@@ -2,8 +2,6 @@ classdef FastProtocolsController < ws.Controller
     
     methods
         function self = FastProtocolsController(wavesurferController,wavesurferModel)
-%             self = self@ws.Controller(wavesurferController, wavesurferModel, {'fastProtocolsFigureWrapper'});
-            
             % Call the superclass constructor
             self = self@ws.Controller(wavesurferController,wavesurferModel); 
 
@@ -15,60 +13,57 @@ classdef FastProtocolsController < ws.Controller
 
     methods
         function ClearRowButtonActuated(self, varargin)
-            selectedIndex = self.Model.IndexOfSelectedFastProtocol;
-            if isempty(selectedIndex) ,
-                return
-            end
-            theFastProtocol = self.Model.FastProtocols{selectedIndex} ;
-            theFastProtocol.ProtocolFileName = '';
-            theFastProtocol.AutoStartType = 'do_nothing';
+            %self.Model.clearSelectedFastProtocol() ;
+            self.Model.do('clearSelectedFastProtocol') ;
         end  % function
         
         function SelectFileButtonActuated(self, varargin)
-            selectedIndex = self.Model.IndexOfSelectedFastProtocol;
-            if isempty(selectedIndex) ,
-                return
-            end
-            
-            % By default start in the location of the current file.  If it
-            % is empty it will attempt to start in LastProtocolFilePath,
-            % loaded from the shared preferences. If that does not exist,
-            % then it will start in the current directory.
-            
-            startLocationFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
-            
-            actualStartLocation = self.Model.FastProtocols{selectedIndex}.ProtocolFileName;
-            if isempty(actualStartLocation)
+            % Allow the user to choose a file to be the protocol file for
+            % the currently selected fast protocol.
+                        
+            % Figure out what directory the file picker dialog will start
+            % in.  By default start in the location of the current file.
+            % If it is empty it will attempt to start in
+            % LastProtocolFilePath, loaded from the shared preferences. If
+            % that does not exist, then it will start in the current
+            % directory.
+            filePickerInitialFolderFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
+            originalFastProtocolFileName = self.Model.selectedFastProtocolFileName() ;
+            if isempty(originalFastProtocolFileName) ,
                 if ~exist('startLocationFromPreferences','var') ,
-                    actualStartLocation='';
+                    filePickerInitialFolder = '' ;
                 else
-                    actualStartLocation =  startLocationFromPreferences;
+                    filePickerInitialFolder =  filePickerInitialFolderFromPreferences ;
                 end
+            else
+                filePickerInitialFolder = originalFastProtocolFileName ;
             end
-            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', actualStartLocation);
-            
+            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', filePickerInitialFolder);
+
             % If the user cancels, just exit.
             if filename == 0 ,
                 return
             end
-            newFileName=fullfile(dirName, filename);
-            theFastProtocol=self.Model.FastProtocols{selectedIndex};
-            ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newFileName);
+            
+            % Set the fast protocol to the selected file
+            newProtocolFileName = fullfile(dirName, filename) ;
+            self.Model.do('setSelectedFastProtocolFileName', newProtocolFileName) ;
 
             % If newFileName and startLocationFromPreferences differ, then
             % save the former as the new LastProtocolFilePath.
-            if ~isequal( ws.canonicalizePath(startLocationFromPreferences) , ws.canonicalizePath(newFileName) )
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newFileName);
+            if ~isequal( ws.canonicalizePath(filePickerInitialFolderFromPreferences) , ws.canonicalizePath(newProtocolFileName) ) ,
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newProtocolFileName);
             end
         end  % function
         
-        function TableCellSelected(self,source,event) %#ok<INUSL>
-            indices=event.Indices;
-            if isempty(indices), return, end
-            rowIndex=indices(1);
-            %columnIndex=indices(2);
-            self.Model.IndexOfSelectedFastProtocol=rowIndex;
-        end
+        function TableCellSelected(self, source, event)  %#ok<INUSL>
+            indices = event.Indices ;
+            if ~isempty(indices) ,
+                rowIndex = indices(1) ;
+                %self.Model.IndexOfSelectedFastProtocol = rowIndex ;
+                self.Model.do('set', 'IndexOfSelectedFastProtocol', rowIndex) ;                
+            end
+        end  % function
     
         function TableCellEdited(self,source,event) %#ok<INUSL>
             indices=event.Indices;
@@ -90,30 +85,6 @@ classdef FastProtocolsController < ws.Controller
                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
             end            
         end  % function        
-    end  %methods block
-    
-    methods (Access=protected)
-%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-%             % This method is inhierited from AbstractController, and is
-%             % called after the user indicates she wants to close the
-%             % window.  Returns true if the window should _not_ close, false
-%             % if it should go ahead and close.
-%             shouldStayPut=false;
-%             
-%             % If acquisition is happening, ignore the close window request
-%             wavesurferModel=self.Model;
-%             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
-%                 return
-%             end            
-%             isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-%             if ~isIdle ,
-%                 shouldStayPut=true;
-%             end
-%         end  % function
-    end % protected methods block    
-    
-    properties (SetAccess=protected)
-       propBindings = struct(); 
-    end
+    end  % public methods block
     
 end  % classdef

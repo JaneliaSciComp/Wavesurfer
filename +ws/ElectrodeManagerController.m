@@ -10,53 +10,6 @@ classdef ElectrodeManagerController < ws.Controller
             self.Figure_ = fig ;
         end
         
-%         function controlActuated(self,controlName,source,event,varargin) %#ok<INUSD,INUSL>
-%             figureObject=self.Figure;
-%             self.Parent_.setAreUpdatesEnabledForAllFigures(false);
-%             try
-%                 if source==figureObject.AddButton ,
-%                     self.AddButtonActuated();
-%                 elseif source==figureObject.RemoveButton ,
-%                     self.RemoveButtonActuated();
-%                 elseif source==figureObject.UpdateButton ,
-%                     self.UpdateButtonActuated();
-%                 elseif source==figureObject.ReconnectButton ,
-%                     self.ReconnectButtonActuated();
-%                 elseif source==figureObject.DoTrodeUpdateBeforeRunCheckbox ,
-%                     self.DoTrodeUpdateBeforeRunCheckboxActuated(source);
-%                 elseif source==figureObject.SoftpanelButton ,
-%                     self.SoftpanelButtonActuated();
-%                 elseif any(source==figureObject.IsCommandEnabledCheckboxes) , 
-%                     self.IsCommandEnabledCheckboxActuated(source);
-%                 elseif any(source==figureObject.TestPulseQCheckboxes) , 
-%                     self.TestPulseQCheckboxActuated(source);
-%                 elseif any(source==figureObject.RemoveQCheckboxes) ,
-%                     self.RemoveQCheckboxActuated(source);
-%                 elseif any(source==figureObject.MonitorPopups) , 
-%                     self.MonitorPopupActuated(source);
-%                 elseif any(source==figureObject.CommandPopups) , 
-%                     self.CommandPopupActuated(source);
-%                 elseif any(source==figureObject.ModePopups) ,
-%                     self.ModePopupActuated(source);
-%                 elseif any(source==figureObject.LabelEdits) ,
-%                     self.LabelEditActuated(source);
-%                 elseif any(source==figureObject.MonitorScaleEdits) ,
-%                     self.MonitorScaleEditActuated(source);
-%                 elseif any(source==figureObject.CommandScaleEdits) ,
-%                     self.CommandScaleEditActuated(source);
-%                 elseif any(source==figureObject.TypePopups) ,
-%                     self.TypePopupActuated(source);
-%                 elseif any(source==figureObject.IndexWithinTypeEdits) ,
-%                     self.IndexWithinTypeEditActuated(source);
-%                 end  % switch
-%             catch exception
-%                 self.Parent_.setAreUpdatesEnabledForAllFigures(true);
-%                 self.raiseDialogOnException_(exception) ;
-%             end
-%             self.Parent_.setAreUpdatesEnabledForAllFigures(true);
-%             %figureObject.AreUpdatesEnabled=true;
-%         end  % method
-
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             self.Parent_.setAreUpdatesEnabledForAllFigures(false) ;
             exceptionMaybe = controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
@@ -129,8 +82,10 @@ classdef ElectrodeManagerController < ws.Controller
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.MonitorPopups);
-            electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.MonitorChannelName=choice;
+            indexOfElectrode = find(isTheElectrode, 1) ;
+            %electrode=self.Model.Electrodes{isTheElectrode};
+            %electrode.MonitorChannelName=choice;
+            self.do('setElectrodeMonitorChannelName', indexOfElectrode, choice) ;
         end
         
 %         function currentMonitorPopupActuated(self,source)
@@ -168,10 +123,11 @@ classdef ElectrodeManagerController < ws.Controller
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
-            indexO
-            electrode=self.Model.Electrodes{isTheElectrode};
-            electrode.CommandChannelName=choice;
-            self.setElectrodeCommandChannelName(indexOfElectrode, choice) ;
+            indexOfElectrode = find(isTheElectrode, 1) ;
+            %electrode=self.Model.Electrodes{isTheElectrode};
+            %electrode.CommandChannelName=choice;
+            %self.setElectrodeCommandChannelName(indexOfElectrode, choice) ;
+            self.do('setElectrodeCommandChannelName', indexOfElectrode, choice) ;
         end
         
 %         function voltageCommandPopupActuated(self,source)
@@ -202,7 +158,7 @@ classdef ElectrodeManagerController < ws.Controller
         
         function ModePopupActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.ModePopups);
-            electrodeIndex=find(isTheElectrode);
+            electrodeIndex=find(isTheElectrode,1);
             electrode=self.Model.Electrodes{electrodeIndex};
             allowedModes=electrode.getAllowedModes();
             allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
@@ -210,21 +166,24 @@ classdef ElectrodeManagerController < ws.Controller
             modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
             if ~isempty(modeIndex) ,
                 mode=allowedModes{modeIndex};
-                self.Model.setElectrodeModeOrScaling(electrodeIndex,'Mode',mode);
+                %self.Model.setElectrodeModeOrScaling(electrodeIndex,'Mode',mode);
+                self.Model.do('setElectrodeModeOrScaling', electrodeIndex, 'Mode', mode) ;
             end
         end  % function
         
         function LabelEditActuated(self, source, event, varargin)  %#ok<INUSD>
             indexOfElectrode = find((source==self.Figure.LabelEdits),1) ;
             newLabel = get(source,'String') ;
-            self.Model.setElectrodeName(indexOfElectrode, newLabel) ;
+            %self.Model.setElectrodeName(indexOfElectrode, newLabel) ;
+            self.Model.do('setElectrodeName', indexOfElectrode, newLabel) ;            
         end  % function
 
         function MonitorScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.MonitorScaleEdits);
             newValue=str2double(get(source,'String'));
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
+            %self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
+            self.Model.do('setElectrodeMonitorScaling', electrodeIndex, newValue) ;  %#ok<FNDSB>
         end  % function
         
 %         function currentMonitorScaleEditActuated(self,source)
@@ -239,10 +198,9 @@ classdef ElectrodeManagerController < ws.Controller
         function CommandScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.CommandScaleEdits);
             newValue=str2double(get(source,'String'));
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.CommandScaling=newValue;
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeCommandScaling(electrodeIndex,newValue);  %#ok<FNDSB>
+            %self.Model.setElectrodeCommandScaling(electrodeIndex,newValue);  %#ok<FNDSB>
+            self.Model.do('setElectrodeCommandScaling', electrodeIndex, newValue) ;  %#ok<FNDSB>
         end  % function
         
 %         function voltageMonitorScaleEditActuated(self,source)
@@ -264,24 +222,20 @@ classdef ElectrodeManagerController < ws.Controller
 %         end  % function        
 
         function TypePopupActuated(self, source, event, varargin)  %#ok<INUSD>
-            %self.Figure.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             choice=ws.getPopupMenuSelection(source,ws.Electrode.Types);
             isTheElectrode=(source==self.Figure.TypePopups);
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.Type=choice;
             electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
-            %self.Figure.changeReadiness(+1);
+            %self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
+            self.Model.do('setElectrodeType', electrodeIndex, choice) ; %#ok<FNDSB>            
         end  % function
         
         function IndexWithinTypeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode=(source==self.Figure.IndexWithinTypeEdits);
+            electrodeIndex=find(isTheElectrode);
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.IndexWithinType=newValue;            
-            electrodeIndex=find(isTheElectrode);
-            self.Model.setElectrodeIndexWithinType(electrodeIndex,newValue); %#ok<FNDSB>
+            %self.Model.setElectrodeIndexWithinType(electrodeIndex,newValue); %#ok<FNDSB>
+            self.Model.do('setElectrodeIndexWithinType', electrodeIndex, newValue) ; %#ok<FNDSB>
         end  % function
 
     end  % methods

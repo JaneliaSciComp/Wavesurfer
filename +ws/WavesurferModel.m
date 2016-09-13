@@ -14,7 +14,7 @@ classdef WavesurferModel < ws.RootModel
         HasUserSpecifiedUserSettingsFileName
         AbsoluteUserSettingsFileName
         FastProtocols
-        IndexOfSelectedFastProtocol
+        IndexOfSelectedFastProtocol  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         Acquisition
         Stimulation
         Triggering
@@ -77,7 +77,7 @@ classdef WavesurferModel < ws.RootModel
         AbsoluteProtocolFileName_ = ''
         HasUserSpecifiedUserSettingsFileName_ = false
         AbsoluteUserSettingsFileName_ = ''
-        IndexOfSelectedFastProtocol_ = []
+        IndexOfSelectedFastProtocol_ = 1  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         State_ = 'uninitialized'
         Subsystems_
         t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
@@ -592,14 +592,12 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function set.IndexOfSelectedFastProtocol(self, newValue)
-            if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
+            if isnumeric(newValue) && isscalar(newValue) && isreal(newValue) && 1<=newValue1 && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
                 self.IndexOfSelectedFastProtocol_ = double(newValue) ;
             else
-                %self.broadcast('Update');
                 error('most:Model:invalidPropVal', ...
                       'IndexOfSelectedFastProtocol (scalar) positive integer between 1 and NFastProtocols, inclusive');
             end
-            %self.broadcast('Update');              
         end
         
         function val = get.NSweepsPerRun(self)
@@ -3023,6 +3021,34 @@ classdef WavesurferModel < ws.RootModel
             % Clear the warning log before returning
             self.WarningLog_ = MException.empty(0, 1) ;
         end
-    end  % protected methods block
+        
+        function clearSelectedFastProtocol(self)
+            selectedIndex = self.Model.IndexOfSelectedFastProtocol ;  % this is never empty
+            fastProtocol = self.FastProtocols_{selectedIndex} ;
+            fastProtocol.ProtocolFileName = '' ;
+            fastProtocol.AutoStartType = 'do_nothing' ;
+        end  % method
+        
+        function result = selectedFastProtocolFileName(self)
+            % Returns a maybe of strings (i.e. a cell array of string, the
+            % cell array of length zero or one)
+            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+            fastProtocol = self.FastProtocols{selectedIndex} ;
+            result = fastProtocol.ProtocolFileName ;
+        end  % method
+        
+        function setSelectedFastProtocolFileName(self, newFileName)
+            % newFileName should be an absolute file path
+            if ws.isAString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) ,
+                selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+                fastProtocol = self.FastProtocols{selectedIndex} ;
+                fastProtocol.ProtocolFileName =newFileName ;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Fast protocol file name must be an absolute path');              
+            end
+        end  % method
+        
+    end  % public methods block
     
 end  % classdef
