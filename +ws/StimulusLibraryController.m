@@ -47,100 +47,109 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             self.windowCloseRequested(source,event);
         end        
         
-        function StimuliListboxActuated(self,source,event) %#ok<INUSD>
-            selectionIndex=get(source,'Value');
-            stimuli=self.Model.Stimuli;
-            nStimuli=length(stimuli);
-            if 1<=selectionIndex && selectionIndex<=nStimuli ,
-                self.Model.SelectedItem=stimuli{selectionIndex};
-            else
-                self.Figure.update();  % something's odd, so just update the figure given the model
-            end
+        function StimuliListboxActuated(self, source, event) %#ok<INUSD>
+            selectionIndex = get(source, 'Value') ;
+            %stimuli=self.Model.Stimuli;
+            %nStimuli=length(stimuli);
+            %if 1<=selectionIndex && selectionIndex<=nStimuli ,
+            %    self.Model.SelectedItem=stimuli{selectionIndex};
+            %else
+            %    self.Figure.update();  % something's odd, so just update the figure given the model
+            %end                       
+            self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.Stimulus', selectionIndex) ;            
         end  % function
         
-        function MapsListboxActuated(self,source,event) %#ok<INUSD>
-            selectionIndex=get(source,'Value');
-            items=self.Model.Maps;
-            nItems=length(items);
-            if 1<=selectionIndex && selectionIndex<=nItems ,
-                self.Model.SelectedItem=items{selectionIndex};
-            else
-                self.Figure.update();  % something's odd, so just update the figure given the model
-            end
+        function MapsListboxActuated(self, source, event)  %#ok<INUSD>
+            selectionIndex = get(source, 'Value') ;
+%             items=self.Model.Maps;
+%             nItems=length(items);
+%             if 1<=selectionIndex && selectionIndex<=nItems ,
+%                 self.Model.SelectedItem=items{selectionIndex};
+%             else
+%                 self.Figure.update();  % something's odd, so just update the figure given the model
+%             end
+            self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.StimulusMap', selectionIndex) ;            
         end  % function
         
-        function SequencesListboxActuated(self,source,event) %#ok<INUSD>
-            selectionIndex=get(source,'Value');
-            items=self.Model.Sequences;
-            nItems=length(items);
-            if 1<=selectionIndex && selectionIndex<=nItems ,
-                self.Model.SelectedItem=items{selectionIndex};
-            else
-                self.Figure.update();  % something's odd, so just update the figure given the model
-            end
+        function SequencesListboxActuated(self, source, event)  %#ok<INUSD>
+            selectionIndex = get(source, 'Value') ;
+%             items=self.Model.Sequences;
+%             nItems=length(items);
+%             if 1<=selectionIndex && selectionIndex<=nItems ,
+%                 self.Model.SelectedItem=items{selectionIndex};
+%             else
+%                 self.Figure.update();  % something's odd, so just update the figure given the model
+%             end
+            self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.StimulusSequence', selectionIndex) ;
         end  % function
         
-        function AddSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
+        function AddSequenceMenuItemActuated(self, source, event)  %#ok<INUSD>
+%             model=self.Model;
+% 
+%             % Add a sequence to the model
+%             sequence = model.addNewSequence();
+%             
+%             % If there are maps, add the first just to get things started.
+%             if ~isempty(model.Maps)
+%                 map=model.Maps{1};
+%                 sequence.addMap(map);
+%             end            
+            
+            self.Model.do('addNewSequence') ;            
+        end  % function
+        
+        function DuplicateSequenceMenuItemActuated(self,source,event)  %#ok<INUSD>
+%             model=self.Model;
+%             
+%             % Duplicate a sequence
+%             model.duplicateSelectedItem();
 
-            % Add a sequence to the model
-            sequence = model.addNewSequence();
-            
-            % If there are maps, add the first just to get things started.
-            if ~isempty(model.Maps)
-                map=model.Maps{1};
-                sequence.addMap(map);
-            end            
+            self.Model.do('duplicateSelectedItem') ;
         end  % function
         
-        function DuplicateSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-            
-            % Duplicate a sequence
-            model.duplicateSelectedItem();
-            
-        end  % function
-        
-        function AddMapToSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-            selectedSequence=model.SelectedSequence;
-            if ~isempty(selectedSequence) ,
-                selectedItem=model.SelectedItem;
-                if ~isempty(selectedItem) ,
-                    if (selectedSequence==selectedItem) ,
-                        if ~isempty(model.Maps)
-                            map=model.Maps{1};  % just add the first map to the sequence.  User can change it subsequently.
-                            selectedSequence.addMap(map);
-                        end
-                    end
-                end
-            end
+        function AddMapToSequenceMenuItemActuated(self,source,event)  %#ok<INUSD>
+%             model=self.Model;
+%             selectedSequence=model.SelectedSequence;
+%             if ~isempty(selectedSequence) ,
+%                 selectedItem=model.SelectedItem;
+%                 if ~isempty(selectedItem) ,
+%                     if (selectedSequence==selectedItem) ,
+%                         if ~isempty(model.Maps)
+%                             map=model.Maps{1};  % just add the first map to the sequence.  User can change it subsequently.
+%                             selectedSequence.addMap(map);
+%                         end
+%                     end
+%                 end
+%             end
+            self.Model.do('addMapToSequence') ;
         end  % function
         
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-            selectedItem=model.SelectedItem;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
-                selectedItem.deleteMarkedMaps();
-            end
+%             model=self.Model;
+%             selectedItem=model.SelectedItem;
+%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
+%                 selectedItem.deleteMarkedMaps();
+%             end
+            self.Model.do('deleteMarkedMapsFromSequence') ;
         end  % function
 
         function AddMapMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-
-            % Add a map to the model
-            map = model.addNewMap();
-            
-            % Add a binding just to get things rolling
-            map.addBinding('');
+%             model=self.Model;
+% 
+%             % Add a map to the model
+%             map = model.addNewMap();
+%             
+%             % Add a binding just to get things rolling
+%             map.addBinding('');            
+            self.Model.do('addNewMap') ;
         end  % function
 
         function DuplicateMapMenuItemActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-
-            % Duplicate a map
-            model.duplicateSelectedItem();
-
+%             model=self.Model;
+% 
+%             % Duplicate a map
+%             model.duplicateSelectedItem();
+            self.Model.do('duplicateSelectedItem') ;
         end  % function
         
         function AddChannelToMapMenuItemActuated(self,source,event) %#ok<INUSD>

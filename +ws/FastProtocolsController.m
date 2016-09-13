@@ -73,16 +73,17 @@ classdef FastProtocolsController < ws.Controller
             fastProtocolIndex=rowIndex;
             if (columnIndex==1) ,
                 % this is the Protocol File column
-                if isempty(newString) || exist(newString,'file') ,
-                    theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
-                    ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
-                end
+%                 if isempty(newString) || exist(newString,'file') ,
+%                     theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
+%                     ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
+%                 end
+                ws.Model.do('setFastProtocolFileName', fastProtocolIndex, newString) ;
             elseif (columnIndex==2) ,
                 % this is the Action column
-                newValue=ws.startTypeFromTitleString(newString);  
-                % newValue=ws.fastprotocol.StartType.str2num(newString);
-                theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
-                ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
+                newValue = ws.startTypeFromTitleString(newString) ;  
+%                 theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
+%                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
+                ws.Model.do('setFastProtocolAutoStartType', fastProtocolIndex, newValue) ;
             end            
         end  % function        
     end  % public methods block

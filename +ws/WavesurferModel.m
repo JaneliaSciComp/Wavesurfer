@@ -2975,8 +2975,12 @@ classdef WavesurferModel < ws.RootModel
                 warningException = warningException.addCause(causeOrEmpty) ;
             end
             if self.DoLogWarnings_ ,
-                self.WarningLog_ = vertcat(self.WarningLog_, ...
-                                           warningException) ;            
+                if length(selfWarningLog_)<10 ,
+                    self.WarningLog_ = vertcat(self.WarningLog_, ...
+                                               warningException) ;            
+                else
+                    % Don't want to log a bazillion warnings, so do nothing
+                end
             else
                 % Just issue a normal warning
                 warning(identifier, message) ;
@@ -3039,16 +3043,41 @@ classdef WavesurferModel < ws.RootModel
         
         function setSelectedFastProtocolFileName(self, newFileName)
             % newFileName should be an absolute file path
-            if ws.isAString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) ,
-                selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
-                fastProtocol = self.FastProtocols{selectedIndex} ;
-                fastProtocol.ProtocolFileName =newFileName ;
-            else
-                error('most:Model:invalidPropVal', ...
-                      'Fast protocol file name must be an absolute path');              
-            end
+            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+            self.setFastProtocolFileName(selectedIndex, newFileName) ;
         end  % method
         
+        function setFastProtocolFileName(self, index, newFileName)
+            % newFileName should be an absolute file path
+            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
+                if ws.isAString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) && exist(newFileName,'file') ,
+                    fastProtocol = self.FastProtocols{index} ;
+                    fastProtocol.ProtocolFileName = newFileName ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Fast protocol file name must be an absolute path');              
+                end
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
+            end                
+        end  % method
+        
+        function setFastProtocolAutoStartType(self, index, newValue)
+            % newFileName should be an absolute file path
+            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
+                if ws.isAStartType(newValue) ,
+                    fastProtocol = self.FastProtocols{index} ;
+                    fastProtocol.AutoStartType = newValue ;
+                else
+                    error('most:Model:invalidPropVal', ...
+                          'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
+                end
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
+            end                
+        end  % method        
     end  % public methods block
     
 end  % classdef

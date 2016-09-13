@@ -355,11 +355,16 @@ classdef Controller < handle
                 end
                 exceptionMaybe = {} ;
             catch exception
-                self.raiseDialogOnException_(exception) ;
-                exceptionMaybe = { exception } ;
+                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                    % ignore completely, don't even pass on to output
+                    exceptionMaybe = {} ;
+                else
+                    self.raiseDialogOnException_(exception) ;
+                    exceptionMaybe = { exception } ;
+                end
             end
         end  % function       
-    end
+    end  % public methods block
     
     methods (Access=protected)
         function raiseDialogOnException_(self, exception)

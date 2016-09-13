@@ -385,8 +385,13 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                 end
                 exceptionMaybe = {} ;
             catch exception
-                self.raiseDialogOnException_(exception) ;
-                exceptionMaybe = { exception } ;
+                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                    % ignore completely, don't even pass on to output
+                    exceptionMaybe = {} ;
+                else
+                    self.raiseDialogOnException_(exception) ;
+                    exceptionMaybe = { exception } ;
+                end
             end
         end  % function       
     end  % public methods block

@@ -508,9 +508,62 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.SelectedItemClassName_='ws.StimulusMap';
             elseif isequal(newValue,'ws.Stimulus') ,
                 self.SelectedItemClassName_='ws.Stimulus';
+            else
+                self.broadcast('Update') ;
+                error('most:Model:invalidPropVal', ...
+                      'Stimulus library selected item class name must be a legal value') ;
             end                
             self.broadcast('Update');
         end  % function
+
+        function setSelectedItemByClassNameAndIndex(self, className, index)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                self.SelectedItemClassName_ = '' ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                if isempty(index) ,
+                    self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                    self.SelectedStimulusSequence_ = [] ;
+                elseif ws.isIndex(index) && 1<=index && index<=length(self.Sequences) ,
+                    self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                    self.SelectedStimulusSequence_ = double(index) ;
+                else
+                    self.broadcast('Update') ;
+                    error('most:Model:invalidPropVal', ...
+                          'Stimulus library sequence index must be a scalar numeric integer between 1 and %d, or empty', length(self.Sequences)) ;                  
+                end
+            elseif isequal(className,'ws.StimulusMap') ,
+                if isempty(index) ,
+                    self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+                    self.SelectedStimulusMap_ = [] ;
+                elseif ws.isIndex(index) && 1<=index && index<=length(self.Maps) ,
+                    self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+                    self.SelectedStimulusMap_ = double(index) ;
+                else
+                    self.broadcast('Update') ;
+                    error('most:Model:invalidPropVal', ...
+                          'Stimulus library map index must be a scalar numeric integer between 1 and %d, or empty', length(self.Maps)) ;                  
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                if isempty(index) ,
+                    self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                    self.SelectedStimulus_ = [] ;
+                elseif ws.isIndex(index) && 1<=index && index<=length(self.Stimuli) ,
+                    self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                    self.SelectedStimulus_ = double(index) ;
+                else
+                    self.broadcast('Update') ;
+                    error('most:Model:invalidPropVal', ...
+                          'Stimulus index must be a scalar numeric integer between 1 and %d, or empty', length(self.Stimuli)) ;                  
+                end
+            else
+                self.broadcast('Update') ;
+                error('most:Model:invalidPropVal', ...
+                      'Stimulus library selected item class name must be a legal value') ;
+            end                            
+            self.broadcast('Update');
+        end  % function
+        
         
         function value = get.SelectedItem(self)
             if isempty(self.SelectedItemClassName_) ,
@@ -1664,8 +1717,46 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %                     self.SelectedOutputableIndex_ = 1 ;
 %                 end                
 %             end            
-        end
+        end  % function
     end  % protected methods block
+    
+    methods
+        function addMapToSequence(self)
+            selectedSequence = self.SelectedSequence ;
+            if ~isempty(selectedSequence) ,
+                selectedItem = self.SelectedItem ;
+                if ~isempty(selectedItem) ,
+                    if selectedSequence==selectedItem ,
+                        if ~isempty(self.Maps) ,
+                            map = self.Maps{1} ;  % just add the first map to the sequence.  User can change it subsequently.
+                            selectedSequence.addMap(map) ;
+                        end
+                    end
+                end
+            end
+        end  % method
+        
+        function deleteMarkedMapsFromSequence(self)
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
+                selectedItem.deleteMarkedMaps() ;
+            end
+        end  % method
+        
+        function addChannelToMap(self)
+            selectedMap = self.SelectedMap ;
+            if ~isempty(selectedMap) ,
+                selectedItem = self.SelectedItem ;
+                if ~isempty(selectedItem) ,
+                    if selectedMap==selectedItem ,
+                        if ~isempty(self.Stimuli) ,
+                            selectedMap.addBinding('');                            
+                        end
+                    end
+                end
+            end
+        end  % function        
+    end  % public methods block
     
 %     methods (Access=protected)
 %         function defineDefaultPropertyTags_(self)
