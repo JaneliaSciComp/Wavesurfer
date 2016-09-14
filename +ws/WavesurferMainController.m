@@ -14,91 +14,35 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         % An array of all the child controllers
         ChildControllers={};
-        ScopeControllers={};  % a subset of ChildControllers
-        
-        % Defines relationships between controller instances/names, window instances,
-        % etc.  See createControllerSpecs() method
-        ControllerSpecs
-        
+        %ScopeControllers={};  % a subset of ChildControllers
+                
         % Keeps track of where we are in the exit process.
         IsExitingMATLAB = false
+    end
+    
+    properties (Access=protected)
+        % Defines relationships between controller instances/names, window instances,
+        % etc.  See createControllerSpecs() method
+        ControllerSpecifications_
     end
     
     methods
         function self = WavesurferMainController(model)
             % Call superclass constructor
-            %self = self@ws.Controller([],model,{'wavesurferMainFigureWrapper'});  % this controller has no parent
             self = self@ws.Controller([],model);  % this controller has no parent
 
             % Create the figure, store a pointer to it
             fig = ws.WavesurferMainFigure(model,self) ;
             self.Figure_ = fig ;
-            
-            %self.HideWindowOnClose = false;
-            
-            self.ControllerSpecs = self.createControllerSpecs();
-            
-            %self.setPropertyTags('FastProtocols', 'IncludeInFileTypes', {'usr'});
-            
-%             self.assign_names('WavesurferWindow', 'CycleComboBox');
-%             self.assign_names('WavesurferWindow', 'ScopesMenu');
-%             self.assign_names('WavesurferWindow', 'FastProtocolsToolBar');
-%             self.assign_names('WavesurferWindow', 'ProgressBar');
-%             self.assign_names('WavesurferWindow', 'EphysSeparator');
-%             self.assign_names('WavesurferWindow', 'ActiveElectrodeLabel');
-%             self.assign_names('WavesurferWindow', 'ActiveElectrodeCount');
-            
-            %self.initializeFastProtocols();
-            
-            % Define a view model that maps stimulus library contents into a data model form
-            % that is better suited to the user interface components.  All stimulus cycle
-            % and library tools launched from this instance of the wavesurfer application will
-            % reference this view model instance.
-            %self.LibraryViewModel = ws.ui.viewmodel.StimulusLibraryViewModel();
-            
-            % Any tool that works with the view model and changes the selected item
-            % (including this main window) will force this callback and cause the cycle to
-            % be updated.  None of those tools need to know of the Stimulation subsystem
-            % directly, just the view model they already need to populate the user
-            % interface.
-            %self.LibraryViewModel.addlistener('SelectedOutputableViewmodel', 'PostSet', @self.didSetStimulusLibraryVMSelectedOutputable);
-            
-            % Configure the combobox used to select the map or cycle within the currently
-            % selected library.
-            %self.hGUIData.WavesurferWindow.CycleComboBox.DataContext = self.LibraryViewModel.ValidCycleItemsModel.Children();
-            %self.hGUIData.WavesurferWindow.CycleComboBox.addlistener('SelectionChanged', @self.stimulationOutputComboboxWasManipulated);
-                % This line above is problematical, because the
-                % SelectionChanged event gets fired when the combobox list
-                % items get changed, in addition to getting fied when the
-                % user changes the selection.  But I don't know how to
-                % distinguish those events from within
-                % stimulationOutputComboboxWasManipulated(), and this leads
-                % to tears  -- ALT, 2014-09-02
-            
-%             % Make the "Yoke to ScanImage" menu item checkable
-%             hGUIData=self.hGUIData;
-%             wavesurferWindow=[];
-%             if ~isempty(hGUIData) && isfield(hGUIData, 'WavesurferWindow') ,
-%                 wavesurferWindow=hGUIData.WavesurferWindow;
-%             end
-%             yokeToScanImageMenuItem=[];
-%             if ~isempty(wavesurferWindow) && isfield(hGUIData.WavesurferWindow, 'YokeToScanImageMenuItem')
-%                 yokeToScanImageMenuItem = hGUIData.WavesurferWindow.YokeToScanImageMenuItem;
-%             end
-%             yokeToScanImageMenuItem.IsCheckable=true;
-%             yokeToScanImageMenuItem.IsChecked=false;  % default
 
-            % Model is currently empty, but need to bring other things into
-            % sync with that (but: Couldn't we just call self.Model=[] ?)
-            %self.syncVariousThingsFromModel_();
-            self.updateSubscriptionsToModel_()
+            % Create the controller specifications
+            self.ControllerSpecifications_ = ws.WavesurferMainController.createControllerSpecs_() ;
             
-%             % Bring the scopes into sync
-%             self.syncScopeControllersWithScopeModels() ;
+            % Establish the appropriate subscriptions (the figure
+            % subscribing to the model)
+            self.updateSubscriptionsToModel_() ;
             
             % Update all the controls
-            %self.Figure.updateControlsInExistance();
-            %self.Figure.updateControlEnablement();            
             self.Figure.update();            
             
             % Show the display figure by default
@@ -108,148 +52,30 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     
     methods
         function delete(self)
-            % Delete all child controllers.
-%             for i=1:length(self.ChildControllers) ,
-%                 ws.deleteIfValidHandle(self.ChildControllers{i});
-%             end
             self.ChildControllers={};
-            self.ScopeControllers={};
+            %self.ScopeControllers={};
         end
 
-%         function quit(self)
-%             self.windowCloseRequested(self.Model,[]);
-%         end
-        
         function play(self, varargin)
-            %self.Figure.changeReadiness(-1);
-            try
-                self.Model.play();
-            catch me
-                %self.Figure.changeReadiness(+1);
-                rethrow(me)
-            end                
-            %self.Figure.changeReadiness(+1);            
+            self.Model.play();
         end
         
         function record(self, varargin)
-            %profile on
-            %self.Figure.changeReadiness(-1);            
-            try
-                self.Model.record();
-            catch me
-                %self.Figure.changeReadiness(+1);
-                rethrow(me)
-            end                                
-            %self.Figure.changeReadiness(+1);            
-            %profile off
+            self.Model.record();
         end
-        
-%         function startTestPulseControlActuated(self, varargin)
-%             progressBar = self.hGUIData.WavesurferWindow.ProgressBar;
-%             progressBar.IsIndeterminate = true;
-%             
-%             %self.showAndRaiseChildFigure_('ws.ui.controller.ephys.TestPulse');
-%             
-%             try
-%                 self.Model.start(ws.ApplicationState.TestPulsing);
-%             catch me
-%                 self.showError(me, 'Error Starting Test Pulse');
-%             end
-%         end
         
         function stopControlActuated(self, varargin)
             % Action method for the Stop button and Stop menu item
             self.Model.stop();
         end
-        
-%         function willSetModelState(self,varargin)
-%             % Used to inform the controller that the model run state is
-%             % about to be set
-%             self.OriginalModelState_=self.Model.State;
-%         end
-%         
-%         function didSetModelState(self,varargin)
-%             % Used to inform the controller that the model run state has
-%             % been set
-%             
-%             % If we're switching out of the "no MDF" mode, update the scope
-%             % controllers 
-%             if self.OriginalModelState_==ws.ApplicationState.NoMDF && self.Model.State~=ws.ApplicationState.NoMDF ,
-%                 self.nukeAndRepaveScopeControllers();
-%                 %self.updateScopeMenu();
-%             end
-%             self.OriginalModelState_=[];
-%             
-%             % Causes the enablement and visibility of UI elements to be
-%             % correctly set, given the current State
-%             %self.updateEnablementAndVisibilityOfControls();
-%         end
-                
-%         function newScopeControllerAdded(self,scopeModel)
-%             scopeModel.subscribeMe(self,'WavesurferScopeMenuNeedsToBeUpdated','','updateScopeMenu');
-%         end        
-        
-%         function self=willEditStimulusLibrary(self)
-%             %self.IsEditingStimulusLibrary_=true;
-%         end
-%         
-%         function self=didEditStimulusLibrary(self)
-%             %self.IsEditingStimulusLibrary_=false;
-%             % I think here we need to call
-%             % StimulusLibraryViewModel.did_change_selected_outputable_in_model() somehow, and fake
-%             % the arguments to it, to prompt the combobox selection to get
-%             % sync'ed up with the model.
-%         end
-        
-%         function yokeToScanImageMenuItemActuated(self,varargin)
-%             %fprintf('Inside yokeToScanImageMenuItemActuated()\n');
-%             model=self.Model;
-%             if ~isempty(model) ,
-%                 try
-%                     model.IsYokedToScanImage= ~model.IsYokedToScanImage;
-%                 catch excp
-%                     if isequal(excp.identifier,'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
-%                         excp.message=sprintf('Can''t enable yoked mode: %s',excp.message);
-%                         throw(excp);
-%                     else
-%                         rethrow(excp);
-%                     end
-%                 end
-%             end                        
-%         end  % function
-        
-%         function updateIsYokedToScanImage(self,varargin)
-%             % Update whether the "Yoke to ScanImage" menu item is checked,
-%             % based on the model state
-%             yokeToScanimageMenuItem=self.Figure.YokeToScanimageMenuItem;
-%             if ~isempty(yokeToScanimageMenuItem) ,
-%                 model=self.Model;
-%                 if ~isempty(model) ,
-%                     set(yokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
-%                 end
-%             end            
-%         end
-        
-        function self=setAreUpdatesEnabledForAllFigures(self,newValue)
+       
+        function setAreUpdatesEnabledForAllFigures(self,newValue)
             childControllers=self.ChildControllers;
             for i=1:length(childControllers)
                 childControllers{i}.setAreUpdatesEnabledForFigure(newValue);
             end
         end
-                
-%         function set.FastProtocols(self, newValue)
-%             self.FastProtocols=newValue;
-%             self.updateEnablementAndVisibilityOfControls();
-%         end  % function
-        
-%         function didSetFastProtocols(self, varargin)
-%             % Called by the FastProtocolsController to notify the
-%             % WavesurferController that one or more of the FastProtocols
-%             % has been set.  Also called via the broadcast mechanism when
-%             % FastProtocols is set in the model.
-%             self.updateEnablementAndVisibilityOfControls();
-%         end            
-        
+                        
         function SweepBasedRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
             ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
@@ -457,10 +283,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % If the intent is really to exit, make sure everything that has special closing
                     % behavior (e.g., the stimulus library editor prompting to save changes) is also
                     % ok with closing.
-                    isOkayToClose = self.isOKToQuitWavesurfer();
+                    isOkayToClose = self.isOKToQuitWavesurfer_();
                     
-                    if isOkayToClose
-                        if exitDialog.Result == Wavesurfer.ExitResult.ExitMATLAB
+                    if isOkayToClose ,
+                        if exitDialog.Result == Wavesurfer.ExitResult.ExitMATLAB ,
                             % Pass along exit to MATLAB and flag that we should not prompt the user the next
                             % time through in this function.
                             self.IsExitingMATLAB = true;
@@ -505,7 +331,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %self.nukeAndRepaveScopeControllers();
             monitorPositions = ws.Controller.getMonitorPositions() ;
             self.decodeMultiWindowLayoutForSuiGenerisControllers_(layoutForAllWindows, monitorPositions) ;
-            self.decodeMultiWindowLayoutForExistingScopeControllers_(layoutForAllWindows, monitorPositions) ;
+            %self.decodeMultiWindowLayoutForExistingScopeControllers_(layoutForAllWindows, monitorPositions) ;
             %self.Model.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             %self.Figure.changeReadiness(+1);
         end  % function
@@ -1359,7 +1185,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         function saveChildWindowLayouts(self, filename)
 %             %self.save_window_layout(filename);
 %             
-%             cellfun(@(x)self.saveWindowIfLoaded(filename, self.(x)), fieldnames(self.ControllerSpecs));
+%             cellfun(@(x)self.saveWindowIfLoaded(filename, self.(x)), fieldnames(self.ControllerSpecifications_));
 %         end
         
         function layoutForAllWindows=encodeAllWindowLayouts(self)
@@ -1407,14 +1233,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 % 
 %             % cellfun(@(x)self.loadWindowIfVisible(s, ...
 %             %                                      self.(x), ...
-%             %                                      self.ControllerSpecs.(x).controlName, ...
-%             %                                      self.ControllerSpecs.(x).className), ...
-%             %         fieldnames(self.ControllerSpecs));
+%             %                                      self.ControllerSpecifications_.(x).controlName, ...
+%             %                                      self.ControllerSpecifications_.(x).className), ...
+%             %         fieldnames(self.ControllerSpecifications_));
 %             
 %             % Go through the list of possible controller types, see if any
 %             % have layout information.  If they do, and they're visible,
 %             % create a controller.
-%             controllerTypeNames=fieldnames(self.ControllerSpecs);
+%             controllerTypeNames=fieldnames(self.ControllerSpecifications_);
 %             nControllerSpecs=length(controllerTypeNames);
 %             for i=1:nControllerSpecs ,
 %                 controllerTypeName=controllerTypeNames{i};
@@ -1422,8 +1248,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %                   self.loadWindowLayoutIfShouldBeVisible(...
 %                       windowLayout, ...
 %                       self.(controllerTypeName), ...
-%                       self.ControllerSpecs.(controllerTypeName).controlName, ...
-%                       self.ControllerSpecs.(controllerTypeName).className), ...
+%                       self.ControllerSpecifications_.(controllerTypeName).controlName, ...
+%                       self.ControllerSpecifications_.(controllerTypeName).className), ...
 %                 end
 %             end
 %            
@@ -1437,7 +1263,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % have layout information.  For each, take the appropriate
             % action to make the current layout match that in
             % multiWindowLayout.
-            controllerNames=fieldnames(self.ControllerSpecs);
+            controllerNames=fieldnames(self.ControllerSpecifications_);
             nControllerSpecs=length(controllerNames);
             for i=1:nControllerSpecs ,
                 controllerName=controllerNames{i};
@@ -1447,8 +1273,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     % The scope controllers need to be handled by
                     % nukeAndRepaveScopeControllers.
                     controller=self.(controllerName);
-                    %windowTypeName=self.ControllerSpecs.(controllerName).controlName;
-                    controllerClassName=self.ControllerSpecs.(controllerName).className;
+                    %windowTypeName=self.ControllerSpecifications_.(controllerName).controlName;
+                    controllerClassName=self.ControllerSpecifications_.(controllerName).className;
                     layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
                     
                     % If the controller does not exist, check whether the configuration indicates
@@ -1488,17 +1314,17 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end    
         end  % function
         
-        function decodeMultiWindowLayoutForExistingScopeControllers_(self, multiWindowLayout, monitorPositions)
-            % When this is envoked, the existing scope controllers should
-            % already be the same as the ones specified in the
-            % multiWindowLayout, usual because of a recent call to
-            % self.nukeAndRepaveScopeControllers().
-            
-            for i=1:length(self.ScopeControllers) ,
-                controller=self.ScopeControllers{i};
-                controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
-            end
-        end  % function
+%         function decodeMultiWindowLayoutForExistingScopeControllers_(self, multiWindowLayout, monitorPositions)
+%             % When this is envoked, the existing scope controllers should
+%             % already be the same as the ones specified in the
+%             % multiWindowLayout, usual because of a recent call to
+%             % self.nukeAndRepaveScopeControllers().
+%             
+%             for i=1:length(self.ScopeControllers) ,
+%                 controller=self.ScopeControllers{i};
+%                 controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
+%             end
+%         end  % function
         
         
         
@@ -1597,7 +1423,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end
         
-        function isOKToQuit = isOKToQuitWavesurfer(self)
+        function isOKToQuit = isOKToQuitWavesurfer_(self)
             isOKToQuit = true;
             
             % If acquisition is happening, ignore the close window request
@@ -1629,7 +1455,33 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             controller.raiseFigure();
         end
         
-        function specs = createControllerSpecs(~)
+        function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
+            if isempty(self.(controllerName)) ,
+                fullControllerClassName=['ws.' controllerName];
+                controller = feval(fullControllerClassName,self,self.Model);
+                self.ChildControllers{end+1}=controller;
+                self.(controllerName)=controller;
+                didCreate = true ;
+            else
+                controller = self.(controllerName);
+                didCreate = false ;
+            end
+        end  % function
+    end  % protected methods
+    
+    methods (Static = true, Access = public)
+        function out = sharedController(varargin)
+            persistent singletonController;
+            if isempty(singletonController) || ~isvalid(singletonController)
+                singletonController = ws.WavesurferMainController(varargin{:});
+            end
+            out = singletonController;
+        end
+    end  % static, public methods
+    
+    
+    methods (Static = true, Access = protected)
+        function specs = createControllerSpecs_()
             %createControllerSpecs Specify data for managing controllers.
             %
             %   Wavesurfer contains several dialogs and figure windows.  This function defines
@@ -1664,67 +1516,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
         end  % function
-
-        function [controller,didCreate] = createChildControllerIfNonexistant(self, controllerName, varargin)
-            if isempty(self.(controllerName)) ,
-                fullControllerClassName=['ws.' controllerName];
-                controller = feval(fullControllerClassName,self,self.Model);
-                self.ChildControllers{end+1}=controller;
-                self.(controllerName)=controller;
-                didCreate = true ;
-            else
-                controller = self.(controllerName);
-                didCreate = false ;
-            end
-        end  % function
-
-%         function showLibraryEditor(self, varargin)
-%             % If the stimulus subsystem is using a cycle or map that is not part of a
-%             % library, offer to put it into a new library.  If the cycle is also empty,
-%             % there is really nothing to do but show an empty editor if this is first time
-%             % to open, or leave it showing whatever is already open if it is open.
-%             if isempty(self.LibraryViewModel.Library) && ~isempty(self.LibraryViewModel.SelectedOutputableViewmodel)
-%                 if isa(self.LibraryViewModel.SelectedOutputableViewmodel, 'ws.StimulusSequence')
-%                     itIsA = 'cycle';
-%                 else
-%                     itIsA = 'map';
-%                 end
-%                 
-%                 result = ws.questdlg(sprintf('The current stimulus %s is not part of a library.  Would you like to put it into a new library?', itIsA), ...
-%                     'Create Library', 'Yes', 'No', 'Yes');
-%                 
-%                 if strcmp(result, 'Yes')
-%                     mlObj = self.LibraryViewModel.findml(self.LibraryViewModel.SelectedOutputableViewmodel);
-%                     if ~isempty(mlObj)
-%                         mlObj.Library = ws.StimulusLibrary();
-%                         mlObj.Library.Store = 'untitled';
-%                     end
-%                 end
-%             end
-%             
-%             if ~isempty(self.StimulusLibraryController)
-%                 if ~isempty(self.LibraryViewModel.Library)
-%                     self.StimulusLibraryController.Library = self.LibraryViewModel.Library;
-%                 end
-%             end
-%             
-%             self.showAndRaiseChildFigure_('ws.ui.controller.stimulus.StimulusLibraryEditorController');
-%         end  % function
-
-    end  % protected methods
-    
-    methods (Static = true, Access = public)
-        function out = sharedController(varargin)
-            persistent singletonController;
-            if isempty(singletonController) || ~isvalid(singletonController)
-                singletonController = ws.WavesurferMainController(varargin{:});
-            end
-            out = singletonController;
-        end
-    end  % static, public methods
-    
-    
-    methods (Static = true, Access = protected)
+        
         function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
             % A function that tries to obtain a valid absolute file name
             % for the caller. If isFileNameKnown is true, the function
@@ -1818,40 +1610,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     
     end  % static, protected methods block
     
-    %% ABSTRACT PROP REALIZATIONS
-    properties (SetAccess=protected)
-       propBindings = struct([]);  %ws.WavesurferMainController.initialPropertyBindings(); 
-    end
-    
-%     methods (Static=true)
-%         function s=initialPropertyBindings()
-%             s = struct();
-%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
-%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
-%             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
-%             
-%             % Need to handle stim.CanEnable
-%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
-%             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
-%             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
-%             
-%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
-%             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
-%             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
-%             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
-%             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
-%             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
-%             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
-%             
-%             %s.State = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StatusText'}});            
-%         end
-%     end  % class methods
-
-    %% COMMANDS
     methods
         % File menu items
         function LoadMachineDataFileMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -1973,17 +1731,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 end
             end                        
         end
-        
-%         % Tools > Scopes submenu                
-%         function ShowHideChannelMenuItemsActuated(self,source,event) %#ok<INUSD>
-%             self.scopeVisibleMenuItemTwiddled(source);
-%         end
-        
-%         % Tools > Scopes > Remove subsubmenu
-%         function RemoveSubsubmenuItemsActuated(self,source,event) %#ok<INUSD>
-%             self.removeScope(source);
-%         end
-        
+                
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');

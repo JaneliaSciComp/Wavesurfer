@@ -488,6 +488,50 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
     end  % public methods block
     
+    methods
+        function setTriggerProperty(self, triggerType, triggerIndex, propertyName, newValue)
+            if ws.isTriggerType(triggerType) ,
+                if isequal(triggerType, 'builtin') ,
+                    if ws.isIndex(triggerIndex) && triggerIndex==1 ,
+                        theTrigger = self.BuiltinTrigger_ ;
+                        theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'Invalid trigger index') ;
+                    end  
+                elseif isequal(triggerType, 'counter') ,
+                    if ws.isIndex(triggerIndex) && 1<=triggerIndex && triggerIndex<=length(self.CounterTriggers_) ,
+                        theTrigger = self.CounterTriggers_{triggerIndex} ;
+                        theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'Invalid trigger index') ;
+                    end  
+                elseif isequal(triggerType, 'external') ,
+                    if ws.isIndex(triggerIndex) && 1<=triggerIndex && triggerIndex<=length(self.ExternalTriggers_) ,
+                        theTrigger = self.ExternalTriggers_{triggerIndex} ;
+                        theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
+                    else
+                        self.broadcast('Update');
+                        error('most:Model:invalidPropVal', ...
+                              'Invalid trigger index') ;
+                    end  
+                else
+                    self.broadcast('Update');
+                    error('ws:programmerError', ...
+                          'ws.isTriggerType(triggerType) is true, but doesn''t match any of the cases.  This is likely a programmer error.') ;
+                end                    
+            else                
+                self.broadcast('Update');
+                error('most:Model:invalidPropVal', ...
+                      'triggerType must be a valid trigger type') ;                    
+            end
+        end  % method
+    end  % public methods block
+    
+    
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();
 %         mdlHeaderExcludeProps = {};

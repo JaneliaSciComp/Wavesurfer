@@ -249,4 +249,5 @@ classdef Triggering < ws.TriggeringSubsystem
 % %             self.StimulationTriggerScheme.poll(timeSinceSweepStart);
 %         end
 %     end    
-end
+
+end  % classdef
