@@ -267,10 +267,9 @@ classdef RootModel < ws.Model
         
         function result = get.IsDOChannelTerminalOvercommitted(self)
             result = self.IsDOChannelTerminalOvercommitted_ ;
-        end
-        
+        end        
     end  % public methods block
-    
+        
     methods (Static)
         function deviceNames = getAllDeviceNamesFromHardware()
             daqmxSystem = ws.dabs.ni.daqmx.System() ;

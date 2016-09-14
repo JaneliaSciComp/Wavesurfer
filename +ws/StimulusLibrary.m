@@ -487,7 +487,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function setSelectedOutputableByIndex(self, index)
             outputables=self.getOutputables();
-            if isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
+            if isempty(index) ,
+                self.SelectedOutputable = [] ;  % set to no selection
+            elseif isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
                 outputable=outputables{index};
                 self.SelectedOutputable=outputable;  % this will broadcast Update
             else

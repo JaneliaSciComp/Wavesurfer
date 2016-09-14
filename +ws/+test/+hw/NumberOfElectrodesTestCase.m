@@ -37,12 +37,12 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             for currentButton=[1,2] 
                 pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButton);
                 wsController.FastProtocolButtonsActuated(pressedButtonHandle);
-                currentController=1;
-                while  ~isa(wsController.ChildControllers{currentController},'ws.ElectrodeManagerController')
-                    currentController=currentController+1;
-                end
+%                 currentController=1;
+%                 while  ~isa(wsController.ChildControllers{currentController},'ws.ElectrodeManagerController')
+%                     currentController=currentController+1;
+%                 end
                 
-                electrodeManagerController = wsController.ChildControllers{currentController};
+                electrodeManagerController = wsController.ElectrodeManagerController ;
                 storeNumberOfElectrodesInFigure(index) = length(electrodeManagerController.Figure.LabelEdits);
                 storeNumberOfElectrodesInModel(index) = wsModel.Ephys.ElectrodeManager.NElectrodes;
                 index = index + 1;

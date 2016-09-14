@@ -75,7 +75,7 @@ classdef Controller < handle
         end
         
         function self=setAreUpdatesEnabledForFigure(self,newValue)
-            self.Figure.AreUpdatesEnabled=newValue;
+            self.Figure.AreUpdatesEnabled = newValue ;
         end        
     end
     

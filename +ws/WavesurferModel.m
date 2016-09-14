@@ -39,6 +39,7 @@ classdef WavesurferModel < ws.RootModel
         %DeviceName
         IsITheOneTrueWavesurferModel
         %WarningLog
+        LayoutForAllWindows
     end
     
     %
@@ -57,7 +58,7 @@ classdef WavesurferModel < ws.RootModel
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
-
+        
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
         
@@ -111,6 +112,7 @@ classdef WavesurferModel < ws.RootModel
         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
         DoLogWarnings_ = false
         WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
+        LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
     end
     
 %     events
@@ -2139,7 +2141,7 @@ classdef WavesurferModel < ws.RootModel
     end
     
     methods
-        function saveStruct = openProtocolFileGivenFileName(self, fileName)
+        function openProtocolFileGivenFileName(self, fileName)
             % Actually loads the named config file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -2157,6 +2159,7 @@ classdef WavesurferModel < ws.RootModel
             %keyboard
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
+            self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             %self.broadcast('Update');  
@@ -2195,7 +2198,7 @@ classdef WavesurferModel < ws.RootModel
     end        
     
     methods
-        function loadUserFileForRealsSrsly(self, fileName)
+        function loadUserFileGivenFileName(self, fileName)
             % Actually loads the named user file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
@@ -2233,40 +2236,19 @@ classdef WavesurferModel < ws.RootModel
     end        
 
     methods
-        function saveUserFileForRealsSrsly(self, absoluteFileName)
-%             if exist(absoluteFileName,'file') ,
-%                 delete(absoluteFileName);  % Have to delete it if it exists, otherwise savePropertiesImpl() will append.
-%                 if exist(absoluteFileName,'file') ,
-%                     error('WavesurferController:UnableToOverwriteUserSettingsFile', ...
-%                           'Unable to overwrite existing user settings file');
-%                 end
-%             end
-            
+        function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
             self.changeReadiness(-1);
-
-            %userSettings=self.encodeOnlyPropertiesExplicityTaggedForFileType('usr');
             userSettings=self.encodeForPersistence();
-            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
                               'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
-            
-            %self.savePropertiesWithTag(absoluteFileName, 'usr');
-            
             self.AbsoluteUserSettingsFileName_ = absoluteFileName;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            %self.broadcast('DidSetAbsoluteUserSettingsFileName');
-
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            %self.setUserFileNameInMenu(absoluteFileName);
-            %controller.updateUserFileNameInMenu();
-
             self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
-
             self.changeReadiness(+1);            
-
             self.broadcast('Update');            
         end  % function
     end
@@ -3077,6 +3059,44 @@ classdef WavesurferModel < ws.RootModel
                 error('most:Model:invalidPropVal', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
+        end  % method        
+        
+        function setSubsystemProperty(self, subsystemName, propertyName, newValue)
+            self.(subsystemName).(propertyName) = newValue ;
+        end
+        
+        function incrementSessionIndex(self)
+            self.Logging.incrementSessionIndex() ;
+        end
+        
+        function setSelectedOutputableByIndex(self, index)
+            self.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(index) ;
+        end
+        
+        function openFastProtocolByIndex(self, index)
+            if ws.IsIndex(index) && 1<=index && index<=self.NFastProtocols ,
+                fastProtocol = self.FastProtocols{index} ;
+                fileName = fastProtocol.ProtocolFileName ;
+                if ~isempty(fileName) , 
+                    if exist(fileName, 'file') ,
+                        self.openProtocolFileGivenFileName(fileName) ;
+                    else
+                        error('ws:fastProtocolFileMissing', ...
+                              'The protocol file %s is missing.',fileName);
+                    end
+                end
+            end
+        end
+        
+        function performAutoStartForFastProtocolByIndex(self, index) 
+            if ws.IsIndex(index) && 1<=index && index<=self.NFastProtocols ,
+                fastProtocol = self.FastProtocols{index} ;            
+                if isequal(fastProtocol.AutoStartType,'play') ,
+                    self.play();
+                elseif isequal(fastProtocol.AutoStartType,'record') ,
+                    self.record();
+                end
+            end
         end  % method        
     end  % public methods block
     
