@@ -2957,7 +2957,7 @@ classdef WavesurferModel < ws.RootModel
                 warningException = warningException.addCause(causeOrEmpty) ;
             end
             if self.DoLogWarnings_ ,
-                if length(selfWarningLog_)<10 ,
+                if length(self.WarningLog_)<10 ,
                     self.WarningLog_ = vertcat(self.WarningLog_, ...
                                                warningException) ;            
                 else
@@ -3098,6 +3098,10 @@ classdef WavesurferModel < ws.RootModel
                 end
             end
         end  % method        
+        
+        function result = get.LayoutForAllWindows(self)
+            result = self.LayoutForAllWindows_ ;
+        end
     end  % public methods block
     
 end  % classdef
