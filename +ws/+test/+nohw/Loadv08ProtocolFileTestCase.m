@@ -11,19 +11,20 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
     % transcoded protocol file in WS.  And this test tests whether that
     % works, on an already-transcoded file.
     
-%     methods (TestMethodSetup)
-%         function setup(self) %#ok<MANU>
-%             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.deleteIfValidHandle(daqSystem.tasks);
-%         end
-%     end
-% 
-%     methods (TestMethodTeardown)
-%         function teardown(self) %#ok<MANU>
-%             daqSystem = ws.dabs.ni.daqmx.System();
-%             ws.deleteIfValidHandle(daqSystem.tasks);
-%         end
-%     end
+    methods (TestMethodSetup)
+        function setup(self) %#ok<MANU>
+            daqSystem = ws.dabs.ni.daqmx.System();
+            ws.deleteIfValidHandle(daqSystem.tasks);
+        end
+    end
+
+    methods (TestMethodTeardown)
+        function teardown(self) %#ok<MANU>
+            delete(findall(0,'Type','Figure')) ;
+            daqSystem = ws.dabs.ni.daqmx.System() ;
+            ws.deleteIfValidHandle(daqSystem.tasks) ;
+        end
+    end
 
     methods (Test)
         function theTest(self)
@@ -32,8 +33,7 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SW-new-test-3.cfg') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
-            event.fileName = protocolFileName ;
-            wsController.OpenProtocolGivenFileNameFauxControlActuated([], event) ;
+            wsController.fakeControlActuatedInTest('OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
             pause(5) ;
             [~,warningID] = lastwarn() ;
             self.verifyNotEqual(warningID, 'MATLAB:hg:uicontrol:ValueMustBeScalar') ;

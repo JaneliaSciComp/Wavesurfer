@@ -38,7 +38,7 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
             % get deleted.  Hopefully user does this in the user class
             % delete() method, so we notify the model that we're quitting,
             % which will prompt it to manually delete the user object.
-            %self.Model.quittingWavesurfer() ;            
+            %self.Model.quittingWavesurfer() ;         
             self.Model.do('quittingWavesurfer') ;
         end  % function
         

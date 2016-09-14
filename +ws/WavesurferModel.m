@@ -111,6 +111,7 @@ classdef WavesurferModel < ws.RootModel
         %IsDeeplyIntoPerformingSweep_ = false
         %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
         DoLogWarnings_ = false
+        WarningCount_ = 0
         WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
         LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
     end
@@ -2343,6 +2344,14 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
+        function addAIChannel(self)
+            self.Acquisition.addAnalogChannel() ;
+        end
+        
+        function addAOChannel(self)
+            self.Stimulation.addAnalogChannel() ;
+        end
+        
         function addDIChannel(self)
             self.Acquisition.addDigitalChannel_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
@@ -2957,7 +2966,8 @@ classdef WavesurferModel < ws.RootModel
                 warningException = warningException.addCause(causeOrEmpty) ;
             end
             if self.DoLogWarnings_ ,
-                if length(self.WarningLog_)<10 ,
+                self.WarningCount_ = self.WarningCount_ + 1 ;
+                if self.WarningCount_ < 10 ,
                     self.WarningLog_ = vertcat(self.WarningLog_, ...
                                                warningException) ;            
                 else
@@ -2976,6 +2986,7 @@ classdef WavesurferModel < ws.RootModel
     
     methods 
         function startLoggingWarnings(self)
+            self.WarningCount_ = 0 ;
             self.WarningLog_ = MException.empty(0, 1) ;
             self.DoLogWarnings_ = true ;
         end        
@@ -2983,28 +2994,29 @@ classdef WavesurferModel < ws.RootModel
         function exceptionMaybe = stopLoggingWarnings(self)
             % Get the warnings, if any
             self.DoLogWarnings_ = false ;
-            warnings = self.WarningLog_ ;
+            loggedWarnings = self.WarningLog_ ;
             % Process them, summarizing them in a maybe (a list of length
             % zero or one) of exceptions.  The individual warnings are
             % stored in the causes of the exception, if it exists.
-            nWarnings = length(warnings) ;
+            nWarnings = self.WarningCount_ ;
             if nWarnings==0 ,
                 exceptionMaybe = {} ;                
             else
                 if nWarnings==1 ,
-                    exceptionMessage = warnings(1).message ;
+                    exceptionMessage = loggedWarnings(1).message ;
                 else
                     exceptionMessage = sprintf('%d warnings occurred.\nThe first one was: %s', ...
                                                nWarnings, ...
-                                               warnings(1).message) ;
+                                               loggedWarnings(1).message) ;
                 end                                           
                 exception = MException('ws:warningsOccurred', exceptionMessage) ;
-                for i = 1:nWarnings ,
-                    exception = exception.addCause(warnings(i)) ;
+                for i = 1:length(loggedWarnings) ,
+                    exception = exception.addCause(loggedWarnings(i)) ;
                 end
                 exceptionMaybe = {exception} ;
             end
             % Clear the warning log before returning
+            self.WarningCount_ = 0 ;
             self.WarningLog_ = MException.empty(0, 1) ;
         end
         
@@ -3074,7 +3086,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function openFastProtocolByIndex(self, index)
-            if ws.IsIndex(index) && 1<=index && index<=self.NFastProtocols ,
+            if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,
                 fastProtocol = self.FastProtocols{index} ;
                 fileName = fastProtocol.ProtocolFileName ;
                 if ~isempty(fileName) , 
@@ -3089,7 +3101,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function performAutoStartForFastProtocolByIndex(self, index) 
-            if ws.IsIndex(index) && 1<=index && index<=self.NFastProtocols ,
+            if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,
                 fastProtocol = self.FastProtocols{index} ;            
                 if isequal(fastProtocol.AutoStartType,'play') ,
                     self.play();

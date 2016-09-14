@@ -78,7 +78,9 @@ function varargout = wavesurfer(varargin)
                 model.initializeFromMDFFileName(protocolOrMDFFileName);
             else
                 % Need to do via controller, to keep the figure updated
-                controller.initializeGivenMDFFileName(protocolOrMDFFileName);
+                %controller.initializeGivenMDFFileName(protocolOrMDFFileName);
+                error('ws:mdfFileNotSupportedWhenUIPresent', ...
+                      'WaveSurfer no longer supports the use of MDF files in the presence of the UI') ;
             end            
         elseif isequal(extension,'.cfg')
             % it's a protocol file

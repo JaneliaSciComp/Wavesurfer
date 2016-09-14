@@ -528,9 +528,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             propertyNames={mc.PropertyList.Name};
             for i=1:length(propertyNames) ,
                 propertyName=propertyNames{i};
-%                 if isequal(propertyName,'FastProtocolButtons') 
-%                     keyboard
-%                 end
                 propertyThing=self.(propertyName);
                 if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
                     % Sometimes propertyThing is a vector, but if so
@@ -546,19 +543,29 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         if get(examplePropertyThing,'Parent')==self.FigureGH ,
                             % do nothing for top-level menus
                         else
-                            set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                            if isscalar(propertyThing)
+                                set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                            else
+                                % For arrays, pass the index to the
+                                % callback
+                                for j = 1:length(propertyThing) ,
+                                    set(propertyThing(j),'Callback',@(source,event)(self.controlActuated(propertyName,source,event,j)));
+                                end                                    
+                            end
                         end
-                    elseif ( isequal(get(examplePropertyThing,'Type'),'uicontrol') && ~isequal(get(examplePropertyThing,'Style'),'text') ) ,
+                    elseif isequal(get(examplePropertyThing,'Type'),'uicontrol') && ~isequal(get(examplePropertyThing,'Style'),'text') ,
                         % set the callback for any uicontrol that is not a
                         % text
-                        set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                        if isscalar(propertyThing)
+                            set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                        else
+                            % For arrays, pass the index to the
+                            % callback
+                            for j = 1:length(propertyThing) ,
+                                set(propertyThing(j),'Callback',@(source,event)(self.controlActuated(propertyName,source,event,j)));
+                            end
+                        end
                     end
-                    
-%                     % Set Font
-%                     if isequal(get(examplePropertyThing,'Type'),'uicontrol') || isequal(get(examplePropertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'FontName','Tahoma');
-%                         set(propertyThing,'FontSize',8);
-%                     end
                     
                     % Set Units
                     if isequal(get(examplePropertyThing,'Type'),'axes'),

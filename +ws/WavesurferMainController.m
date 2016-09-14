@@ -179,11 +179,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end
 
-        function OpenProtocolGivenFileNameFauxControlActuated(self,source,event)  %#ok<INUSL>
-            fileName = event.fileName ;
+        function OpenProtocolGivenFileNameFauxControlActuated(self, source, event, fileName)  %#ok<INUSL>
             self.openProtocolFileGivenFileName_(fileName) ;
         end
 
+        function SaveProtocolGivenFileNameFauxControlActuated(self, source, event, fileName)  %#ok<INUSL>
+            self.saveProtocolFileGivenFileName_(fileName) ;
+        end
+        
         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             % This is the action for the File > Save menu item
             isSaveAs=false;
@@ -352,9 +355,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showAndRaiseChildFigure_('StimulusLibraryController');
         end
         
-        function FastProtocolButtonsActuated(self, source, event)  %#ok<INUSD>
-            isMatch = (source==self.Figure.FastProtocolButtons) ;
-            fastProtocolIndex = find(isMatch,1) ;
+        function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
             if ~isempty(self.Model) ,
                 self.Model.startLoggingWarnings() ;
                 self.Model.openFastProtocolByIndex(fastProtocolIndex) ;
@@ -494,11 +495,23 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     'save', ...
                     fileChooserInitialFileName);
             
-            if ~isempty(absoluteFileName)
-                layoutForAllWindows = self.encodeAllWindowLayouts_() ;            
-                self.Model.do('saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout', absoluteFileName, layoutForAllWindows) ;
+            if ~isempty(absoluteFileName) ,
+                self.saveProtocolFileGivenFileName_(absoluteFileName) ;
             end            
         end  % method        
+        
+        function saveProtocolFileGivenFileName_(self, fileName)
+            % Actually loads the named config file.  fileName should be an
+            % file name referring to a file that is known to be
+            % present, at least as of a few milliseconds ago.
+            if ws.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end                        
+            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
+            self.Model.do('saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout', absoluteFileName, layoutForAllWindows) ;
+        end  % function
         
         function saveOrSaveAsUser_(self, isSaveAs)
             % Figure out the file name, or leave empty for save as

@@ -326,32 +326,23 @@ classdef Controller < handle
             % subclasses may want to call this method, and may want to know
             % if anything went wrong during execution.
             try
-                %controlName
-                if isempty(source) ,
-                    % this means the control actuated was a 'faux' control
+                type=get(source,'Type') ;
+                if isequal(type,'uitable') ,
+                    if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
+                        methodName=[controlName 'CellEdited'] ;
+                    else
+                        methodName=[controlName 'CellSelected'] ;
+                    end
+                    if ismethod(self,methodName) ,
+                        self.(methodName)(source,event,varargin{:}) ;
+                    end                    
+                elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
                     methodName=[controlName 'Actuated'] ;
                     if ismethod(self,methodName) ,
                         self.(methodName)(source,event,varargin{:}) ;
                     end
                 else
-                    type=get(source,'Type') ;
-                    if isequal(type,'uitable') ,
-                        if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                            methodName=[controlName 'CellEdited'] ;
-                        else
-                            methodName=[controlName 'CellSelected'] ;
-                        end
-                        if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:}) ;
-                        end                    
-                    elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
-                        methodName=[controlName 'Actuated'] ;
-                        if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:}) ;
-                        end
-                    else
-                        % odd --- just ignore
-                    end
+                    % odd --- just ignore
                 end
                 exceptionMaybe = {} ;
             catch exception
@@ -363,10 +354,38 @@ classdef Controller < handle
                     exceptionMaybe = { exception } ;
                 end
             end
-        end  % function       
+        end  % function
+        
+        function fakeControlActuatedInTest(self, controlName, varargin)            
+            % This is like controlActuated(), but used when you want to
+            % fake the actuation of a control, often in a testing script.
+            % So, for instance, if only ws:warnings occur, if prints them,
+            % rather than showing a dialog box.  Also, this lets
+            % non-warning errors (including most:Model:invalidPropVal)
+            % percolate upward, unlike controlActuated().  Also, this
+            % always calls [controlName 'Actuated'], rather than using
+            % source.Type to determine the method name.  That's becuase
+            % there's generally no real source for fake actuations.
+            try
+                methodName=[controlName 'Actuated'] ;
+                if ismethod(self,methodName) ,
+                    source = [] ;
+                    event = [] ;
+                    self.(methodName)(source,event,varargin{:}) ;
+                end
+            catch exception
+                indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+                isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+                if isWarning ,
+                    disp(exception.getReport()) ;
+                else
+                    rethrow(exception) ;
+                end
+            end
+        end  % function
     end  % public methods block
     
-    methods (Access=protected)
+    methods (Access=protected)        
         function raiseDialogOnException_(self, exception)
             model = self.Model ;
             if ~isempty(model) ,
