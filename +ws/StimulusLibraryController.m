@@ -422,7 +422,8 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             columnIndex = indices(2) ;
             if (columnIndex==1) ,
                 % this is the Map Name column
-                newMapName = event.EditData ;
+                newMapNameRaw = event.EditData ;
+                newMapName = ws.fif(isequal(newMapNameRaw,'(Unspecified)'), '', newMapNameRaw) ;
                 %map=library.mapWithName(newMapName);
                 %selectedSequence.setMap(rowIndex,map);
                 self.Model.do('setElementOfSelectedSequenceToNamedMap', indexOfElementWithinSequence, newMapName) ;

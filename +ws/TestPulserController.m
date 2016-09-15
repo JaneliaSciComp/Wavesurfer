@@ -49,7 +49,7 @@ classdef TestPulserController < ws.Controller
         end  % function
         
         function StartStopButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.toggleIsRunning();
+            self.Model.do('toggleIsRunning');
         end
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>

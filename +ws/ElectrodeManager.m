@@ -89,6 +89,36 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.Parent_ = [];  % eliminate reference to parent object (do I need this?)
         end
         
+        function do(self, methodName, varargin)
+            % This is intended to be the usual way of calling model
+            % methods.  For instance, a call to a ws.Controller
+            % controlActuated() method should generally result in a single
+            % call to .do() on it's model object, and zero direct calls to
+            % model methods.  This gives us a
+            % good way to implement functionality that is common to all
+            % model method calls, when they are called as the main "thing"
+            % the user wanted to accomplish.  For instance, we start
+            % warning logging near the beginning of the .do() method, and turn
+            % it off near the end.  That way we don't have to do it for
+            % each model method, and we only do it once per user command.            
+            root = self.Parent.Parent ;
+            root.startLoggingWarnings() ;
+            try
+                self.(methodName)(varargin{:}) ;
+            catch exception
+                % If there's a real exception, the warnings no longer
+                % matter.  But we want to restore the model to the
+                % non-logging state.
+                root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+                rethrow(exception) ;
+            end
+            warningExceptionMaybe = root.stopLoggingWarnings() ;
+            if ~isempty(warningExceptionMaybe) ,
+                warningException = warningExceptionMaybe{1} ;
+                throw(warningException) ;
+            end
+        end
+        
         function out = get.NElectrodes(self)
             out=length(self.Electrodes_);
         end
@@ -423,17 +453,17 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end                
         end  % function
         
-        function self.setElectrodeName(self, electrodeIndex, newValue)
+        function setElectrodeName(self, electrodeIndex, newValue)
             electrode = self.Electrodes_{electrodeIndex} ;
             electrode.Name = newValue ;
         end
         
-        function self.setElectrodeCommandChannelName(self, electrodeIndex, newValue)
+        function setElectrodeCommandChannelName(self, electrodeIndex, newValue)
             electrode = self.Electrodes_{electrodeIndex} ;
             electrode.CommandChannelName = newValue ;
         end
         
-        function self.setElectrodeMonitorChannelName(self, electrodeIndex, newValue)
+        function setElectrodeMonitorChannelName(self, electrodeIndex, newValue)
             electrode = self.Electrodes_{electrodeIndex} ;
             electrode.MonitorChannelName = newValue ;
         end

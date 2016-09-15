@@ -746,9 +746,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.fif
-            import ws.onIff
-            
             selectedSequence=stimulusLibrary.SelectedSequence;
             
             nColumns=4;  % number of cols in the table
@@ -763,7 +760,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 % Get the options for the map names
                 allMaps=stimulusLibrary.Maps;
                 allMapNames=cellfun(@(map)(map.Name),allMaps,'UniformOutput',false);
-                %allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
+                allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
                 
                 % Update the table
                 mapsInSequence=selectedSequence.Maps;
@@ -771,13 +768,19 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 data=cell(nRows,nColumns);
                 for i=1:nRows ,
                     map=mapsInSequence{i};
-                    data{i,1}=map.Name;
-                    data{i,2}=map.Duration;
-                    data{i,3}=length(map.ChannelNames);
+                    if isempty(map) ,                        
+                        data{i,1}='(Unspecified)';
+                        data{i,2}='(Unspecified)';
+                        data{i,3}='(Unspecified)';
+                    else
+                        data{i,1}=map.Name;
+                        data{i,2}=sprintf('%g',map.Duration) ;
+                        data{i,3}=sprintf('%d',length(map.ChannelNames)) ;
+                    end
                     data{i,4}=selectedSequence.IsMarkedForDeletion(i);
                 end
                 set(self.SequenceTable, ...
-                    'ColumnFormat',{fif(isempty(allMapNames),'char',allMapNames) 'numeric' 'numeric' 'logical'}, ...
+                    'ColumnFormat',{allMapsNamesWithUnspecified 'char' 'char' 'logical'}, ...
                     'Data',data);            
             end
         end  % function

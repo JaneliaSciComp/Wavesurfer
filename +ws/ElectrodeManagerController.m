@@ -85,7 +85,7 @@ classdef ElectrodeManagerController < ws.Controller
             indexOfElectrode = find(isTheElectrode, 1) ;
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.MonitorChannelName=choice;
-            self.do('setElectrodeMonitorChannelName', indexOfElectrode, choice) ;
+            self.Model.do('setElectrodeMonitorChannelName', indexOfElectrode, choice) ;
         end
         
 %         function currentMonitorPopupActuated(self,source)
@@ -127,7 +127,7 @@ classdef ElectrodeManagerController < ws.Controller
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.CommandChannelName=choice;
             %self.setElectrodeCommandChannelName(indexOfElectrode, choice) ;
-            self.do('setElectrodeCommandChannelName', indexOfElectrode, choice) ;
+            self.Model.do('setElectrodeCommandChannelName', indexOfElectrode, choice) ;
         end
         
 %         function voltageCommandPopupActuated(self,source)

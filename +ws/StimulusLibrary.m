@@ -536,7 +536,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedStimulusSequence_ = [] ;
                 elseif ws.isIndex(index) && 1<=index && index<=length(self.Sequences) ,
                     self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
-                    self.SelectedStimulusSequence_ = double(index) ;
+                    self.SelectedStimulusIndex_ = double(index) ;
                 else
                     self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
@@ -548,7 +548,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedStimulusMap_ = [] ;
                 elseif ws.isIndex(index) && 1<=index && index<=length(self.Maps) ,
                     self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-                    self.SelectedStimulusMap_ = double(index) ;
+                    self.SelectedMapIndex_ = double(index) ;
                 else
                     self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
@@ -560,7 +560,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedStimulus_ = [] ;
                 elseif ws.isIndex(index) && 1<=index && index<=length(self.Stimuli) ,
                     self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                    self.SelectedStimulus_ = double(index) ;
+                    self.SelectedStimulusIndex_ = double(index) ;
                 else
                     self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
@@ -921,6 +921,15 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 out = {};
             else
                 out = self.Maps{idx};
+            end
+        end  % function
+        
+        function result = indexOfMapWithName(self, mapName)
+            if ws.isString(mapName) ,
+                mapNames=cellfun(@(map)(map.Name),self.Maps,'UniformOutput',false);
+                result = find(strcmp(mapName, mapNames), 1);
+            else
+                result = [] ;
             end
         end  % function
         
@@ -1837,12 +1846,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.broadcast('Update') ;
             else                
                 if ws.isString(mapName) ,
-                    map = self.mapWithName(mapName) ;
-                    if isempty(map) ,
-                        self.broadcast('Update') ;
-                    else
-                        selectedSequence.setMap(indexOfSequenceElement, map) ;
-                    end
+                    indexOfMap = self.indexOfMapWithName(mapName) ;  % can be empty
+                    selectedSequence.setMapByIndex(indexOfSequenceElement, indexOfMap) ;  % if isempty(indexOfMap), the map is is "unspecified"
                 else
                     self.broadcast('Update') ;
                 end                    
@@ -1854,7 +1859,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(selectedSequence) ,
                 self.broadcast('Update') ;
             else                
-                if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && isfinite(newValue) ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
                     newValueAsLogical = logical(newValue) ;
                     if ws.isIndex(indexOfElementWithinSequence) && ...
                             1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps) ,

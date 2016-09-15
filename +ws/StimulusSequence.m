@@ -205,13 +205,30 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             end
         end   % function
 
-        function setMap(self, indexWithinSequence, newMap)
-            nMaps = length(self.IndexOfEachMapInLibrary_) ;
+%         function setMap(self, indexWithinSequence, newMap)
+%             nMaps = length(self.IndexOfEachMapInLibrary_) ;
+%             library = self.Parent ;
+%             if 1<=indexWithinSequence && indexWithinSequence<=nMaps && round(indexWithinSequence)==indexWithinSequence ,
+%                 indexOfNewMapInLibrary = library.getMapIndex(newMap) ;
+%                 if ~isempty(indexOfNewMapInLibrary) ,
+%                     self.IndexOfEachMapInLibrary_{indexWithinSequence} = indexOfNewMapInLibrary ;
+%                 end
+%             end
+%             library.childMayHaveChanged(self);
+%         end   % function
+
+        function setMapByIndex(self, elementIndex, indexOfNewMapInLibrary)
+            % Here an "element" refers to one of the elements of the
+            % sequence.  I.e. each element is a map.
+            nElements = length(self.IndexOfEachMapInLibrary_) ;
             library = self.Parent ;
-            if 1<=indexWithinSequence && indexWithinSequence<=nMaps && round(indexWithinSequence)==indexWithinSequence ,
-                indexOfNewMapInLibrary = library.getMapIndex(newMap) ;
-                if ~isempty(indexOfNewMapInLibrary) ,
-                    self.IndexOfEachMapInLibrary_{indexWithinSequence} = indexOfNewMapInLibrary ;
+            if ws.isIndex(elementIndex) && 1<=elementIndex && elementIndex<=nElements ,
+                if isempty(indexOfNewMapInLibrary) ,
+                    self.IndexOfEachMapInLibrary_{elementIndex} = [] ;
+                else
+                    if ws.isIndex(indexOfNewMapInLibrary) && 1<=indexOfNewMapInLibrary && indexOfNewMapInLibrary<=length(library.Maps) ,
+                        self.IndexOfEachMapInLibrary_{elementIndex} = indexOfNewMapInLibrary ;
+                    end
                 end
             end
             library.childMayHaveChanged(self);

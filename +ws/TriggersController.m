@@ -31,16 +31,16 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
         end  % function
         
         function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
-            value = logical(get(source,'Value')) ;
+            newValue = logical(get(source,'Value')) ;
             %self.Model.StimulationUsesAcquisitionTriggerScheme=value;
-            self.Model.do('StimulationUsesAcquisitionTriggerScheme', value) ;
+            self.Model.do('set', 'StimulationUsesAcquisitionTriggerScheme', newValue) ;
         end  % function
 
         function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
             selectionIndex = get(source,'Value') ;
             %self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
-            self.Model.do('StimulationTriggerSchemeIndex', selectionIndex) ;
+            self.Model.do('set', 'StimulationTriggerSchemeIndex', selectionIndex) ;
         end  % function
         
         function CounterTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
