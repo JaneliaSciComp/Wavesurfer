@@ -58,7 +58,6 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function StopButtonActuated(self, source, event)  %#ok<INUSD>
-            %self.Model.stop();
             self.Model.do('stop') ;
         end
         
@@ -71,7 +70,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
             %ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
-            self.Model.so('set', 'AreSweepsContinuous', newValue);
+            self.Model.do('set', 'AreSweepsContinuous', newValue);
         end
 
         function NSweepsEditActuated(self,source,event) %#ok<INUSD>
@@ -548,7 +547,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
             % Prompt the user for a file name, if necessary, and save
             % the file
-            self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
+            %self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
@@ -559,7 +558,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
             if ~isempty(absoluteFileName) ,
                 %self.Model.saveUserFileGivenAbsoluteFileName(absoluteFileName) ;
-                self.Model.do('saveUserFileGivenAbsoluteFileName', 'absoluteFileName') ;
+                self.Model.do('saveUserFileGivenAbsoluteFileName', absoluteFileName) ;
             end
         end  % method                
 

@@ -72,17 +72,17 @@ classdef ChannelsController < ws.Controller
             isAnalogChannelMarkedForDeletion = self.Model.Acquisition.IsAnalogChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
-            self.Model.Acquisition.do('set', IsAnalogChannelMarkedForDeletion, isAnalogChannelMarkedForDeletion) ;
+            self.Model.Acquisition.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
         function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
             %self.Model.Acquisition.addAnalogChannel() ;
-            self.Model.Acquisition.do('addAnalogChannel') ;
+            self.Model.do('addAIChannel') ;
         end
         
         function DeleteAIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
             %self.Model.Acquisition.deleteMarkedAnalogChannels() ;
-            self.Model.deleteMarkedAIChannels() ;
+            self.Model.do('deleteMarkedAIChannels') ;
         end
         
         function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
@@ -213,12 +213,13 @@ classdef ChannelsController < ws.Controller
             self.Model.do('setSingleDOChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
-        function DOIsTimedCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.DOIsTimedCheckboxes);
-            i=find(isTheChannel);            
+        function DOIsTimedCheckboxesActuated(self, source, event)  %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
+            i = find(isTheChannel) ;            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
             %self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
-            self.Model.Stimulation.do('IsDigitalChannelTimed', i, newState) ;
+            newArray = ws.replace(self.Model.Stimulation.IsDigitalChannelTimed, i, newState) ;
+            self.Model.Stimulation.do('set','IsDigitalChannelTimed', newArray) ;
             %self.Figure.update();  % Surely this is not necessary anymore,
                                     % right?  -- ALT, 2016-09-12
         end

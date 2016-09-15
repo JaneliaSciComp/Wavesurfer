@@ -109,8 +109,9 @@ classdef WavesurferModel < ws.RootModel
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         %IsDeeplyIntoPerformingSweep_ = false
-        %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired
-        DoLogWarnings_ = false
+        %TimeInSweep_  % wall clock time since the start of the sweep, updated each time scans are acquired        
+        %DoLogWarnings_ = false
+        UnmatchedLogWarningStartCount_ = 0  % technically, the number of starts without a corresponding stop
         WarningCount_ = 0
         WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
         LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
@@ -595,7 +596,7 @@ classdef WavesurferModel < ws.RootModel
         end
         
         function set.IndexOfSelectedFastProtocol(self, newValue)
-            if isnumeric(newValue) && isscalar(newValue) && isreal(newValue) && 1<=newValue1 && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
+            if isnumeric(newValue) && isscalar(newValue) && isreal(newValue) && 1<=newValue && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
                 self.IndexOfSelectedFastProtocol_ = double(newValue) ;
             else
                 error('most:Model:invalidPropVal', ...
@@ -2947,7 +2948,15 @@ classdef WavesurferModel < ws.RootModel
             % it off near the end.  That way we don't have to do it for
             % each model method, and we only do it once per user command.            
             self.startLoggingWarnings() ;
-            self.(methodName)(varargin{:}) ;
+            try
+                self.(methodName)(varargin{:}) ;
+            catch exception
+                % If there's a real exception, the warnings no longer
+                % matter.  But we want to restore the model to the
+                % non-logging state.
+                self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+                rethrow(exception) ;
+            end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
                 warningException = warningExceptionMaybe{1} ;
@@ -2965,7 +2974,7 @@ classdef WavesurferModel < ws.RootModel
             if ~isempty(causeOrEmpty) ,
                 warningException = warningException.addCause(causeOrEmpty) ;
             end
-            if self.DoLogWarnings_ ,
+            if self.UnmatchedLogWarningStartCount_>0 ,
                 self.WarningCount_ = self.WarningCount_ + 1 ;
                 if self.WarningCount_ < 10 ,
                     self.WarningLog_ = vertcat(self.WarningLog_, ...
@@ -2986,42 +2995,70 @@ classdef WavesurferModel < ws.RootModel
     
     methods 
         function startLoggingWarnings(self)
-            self.WarningCount_ = 0 ;
-            self.WarningLog_ = MException.empty(0, 1) ;
-            self.DoLogWarnings_ = true ;
+            % fprintf('\n\n\n\n');
+            % dbstack
+            % fprintf('At entry to startLogginWarnings: self.UnmatchedLogWarningStartCount_ = %d\n', self.UnmatchedLogWarningStartCount_) ;
+            self.UnmatchedLogWarningStartCount_ = self.UnmatchedLogWarningStartCount_ + 1 ;
+            if self.UnmatchedLogWarningStartCount_ <= 1 ,
+                % Unless things have gotten weird,
+                % self.UnmatchedLogWarningStartCount_ should *equal* one
+                % here.
+                % This means this is the first unmatched start (or the
+                % first one after a matched set of starts and stops), so we
+                % reset the warning count and the warning log.
+                self.UnmatchedLogWarningStartCount_ = 1 ;  % If things have gotten weird, fix them.
+                self.WarningCount_ = 0 ;
+                self.WarningLog_ = MException.empty(0, 1) ;
+            end
         end        
         
         function exceptionMaybe = stopLoggingWarnings(self)
+            % fprintf('\n\n\n\n');
+            % dbstack
+            % fprintf('At entry to stopLogginWarnings: self.UnmatchedLogWarningStartCount_ = %d\n', self.UnmatchedLogWarningStartCount_) ;
             % Get the warnings, if any
-            self.DoLogWarnings_ = false ;
-            loggedWarnings = self.WarningLog_ ;
-            % Process them, summarizing them in a maybe (a list of length
-            % zero or one) of exceptions.  The individual warnings are
-            % stored in the causes of the exception, if it exists.
-            nWarnings = self.WarningCount_ ;
-            if nWarnings==0 ,
-                exceptionMaybe = {} ;                
-            else
-                if nWarnings==1 ,
-                    exceptionMessage = loggedWarnings(1).message ;
+            self.UnmatchedLogWarningStartCount_ = self.UnmatchedLogWarningStartCount_ - 1 ;
+            if self.UnmatchedLogWarningStartCount_ <= 0 , 
+                % Technically, this should only happen when
+                % self.UnmatchedLogWarningStartCount_==0, unless there was a
+                % programming error.  But in any case, we
+                % produce a summary of the warnings, if any, and set the
+                % (unmatched) start counter to zero, even though it should
+                % be zero already.
+                self.UnmatchedLogWarningStartCount_ = 0 ;
+                loggedWarnings = self.WarningLog_ ;
+                % Process them, summarizing them in a maybe (a list of length
+                % zero or one) of exceptions.  The individual warnings are
+                % stored in the causes of the exception, if it exists.
+                nWarnings = self.WarningCount_ ;
+                if nWarnings==0 ,
+                    exceptionMaybe = {} ;                
                 else
-                    exceptionMessage = sprintf('%d warnings occurred.\nThe first one was: %s', ...
-                                               nWarnings, ...
-                                               loggedWarnings(1).message) ;
-                end                                           
-                exception = MException('ws:warningsOccurred', exceptionMessage) ;
-                for i = 1:length(loggedWarnings) ,
-                    exception = exception.addCause(loggedWarnings(i)) ;
+                    if nWarnings==1 ,
+                        exceptionMessage = loggedWarnings(1).message ;
+                    else
+                        exceptionMessage = sprintf('%d warnings occurred.\nThe first one was: %s', ...
+                                                   nWarnings, ...
+                                                   loggedWarnings(1).message) ;
+                    end                                           
+                    exception = MException('ws:warningsOccurred', exceptionMessage) ;
+                    for i = 1:length(loggedWarnings) ,
+                        exception = exception.addCause(loggedWarnings(i)) ;
+                    end
+                    exceptionMaybe = {exception} ;
                 end
-                exceptionMaybe = {exception} ;
+                % Clear the warning log before returning
+                self.WarningCount_ = 0 ;
+                self.WarningLog_ = MException.empty(0, 1) ;
+            else
+                % self.UnmatchedLogWarningStartCount_ > 1, so decrement the number of
+                % unmatched starts, but don't do much else.
+                exceptionMaybe = {} ;
             end
-            % Clear the warning log before returning
-            self.WarningCount_ = 0 ;
-            self.WarningLog_ = MException.empty(0, 1) ;
-        end
+        end  % method
         
         function clearSelectedFastProtocol(self)
-            selectedIndex = self.Model.IndexOfSelectedFastProtocol ;  % this is never empty
+            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
             fastProtocol = self.FastProtocols_{selectedIndex} ;
             fastProtocol.ProtocolFileName = '' ;
             fastProtocol.AutoStartType = 'do_nothing' ;
@@ -3044,7 +3081,7 @@ classdef WavesurferModel < ws.RootModel
         function setFastProtocolFileName(self, index, newFileName)
             % newFileName should be an absolute file path
             if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
-                if ws.isAString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) && exist(newFileName,'file') ,
+                if ws.isString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) && exist(newFileName,'file') ,
                     fastProtocol = self.FastProtocols{index} ;
                     fastProtocol.ProtocolFileName = newFileName ;
                 else

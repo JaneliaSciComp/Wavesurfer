@@ -77,13 +77,13 @@ classdef FastProtocolsController < ws.Controller
 %                     theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
 %                     ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
 %                 end
-                ws.Model.do('setFastProtocolFileName', fastProtocolIndex, newString) ;
+                self.Model.do('setFastProtocolFileName', fastProtocolIndex, newString) ;
             elseif (columnIndex==2) ,
                 % this is the Action column
                 newValue = ws.startTypeFromTitleString(newString) ;  
 %                 theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
 %                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
-                ws.Model.do('setFastProtocolAutoStartType', fastProtocolIndex, newValue) ;
+                self.Model.do('setFastProtocolAutoStartType', fastProtocolIndex, newValue) ;
             end            
         end  % function        
     end  % public methods block

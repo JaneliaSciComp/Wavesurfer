@@ -96,7 +96,15 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % each model method, and we only do it once per user command.            
             root = self.Parent.Parent ;
             root.startLoggingWarnings() ;
-            self.(methodName)(varargin{:}) ;
+            try
+                self.(methodName)(varargin{:}) ;
+            catch exception
+                % If there's a real exception, the warnings no longer
+                % matter.  But we want to restore the model to the
+                % non-logging state.
+                root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+                rethrow(exception) ;
+            end
             warningExceptionMaybe = root.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
                 warningException = warningExceptionMaybe{1} ;
@@ -1868,7 +1876,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 if ws.isString(newValue) ,
                     if ws.isIndex(indexOfElementWithinMap) && ...
                             1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-                        selectedMap.ChannelName(indexOfElementWithinMap) = newValue ;
+                        selectedMap.ChannelNames{indexOfElementWithinMap} = newValue ;
                     else
                         self.broadcast('Update') ;
                     end

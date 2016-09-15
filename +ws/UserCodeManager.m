@@ -126,9 +126,9 @@ classdef UserCodeManager < ws.Subsystem
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                self.Parent.logWarning('ws:warningsOccurred:userCodeError', ...
-                                       sprintf('Error in user class method %s',eventName), ...
-                                       me) ;
+                self.logWarning('ws:userCodeError', ...
+                                sprintf('Error in user class method %s',eventName), ...
+                                me) ;
                 %fprintf('Stack trace for user class method error:\n');
                 %display(me.getReport());
             end
@@ -145,9 +145,9 @@ classdef UserCodeManager < ws.Subsystem
                 %warningException = MException('wavesurfer:usercodemanager:codeerror', ...
                 %                              'Error in user class method samplesAcquired') ;
                 %warningException = warningException.addCause(me) ;                                          
-                self.Parent.logWarning('ws:warningsOccurred:userCodeError', ...
-                                       'Error in user class method samplesAcquired', ...
-                                       me) ;
+                self.logWarning('ws:userCodeError', ...
+                                'Error in user class method samplesAcquired', ...
+                                me) ;
                 %fprintf('Stack trace for user class method error:\n');
                 %display(me.getReport());
             end            
@@ -206,28 +206,7 @@ classdef UserCodeManager < ws.Subsystem
             
             % Broadcast update
             self.broadcast('Update');
-        end  % function
-        
-        function do(self, methodName, varargin)
-            % This is intended to be the usual way of calling model
-            % methods.  For instance, a call to a ws.Controller
-            % controlActuated() method should generally result in a single
-            % call to .do() on it's model object, and zero direct calls to
-            % model methods.  This gives us a
-            % good way to implement functionality that is common to all
-            % model method calls, when they are called as the main "thing"
-            % the user wanted to accomplish.  For instance, we start
-            % warning logging near the beginning of the .do() method, and turn
-            % it off near the end.  That way we don't have to do it for
-            % each model method, and we only do it once per user command.            
-            self.Parent.startLoggingWarnings() ;
-            self.(methodName)(varargin{:}) ;
-            warningExceptionMaybe = self.Parent.stopLoggingWarnings() ;
-            if ~isempty(warningExceptionMaybe) ,
-                warningException = warningExceptionMaybe{1} ;
-                throw(warningException) ;
-            end
-        end
+        end  % function        
     end  % public methods block
        
     methods (Access=protected)
