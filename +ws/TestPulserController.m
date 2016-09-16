@@ -53,55 +53,55 @@ classdef TestPulserController < ws.Controller
         end
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
-            electrodeNames=self.Model.ElectrodeNames;
-            menuItem=ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
-                                                      electrodeNames);
+            electrodeNames = self.Model.ElectrodeNames ;
+            menuItem = ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
+                                                electrodeNames);
             if isempty(menuItem) ,  % indicates invalid selection
-                self.Figure.badChangeMade();                
+                self.Figure.update();                
             else
                 electrodeName=menuItem;
-                self.Model.ElectrodeName=electrodeName;
+                self.Model.do('set','ElectrodeName',electrodeName) ;
             end
         end
         
         function SubtractBaselineCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value=logical(get(self.Figure.SubtractBaselineCheckbox,'Value'));
-            self.Model.DoSubtractBaseline=value;
+            value = logical(get(self.Figure.SubtractBaselineCheckbox,'Value')) ;
+            self.Model.do('set', 'DoSubtractBaseline', value) ;
         end
         
         function AutoYCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value=logical(get(self.Figure.AutoYCheckbox,'Value'));
-            self.Model.IsAutoY=value;
+            value = logical(get(self.Figure.AutoYCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoY', value) ;
         end
         
         function AutoYRepeatingCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value=logical(get(self.Figure.AutoYRepeatingCheckbox,'Value'));
-            self.Model.IsAutoYRepeating=value;
+            value = logical(get(self.Figure.AutoYRepeatingCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoYRepeating', value) ;
         end
         
         function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
-            value=get(self.Figure.AmplitudeEdit,'String');
-            self.Model.Amplitude=value;  % Amplitude is a double-string
+            value = get(self.Figure.AmplitudeEdit,'String') ;
+            self.Model.do('set', 'Amplitude', value) ;
         end
         
         function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
-            value=get(self.Figure.DurationEdit,'String');
-            self.Model.PulseDurationInMsAsString=value;
+            value = get(self.Figure.DurationEdit,'String') ;
+            self.Model.do('set', 'PulseDurationInMsAsString', value) ;
         end
         
         function ZoomInButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.zoomIn();
+            self.Model.do('zoomIn') ;
         end
         
         function ZoomOutButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.zoomOut();
+            self.Model.do('zoomOut') ;
         end
         
         function YLimitsButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogFigure = [] ;  % if not first call, this should cause the old controller to be garbage collectable
             
             function setModelYLimits(newYLimits)
-                self.Model.YLimits=newYLimits ;
+                self.Model.do('set', 'YLimits', newYLimits) ;
             end
             
             self.MyYLimDialogFigure = ...
@@ -109,33 +109,33 @@ classdef TestPulserController < ws.Controller
                                     get(self.Figure,'Position'), ...
                                     self.Model.YLimits, ...
                                     self.Model.YUnits, ...
-                                    @setModelYLimits);
+                                    @setModelYLimits) ;
         end
         
         function ScrollUpButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.scrollUp();
+            self.Model.do('scrollUp') ;
         end
         
         function ScrollDownButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.scrollDown();
+            self.Model.do('scrollDown') ;
         end
         
         function VCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
             % update the other toggle
-            set(self.Figure.CCToggle,'Value',0);  % Want this to be fast
+            set(self.Figure.CCToggle, 'Value', 0) ;  % Want this to be fast
             drawnow('update');
 
             % Change the setting
-            self.Model.ElectrodeMode='vc';
+            self.Model.do('set', 'ElectrodeMode', 'vc') ;
         end  % function
         
         function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
             % update the other toggle
-            set(self.Figure.VCToggle,'Value',0);  % Want this to be fast
+            set(self.Figure.VCToggle, 'Value', 0) ;  % Want this to be fast
             drawnow('update');
             
             % Change the setting           
-            self.Model.ElectrodeMode='cc';
+            self.Model.do('set', 'ElectrodeMode', 'cc') ;
         end  % function
     end  % methods
     

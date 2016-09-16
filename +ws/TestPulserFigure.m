@@ -118,11 +118,11 @@ classdef TestPulserFigure < ws.MCOSFigure
             end
         end  % function
         
-        function badChangeMade(self)
-            % Used to notify the view that a bad change has been made, so
-            % it should re-sync with the model.
-            self.update();
-        end  % function
+%         function badChangeMade(self)
+%             % Used to notify the view that a bad change has been made, so
+%             % it should re-sync with the model.
+%             self.update();
+%         end  % function
         
 %         % Override the superclass set method so that we can catch it if
 %         % Visible is set to 'off', and set to false IsMinimumSizeSet_, since
