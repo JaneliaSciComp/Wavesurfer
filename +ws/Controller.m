@@ -303,23 +303,31 @@ classdef Controller < handle
             % subclasses may want to call this method, and may want to know
             % if anything went wrong during execution.
             try
-                type=get(source,'Type') ;
-                if isequal(type,'uitable') ,
-                    if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                        methodName=[controlName 'CellEdited'] ;
-                    else
-                        methodName=[controlName 'CellSelected'] ;
-                    end
-                    if ismethod(self,methodName) ,
-                        self.(methodName)(source,event,varargin{:}) ;
-                    end                    
-                elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
+                if isempty(source) ,
+                    % This enables us to easily do fake actuations
                     methodName=[controlName 'Actuated'] ;
                     if ismethod(self,methodName) ,
                         self.(methodName)(source,event,varargin{:}) ;
                     end
-                else
-                    % odd --- just ignore
+                else                    
+                    type=get(source,'Type') ;
+                    if isequal(type,'uitable') ,
+                        if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
+                            methodName=[controlName 'CellEdited'] ;
+                        else
+                            methodName=[controlName 'CellSelected'] ;
+                        end
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source,event,varargin{:}) ;
+                        end                    
+                    elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
+                        methodName=[controlName 'Actuated'] ;
+                        if ismethod(self,methodName) ,
+                            self.(methodName)(source,event,varargin{:}) ;
+                        end
+                    else
+                        % odd --- just ignore
+                    end
                 end
                 exceptionMaybe = {} ;
             catch exception

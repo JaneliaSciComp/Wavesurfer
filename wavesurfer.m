@@ -93,8 +93,8 @@ function varargout = wavesurfer(varargin)
                 % We do this via controlActuated() to get the usual
                 % try-catch behaviors when a control is actuated in the UI
                 source = [] ;
-                event = struct('fileName',protocolOrMDFFileName) ;
-                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event) ;
+                event = [] ;
+                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event, protocolOrMDFFileName) ;
             end
         else
             % do nothing
