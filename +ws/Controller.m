@@ -127,7 +127,7 @@ classdef Controller < handle
     end  % methods
     
     methods (Access = protected, Sealed = true)
-        function layoutForAllWindows=addThisWindowLayoutToLayout(self, layoutForAllWindows)
+        function layoutForAllWindows = addThisWindowLayoutToLayout(self, layoutForAllWindows)
             % Add layout info for this window (just this one window) to
             % a struct representing the layout of all windows in the app
             % session.
@@ -135,36 +135,11 @@ classdef Controller < handle
             % Framework specific transformation.
             thisWindowLayout = self.encodeWindowLayout_();
             
-            layoutVarNameForClass = self.getLayoutVariableNameForClass();
-            if isfield(layoutForAllWindows,layoutVarNameForClass)
-                % If the class field is already present, add the single tag
-                tag=get(self.Figure,'Tag');
-                layoutForAllWindows.(layoutVarNameForClass).(tag)=thisWindowLayout.(tag);
-            else
-                % If the class field is not present, thisWindowLayout
-                % becomes the whole field
-                layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
-            end
+            layoutVarNameForClass = ws.Controller.layoutVariableNameFromControllerClassName(class(self));
+            layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
         end
     end
 
-    methods (Access = protected, Sealed = true)
-        function varName = getLayoutVariableNameForClass(self, varargin)
-            if nargin == 1
-                str = class(self);
-            else
-                str = varargin{1};
-            end
-            
-            varName = sprintf('%s_layout', str);
-            varName = regexprep(varName, '\.','__');
-            % Make sure we don't go beyonf matlab var name length limit
-            if length(varName)>63 ,
-                varName=varName(end-62:end);
-            end
-        end
-    end    
-    
 %     methods (Access = protected)
 %         function out = encodeWindowLayout_(self) %#ok<MANU>
 %             % Subclasses can encode size, position, visibility, and other features.  Current
@@ -178,41 +153,43 @@ classdef Controller < handle
 %     end
         
     methods (Access = protected)
-        function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
-            window = self.Figure;
-            layoutOfWindowsInClassButOnlyForThisWindow = struct();
-            tag = get(window, 'Tag');
-            layoutOfWindowsInClassButOnlyForThisWindow.(tag).Position = get(window, 'Position');
-            visible=get(window, 'Visible');
+        function layout = encodeWindowLayout_(self)
+            fig = self.Figure ;
+            position = get(fig, 'Position') ;
+            visible = get(fig, 'Visible') ;
             if ischar(visible) ,
-                isVisible=strcmpi(visible,'on');
+                isVisible = strcmpi(visible,'on') ;
             else
-                isVisible=visible;
+                isVisible = visible ;
             end
-            layoutOfWindowsInClassButOnlyForThisWindow.(tag).Visible = isVisible;
-%             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-%             else
-%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-%             end
+            layout = struct('Position', {position}, 'IsVisible', {isVisible}) ;
         end
     end
     
     methods (Access = protected)
         function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
-            figureObject = self.Figure;
-            tag = get(figureObject, 'Tag');
-            if isfield(layoutOfWindowsInClass, tag) ,
-                layoutOfThisWindow = layoutOfWindowsInClass.(tag);
+            figureObject = self.Figure ;
+            fieldNames = fieldnames(layoutOfWindowsInClass) ;
+            if isscalar(fieldNames) ,
+                % This means it's an older protocol file, with the layout
+                % stored in a single field with a sometimes-weird name.
+                % But the name doesn't really matter.
+                fieldName = fieldNames{1} ;
+                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
+                isVisibleFieldName = 'Visible' ;
+            else
+                % This means it's a newer protocol file, with (hopefully)
+                % two fields, Position and IsVisible.
+                layoutOfThisWindow = layoutOfWindowsInClass ;
+                isVisibleFieldName = 'IsVisible' ;
+            end
+            if isfield(layoutOfThisWindow, 'Position') ,
                 rawPosition = layoutOfThisWindow.Position ;
-                %outerPositionBeforeMove = get(figureObject,'OuterPosition')
                 set(figureObject, 'Position', rawPosition);
-                %outerPositionAfterMove = get(figureObject,'OuterPosition')
                 figureObject.constrainPositionToMonitors(monitorPositions) ;
-                %outerPositionAfterConstrain = get(figureObject,'OuterPosition')
-                if isfield(layoutOfThisWindow,'Visible') ,
-                    set(figureObject, 'Visible', layoutOfThisWindow.Visible);
-                end
+            end
+            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
+                set(figureObject, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
             end
         end
     end
@@ -480,30 +457,43 @@ classdef Controller < handle
         function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
             % Find a layout that applies to whatever subclass of controller
             % self happens to be (if any), and use it to position self's
-            % figure's window.
-            
-            if isempty(multiWindowLayout)
-                return
-            end
-            
-            layoutVarNameForThisClass = self.getLayoutVariableNameForClass();
-            
-            if isfield(multiWindowLayout, layoutVarNameForThisClass) ,
-                layoutForThisClass=multiWindowLayout.(layoutVarNameForThisClass);
-                self.decodeWindowLayout(layoutForThisClass, monitorPositions);
-%                 if self.IsSuiGeneris ,
-%                     windowLayout = layoutForThisClass;
-%                     self.decodeWindowLayout(windowLayout);
-%                 else
-%                     tag=get(self.Window,'Tag');
-%                     if isfield(layoutForAllWindows.(layoutVarNameForThisClass),tag)
-%                         windowLayout=layoutForAllWindows.(layoutVarNameForThisClass).(tag);
-%                         self.decodeWindowLayout(windowLayout);
-%                     end
-%                 end
+            % figure's window.            
+            if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
+                layoutMaybe = ws.Controller.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
+                if ~isempty(layoutMaybe) ,
+                    layoutForThisClass = layoutMaybe{1} ;
+                    self.decodeWindowLayout(layoutForThisClass, monitorPositions);
+                end
             end
         end  % function        
     end
     
+    methods (Static=true)
+        function result = layoutVariableNameFromControllerClassName(controllerClassName)
+            controllerClassNameWithoutPrefix = strrep(controllerClassName, 'ws.', '') ;
+            figureClassName = strrep(controllerClassNameWithoutPrefix, 'Controller', 'Figure') ;
+            % Make sure we don't go beyond matlab var name length limit
+            if length(figureClassName)>63 ,
+                result = figureClassName(1:63) ;
+            else
+                result = figureClassName ;
+            end
+        end  % method
+        
+        function layoutMaybe = singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) 
+            coreName = strrep(strrep(controllerClassName, 'ws.', ''), 'Controller', '') ;
+            multiWindowLayoutFieldNames = fieldnames(multiWindowLayout) ;
+            layoutMaybe = {} ;
+            for i = 1:length(multiWindowLayoutFieldNames) ,
+                fieldName = multiWindowLayoutFieldNames{i} ;
+                doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
+                if doesFieldNameContainCoreName ,
+                    layoutMaybe = {multiWindowLayout.(fieldName)} ;
+                    break
+                end
+            end
+        end  % function
+        
+    end  % static methods block
     
 end  % classdef

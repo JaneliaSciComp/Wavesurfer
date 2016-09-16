@@ -16,7 +16,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     properties (Access=protected, Transient)
         % Defines relationships between controller instances/names, window instances,
         % etc.  See createControllerSpecs() method
-        ControllerSpecifications_
+        %ControllerSpecifications_
 
         % An array of all the child controllers, which is sometimes handy
         ChildControllers_ = {}
@@ -32,7 +32,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.Figure_ = fig ;
 
             % Create the controller specifications
-            self.ControllerSpecifications_ = ws.WavesurferMainController.createControllerSpecs_() ;
+            %self.ControllerSpecifications_ = ws.WavesurferMainController.createControllerSpecs_() ;
             
             % Update all the controls
             self.Figure.update();            
@@ -361,7 +361,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 % Restore the layout...
                 layoutForAllWindows = self.Model.LayoutForAllWindows ;
                 monitorPositions = ws.Controller.getMonitorPositions() ;
-                self.decodeMultiWindowLayoutForSuiGenerisControllers_(layoutForAllWindows, monitorPositions) ;
+                self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
                 % Done restoring layout
                 % Now do an auto-start, if called for by the fast protocol
                 self.Model.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
@@ -442,7 +442,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % Restore the layout...
             layoutForAllWindows = self.Model.LayoutForAllWindows ;
             monitorPositions = ws.Controller.getMonitorPositions() ;
-            self.decodeMultiWindowLayoutForSuiGenerisControllers_(layoutForAllWindows, monitorPositions) ;
+            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
             % Now throw if there were any warnings
             warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
@@ -578,7 +578,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % function
         
-        function decodeMultiWindowLayoutForSuiGenerisControllers_(self, multiWindowLayout, monitorPositions)
+        function decodeMultiWindowLayout_(self, multiWindowLayout, monitorPositions)
             % load the layout of the main window
             self.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
                         
@@ -586,19 +586,23 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % have layout information.  For each, take the appropriate
             % action to make the current layout match that in
             % multiWindowLayout.
-            controllerNames=fieldnames(self.ControllerSpecifications_);
-            nControllerSpecs=length(controllerNames);
-            for i=1:nControllerSpecs ,
-                controllerName=controllerNames{i};
-                if isprop(self,controllerName) ,  
-                    % This is true for all of the sui generis
-                    % subcontrollers, but not for, e.g. the scope controllers.
-                    % The scope controllers need to be handled by
-                    % nukeAndRepaveScopeControllers.
-                    controller=self.(controllerName);
+            controllerNames = { 'TriggersController' ...
+                                'StimulusLibraryController' ...
+                                'FastProtocolsController' ...
+                                'UserCodeManagerController' ...
+                                'ChannelsController' ...
+                                'TestPulserController' ...
+                                'DisplayController' ...
+                                'ElectrodeManagerController' } ;
+            for i=1:length(controllerNames) ,
+                controllerName = controllerNames{i} ;
+                if isprop(self, controllerName) ,  
+                    % This should always be true now
+                    controller = self.(controllerName) ;
                     %windowTypeName=self.ControllerSpecifications_.(controllerName).controlName;
-                    controllerClassName=self.ControllerSpecifications_.(controllerName).className;
-                    layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
+                    controllerClassName = ['ws.' controllerName] ;
+                    %layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
+                    layoutMaybe = ws.Controller.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) ;
                     
                     % If the controller does not exist, check whether the configuration indicates
                     % that it should visible.  If so, create it, otherwise it can remain empty until
@@ -606,22 +610,26 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     if isempty(controller) ,
                         % The controller does not exist.  Check if it needs
                         % to.
-                        if isfield(multiWindowLayout, layoutVarName) ,
+                        if ~isempty(layoutMaybe) ,
                             % The controller does not exist, but there's layout info in the multiWindowLayout.  So we
                             % create the controller and then decode the
                             % layout.
                             controller = self.createChildControllerIfNonexistant_(controllerName) ;
-                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+                            %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+                            layout = layoutMaybe{1} ;
+                            controller.decodeWindowLayout(layout, monitorPositions);
                         else
                             % The controller doesn't exist, but there's no
                             % layout info for it, so all is well.
                         end                        
                     else
                         % The controller does exist.
-                        if isfield(multiWindowLayout, layoutVarName) ,
+                        if ~isempty(layoutMaybe) ,
                             % The controller exists, and there's layout
                             % info for it, so lay it out
-                            controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+                            %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+                            layout = layoutMaybe{1} ;
+                            controller.decodeWindowLayout(layout, monitorPositions);
                         else
                             % The controller exists, but there's no layout
                             % info for it in the multiWindowLayout.  This
@@ -694,41 +702,41 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end  % protected methods
     
     methods (Static = true, Access = protected)
-        function specs = createControllerSpecs_()
-            %createControllerSpecs Specify data for managing controllers.
-            %
-            %   Wavesurfer contains several dialogs and figure windows.  This function defines
-            %   the relationships between the controller variable name in this class, the
-            %   .NET control name or HG fig file name, and controller class name.  This
-            %   allows various functions that create these controllers on demand, save and
-            %   load window layout information, and other actions to operate on this data
-            %   structure, rather than having a long list of controllers in each of those
-            %   methods.
-            
-            specs.TriggersController.className = 'ws.TriggersController';
-            %specs.TriggersController.controlName = 'TriggersFigure';
-                        
-            specs.StimulusLibraryController.className = 'ws.StimulusLibraryController';
-            %specs.StimulusLibraryController.controlName = 'StimulusLibraryFigure';
-                        
-            specs.FastProtocolsController.className = 'ws.FastProtocolsController';
-            %specs.FastProtocolsController.controlName = 'FastProtocolsFigure';
-            
-            specs.UserCodeManagerController.className = 'ws.UserCodeManagerController';
-            %specs.UserCodeManagerController.controlName = 'UserFunctionFigure';
-            
-            specs.ChannelsController.className = 'ws.ChannelsController';
-            %specs.ChannelsController.controlName = 'ChannelsFigure';
-            
-            specs.TestPulserController.className = 'ws.TestPulserController';
-            %specs.TestPulserController.controlName = 'TestPulserFigure';
-            
-            specs.DisplayController.className = 'ws.DisplayController';
-            %specs.ScopeController.controlName = 'ScopeFigure';
-            
-            specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
-            %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
-        end  % function
+%         function specs = createControllerSpecs_()
+%             %createControllerSpecs Specify data for managing controllers.
+%             %
+%             %   Wavesurfer contains several dialogs and figure windows.  This function defines
+%             %   the relationships between the controller variable name in this class, the
+%             %   .NET control name or HG fig file name, and controller class name.  This
+%             %   allows various functions that create these controllers on demand, save and
+%             %   load window layout information, and other actions to operate on this data
+%             %   structure, rather than having a long list of controllers in each of those
+%             %   methods.
+%             
+%             specs.TriggersController.className = 'ws.TriggersController';
+%             %specs.TriggersController.controlName = 'TriggersFigure';
+%                         
+%             specs.StimulusLibraryController.className = 'ws.StimulusLibraryController';
+%             %specs.StimulusLibraryController.controlName = 'StimulusLibraryFigure';
+%                         
+%             specs.FastProtocolsController.className = 'ws.FastProtocolsController';
+%             %specs.FastProtocolsController.controlName = 'FastProtocolsFigure';
+%             
+%             specs.UserCodeManagerController.className = 'ws.UserCodeManagerController';
+%             %specs.UserCodeManagerController.controlName = 'UserFunctionFigure';
+%             
+%             specs.ChannelsController.className = 'ws.ChannelsController';
+%             %specs.ChannelsController.controlName = 'ChannelsFigure';
+%             
+%             specs.TestPulserController.className = 'ws.TestPulserController';
+%             %specs.TestPulserController.controlName = 'TestPulserFigure';
+%             
+%             specs.DisplayController.className = 'ws.DisplayController';
+%             %specs.ScopeController.controlName = 'ScopeFigure';
+%             
+%             specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
+%             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
+%         end  % function
         
         function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
             % A function that tries to obtain a valid absolute file name
