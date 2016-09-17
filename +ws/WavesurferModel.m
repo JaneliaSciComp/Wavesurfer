@@ -1142,12 +1142,13 @@ classdef WavesurferModel < ws.RootModel
             % Tell the Looper & Refiller to prepare for the run
             currentFrontendPath = path() ;
             currentFrontendPwd = pwd() ;
+            looperProtocol = self.getLooperProtocol_() ;
             wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
             self.LooperIPCRequester_.send('startingRun', ...
                                           currentFrontendPath, ...
                                           currentFrontendPwd, ...
-                                          wavesurferModelSettings, ...
+                                          looperProtocol, ...
                                           acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                           self.IsAIChannelTerminalOvercommitted, ...
                                           self.IsDIChannelTerminalOvercommitted, ...
@@ -3152,5 +3153,30 @@ classdef WavesurferModel < ws.RootModel
             result = self.LayoutForAllWindows_ ;
         end
     end  % public methods block
+    
+    methods (Access=protected)
+        function looperProtocol = getLooperProtocol_(self)
+            looperProtocol = struct() ;
+            looperProtocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
+            looperProtocol.SweepDuration = self.SweepDuration ;
+            looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
+
+            looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
+            looperProtocol.AIChannelScales = self.Acquisition.AnalogChannelScales ;
+            looperProtocol.IsAIChannelActive = self.Acquisition.IsAnalogChannelActive ;
+            looperProtocol.AITerminalIDs = self.Acquisition.AnalogTerminalIDs ;
+            
+            looperProtocol.DIChannelNames = self.Acquisition.DigitalChannelNames ;
+            looperProtocol.IsDIChannelActive = self.Acquisition.IsDigitalChannelActive ;
+            looperProtocol.DITerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            
+            looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
+            
+            looperProtocol.AcquisitionTriggerPFIID = self.Triggering.AcquisitionTriggerScheme.PFIID ;
+            looperProtocol.AcquisitionTriggerEdge = self.Triggering.AcquisitionTriggerScheme.Edge ;
+            
+            looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+        end  % method
+    end  % methods
     
 end  % classdef

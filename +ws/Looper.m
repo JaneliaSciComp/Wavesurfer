@@ -1,30 +1,30 @@
-classdef Looper < ws.RootModel
+classdef Looper < ws.Model
     % The main Looper model object.
     
     properties (Dependent = true)
-        Acquisition
-        Stimulation
-        Triggering
+        %Acquisition
+        %Stimulation
+        %Triggering
         %Display
         %Logging
-        UserCodeManager
+        %UserCodeManager
         %Ephys
-        SweepDuration  % the sweep duration, in s
-        SweepDurationIfFinite
-        AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
-        AreSweepsContinuous  
+        %SweepDuration  % the sweep duration, in s
+        %SweepDurationIfFinite
+        %AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
+        %AreSweepsContinuous  
           % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-        NSweepsPerRun  
+        %NSweepsPerRun  
             % Number of sweeps to perform during run.  If in
             % sweep-based mode, this is a pass through to the repeat count
             % of the start trigger.  If in continuous mode, it is always 1.
-        NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
-        NTimesSamplesAcquiredCalledSinceRunStart
+        %NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
+        %NTimesSamplesAcquiredCalledSinceRunStart
         %ClockAtRunStart  
           % We want this written to the data file header, but not persisted in
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
-        AcquisitionKeystoneTaskCache  
+        %AcquisitionKeystoneTaskCache  
     end
     
     properties (Access = protected)        
@@ -36,9 +36,45 @@ classdef Looper < ws.RootModel
         %Logging_
         UserCodeManager_
         %Ephys_
-        AreSweepsFiniteDuration_ = true
+        %AreSweepsFiniteDuration_ = true
+        %AreSweepsContinuous_ = false
         NSweepsPerRun_ = 1
-        SweepDurationIfFinite_ = 1  % s
+        %SweepDurationIfFinite_ = 1  % s
+        SweepDuration_ = [] 
+        DeviceName_ = ''
+        NDIOTerminals_ = 0
+        NPFITerminals_ = 0
+        NCounters_ = 0
+        NAITerminals_ = 0
+        AITerminalIDsOnDevice_ = cell(1,0)
+        NAOTerminals_ = 0 ;            
+        DOTerminalIDs_ = cell(1,0)
+        DigitalOutputStateIfUntimed_ = false(1,0)
+        IsDOChannelTimed_ = false(1,0)     
+        DOChannelNames_ = cell(1,0)
+        AcquisitionSampleRate_ = []
+
+        AIChannelNames_ = cell(1,0)
+        AIChannelScales_ = zeros(1,0)
+        IsAIChannelActive_ = false(1,0)
+        AITerminalIDs_ = zeros(1,0)
+            
+        DIChannelNames_ = cell(1,0)
+        IsDIChannelActive_ = false(1,0)
+        DITerminalIDs_ = zeros(1,0)
+            
+        DataCacheDurationWhenContinuous_ = []
+        
+        IsAIChannelTerminalOvercommitted_ = false(1,0)        
+        IsAOChannelTerminalOvercommitted_ = false(1,0)        
+        
+        IsDIChannelTerminalOvercommitted_ = false(1,0)        
+        IsDOChannelTerminalOvercommitted_ = false(1,0)               
+        
+        AcquisitionTriggerPFIID_
+        AcquisitionTriggerEdge_
+        
+        TheUserObject_
     end
 
     properties (Access=protected, Transient=true)
@@ -70,7 +106,27 @@ classdef Looper < ws.RootModel
         IsPerformingSweep_ = false
         IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
         AcquisitionKeystoneTaskCache_
+        IsInUntimedDOTaskForEachUntimedDOChannel_ = false(1,0)  
+        % Tasks
+        UntimedDigitalOutputTask_ = []
+        TimedAnalogInputTask_ = []
+        TimedDigitalInputTask_ = []        
     end
+    
+    properties (Access = protected, Transient=true)
+        LatestRawAnalogData_
+        LatestRawDigitalData_
+        RawAnalogDataCache_
+        RawDigitalDataCache_
+        IsAtLeastOneActiveAIChannelCached_
+        IsAtLeastOneActiveDIChannelCached_                
+        IsArmedOrAcquiring_
+        NScansFromLatestCallback_
+        IndexOfLastScanInCache_
+        IsAllDataInCacheValid_
+        TimeOfLastPollingTimerFire_
+        NScansReadThisSweep_        
+    end        
     
 %     events
 %         % As of 2014-10-16, none of these events are subscribed to
@@ -107,7 +163,8 @@ classdef Looper < ws.RootModel
             % outputs as far as possible.
             
             % Call the superclass constructor
-            self@ws.RootModel();
+            %self@ws.RootModel();
+            self@ws.Model([]);
             
             % Set up sockets
 %             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.LooperRPCPortNumber) ;
@@ -148,13 +205,10 @@ classdef Looper < ws.RootModel
 %             self.IndexOfSelectedFastProtocol=1;
             
             % Create all subsystems.
-            self.Acquisition_ = ws.LooperAcquisition(self);
-            self.Stimulation_ = ws.LooperStimulation(self);
-            %self.Display = ws.Display(self);
-            self.Triggering_ = ws.LooperTriggering(self);
-            self.UserCodeManager_ = ws.UserCodeManager(self);
-            %self.Logging = ws.Logging(self);
-            %self.Ephys = ws.Ephys(self);
+%             self.Acquisition_ = ws.LooperAcquisition(self);
+%             self.Stimulation_ = ws.LooperStimulation(self);
+%             self.Triggering_ = ws.LooperTriggering(self);
+%             self.UserCodeManager_ = ws.UserCodeManager(self);
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -162,7 +216,7 @@ classdef Looper < ws.RootModel
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Acquisition, self.Stimulation, self.Triggering, self.UserCodeManager};            
+%             self.Subsystems_ = {self.Acquisition_, self.Stimulation_, self.Triggering_, self.UserCodeManager_};            
 
             % The object is now initialized, but not very useful until an
             % MDF is specified.
@@ -305,7 +359,7 @@ classdef Looper < ws.RootModel
         function result = startingRun(self, ...
                                       currentFrontendPath, ...
                                       currentFrontendPwd, ...
-                                      wavesurferModelSettings, ...
+                                      looperProtocol, ...
                                       acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                       isTerminalOvercommitedForEachAIChannel, ...
                                       isTerminalOvercommitedForEachDIChannel, ...
@@ -319,7 +373,7 @@ classdef Looper < ws.RootModel
             % Prepare for the run
             result = self.prepareForRun_(currentFrontendPath, ...
                                          currentFrontendPwd, ...
-                                         wavesurferModelSettings, ...
+                                         looperProtocol, ...
                                          acquisitionKeystoneTask, ...
                                          stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAIChannel, ...
@@ -398,27 +452,30 @@ classdef Looper < ws.RootModel
             result = [] ;
         end  % function        
         
-        function result = releaseTimedHardwareResources(self)
-            % This is a req-rep method
-            self.releaseTimedHardwareResources_();
-            %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
-            result = [] ;
-        end  % function
+%         function result = releaseTimedHardwareResources(self)
+%             % This is a req-rep method
+%             self.releaseTimedHardwareResources_();
+%             %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+%             result = [] ;
+%         end  % function
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
                                                                         isDOChannelTerminalOvercommitted)
             %self.Stimulation.setSingleDigitalTerminalID(i, newValue) ;
-            self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
+            %self.Stimulation.singleDigitalOutputTerminalIDWasSetInFrontend(i, newValue) ;
+            self.DOTerminalIDs_(i) = newValue ;
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
-            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
         function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
             % This only gets called if the value in newValue was found to
             % be legal.
-            self.Stimulation.isDigitalChannelTimedWasSetInFrontend(newValue) ;
+            %self.Stimulation.isDigitalChannelTimedWasSetInFrontend(newValue) ;
+            self.IsDOChannelTimed_ = newValue ;
+            self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately
             result = [] ;
         end  % function
         
@@ -430,11 +487,10 @@ classdef Looper < ws.RootModel
                                                                onDemandOutputForEachDOChannel, ...
                                                                isTerminalOvercommittedForEachDOChannel)
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
-            self.Stimulation.didAddDOChannelInFrontend(channelNameForEachDOChannel, ...
-                                                       deviceNameForEachDOChannel, ...
-                                                       terminalIDForEachDOChannel, ...
-                                                       isTimedForEachDOChannel, ...
-                                                       onDemandOutputForEachDOChannel) ;
+            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel) ;
             result = [] ;
         end  % function
         
@@ -446,16 +502,25 @@ classdef Looper < ws.RootModel
                                                                    onDemandOutputForEachDOChannel, ...
                                                                    isTerminalOvercommittedForEachDOChannel)
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
-            self.Stimulation.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
-                                                                      deviceNameForEachDOChannel, ...
-                                                                      terminalIDForEachDOChannel, ...
-                                                                      isTimedForEachDOChannel, ...
-                                                                      onDemandOutputForEachDOChannel)
+            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel) ;
             result = [] ;
         end  % function
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-            self.Stimulation.digitalOutputStateIfUntimedWasSetInFrontend(newValue) ;
+            self.DigitalOutputStateIfUntimed_ = newValue ;
+            if ~isempty(self.UntimedDigitalOutputTask_) ,
+                isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
+                isDOChannelUntimed = ~self.IsDOChannelTimed_ ;
+                outputStateIfUntimedForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
+                outputStateForEachUntimedDOChannel = outputStateIfUntimedForEachDOChannel(isDOChannelUntimed) ;
+                outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDOChannel(isInUntimedDOTaskForEachUntimedDOChannel) ;
+                if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+                    self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+                end
+            end            
             result = [] ;
         end  % function
         
@@ -479,8 +544,8 @@ classdef Looper < ws.RootModel
             self.releaseHardwareResources_() ;           
             
             % Make our own settings mimic those of wavesurferModelSettings
-            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicWavesurferModel_(wsModel) ;
+            %wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            self.adoptSettingsFromFrontend(wavesurferModelSettings) ;
 
             % Set the overcommitment stuff, calculated in the frontend
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
@@ -506,107 +571,107 @@ classdef Looper < ws.RootModel
     end  % RPC methods block
     
     methods
-        function out = get.Acquisition(self)
-            out = self.Acquisition_ ;
-        end
-        
-        function out = get.Stimulation(self)
-            out = self.Stimulation_ ;
-        end
-        
-        function out = get.Triggering(self)
-            out = self.Triggering_ ;
-        end
-        
-        function out = get.UserCodeManager(self)
-            out = self.UserCodeManager_ ;
-        end
-        
-        function out = get.NSweepsCompletedInThisRun(self)
-            out = self.NSweepsCompletedInThisRun_ ;
-        end
+%         function out = get.Acquisition(self)
+%             out = self.Acquisition_ ;
+%         end
+%         
+%         function out = get.Stimulation(self)
+%             out = self.Stimulation_ ;
+%         end
+%         
+%         function out = get.Triggering(self)
+%             out = self.Triggering_ ;
+%         end
+%         
+%         function out = get.UserCodeManager(self)
+%             out = self.UserCodeManager_ ;
+%         end
+%         
+%         function out = get.NSweepsCompletedInThisRun(self)
+%             out = self.NSweepsCompletedInThisRun_ ;
+%         end
 
-        function val = get.NSweepsPerRun(self)
-            if self.AreSweepsContinuous ,
-                val = 1;
-            else
-                %val = self.Triggering.SweepTrigger.Source.RepeatCount;
-                val = self.NSweepsPerRun_;
-            end
-        end  % function
+%         function val = get.NSweepsPerRun(self)
+%             if self.AreSweepsContinuous ,
+%                 val = 1;
+%             else
+%                 %val = self.Triggering.SweepTrigger.Source.RepeatCount;
+%                 val = self.NSweepsPerRun_;
+%             end
+%         end  % function
         
-        function set.NSweepsPerRun(self, newValue)
-            % Sometimes want to trigger the listeners without actually
-            % setting, and without throwing an error
-            if ws.isASettableValue(newValue) ,
-                % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-                %value=self.validatePropArg('NSweepsPerRun',value);
-                if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
-                    % If get here, value is a valid value for this prop
-                    if self.AreSweepsFiniteDuration ,
-                        self.Triggering.willSetNSweepsPerRun();
-                        self.NSweepsPerRun_ = newValue;
-                        self.Triggering.didSetNSweepsPerRun();
-                    end
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'NSweepsPerRun must be a (scalar) positive integer, or inf');       
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function set.NSweepsPerRun(self, newValue)
+%             % Sometimes want to trigger the listeners without actually
+%             % setting, and without throwing an error
+%             if ws.isASettableValue(newValue) ,
+%                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
+%                 %value=self.validatePropArg('NSweepsPerRun',value);
+%                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
+%                     % If get here, value is a valid value for this prop
+%                     if self.AreSweepsFiniteDuration ,
+%                         self.Triggering.willSetNSweepsPerRun();
+%                         self.NSweepsPerRun_ = newValue;
+%                         self.Triggering.didSetNSweepsPerRun();
+%                     end
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'NSweepsPerRun must be a (scalar) positive integer, or inf');       
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
-        function out = get.SweepDurationIfFinite(self)
-            out = self.SweepDurationIfFinite_ ;
-        end  % function
-        
-        function set.SweepDurationIfFinite(self, value)
-            %fprintf('Acquisition::set.Duration()\n');
-            if ws.isASettableValue(value) , 
-                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
-                    valueToSet = max(value,0.1);
-                    self.willSetSweepDurationIfFinite();
-                    self.SweepDurationIfFinite_ = valueToSet;
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDurationIfFinite();
-                else
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDurationIfFinite();
-                    error('most:Model:invalidPropVal', ...
-                          'SweepDurationIfFinite must be a (scalar) positive finite value');
-                end
-            end
-        end  % function
-        
-        function value = get.SweepDuration(self)
-            if self.AreSweepsContinuous ,
-                value=inf;
-            else
-                value=self.SweepDurationIfFinite_ ;
-            end
-        end  % function
-        
-        function set.SweepDuration(self, newValue)
-            % Fail quietly if a nonvalue
-            if ws.isASettableValue(newValue),             
-                % Check value and set if valid
-                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
-                    % If get here, newValue is a valid value for this prop
-                    if isfinite(newValue) ,
-                        self.AreSweepsFiniteDuration = true ;
-                        self.SweepDurationIfFinite = newValue ;
-                    else                        
-                        self.AreSweepsContinuous = true ;
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'SweepDuration must be a (scalar) positive value');
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function out = get.SweepDurationIfFinite(self)
+%             out = self.SweepDurationIfFinite_ ;
+%         end  % function
+%         
+%         function set.SweepDurationIfFinite(self, value)
+%             %fprintf('Acquisition::set.Duration()\n');
+%             if ws.isASettableValue(value) , 
+%                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+%                     valueToSet = max(value,0.1);
+%                     self.willSetSweepDurationIfFinite();
+%                     self.SweepDurationIfFinite_ = valueToSet;
+%                     self.stimulusMapDurationPrecursorMayHaveChanged();
+%                     self.didSetSweepDurationIfFinite();
+%                 else
+%                     self.stimulusMapDurationPrecursorMayHaveChanged();
+%                     self.didSetSweepDurationIfFinite();
+%                     error('most:Model:invalidPropVal', ...
+%                           'SweepDurationIfFinite must be a (scalar) positive finite value');
+%                 end
+%             end
+%         end  % function
+%         
+%         function value = get.SweepDuration(self)
+%             if self.AreSweepsContinuous_ ,
+%                 value=inf;
+%             else
+%                 value=self.SweepDurationIfFinite_ ;
+%             end
+%         end  % function
+%         
+%         function set.SweepDuration(self, newValue)
+%             % Fail quietly if a nonvalue
+%             if ws.isASettableValue(newValue),             
+%                 % Check value and set if valid
+%                 if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+%                     % If get here, newValue is a valid value for this prop
+%                     if isfinite(newValue) ,
+%                         self.AreSweepsFiniteDuration = true ;
+%                         self.SweepDurationIfFinite = newValue ;
+%                     else                        
+%                         self.AreSweepsContinuous = true ;
+%                     end                        
+%                 else
+%                     self.broadcast('Update');
+%                     error('most:Model:invalidPropVal', ...
+%                           'SweepDuration must be a (scalar) positive value');
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
 %         function value = get.SweepDuration(self)
 %             if self.AreSweepsContinuous ,
@@ -635,43 +700,43 @@ classdef Looper < ws.RootModel
 %             self.broadcast('Update');
 %         end  % function
         
-        function value=get.AreSweepsFiniteDuration(self)
-            value=self.AreSweepsFiniteDuration_;
-        end
+%         function value=get.AreSweepsFiniteDuration(self)
+%             value=self.AreSweepsFiniteDuration_;
+%         end
+%         
+%         function set.AreSweepsFiniteDuration(self,newValue)
+%             %fprintf('inside set.AreSweepsFiniteDuration.  self.AreSweepsFiniteDuration_: %d\n', self.AreSweepsFiniteDuration_);
+%             %newValue            
+%             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
+%                 self.willSetAreSweepsFiniteDuration();
+%                 self.AreSweepsFiniteDuration_=logical(newValue);
+%                 %self.AreSweepsContinuous=nan.The;
+%                 %self.NSweepsPerRun=nan.The;
+%                 %self.SweepDuration=nan.The;
+%                 self.stimulusMapDurationPrecursorMayHaveChanged();
+%                 self.didSetAreSweepsFiniteDuration();
+%             end
+%             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
+%             self.broadcast('Update');
+%         end
+%         
+%         function value=get.AreSweepsContinuous(self)
+%             value=~self.AreSweepsFiniteDuration_;
+%         end
+%         
+%         function set.AreSweepsContinuous(self,newValue)
+%             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                 self.AreSweepsFiniteDuration=~logical(newValue);
+%             end
+%         end
         
-        function set.AreSweepsFiniteDuration(self,newValue)
-            %fprintf('inside set.AreSweepsFiniteDuration.  self.AreSweepsFiniteDuration_: %d\n', self.AreSweepsFiniteDuration_);
-            %newValue            
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.willSetAreSweepsFiniteDuration();
-                self.AreSweepsFiniteDuration_=logical(newValue);
-                %self.AreSweepsContinuous=nan.The;
-                %self.NSweepsPerRun=nan.The;
-                %self.SweepDuration=nan.The;
-                self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.didSetAreSweepsFiniteDuration();
-            end
-            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
-            self.broadcast('Update');
-        end
-        
-        function value=get.AreSweepsContinuous(self)
-            value=~self.AreSweepsFiniteDuration_;
-        end
-        
-        function set.AreSweepsContinuous(self,newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.AreSweepsFiniteDuration=~logical(newValue);
-            end
-        end
-        
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulation=self.Stimulation;
-            if ~isempty(stimulation) ,
-                stimulation.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end        
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             stimulation=self.Stimulation;
+%             if ~isempty(stimulation) ,
+%                 stimulation.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end        
         
         function electrodesRemoved(self)
             % Called by the Ephys to notify that one or more electrodes
@@ -876,8 +941,8 @@ classdef Looper < ws.RootModel
             % messages should be arriving during a sweep.
 
             % Acquire data, update soft real-time outputs
-            [didReadFromTasks,rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData,areTasksDone] = ...
-                self.Acquisition_.poll(timeSinceSweepStart,self.FromRunStartTicId_) ;
+            [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+                self.pollAcquisition_(timeSinceSweepStart, self.FromRunStartTicId_) ;
 
             % Deal with the acquired samples
             if didReadFromTasks ,
@@ -894,51 +959,88 @@ classdef Looper < ws.RootModel
             didAcquireNonzeroScans = (size(rawAnalogData,1)>0) ;
         end
         
-        function releaseTimedHardwareResources_(self)
-            self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseTimedHardwareResources();
-            %self.Stimulation.releaseOnDemandHardwareResources();
-            %self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
+%         function releaseTimedHardwareResources_(self)
+%             self.Acquisition.releaseHardwareResources();
+%             self.Stimulation.releaseTimedHardwareResources();
+%             %self.Stimulation.releaseOnDemandHardwareResources();
+%             %self.Triggering.releaseHardwareResources();
+%             %self.Ephys.releaseHardwareResources();
+%         end
 
         function releaseOnDemandHardwareResources_(self)
-            %self.Acquisition.releaseHardwareResources();
-            %self.Stimulation.releaseTimedHardwareResources();
-            self.Stimulation.releaseOnDemandHardwareResources();
-            %self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
+            self.UntimedDigitalOutputTask_ = [];
+            self.IsInUntimedDOTaskForEachUntimedDOChannel_ = [] ;   % for tidiness---this is meaningless if UntimedDigitalOutputTask_ is empty
         end
         
-        function releaseHardwareResources_(self)            
-            self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseHardwareResources();
-        end
-    end
-
-%     methods
-%         function didSetAcquisitionSampleRate(self,newValue)
-%             ephys = self.Ephys ;
-%             if ~isempty(ephys) ,
-%                 ephys.didSetAcquisitionSampleRate(newValue) ;
-%             end
+%         function releaseHardwareResources_(self)            
+%             self.Acquisition.releaseHardwareResources();
+%             self.Stimulation.releaseHardwareResources();
 %         end
-%     end  % methods
-    
-    methods (Access = protected)
-        function acquireTimedHardwareResources_(self)
-            %self.Acquisition.releaseHardwareResources();
-            self.Stimulation.acquireTimedHardwareResources();
-            %self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
-
+        
         function acquireOnDemandHardwareResources_(self)
-            self.Stimulation.acquireOnDemandHardwareResources();
-        end
+            %fprintf('LooperStimulation::acquireOnDemandHardwareResources()\n');
+            if isempty(self.UntimedDigitalOutputTask_) ,
+                %fprintf('the task is empty, so about to create a new one\n');
+                
+                % Get the digital device names and terminal IDs, other
+                % things out of self
+                deviceName = self.DeviceName_ ;
+                deviceNameForEachDOChannel = repmat({deviceName},size(self.DOTerminalIDs_)) ;
+                terminalIDForEachDOChannel = self.DOTerminalIDs_ ;
+                %if length(deviceNameForEachDigitalChannel) ~= length(terminalIDForEachDigitalChannel) ,
+                %    self
+                %    keyboard
+                %end
+                
+                onDemandOutputStateForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
+                  % channels with out-of-range DIO terminal IDs are "overcommitted", too
+                isTerminalUniquelyCommittedForEachDOChannel = ~isTerminalOvercommittedForEachDOChannel ;
+                %nDIOTerminals = self.Parent.NDIOTerminals ;
+
+                % Filter for just the on-demand ones
+                isOnDemandForEachDOChannel = ~self.IsDOChannelTimed_ ;
+                if any(isOnDemandForEachDOChannel) ,
+                    deviceNameForEachOnDemandDOChannel = deviceNameForEachDOChannel ;
+                    terminalIDForEachOnDemandDOChannel = terminalIDForEachDOChannel(isOnDemandForEachDOChannel) ;
+                    outputStateForEachOnDemandDOChannel = onDemandOutputStateForEachDOChannel(isOnDemandForEachDOChannel) ;
+                    isTerminalUniquelyCommittedForEachOnDemandDOChannel = isTerminalUniquelyCommittedForEachDOChannel(isOnDemandForEachDOChannel) ;
+                else
+                    deviceNameForEachOnDemandDOChannel = cell(1,0) ;  % want a length-zero row vector
+                    terminalIDForEachOnDemandDOChannel = zeros(1,0) ;  % want a length-zero row vector
+                    outputStateForEachOnDemandDOChannel = false(1,0) ;  % want a length-zero row vector
+                    isTerminalUniquelyCommittedForEachOnDemandDOChannel = true(1,0) ;  % want a length-zero row vector
+                end
+                
+                % The channels in the task are exactly those that are
+                % uniquely committed.
+                isInTaskForEachOnDemandDOChannel = isTerminalUniquelyCommittedForEachOnDemandDOChannel ;
+                
+                % Create the task
+                deviceNamesInTask = deviceNameForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
+                terminalIDsInTask = terminalIDForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
+                self.UntimedDigitalOutputTask_ = ...
+                    ws.UntimedDigitalOutputTask(self, ...
+                                                'WaveSurfer Untimed Digital Output Task', ...
+                                                deviceNamesInTask, ...
+                                                terminalIDsInTask) ;
+                self.IsInUntimedDOTaskForEachUntimedDOChannel_ = isInTaskForEachOnDemandDOChannel ;
+                                               
+                % Set the outputs to the proper values, now that we have a task                               
+                %fprintf('About to turn on/off on-demand digital channels\n');
+                if any(isInTaskForEachOnDemandDOChannel) ,                    
+                    outputStateForEachChannelInOnDemandDOTask = ...
+                        outputStateForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
+                    if ~isempty(outputStateForEachChannelInOnDemandDOTask) ,  % Isn't this redundant? -- ALT, 2016-02-02
+                        self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInOnDemandDOTask ;
+                    end
+                end                
+            end
+        end  % method
 
         function reacquireOnDemandHardwareResources_(self)
-            self.Stimulation.reacquireOnDemandHardwareResources();
+            self.releaseOnDemandHardwareResources_() ;
+            self.acquireOnDemandHardwareResources_() ;            
         end
         
 %         function runWithGuards_(self)
@@ -954,7 +1056,7 @@ classdef Looper < ws.RootModel
         function coeffsAndClock = prepareForRun_(self, ...
                                                  currentFrontendPath, ...
                                                  currentFrontendPwd, ...
-                                                 wavesurferModelSettings, ...
+                                                 looperProtocol, ...
                                                  acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                                  isTerminalOvercommitedForEachAIChannel, ...
                                                  isTerminalOvercommitedForEachDIChannel, ...
@@ -978,15 +1080,16 @@ classdef Looper < ws.RootModel
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
             self.NSweepsCompletedInThisRun_ = 0 ;
-            self.IsUserCodeManagerEnabled_ = self.UserCodeManager.IsEnabled ;  % cache for speed                             
+            %self.IsUserCodeManagerEnabled_ = self.UserCodeManager_.IsEnabled ;  % cache for speed                             
             self.IsPerformingRun_ = true ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
-            self.releaseTimedHardwareResources_();           
-            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            self.releaseHardwareResourcesForAcquisition_() ;           
+            %wsModel = ws.Coding.decodeEncodingContainer(looperProtocol) ;
+            %self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            self.setLooperProtocol_(looperProtocol) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
@@ -999,11 +1102,10 @@ classdef Looper < ws.RootModel
             
             % Tell all the subsystems to prepare for the run
             try
-                for idx = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingRun() ;
-                    end
-                end
+                self.startingRunAcquisition_() ;
+                %self.startingRunStimulation_() ;
+                self.startingRunTriggering_() ;
+                self.startingRunUserCodeManager_() ;
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
@@ -1013,7 +1115,7 @@ classdef Looper < ws.RootModel
             end
             
             % Get the analog input scaling coeffcients
-            scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+            scalingCoefficients = self.getAnalogScalingCoefficients_() ;
             
             % Initialize timing variables
             clockAtRunStartTic = clock() ;
@@ -1023,36 +1125,69 @@ classdef Looper < ws.RootModel
 
             % Return the coeffs and clock
             coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
-            %self.IPCPublisher_.send('looperReadyForRunOrPerhapsNot',coeffsAndClock) ;
-            %keyboard
-            
-            %self.MinimumPollingDt_ = min(1/self.Display.UpdateRate,self.SweepDuration);  % s
-            
-%             % Move on to performing the sweeps
-%             didCompleteLastSweep = true ;
-%             didUserStop = false ;
-%             didThrow = false ;
-%             exception = [] ;
-%             for iSweep = 1:self.NSweepsPerRun ,
-%                 if didCompleteLastSweep ,
-%                     [didCompleteLastSweep,didUserStop,didThrow,exception] = self.performSweep_() ;
-%                 end
-%             end
-%             
-%             % Do some kind of clean up
-%             if didCompleteLastSweep ,
-%                 self.completeTheOngoingRun_();
-%             else
-%                 % do something else                
-%                 reason = ws.fif(didUserStop, 'user', 'problem') ;
-%                 self.abortTheOngoingRun_(reason);
-%             end
-%             
-%             % If an exception was thrown, re-throw it
-%             if didThrow ,
-%                 rethrow(exception) ;
-%             end
         end  % function
+        
+        function startingRunAcquisition_(self)
+            % Make the NI daq task, if don't have it already
+            self.acquireHardwareResourcesForAcquisition_() ;
+
+            % Set up the task triggering
+            keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+            if isequal(keystoneTask,'ai') ,
+                self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
+                self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+                self.TimedDigitalInputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'di') ,
+                self.TimedAnalogInputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
+                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
+                self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+            else
+                % Getting here means there was a programmer error
+                error('ws:InternalError', ...
+                      'Adam is a dum-dum, and the magic number is 92834797');
+            end
+            
+            % Set for finite-duration vs. continous acquisition
+            self.TimedAnalogInputTask_.AcquisitionDuration = self.SweepDuration_ ;
+            self.TimedDigitalInputTask_.AcquisitionDuration = self.SweepDuration_ ;
+            
+            % Dimension the cache that will hold acquired data in main
+            % memory
+            nDIChannels = length(self.DIChannelNames_) ;
+            if nDIChannels<=8
+                dataType = 'uint8';
+            elseif nDIChannels<=16
+                dataType = 'uint16';
+            else %nDIChannels<=32
+                dataType = 'uint32';
+            end
+            nActiveAIChannels = sum(self.IsAIChannelActive_);
+            nActiveDIChannels = sum(self.IsDIChannelActive_);
+            if isfinite(self.SweepDuration_)  ,
+                expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+                self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
+                self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
+            else                                
+                nScans = round(self.DataCacheDurationWhenContinuous_ * self.AcquisitionSampleRate_) ;
+                self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
+                self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
+            end
+            
+            self.IsAtLeastOneActiveAIChannelCached_ = (nActiveAIChannels>0) ;
+            self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
+            
+            % Arm the AI and DI tasks
+            self.TimedAnalogInputTask_.arm();
+            self.TimedDigitalInputTask_.arm();
+        end  % function        
+        
+        function startingRunTriggering_(self)
+        end  % function        
+
+        function startingRunUserCodeManager_(self)
+        end  % function        
         
         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but
@@ -1085,12 +1220,17 @@ classdef Looper < ws.RootModel
             self.NScansAcquiredSoFarThisSweep_ = 0;
                         
             % Call startingSweep() on all the enabled subsystems
-            for i = 1:numel(self.Subsystems_) ,
-                if self.Subsystems_{i}.IsEnabled ,
-                    %fprintf('About to call startingSweep() on subsystem %d\n',i) ;
-                    self.Subsystems_{i}.startingSweep();
-                end
-            end
+%             for i = 1:numel(self.Subsystems_) ,
+%                 if self.Subsystems_{i}.IsEnabled ,
+%                     %fprintf('About to call startingSweep() on subsystem %d\n',i) ;
+%                     self.Subsystems_{i}.startingSweep();
+%                 end
+%             end
+            self.startingSweepAcquisition_() ;
+            % Nothing to do for any of the other "subsystems"
+            %self.startingSweepStimulation_() ;
+            %self.startingSweepTriggering_() ;
+            %self.startingSweepUserCodeManager_() ;            
 
 %             % Start the counter timer tasks, which will trigger the
 %             % hardware-timed AI, AO, DI, and DO tasks.  But the counter
@@ -1113,6 +1253,18 @@ classdef Looper < ws.RootModel
             %self.IPCPublisher_.send('looperReadyForSweep') ;
         end  % function
 
+        function startingSweepAcquisition_(self)
+            %fprintf('LooperAcquisition::startingSweep()\n');
+            self.IsArmedOrAcquiring_ = true;
+            self.NScansFromLatestCallback_ = [] ;
+            self.IndexOfLastScanInCache_ = 0 ;
+            self.IsAllDataInCacheValid_ = false ;
+            self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
+            self.NScansReadThisSweep_ = 0 ;
+            self.TimedDigitalInputTask_.start();
+            self.TimedAnalogInputTask_.start();
+        end  % function
+        
 %         function err = startSweep_(self)
 %             % Start the sweep by pulsing the master trigger (a
 %             % software-timed digital output).
@@ -1230,13 +1382,13 @@ classdef Looper < ws.RootModel
                         
             if (nScans>0)
                 % update the current time
-                dt=1/self.Acquisition.SampleRate;
-                self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
+                dt = 1/self.AcquisitionSampleRate_ ;
+                self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition_.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
+                channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
                 
-                scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
+                scalingCoefficients = self.getAnalogScalingCoefficients_() ;
                 scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
                 
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
@@ -1253,19 +1405,21 @@ classdef Looper < ws.RootModel
                 % Notify each subsystem that data has just been acquired
                 %T=zeros(1,7);
                 %state = self.State_ ;
-                isSweepBased = self.AreSweepsFiniteDuration_ ;
-                t = self.t_;
+                isSweepBased = isfinite(self.SweepDuration_) ;
+                t = self.t_ ;
                 % No need to inform Triggering subsystem
-                self.Acquisition.samplesAcquired(isSweepBased, ...
-                                                 t, ...
-                                                 rawAnalogData, ...
-                                                 rawDigitalData, ...
-                                                 timeSinceRunStartAtStartOfData);  % acq system is always enabled
+%                 self.Acquisition.samplesAcquired(isSweepBased, ...
+%                                                  t, ...
+%                                                  rawAnalogData, ...
+%                                                  rawDigitalData, ...
+%                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
+                self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
+                                             
 %                 if self.UserCodeManager.IsEnabled ,                             
 %                     self.callUserMethod_('samplesAcquired',scaledAnalogData,rawDigitalData);
 %                 end
                 if self.IsUserCodeManagerEnabled_ ,
-                    self.UserCodeManager_.invokeSamplesAcquired(self, scaledAnalogData, rawDigitalData) ;
+                    self.invokeSamplesAcquiredUserMethod_(self, scaledAnalogData, rawDigitalData) ;
                 end
                 
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
@@ -1294,7 +1448,7 @@ classdef Looper < ws.RootModel
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName, varargin{:});
+            self.UserCodeManager_.invoke(self, eventName, varargin{:});
             
             % Handle as standard event if applicable.
             %self.broadcast(eventName);
@@ -1628,11 +1782,11 @@ classdef Looper < ws.RootModel
 %         end  % function
 %     end  % class methods block
     
-    methods
-        function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
-            value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
-        end
-    end
+%     methods
+%         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
+%             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
+%         end
+%     end
 
 %     methods
 %         function value = get.ClockAtRunStart(self)
@@ -1787,40 +1941,78 @@ classdef Looper < ws.RootModel
 %         end  % function        
 %     end
     
-    methods
-        function value = get.AcquisitionKeystoneTaskCache(self)
-            value = self.AcquisitionKeystoneTaskCache_ ;
-        end
-
-%         function didSetDigitalOutputTerminalID(self)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             %self.broadcast('UpdateChannels') ;
+%     methods
+%         function value = get.AcquisitionKeystoneTaskCache(self)
+%             value = self.AcquisitionKeystoneTaskCache_ ;
 %         end
-    end  % public methods block
+% 
+% %         function didSetDigitalOutputTerminalID(self)
+% %             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+% %             %self.broadcast('UpdateChannels') ;
+% %         end
+%     end  % public methods block
 
     methods (Access=protected) 
-        function mimicWavesurferModel_(self, wsModel)
+%         function mimicWavesurferModel_(self, wsModel)
+%             % Cause self to resemble other, for the purposes of running an
+%             % experiment with the settings defined in wsModel.
+%         
+%             % Get the list of property names for this file type
+%             propertyNames = self.listPropertiesForPersistence();
+%             
+%             % Set each property to the corresponding one
+%             for i = 1:length(propertyNames) ,
+%                 thisPropertyName=propertyNames{i};
+%                 if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserCodeManager_'})) ,
+%                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+%                     self.(thisPropertyName).mimicWavesurferModel_(wsModel.getPropertyValue_(thisPropertyName)) ;
+%                 elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
+%                     % do nothing                   
+%                 else
+%                     if isprop(wsModel,thisPropertyName) ,
+%                         source = wsModel.getPropertyValue_(thisPropertyName) ;
+%                         self.setPropertyValue_(thisPropertyName, source) ;
+%                     end
+%                 end
+%             end
+%             
+%             % Do sanity-checking on persisted state
+%             self.sanitizePersistedState_() ;
+% 
+%             % Make sure the transient state is consistent with
+%             % the non-transient state
+%             self.synchronizeTransientStateToPersistedState_() ;     
+%             
+%             % Notify subsystems, because they need to pick up the possibly-new
+%             % device name
+%             %self.Acquisition.mimickingWavesurferModel_() ;
+%             %self.Stimulation.mimickingWavesurferModel_() ;            
+%             %self.Triggering.mimickingWavesurferModel_() ;                                    
+%         end  % function
+        
+        function setLooperProtocol_(self, looperProtocol)
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
         
-            % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            self.NSweepsPerRun_  = looperProtocol.NSweepsPerRun ;
+            self.SweepDuration_ = looperProtocol.SweepDuration ;
+            self.AcquisitionSampleRate_ = looperProtocol.AcquisitionSampleRate ;
+
+            self.AIChannelNames_ = looperProtocol.AIChannelNames ;
+            self.AIChannelScales_ = looperProtocol.AIChannelScales ;
+            self.IsAIChannelActive_ = looperProtocol.IsAIChannelActive ;
+            self.AITerminalIDs_ = looperProtocol.AITerminalIDs ;
             
-            % Set each property to the corresponding one
-            for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'UserCodeManager_'})) ,
-                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimicWavesurferModel_(wsModel.getPropertyValue_(thisPropertyName)) ;
-                elseif any(strcmp(thisPropertyName,{'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
-                    % do nothing                   
-                else
-                    if isprop(wsModel,thisPropertyName) ,
-                        source = wsModel.getPropertyValue_(thisPropertyName) ;
-                        self.setPropertyValue_(thisPropertyName, source) ;
-                    end
-                end
-            end
+            self.DIChannelNames_ = looperProtocol.DIChannelNames ;
+            self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
+            self.DITerminalIDs_ = looperProtocol.DITerminalIDs ;
+            
+            self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
+            
+            self.AcquisitionTriggerPFIID_ = looperProtocol.AcquisitionTriggerPFIID ;
+            self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
+            
+            self.IsUserCodeManagerEnabled_ = looperProtocol.IsUserCodeManagerEnabled ;
             
             % Do sanity-checking on persisted state
             self.sanitizePersistedState_() ;
@@ -1828,32 +2020,229 @@ classdef Looper < ws.RootModel
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;     
-            
-            % Notify subsystems, because they need to pick up the possibly-new
-            % device name
-            %self.Acquisition.mimickingWavesurferModel_() ;
-            %self.Stimulation.mimickingWavesurferModel_() ;            
-            %self.Triggering.mimickingWavesurferModel_() ;                                    
         end  % function
+        
     end  % public methods block
     
-%     methods (Access=protected)
-%         function initializeFromMDFStructure_(self, mdfStructure)                        
-%             % Initialize the acquisition subsystem given the MDF data
-%             self.Acquisition.initializeFromMDFStructure(mdfStructure);
-%             
-%             % Initialize the stimulation subsystem given the MDF
-%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
-% 
-%             % Initialize the triggering subsystem given the MDF
-%             self.Triggering.initializeFromMDFStructure(mdfStructure);
-%             
-%             % Add the default scopes to the display
-%             %self.Display.initializeScopes();
-%             
-%             % Change our state to reflect the presence of the MDF file
-%             %self.setState_('idle');            
-%         end  % function
-%     end  % methods block        
-    
+    methods (Access=protected)
+        function didAddOrDeleteDOChannelsInFrontend_(self, ...
+                                                     channelNameForEachDOChannel, ...
+                                                     terminalIDForEachDOChannel, ...
+                                                     isTimedForEachDOChannel, ...
+                                                     onDemandOutputForEachDOChannel)
+            self.DOChannelNames_ = channelNameForEachDOChannel ;
+            %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
+            self.DOTerminalIDs_ = terminalIDForEachDOChannel ;
+            self.IsDOChannelTimed_ = isTimedForEachDOChannel ;
+            self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
+            self.reacquireOnDemandHardwareResources_() ;
+        end
+        
+        function acquireHardwareResourcesForAcquisition_(self)
+            % We create and analog InputTask and a digital InputTask, regardless
+            % of whether there are any channels of each type.  Within InputTask,
+            % it will create a DABS Task only if the number of channels is
+            % greater than zero.  But InputTask hides that detail from us.
+            %keyboard
+            if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
+                % Only hand the active channels to the AnalogInputTask
+                isAIChannelActive = self.IsAIChannelActive_ ;
+                %activeAIChannelNames = self.AIChannelNames(isAIChannelActive) ;
+                %activeAnalogTerminalNames = self.AnalogTerminalNames(isAIChannelActive) ;
+                aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
+                activeAITerminalIDs = self.AITerminalIDs_(isAIChannelActive) ;
+                self.TimedAnalogInputTask_ = ...
+                    ws.InputTask(self, ...
+                                 'analog', ...
+                                 'WaveSurfer Analog Acquisition Task', ...
+                                 activeAIDeviceNames, ...
+                                 activeAITerminalIDs, ...
+                                 self.AcquisitionSampleRate_, ...
+                                 self.SweepDuration_) ;
+                % Set other things in the Task object
+                %self.TimedAnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.TimedAnalogInputTask_.SampleRate = self.SampleRate;                
+            end
+            if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
+                isDIChannelActive = self.IsDIChannelActive_ ;
+                %activeDIChannelNames = self.DIChannelNames(isDIChannelActive) ;                
+                %activeDigitalTerminalNames = self.DigitalTerminalNames(isDIChannelActive) ;                
+                diDeviceNames = repmat({self.DeviceName_}, size(isDIChannelActive)) ;
+                activeDIDeviceNames = diDeviceNames(isDIChannelActive) ;
+                activeDITerminalIDs = self.DITerminalIDs_(isDIChannelActive) ;
+                self.TimedDigitalInputTask_ = ...
+                    ws.InputTask(self, ...
+                                 'digital', ...
+                                 'WaveSurfer Digital Acquisition Task', ...
+                                 activeDIDeviceNames, ...
+                                 activeDITerminalIDs, ...
+                                 self.AcquisitionSampleRate_, ...
+                                 self.SweepDuration_) ;
+                % Set other things in the Task object
+                %self.TimedDigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
+                %self.TimedDigitalInputTask_.SampleRate = self.SampleRate;                
+            end
+        end  % function
+
+        function releaseHardwareResourcesForAcquisition_(self)
+            self.TimedAnalogInputTask_=[];            
+            self.TimedDigitalInputTask_=[];            
+        end
+        
+        function result = getAnalogScalingCoefficients_(self)
+            if isempty(self.TimedAnalogInputTask_) ,
+                result = [] ;
+            else                
+                result = self.TimedAnalogInputTask_.ScalingCoefficients ;
+            end
+        end        
+        
+        function [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+                pollAcquisition_(self, timeSinceSweepStart, fromRunStartTicId)
+            %fprintf('LooperAcquisition::poll()\n') ;
+            % Determine the time since the last undropped timer fire
+            timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
+
+            % Call the task to do the real work
+            if self.IsArmedOrAcquiring_ ,
+                %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
+                % Check for task doneness
+                if ~isfinite(self.SweepDuration_) ,  
+                    % if doing continuous acq, no need to check.  This is
+                    % an important optimization, b/c the checks can take
+                    % 10-20 ms.
+                    areTasksDone = false;
+                else                    
+                    areTasksDone = ( self.TimedAnalogInputTask_.isTaskDone() && self.TimedDigitalInputTask_.isTaskDone() ) ;
+                end
+%                 if areTasksDone ,
+%                     fprintf('Acquisition tasks are done.\n')
+%                 end
+                
+                % Get data
+                %if areTasksDone ,
+                %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
+                %end
+                [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+                    self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
+                %nScans = size(rawAnalogData,1) ;
+                %fprintf('Read acq data. nScans: %d\n',nScans)
+
+                % Notify the whole system that samples were acquired
+                didReadFromTasks = true ;  % we return this, even if zero samples were acquired
+                %self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
+
+                % If we were done before reading the data, act accordingly
+                if areTasksDone ,
+                    % Stop tasks, set flag to reflect that we're no longer
+                    % armed nor acquiring
+                    self.TimedAnalogInputTask_.stop();
+                    self.TimedDigitalInputTask_.stop();
+                    self.IsArmedOrAcquiring_ = false ;
+                end
+            else
+                %fprintf('~IsArmedOrAcquiring\n') ;
+                didReadFromTasks = false ;
+                rawAnalogData = [] ;
+                rawDigitalData = [] ;
+                timeSinceRunStartAtStartOfData = false ;
+                areTasksDone = [] ;  
+            end
+            
+            % Prepare for next time            
+            self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
+        end  % method
+        
+        function [rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData] = ...
+                readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone)  %#ok<INUSD>
+            % both analog and digital tasks are for-real
+            if self.IsAtLeastOneActiveAIChannelCached_ ,
+                [rawAnalogData, timeSinceRunStartAtStartOfData] = ...
+                    self.TimedAnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
+                nScans = size(rawAnalogData,1) ;
+                rawDigitalData = ...
+                    self.TimedDigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            elseif self.IsAtLeastOneActiveDIChannelCached_ ,
+                % There are zero active analog channels, but at least one
+                % active digital channel.
+                % In this case, want the digital task to determine the
+                % "pace" of data acquisition.
+                [rawDigitalData,timeSinceRunStartAtStartOfData] = ...
+                    self.TimedDigitalInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);                    
+                nScans = size(rawDigitalData,1) ;
+                rawAnalogData = zeros(nScans, 0, 'int16') ;
+                % rawAnalogData  = ...
+                %     self.AnalogInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
+            else
+                % If we get here, we've made a programming error --- this
+                % should have been caught when the run was started.
+                error('wavesurfer:ZeroActiveInputChannelsWhileReadingDataFromTasks', ...
+                      'Internal error: No active input channels while reading data from tasks') ;
+            end
+            self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
+        end  % function
+        
+        function addDataToUserCache_(self, rawAnalogData, rawDigitalData, isSweepBased)
+            %self.LatestAnalogData_ = scaledAnalogData ;
+            self.LatestRawAnalogData_ = rawAnalogData ;
+            self.LatestRawDigitalData_ = rawDigitalData ;
+            if isSweepBased ,
+                % add data to cache
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawAnalogData,1);
+                jf=j0+n-1;
+                self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                self.IndexOfLastScanInCache_ = jf ;
+                self.NScansFromLatestCallback_ = n ;                
+                if jf == size(self.RawAnalogDataCache_,1) ,
+                     self.IsAllDataInCacheValid_ = true;
+                end
+            else                
+                % Add data to cache, wrapping around if needed
+                j0=self.IndexOfLastScanInCache_ + 1;
+                n=size(rawAnalogData,1);
+                jf=j0+n-1;
+                nScansInCache = size(self.RawAnalogDataCache_,1);
+                if jf<=nScansInCache ,
+                    % the usual case
+                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                    self.IndexOfLastScanInCache_ = jf ;
+                elseif jf==nScansInCache ,
+                    % the cache is just large enough to accommodate rawData
+                    self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
+                    self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
+                    self.IndexOfLastScanInCache_ = 0 ;
+                    self.IsAllDataInCacheValid_ = true ;
+                else
+                    % Need to write part of rawData to end of data cache,
+                    % part to start of data cache                    
+                    nScansAtStartOfCache = jf - nScansInCache ;
+                    nScansAtEndOfCache = n - nScansAtStartOfCache ;
+                    self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
+                    self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
+                    self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
+                    self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
+                    self.IsAllDataInCacheValid_ = true ;
+                    self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
+                end
+                self.NScansFromLatestCallback_ = n ;
+            end
+        end  % method
+        
+        function invokeSamplesAcquiredUserMethod_(self, rootModel, scaledAnalogData, rawDigitalData) 
+            % This method is designed to be fast, at the expense of
+            % error-checking.
+            try
+                if ~isempty(self.TheUserObject_) ,
+                    self.TheUserObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                end
+            catch exception ,
+                warning('Error in user class method samplesAcquired.  Exception report follows.') ;
+                disp(exception.getReport()) ;
+            end            
+        end  % method        
+    end  % protected methods block
 end  % classdef
