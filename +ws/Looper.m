@@ -11,7 +11,7 @@ classdef Looper < handle
         NAOTerminals_ = 0 ;            
         NSweepsPerRun_ = 1
         SweepDuration_ = [] 
-        DOTerminalIDs_ = cell(1,0)
+        DOTerminalIDs_ = zeros(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
         IsDOChannelTimed_ = false(1,0)     
         DOChannelNames_ = cell(1,0)
@@ -335,7 +335,7 @@ classdef Looper < handle
             result = [] ;
         end  % function
         
-        function result = frontendJustLoadedProtocol(self, wavesurferModelSettings, isDOChannelTerminalOvercommitted)
+        function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted)
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -349,7 +349,7 @@ classdef Looper < handle
             
             % Make our own settings mimic those of wavesurferModelSettings
             %wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.adoptSettingsFromFrontend(wavesurferModelSettings) ;
+            self.setLooperProtocol_(looperProtocol) ;
 
             % Set the overcommitment stuff, calculated in the frontend
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
@@ -824,6 +824,11 @@ classdef Looper < handle
             self.DIChannelNames_ = looperProtocol.DIChannelNames ;
             self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
             self.DITerminalIDs_ = looperProtocol.DITerminalIDs ;
+            
+            self.DOChannelNames_ = looperProtocol.DOChannelNames ;
+            self.DOTerminalIDs_ = looperProtocol.DOTerminalIDs ;
+            self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
+            self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
             
             self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
             

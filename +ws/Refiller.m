@@ -446,7 +446,7 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function
 
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings, isDOChannelTerminalOvercommitted) %#ok<INUSD>
+        function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return

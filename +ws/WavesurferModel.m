@@ -2756,10 +2756,14 @@ classdef WavesurferModel < ws.RootModel
             % on-demand
             %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
-                %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
-                wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
-                self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
+                self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                                        self.DeviceName, ...
+                                        self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
+                                        isTerminalOvercommittedForEachDOChannel) ;                
+                %wavesurferModelSettings = self.encodeForPersistence() ;
+                looperProtocol = self.getLooperProtocol_() ;
+                self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
             end
         end  % function
     end  % protected methods block
@@ -3164,6 +3168,11 @@ classdef WavesurferModel < ws.RootModel
             looperProtocol.DIChannelNames = self.Acquisition.DigitalChannelNames ;
             looperProtocol.IsDIChannelActive = self.Acquisition.IsDigitalChannelActive ;
             looperProtocol.DITerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            
+            looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            looperProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            looperProtocol.DigitalOutputStateIfUntimed = self.Stimulation.DigitalOutputStateIfUntimed ;
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
             
