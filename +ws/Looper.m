@@ -452,12 +452,12 @@ classdef Looper < ws.Model
             result = [] ;
         end  % function        
         
-%         function result = releaseTimedHardwareResources(self)
-%             % This is a req-rep method
-%             self.releaseTimedHardwareResources_();
-%             %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
-%             result = [] ;
-%         end  % function
+        function result = releaseTimedHardwareResources(self)
+            % This is a req-rep method
+            self.releaseTimedHardwareResources_();
+            %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+            result = [] ;
+        end  % function
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
@@ -527,7 +527,7 @@ classdef Looper < ws.Model
         function result = singleDigitalInputTerminalIDWasSetInFrontend(self, ...
                                                                        isDOChannelTerminalOvercommitted)
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
-            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
@@ -558,13 +558,13 @@ classdef Looper < ws.Model
         
         function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
-            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
         function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
-            self.Stimulation.reacquireHardwareResources() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
+            self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
@@ -967,9 +967,19 @@ classdef Looper < ws.Model
 %             %self.Ephys.releaseHardwareResources();
 %         end
 
+        function releaseHardwareResources_(self)
+            self.releaseOnDemandHardwareResources_() ;
+            self.releaseTimedHardwareResources_() ;
+        end
+
         function releaseOnDemandHardwareResources_(self)
             self.UntimedDigitalOutputTask_ = [];
             self.IsInUntimedDOTaskForEachUntimedDOChannel_ = [] ;   % for tidiness---this is meaningless if UntimedDigitalOutputTask_ is empty
+        end
+
+        function releaseTimedHardwareResources_(self)
+            self.TimedAnalogInputTask_=[];            
+            self.TimedDigitalInputTask_=[];            
         end
         
 %         function releaseHardwareResources_(self)            
@@ -1086,7 +1096,7 @@ classdef Looper < ws.Model
             
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
-            self.releaseHardwareResourcesForAcquisition_() ;           
+            self.releaseTimedHardwareResources_() ;           
             %wsModel = ws.Coding.decodeEncodingContainer(looperProtocol) ;
             %self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             self.setLooperProtocol_(looperProtocol) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
@@ -1129,7 +1139,7 @@ classdef Looper < ws.Model
         
         function startingRunAcquisition_(self)
             % Make the NI daq task, if don't have it already
-            self.acquireHardwareResourcesForAcquisition_() ;
+            self.acquireTimedHardwareResources_() ;
 
             % Set up the task triggering
             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
@@ -2013,6 +2023,7 @@ classdef Looper < ws.Model
             self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
             
             self.IsUserCodeManagerEnabled_ = looperProtocol.IsUserCodeManagerEnabled ;
+            self.TheUserObject_ = looperProtocol.TheUserObject ;
             
             % Do sanity-checking on persisted state
             self.sanitizePersistedState_() ;
@@ -2038,7 +2049,7 @@ classdef Looper < ws.Model
             self.reacquireOnDemandHardwareResources_() ;
         end
         
-        function acquireHardwareResourcesForAcquisition_(self)
+        function acquireTimedHardwareResources_(self)
             % We create and analog InputTask and a digital InputTask, regardless
             % of whether there are any channels of each type.  Within InputTask,
             % it will create a DABS Task only if the number of channels is
@@ -2085,10 +2096,10 @@ classdef Looper < ws.Model
             end
         end  % function
 
-        function releaseHardwareResourcesForAcquisition_(self)
-            self.TimedAnalogInputTask_=[];            
-            self.TimedDigitalInputTask_=[];            
-        end
+%         function releaseHardwareResourcesForAcquisition_(self)
+%             self.TimedAnalogInputTask_=[];            
+%             self.TimedDigitalInputTask_=[];            
+%         end
         
         function result = getAnalogScalingCoefficients_(self)
             if isempty(self.TimedAnalogInputTask_) ,

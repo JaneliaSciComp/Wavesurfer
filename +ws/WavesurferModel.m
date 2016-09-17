@@ -3176,6 +3176,7 @@ classdef WavesurferModel < ws.RootModel
             looperProtocol.AcquisitionTriggerEdge = self.Triggering.AcquisitionTriggerScheme.Edge ;
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
         end  % method
     end  % methods
     
