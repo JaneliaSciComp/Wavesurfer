@@ -609,7 +609,7 @@ classdef Refiller < handle
                 self.IsPerformingEpisode_ = true ;
                 %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
                 self.callUserMethod_('startingEpisode') ;
-                self.startingEpisode_(self.NEpisodesCompletedSoFarThisRun_+1) ;
+                self.fillOutputBuffersAndStartOutputTasks_(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
         end
         
@@ -786,7 +786,7 @@ classdef Refiller < handle
             self.IsInTaskForEachDOChannel_ = [] ;
         end  % function        
         
-        function startingEpisode_(self, indexOfEpisodeWithinSweep)
+        function fillOutputBuffersAndStartOutputTasks_(self, indexOfEpisodeWithinSweep)
             % Called by the Refiller when it's starting an episode
             
             if self.IsArmedOrStimulating_ ,
