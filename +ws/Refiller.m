@@ -2,10 +2,37 @@ classdef Refiller < handle
     % The main Refiller model object.
     
     properties (Access = protected)        
+        DeviceName_ = ''
+        %NDIOTerminals_ = 0
+        %NPFITerminals_ = 0
+        %NCounters_ = 0
+        %NAITerminals_ = 0
+        %AITerminalIDsOnDevice_ = cell(1,0)
+        %NAOTerminals_ = 0 ;            
+
         NSweepsPerRun_ = 1
         SweepDuration_ = []
-        TheUserObject_        
+
+        StimulationTrigger_
+        
         IsStimulationEnabled_ = false
+        StimulationSampleRate_ = []
+        StimulusLibrary_ = []
+        DoRepeatSequence_ = true
+        
+        AOChannelNames_ = cell(1,0)
+        AOChannelScales_ = zeros(1,0)
+        IsAOChannelActive_ = false(1,0)
+        AOTerminalIDs_ = zeros(1,0)
+        IsAOChannelTerminalOvercommitted_ = false(1,0) 
+        
+        DOChannelNames_ = cell(1,0)
+        IsDOChannelTimed_ = false(1,0)     
+        DOTerminalIDs_ = zeros(1,0)
+        IsDOChannelTerminalOvercommitted_ = false(1,0)               
+        
+        IsUserCodeManagerEnabled_
+        TheUserObject_        
     end
 
     properties (Access=protected, Transient=true)
@@ -42,7 +69,7 @@ classdef Refiller < handle
         IsTriggeringCounterBased_
         IsTriggeringExternal_        
         
-        SelectedOutputableCache_ = []  % cache used only during acquisition (set during startingRun(), set to [] in completingRun())
+        SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
     end
     
@@ -177,7 +204,7 @@ classdef Refiller < handle
         function result = startingRun(self, ...
                                       currentFrontendPath, ...                
                                       currentFrontendPwd, ...
-                                      wavesurferModelSettings, ...
+                                      refillerProtocol, ...
                                       acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                       isTerminalOvercommitedForEachAIChannel, ...
                                       isTerminalOvercommitedForEachDIChannel, ...
@@ -191,7 +218,7 @@ classdef Refiller < handle
             % Prepare for the run
             result = self.prepareForRun_(currentFrontendPath, ...                
                                          currentFrontendPwd, ...
-                                         wavesurferModelSettings, ...
+                                         refillerProtocol, ...
                                          acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAIChannel, ...
                                          isTerminalOvercommitedForEachDIChannel, ...
@@ -268,7 +295,7 @@ classdef Refiller < handle
         
         function result = releaseTimedHardwareResources(self)
             % This is a req-rep method
-            self.releaseHardwareResources_();
+            self.releaseHardwareResources_();  % All the refiller resources are timed resources
             result = [] ;
         end
         
@@ -347,7 +374,7 @@ classdef Refiller < handle
         function result = prepareForRun_(self, ...
                                          currentFrontendPath, ...    
                                          currentFrontendPwd, ...                                         
-                                         wavesurferModelSettings, ...
+                                         refillerProtocol, ...
                                          acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAIChannel, ...
                                          isTerminalOvercommitedForEachDIChannel, ...
@@ -369,32 +396,30 @@ classdef Refiller < handle
             
             % Make our own settings mimic those of wavesurferModelSettings
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
-            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            %keyboard
-            self.mimicWavesurferModel_(wsModel) ;
+            self.setRefillerProtocol_(refillerProtocol) ;
             
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Set the overcommitment arrays
-            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
             self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
-            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per sweep
             if self.IsStimulationEnabled_ ,
-                if self.AreSweepsFiniteDuration ,
+                if isfinite(self.SweepDuration_) ,
                     % This means one episode per sweep, always
                     self.NEpisodesPerSweep_ = 1 ;
                 else
                     % Means continuous acq, so need to consult stim trigger
-                    if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
+                    if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
                         self.NEpisodesPerSweep_ = 1 ;                    
-                    elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
+                    elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
                         % stim trigger scheme is a counter trigger
-                        self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                        self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
                     else
                         % stim trigger scheme is an external trigger
                         self.NEpisodesPerSweep_ = inf ;  % by convention
@@ -845,7 +870,7 @@ classdef Refiller < handle
                     isThereAMapForThisEpisode=true;
                     indexOfMapWithinOutputable=episodeIndexWithinSweep;
                 else
-                    if self.DoRepeatSequence ,
+                    if self.DoRepeatSequence_ ,
                         if nMapsInOutputable>0 ,
                             isThereAMapForThisEpisode=true;
                             indexOfMapWithinOutputable=mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1;
@@ -883,10 +908,10 @@ classdef Refiller < handle
                 aoData = zeros(0,nAnalogChannelsInTask) ;
                 nChannelsWithStimulus = 0 ;
             else
-                channelNamesInTask = self.AnalogChannelNames(isInTaskForEachAnalogChannel) ;
+                channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
                 isChannelAnalog = true(1,nAnalogChannelsInTask) ;
                 [aoData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                    stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
                   % each signal of aoData is in native units
             end
             
@@ -894,7 +919,7 @@ classdef Refiller < handle
             nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AnalogChannelScales(isInTaskForEachAnalogChannel);  % (native units)/V
+            analogChannelScales=self.AOChannelScales_(isInTaskForEachAnalogChannel);  % (native units)/V
             inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
             sanitizedInverseAnalogChannelScales = ...
                 ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
@@ -934,9 +959,9 @@ classdef Refiller < handle
                 nChannelsWithStimulus = 0 ;
             else
                 isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
-                namesOfDigitalChannelsInTask = self.DigitalChannelNames(isInTaskForEachDigitalChannel) ;                
+                namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
                 [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.SampleRate, ...
+                    stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
                                                  namesOfDigitalChannelsInTask, ...
                                                  isChannelAnalogForEachDigitalChannelInTask, ...
                                                  episodeIndexWithinRun);
@@ -956,7 +981,7 @@ classdef Refiller < handle
         function startingRunTriggering_(self) 
             %fprintf('RefillerTriggering::startingRun()\n');
             self.setupCounterTriggers_();
-            stimulationTriggerScheme = self.StimulationTriggerScheme_ ;            
+            stimulationTriggerScheme = self.StimulationTrigger_ ;            
             if isa(stimulationTriggerScheme,'ws.BuiltinTrigger') ,
                 self.IsTriggeringBuiltin_ = true ;
                 self.IsTriggeringCounterBased_ = false ;
@@ -973,38 +998,11 @@ classdef Refiller < handle
         end  % function        
         
         function startingRunStimulation_(self)
-            %fprintf('Stimulation::startingRun()\n');
-            %errors = [];
-            %abort = false;
-            
-%             % Do a bunch of checks to make sure all is well for running an
-%             % run
-%             if isempty(self.TriggerScheme)
-%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme can not be empty when the system is enabled.');
-%             end            
-%             if isempty(self.TriggerScheme.Target)
-%                 error('wavesurfer:stimulussystem:invalidtrigger', 'The stimulus trigger scheme target can not be empty when the system is enabled.');
-%             end            
-%             %if isempty(self.StimulusLibrary.SelectedOutputable) || ~isvalid(self.StimulusLibrary.SelectedOutputable) ,
-%             %    error('wavesurfer:stimulussystem:emptycycle', 'The stimulation selected outputable can not be empty when the system is enabled.');
-%             %end
-            
-            %wavesurferModel = self.Parent ;
-            
             % Make the NI daq tasks, if don't have already
-            self.acquireHardwareResources() ;
-            
+            self.acquireHardwareResourcesStimulation_() ;
+                        
             % Set up the task triggering
-            %pfiID = self.TriggerScheme.PFIID ;
-            %keystoneTerminalName = sprintf('PFI%d',pfiID) ;
-            %keystoneEdge = self.TriggerScheme.Edge ;
-            %self.TheFiniteAnalogOutputTask_.TriggerPFIID = pfiID ;
-            %self.TheFiniteAnalogOutputTask_.TriggerEdge = edge ;
-            %self.TheFiniteDigitalOutputTask_.TriggerPFIID = pfiID ;
-            %self.TheFiniteDigitalOutputTask_.TriggerEdge = edge ;
-            
-            % Set up the task triggering
-            keystoneTask = self.Parent.StimulationKeystoneTaskCache ;
+            keystoneTask = self.StimulationKeystoneTaskCache_ ;
             if isequal(keystoneTask,'ai') ,
                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
@@ -1016,15 +1014,15 @@ classdef Refiller < handle
                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
             elseif isequal(keystoneTask,'ao') ,
-                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
-                self.TheFiniteAnalogOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
             elseif isequal(keystoneTask,'do') ,
                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
-                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.TriggerScheme.PFIID) ;
-                self.TheFiniteDigitalOutputTask_.TriggerEdge = self.TriggerScheme.Edge ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
             else
                 % Getting here means there was a programmer error
                 error('ws:InternalError', ...
@@ -1039,27 +1037,9 @@ classdef Refiller < handle
             self.TheFiniteAnalogOutputTask_.arm() ;
             self.TheFiniteDigitalOutputTask_.arm() ;
             
-%             % Determine episodes per sweep
-%             if wavesurferModel.AreSweepsFiniteDuration ,
-%                 % this means one episode per sweep, always
-%                 self.NEpisodesPerSweep_ = 1 ;
-%             else
-%                 % Means continuous acq, so need to consult stim trigger
-%                 if self.TriggerScheme.IsInternal ,
-%                     % stim trigger scheme is internal
-%                     self.NEpisodesPerSweep_ = self.TriggerScheme.RepeatCount ;
-%                 else
-%                     % stim trigger scheme is external
-%                     self.NEpisodesPerSweep_ = inf ;  % by convention
-%                 end
-%             end
-            
             % Set up the selected outputable cache
-            stimulusOutputable = self.StimulusLibrary.SelectedOutputable ;
+            stimulusOutputable = self.StimulusLibrary_.SelectedOutputable ;
             self.SelectedOutputableCache_=stimulusOutputable ;
-            
-            % Set the state
-            %self.IsWithinRun_=true;
         end  % function        
         
         function startingSweepTriggering_(self)
@@ -1067,5 +1047,115 @@ classdef Refiller < handle
             self.startCounterTasks_();
         end  % function
         
+        function setRefillerProtocol_(self, protocol)
+            self.DeviceName_ = protocol.DeviceName ;
+            self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
+            self.SweepDuration_ = protocol.SweepDuration ;
+            self.StimulationSampleRate_ = protocol.StimulationSampleRate ;
+
+            self.AOChannelNames_ = protocol.AOChannelNames ;
+            self.AOChannelScales_ = protocol.AOChannelScales ;
+            self.AOTerminalIDs_ = protocol.AOTerminalIDs ;
+            
+            self.DOChannelNames_ = protocol.DOChannelNames ;
+            self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
+            self.DOTerminalIDs_ = protocol.DOTerminalIDs ;
+            
+            self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
+            self.StimulationTrigger_ = protocol.StimulationTrigger ;            
+            self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
+            self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
+            
+            self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
+            self.TheUserObject_ = protocol.TheUserObject ;
+        end  % method       
+        
+        function startCounterTasks_(self)
+            if ~isempty(self.StimulationCounterTask_) ,
+                self.StimulationCounterTask_.start() ;
+            end            
+        end  % method        
+        
+        function acquireHardwareResourcesStimulation_(self)
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                deviceNameForEachAOChannel = repmat({self.DeviceName_}, size(self.AOChannelNames_)) ;
+                isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted_ ;
+                isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
+                deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
+                terminalIDForEachChannelInAOTask = self.AOTerminalIDs_(isInTaskForEachAOChannel) ;                
+                self.TheFiniteAnalogOutputTask_ = ...
+                    ws.FiniteOutputTask('analog', ...
+                                        'WaveSurfer Finite Analog Output Task', ...
+                                        deviceNameForEachChannelInAOTask, ...
+                                        terminalIDForEachChannelInAOTask, ...
+                                        self.StimulationSampleRate_) ;
+                %self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
+            end
+            if isempty(self.TheFiniteDigitalOutputTask_) ,
+                deviceNameForEachDOChannel = repmat({self.DeviceName_}, size(self.DOChannelNames_)) ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
+                isTimedForEachDOChannel = self.IsDOChannelTimed_ ;
+                isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
+                deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
+                terminalIDForEachChannelInDOTask = self.DOTerminalIDs_(isInTaskForEachDOChannel) ;                
+                self.TheFiniteDigitalOutputTask_ = ...
+                    ws.FiniteOutputTask('digital', ...
+                                           'WaveSurfer Finite Digital Output Task', ...
+                                           deviceNameForEachChannelInDOTask, ...
+                                           terminalIDForEachChannelInDOTask, ...
+                                           self.StimulationSampleRate_) ;
+                %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
+                self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
+            end
+        end  % method
+        
+        function setupCounterTriggers_(self)        
+            self.teardownCounterTriggers_() ;  % just in case there's an old one hanging around
+            stimulationTriggerScheme = self.StimulationTrigger_ ;            
+            if self.IsStimulationEnabled_ && isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+                self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
+            end            
+        end  % function       
+        
+        function task = createCounterTask_(self, trigger)
+            % Create the counter task
+            counterID = trigger.CounterID ;
+            taskName = sprintf('WaveSurfer Counter Trigger Task for CTR%d', counterID) ;
+            task = ...
+                ws.CounterTriggerTask(trigger, ...
+                                      trigger.DeviceName, ...
+                                      counterID, ...
+                                      taskName);
+            
+            % Set freq, repeat count                               
+            interval=trigger.Interval;
+            task.RepeatFrequency = 1/interval;
+            repeatCount=trigger.RepeatCount;
+            task.RepeatCount = repeatCount;
+            
+            % Set the PFIID, whether or not we should need to. It seems
+            % that we really do need to do this, even though we now
+            % (6/27/2016) always use the default PFI for output.  Weird.
+            pfiID = trigger.PFIID ;
+            task.exportSignal(sprintf('PFI%d', pfiID)) ;
+%             if pfiID ~= counterID + 12 ,
+%                 fprintf('About to export counter task %d out PFI%d\n', counterID, pfiID) ;
+%                 task.exportSignal(sprintf('PFI%d', pfiID));
+%             else
+%                 fprintf('Leaving export counter task %d on the default PFI, which we think is is PFI%d\n', counterID, pfiID) ;                
+%             end
+            
+            % TODO: Need to set the edge polarity!!!
+            
+            % Note that this counter *must* be the stim trigger, since
+            % can't use a counter for acq trigger.
+            % Set it up to trigger off the acq trigger, since don't want to
+            % fire anything until we've started acquiring.
+            keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+            triggerTerminalName = sprintf('%s/StartTrigger', keystoneTask) ;
+            %task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+            task.configureStartTrigger(triggerTerminalName, 'rising');
+        end  % method        
     end  % protected methods block    
 end  % classdef

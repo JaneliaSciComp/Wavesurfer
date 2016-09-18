@@ -1143,7 +1143,8 @@ classdef WavesurferModel < ws.RootModel
             currentFrontendPath = path() ;
             currentFrontendPwd = pwd() ;
             looperProtocol = self.getLooperProtocol_() ;
-            wavesurferModelSettings=self.encodeForPersistence();
+            refillerProtocol = self.getRefillerProtocol_() ;
+            %wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
             self.LooperIPCRequester_.send('startingRun', ...
                                           currentFrontendPath, ...
@@ -1154,7 +1155,7 @@ classdef WavesurferModel < ws.RootModel
             self.RefillerIPCRequester_.send('startingRun', ...
                                             currentFrontendPath, ...
                                             currentFrontendPwd, ...
-                                            wavesurferModelSettings, ...
+                                            refillerProtocol, ...
                                             acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                             self.IsAIChannelTerminalOvercommitted, ...
                                             self.IsDIChannelTerminalOvercommitted, ...
@@ -3182,6 +3183,31 @@ classdef WavesurferModel < ws.RootModel
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
         end  % method
+        
+        function protocol = getRefillerProtocol_(self)
+            protocol = struct() ;
+            protocol.DeviceName = self.DeviceName ;
+            protocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
+            protocol.SweepDuration = self.SweepDuration ;
+            protocol.StimulationSampleRate = self.Stimulation.SampleRate ;
+
+            protocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
+            protocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
+            protocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            
+            protocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            protocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            protocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            
+            protocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
+            protocol.StimulationTrigger = self.Triggering.StimulationTriggerScheme ;            
+            protocol.StimulusLibrary = self.Stimulation.StimulusLibrary ;                        
+            protocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
+            
+            protocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            protocol.TheUserObject = self.UserCodeManager.TheObject ;
+        end  % method
+        
     end  % methods
     
 end  % classdef
