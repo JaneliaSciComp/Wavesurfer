@@ -1,13 +1,52 @@
-classdef WavesurferModel < ws.RootModel
+classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
 
-%     properties (Constant = true, Transient=true)
-%         NFastProtocols = 6        
-%         FrontendIPCPublisherPortNumber = 8081
-%         LooperIPCPublisherPortNumber = 8082
-%         RefillerIPCPublisherPortNumber = 8083        
-%     end
+    properties (Constant = true, Transient=true)
+        NFastProtocols = 6
+    end
+
+    properties (Dependent = true)
+        AllDeviceNames
+        DeviceName
+        SampleClockTimebaseFrequency
+        NDIOTerminals
+        NPFITerminals
+        NCounters
+        NAITerminals
+        AITerminalIDsOnDevice
+        NAOTerminals
+        NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
+        AllChannelNames
+        IsAIChannelTerminalOvercommitted
+        IsAOChannelTerminalOvercommitted
+        IsDIChannelTerminalOvercommitted
+        IsDOChannelTerminalOvercommitted
+    end
     
+    properties (Access=protected)
+        DeviceName_ = ''   % an empty string represents "no device specified"
+    end
+
+    properties (Access=protected, Transient=true)
+        AllDeviceNames_ = cell(1,0)  % transient b/c we want to probe the hardware on startup each time to get this        
+
+        SampleClockTimebaseFrequency_ = 100e6 ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
+        
+        NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
+                            % file load than it did when the protocol file was saved
+        NPFITerminals_ = 0 
+        NCounters_ = 0
+        NAITerminals_ = 0
+        AITerminalIDsOnDevice_ = zeros(1,0)
+        NAOTerminals_ = 0
+
+        IsAIChannelTerminalOvercommitted_ = false(1,0)        
+        IsAOChannelTerminalOvercommitted_ = false(1,0)        
+        
+        IsDIChannelTerminalOvercommitted_ = false(1,0)        
+        IsDOChannelTerminalOvercommitted_ = false(1,0)        
+    end   
+
     properties (Dependent = true)
         HasUserSpecifiedProtocolFileName
         AbsoluteProtocolFileName
@@ -41,10 +80,6 @@ classdef WavesurferModel < ws.RootModel
         %WarningLog
         LayoutForAllWindows
     end
-    
-    %
-    % Non-dependent props (i.e. those with storage) start here
-    %
     
     properties (Access=protected)
         % Saved to protocol file
@@ -117,31 +152,13 @@ classdef WavesurferModel < ws.RootModel
         LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
     end
     
-%     events
-%         % As of 2014-10-16, none of these events are subscribed to
-%         % anywhere in the WS code.  But we'll leave them in as hooks for
-%         % user customization.
-%         startingSweep
-%         didCompleteSweep
-%         didAbortSweep
-%         startingRun
-%         didCompleteRun
-%         didAbortRun        %NScopesMayHaveChanged
-%         dataAvailable
-%     end
-    
     events
-        % These events _are_ used by WS itself.
         UpdateChannels
         UpdateFastProtocols
         UpdateForNewData
         UpdateIsYokedToScanImage
-        %DidSetAbsoluteProtocolFileName
-        %DidSetAbsoluteUserSettingsFileName        
-        %DidLoadProtocolFile
         WillSetState
         DidSetState
-        %DidSetAreSweepsFiniteDurationOrContinuous
         DidCompleteSweep
         UpdateDigitalOutputStateIfUntimed
         DidChangeNumberOfInputChannels
@@ -149,7 +166,7 @@ classdef WavesurferModel < ws.RootModel
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
-            self@ws.RootModel();  % we have no parent
+            self@ws.Model([]);  % we have no parent
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
@@ -1157,8 +1174,6 @@ classdef WavesurferModel < ws.RootModel
                                             currentFrontendPwd, ...
                                             refillerProtocol, ...
                                             acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                            self.IsAIChannelTerminalOvercommitted, ...
-                                            self.IsDIChannelTerminalOvercommitted, ...
                                             self.IsAOChannelTerminalOvercommitted, ...
                                             self.IsDOChannelTerminalOvercommitted ) ;
             
@@ -3206,8 +3221,242 @@ classdef WavesurferModel < ws.RootModel
             
             protocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             protocol.TheUserObject = self.UserCodeManager.TheObject ;
-        end  % method
-        
-    end  % methods
+        end  % method        
+    end  % protected methods block
     
+methods
+        function value = get.AllDeviceNames(self)
+            value = self.AllDeviceNames_ ;
+        end  % function
+
+        function value = get.DeviceName(self)
+            value = self.DeviceName_ ;
+        end  % function
+
+        function value = get.SampleClockTimebaseFrequency(self)
+            value = self.SampleClockTimebaseFrequency_ ;
+        end  % function
+
+        function set.DeviceName(self, newValue)
+            self.setDeviceName_(newValue) ;
+        end  % function
+    end  % public methods block
+    
+    methods
+        function probeHardwareAndSetAllDeviceNames(self)
+            self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
+        end
+        
+        function result = get.NAITerminals(self)
+            % The number of AI channels available, if you used them all in
+            % differential mode, which is what we do.
+            result = self.NAITerminals_ ;
+        end
+        
+        function result = get.AITerminalIDsOnDevice(self)
+            % A list of the available AI terminal IDs on the current
+            % device, if you used all AIs in differential mode, which is
+            % what we do.
+            result = self.AITerminalIDsOnDevice_ ;
+        end
+        
+        function result = get.NAOTerminals(self)
+            % The number of AO channels available.
+            result = self.NAOTerminals_ ;
+        end
+
+        function numberOfDIOChannels = get.NDIOTerminals(self)
+            % The number of DIO channels available.  We only count the DIO
+            % channels capable of timed operation, i.e. the P0.x channels.
+            % This is a conscious design choice.  We treat the PFIn/Pm.x
+            % channels as being only PFIn channels.
+            numberOfDIOChannels = self.NDIOTerminals_ ;
+        end  % function
+        
+        function numberOfPFILines = get.NPFITerminals(self)
+            numberOfPFILines = self.NPFITerminals_ ;
+        end  % function
+        
+        function result = get.NCounters(self)
+            % The number of counters (CTRs) on the board.
+            result = self.NCounters_ ;
+        end  % function        
+        
+        function result = getAllAITerminalNames(self)             
+            nAIsInHardware = self.NAITerminals ;  % this is the number of terminals if all are differential, which they are
+            %allAITerminalIDs  = 0:(nAIsInHardware-1) ;  % wrong!
+            allAITerminalIDs = ws.differentialAITerminalIDsGivenCount(nAIsInHardware) ;
+            result = arrayfun(@(id)(sprintf('AI%d',id)), allAITerminalIDs, 'UniformOutput', false ) ;
+        end        
+        
+        function result = getAllAOTerminalNames(self)             
+            nAOsInHardware = self.NAOTerminals ;
+            result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAOsInHardware-1), 'UniformOutput', false ) ;
+        end        
+        
+        function result = getAllDigitalTerminalNames(self)             
+            nChannelsInHardware = self.NDIOTerminals ;
+            result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
+        end        
+                
+        function result = get.NDigitalChannels(self)
+            nDIs = self.Acquisition.NDigitalChannels ;
+            nDOs = self.Stimulation.NDigitalChannels ;
+            result =  nDIs + nDOs ;
+        end
+        
+        function result = get.AllChannelNames(self)
+            aiNames = self.Acquisition.AnalogChannelNames ;
+            diNames = self.Acquisition.DigitalChannelNames ;
+            aoNames = self.Stimulation.AnalogChannelNames ;
+            doNames = self.Stimulation.DigitalChannelNames ;
+            result = [aiNames diNames aoNames doNames] ;
+        end
+
+        function result = get.IsAIChannelTerminalOvercommitted(self)
+            result = self.IsAIChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsAOChannelTerminalOvercommitted(self)
+            result = self.IsAOChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsDIChannelTerminalOvercommitted(self)
+            result = self.IsDIChannelTerminalOvercommitted_ ;
+        end
+        
+        function result = get.IsDOChannelTerminalOvercommitted(self)
+            result = self.IsDOChannelTerminalOvercommitted_ ;
+        end        
+    end  % public methods block
+        
+    methods
+        function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
+        end
+    end  % public methods block
+    
+    methods (Access=protected)
+        function syncDeviceResourceCountsFromDeviceName_(self)
+            % Probe the device to find out its capabilities
+            deviceName = self.DeviceName ;
+            [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+            nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
+            nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
+            nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;
+            self.NDIOTerminals_ = nDIOTerminals ;
+            self.NPFITerminals_ = nPFITerminals ;
+            self.NCounters_ = nCounters ;
+            self.NAITerminals_ = nAITerminals ;
+            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+            self.NAOTerminals_ = nAOTerminals ;
+        end
+
+        function syncIsDigitalChannelTerminalOvercommitted_(self)
+            [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
+            nDIOTerminals = self.NDIOTerminals ;
+            terminalIDForEachDIChannel = self.Acquisition.DigitalTerminalIDs ;
+            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
+            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
+        end  % function
+
+        function syncIsAIChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.  (Because there's one in use, and zero
+            % available.)
+            
+            % For AI terminals
+            aiTerminalIDForEachChannel = self.Acquisition.AnalogTerminalIDs ;
+            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDForEachChannel) ;
+            aiTerminalIDsOnDevice = self.AITerminalIDsOnDevice ;
+            %nAITerminalsOnDevice = self.NAITerminals ;            
+            %self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDForEachChannel>=nAITerminalsOnDevice) ;            
+            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | ~ismember(aiTerminalIDForEachChannel,aiTerminalIDsOnDevice) ;
+        end
+        
+        function syncIsAOChannelTerminalOvercommitted_(self)            
+            % For each channel, determines if the terminal ID for that
+            % channel is "overcommited".  I.e. if two channels specify the
+            % same terminal ID, that terminal ID is overcommitted.  Also,
+            % if that specified terminal ID is not a legal terminal ID for
+            % the current device, then we say that that terminal ID is
+            % overcommitted.
+            
+            % For AO terminals
+            aoTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            nOccurancesOfAOTerminal = ws.nOccurancesOfID(aoTerminalIDs) ;
+            nAOTerminals = self.NAOTerminals ;
+            self.IsAOChannelTerminalOvercommitted_ = (nOccurancesOfAOTerminal>1) | (aoTerminalIDs>=nAOTerminals) ;            
+        end
+        
+    end  % protected methods block
+    
+    methods
+        function [nOccurancesOfAcquisitionTerminal, nOccurancesOfStimulationTerminal] = computeDIOTerminalCommitments(self) 
+            % Determine how many channels are "claiming" the terminal ID of
+            % each digital channel.  On return,
+            % nOccurancesOfAcquisitionTerminal is 1 x (the number of DI
+            % channels) and is the number of channels that currently have
+            % their terminal ID to the same terminal ID as that channel.
+            % nOccurancesOfStimulationTerminal is similar, but for DO
+            % channels.
+            acquisitionTerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            stimulationTerminalIDs = self.Stimulation.DigitalTerminalIDs ;            
+            terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;
+            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
+            % nChannels = length(terminalIDs) ;
+            % terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
+            % terminalIDsInEachCol = terminalIDsInEachRow' ;
+            % isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
+            % nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
+            % Sort them into the acq, stim ones
+            nAcquisitionChannels = length(acquisitionTerminalIDs) ;
+            nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;
+            nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
+        end        
+        
+        function [sampleFrequency,timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+            % Coerce to be finite and not nan
+            if isfinite(desiredSampleFrequency) ,
+                protoResult1 = desiredSampleFrequency;
+            else
+                protoResult1 = 20000;  % the default
+            end
+            
+            % We know it's finite and not nan here
+            
+            % Limit to the allowed range of sampling frequencies
+            protoResult2 = max(protoResult1,10) ;  % 10 Hz minimum
+            timebaseFrequency = self.SampleClockTimebaseFrequency;  % Hz
+            maximumFrequency = timebaseFrequency/100 ;  % maximum, 1 MHz for X-series 
+            protoResult3 = min(protoResult2, maximumFrequency) ;
+            
+            % Limit to an integer multiple of the timebase interval
+            timebaseTicksPerSample = floor(timebaseFrequency/protoResult3) ;  % err on the side of sampling faster
+            sampleFrequency = timebaseFrequency/timebaseTicksPerSample ;
+        end
+    end  % public methods block
+
+    methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)            
+            % This method should set any transient state variables to
+            % ensure that the object invariants are met, given the values
+            % of the persisted state variables.  The default implementation
+            % does nothing, but subclasses can override it to make sure the
+            % object invariants are satisfied after an object is decoded
+            % from persistant storage.  This is called by
+            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % a new object is instantiated, and after its persistent state
+            % variables have been set to the encoded values.
+            
+            self.syncDeviceResourceCountsFromDeviceName_() ;
+            self.syncIsAIChannelTerminalOvercommitted_() ;
+            self.syncIsAOChannelTerminalOvercommitted_() ;
+            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+        end  % method
+    end  % protected methods block        
 end  % classdef

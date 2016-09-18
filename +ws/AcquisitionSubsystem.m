@@ -53,11 +53,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
     
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
-        %Duration_ = 1  % s
-        %AnalogDeviceNames_ = cell(1,0) ;
-        %DigitalDeviceNames_ = cell(1,0) ;
-        %AnalogTerminalNames_ = cell(1,0)  % the physical channel name for each analog channel
-        %DigitalTerminalNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
@@ -74,14 +69,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
         %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
-%     properties (Access=protected, Constant=true)
-%         CoreFieldNames_ = { 'SampleRate_' , 'DeviceNames_', 'AnalogTerminalNames_', ...
-%                             'DigitalTerminalNames_' 'AnalogChannelNames_' 'DigitalChannelNames_' 'AnalogTerminalIDs_' ...
-%                             'AnalogChannelScales_' 'AnalogChannelUnits_' 'IsAnalogChannelActive_' 'IsDigitalChannelActive_' } ;
-%             % The "core" settings are the ones that get transferred to
-%             % other processes for running a sweep.
-%     end
-    
     properties (Access = protected, Transient=true)
         %LatestAnalogData_ = [] ;
         LatestRawAnalogData_ = [] ;
@@ -97,9 +84,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
     end    
     
     events 
-        %DidChangeNumberOfChannels
-        %DidSetAnalogChannelUnitsOrScales
-        %DidSetIsChannelActive
         DidSetSampleRate
     end
     
@@ -109,69 +93,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-%         function initializeFromMDFStructure(self, mdfStructure)
-%             terminalNames = mdfStructure.physicalInputChannelNames ;
-%             
-%             if ~isempty(terminalNames) ,
-%                 channelNames = mdfStructure.inputChannelNames;
-% 
-%                 % Deal with the device names, setting the WSM DeviceName if
-%                 % it's not set yet.
-%                 deviceNames = ws.deviceNamesFromTerminalNames(terminalNames);
-%                 uniqueDeviceNames=unique(deviceNames);
-%                 if length(uniqueDeviceNames)>1 ,
-%                     error('ws:MoreThanOneDeviceName', ...
-%                           'WaveSurfer only supports a single NI card at present.');                      
-%                 end
-%                 deviceName = uniqueDeviceNames{1} ;                
-%                 if isempty(self.Parent.DeviceName) ,
-%                     self.Parent.DeviceName = deviceName ;
-%                 end
-% 
-%                 % Get the channel IDs
-%                 terminalIDs = ws.terminalIDsFromTerminalNames(terminalNames);
-%                 
-%                 % Figure out which are analog and which are digital
-%                 channelTypes = ws.channelTypesFromTerminalNames(terminalNames);
-%                 isAnalog = strcmp(channelTypes,'ai');
-%                 isDigital = ~isAnalog;
-% 
-%                 % Sort the channel names, etc
-%                 %analogDeviceNames = deviceNames(isAnalog) ;
-%                 %digitalDeviceNames = deviceNames(isDigital) ;
-%                 analogTerminalIDs = terminalIDs(isAnalog) ;
-%                 digitalTerminalIDs = terminalIDs(isDigital) ;            
-%                 analogChannelNames = channelNames(isAnalog) ;
-%                 digitalChannelNames = channelNames(isDigital) ;
-% 
-%                 % add the analog channels
-%                 nAnalogChannels = length(analogChannelNames);
-%                 for i = 1:nAnalogChannels ,
-%                     self.addAnalogChannel() ;
-%                     indexOfChannelInSelf = self.NAnalogChannels ;
-%                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames(i)) ;                    
-%                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-%                 end
-%                 
-%                 % add the digital channels
-%                 nDigitalChannels = length(digitalChannelNames);
-%                 for i = 1:nDigitalChannels ,
-%                     self.addDigitalChannel() ;
-%                     indexOfChannelInSelf = self.NDigitalChannels ;
-%                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames(i)) ;
-%                     self.setSingleDigitalTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-%                 end                
-%             end
-%         end  % function
-        
-%         function result = get.AnalogTerminalNames(self)
-%             result = self.AnalogTerminalNames_ ;
-%         end
-%     
-%         function result = get.DigitalTerminalNames(self)
-%             result = self.DigitalTerminalNames_ ;
-%         end
-
         function result = get.AnalogTerminalNames(self)
             terminalIDs = self.AnalogTerminalIDs_ ;
             function name = terminalNameFromID(id)
@@ -265,14 +186,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             % active.
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
-        
-%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
-%             result =  self.Parent.IsAIChannelTerminalOvercommitted ;
-%         end
-        
-%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
-%             result =  self.Parent.IsDIChannelTerminalOvercommitted ;
-%         end
         
         function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
             % Boolean array indicating which of the analog channels is
@@ -545,10 +458,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             out = repmat({deviceName}, size(self.DigitalChannelNames)) ;             
         end  % function
         
-%         function out = get.DeviceNames(self)
-%             out = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
-%         end  % function
-        
         function set.SampleRate(self, newValue)
             if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
                 % Constrain value appropriately
@@ -590,19 +499,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end                
         end  % function
         
-%         function completingRun(self)
-%             %fprintf('Acquisition::completingRun()\n');
-%             self.completingOrStoppingOrAbortingRun_();
-%         end  % function
-%         
-%         function stoppingRun(self)
-%             self.completingOrStoppingOrAbortingRun_();
-%         end  % function
-%         
-%         function abortingRun(self)
-%             self.completingOrStoppingOrAbortingRun_();
-%         end  % function
-
         function startingSweep(self)
             %fprintf('Acquisition::startingSweep()\n');
             %self.IsArmedOrAcquiring_ = true;
@@ -648,18 +544,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end
         end  % function
         
-%         function iChannel=iChannelFromID(self,terminalID)
-%             % Get the index of the the channel in the available channels
-%             % array, given the channel ID.
-%             % Note that this does _not_ itself return a channel ID.
-%             iChannels=find(terminalID==self.Channels);
-%             if isempty(iChannels) ,
-%                 iChannel=nan;
-%             else
-%                 iChannel=iChannels(1);
-%             end                
-%         end
-        
         function terminalID=analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is AI4,
@@ -697,57 +581,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
         function debug(self) %#ok<MANU>
             keyboard
         end
-        
-%         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD,INUSL>
-%             % Called "from above" when data is available.  When called, we update
-%             % our main-memory data cache with the newly available data.
-%             self.LatestAnalogData_ = scaledAnalogData ;
-%             self.LatestRawAnalogData_ = rawAnalogData ;
-%             self.LatestRawDigitalData_ = rawDigitalData ;
-%             if isSweepBased ,
-%                 % add data to cache
-%                 j0=self.IndexOfLastScanInCache_ + 1;
-%                 n=size(rawAnalogData,1);
-%                 jf=j0+n-1;
-%                 self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-%                 self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-%                 self.IndexOfLastScanInCache_ = jf ;
-%                 self.NScansFromLatestCallback_ = n ;                
-%                 if jf == size(self.RawAnalogDataCache_,1) ,
-%                      self.IsAllDataInCacheValid_ = true;
-%                 end
-%             else                
-%                 % Add data to cache, wrapping around if needed
-%                 j0=self.IndexOfLastScanInCache_ + 1;
-%                 n=size(rawAnalogData,1);
-%                 jf=j0+n-1;
-%                 nScansInCache = size(self.RawAnalogDataCache_,1);
-%                 if jf<=nScansInCache ,
-%                     % the usual case
-%                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-%                     self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-%                     self.IndexOfLastScanInCache_ = jf ;
-%                 elseif jf==nScansInCache ,
-%                     % the cache is just large enough to accommodate rawData
-%                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
-%                     self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
-%                     self.IndexOfLastScanInCache_ = 0 ;
-%                     self.IsAllDataInCacheValid_ = true ;
-%                 else
-%                     % Need to write part of rawData to end of data cache,
-%                     % part to start of data cache                    
-%                     nScansAtStartOfCache = jf - nScansInCache ;
-%                     nScansAtEndOfCache = n - nScansAtStartOfCache ;
-%                     self.RawAnalogDataCache_(j0:end,:) = rawAnalogData(1:nScansAtEndOfCache,:) ;
-%                     self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
-%                     self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
-%                     self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
-%                     self.IsAllDataInCacheValid_ = true ;
-%                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
-%                 end
-%                 self.NScansFromLatestCallback_ = n ;
-%             end
-%         end  % function
         
         function scaledAnalogData = getLatestAnalogData(self)
             % Get the data from the most-recent data available callback, as
@@ -910,91 +743,20 @@ classdef AcquisitionSubsystem < ws.Subsystem
     end  % methods block
     
     methods (Access = protected)
-%         function completingOrStoppingOrAbortingRun_(self) %#ok<MANU>
-% %             if ~isempty(self.AnalogInputTask_) ,
-% %                 if isvalid(self.AnalogInputTask_) ,
-% %                     self.AnalogInputTask_.disarm();
-% %                 else
-% %                     self.AnalogInputTask_ = [] ;
-% %                 end
-% %             end
-% %             if ~isempty(self.DigitalInputTask_) ,
-% %                 if isvalid(self.DigitalInputTask_) ,
-% %                     self.DigitalInputTask_.disarm();
-% %                 else
-% %                     self.DigitalInputTask_ = [] ;
-% %                 end                    
-% %             end
-%             %self.IsArmedOrAcquiring_ = false;
-%         end  % function
-        
         function acquisitionSweepComplete_(self)
             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
             %self.IsArmedOrAcquiring_ = false;
             % TODO If there are multiple acquisition boards, notify only when all are complete.
-%             if ~isempty(self.DelegateDoneFcn_)
-%                 feval(self.DelegateDoneFcn_, source, event);
-%             end
             parent=self.Parent;
             if ~isempty(parent) && isvalid(parent) ,
                 parent.acquisitionSweepComplete();
             end
         end  % function
         
-%         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-%             %fprintf('Acquisition::samplesAcquired_()\n');
-%             %profile resume
-% 
-%             % read both the analog and digital data, they should be in
-%             % lock-step
-%             parent=self.Parent;
-%             if ~isempty(parent) && isvalid(parent) ,
-%                 parent.samplesAcquired(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-%             end
-%             %profile off
-%         end  % function
-
         function value = getAnalogChannelScales_(self)
             value = self.AnalogChannelScales_ ;
-        end  % function
-        
-%         function syncIsAnalogChannelTerminalOvercommitted_(self) 
-%             % For each channel, determines if the terminal ID for that
-%             % channel is "overcommited".  I.e. if two channels specify the
-%             % same terminal ID, that terminal ID is overcommitted.  Also,
-%             % if that specified terminal ID is not a legal terminal ID for
-%             % the current device, then we say that that terminal ID is
-%             % overcommitted.
-%             terminalIDs = self.AnalogTerminalIDs ;
-%             nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
-%             %nChannels = length(terminalIDs) ;
-%             %terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-%             %terminalIDsInEachCol = terminalIDsInEachRow' ;
-%             %isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-%             %nOccurancesOfTerminal = sum(isMatchMatrix,1) ;  % sum rows
-%             nTerminalsOnDevice = self.Parent.NAITerminals ;
-%             self.IsAnalogChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nTerminalsOnDevice) ;
-%         end
-         
-%         function syncIsDigitalChannelTerminalOvercommitted_(self)            
-%             [nOccurancesOfTerminal,~] = self.Parent.computeDIOTerminalCommitments() ;
-%             nDIOTerminals = self.Parent.NDIOTerminals ;
-%             terminalIDs = self.DigitalTerminalIDs ;
-%             self.IsDigitalChannelTerminalOvercommitted_ = (nOccurancesOfTerminal>1) | (terminalIDs>=nDIOTerminals) ;
-%         end
+        end  % function        
     end  % protected methods block
-    
-%     methods (Static=true)
-%         function result=findIndicesOfSubsetInSet(set,subset)
-%             isInSubset=ismember(set,subset);
-%             result=find(isInSubset);
-%         end  % function
-%     end
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
     
     methods (Access=protected)
         function out = getPropertyValue_(self, name)
@@ -1012,45 +774,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
     end
     
     methods
-%         function poll(self, timeSinceSweepStart, fromRunStartTicId)
-%             % Determine the time since the last undropped timer fire
-%             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
-% 
-% %             % Call the task to do the real work
-% %             if self.IsArmedOrAcquiring ,
-% %                 % Check for task doneness
-% %                 areTasksDone = ( self.AnalogInputTask_.isTaskDone() && self.DigitalInputTask_.isTaskDone() ) ;
-% %                 %if areTasksDone ,
-% %                 %    fprintf('Acquisition tasks are done.\n')
-% %                 %end
-% %                     
-% %                 % Get data
-% %                 %if areTasksDone ,
-% %                 %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
-% %                 %end
-% %                 [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
-% %                     self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
-% %                 %nScans = size(rawAnalogData,1) ;
-% %                 %fprintf('Read acq data. nScans: %d\n',nScans)
-% % 
-% %                 % Notify the whole system that samples were acquired
-% %                 self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
-% % 
-% %                 % If we were done before reading the data, act accordingly
-% %                 if areTasksDone ,
-% %                     %fprintf('Total number of scans read for this acquire: %d\n',self.NScansReadThisSweep_);
-% %                 
-% %                     % Stop tasks, notify rest of system
-% %                     self.AnalogInputTask_.stop();
-% %                     self.DigitalInputTask_.stop();
-% %                     self.acquisitionSweepComplete_();
-% %                 end                
-% %             end
-%             
-%             % Prepare for next time            
-%             self.TimeOfLastPollingTimerFire_ = timeSinceSweepStart ;
-%         end
-        
         function result = getNScansReadThisSweep(self)
             result  = self.NScansReadThisSweep_ ;
         end        
@@ -1079,30 +802,6 @@ classdef AcquisitionSubsystem < ws.Subsystem
             self.Parent.didAddAnalogInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
-
-%         function removeAnalogChannel(self,channelIndex)
-%             nChannels = length(self.AnalogTerminalIDs) ;
-%             if 1<=channelIndex && channelIndex<=nChannels ,
-%                 isKeeper = true(1,nChannels) ;                
-%                 isKeeper(channelIndex) = false ;
-%                 channelName = self.AnalogChannelNames_(channelIndex) ;  % save this for later
-%                 self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-%                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
-%                 %self.AnalogTerminalNames_ =  self.AnalogTerminalNames_(isKeeper) ;
-%                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-%                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-%                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-%                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
-% 
-%                 self.Parent.didRemoveAnalogInputChannel(channelName) ;
-%                 %self.broadcast('DidChangeNumberOfChannels');            
-%             end
-%         end  % function
-%         
-%         function removeLastAnalogChannel(self)
-%             nChannels = length(self.AnalogTerminalIDs) ;
-%             self.removeAnalogChannel(nChannels) ;
-%         end  % function
 
         function wasDeleted = deleteMarkedAnalogChannels_(self)
             % This should only be called by self.Parent.
@@ -1135,45 +834,8 @@ classdef AcquisitionSubsystem < ws.Subsystem
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             wasDeleted = isToBeDeleted ;
             %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
-        end  % function
-        
-%         function removeDigitalChannel(self,channelIndex)
-%             nChannels = length(self.DigitalTerminalIDs) ;
-%             if 1<=channelIndex && channelIndex<=nChannels ,            
-%                 isKeeper = true(1,nChannels) ;
-%                 isKeeper(channelIndex) = false ;
-%                 channelName = self.DigitalChannelNames_(channelIndex) ;  % save this for later
-%                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-%                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-%                 %self.DigitalTerminalNames_ =  self.DigitalTerminalNames_(isKeeper) ;
-%                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-%                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
-% 
-%                 self.Parent.didRemoveDigitalInputChannel(channelName) ;
-%                 %self.broadcast('DidChangeNumberOfChannels');            
-%             end
-%         end  % function
-%         
-%         function removeLastDigitalChannel(self)
-%             nChannels = length(self.DigitalTerminalIDs) ;
-%             self.removeDigitalChannel(nChannels) ;
-%         end  % function
+        end  % function        
     end
-    
-%     methods (Access=protected)
-%         function [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
-%                 readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone) %#ok<INUSD>
-%             % both analog and digital tasks are for-real
-%             [rawAnalogData,timeSinceRunStartAtStartOfData] = self.AnalogInputTask_.readData([], timeSinceSweepStart, fromRunStartTicId);
-%             nScans = size(rawAnalogData,1) ;
-%             %if areTasksDone ,
-%             %    fprintf('Tasks are done, and about to attampt to read %d scans from the digital input task.\n',nScans);
-%             %end
-%             rawDigitalData = ...
-%                 self.DigitalInputTask_.readData(nScans, timeSinceSweepStart, fromRunStartTicId);
-%             self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
-%         end  % function
-%     end
     
     methods (Access=protected)
         function sanitizePersistedState_(self)
