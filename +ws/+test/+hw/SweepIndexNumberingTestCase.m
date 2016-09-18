@@ -11,6 +11,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
+            delete(findall(groot,'Type','Figure')) ;
             daqSystem = ws.dabs.ni.daqmx.System();
             ws.deleteIfValidHandle(daqSystem.tasks);
         end
@@ -18,16 +19,24 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTestWithoutUI(self)
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui', ...
-                               fullfile(thisDirName,'Machine_Data_File_WS_Test_8_AIs.m')) ;
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer('--nogui') ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
             wsModel.Acquisition.Duration = 10; %s
             %wsModel.Acquisition.SampleRate=20000;  % Hz
             %wsModel.Stimulation.IsEnabled=false;
             %wsModel.Stimulation.SampleRate=20000;  % Hz
             %wsModel.Display.IsEnabled=true;
             
-            % set to external triggering
+            % Set to external triggering
+            wsModel.Triggering.addExternalTrigger() ;
             wsModel.Triggering.AcquisitionTriggerSchemeIndex = 2 ;
 
             nSweeps=1;
@@ -49,11 +58,13 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Create timer so Wavesurfer will be stopped 5 seconds after
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
-            timerToStopWavesurfer = timer('ExecutionMode', 'singleShot', ...
+            timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
                                           'TimerFcn',@(~,~)(wsModel.stop()), ...
-                                          'StartDelay',5);
+                                          'StartDelay',5, ...
+                                          'Period', 10);  % do this repeatedly in case first is missed
             start(timerToStopWavesurfer);
             wsModel.record();  % this will block
+            stop(timerToStopWavesurfer);
             
             % No external trigger was created, so no data should have been
             % collected and no file or data should have been written. Also,
@@ -79,6 +90,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Start timer so Wavesurfer is stopped after 5 seconds
             start(timerToStopWavesurfer);
             wsModel.record();
+            stop(timerToStopWavesurfer);
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = (length(filesCreated)==1) ;
             if wasAnOutputFileCreated ,

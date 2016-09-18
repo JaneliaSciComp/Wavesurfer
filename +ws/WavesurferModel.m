@@ -1142,21 +1142,20 @@ classdef WavesurferModel < ws.RootModel
             % Tell the Looper & Refiller to prepare for the run
             currentFrontendPath = path() ;
             currentFrontendPwd = pwd() ;
-            wavesurferModelSettings=self.encodeForPersistence();
+            looperProtocol = self.getLooperProtocol_() ;
+            refillerProtocol = self.getRefillerProtocol_() ;
+            %wavesurferModelSettings=self.encodeForPersistence();
             %fprintf('About to send startingRun\n');
             self.LooperIPCRequester_.send('startingRun', ...
                                           currentFrontendPath, ...
                                           currentFrontendPwd, ...
-                                          wavesurferModelSettings, ...
-                                          acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                          self.IsAIChannelTerminalOvercommitted, ...
-                                          self.IsDIChannelTerminalOvercommitted, ...
-                                          self.IsAOChannelTerminalOvercommitted, ...
+                                          looperProtocol, ...
+                                          acquisitionKeystoneTask, ...
                                           self.IsDOChannelTerminalOvercommitted) ;
             self.RefillerIPCRequester_.send('startingRun', ...
                                             currentFrontendPath, ...
                                             currentFrontendPwd, ...
-                                            wavesurferModelSettings, ...
+                                            refillerProtocol, ...
                                             acquisitionKeystoneTask, stimulationKeystoneTask, ...
                                             self.IsAIChannelTerminalOvercommitted, ...
                                             self.IsDIChannelTerminalOvercommitted, ...
@@ -2458,14 +2457,13 @@ classdef WavesurferModel < ws.RootModel
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
-            deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+            %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
                                     channelNameForEachDOChannel, ...
-                                    deviceNameForEachDOChannel, ...
                                     terminalIDForEachDOChannel, ...
                                     isTimedForEachDOChannel, ...
                                     onDemandOutputForEachDOChannel, ...
@@ -2501,14 +2499,13 @@ classdef WavesurferModel < ws.RootModel
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
-            deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
+            %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
                                     channelNameForEachDOChannel, ...
-                                    deviceNameForEachDOChannel, ...
                                     terminalIDForEachDOChannel, ...
                                     isTimedForEachDOChannel, ...
                                     onDemandOutputForEachDOChannel, ...
@@ -2760,10 +2757,14 @@ classdef WavesurferModel < ws.RootModel
             % on-demand
             %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
-                %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',self.Stimulation.IsDigitalChannelTimed) ;
-                wavesurferModelSettings = self.encodeForPersistence() ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
-                self.IPCPublisher_.send('frontendJustLoadedProtocol', wavesurferModelSettings, isTerminalOvercommittedForEachDOChannel) ;
+                self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                                        self.DeviceName, ...
+                                        self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
+                                        isTerminalOvercommittedForEachDOChannel) ;                
+                %wavesurferModelSettings = self.encodeForPersistence() ;
+                looperProtocol = self.getLooperProtocol_() ;
+                self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
             end
         end  % function
     end  % protected methods block
@@ -3152,5 +3153,61 @@ classdef WavesurferModel < ws.RootModel
             result = self.LayoutForAllWindows_ ;
         end
     end  % public methods block
+    
+    methods (Access=protected)
+        function looperProtocol = getLooperProtocol_(self)
+            looperProtocol = struct() ;
+            looperProtocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
+            looperProtocol.SweepDuration = self.SweepDuration ;
+            looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
+
+            looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
+            looperProtocol.AIChannelScales = self.Acquisition.AnalogChannelScales ;
+            looperProtocol.IsAIChannelActive = self.Acquisition.IsAnalogChannelActive ;
+            looperProtocol.AITerminalIDs = self.Acquisition.AnalogTerminalIDs ;
+            
+            looperProtocol.DIChannelNames = self.Acquisition.DigitalChannelNames ;
+            looperProtocol.IsDIChannelActive = self.Acquisition.IsDigitalChannelActive ;
+            looperProtocol.DITerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            
+            looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            looperProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            looperProtocol.DigitalOutputStateIfUntimed = self.Stimulation.DigitalOutputStateIfUntimed ;
+            
+            looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
+            
+            looperProtocol.AcquisitionTriggerPFIID = self.Triggering.AcquisitionTriggerScheme.PFIID ;
+            looperProtocol.AcquisitionTriggerEdge = self.Triggering.AcquisitionTriggerScheme.Edge ;
+            
+            looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
+        end  % method
+        
+        function protocol = getRefillerProtocol_(self)
+            protocol = struct() ;
+            protocol.DeviceName = self.DeviceName ;
+            protocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
+            protocol.SweepDuration = self.SweepDuration ;
+            protocol.StimulationSampleRate = self.Stimulation.SampleRate ;
+
+            protocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
+            protocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
+            protocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            
+            protocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            protocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            protocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            
+            protocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
+            protocol.StimulationTrigger = self.Triggering.StimulationTriggerScheme ;            
+            protocol.StimulusLibrary = self.Stimulation.StimulusLibrary ;                        
+            protocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
+            
+            protocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            protocol.TheUserObject = self.UserCodeManager.TheObject ;
+        end  % method
+        
+    end  % methods
     
 end  % classdef
