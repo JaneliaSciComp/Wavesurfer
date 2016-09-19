@@ -20,10 +20,14 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
     methods (Test)
         function testWithOneTimedInput(self)
             isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_1_DI.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer(isCommandLineOnly);
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addAOChannel() ;
+                           
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz

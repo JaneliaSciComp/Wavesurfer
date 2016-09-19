@@ -1,7 +1,6 @@
 classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be in
-    % the current directory, and be named Machine_Data_File_WS_Test_with_DO.m.
+    % To run these tests, need to have an NI daq attachedF.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -20,10 +19,16 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
     methods (Test)
         function testWithOneTimedOneUntimed(self)
             isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_4_AIs_0_DIs_2_AOs_2_DOs.m'), ...
-                               isCommandLineOnly);
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer(isCommandLineOnly);
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            wsModel.addDOChannel() ;
+                           
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz

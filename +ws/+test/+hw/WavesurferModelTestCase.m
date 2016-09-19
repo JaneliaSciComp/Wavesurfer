@@ -1,7 +1,6 @@
 classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on
-    % the path, and be named Machine_Data_File_WS_Test.m.
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -20,9 +19,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     methods (Test)
         function testTooLargeStimulus(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             model=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAOChannel() ;
             
             % Enable stimulation subsystem
             model.Stimulation.IsEnabled=true;
@@ -57,9 +61,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testSavingAndLoadingStimulusLibraryWithinWavesurferModel(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAOChannel() ;
             
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
@@ -101,9 +110,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testEncodingOfStimulusSource(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAOChannel() ;
             
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
@@ -134,9 +148,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testRestorationOfStimulusSource(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             wsModel=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
             
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
@@ -199,9 +218,15 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testWhetherDurationIsNotFreeAfterProtocolLoad(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAOChannel() ;
+            
             
             % Clear the stim lib within the WavesurferModel
             em.Stimulation.StimulusLibrary.clear();
@@ -240,9 +265,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testSavingAndLoadingSimpleProtocolFile(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             wsModel=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %wsModel.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
             
             % A list of settings
             settings=cell(0,2);
@@ -284,9 +314,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             %keyboard
             
             % Create a fresh WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             wsModelCheck=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            wsModelCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            %wsModelCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
+            
+            wsModelCheck.addAIChannel() ;
+            wsModelCheck.addAIChannel() ;
+            wsModelCheck.addAIChannel() ;
+            wsModelCheck.addAOChannel() ;
             
             % Load the settings, very like WavesurferController does
             s=load(fileName);
@@ -311,9 +346,14 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testSavingAndLoadingElectrodeProperties(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
+            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
+
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAIChannel() ;
+            em.addAOChannel() ;
             
             em.Ephys.ElectrodeManager.addNewElectrode();
             
@@ -385,48 +425,5 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
                 self.verifyEqual(propertyValue,propertyValueCheck);
             end            
         end  % function
-
-%         function testWavesurferModelAliasing(self) %#ok<MANU>
-%             % Create an WavesurferModel
-%             thisDirName=fileparts(mfilename('fullpath'));
-%             em=ws.WavesurferModel();
-%             em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
-%             
-%             % Save the protocol to disk, very similar to how
-%             % WavesurferController does it
-%             protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg'); 
-%             
-%             % Delete the WavesurferModel
-%             %clear em  % at this point, the WavesurferModel destructor should be called...
-%             %clear protocolSettings  % that we have to do this indicates problems elsewhere...
-%             
-%             % Create a fresh WavesurferModel (this will fail if em has not been
-%             % garbage collected b/c of aliasing)
-%             [isAliasing,pathToAlias]=ws.checkForAliasing(em,protocolSettings)
-%             
-%             keyboard
-%             clear em
-%             sl=protocolSettings.Stimulation.StimulusLibrary
-%             sl.SelectedItemClassName=''
-%             sl.SelectedSequence=[]
-%             sl.SelectedMap=[]
-%             sl.SelectedStimulus=[]
-%             sl.SelectedOutputable=[]
-%             for j=length(sl.Sequences):-1:1
-%                 sl.deleteItem(sl.Sequences{j});
-%             end
-%             for j=length(sl.Maps):-1:1
-%                 sl.deleteItem(sl.Maps{j});
-%             end
-%             for j=length(sl.Stimuli):-1:1
-%                 sl.deleteItem(sl.Stimuli{j});
-%             end            
-%             
-% %             thisDirName=fileparts(mfilename('fullpath'));
-% %             emCheck=ws.WavesurferModel();
-% %             emCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
-%         end  % function
-        
     end  % test methods    
-
- end  % classdef
+end  % classdef

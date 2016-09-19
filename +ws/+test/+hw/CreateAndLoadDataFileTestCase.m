@@ -20,11 +20,19 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
 
         function testAnalogAndDigital(self)
             isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
-                               isCommandLineOnly);
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer(isCommandLineOnly);
 
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            wsModel.addDOChannel() ;
+            
+            wsModel.Acquisition.SampleRate=20000;  % Hz            
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;

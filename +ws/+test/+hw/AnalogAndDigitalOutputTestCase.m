@@ -1,6 +1,6 @@
 classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -18,11 +18,18 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testAnalogOnly(self)
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui', ...
-                               fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
+%             thisDirName=fileparts(mfilename('fullpath'));            
+%             wsModel=wavesurfer('--nogui', ...
+%                                fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
+            wsModel=wavesurfer('--nogui') ;
 
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            
+            wsModel.Acquisition.SampleRate=20000;  % Hz            
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
@@ -62,16 +69,6 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             pause(1);
             wsModel.record();  % this now blocks...            
 
-%             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nSweeps;  % s
-%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-%             for i=1:nTimesToCheck ,
-%                 pause(dtBetweenChecks);
-%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-%                     break
-%                 end
-%             end                   
-% 
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
@@ -79,10 +76,13 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testDigitalOnly(self)
-            %isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               '--nogui');
+            wsModel=wavesurfer('--nogui');
+                           
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
                            
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
@@ -142,11 +142,14 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testAnalogAndDigital(self)
-            %isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui', ...
-                               fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
+            wsModel=wavesurfer('--nogui') ;
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+                           
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
@@ -189,24 +192,10 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             pause(1);
             wsModel.record();
 
-%             dtBetweenChecks=1;  % s
-%             maxTimeToWait=2.5*nSweeps;  % s
-%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-%             for i=1:nTimesToCheck ,
-%                 pause(dtBetweenChecks);
-%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-%                     break
-%                 end
-%             end                   
-
             % Delete the data file
             delete(dataFilePatternAbsolute);
             
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
-
-        
-        
     end  % test methods
-
  end  % classdef

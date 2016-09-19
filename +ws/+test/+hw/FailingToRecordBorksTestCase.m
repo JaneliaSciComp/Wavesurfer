@@ -20,10 +20,14 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTest(self)
             isCommandLineOnly='--nogui';
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'), ...
-                               isCommandLineOnly);
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer(isCommandLineOnly);
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+                           
             % Turn on stimulation (there's a single pulse output by
             % default)
             wsModel.Stimulation.IsEnabled=true;

@@ -1771,18 +1771,18 @@ classdef WavesurferModel < ws.Model
     end  % methods ( Access = protected )
     
     methods
-        function initializeFromMDFFileName(self,mdfFileName)
-            self.changeReadiness(-1);
-            try
-                mdfStructure = ws.readMachineDataFile(mdfFileName);
-                ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-                self.initializeFromMDFStructure_(mdfStructure);
-            catch me
-                self.changeReadiness(+1);
-                rethrow(me) ;
-            end
-            self.changeReadiness(+1);
-        end
+%         function initializeFromMDFFileName(self,mdfFileName)
+%             self.changeReadiness(-1);
+%             try
+%                 mdfStructure = ws.readMachineDataFile(mdfFileName);
+%                 ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
+%                 self.initializeFromMDFStructure_(mdfStructure);
+%             catch me
+%                 self.changeReadiness(+1);
+%                 rethrow(me) ;
+%             end
+%             self.changeReadiness(+1);
+%         end
         
         function addStarterChannelsAndStimulusLibrary(self)
             % Adds an AI channel, an AO channel, creates a stimulus and a
@@ -1797,31 +1797,31 @@ classdef WavesurferModel < ws.Model
         end
     end  % methods block
     
-    methods (Access=protected)
-        function initializeFromMDFStructure_(self, mdfStructure)
-            % Initialize the acquisition subsystem given the MDF data
-            self.Acquisition.initializeFromMDFStructure(mdfStructure) ;
-            
-            % Initialize the stimulation subsystem given the MDF
-            self.Stimulation.initializeFromMDFStructure(mdfStructure) ;
-
-            % Initialize the triggering subsystem given the MDF
-            self.Triggering.initializeFromMDFStructure(mdfStructure) ;
-                        
-            % Add the default scopes to the display
-            %self.Display.initializeScopes();
-            % Don't need this anymore --- Display keeps itself in sync as
-            % channels are added.
-            
-            % Change our state to reflect the presence of the MDF file            
-            %self.setState_('idle');
-            
-%             % Notify the satellites
-%             if self.IsITheOneTrueWavesurferModel_ ,
-%                 self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
-%             end
-        end  % function
-    end  % methods block
+%     methods (Access=protected)
+%         function initializeFromMDFStructure_(self, mdfStructure)
+%             % Initialize the acquisition subsystem given the MDF data
+%             self.Acquisition.initializeFromMDFStructure(mdfStructure) ;
+%             
+%             % Initialize the stimulation subsystem given the MDF
+%             self.Stimulation.initializeFromMDFStructure(mdfStructure) ;
+% 
+%             % Initialize the triggering subsystem given the MDF
+%             self.Triggering.initializeFromMDFStructure(mdfStructure) ;
+%                         
+%             % Add the default scopes to the display
+%             %self.Display.initializeScopes();
+%             % Don't need this anymore --- Display keeps itself in sync as
+%             % channels are added.
+%             
+%             % Change our state to reflect the presence of the MDF file            
+%             %self.setState_('idle');
+%             
+% %             % Notify the satellites
+% %             if self.IsITheOneTrueWavesurferModel_ ,
+% %                 self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
+% %             end
+%         end  % function
+%     end  % methods block
         
     methods (Access = protected)        
 %         % Allows ws.DependentProperties to initiate registered dependencies on
