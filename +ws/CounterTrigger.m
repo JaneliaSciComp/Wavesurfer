@@ -1,14 +1,9 @@
-classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Heterogeneous  (was second in list)
+classdef CounterTrigger < ws.Model
     % This class represents a trigger source, i.e. an internally-generated
     % trigger output.  A trigger source has a device (e.g. 'Dev1'), a
     % counter (the index of the NI DAQmx counter), an inter-trigger
     % interval, a PFIID (the NI zero-based index of the PFI line used for
     % output), and an Edge (the edge polarity used).
-    
-    properties (Constant=true)
-        %IsInternal = true
-        %IsExternal = false
-    end
     
     properties (Dependent=true)
         Name
@@ -24,39 +19,20 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
     properties (Access=protected)
         Name_
         RepeatCount_  % our internal RepeatCount value, which can be overridden
-        %IsRepeatCountOverridden_ = false  % boolean, true iff RepeatCount is overridden
-        %RepeatCountOverride_  % the value of RepeatCount if IsRepeatCountOverridden_
         Interval_  % our internal Interval value, which can be overridden
-        %IsIntervalOverridden_ = false  % boolean, true iff Interval is overridden
-        %IntervalOverride_  % the value of Interval if IsIntervalOverridden_
-        %DeviceName_
         CounterID_
-        %PFIID_
         Edge_
         IsMarkedForDeletion_
     end
 
-%     properties (Access = protected, Transient=true)
-%         CounterTask_  % of type ws.CounterTriggerTask, or empty        
-%           % if setup() method is never called, this will always be empty
-%     end
-    
-%     events
-%         Update
-%     end
-    
     methods
         function self = CounterTrigger(parent)
             self = self@ws.Model(parent) ;
-            %self.DeviceName_ = 'Dev1' ;
             self.Name_ = 'CounterTrigger' ;
             self.RepeatCount_ = 1 ;
             self.CounterID_ = 0 ;
             self.Interval_ = 1 ; % s
-            %self.syncPFIIDToCounterID_() ;
-            %self.PFIID_ = 12 ;
             self.Edge_ = 'rising' ;
-            %self.CounterTask_=[];  % set in setup() method
             self.IsMarkedForDeletion_ = false ;
         end
     end
@@ -68,23 +44,55 @@ classdef CounterTrigger < ws.Model %& ws.HasPFIIDAndEdge   % & matlab.mixin.Hete
     end
     
     methods        
-        function value=get.RepeatCount(self)
-            value=self.RepeatCount_;
-        end
+        function value = get.RepeatCount(self)
+            % In some circumstances, the internal value is overridden by
+            % the NSweepsPerRun property of the root model.  Otherwise,
+            % just return self.RepeatCount_.
+            if self.IsRepeatCountOverridden ,
+                value = self.Parent.Parent.NSweepsPerRun ;
+            else
+                value = self.RepeatCount_; 
+            end                
+        end  % function
         
         function set.RepeatCount(self, newValue)
-            %fprintf('set.RepeatCount()\n');
-            %dbstack
-            if ws.isASettableValue(newValue) ,
-                if isnumeric(newValue) && isscalar(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
+            if self.IsRepeatCountOverridden() ,
+                self.Parent.update();
+                error('most:Model:invalidPropVal', ...
+                      'Can''t set RepeatCount when it is overridden by the WaveSurfer NSweepsPerRun');
+            else
+                if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && newValue>0 && (round(newValue)==newValue || isinf(newValue)) ,
                     self.RepeatCount_ = double(newValue) ;
+                    self.Parent.update();
                 else
                     self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'RepeatCount must be a (scalar) positive integer, or inf');
                 end                
             end
-            self.Parent.update();
+        end
+        
+        function result = IsRepeatCountOverridden(self)
+            triggering = self.Parent ;
+            if isempty(triggering) ,
+                result = false ; 
+            else
+                acquisitionTriggeringScheme = triggering.AcquisitionTriggerScheme ;
+                if isempty(acquisitionTriggeringScheme) ,
+                    result = false ;
+                else
+                    if acquisitionTriggeringScheme==self , 
+                        wavesurferModel = triggering.Parent ;
+                        if isempty(wavesurferModel) ,
+                            result = false ;
+                        else
+                            result = true ;
+                        end                            
+                    else
+                        result = false ;
+                    end
+                end
+            end                            
         end
         
 %         function overrideRepeatCount(self,newValue)

@@ -18,9 +18,6 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testAnalogOnly(self)
-%             thisDirName=fileparts(mfilename('fullpath'));            
-%             wsModel=wavesurfer('--nogui', ...
-%                                fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m') ) ;
             wsModel=wavesurfer('--nogui') ;
 
             wsModel.addAIChannel() ;

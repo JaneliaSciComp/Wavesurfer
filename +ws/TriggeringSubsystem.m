@@ -5,12 +5,14 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
-        AcquisitionSchemes  % This is [{BuiltinTrigger} ExternalTriggers], a row cell array
+        AcquisitionSchemes  % This used to be [{BuiltinTrigger} ExternalTriggers], a row cell array, but
+                            % Now it's an alias for Schemes.  We keep it
+                            % around for backwards-compatibility.
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
         StimulationTriggerScheme
-        AcquisitionTriggerSchemeIndex  % this is an index into AcquisitionSchemes, not Schemes
+        AcquisitionTriggerSchemeIndex  % this is an index into Schemes
         StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
           % if StimulationUsesAcquisitionTriggerScheme is true, this
           % returns the index into Schemes that points to the trigger
@@ -18,28 +20,16 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
           % StimulationUsesAcquisitionTriggerScheme gets set to false.
     end
     
-    properties (Access=protected, Constant=true)
-        %SweepTriggerTerminalName_ = 'pfi8'
-        %SweepTriggerPFIID_ = 8
-        %SweepTriggerEdge_ = 'rising'
-    end
-    
     properties (Access = protected)
         BuiltinTrigger_  % a ws.BuiltinTrigger (not a cell array)
         CounterTriggers_  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers_  % this is a cell row array with all elements of type ws.ExternalTrigger
         StimulationUsesAcquisitionTriggerScheme_
-        AcquisitionTriggerSchemeIndex_  % this is an index into AcquisitionSchemes
+        %AcquisitionTriggerSchemeIndex_  % this is an index into AcquisitionSchemes
         StimulationTriggerSchemeIndex_
+        NewAcquisitionTriggerSchemeIndex_  % this is an index into Schemes, unlike the old AcquisitionTriggerSchemeIndex_
     end
 
-%     properties (Access=protected, Constant=true)
-%         CoreFieldNames_ = { 'CounterTriggers_' , 'ExternalTriggers_', 'StimulationUsesAcquisitionTriggerScheme_', 'AcquisitionTriggerSchemeIndex_', ...
-%                             'StimulationTriggerSchemeIndex_' } ;
-%             % The "core" settings are the ones that get transferred to
-%             % other processes for running a sweep.
-%     end
-    
     methods
         function self = TriggeringSubsystem(parent)
             self@ws.Subsystem(parent) ;            
@@ -48,7 +38,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
-            self.AcquisitionTriggerSchemeIndex_ = 1 ;
+            self.NewAcquisitionTriggerSchemeIndex_ = 1 ;
             self.StimulationTriggerSchemeIndex_ = 1 ;
         end  % function
         
@@ -65,7 +55,8 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
         
         function out = get.AcquisitionSchemes(self)
-            out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
+            %out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
+            out = self.Schemes ;
         end  % function
         
         function out = get.Schemes(self)
@@ -73,23 +64,23 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
         
         function out = get.AcquisitionTriggerScheme(self)
-            index = self.AcquisitionTriggerSchemeIndex_ ;
+            index = self.NewAcquisitionTriggerSchemeIndex_ ;
             if isempty(index) ,
                 out = [] ;
             else
-                out = self.AcquisitionSchemes{index} ;
+                out = self.Schemes{index} ;
             end
         end  % function
         
         function result = get.AcquisitionTriggerSchemeIndex(self)            
-            result = self.AcquisitionTriggerSchemeIndex_ ;
+            result = self.NewAcquisitionTriggerSchemeIndex_ ;
         end  % function
 
         function set.AcquisitionTriggerSchemeIndex(self, newValue)
             if ws.isASettableValue(newValue) ,
-                nSchemes = 1 + length(self.ExternalTriggers_) ;
+                nSchemes = length(self.Schemes) ;
                 if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.AcquisitionTriggerSchemeIndex_ = double(newValue) ;
+                    self.NewAcquisitionTriggerSchemeIndex_ = double(newValue) ;
                 else
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -395,6 +386,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
 
         function didSetNSweepsPerRun(self) %#ok<MANU>
             %self.syncCounterTriggersFromTriggeringState_();            
+            self.broadcast('Update') ;
         end  % function        
         
         function willSetSweepDurationIfFinite(self) %#ok<MANU>
@@ -468,23 +460,31 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                     end
                 end
             end
-            
-            % To ensure backwards-compatibility when loading an old .cfg
-            % file, check that AcquisitionTriggerSchemeIndex_ is in-range
-            nAcquisitionSchemes = length(self.AcquisitionSchemes) ;
-            if 1<=self.AcquisitionTriggerSchemeIndex_ && self.AcquisitionTriggerSchemeIndex_<=nAcquisitionSchemes ,
-                % all is well
-            else
-                % Current value is illegal, so fix it.
-                self.AcquisitionTriggerSchemeIndex_ = 1 ;  % Just set it to the built-in trigger, which always exists
+
+            % Hack to deal with old files
+            if isprop(other, 'AcquisitionTriggerSchemeIndex_') && ~isprop(other, 'NewAcquisitionTriggerSchemeIndex_') ,
+                % To do this right, we'd have to look at the precise
+                % version of the protocol file to see if the file is old
+                % old or merely old.  Instead, we punt and just use the
+                % built-in trigger.
+                self.NewAcquisitionTriggerSchemeIndex_ = 1 ;
             end
+            
+%             % To ensure backwards-compatibility when loading an old .cfg
+%             % file, check that AcquisitionTriggerSchemeIndex_ is in-range
+%             nAcquisitionSchemes = length(self.AcquisitionSchemes) ;
+%             if 1<=self.AcquisitionTriggerSchemeIndex_ && self.AcquisitionTriggerSchemeIndex_<=nAcquisitionSchemes ,
+%                 % all is well
+%             else
+%                 % Current value is illegal, so fix it.
+%                 self.AcquisitionTriggerSchemeIndex_ = 1 ;  % Just set it to the built-in trigger, which always exists
+%             end
             
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
             
             % Broadcast update
-            self.broadcast('Update');
-            
+            self.broadcast('Update');            
         end  % function
     end  % public methods block
     
@@ -529,12 +529,5 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                       'triggerType must be a valid trigger type') ;                    
             end
         end  % method
-    end  % public methods block
-    
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();
-%         mdlHeaderExcludeProps = {};
-%     end  % function    
-    
-end
+    end  % public methods block    
+end  % classdef

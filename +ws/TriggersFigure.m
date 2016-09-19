@@ -535,14 +535,12 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(model) ,
                 return
             end
-            %import ws.setPopupMenuItemsAndSelectionBang
-            %import ws.onIff
-            schemes = model.AcquisitionSchemes ;
+            schemes = model.Schemes ;
             rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
             rawCurrentItem=model.AcquisitionTriggerScheme.Name;
             ws.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
-                                                         rawMenuItems, ...
-                                                         rawCurrentItem);
+                                                 rawMenuItems, ...
+                                                 rawCurrentItem);
         end  % function       
     end  % methods
     

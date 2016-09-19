@@ -3,12 +3,6 @@ classdef Refiller < handle
     
     properties (Access = protected)        
         DeviceName_ = ''
-        %NDIOTerminals_ = 0
-        %NPFITerminals_ = 0
-        %NCounters_ = 0
-        %NAITerminals_ = 0
-        %AITerminalIDsOnDevice_ = cell(1,0)
-        %NAOTerminals_ = 0 ;            
 
         NSweepsPerRun_ = 1
         SweepDuration_ = []
@@ -64,10 +58,9 @@ classdef Refiller < handle
         IsInTaskForEachAOChannel_
         IsInTaskForEachDOChannel_        
         
-        StimulationCounterTask_  % a ws.CounterTriggerTask, or []
-        IsTriggeringBuiltin_
-        IsTriggeringCounterBased_
-        IsTriggeringExternal_        
+%         IsTriggeringBuiltin_
+%         IsTriggeringCounterBased_
+%         IsTriggeringExternal_        
         
         SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
@@ -145,7 +138,7 @@ classdef Refiller < handle
                                     if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
                                         self.startEpisode_() ;
                                     else
-                                        self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
+                                        self.completeTheOngoingSweep_() ;
                                     end                                        
                                 end                                
                             else
@@ -153,7 +146,7 @@ classdef Refiller < handle
                                 % an episode, check to see if the counter
                                 % task is done, if there is one.
                                 if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
-                                    self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
+                                    self.completeTheOngoingSweep_() ;
                                 end
                             end
                         end
@@ -361,7 +354,7 @@ classdef Refiller < handle
             self.IsInTaskForEachAOChannel_ = [] ;
             self.TheFiniteDigitalOutputTask_ = [] ;            
             self.IsInTaskForEachDOChannel_ = [] ;
-            self.teardownCounterTriggers_();            
+            %self.teardownCounterTriggers_();            
         end
                 
         function result = prepareForRun_(self, ...
@@ -429,7 +422,7 @@ classdef Refiller < handle
 
             % Tell all the subsystems to prepare for the run
             try
-                self.startingRunTriggering_() ;
+                %self.startingRunTriggering_() ;
                 self.startingRunStimulation_() ;                
             catch me
                 % Something went wrong
@@ -462,8 +455,8 @@ classdef Refiller < handle
             self.NScansAcquiredSoFarThisSweep_ = 0;
             %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             
-            % Call startingSweep() on all the enabled subsystems
-            self.startingSweepTriggering_() ;
+            % Start the counter task, if any
+            %self.startCounterTasks_() ;
             
             % At this point, all the hardware-timed tasks the refiller is
             % responsible for should be "started" (in the DAQmx sense)
@@ -483,20 +476,20 @@ classdef Refiller < handle
             %self.IPCPublisher_.send('refillerReadyForSweep') ;
         end  % function
 
-        function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
-            if isfinite(self.SweepDuration_) ,
-                areTriggeringTasksDone = true ;
-            else
-                areTriggeringTasksDone = self.areTasksDoneTriggering_() ;
-            end
-            if areTriggeringTasksDone ,
-                self.completeTheOngoingSweep_() ;
-            end        
-        end
+%         function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
+%             if isfinite(self.SweepDuration_) ,
+%                 areTriggeringTasksDone = true ;
+%             else
+%                 areTriggeringTasksDone = self.areTasksDoneTriggering_() ;
+%             end
+%             if areTriggeringTasksDone ,
+%                 self.completeTheOngoingSweep_() ;
+%             end        
+%         end
         
         function completeTheOngoingSweep_(self)
             % Stop the counter tasks, if any
-            self.stopCounterTasks_();                        
+            %self.stopCounterTasks_();                        
             
             % Note that we are no longer performing a sweep
             self.IsPerformingSweep_ = false ;            
@@ -511,13 +504,13 @@ classdef Refiller < handle
         
         function stopTheOngoingSweep_(self)
             % Stops the ongoing sweep.
-            self.stopCounterTasks_();
+            %self.stopCounterTasks_();
             self.IsPerformingSweep_ = false ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
         end  % function
 
         function abortTheOngoingSweep_(self)            
-            self.stopCounterTasks_();
+            %self.stopCounterTasks_();
             self.IsPerformingSweep_ = false ;          
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
         end            
@@ -527,10 +520,10 @@ classdef Refiller < handle
             % successful end of run event.
             
             % Clear the triggering stuff
-            self.teardownCounterTriggers_();            
-            self.IsTriggeringBuiltin_ = [] ;
-            self.IsTriggeringCounterBased_ = [] ;
-            self.IsTriggeringExternal_ = [] ;
+            %self.teardownCounterTriggers_();            
+%             self.IsTriggeringBuiltin_ = [] ;
+%             self.IsTriggeringCounterBased_ = [] ;
+%             self.IsTriggeringExternal_ = [] ;
 
             %
             % Clear the stimulation stuff
@@ -556,10 +549,10 @@ classdef Refiller < handle
         
         function stopTheOngoingRun_(self)
             % Clear the triggering stuff
-            self.teardownCounterTriggers_();            
-            self.IsTriggeringBuiltin_ = [] ;
-            self.IsTriggeringCounterBased_ = [] ;
-            self.IsTriggeringExternal_ = [] ;
+%             self.teardownCounterTriggers_();            
+%             self.IsTriggeringBuiltin_ = [] ;
+%             self.IsTriggeringCounterBased_ = [] ;
+%             self.IsTriggeringExternal_ = [] ;
             
             self.stoppingRunStimulation_() ;
             
@@ -569,10 +562,10 @@ classdef Refiller < handle
         
         function abortTheOngoingRun_(self)            
             % Clear the triggering stuff
-            self.teardownCounterTriggers_();            
-            self.IsTriggeringBuiltin_ = [] ;
-            self.IsTriggeringCounterBased_ = [] ;
-            self.IsTriggeringExternal_ = [] ;
+%             self.teardownCounterTriggers_();            
+%             self.IsTriggeringBuiltin_ = [] ;
+%             self.IsTriggeringCounterBased_ = [] ;
+%             self.IsTriggeringExternal_ = [] ;
 
             self.abortingRunStimulation_() ;
             
@@ -677,42 +670,91 @@ classdef Refiller < handle
             end
         end
         
-        function teardownCounterTriggers_(self)
-            if ~isempty(self.StimulationCounterTask_) ,
-                try
-                    self.StimulationCounterTask_.stop();
-                catch me  %#ok<NASGU>
-                    % if there's a problem, can't really do much about
-                    % it...
-                end
-            end
-            self.StimulationCounterTask_ = [];
-        end  % function        
+%         function setupCounterTriggers_(self)        
+%             self.teardownCounterTriggers_() ;  % just in case there's an old one hanging around
+%             stimulationTriggerScheme = self.StimulationTrigger_ ;            
+%             if self.IsStimulationEnabled_ && isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                 self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;                
+%             end            
+%         end  % function       
         
-        function result = areTasksDoneTriggering_(self)
-            % Check if the tasks are done.  This doesn't change the object
-            % state at all.
-            
-            if self.IsTriggeringBuiltin_ ,
-                result = true ;  % there's no counter task, and the builtin trigger fires only once per sweep, so we're done
-            elseif self.IsTriggeringCounterBased_ ,
-                result = self.StimulationCounterTask_.isDone() ;
-            else
-                % triggering is external, which is never done
-                result = false ;
-            end
-        end  % method        
+%         function task = createCounterTask_(self, trigger)
+%             % Create the counter task
+%             deviceName = self.DeviceName_ ;
+%             counterID = trigger.CounterID ;
+%             taskName = sprintf('WaveSurfer Counter Trigger Task for CTR%d', counterID) ;
+%             task = ...
+%                 ws.CounterTriggerTask(self, ...
+%                                       deviceName, ...
+%                                       counterID, ...
+%                                       taskName);
+%             
+%             % Set freq, repeat count                               
+%             interval=trigger.Interval;
+%             task.RepeatFrequency = 1/interval;
+%             repeatCount=trigger.RepeatCount;
+%             task.RepeatCount = repeatCount;
+%             
+%             % Set the PFIID, whether or not we should need to. It seems
+%             % that we really do need to do this, even though we now
+%             % (6/27/2016) always use the default PFI for output.  Weird.
+%             pfiID = trigger.PFIID ;
+%             task.exportSignal(sprintf('PFI%d', pfiID)) ;
+%             
+%             % TODO: Need to set the edge polarity!!!
+%             
+%             % Note that this counter *must* be the stim trigger, since
+%             % can't use a counter for acq trigger.
+%             % Set it up to trigger off the acq trigger, since don't want to
+%             % fire anything until we've started acquiring.
+%             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+%             triggerTerminalName = sprintf('%s/StartTrigger', keystoneTask) ;
+%             %task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+%             task.configureStartTrigger(triggerTerminalName, 'rising');
+%         end  % method        
         
-        function stopCounterTasks_(self)
-            if ~isempty(self.StimulationCounterTask_) ,
-                try
-                    self.StimulationCounterTask_.stop() ;
-                catch me  %#ok<NASGU>
-                    % if there's a problem, can't really do much about
-                    % it...
-                end
-            end
-        end  % method
+%         function teardownCounterTriggers_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop();
+%                 catch me  %#ok<NASGU>
+%                     % if there's a problem, can't really do much about
+%                     % it...
+%                 end
+%             end
+%             self.StimulationCounterTask_ = [];
+%         end  % function        
+%         
+%         function startCounterTasks_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 self.StimulationCounterTask_.start() ;
+%             end            
+%         end  % method        
+%         
+%         function stopCounterTasks_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop() ;
+%                 catch me  %#ok<NASGU>
+%                     % if there's a problem, can't really do much about
+%                     % it...
+%                 end
+%             end
+%         end  % method
+%         
+%         function result = areTasksDoneTriggering_(self)
+%             % Check if the tasks are done.  This doesn't change the object
+%             % state at all.
+%             
+%             if self.IsTriggeringBuiltin_ ,
+%                 result = true ;  % there's no counter task, and the builtin trigger fires only once per sweep, so we're done
+%             elseif self.IsTriggeringCounterBased_ ,
+%                 result = self.StimulationCounterTask_.isDone() ;
+%             else
+%                 % triggering is external, which is never done
+%                 result = false ;
+%             end
+%         end  % method        
         
         function stoppingRunStimulation_(self)
             self.SelectedOutputableCache_ = [];
@@ -969,24 +1011,24 @@ classdef Refiller < handle
             self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
         end  % function        
         
-        function startingRunTriggering_(self) 
-            %fprintf('RefillerTriggering::startingRun()\n');
-            self.setupCounterTriggers_();
-            stimulationTriggerScheme = self.StimulationTrigger_ ;            
-            if isa(stimulationTriggerScheme,'ws.BuiltinTrigger') ,
-                self.IsTriggeringBuiltin_ = true ;
-                self.IsTriggeringCounterBased_ = false ;
-                self.IsTriggeringExternal_ = false ;                
-            elseif isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                self.IsTriggeringBuiltin_ = false ;
-                self.IsTriggeringCounterBased_ = true ;
-                self.IsTriggeringExternal_ = false ;
-            elseif isa(stimulationTriggerScheme,'ws.ExternalTrigger') ,
-                self.IsTriggeringBuiltin_ = false ;
-                self.IsTriggeringCounterBased_ = false ;
-                self.IsTriggeringExternal_ = true ;
-            end
-        end  % function        
+%         function startingRunTriggering_(self) 
+%             %fprintf('RefillerTriggering::startingRun()\n');
+%             self.setupCounterTriggers_();
+%             stimulationTriggerScheme = self.StimulationTrigger_ ;            
+%             if isa(stimulationTriggerScheme,'ws.BuiltinTrigger') ,
+%                 self.IsTriggeringBuiltin_ = true ;
+%                 self.IsTriggeringCounterBased_ = false ;
+%                 self.IsTriggeringExternal_ = false ;                
+%             elseif isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                 self.IsTriggeringBuiltin_ = false ;
+%                 self.IsTriggeringCounterBased_ = true ;
+%                 self.IsTriggeringExternal_ = false ;
+%             elseif isa(stimulationTriggerScheme,'ws.ExternalTrigger') ,
+%                 self.IsTriggeringBuiltin_ = false ;
+%                 self.IsTriggeringCounterBased_ = false ;
+%                 self.IsTriggeringExternal_ = true ;
+%             end
+%         end  % function        
         
         function startingRunStimulation_(self)
             % Make the NI daq tasks, if don't have already
@@ -1033,10 +1075,10 @@ classdef Refiller < handle
             self.SelectedOutputableCache_=stimulusOutputable ;
         end  % function        
         
-        function startingSweepTriggering_(self)
-            %fprintf('RefillerTriggering::startingSweep()\n');
-            self.startCounterTasks_();
-        end  % function
+%         function startingSweepTriggering_(self)
+%             %fprintf('RefillerTriggering::startingSweep()\n');
+%             self.startCounterTasks_();
+%         end  % function
         
         function setRefillerProtocol_(self, protocol)
             self.DeviceName_ = protocol.DeviceName ;
@@ -1060,12 +1102,6 @@ classdef Refiller < handle
             self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
             self.TheUserObject_ = protocol.TheUserObject ;
         end  % method       
-        
-        function startCounterTasks_(self)
-            if ~isempty(self.StimulationCounterTask_) ,
-                self.StimulationCounterTask_.start() ;
-            end            
-        end  % method        
         
         function acquireHardwareResourcesStimulation_(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
@@ -1101,52 +1137,5 @@ classdef Refiller < handle
             end
         end  % method
         
-        function setupCounterTriggers_(self)        
-            self.teardownCounterTriggers_() ;  % just in case there's an old one hanging around
-            stimulationTriggerScheme = self.StimulationTrigger_ ;            
-            if self.IsStimulationEnabled_ && isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
-                self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;
-            end            
-        end  % function       
-        
-        function task = createCounterTask_(self, trigger)
-            % Create the counter task
-            counterID = trigger.CounterID ;
-            taskName = sprintf('WaveSurfer Counter Trigger Task for CTR%d', counterID) ;
-            task = ...
-                ws.CounterTriggerTask(trigger, ...
-                                      trigger.DeviceName, ...
-                                      counterID, ...
-                                      taskName);
-            
-            % Set freq, repeat count                               
-            interval=trigger.Interval;
-            task.RepeatFrequency = 1/interval;
-            repeatCount=trigger.RepeatCount;
-            task.RepeatCount = repeatCount;
-            
-            % Set the PFIID, whether or not we should need to. It seems
-            % that we really do need to do this, even though we now
-            % (6/27/2016) always use the default PFI for output.  Weird.
-            pfiID = trigger.PFIID ;
-            task.exportSignal(sprintf('PFI%d', pfiID)) ;
-%             if pfiID ~= counterID + 12 ,
-%                 fprintf('About to export counter task %d out PFI%d\n', counterID, pfiID) ;
-%                 task.exportSignal(sprintf('PFI%d', pfiID));
-%             else
-%                 fprintf('Leaving export counter task %d on the default PFI, which we think is is PFI%d\n', counterID, pfiID) ;                
-%             end
-            
-            % TODO: Need to set the edge polarity!!!
-            
-            % Note that this counter *must* be the stim trigger, since
-            % can't use a counter for acq trigger.
-            % Set it up to trigger off the acq trigger, since don't want to
-            % fire anything until we've started acquiring.
-            keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
-            triggerTerminalName = sprintf('%s/StartTrigger', keystoneTask) ;
-            %task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
-            task.configureStartTrigger(triggerTerminalName, 'rising');
-        end  % method        
     end  % protected methods block    
 end  % classdef

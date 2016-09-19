@@ -636,7 +636,7 @@ classdef WavesurferModel < ws.Model
             if ws.isASettableValue(newValue) ,
                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
                 %value=self.validatePropArg('NSweepsPerRun',value);
-                if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
+                if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
                     if self.AreSweepsFiniteDuration ,
                         self.Triggering.willSetNSweepsPerRun();
