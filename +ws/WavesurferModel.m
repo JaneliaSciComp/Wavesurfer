@@ -2651,10 +2651,6 @@ classdef WavesurferModel < ws.Model
             propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
             propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
         end
-        
-        function debug(self) %#ok<MANU>
-            keyboard
-        end
     end  % public methods block
     
     methods (Access=protected) 
