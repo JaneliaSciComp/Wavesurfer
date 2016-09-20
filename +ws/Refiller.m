@@ -33,17 +33,7 @@ classdef Refiller < handle
         IPCPublisher_
         IPCSubscriber_  % subscriber for the frontend
         IPCReplier_  % to reply to frontend rep-req requests
-        NSweepsCompletedSoFarThisRun_ = 0
-        t_
-        NScansAcquiredSoFarThisSweep_
-        FromRunStartTicId_  
-        FromSweepStartTicId_
-        TimeOfLastSamplesAcquired_
-        NTimesSamplesAcquiredCalledSinceRunStart_ = 0
-        TimeOfLastPollInSweep_
         DoesFrontendWantToStopRun_        
-        WasExceptionThrown_
-        ThrownException_
         DoKeepRunningMainLoop_
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
@@ -51,17 +41,11 @@ classdef Refiller < handle
         NEpisodesPerSweep_
         NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
-        AcquisitionKeystoneTaskCache_
         StimulationKeystoneTaskCache_
         TheFiniteAnalogOutputTask_ = []
         TheFiniteDigitalOutputTask_ = []
         IsInTaskForEachAOChannel_
         IsInTaskForEachDOChannel_        
-        
-%         IsTriggeringBuiltin_
-%         IsTriggeringCounterBased_
-%         IsTriggeringExternal_        
-        
         SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
     end
@@ -195,7 +179,7 @@ classdef Refiller < handle
                                       currentFrontendPath, ...                
                                       currentFrontendPwd, ...
                                       refillerProtocol, ...
-                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                      stimulationKeystoneTask, ...
                                       isTerminalOvercommitedForEachAOChannel, ...
                                       isTerminalOvercommitedForEachDOChannel)
             % Make the refiller settings look like the
@@ -207,7 +191,7 @@ classdef Refiller < handle
             result = self.prepareForRun_(currentFrontendPath, ...                
                                          currentFrontendPwd, ...
                                          refillerProtocol, ...
-                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                         stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAOChannel, ...
                                          isTerminalOvercommitedForEachDOChannel) ;
         end  % function
@@ -361,7 +345,7 @@ classdef Refiller < handle
                                          currentFrontendPath, ...    
                                          currentFrontendPwd, ...                                         
                                          refillerProtocol, ...
-                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
+                                         stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAOChannel, ...
                                          isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
@@ -383,7 +367,7 @@ classdef Refiller < handle
             self.setRefillerProtocol_(refillerProtocol) ;
             
             % Cache the keystone task for the run
-            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
+            %self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Set the overcommitment arrays
@@ -415,7 +399,7 @@ classdef Refiller < handle
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            self.NSweepsCompletedSoFarThisRun_ = 0 ;
+            %self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
@@ -431,8 +415,8 @@ classdef Refiller < handle
             end
             
             % Initialize timing variables
-            self.FromRunStartTicId_ = tic() ;
-            self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
+            %self.FromRunStartTicId_ = tic() ;
+            %self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Return empty
             result = [] ;
@@ -452,7 +436,7 @@ classdef Refiller < handle
             
             % Reset the sample count for the sweep
             %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
-            self.NScansAcquiredSoFarThisSweep_ = 0;
+            %self.NScansAcquiredSoFarThisSweep_ = 0;
             %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
             
             % Start the counter task, if any
@@ -496,7 +480,7 @@ classdef Refiller < handle
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
 
             % Bump the number of completed sweeps
-            self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
+            %self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
             
             % Notify the front end
             self.IPCPublisher_.send('refillerCompletedSweep') ;
