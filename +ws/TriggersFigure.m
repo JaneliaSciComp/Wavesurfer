@@ -498,34 +498,27 @@ classdef TriggersFigure < ws.MCOSFigure
             end            
             wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=isequal(wsModel.State,'idle');
-            isSweepBased = wsModel.AreSweepsFiniteDuration;
+            %isSweepBased = wsModel.AreSweepsFiniteDuration;
             
-            import ws.onIff
+            set(self.AcquisitionSchemePopupmenu,'Enable',ws.onIff(isIdle));
             
-            set(self.AcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
-            
-            %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
-            isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
-            %isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
-            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
-            set(self.StimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
-            
-            %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
+            isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme ;
+            set(self.UseAcquisitionTriggerCheckbox,'Enable',ws.onIff(isIdle)) ;
+            set(self.StimulationSchemePopupmenu,'Enable',ws.onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme)) ;
             
             areAnyFreeCounterIDs = ~isempty(triggeringModel.freeCounterIDs()) ;
             isCounterTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.CounterTriggers) ;
             isAnyCounterTriggerMarkedForDeletion = any(isCounterTriggerMarkedForDeletion) ;
-            set(self.CounterTriggersTable,'Enable',onIff(isIdle));
-            set(self.AddCounterTriggerButton,'Enable',onIff(isIdle&&areAnyFreeCounterIDs)) ;
-            set(self.DeleteCounterTriggersButton,'Enable',onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
+            set(self.CounterTriggersTable,'Enable',ws.onIff(isIdle));
+            set(self.AddCounterTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreeCounterIDs)) ;
+            set(self.DeleteCounterTriggersButton,'Enable',ws.onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
             
             areAnyFreePFIIDs = ~isempty(triggeringModel.freePFIIDs()) ;
             isExternalTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.ExternalTriggers) ;
             isAnyExternalTriggerMarkedForDeletion = any(isExternalTriggerMarkedForDeletion) ;
-            set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
-            set(self.AddExternalTriggerButton,'Enable',onIff(isIdle&&areAnyFreePFIIDs)) ;
-            set(self.DeleteExternalTriggersButton,'Enable',onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
+            set(self.ExternalTriggersTable,'Enable',ws.onIff(isIdle));
+            set(self.AddExternalTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreePFIIDs)) ;
+            set(self.DeleteExternalTriggersButton,'Enable',ws.onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
         end  % function
     end
     

@@ -362,7 +362,9 @@ classdef Controller < handle
                 indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
                 isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
                 if isWarning ,
+                    fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
                     disp(exception.getReport()) ;
+                    fprintf('(End of report for warning-level exception.)\n\n') ;
                 else
                     rethrow(exception) ;
                 end

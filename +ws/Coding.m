@@ -401,8 +401,9 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'IsEnabled_' ;
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') ,
                                 propertyName = 'AcquisitionTriggerSchemeIndex_' ;
-                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') ,
-                                propertyName = 'AcquisitionTriggerSchemeIndex_' ;
+                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') && ...
+                                    isequal(fieldName, 'AcquisitionTriggerSchemeIndex_') ,
+                                propertyName = 'NewAcquisitionTriggerSchemeIndex_' ;
                             else
                                 % The typical case
                                 propertyName = fieldName ;
@@ -424,7 +425,7 @@ classdef (Abstract) Coding < handle
                                 end
                                 % end backwards-compatibility hack
                                 if isa(result, 'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') && ...
-                                   isequal(propertyName, 'AcquisitionTriggerSchemeIndex_') ,
+                                   isequal(propertyName, 'NewAcquisitionTriggerSchemeIndex_') ,
                                     % This BC hack handles the case where the
                                     % class is ws.Triggering, and the field is
                                     % AcquisitionUsesASAPTriggering_.  In this
@@ -444,13 +445,18 @@ classdef (Abstract) Coding < handle
                                         subresult = [] ;  % not used
                                     end
                                 elseif isa(result, 'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') && ...
-                                       isequal(propertyName, 'AcquisitionTriggerSchemeIndex_') ,
+                                       isequal(propertyName, 'NewAcquisitionTriggerSchemeIndex_') ,
                                     % This BC hack ...
                                     % In the current version of WS, the acq
                                     % scheme cannot be set to a counter
                                     % trigger, so we ignore this
                                     doSetPropertyValue = false ;
                                     subresult = [] ;  % not used
+                                elseif isa(result, 'ws.Triggering') && isequal(fieldName, 'AcquisitionTriggerSchemeIndex_') && ...
+                                       isequal(propertyName, 'NewAcquisitionTriggerSchemeIndex_') ,
+                                    % This is a BC hack ...
+                                    doSetPropertyValue = true ;
+                                    subresult = 1 ;  % This will set it to the built-in trigger
                                 elseif isa(result, 'ws.ElectrodeManager') && isequal(fieldName, 'EPCMasterSocket_') && ...
                                        isequal(propertyName, 'EPCMasterSocket_') ,
                                     % BC hack 

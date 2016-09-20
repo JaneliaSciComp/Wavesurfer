@@ -334,36 +334,24 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end
         
         function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if self.Parent.AreSweepsFiniteDuration ,
-                    % overridden by AreSweepsFiniteDuration, do nothing
-                else                    
-                    if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                        self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
-                        self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
-                    else
-                        self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
-                              'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
-                    end
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
+                self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
+            else
+                self.broadcast('Update');
+                error('most:Model:invalidPropVal', ...
+                    'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('Update');            
+            self.broadcast('Update') ;            
         end  % function
         
-        function value=get.StimulationUsesAcquisitionTriggerScheme(self)
-            parent = self.Parent ;
-            if ~isempty(parent) && isvalid(parent) && parent.AreSweepsFiniteDuration ,
-                value = true ;
-            else
-                value = self.StimulationUsesAcquisitionTriggerScheme_ ;
-            end
+        function value = get.StimulationUsesAcquisitionTriggerScheme(self)
+            value = self.StimulationUsesAcquisitionTriggerScheme_ ;
         end  % function
         
         function update(self)
             self.broadcast('Update');
-        end
-            
+        end            
     end  % methods block
     
     methods (Access = protected)
@@ -384,7 +372,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             %self.releaseCurrentCounterTriggers_();
         end  % function
 
-        function didSetNSweepsPerRun(self) %#ok<MANU>
+        function didSetNSweepsPerRun(self) 
             %self.syncCounterTriggersFromTriggeringState_();            
             self.broadcast('Update') ;
         end  % function        
@@ -460,26 +448,14 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                     end
                 end
             end
+            
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
 
-            % Hack to deal with old files
-            if isprop(other, 'AcquisitionTriggerSchemeIndex_') && ~isprop(other, 'NewAcquisitionTriggerSchemeIndex_') ,
-                % To do this right, we'd have to look at the precise
-                % version of the protocol file to see if the file is old
-                % old or merely old.  Instead, we punt and just use the
-                % built-in trigger.
-                self.NewAcquisitionTriggerSchemeIndex_ = 1 ;
-            end
-            
-%             % To ensure backwards-compatibility when loading an old .cfg
-%             % file, check that AcquisitionTriggerSchemeIndex_ is in-range
-%             nAcquisitionSchemes = length(self.AcquisitionSchemes) ;
-%             if 1<=self.AcquisitionTriggerSchemeIndex_ && self.AcquisitionTriggerSchemeIndex_<=nAcquisitionSchemes ,
-%                 % all is well
-%             else
-%                 % Current value is illegal, so fix it.
-%                 self.AcquisitionTriggerSchemeIndex_ = 1 ;  % Just set it to the built-in trigger, which always exists
-%             end
-            
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
             
@@ -487,6 +463,34 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             self.broadcast('Update');            
         end  % function
     end  % public methods block
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+
+            % Make sure the trigger indices point to existing triggers
+            nTriggers = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
+            if ws.isIndex(self.StimulationTriggerSchemeIndex_) && 1<=self.StimulationTriggerSchemeIndex_ && self.StimulationTriggerSchemeIndex_<=nTriggers ,
+                % Make sure it's a double
+                self.StimulationTriggerSchemeIndex_ = double(self.StimulationTriggerSchemeIndex_) ;  
+            else
+                % Something is not right with
+                % self.StimulationTriggerSchemeIndex_, so fix that.
+                self.StimulationTriggerSchemeIndex_  = 1 ;  % This means the built-in trigger
+            end
+            if ws.isIndex(self.NewAcquisitionTriggerSchemeIndex_) && 1<=self.NewAcquisitionTriggerSchemeIndex_ && ...
+                    self.NewAcquisitionTriggerSchemeIndex_<=nTriggers ,
+                % Make sure it's a double
+                self.NewAcquisitionTriggerSchemeIndex_ = double(self.NewAcquisitionTriggerSchemeIndex_) ;  
+            else
+                % Something is not right with
+                % self.NewAcquisitionTriggerSchemeIndex_, so fix that.
+                self.NewAcquisitionTriggerSchemeIndex_  = 1 ;  % This means the built-in trigger
+            end
+        end  % function
+    end  % protected methods block
     
     methods
         function setTriggerProperty(self, triggerType, triggerIndex, propertyName, newValue)
