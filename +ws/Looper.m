@@ -107,6 +107,10 @@ classdef Looper < handle
             self.IPCReplier_ = [] ;
         end
         
+        function debug(self) %#ok<MANU>
+            keyboard
+        end  % function        
+        
         function runMainLoop(self)
             % Put something in the console, so user know's what this funny
             % window is.

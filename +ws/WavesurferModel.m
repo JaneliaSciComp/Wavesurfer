@@ -175,10 +175,6 @@ classdef WavesurferModel < ws.Model
                 doRunInDebugMode = false ;
             end
             
-%             if ~exist('mode','var') || isempty(mode),
-%                 mode = 'release' ;
-%             end
-            
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
             self.VersionString_ = ws.versionString() ;
@@ -319,27 +315,6 @@ classdef WavesurferModel < ws.Model
             % data values are correct.
             self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserCodeManager};
             
-%             % Configure subystem trigger relationships.  (Essentially,
-%             % this happens automatically now.)
-%             self.Acquisition.TriggerScheme = self.Triggering.AcquisitionTriggerScheme;
-%             self.Stimulation.TriggerScheme = self.Triggering.StimulationTriggerScheme;
-
-            % Create a timer object to poll during acquisition/stimulation
-            % We can't set the callbacks here, b/c timers don't seem to behave like other objects for the purposes of
-            % object destruction.  If the polling timer has callbacks that point at the WavesurferModel, and the WSM
-            % points at the polling timer (as it will), then that seems to function as a reference loop that Matlab
-            % can't figure out is reclaimable b/c it's not refered to anywhere.  So we set the callbacks just before we
-            % start the timer, and we clear them just after we stop the timer.  This seems to solve the problem, and the
-            % WSM gets deleted once there are no more references to it.
-%             self.PollingTimer_ = timer('Name','Wavesurfer Polling Timer', ...
-%                                        'ExecutionMode','fixedRate', ...
-%                                        'Period',0.100, ...
-%                                        'BusyMode','drop', ...
-%                                        'ObjectVisibility','off');
-%             %                           'TimerFcn',@(timer,timerStruct)(self.poll_()), ...
-%             %                           'ErrorFcn',@(timer,timerStruct,godOnlyKnows)(self.pollingTimerErrored_(timerStruct)), ...
-            
-
             % The object is now initialized, but not very useful until a
             % device is specified.
             self.setState_('no_device') ;
@@ -369,48 +344,12 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCRequester_ = [] ;
                 self.IPCPublisher_ = [] ;
             end
-            
-            %if ~isempty(self) ,
-            %import ws.*
-%             if ~isempty(self.PollingTimer_) && isvalid(self.PollingTimer_) ,
-%                 delete(self.PollingTimer_);
-%                 self.PollingTimer_ = [] ;
-%             end
-            %deleteIfValidHandle(self.Acquisition);
-            %deleteIfValidHandle(self.Stimulation);
-            %deleteIfValidHandle(self.Display);
-            %deleteIfValidHandle(self.Triggering);
-            %deleteIfValidHandle(self.Logging);
-            %deleteIfValidHandle(self.UserCodeManager);
-            %deleteIfValidHandle(self.Ephys);
-            %end
-            %fprintf('at end of WavesurferModel::delete()\n');
         end
         
-%         function unstring(self)
-%             % Called to eliminate all the child-to-parent references, so
-%             % that all the descendents will be properly deleted once the
-%             % last reference to the WavesurferModel goes away.
-%             if ~isempty(self.Acquisition) ,
-%                 self.Acquisition.unstring();
-%             end
-%             if ~isempty(self.Stimulation) ,
-%                 self.Stimulation.unstring();
-%             end
-%             if ~isempty(self.Triggering) ,
-%                 self.Triggering.unstring();
-%             end
-%             if ~isempty(self.Logging) ,
-%                 self.Logging.unstring();
-%             end
-%             if ~isempty(self.UserCodeManager) ,
-%                 self.UserCodeManager.unstring();
-%             end
-%             if ~isempty(self.Ephys) ,
-%                 self.Ephys.unstring();
-%             end
-%         end
-        
+        function debug(self) %#ok<MANU>
+            keyboard
+        end  % function        
+                
         function play(self)
             % Start a run without recording data to disk.
             self.Logging.IsEnabled = false ;
