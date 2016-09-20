@@ -128,8 +128,8 @@ classdef WavesurferModel < ws.Model
         TimeOfLastPollInSweep_
         ClockAtRunStart_
         %DoContinuePolling_
-        DidLooperCompleteSweep_
-        DidRefillerCompleteSweep_
+        %DidLooperCompleteSweep_
+        %DidRefillerCompleteSweep_
         IsSweepComplete_
         WasRunStopped_        
         WasRunStoppedInLooper_        
@@ -457,18 +457,18 @@ classdef WavesurferModel < ws.Model
         function result = looperCompletedSweep(self)
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
             %fprintf('WavesurferModel::looperCompletedSweep()\n');
-            self.DidLooperCompleteSweep_ = true ;
-            self.IsSweepComplete_ = self.DidRefillerCompleteSweep_ ;
+            %self.DidLooperCompleteSweep_ = true ;
+            self.IsSweepComplete_ = true ;
             result = [] ;
         end
         
-        function result = refillerCompletedSweep(self)
-            % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
-            %fprintf('WavesurferModel::refillerCompletedSweep()\n');
-            self.DidRefillerCompleteSweep_ = true ;
-            self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
-            result = [] ;
-        end
+%         function result = refillerCompletedSweep(self)
+%             % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
+%             %fprintf('WavesurferModel::refillerCompletedSweep()\n');
+%             self.DidRefillerCompleteSweep_ = true ;
+%             self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
+%             result = [] ;
+%         end
         
         function result = looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
@@ -1375,21 +1375,21 @@ classdef WavesurferModel < ws.Model
                     end
                 end
                 
-                % Tell the refiller to ready itself (we do this first b/c
-                % this starts the DAQmx tasks, and we want the output
-                % task(s) to start before the input task(s)
-                % self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
-                
-                % Wait for the refiller to respond
-                timeout = 11 ;  % s
-                self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-                err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
-                if ~isempty(err) ,
-                    % Something went wrong
-                    self.abortOngoingRun_();
-                    self.changeReadiness(+1);
-                    throw(err);
-                end
+%                 % Tell the refiller to ready itself (we do this first b/c
+%                 % this starts the DAQmx tasks, and we want the output
+%                 % task(s) to start before the input task(s)
+%                 % self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
+%                 
+%                 % Wait for the refiller to respond
+%                 timeout = 11 ;  % s
+%                 self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+%                 err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+%                 if ~isempty(err) ,
+%                     % Something went wrong
+%                     self.abortOngoingRun_();
+%                     self.changeReadiness(+1);
+%                     throw(err);
+%                 end
                 
                 % % Tell the looper to ready itself
                 % self.IPCPublisher_.send('startingSweepLooper',self.NSweepsCompletedInThisRun_+1) ;
@@ -2563,8 +2563,8 @@ classdef WavesurferModel < ws.Model
             % Runs the main message-processing loop during a sweep.
             
             self.IsSweepComplete_ = false ;
-            self.DidLooperCompleteSweep_ = false ;
-            self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
+            %self.DidLooperCompleteSweep_ = false ;
+            %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
             self.WasRunStoppedInLooper_ = false ;
             self.WasRunStoppedInRefiller_ = false ;
             self.WasRunStopped_ = false ;

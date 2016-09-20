@@ -36,10 +36,11 @@ classdef Refiller < handle
         DoesFrontendWantToStopRun_        
         DoKeepRunningMainLoop_
         IsPerformingRun_ = false
-        IsPerformingSweep_ = false
+        %IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesPerSweep_
-        NEpisodesCompletedSoFarThisSweep_
+        %NEpisodesPerSweep_
+        NEpisodesPerRun_
+        %NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
         StimulationKeystoneTaskCache_
         TheFiniteAnalogOutputTask_ = []
@@ -97,56 +98,46 @@ classdef Refiller < handle
                 if self.IsPerformingRun_ ,
                     % Action in a run depends on whether we are also in a
                     % sweep, or are in-between sweeps
-                    if self.IsPerformingSweep_ ,
-                        %fprintf('Refiller: In a sweep\n') ;
-                        if self.DoesFrontendWantToStopRun_ ,
-                            %fprintf('Refiller: self.DoesFrontendWantToStopRun_\n');
-                            % When done, clean up after sweep
-                            if self.IsPerformingEpisode_ ,
-                                self.stopTheOngoingEpisode_() ;
-                            end
-                            self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
+                    if self.DoesFrontendWantToStopRun_ ,
+                        if self.IsPerformingEpisode_ ,
+                            self.stopTheOngoingEpisode_() ;
+                        end
+                        self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        self.IPCPublisher_.send('refillerStoppedRun') ;
+                    else
+                        % Check the finite outputs, refill them if
+                        % needed.
+                        if self.IsPerformingEpisode_ ,
+                            areStimulationTasksDone = self.areTasksDoneStimulation_() ;
+                            if areStimulationTasksDone ,
+                                self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                                % Start a new episode immediately, without
+                                % checking for more messages.
+                                if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                    self.startEpisode_() ;  % start another episode
+                                end                                        
+                            end                                                            
                         else
-                            %fprintf('Refiller: ~self.DoesFrontendWantToStopRun_\n');
-                            % Check for messages, but don't wait for them
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;
-                              % Don't need to process self.IPCReplier_ messages, b/c no req-rep
-                              % messages should be arriving during a sweep.                            
-
-                            % Check the finite outputs, refill them if
-                            % needed.
-                            if self.IsPerformingEpisode_ ,
-                                areStimulationTasksDone = self.areTasksDoneStimulation_() ;
-                                if areStimulationTasksDone ,
-                                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
-                                        self.startEpisode_() ;
-                                    else
-                                        self.completeTheOngoingSweep_() ;
-                                    end                                        
-                                end                                
+                            % If we're not performing an episode, see if
+                            % we need to start one.
+                            if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                self.startEpisode_() ;  % start another episode
                             else
-                                % If we're in a sweep, but not performing
-                                % an episode, check to see if the counter
-                                % task is done, if there is one.
-                                if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
-                                    self.completeTheOngoingSweep_() ;
-                                end
+                                % If we get here, the run is ongoing, but
+                                % timed stimulation is done.  So we pause
+                                % to not peg the CPU.
+                                pause(0.010);  % don't want to peg CPU when done
                             end
                         end
-                    else
-                        %fprintf('Refiller: In a run, but not a sweep\n');
-                        if self.DoesFrontendWantToStopRun_ ,
-                            self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
-                            self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                            self.IPCPublisher_.send('refillerStoppedRun') ;
-                        else
-                            % Check for messages, but don't block
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;                            
-                            self.IPCReplier_.processMessagesIfAvailable() ;
-                            % no pause here, b/c want to start sweep as
-                            % soon as frontend tells us to
-                        end                        
+                        
+                        % Check for messages, but don't wait for them
+                        % We do this last, instead of first, because
+                        % processing messages can e.g. change
+                        % self.IsPerformingRun_, etc.
+                        self.IPCSubscriber_.processMessagesIfAvailable() ;
+                          % Don't need to process self.IPCReplier_ messages, b/c no req-rep
+                          % messages should be arriving during a sweep.                            
                     end
                 else
                     %fprintf('Refiller: Not in a run, about to check for messages\n');
@@ -159,7 +150,7 @@ classdef Refiller < handle
                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
                     end
                     %self.frontendIsBeingDeleted();
-                    pause(0.010);  % don't want to peg CPU when not acquiring
+                    pause(0.010);  % don't want to peg CPU when idle
                 end
             end
         end  % function
@@ -220,9 +211,9 @@ classdef Refiller < handle
                 self.abortTheOngoingEpisode_() ;
             end
             
-            if self.IsPerformingSweep_ ,
-                self.abortTheOngoingSweep_() ;
-            end
+%             if self.IsPerformingSweep_ ,
+%                 self.abortTheOngoingSweep_() ;
+%             end
             
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
@@ -231,18 +222,18 @@ classdef Refiller < handle
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self,indexOfSweepWithinRun)
-            % Sent by the wavesurferModel to prompt the Refiller to prepare
-            % to run a sweep.  But the sweep doesn't start until the
-            % WavesurferModel calls startSweep().
-            %
-            % This is called via RPC, so must return exactly one return
-            % value.  If a runtime error occurs, it will cause the frontend
-            % process to hang.
-
-            % Prepare for the run
-            result = self.prepareForSweep_(indexOfSweepWithinRun) ;
-        end  % function
+%         function result = startingSweep(self,indexOfSweepWithinRun)
+%             % Sent by the wavesurferModel to prompt the Refiller to prepare
+%             % to run a sweep.  But the sweep doesn't start until the
+%             % WavesurferModel calls startSweep().
+%             %
+%             % This is called via RPC, so must return exactly one return
+%             % value.  If a runtime error occurs, it will cause the frontend
+%             % process to hang.
+% 
+%             % Prepare for the run
+%             %result = self.prepareForSweep_(indexOfSweepWithinRun) ;
+%         end  % function
 
         function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
@@ -376,26 +367,42 @@ classdef Refiller < handle
             %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
-            % Determine episodes per sweep
+            % Determine episodes per run
             if self.IsStimulationEnabled_ ,
-                if isfinite(self.SweepDuration_) ,
-                    % This means one episode per sweep, always
-                    self.NEpisodesPerSweep_ = 1 ;
+                % Means continuous acq, so need to consult stim trigger
+                if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
+                    self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
+                elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+                    % stim trigger scheme is a counter trigger
+                    self.NEpisodesPerRun_ = self.StimulationTrigger_.RepeatCount ;
                 else
-                    % Means continuous acq, so need to consult stim trigger
-                    if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
-                        self.NEpisodesPerSweep_ = 1 ;                    
-                    elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
-                        % stim trigger scheme is a counter trigger
-                        self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
-                    else
-                        % stim trigger scheme is an external trigger
-                        self.NEpisodesPerSweep_ = inf ;  % by convention
-                    end
+                    % stim trigger scheme is an external trigger
+                    self.NEpisodesPerRun_ = inf ;  % by convention
                 end
             else
-                self.NEpisodesPerSweep_ = 0 ;
+                self.NEpisodesPerRun_ = 0 ;
             end
+            
+%             % Determine episodes per sweep
+%             if self.IsStimulationEnabled_ ,
+%                 if isfinite(self.SweepDuration_) ,
+%                     % This means one episode per sweep, always
+%                     self.NEpisodesPerSweep_ = 1 ;
+%                 else
+%                     % Means continuous acq, so need to consult stim trigger
+%                     if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
+%                         self.NEpisodesPerSweep_ = 1 ;                    
+%                     elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+%                         % stim trigger scheme is a counter trigger
+%                         self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
+%                     else
+%                         % stim trigger scheme is an external trigger
+%                         self.NEpisodesPerSweep_ = inf ;  % by convention
+%                     end
+%                 end
+%             else
+%                 self.NEpisodesPerSweep_ = 0 ;
+%             end
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
@@ -418,47 +425,53 @@ classdef Refiller < handle
             %self.FromRunStartTicId_ = tic() ;
             %self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
+            % (Maybe) start an episode, which will wait for a trigger to *really*
+            % start.
+            if self.NEpisodesPerRun_ > 0 ,
+                self.startEpisode_() ;
+            end
+            
             % Return empty
             result = [] ;
         end  % function
         
-        function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
-            % Get everything set up for the Refiller to run a sweep, but
-            % don't pulse the master trigger yet.
-
-            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
-                % If we're not in the right mode, ignore this message.
-                % This can now happen in normal operation, so we want to
-                % just ignore it silently.
-                result = [] ;
-                return
-            end
-            
-            % Reset the sample count for the sweep
-            %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
-            %self.NScansAcquiredSoFarThisSweep_ = 0;
-            %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
-            
-            % Start the counter task, if any
-            %self.startCounterTasks_() ;
-            
-            % At this point, all the hardware-timed tasks the refiller is
-            % responsible for should be "started" (in the DAQmx sense)
-            % and simply waiting for their trigger to go high to truly
-            % start.                
-                
-            % Almost-Final preparations...
-            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
-            self.IsPerformingSweep_ = true ;
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-
-            % Start an episode
-            self.startEpisode_() ;
-            
-            % Nothing to return
-            result = [] ;
-            %self.IPCPublisher_.send('refillerReadyForSweep') ;
-        end  % function
+%         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+%             % Get everything set up for the Refiller to run a sweep, but
+%             % don't pulse the master trigger yet.
+% 
+%             if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+%                 % If we're not in the right mode, ignore this message.
+%                 % This can now happen in normal operation, so we want to
+%                 % just ignore it silently.
+%                 result = [] ;
+%                 return
+%             end
+%             
+%             % Reset the sample count for the sweep
+%             %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
+%             %self.NScansAcquiredSoFarThisSweep_ = 0;
+%             %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
+%             
+%             % Start the counter task, if any
+%             %self.startCounterTasks_() ;
+%             
+%             % At this point, all the hardware-timed tasks the refiller is
+%             % responsible for should be "started" (in the DAQmx sense)
+%             % and simply waiting for their trigger to go high to truly
+%             % start.                
+%                 
+%             % Almost-Final preparations...
+%             self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
+%             self.IsPerformingSweep_ = true ;
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+% 
+%             % Start an episode
+%             self.startEpisode_() ;
+%             
+%             % Nothing to return
+%             result = [] ;
+%             %self.IPCPublisher_.send('refillerReadyForSweep') ;
+%         end  % function
 
 %         function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
 %             if isfinite(self.SweepDuration_) ,
@@ -471,33 +484,33 @@ classdef Refiller < handle
 %             end        
 %         end
         
-        function completeTheOngoingSweep_(self)
-            % Stop the counter tasks, if any
-            %self.stopCounterTasks_();                        
-            
-            % Note that we are no longer performing a sweep
-            self.IsPerformingSweep_ = false ;            
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-
-            % Bump the number of completed sweeps
-            %self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
-            
-            % Notify the front end
-            self.IPCPublisher_.send('refillerCompletedSweep') ;
-        end  % function
+%         function completeTheOngoingSweep_(self)
+%             % Stop the counter tasks, if any
+%             %self.stopCounterTasks_();                        
+%             
+%             % Note that we are no longer performing a sweep
+%             self.IsPerformingSweep_ = false ;            
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+% 
+%             % Bump the number of completed sweeps
+%             %self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
+%             
+%             % Notify the front end
+%             self.IPCPublisher_.send('refillerCompletedSweep') ;
+%         end  % function
         
-        function stopTheOngoingSweep_(self)
-            % Stops the ongoing sweep.
-            %self.stopCounterTasks_();
-            self.IsPerformingSweep_ = false ;
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-        end  % function
+%         function stopTheOngoingSweep_(self)
+%             % Stops the ongoing sweep.
+%             %self.stopCounterTasks_();
+%             self.IsPerformingSweep_ = false ;
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+%         end  % function
 
-        function abortTheOngoingSweep_(self)            
-            %self.stopCounterTasks_();
-            self.IsPerformingSweep_ = false ;          
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-        end            
+%         function abortTheOngoingSweep_(self)            
+%             %self.stopCounterTasks_();
+%             self.IsPerformingSweep_ = false ;          
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+%         end            
         
         function completeTheOngoingRun_(self)
             % Stop assumes the object is running and completed successfully.  It generates
@@ -573,10 +586,10 @@ classdef Refiller < handle
                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
                       'The refiller was asked to start an episode while not in a run') ;
             end
-            if ~self.IsPerformingSweep_ ,
-                error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
-                      'The refiller was asked to start an episode while not in a sweep') ;
-            end
+%             if ~self.IsPerformingSweep_ ,
+%                 error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
+%                       'The refiller was asked to start an episode while not in a sweep') ;
+%             end
             if self.IsPerformingEpisode_ ,
                 error('ws:Refiller:askedToStartEpisodeWhileInEpisode', ...
                       'The refiller was asked to start an episode while already in an epsiode') ;
@@ -608,7 +621,6 @@ classdef Refiller < handle
             % Update state
             self.IsPerformingEpisode_ = false;
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
