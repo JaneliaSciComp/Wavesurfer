@@ -34,7 +34,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         NTimedDigitalChannels        
         NChannels
         IsChannelAnalog
-        TriggerScheme
+        %TriggerScheme
         %IsAnalogChannelTerminalOvercommitted
         %IsDigitalChannelTerminalOvercommitted
     end
@@ -229,9 +229,10 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-        function output = get.TriggerScheme(self)
-            output = self.Parent.Triggering.StimulationTriggerScheme ;
-        end
+%         function output = get.TriggerScheme(self)
+%             triggering = self.Parent.getTriggeringEvenThoughThisIsDangerous() ;
+%             output = triggering.StimulationTriggerScheme ;
+%         end
         
 %         function output = get.DeviceNames(self)
 %             output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;

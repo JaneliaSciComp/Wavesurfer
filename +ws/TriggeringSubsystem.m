@@ -4,6 +4,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
         CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
+        TriggerCount
         Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         AcquisitionSchemes  % This used to be [{BuiltinTrigger} ExternalTriggers], a row cell array, but
                             % Now it's an alias for Schemes.  We keep it
@@ -28,18 +29,22 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         %AcquisitionTriggerSchemeIndex_  % this is an index into AcquisitionSchemes
         StimulationTriggerSchemeIndex_
         NewAcquisitionTriggerSchemeIndex_  % this is an index into Schemes, unlike the old AcquisitionTriggerSchemeIndex_
+        NPFITerminals_
+        NCounters_
     end
 
     methods
         function self = TriggeringSubsystem(parent)
             self@ws.Subsystem(parent) ;            
             self.IsEnabled = true ;
-            self.BuiltinTrigger_ = ws.BuiltinTrigger(self) ; 
+            self.BuiltinTrigger_ = ws.BuiltinTrigger() ;  % triggers are now parentless
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
             self.StimulationUsesAcquisitionTriggerScheme_ = true ;
             self.NewAcquisitionTriggerSchemeIndex_ = 1 ;
             self.StimulationTriggerSchemeIndex_ = 1 ;
+            self.NPFITerminals_ = 0 ;
+            self.NCounters_ = 0 ;
         end  % function
         
         function out = get.BuiltinTrigger(self)
@@ -63,6 +68,10 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             out = [ {self.BuiltinTrigger} self.CounterTriggers self.ExternalTriggers ] ;
         end  % function
         
+        function result = get.TriggerCount(self)
+            result = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers) ;
+        end
+        
         function out = get.AcquisitionTriggerScheme(self)
             index = self.NewAcquisitionTriggerSchemeIndex_ ;
             if isempty(index) ,
@@ -76,25 +85,36 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             result = self.NewAcquisitionTriggerSchemeIndex_ ;
         end  % function
 
-        function set.AcquisitionTriggerSchemeIndex(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                nSchemes = length(self.Schemes) ;
-                if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                    self.NewAcquisitionTriggerSchemeIndex_ = double(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes, and cannot refer to a counter trigger');
+        function setAcquisitionTriggerIndex(self, rawNewValue, nSweepsPerRun)  % public, but should only be called by WSM
+            % This is called by WSM, and newValue is already vetted
+            % If the current acq trigger is a counter trigger, release it's
+            % RepeatCount
+            nTriggers = self.TriggerCount ;
+            if ws.isIndex(rawNewValue) && 1<=rawNewValue && rawNewValue<=nTriggers ,
+                newValue = double(rawNewValue) ;
+                originalAcquisitionTrigger = self.getTriggerByIndex_(self.NewAcquisitionTriggerSchemeIndex_) ;
+                if isa(originalAcquisitionTrigger, 'ws.CounterTrigger') ,
+                    originalAcquisitionTrigger.releaseRepeatCount() ;
                 end
+                % Set the new acq trigger
+                self.NewAcquisitionTriggerSchemeIndex_ = newValue ;
+                % If the new acq trigger is a counter trigger, override its
+                % RepeatCount with NSweepsPerRun
+                acquisitionTrigger = self.getTriggerByIndex_(newValue) ;
+                if isa(acquisitionTrigger, 'ws.CounterTrigger') ,
+                    acquisitionTrigger.overrideRepeatCount(nSweepsPerRun) ;
+                end
+            else
+                error('most:Model:invalidPropVal', ...
+                      'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');                
             end
-            self.broadcast('Update');                        
-        end
+        end  % function
         
         function out = get.StimulationTriggerSchemeIndex(self)
             out = self.StimulationTriggerSchemeIndex_ ;
         end  % function
 
-        function set.StimulationTriggerSchemeIndex(self, newValue)
+        function setStimulationTriggerIndex(self, newValue)
             if ws.isASettableValue(newValue) ,
                 if self.StimulationUsesAcquisitionTriggerScheme ,
                     error('most:Model:invalidPropVal', ...
@@ -104,13 +124,13 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                     if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
                         self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                     else
-                        self.broadcast('Update');
+                        % self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                     end
                 end
             end
-            self.broadcast('Update');                        
+            % self.broadcast('Update');                        
         end
         
         function out = get.StimulationTriggerScheme(self)
@@ -134,35 +154,26 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
     end  % methods block
     
     methods
-        function trigger = addCounterTrigger(self, counterID)
-            % If no counter ID is given, try to find one that is not in use
-            if ~exist('counterID','var') || isempty(counterID) ,
-                % Need to pick a counterID.
-                % We find the lowest counterID that is not in use.
-                counterIDs = self.freeCounterIDs() ;
-                if isempty(counterIDs) ,
-                    % this means there is no free counter
-                    trigger = [] ;
-                    return
-                else
-                    counterID = counterIDs(1) ;
-                end
+        function addCounterTrigger(self, deviceName)
+            % Need to pick a counterID.
+            % We find the lowest counterID that is not in use.
+            counterIDs = self.freeCounterIDs() ;
+            if isempty(counterIDs) ,
+                % this means there is no free counter
+                error('ws:noFreeCounter', ...
+                      'There are no free counters.') ;
+            else
+                counterID = counterIDs(1) ;
             end
             
-            % Check that the counterID is free
-            if self.isCounterIDInUse(counterID) ,
-                trigger = [] ;
-                return
-            end
-
             % Create the trigger
-            trigger = ws.CounterTrigger(self);  % self is parent of the CounterTrigger
+            trigger = ws.CounterTrigger();  % Triggers are now parentless
 
             % Set the trigger parameters
             self.disableBroadcasts() ;
             trigger.Name = sprintf('Counter %d',counterID) ;
-            %trigger.DeviceName = self.Parent.DeviceName ; 
-            trigger.CounterID = counterID ;
+            trigger.DeviceName = deviceName ; 
+            trigger.CounterID = counterID ;  % at this point, we know this is a free counter
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
             trigger.Edge = 'rising' ;
@@ -171,7 +182,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Add the just-created trigger to thel list of counter triggers
             self.CounterTriggers_{1,end + 1} = trigger ;
             
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end  % function
 
         function deleteMarkedCounterTriggers(self)
@@ -191,7 +202,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Finally, delete the marked external triggers
             doKeep = ~doDelete ;
             self.CounterTriggers_ = triggers(doKeep) ;
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end
 
         function trigger = addExternalTrigger(self, pfiID)
@@ -216,17 +227,17 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             end
 
             % Create the trigger
-            trigger = ws.ExternalTrigger(self) ;  % self is parent of the ExternalTrigger
+            trigger = ws.ExternalTrigger() ;   % Triggers are now parentless
 
             % Set the trigger parameters
             trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
             %trigger.DeviceName = self.Parent.DeviceName ; 
-            trigger.PFIID = pfiID ;
+            trigger.PFIID = pfiID ;  % we know this PFIID is free
             trigger.Edge = 'rising' ;
             
             % Add the just-created trigger to thel list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end  % function
                         
         function deleteMarkedExternalTriggers(self)
@@ -250,11 +261,12 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             % Finally, delete the marked external triggers
             doKeep = ~doDelete ;
             self.ExternalTriggers_ = triggers(doKeep) ;
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end
         
         function result = allCounterIDs(self)
-            nCounterIDsInHardware = self.Parent.NCounters ;
+            %nCounterIDsInHardware = self.Parent.NCounters ;
+            nCounterIDsInHardware = self.NCounters_ ;
             result = 0:(nCounterIDsInHardware-1) ;              
         end
         
@@ -288,7 +300,8 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end
 
         function result = allPFIIDs(self)
-            nPFIIDsInHardware = self.Parent.NPFITerminals ;
+            %nPFIIDsInHardware = self.Parent.NPFITerminals ;
+            nPFIIDsInHardware = self.NPFITerminals_ ;
             result = 0:(nPFIIDsInHardware-1) ;              
         end
         
@@ -298,8 +311,8 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             
             % We consider all the default counter PFIs to be "in use",
             % regardless of whether any of the counters are in use.
-            nPFIIDsInHardware = self.Parent.NPFITerminals ;
-            nCounterIDsInHardware = self.Parent.NCounters ;
+            nPFIIDsInHardware = self.NPFITerminals_ ;
+            nCounterIDsInHardware = self.NCounters_ ;
             counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
 
             % The built-in trigger PFI line is also in use
@@ -333,25 +346,57 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             result = ismember(pfiID, freePFIIDs) ;
         end
         
-        function set.StimulationUsesAcquisitionTriggerScheme(self,newValue)
+        function set.StimulationUsesAcquisitionTriggerScheme(self, newValue)
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.StimulationUsesAcquisitionTriggerScheme_ = logical(newValue) ;
-                self.stimulusMapDurationPrecursorMayHaveChanged_();  % why are we calling this, again?
+                %self.stimulusMapDurationPrecursorMayHaveChanged_();  
             else
-                self.broadcast('Update');
+                % self.broadcast('Update');
                 error('most:Model:invalidPropVal', ...
                     'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('Update') ;            
+            %self.broadcast('Update') ;            
         end  % function
         
         function value = get.StimulationUsesAcquisitionTriggerScheme(self)
             value = self.StimulationUsesAcquisitionTriggerScheme_ ;
         end  % function
         
-        function update(self)
-            self.broadcast('Update');
-        end            
+        function setCounterTriggerProperty(self, index, propertyName, newValue)
+            if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
+                self.broadcast('Update') ;
+                error('most:Model:invalidPropVal', ...
+                      'Illegal or taken counter ID') ;
+            end
+            trigger = self.CounterTriggers_{index} ;
+            try
+                trigger.(propertyName) = newValue ;
+            catch exception
+                self.broadcast('Update') ;
+                rethrow(exception) ;
+            end            
+            %self.broadcast('Update') ;
+        end  % function
+
+        function setExternalTriggerProperty(self, index, propertyName, newValue)
+            if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
+                self.broadcast('Update') ;
+                error('most:Model:invalidPropVal', ...
+                      'Illegal or taken PFI ID') ;
+            end
+            trigger = self.ExternalTriggers_{index} ;
+            try
+                trigger.(propertyName) = newValue ;
+            catch exception
+                self.broadcast('Update') ;
+                rethrow(exception) ;
+            end            
+            %self.broadcast('Update') ;
+        end  % function
+        
+%         function update(self)
+%             % self.broadcast('Update');
+%         end            
     end  % methods block
     
     methods (Access = protected)
@@ -367,57 +412,57 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
     end  % protected methods block
     
     methods
-        function willSetNSweepsPerRun(self) %#ok<MANU>
-            % Have to release the relvant parts of the trigger scheme
-            %self.releaseCurrentCounterTriggers_();
-        end  % function
+%         function willSetNSweepsPerRun(self)
+%             % Have to release the relvant parts of the trigger scheme
+%             self.releaseCurrentCounterTriggers_() ;
+%         end  % function
 
-        function didSetNSweepsPerRun(self) 
-            %self.syncCounterTriggersFromTriggeringState_();            
-            self.broadcast('Update') ;
+        function didSetNSweepsPerRun(self, nSweepsPerRun) 
+            self.overrideAcquisitionTriggerRepeatCountIfNeeded_(nSweepsPerRun) ;            
+            %self.broadcast('Update') ;
         end  % function        
         
-        function willSetSweepDurationIfFinite(self) %#ok<MANU>
-            % Have to release the relvant parts of the trigger scheme
-            %self.releaseCurrentCounterTriggers_();
-        end  % function
-
-        function didSetSweepDurationIfFinite(self) %#ok<MANU>
-            %self.syncCounterTriggersFromTriggeringState_();            
-        end  % function        
+%         function willSetSweepDurationIfFinite(self) %#ok<MANU>
+%             % Have to release the relvant parts of the trigger scheme
+%             %self.releaseCurrentCounterTriggers_();
+%         end  % function
+% 
+%         function didSetSweepDurationIfFinite(self) %#ok<MANU>
+%             %self.overrideAcquisitionTriggerRepeatCountIfNeeded_();            
+%         end  % function        
         
         function willSetAreSweepsFiniteDuration(self) %#ok<MANU>
             % Have to release the relvant parts of the trigger scheme
-            %self.releaseCurrentCounterTriggers_();
+            %self.releaseCurrentCounterTriggers_() ;
         end  % function
         
-        function didSetAreSweepsFiniteDuration(self)
-            %self.syncCounterTriggersFromTriggeringState_();
-            self.broadcast('Update');    
+        function didSetAreSweepsFiniteDuration(self, nSweepsPerRun)
+            self.overrideAcquisitionTriggerRepeatCountIfNeeded_(nSweepsPerRun) ;            
+            %self.broadcast('Update') ;    
         end  % function         
-    end
+    end  % public methods block
     
     methods (Access=protected)
-        function stimulusMapDurationPrecursorMayHaveChanged_(self)
-            parent=self.Parent;
-            if ~isempty(parent) ,
-                parent.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end  % function        
+%         function stimulusMapDurationPrecursorMayHaveChanged_(self)
+%             parent=self.Parent;
+%             if ~isempty(parent) ,
+%                 parent.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end  % function        
 
 %         function releaseCurrentCounterTriggers_(self)
-%             if self.AcquisitionTriggerScheme.IsInternal ,
-%                 self.AcquisitionTriggerScheme.releaseInterval();
-%                 self.AcquisitionTriggerScheme.releaseRepeatCount();
+%             if isa(self.AcquisitionTriggerScheme,'ws.CounterTrigger') ,
+%                 %self.AcquisitionTriggerScheme.releaseInterval();
+%                 self.AcquisitionTriggerScheme.releaseRepeatCount() ;
 %             end
 %         end  % function
         
-%         function syncCounterTriggersFromTriggeringState_(self)
-%             if self.AcquisitionTriggerScheme.IsInternal ,
-%                 self.AcquisitionTriggerScheme.overrideInterval(0.01);
-%                 self.AcquisitionTriggerScheme.overrideRepeatCount(1);
-%             end
-%         end  % function        
+        function overrideAcquisitionTriggerRepeatCountIfNeeded_(self, nSweepsPerRun)
+            if isa(self.AcquisitionTriggerScheme, 'ws.CounterTrigger') ,
+                %self.AcquisitionTriggerScheme.overrideInterval(0.01);
+                self.AcquisitionTriggerScheme.overrideRepeatCount(nSweepsPerRun) ;
+            end
+        end  % function        
     end  % protected methods block
 
     methods
@@ -460,8 +505,22 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             self.enableBroadcastsMaybe();
             
             % Broadcast update
-            self.broadcast('Update');            
+            % self.broadcast('Update');            
         end  % function
+        
+        function didSetDevice(self, deviceName, nCounters, nPFITerminals)
+            self.BuiltinTrigger_.DeviceName = deviceName ;
+            for i = 1:length(self.CounterTriggers_) ,
+                self.CounterTriggers_{i}.DeviceName = deviceName ;                
+            end
+            for i = 1:length(self.ExternalTriggers_) ,
+                self.ExternalTriggers_{i}.DeviceName = deviceName ;                
+            end
+            self.NPFITerminals_ = nPFITerminals ;
+            self.NCounters_ = nCounters ;
+
+            %self.broadcast('Update') ;
+        end        
     end  % public methods block
     
     methods (Access=protected)
@@ -493,45 +552,62 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
     end  % protected methods block
     
     methods
-        function setTriggerProperty(self, triggerType, triggerIndex, propertyName, newValue)
+        function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
             if ws.isTriggerType(triggerType) ,
                 if isequal(triggerType, 'builtin') ,
-                    if ws.isIndex(triggerIndex) && triggerIndex==1 ,
+                    if ws.isIndex(triggerIndexWithinType) && triggerIndexWithinType==1 ,
                         theTrigger = self.BuiltinTrigger_ ;
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
-                        self.broadcast('Update');
+                        % self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'Invalid trigger index') ;
                     end  
                 elseif isequal(triggerType, 'counter') ,
-                    if ws.isIndex(triggerIndex) && 1<=triggerIndex && triggerIndex<=length(self.CounterTriggers_) ,
-                        theTrigger = self.CounterTriggers_{triggerIndex} ;
+                    if ws.isIndex(triggerIndexWithinType) && 1<=triggerIndexWithinType && triggerIndexWithinType<=length(self.CounterTriggers_) ,
+                        theTrigger = self.CounterTriggers_{triggerIndexWithinType} ;
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
-                        self.broadcast('Update');
+                        % self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'Invalid trigger index') ;
                     end  
                 elseif isequal(triggerType, 'external') ,
-                    if ws.isIndex(triggerIndex) && 1<=triggerIndex && triggerIndex<=length(self.ExternalTriggers_) ,
-                        theTrigger = self.ExternalTriggers_{triggerIndex} ;
+                    if ws.isIndex(triggerIndexWithinType) && 1<=triggerIndexWithinType && triggerIndexWithinType<=length(self.ExternalTriggers_) ,
+                        theTrigger = self.ExternalTriggers_{triggerIndexWithinType} ;
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
-                        self.broadcast('Update');
+                        % self.broadcast('Update');
                         error('most:Model:invalidPropVal', ...
                               'Invalid trigger index') ;
                     end  
                 else
-                    self.broadcast('Update');
+                    % self.broadcast('Update');
                     error('ws:programmerError', ...
                           'ws.isTriggerType(triggerType) is true, but doesn''t match any of the cases.  This is likely a programmer error.') ;
                 end                    
             else                
-                self.broadcast('Update');
+                % self.broadcast('Update');
                 error('most:Model:invalidPropVal', ...
                       'triggerType must be a valid trigger type') ;                    
             end
         end  % method
     end  % public methods block    
+    
+    methods (Access=protected)    
+        function result = getTriggerByIndex_(self, index)
+            % This is basically indexing into self.Schemes, but hopefully
+            % somewhat efficiently.  We assume index is valid.
+            counterTriggerCount = length(self.CounterTriggers_) ;
+            if index==1 ,
+                result = self.BuiltinTrigger_ ;
+            elseif 2<=index && index<=1+counterTriggerCount ,
+                counterTriggerIndex = index-1 ;
+                result = self.CounterTriggers_{counterTriggerIndex} ;
+            else
+                externalTriggerIndex = index - (1+counterTriggerCount) ;
+                result = self.ExternalTriggers_{externalTriggerIndex} ;
+            end
+        end  % function
+    end  % protected methods block
 end  % classdef

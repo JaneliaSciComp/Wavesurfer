@@ -36,8 +36,8 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             %wsModel.Display.IsEnabled=true;
             
             % Set to external triggering
-            wsModel.Triggering.addExternalTrigger() ;
-            wsModel.Triggering.AcquisitionTriggerSchemeIndex = 2 ;
+            wsModel.addExternalTrigger() ;
+            wsModel.AcquisitionTriggerIndex = 2 ;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -81,7 +81,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % padding with zeros up to wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate
             
             % Set the trigger back to the Built-in Trigger
-            wsModel.Triggering.AcquisitionTriggerSchemeIndex = 1 ;
+            wsModel.AcquisitionTriggerIndex = 1 ;
             
             % Delete the data file if it was created
             delete(dataFilePatternAbsolute);            

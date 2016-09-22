@@ -22,11 +22,14 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer(isCommandLineOnly) ;
             wsModel.NSweepsPerRun = 3 ;
             wsModel.Stimulation.IsEnabled = true ;
-            trigger = wsModel.Triggering.addCounterTrigger() ;
-            trigger.RepeatCount = 2 ;
-            trigger.Interval = 1.5 ;
-            wsModel.Triggering.StimulationUsesAcquisitionTriggerScheme = false ;
-            wsModel.Triggering.StimulationTriggerSchemeIndex = 2 ;  % this should be the newly-defined counter trigger
+%             trigger = wsModel.addCounterTrigger() ;
+%             trigger.RepeatCount = 2 ;
+%             trigger.Interval = 1.5 ;
+            wsModel.addCounterTrigger() ;
+            wsModel.setTriggerProperty('counter', 1, 'RepeatCount', 2) ;
+            wsModel.setTriggerProperty('counter', 1, 'Interval', 1.5) ;            
+            wsModel.StimulationUsesAcquisitionTrigger = false ;
+            wsModel.StimulationTriggerIndex = 2 ;  % this should be the newly-defined counter trigger
             didTimerCallbackFire = false ;            
             function timerCallback(source, event)  %#ok<INUSD>
                 % The timer callback.  If WS is working properly, the timer

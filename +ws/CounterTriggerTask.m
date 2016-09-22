@@ -37,7 +37,10 @@ classdef CounterTriggerTask < handle
             self.TriggerTerminalName_ = triggerTerminalName ;
                         
             self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_);
-            self.DabsDaqTask_.createCOPulseChanFreq(self.DeviceName_, counterID, '', repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+            %deviceName
+            %counterID
+            %repeatFrequency
+            self.DabsDaqTask_.createCOPulseChanFreq(deviceName, counterID, '', repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
             if isinf(repeatCount) ,
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_ContSamps');
             else

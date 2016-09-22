@@ -1,23 +1,13 @@
-classdef TriggersController < ws.Controller     % & ws.EventSubscriber
-    
-    properties (Access = protected, Transient = true)
-        %SourcesDataGridDataTable_    % Only internal sources for display/configuration.
-        %SourceComboboxDataTable_    % Includes external for selection in combobox, etc.
-        %DestinationsDataGridDataTable_
-        %IsManualCommit_ = false
-    end
+classdef TriggersController < ws.Controller  
     
     methods
-        function self = TriggersController(wavesurferController,wavesurferModel)
-            %triggeringModel=wavesurferModel.Triggering;
-            %self = self@ws.Controller(wavesurferController, triggeringModel, {'triggersFigureWrapper'});
-            
+        function self = TriggersController(wavesurferController, wavesurferModel)
             % Call superclass constructor
-            triggeringModel=wavesurferModel.Triggering;
-            self = self@ws.Controller(wavesurferController,triggeringModel);  
+            %triggeringModel = wavesurferModel.Triggering ;
+            self = self@ws.Controller(wavesurferController, wavesurferModel) ;  
 
             % Create the figure, store a pointer to it
-            fig = ws.TriggersFigure(triggeringModel,self) ;
+            fig = ws.TriggersFigure(wavesurferModel, self) ;
             self.Figure_ = fig ;            
         end  % constructor
     end  % methods block    
@@ -27,20 +17,20 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
             selectionIndex = get(source,'Value') ;
             %self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
-            self.Model.do('set', 'AcquisitionTriggerSchemeIndex', selectionIndex) ;            
+            self.Model.do('set', 'AcquisitionTriggerIndex', selectionIndex) ;            
         end  % function
         
         function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
             newValue = logical(get(source,'Value')) ;
             %self.Model.StimulationUsesAcquisitionTriggerScheme=value;
-            self.Model.do('set', 'StimulationUsesAcquisitionTriggerScheme', newValue) ;
+            self.Model.do('set', 'StimulationUsesAcquisitionTrigger', newValue) ;
         end  % function
 
         function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
             %acquisitionSchemePopupmenuActuated_(self, source, self.Model.StimulationTriggerScheme);
             selectionIndex = get(source,'Value') ;
             %self.Model.StimulationTriggerSchemeIndex = selectionIndex ;
-            self.Model.do('set', 'StimulationTriggerSchemeIndex', selectionIndex) ;
+            self.Model.do('set', 'StimulationTriggerIndex', selectionIndex) ;
         end  % function
         
         function CounterTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
@@ -135,35 +125,6 @@ classdef TriggersController < ws.Controller     % & ws.EventSubscriber
         function DeleteExternalTriggersButtonActuated(self, source, event)  %#ok<INUSD>
             %self.Model.deleteMarkedExternalTriggers() ;
             self.Model.do('deleteMarkedExternalTriggers') ;
-        end
-        
+        end        
     end  % methods block    
-
-%     methods (Access=protected)
-%         function acquisitionSchemePopupmenuActuated_(self, source, triggerScheme)
-%             % Called when the selection is changed in a listbox.  Causes the
-%             % given triggerScheme (part of the model) to be updated appropriately.
-%             selectionIndex = get(source,'Value');
-%             
-%             nSources=length(self.Model.CounterTriggers);
-%             nDestinations=length(self.Model.ExternalTriggers);
-%             if 1<=selectionIndex && selectionIndex<=nSources ,
-%                 triggerScheme.Target = self.Model.CounterTriggers(selectionIndex);
-%             elseif nSources+1<=selectionIndex && selectionIndex<=nSources+nDestinations ,
-%                 destinationIndex = selectionIndex-nSources;
-%                 triggerScheme.Target = self.Model.ExternalTriggers(destinationIndex);
-%             end
-%         end  % function
-%     end
-    
-%     properties (SetAccess=protected)
-%        propBindings = struct()
-%     end
-    
-%     methods (Static=true)
-%         function s=initialPropertyBindings()
-%             s = struct();
-%         end
-%     end  % class methods
-    
 end

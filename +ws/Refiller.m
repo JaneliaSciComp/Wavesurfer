@@ -13,6 +13,7 @@ classdef Refiller < handle
         StimulationSampleRate_ = []
         StimulusLibrary_ = []
         DoRepeatSequence_ = true
+        IsStimulationTriggerIdenticalToAcquistionTrigger_ = []
         
         AOChannelNames_ = cell(1,0)
         AOChannelScales_ = zeros(1,0)
@@ -369,7 +370,6 @@ classdef Refiller < handle
             
             % Determine episodes per run
             if self.IsStimulationEnabled_ ,
-                % Means continuous acq, so need to consult stim trigger
                 if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
                     self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
                 elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
@@ -377,7 +377,11 @@ classdef Refiller < handle
                     self.NEpisodesPerRun_ = self.StimulationTrigger_.RepeatCount ;
                 else
                     % stim trigger scheme is an external trigger
-                    self.NEpisodesPerRun_ = inf ;  % by convention
+                    if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
+                        
+                    else
+                        self.NEpisodesPerRun_ = inf ;  % by convention
+                    end
                 end
             else
                 self.NEpisodesPerRun_ = 0 ;
@@ -597,7 +601,7 @@ classdef Refiller < handle
             
             if self.IsStimulationEnabled_ ,
                 self.IsPerformingEpisode_ = true ;
-                %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+                fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
                 self.callUserMethod_('startingEpisode') ;
                 self.fillOutputBuffersAndStartOutputTasks_(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
@@ -620,7 +624,7 @@ classdef Refiller < handle
 
             % Update state
             self.IsPerformingEpisode_ = false;
-            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
@@ -633,7 +637,7 @@ classdef Refiller < handle
             end
             self.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
-            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingEpisode_(self)
@@ -642,7 +646,7 @@ classdef Refiller < handle
             end
             self.callUserMethod_('abortingEpisode');            
             self.IsPerformingEpisode_ = false ;            
-            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
                 
         function result = areTasksDoneStimulation_(self)
@@ -1094,7 +1098,8 @@ classdef Refiller < handle
             self.StimulationTrigger_ = protocol.StimulationTrigger ;            
             self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
             self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
-            
+            self.IsStimulationTriggerIdenticalToAcquistionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ ;
+
             self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
             self.TheUserObject_ = protocol.TheUserObject ;
         end  % method       

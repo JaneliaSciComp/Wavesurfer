@@ -56,7 +56,7 @@ classdef WavesurferModel < ws.Model
         IndexOfSelectedFastProtocol  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         Acquisition
         Stimulation
-        Triggering
+        %Triggering
         Display
         Logging
         UserCodeManager
@@ -79,6 +79,12 @@ classdef WavesurferModel < ws.Model
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
+        
+        % Triggering settings
+        TriggerCount
+        AcquisitionTriggerIndex  % this is an index into Schemes
+        StimulationUsesAcquisitionTrigger  % boolean
+        StimulationTriggerIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
     end
     
     properties (Access=protected)
@@ -154,6 +160,7 @@ classdef WavesurferModel < ws.Model
     
     events
         UpdateChannels
+        UpdateTriggering
         UpdateFastProtocols
         UpdateForNewData
         UpdateIsYokedToScanImage
@@ -302,7 +309,7 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_ = ws.Acquisition(self);
             self.Stimulation_ = ws.Stimulation(self);
             self.Display_ = ws.Display(self);
-            self.Triggering_ = ws.Triggering(self);
+            self.Triggering_ = ws.Triggering([]);  % Triggering subsystem doesn't need to know its parent, now.
             self.UserCodeManager_ = ws.UserCodeManager(self);
             self.Logging_ = ws.Logging(self);
             self.Ephys_ = ws.Ephys(self);
@@ -313,7 +320,7 @@ classdef WavesurferModel < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering, self.Logging, self.UserCodeManager};
+            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering_, self.Logging, self.UserCodeManager};
             
             % The object is now initialized, but not very useful until a
             % device is specified.
@@ -507,9 +514,9 @@ classdef WavesurferModel < ws.Model
             out = self.Stimulation_ ;
         end
         
-        function out = get.Triggering(self)
-            out = self.Triggering_ ;
-        end
+%         function out = get.Triggering(self)
+%             out = self.Triggering_ ;
+%         end
         
         function out = get.UserCodeManager(self)
             out = self.UserCodeManager_ ;
@@ -578,14 +585,19 @@ classdef WavesurferModel < ws.Model
                 if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
                     % If get here, value is a valid value for this prop
                     if self.AreSweepsFiniteDuration ,
-                        self.Triggering.willSetNSweepsPerRun();
-                        self.NSweepsPerRun_ = newValue;
-                        self.Triggering.didSetNSweepsPerRun();
+                        %self.Triggering.willSetNSweepsPerRun();
+                        self.NSweepsPerRun_ = double(newValue) ;
+                        self.didSetNSweepsPerRun_() ;
+                    else
+                        self.broadcast('Update') ;
+                        error('most:Model:invalidPropVal', ...
+                              'NSweepsPerRun cannot be set when sweeps are continuous') ;
+                        
                     end
                 else
-                    self.broadcast('Update');
+                    self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
-                          'NSweepsPerRun must be a (scalar) positive integer, or inf');       
+                          'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
                 end
             end
             self.broadcast('Update');
@@ -600,10 +612,10 @@ classdef WavesurferModel < ws.Model
             if ws.isASettableValue(value) , 
                 if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
                     valueToSet = max(value,0.1);
-                    self.willSetSweepDurationIfFinite();
+                    %self.willSetSweepDurationIfFinite();
                     self.SweepDurationIfFinite_ = valueToSet;
                     self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDurationIfFinite();
+                    self.didSetSweepDurationIfFinite_();
                 else
                     %self.stimulusMapDurationPrecursorMayHaveChanged();
                     %self.didSetSweepDurationIfFinite();
@@ -653,13 +665,13 @@ classdef WavesurferModel < ws.Model
             %newValue            
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.willSetAreSweepsFiniteDuration();
+                %self.willSetAreSweepsFiniteDuration();
                 self.AreSweepsFiniteDuration_=logical(newValue);
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.didSetAreSweepsFiniteDuration();
+                self.didSetAreSweepsFiniteDuration_();
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
@@ -948,30 +960,18 @@ classdef WavesurferModel < ws.Model
 %             %profile off
 %         end
 
-        function willSetAreSweepsFiniteDuration(self)
-            self.Triggering.willSetAreSweepsFiniteDuration();
-        end
+%         function willSetAreSweepsFiniteDuration(self)  %#ok<MANU>
+%             %self.Triggering.willSetAreSweepsFiniteDuration();
+%         end
         
-        function didSetAreSweepsFiniteDuration(self)
-            self.Triggering.didSetAreSweepsFiniteDuration();
-            self.Display.didSetAreSweepsFiniteDuration();
-        end        
-
-        function willSetSweepDurationIfFinite(self)
-            self.Triggering.willSetSweepDurationIfFinite();
-        end
-        
-        function didSetSweepDurationIfFinite(self)
-            %self.broadcast('Update');
-            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetSweepDurationIfFinite();
-            self.Display.didSetSweepDurationIfFinite();
-        end        
+%         function willSetSweepDurationIfFinite(self)
+%             self.Triggering.willSetSweepDurationIfFinite();
+%         end
         
         function releaseTimedHardwareResources_(self)
             %self.Acquisition.releaseHardwareResources();
             %self.Stimulation.releaseHardwareResources();
-            self.Triggering.releaseTimedHardwareResources();
+            self.Triggering_.releaseTimedHardwareResources();
             %self.Ephys.releaseTimedHardwareResources();
         end
 
@@ -981,6 +981,17 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods (Access=protected)
+        function didSetSweepDurationIfFinite_(self)
+            %self.Triggering.didSetSweepDurationIfFinite() ;
+            self.Display.didSetSweepDurationIfFinite() ;
+        end        
+        
+        function didSetAreSweepsFiniteDuration_(self)
+            self.Triggering_.didSetAreSweepsFiniteDuration(self.NSweepsPerRun);
+            self.broadcast('UpdateTriggering') ;
+            self.Display.didSetAreSweepsFiniteDuration();
+        end        
+
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
             % Release our own hardware resources, and also tell the
             % satellites to do so.
@@ -1362,7 +1373,7 @@ classdef WavesurferModel < ws.Model
                     % samplesAcquired messages are ignored when we're
                     % waiting for looperReadyForSweep and
                     % refillerReadyForSweep messages above.
-                self.Triggering.pulseBuiltinTrigger();
+                self.Triggering_.pulseBuiltinTrigger();
                 
 %                 err = self.LooperRPCClient('startSweep') ;
 %                 if ~isempty(err) ,
@@ -2618,7 +2629,7 @@ classdef WavesurferModel < ws.Model
             end                
             
             % Now figure out the stim keystone task
-            if self.Triggering.AcquisitionTriggerScheme==self.Triggering.StimulationTriggerScheme ,
+            if self.AcquisitionTriggerIndex==self.StimulationTriggerIndex ,
                 % Acq and stim subsystems are using the same trigger, so
                 % acq and stim subsystems will have the same keystone task.
                 stimulationKeystoneTask = acquisitionKeystoneTask ;
@@ -2750,12 +2761,12 @@ classdef WavesurferModel < ws.Model
                         % name
                         self.Acquisition.didSetDeviceName() ;
                         self.Stimulation.didSetDeviceName() ;
-                        self.Triggering.didSetDeviceName() ;
+                        self.Triggering_.didSetDevice(deviceName, self.NCounters, self.NPFITerminals) ;
                         %self.Display.didSetDeviceName() ;
                         
                         % Change our state to reflect the presence of the
                         % device
-                        self.setState_('idle');
+                        self.setState_('idle') ;
 
                         % Notify the satellites
                         if self.IsITheOneTrueWavesurferModel_ ,
@@ -3127,8 +3138,8 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
             
-            looperProtocol.AcquisitionTriggerPFIID = self.Triggering.AcquisitionTriggerScheme.PFIID ;
-            looperProtocol.AcquisitionTriggerEdge = self.Triggering.AcquisitionTriggerScheme.Edge ;
+            looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.AcquisitionTriggerScheme.PFIID ;
+            looperProtocol.AcquisitionTriggerEdge = self.Triggering_.AcquisitionTriggerScheme.Edge ;
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
@@ -3150,16 +3161,18 @@ classdef WavesurferModel < ws.Model
             protocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
             
             protocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
-            protocol.StimulationTrigger = self.Triggering.StimulationTriggerScheme ;            
+            protocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
             protocol.StimulusLibrary = self.Stimulation.StimulusLibrary ;                        
             protocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
+            protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
+                (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
             protocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             protocol.TheUserObject = self.UserCodeManager.TheObject ;
         end  % method        
     end  % protected methods block
     
-methods
+    methods
         function value = get.AllDeviceNames(self)
             value = self.AllDeviceNames_ ;
         end  % function
@@ -3354,7 +3367,7 @@ methods
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
         
-        function [sampleFrequency,timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+        function [sampleFrequency, timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
             % Coerce to be finite and not nan
             if isfinite(desiredSampleFrequency) ,
                 protoResult1 = desiredSampleFrequency;
@@ -3393,5 +3406,112 @@ methods
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end  % method
-    end  % protected methods block        
+        
+        function didSetNSweepsPerRun_(self)
+            self.Triggering_.didSetNSweepsPerRun(self.NSweepsPerRun) ;
+            self.broadcast('UpdateTriggering') ;
+        end  % function        
+    end  % protected methods block 
+    
+    methods  % Present the user-relevant triggering methods at the WSM level
+        function result = get.AcquisitionTriggerIndex(self)            
+            result = self.Triggering_.AcquisitionTriggerSchemeIndex ;
+        end  % function
+        
+        function set.AcquisitionTriggerIndex(self, newValue)
+            try
+                self.Triggering_.setAcquisitionTriggerIndex(newValue, self.NSweepsPerRun) ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering');                        
+        end
+                
+        function result = get.StimulationTriggerIndex(self)            
+            result = self.Triggering_.StimulationTriggerSchemeIndex ;
+        end  % function
+        
+        function set.StimulationTriggerIndex(self, newValue)
+            try
+                self.Triggering_.setStimulationTriggerIndex(newValue) ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering');                        
+        end
+        
+        function value = get.StimulationUsesAcquisitionTrigger(self)
+            value = self.Triggering_.StimulationUsesAcquisitionTriggerScheme ;
+        end  % function        
+        
+        function set.StimulationUsesAcquisitionTrigger(self, newValue)
+            try
+                self.Triggering_.StimulationUsesAcquisitionTriggerScheme = newValue ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end  % function        
+
+        function addCounterTrigger(self)    
+            try
+                self.Triggering_.addCounterTrigger(self.DeviceName) ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end  % function
+        
+        function deleteMarkedCounterTriggers(self)
+            try
+                self.Triggering_.deleteMarkedCounterTriggers() ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end
+        
+        function addExternalTrigger(self)    
+            try
+                self.Triggering_.addExternalTrigger() ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end  % function
+        
+        function deleteMarkedExternalTriggers(self)
+            try
+                self.Triggering_.deleteMarkedExternalTriggers() ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end  % function
+        
+        function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
+            try
+                self.Triggering_.setTriggerProperty(triggerType, triggerIndexWithinType, propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateTriggering');
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateTriggering') ;            
+        end  % function
+        
+        function result = get.TriggerCount(self)
+            result = self.Triggering_.TriggerCount ;
+        end  % function
+        
+%         function result = getTriggeringEvenThoughThisIsDangerous(self)
+%             result = self.Triggering_ ;
+%         end
+    end  % public methods block
 end  % classdef

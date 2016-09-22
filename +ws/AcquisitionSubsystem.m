@@ -43,7 +43,7 @@ classdef AcquisitionSubsystem < ws.Subsystem
         IsChannelActive
         ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
-       	TriggerScheme        
+       	%TriggerScheme        
         %IsAnalogChannelTerminalOvercommitted
         %IsDigitalChannelTerminalOvercommitted
         AnalogScalingCoefficients
@@ -476,9 +476,9 @@ classdef AcquisitionSubsystem < ws.Subsystem
             end                
         end  % function
         
-        function output = get.TriggerScheme(self)
-            output = self.Parent.Triggering.AcquisitionTriggerScheme ;
-        end
+%         function output = get.TriggerScheme(self)
+%             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
+%         end
         
         function result = get.DataCacheDurationWhenContinuous(self) 
            result = self.DataCacheDurationWhenContinuous_ ;

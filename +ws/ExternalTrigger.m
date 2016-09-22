@@ -25,15 +25,15 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
     
     properties (Access=protected)
         Name_
-        %DeviceName_
+        DeviceName_
         PFIID_
         Edge_
         IsMarkedForDeletion_
     end
     
     methods
-        function self=ExternalTrigger(parent)
-            self@ws.Model(parent) ;
+        function self=ExternalTrigger(parent)  %#ok<INUSD>
+            self@ws.Model([]) ;  % ignore parent arg
             self.Name_ = 'Destination';
             %self.DeviceName_ = 'Dev1';
             self.PFIID_ = 0;
@@ -46,9 +46,13 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         end
         
         function value=get.DeviceName(self)
-            value=self.Parent.Parent.DeviceName ;
+            value=self.DeviceName_;
         end
-                
+        
+        function set.DeviceName(self, deviceName)  % should only be called by triggering subsystem
+            self.DeviceName_ = deviceName ;
+        end        
+        
         function value=get.PFIID(self)
             value=self.PFIID_;
         end
@@ -62,12 +66,12 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                 if ws.isString(value) && ~isempty(value) ,
                     self.Name_ = value ;
                 else
-                    self.Parent.update();
+                    %self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
-            self.Parent.update();            
+            %self.Parent.update();            
         end
         
 %         function set.DeviceName(self, value)
@@ -85,16 +89,16 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         
         function set.PFIID(self, value)
             if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 && self.Parent.isPFIIDFree(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,   % && self.Parent.isPFIIDFree(value) ,
                     value = double(value) ;
                     self.PFIID_ = value ;
                 else
-                    self.Parent.update();
+                    %self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'PFIID must be a (scalar) nonnegative integer');                  
                 end                    
             end
-            self.Parent.update();            
+            %self.Parent.update();            
         end
         
         function set.Edge(self, value)
@@ -102,12 +106,12 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                 if ws.isAnEdgeType(value) ,
                     self.Edge_ = value;
                 else
-                    self.Parent.update();
+                    %self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
-            self.Parent.update();            
+            %self.Parent.update();            
         end  % function 
         
         function value = get.IsMarkedForDeletion(self)
@@ -119,12 +123,12 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                 if (islogical(value) || isnumeric(value)) && isscalar(value) ,
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
-                    self.Parent.update();
+                    %self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'IsMarkedForDeletion must be a truthy scalar');                  
                 end                    
             end
-            self.Parent.update();            
+            %self.Parent.update();            
         end
         
     end  % methods
@@ -138,27 +142,5 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
-    end
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-% 
-%             s.Name=struct('Classes', 'char', ...
-%                           'Attributes', {{'vector'}}, ...
-%                           'AllowEmpty', false);
-%             s.DeviceName=struct('Classes', 'char', ...
-%                             'Attributes', {{'vector'}}, ...
-%                             'AllowEmpty', true);
-%             s.PFIID=struct('Classes', 'numeric', ...
-%                            'Attributes', {{'scalar', 'integer'}}, ...
-%                            'AllowEmpty', false);
-%         end  % function
-%     end  % class methods block
-    
+    end    
 end  % classdef

@@ -64,7 +64,7 @@ classdef Triggering < ws.TriggeringSubsystem
             % If needed, set up the acquisition counter task
             acquisitionTrigger = self.AcquisitionTriggerScheme ;            
             if isa(acquisitionTrigger, 'ws.CounterTrigger') ,  % acquisition subsystem is always enabled
-                deviceName = self.Parent.DeviceName ;
+                deviceName = acquisitionTrigger.DeviceName ;
                 counterID = acquisitionTrigger.CounterID ;
                 taskName = sprintf('WaveSurfer Acquisition Counter Trigger Task for CTR%d', counterID) ;
                 % Set it up to trigger off the built-in trigger, since that
@@ -86,8 +86,13 @@ classdef Triggering < ws.TriggeringSubsystem
             
             % If needed, set up the stimulation counter task
             stimulationTrigger = self.StimulationTriggerScheme ;            
-            if self.Parent.Stimulation.IsEnabled && isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
-                deviceName = self.Parent.DeviceName ;
+            % With the new no-parent movement, it's nontrivial to determine
+            % from here whether stimulation is enabled.  So we just set up
+            % the stimulation counter trigger regardless.  The stim
+            % susbsystem will not create any tasks that are triggered off it, so this should be OK.
+            %if self.Parent.Stimulation.IsEnabled && isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
+            if isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
+                deviceName = stimulationTrigger.DeviceName ;
                 counterID = stimulationTrigger.CounterID ;
                 taskName = sprintf('WaveSurfer Stimulation Counter Trigger Task for CTR%d', counterID) ;
                 % Set it up to trigger off the built-in trigger, since that
@@ -138,10 +143,6 @@ classdef Triggering < ws.TriggeringSubsystem
             self.completingOrStoppingOrAbortingRun_() ;
         end  % function                
 
-        function didSetDeviceName(self)
-            self.broadcast('Update') ;
-        end
-        
         function debug(self) %#ok<MANU>
             % This is to make it easy to examine the internals of the
             % object

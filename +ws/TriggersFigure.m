@@ -52,9 +52,6 @@ classdef TriggersFigure < ws.MCOSFigure
            
            % Sync to the model
            self.update();
-           
-%            % Make the figure visible
-%            set(self.FigureGH,'Visible','on');
         end  % constructor
     end
     
@@ -77,10 +74,6 @@ classdef TriggersFigure < ws.MCOSFigure
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
-%             self.UseASAPTriggeringCheckbox = ...
-%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
-%                           'Style','checkbox', ...
-%                           'String','Use ASAP triggering');
             self.AcquisitionSchemeText = ...
                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
@@ -183,23 +176,6 @@ classdef TriggersFigure < ws.MCOSFigure
                     elseif isequal(get(propertyThing,'Type'),'uitable') 
                         set(propertyThing,'CellEditCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
-                    
-%                     % Set Font
-%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'FontName','Tahoma');
-%                         set(propertyThing,'FontSize',8);
-%                     end
-%                     
-%                     % Set Units
-%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'Units','pixels');
-%                     end
-                    
-%                     % Set border type
-%                     if isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'BorderType','none', ...
-%                                           'FontWeight','bold');
-%                     end
                 end
             end
         end  % function        
@@ -302,18 +278,6 @@ classdef TriggersFigure < ws.MCOSFigure
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
             ws.positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
-
-%             % Checkbox
-%             checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
-%             checkboxExtent=checkboxFullExtent(3:4);
-%             checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
-%             checkboxXOffset=rulerXOffset;
-%             checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
-%             checkboxHeight=checkboxPosition(4);
-%             checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
-%             set(self.UseASAPTriggeringCheckbox, ...
-%                 'Position',[checkboxXOffset checkboxYOffset ...
-%                             checkboxWidth checkboxHeight]);            
         end  % function
     end
 
@@ -458,45 +422,25 @@ classdef TriggersFigure < ws.MCOSFigure
         end
     end
     
-    methods
-        function delete(self) %#ok<INUSD>
-%             if ishghandle(self.FigureGH) ,
-%                 delete(self.FigureGH);
-%             end
-        end  % function       
-    end  % methods    
-
-%     methods
-%         function controlActuated(self,controlName,source,event)
-%             if isempty(self.Controller) ,
-%                 % do nothing
-%             else
-%                 self.Controller.controlActuated(controlName,source,event);
-%                 %self.Controller.updateModel(source,event,guidata(self.FigureGH));
-%             end
-%         end  % function       
-%     end  % methods
-
     methods (Access=protected)
-        function updateControlPropertiesImplementation_(self,varargin)
+        function updateControlPropertiesImplementation_(self, varargin)
             if isempty(self.Model) ,
                 return
             end            
-            self.updateSweepBasedAcquisitionControls();
-            self.updateSweepBasedStimulationControls();
-            %self.updateContinuousModeControls();
-            self.updateCounterTriggersTable();
-            self.updateExternalTriggersTable();                   
+            self.updateSweepBasedAcquisitionControls() ;
+            self.updateSweepBasedStimulationControls() ;
+            self.updateCounterTriggersTable() ;
+            self.updateExternalTriggersTable() ;                   
         end  % function
     end  % methods
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self)
-            triggeringModel=self.Model;
+            wsModel = self.Model ;  % this is the WavesurferModel
+            triggeringModel = wsModel.Triggering ;
             if isempty(triggeringModel) || ~isvalid(triggeringModel) ,
                 return
             end            
-            wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=isequal(wsModel.State,'idle');
             %isSweepBased = wsModel.AreSweepsFiniteDuration;
             
@@ -524,7 +468,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateSweepBasedAcquisitionControls(self,varargin)
-            model=self.Model;
+            model=self.Model.Triggering;
             if isempty(model) ,
                 return
             end
@@ -539,7 +483,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateSweepBasedStimulationControls(self,varargin)
-            model=self.Model;
+            model=self.Model.Triggering;
             if isempty(model) ,
                 return
             end
@@ -556,24 +500,8 @@ classdef TriggersFigure < ws.MCOSFigure
     end  % methods
     
     methods
-%         function updateContinuousModeControls(self,varargin)
-%             model=self.Model;
-%             if isempty(model) ,
-%                 return
-%             end
-%             import ws.setPopupMenuItemsAndSelectionBang
-%             import ws.onIff
-%             rawMenuItems={model.CounterTriggers.Name};
-%             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
-%             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
-%                                               rawMenuItems, ...
-%                                               rawCurrentItem);
-%         end  % function       
-    end  % methods
-
-    methods
         function updateCounterTriggersTable(self,varargin)
-            model=self.Model;
+            model=self.Model.Triggering;
             if isempty(model) ,
                 return
             end
@@ -597,7 +525,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateExternalTriggersTable(self,varargin)
-            model=self.Model;
+            model=self.Model.Triggering;
             if isempty(model) ,
                 return
             end
@@ -618,39 +546,12 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateSubscriptionsToModelEvents_(self)
-            % Unsubscribe from all events, then subsribe to all the
-            % approprate events of model.  model should be a Triggering subsystem
-            %self.unsubscribeFromAll();
-            model=self.Model;
-            if ~isempty(model) && isvalid(model) ,
-                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
-                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
-
-                % Add subscriptions for updating control enablement
-                model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                %model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
-                model.subscribeMe(self,'Update','','update');
-                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-
-                % Add subscriptions for the changeable fields of each element
-                % of model.CounterTriggers
-                self.updateSubscriptionsToSourceProperties_();
+            wsm = self.Model ;  % a WSM
+            if ~isempty(wsm) && isvalid(wsm) ,
+                wsm.subscribeMe(self,'DidSetState','','updateControlEnablement');
+                wsm.subscribeMe(self,'UpdateTriggering','','update');
             end
         end
-        
-        function updateSubscriptionsToSourceProperties_(self,varargin)
-            % Add subscriptions for the changeable fields of each source
-            model=self.Model;
-            sources = model.CounterTriggers;            
-            for i = 1:length(sources) ,
-                source=sources{i};
-                source.unsubscribeMeFromAll(self);
-                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateCounterTriggersTable');
-                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateCounterTriggersTable');
-                source.subscribeMe(self, 'Update', '', 'updateCounterTriggersTable');
-            end
-        end
-    end
+    end  % protected methods block
     
 end  % classdef
