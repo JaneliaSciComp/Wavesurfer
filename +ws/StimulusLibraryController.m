@@ -46,132 +46,48 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         
         function StimuliListboxActuated(self, source, event) %#ok<INUSD>
             selectionIndex = get(source, 'Value') ;
-            %stimuli=self.Model.Stimuli;
-            %nStimuli=length(stimuli);
-            %if 1<=selectionIndex && selectionIndex<=nStimuli ,
-            %    self.Model.SelectedItem=stimuli{selectionIndex};
-            %else
-            %    self.Figure.update();  % something's odd, so just update the figure given the model
-            %end                       
             self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.Stimulus', selectionIndex) ;            
         end  % function
         
         function MapsListboxActuated(self, source, event)  %#ok<INUSD>
             selectionIndex = get(source, 'Value') ;
-%             items=self.Model.Maps;
-%             nItems=length(items);
-%             if 1<=selectionIndex && selectionIndex<=nItems ,
-%                 self.Model.SelectedItem=items{selectionIndex};
-%             else
-%                 self.Figure.update();  % something's odd, so just update the figure given the model
-%             end
             self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.StimulusMap', selectionIndex) ;            
         end  % function
         
         function SequencesListboxActuated(self, source, event)  %#ok<INUSD>
             selectionIndex = get(source, 'Value') ;
-%             items=self.Model.Sequences;
-%             nItems=length(items);
-%             if 1<=selectionIndex && selectionIndex<=nItems ,
-%                 self.Model.SelectedItem=items{selectionIndex};
-%             else
-%                 self.Figure.update();  % something's odd, so just update the figure given the model
-%             end
             self.Model.do('setSelectedItemByClassNameAndIndex', 'ws.StimulusSequence', selectionIndex) ;
         end  % function
         
         function AddSequenceMenuItemActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;
-% 
-%             % Add a sequence to the model
-%             sequence = model.addNewSequence();
-%             
-%             % If there are maps, add the first just to get things started.
-%             if ~isempty(model.Maps)
-%                 map=model.Maps{1};
-%                 sequence.addMap(map);
-%             end            
-            
             self.Model.do('addNewSequence') ;            
         end  % function
         
         function DuplicateSequenceMenuItemActuated(self,source,event)  %#ok<INUSD>
-%             model=self.Model;
-%             
-%             % Duplicate a sequence
-%             model.duplicateSelectedItem();
-
             self.Model.do('duplicateSelectedItem') ;
         end  % function
         
         function AddMapToSequenceMenuItemActuated(self,source,event)  %#ok<INUSD>
-%             model=self.Model;
-%             selectedSequence=model.SelectedSequence;
-%             if ~isempty(selectedSequence) ,
-%                 selectedItem=model.SelectedItem;
-%                 if ~isempty(selectedItem) ,
-%                     if (selectedSequence==selectedItem) ,
-%                         if ~isempty(model.Maps)
-%                             map=model.Maps{1};  % just add the first map to the sequence.  User can change it subsequently.
-%                             selectedSequence.addMap(map);
-%                         end
-%                     end
-%                 end
-%             end
             self.Model.do('addMapToSelectedItem') ;
         end  % function
         
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;
-%             selectedItem=model.SelectedItem;
-%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
-%                 selectedItem.deleteMarkedMaps();
-%             end
             self.Model.do('deleteMarkedMapsFromSequence') ;
         end  % function
 
         function AddMapMenuItemActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;
-% 
-%             % Add a map to the model
-%             map = model.addNewMap();
-%             
-%             % Add a binding just to get things rolling
-%             map.addBinding('');            
             self.Model.do('addNewMap') ;
         end  % function
 
         function DuplicateMapMenuItemActuated(self, source, event) %#ok<INUSD>
-%             model=self.Model;
-% 
-%             % Duplicate a map
-%             model.duplicateSelectedItem();
             self.Model.do('duplicateSelectedItem') ;
         end  % function
         
         function AddChannelToMapMenuItemActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;
-%             selectedMap=model.SelectedMap;
-%             if ~isempty(selectedMap) ,
-%                 selectedItem=model.SelectedItem;
-%                 if ~isempty(selectedItem) ,
-%                     if (selectedMap==selectedItem) ,
-%                         if ~isempty(model.Stimuli)
-%                             %stimulus=model.Stimuli{1};  % just add the first map to the sequence.  User can change it subsequently.
-%                             selectedMap.addBinding('');                            
-%                         end
-%                     end
-%                 end
-%             end
             self.Model.do('addChannelToSelectedItem') ;            
         end  % function
 
         function DeleteChannelsFromMapMenuItemActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;
-%             selectedItem=model.SelectedItem;
-%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
-%                 selectedItem.deleteMarkedBindings();
-%             end
             self.Model.do('deleteMarkedChannelsFromSelectedItem') ;
         end  % function
 
@@ -182,10 +98,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
 
         function DuplicateStimulusMenuItemActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;
-%             
-%             % Duplicate a stimulus
-%             model.duplicateSelectedItem();
             self.Model.do('duplicateSelectedItem') ;            
         end  % function
         
@@ -253,26 +165,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             end
         end  % function
 
-%         function DeleteItemMenuItemActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;
-%             selectedItem=model.SelectedItem;
-%             if ~isempty(selectedItem) ,
-%                 isInUse = model.isInUse(selectedItem);
-% 
-%                 if isInUse ,
-%                     str1 = 'This item is referenced by one or more items in the library.  Deleting it will alter those items.';
-%                     str2 = 'Delete Item?';
-%                     choice = ws.questdlg(str1, str2, 'Delete', 'Cancel', 'Cancel');
-%                     switch choice 
-%                         case 'Delete'
-%                             model.deleteItem(selectedItem);
-%                     end
-%                 else
-%                     model.deleteItem(selectedItem);
-%                 end                            
-%             end
-%         end  % function
-        
         function PreviewMenuItemActuated(self,source,event) %#ok<INUSD>
             model=self.Model;            
             selectedItem=model.SelectedItem;
@@ -306,13 +198,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function                
         
         function itemNameEditActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;            
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             newName = get(source,'String') ;
-%             selectedItem.Name=newName;
             self.Model.do('setSelectedItemName', newName) ;
         end  % function
         
@@ -329,36 +215,18 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function                
         
         function MapDurationEditActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;            
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             newValueAsString = get(source,'String') ;
             newValue = str2double(newValueAsString) ;
-%             selectedItem.Duration=newValue;
             self.Model.do('setSelectedItemDuration', newValue) ;
         end  % function
 
         function StimulusDelayEditActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;            
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             newValueAsString = get(source,'String') ;
-%             selectedItem.Delay=newValueAsString;
             self.Model.do('setSelectedStimulusProperty', 'Delay', newValueAsString) ;
         end  % function
         
         function StimulusDurationEditActuated(self,source,event) %#ok<INUSD>
-%             model=self.Model;            
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             newValueAsString = get(source,'String') ;
-            %selectedItem.Duration=newValueAsString;
             self.Model.do('setSelectedStimulusProperty', 'Duration', newValueAsString) ;
         end  % function
         
@@ -373,11 +241,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
         
         function StimulusFunctionPopupmenuActuated(self, source, event)  %#ok<INUSD>
-%             model=self.Model;            
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             iMenuItem = get(source,'Value') ;
             allowedTypeStrings = ws.Stimulus.AllowedTypeStrings ;
             if 1<=iMenuItem && iMenuItem<=length(allowedTypeStrings) ,
@@ -391,29 +254,13 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     
         function StimulusAdditionalParametersEditsActuated(self, source, event)  %#ok<INUSD>
             % This means one of the additional parameter edits was actuated
-%             model=self.Model;
-%             selectedItem=model.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 return
-%             end
             isMatch = (source==self.Figure.StimulusAdditionalParametersEdits) ;
             iParameter = find(isMatch,1) ;
-%             if isempty(iParameter) ,
-%                 return
-%             end             
-%             additionalParameterNames=selectedItem.Delegate.AdditionalParameterNames;
-%             propertyName=additionalParameterNames{iParameter};
             newString = get(source,'String') ;
-            %selectedItem.Delegate.(propertyName)=newString;  % model will check validity            
             self.Model.do('setSelectedStimulusAdditionalParameter', iParameter, newString) ;
         end  % function
     
         function SequenceTableCellEdited(self,source,event)  %#ok<INUSL>
-%             library=self.Model;
-%             selectedSequence=library.SelectedItem;
-%             if isempty(selectedSequence) ,
-%                 return
-%             end            
             indices = event.Indices ;
             indexOfElementWithinSequence = indices(1) ;  % the row index
             columnIndex = indices(2) ;
@@ -421,23 +268,15 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 % this is the Map Name column
                 newMapNameRaw = event.EditData ;
                 newMapName = ws.fif(isequal(newMapNameRaw,'(Unspecified)'), '', newMapNameRaw) ;
-                %map=library.mapWithName(newMapName);
-                %selectedSequence.setMap(rowIndex,map);
                 self.Model.do('setElementOfSelectedSequenceToNamedMap', indexOfElementWithinSequence, newMapName) ;
             elseif (columnIndex==4) ,
                 % this is the Delete? column
                 newValue = event.EditData ;
-                %selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValue ;
                 self.Model.do('setIsMarkedForDeletionForElementOfSelectedSequence', indexOfElementWithinSequence, newValue) ;
             end
         end  % function
     
         function MapTableCellEdited(self,source,event)  %#ok<INUSL>
-%             model=self.Model;
-%             selectedMap=model.SelectedItem;
-%             if isempty(selectedMap) ,
-%                 return
-%             end            
             indices = event.Indices ;
             indexOfElementWithinMap = indices(1) ;  % the row index
             columnIndex = indices(2) ;
@@ -450,11 +289,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 newStimulusNameRaw = event.EditData ;
-%                 if isequal(newStimulusName,'(Unspecified)') ,
-%                     selectedMap.nullStimulusAtBindingIndex(indexOfElementWithinMap)
-%                 else
-%                     selectedMap.setStimulusByName(indexOfElementWithinMap, newStimulusName) ;
-%                 end                
                 newStimulusName = ws.fif(isequal(newStimulusNameRaw,'(Unspecified)'), '', newStimulusNameRaw) ;
                 self.Model.do('setStimulusByNameForElementOfSelectedMap', indexOfElementWithinMap, newStimulusName) ;
             elseif (columnIndex==4) ,
@@ -482,13 +316,11 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             nMaps=length(maps);
             plotHeight=1/nMaps;
             for idx = 1:nMaps ,
-                %ax = subplot(selectedItem.CycleCount, 1, idx);  
                 % subplot doesn't allow for direct specification of the
                 % target figure
                 ax=axes('Parent',fig, ...
                         'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
                 map=maps{idx};
-                %map.plot(fig, ax, samplingRate);
                 self.plotStimulusMap_(ax, map, samplingRate, channelNames) ;
                 ylabel(ax,sprintf('Map %d',idx),'FontSize',10,'Interpreter','none') ;
             end
@@ -501,9 +333,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 % Make our own axes
                 ax = axes('Parent',fig);
             end            
-            
-            % % Get the channel names
-            % channelNamesInThisMap=map.ChannelNames;
             
             % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
             nChannelsInThisMap = length(channelNames) ;
@@ -562,15 +391,11 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
             
             ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
             legend(ax, channelNames, 'Interpreter', 'None');
-            %title(ax,sprintf('Stimulus Map: %s', selectedItem.Name));
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,map.Name,'FontSize',10,'Interpreter','none');
-            
-            %set(ax, 'NextPlot', 'Replace');
         end  % function
 
         function plotStimulus_(self, ax, stimulus, samplingRate)
-        %function h = plot(self, fig, ax, sampleRate)
             fig = self.PlotFigureGH_ ;            
             if ~exist('ax','var') || isempty(ax)
                 ax = axes('Parent',fig);
