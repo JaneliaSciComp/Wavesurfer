@@ -218,15 +218,13 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
         
         function testWhetherDurationIsNotFreeAfterProtocolLoad(self)
             % Create an WavesurferModel
-            %thisDirName=fileparts(mfilename('fullpath'));
             em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
-            
+
+            % Add channels
             em.addAIChannel() ;
             em.addAIChannel() ;
             em.addAIChannel() ;
             em.addAOChannel() ;
-            
             
             % Clear the stim lib within the WavesurferModel
             em.Stimulation.StimulusLibrary.clear();
@@ -238,8 +236,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
            
             % All map durations should be not free
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
-            self.verifyTrue(all(isDurationOverridden));
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree') ;
+            self.verifyTrue(all(isDurationOverridden), 'Not all map durations are overridden') ;
             
             % Save the protocol to disk
             %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
@@ -258,8 +256,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[em.Stimulation.StimulusLibrary.Maps.IsDurationFree];
-            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree');
-            self.verifyTrue(all(isDurationOverridden));
+            isDurationOverridden= ~ws.cellArrayPropertyAsArray(em.Stimulation.StimulusLibrary.Maps,'IsDurationFree') ;
+            self.verifyTrue(all(isDurationOverridden), 'Not all map durations are overridden');
             %keyboard
         end  % function      
         

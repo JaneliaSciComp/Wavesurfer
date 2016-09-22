@@ -328,10 +328,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             stimulusLibrary=self.Parent;
             stimulationSubsystem=stimulusLibrary.Parent;
             rootModel=stimulationSubsystem.Parent;
-            triggeringSubsystem=rootModel.Triggering;
+            %triggeringSubsystem=rootModel.Triggering;
             %acquisitionSubsystem=rootModel.Acquisition;  % problematic: refiller doesn't have this subsystem      
             isSweepBased=rootModel.AreSweepsFiniteDuration;
-            doesStimulusUseAcquisitionTriggerScheme=triggeringSubsystem.StimulationUsesAcquisitionTriggerScheme;
+            doesStimulusUseAcquisitionTriggerScheme=rootModel.StimulationUsesAcquisitionTrigger ;
             %acquisitionDuration=acquisitionSubsystem.Duration;
             acquisitionDuration=rootModel.SweepDuration;
         end   % function
