@@ -114,13 +114,15 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         
         function testUpdateBeforeRunCheckbox(self)
             % Create a WavesurferModel
-            model=ws.WavesurferModel(true);
+            isITheOneTrueWavesurferModel = true ;
+            wsModel = ws.WavesurferModel(isITheOneTrueWavesurferModel) ;
+            %wsModel = wavesurfer('--nogui') ;
             
             % Load configuration file with one Heka EPC electrode
             thisDirName=fileparts(mfilename('fullpath'));
-            model.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
-            electrodeManager = model.Ephys.ElectrodeManager;
-            testPulser = model.Ephys.TestPulser;
+            wsModel.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
+            electrodeManager = wsModel.Ephys.ElectrodeManager;
+            testPulser = wsModel.Ephys.TestPulser;
             electrodeIndex = 1;
             
             % Create another EPCMasterSocket object so we can modify
@@ -143,7 +145,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %self.verifyTrue(all(testPulserShouldAllBeTrue));
             
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
-            self.checkTimingAndUpdating_(@model.play, @model.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(runShouldAllBeTrue));        
         end  % function
     end

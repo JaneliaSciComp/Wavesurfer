@@ -24,20 +24,22 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
     end
     
     methods
-        function self=BuiltinTrigger(parent)  %#ok<INUSD>
+        function self=BuiltinTrigger(parent)  %#ok<INUSD>            
             self@ws.Model([]) ;  % have to accept parent arg, but ignore it
+            %fprintf('ws.BuiltinTrigger constructor called\n') ;
+            %dbstack
             self.Name_ = 'Built-in Trigger (PFI8)' ;
-            %self.DeviceName_ = '' ;
+            self.DeviceName_ = '' ;
             self.PFIID_ = 8 ;
             self.Edge_ = 'rising' ;
         end
         
         function value=get.Name(self)
-            value=self.Name_;
+            value = self.Name_ ;
         end
 
-        function value=get.DeviceName(self)
-            value=self.DeviceName_;
+        function value = get.DeviceName(self)
+            value = self.DeviceName_ ;
         end
         
         function set.DeviceName(self, deviceName)  % should only be called by triggering subsystem

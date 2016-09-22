@@ -587,7 +587,7 @@ classdef WavesurferModel < ws.Model
                     if self.AreSweepsFiniteDuration ,
                         %self.Triggering.willSetNSweepsPerRun();
                         self.NSweepsPerRun_ = double(newValue) ;
-                        self.didSetNSweepsPerRun_() ;
+                        self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
                     else
                         self.broadcast('Update') ;
                         error('most:Model:invalidPropVal', ...
@@ -671,7 +671,7 @@ classdef WavesurferModel < ws.Model
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
                 self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.didSetAreSweepsFiniteDuration_();
+                self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_);
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
@@ -750,11 +750,6 @@ classdef WavesurferModel < ws.Model
             end            
         end
         
-%         function didSetDigitalInputTerminalID(self)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.broadcast('UpdateChannels') ;
-%         end
-        
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             display=self.Display;
             if ~isempty(display)
@@ -769,10 +764,6 @@ classdef WavesurferModel < ws.Model
         
         function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
             self.Display.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
-%             ephys=self.Ephys;
-%             if ~isempty(ephys)
-%                 ephys.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
-%             end            
             self.broadcast('UpdateChannels') ;
         end
         
@@ -781,16 +772,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end
         
-%         function didSetDigitalOutputTerminalID(self)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.broadcast('UpdateChannels') ;
-%         end
-        
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
-%             display=self.Display;
-%             if ~isempty(display)
-%                 display.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
-%             end            
             ephys=self.Ephys;
             if ~isempty(ephys)
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
@@ -799,11 +781,6 @@ classdef WavesurferModel < ws.Model
         end
         
         function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
-%             self.Display.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
-%             ephys=self.Ephys;
-%             if ~isempty(ephys)
-%                 ephys.didSetDigitalOutputChannelName(didSucceed, oldValue, newValue);
-%             end            
             self.broadcast('UpdateChannels') ;
         end
         
@@ -880,94 +857,12 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-%         function acquisitionSweepComplete(self)
-%             % Called by the acq subsystem when it's done acquiring for the
-%             % sweep.
-%             %fprintf('WavesurferModel::acquisitionSweepComplete()\n');
-%             self.checkIfSweepIsComplete_();            
-%         end  % function
-        
-%         function stimulationEpisodeComplete(self)
-%             % Called by the stimulation subsystem when it is done outputting
-%             % the sweep
-%             
-%             %fprintf('WavesurferModel::stimulationEpisodeComplete()\n');
-%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-%             self.checkIfSweepIsComplete_();
-%         end  % function
-        
-%         function internalStimulationCounterTriggerTaskComplete(self)
-%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-%             %dbstack
-%             self.checkIfSweepIsComplete_();
-%         end
-        
-%         function checkIfSweepIsComplete_(self)
-%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-%             % depending on the states of the Acquisition, Stimulation, and
-%             % Triggering subsystems.  Generally speaking, we want to make
-%             % sure that all three subsystems are done with the sweep before
-%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-%             if self.Stimulation.IsEnabled ,
-%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-%                     % acq and stim trig sources are identical
-%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-%                         % do nothing
-%                     else
-%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.IsSweepComplete_ = true ;
-%                     end
-%                 else
-%                     % acq and stim trig sources are distinct
-%                     % this means the stim trigger basically runs on
-%                     % its own until it's done
-%                     if self.Acquisition.IsArmedOrAcquiring ,
-%                         % do nothing
-%                     else
-%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.IsSweepComplete_ = true ;
-%                     end
-%                 end
-%             else
-%                 % Stimulation subsystem is disabled
-%                 if self.Acquisition.IsArmedOrAcquiring , 
-%                     % do nothing
-%                 else
-%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                     self.IsSweepComplete_ = true ;
-%                 end
-%             end            
-%         end  % function
-                
-%         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-%             % Called "from below" when data is available
-%             self.NTimesDataAvailableCalledSinceRunStart_ = self.NTimesDataAvailableCalledSinceRunStart_ + 1 ;
-%             %profile resume
-%             % time between subsequent calls to this
-% %            t=toc(self.FromRunStartTicId_);
-% %             if isempty(self.TimeOfLastSamplesAcquired_) ,
-% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
-% %             else
-% %                 %dt=t-self.TimeOfLastSamplesAcquired_;
-% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
-% %             end
-%             self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
-%            
-%             % Actually handle the data
-%             %data = eventData.Samples;
-%             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-%             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-%             %profile off
-%         end
-
-%         function willSetAreSweepsFiniteDuration(self)  %#ok<MANU>
-%             %self.Triggering.willSetAreSweepsFiniteDuration();
-%         end
-        
-%         function willSetSweepDurationIfFinite(self)
-%             self.Triggering.willSetSweepDurationIfFinite();
-%         end
-        
+        function testPulserIsAboutToStartTestPulsing(self)
+            self.releaseTimedHardwareResourcesOfAllProcesses_();
+        end        
+    end  % public methods block
+    
+    methods (Access=protected)
         function releaseTimedHardwareResources_(self)
             %self.Acquisition.releaseHardwareResources();
             %self.Stimulation.releaseHardwareResources();
@@ -975,19 +870,13 @@ classdef WavesurferModel < ws.Model
             %self.Ephys.releaseTimedHardwareResources();
         end
 
-        function testPulserIsAboutToStartTestPulsing(self)
-            self.releaseTimedHardwareResourcesOfAllProcesses_();
-        end        
-    end  % public methods block
-    
-    methods (Access=protected)
         function didSetSweepDurationIfFinite_(self)
             %self.Triggering.didSetSweepDurationIfFinite() ;
             self.Display.didSetSweepDurationIfFinite() ;
         end        
         
-        function didSetAreSweepsFiniteDuration_(self)
-            self.Triggering_.didSetAreSweepsFiniteDuration(self.NSweepsPerRun);
+        function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun)
+            self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
             self.broadcast('UpdateTriggering') ;
             self.Display.didSetAreSweepsFiniteDuration();
         end        
@@ -2703,12 +2592,18 @@ classdef WavesurferModel < ws.Model
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
             
-%             % Tell the subsystems that we've changed the device
-%             % name, which we have, among other things
-%             self.Acquisition.didSetDeviceName() ;
-%             self.Stimulation.didSetDeviceName() ;
-%             self.Triggering.didSetDeviceName() ;
-%             %self.Display.didSetDeviceName() ;
+            % Do some things to help with old protocol files.  Have to do
+            % it here b/c have to do it after
+            % synchronizeTransientStateToPersistedState_(), since that's
+            % what probes the device to get number of counters, PFI lines,
+            % etc, and we need that info to be right before we call the
+            % methods below.
+            self.didSetDeviceName_(self.DeviceName_, self.NCounters_, self.NPFITerminals_) ;  % Old protocol files don't store the 
+                                        % device name in subobjects, so we call 
+                                        % this to set the DeviceName
+                                        % throughout to the one set in self
+            self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_) ;  % Ditto
+            self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;  % Ditto
 
             % Safe to do broadcasts again
             %self.enableBroadcastsMaybe() ;
@@ -2759,10 +2654,7 @@ classdef WavesurferModel < ws.Model
                         
                         % Tell the subsystems that we've changed the device
                         % name
-                        self.Acquisition.didSetDeviceName() ;
-                        self.Stimulation.didSetDeviceName() ;
-                        self.Triggering_.didSetDevice(deviceName, self.NCounters, self.NPFITerminals) ;
-                        %self.Display.didSetDeviceName() ;
+                        self.didSetDeviceName_(deviceName,  self.NCounters_, self.NPFITerminals_) ;
                         
                         % Change our state to reflect the presence of the
                         % device
@@ -3390,6 +3282,18 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
 
     methods (Access=protected)
+%         function sanitizePersistedState_(self)
+%             % This method should perform any sanity-checking that might be
+%             % advisable after loading the persistent state from disk.
+%             % This is often useful to provide backwards compatibility
+%             
+%             self.didSetDeviceName_() ;  % Old protocol files don't store the 
+%                                         % device name in subobjects, so we call 
+%                                         % this to set the DeviceName
+%                                         % throughout to the one set in self
+%             self.didSetNSweepsPerRun_() ;  % Ditto
+%         end  % function
+        
         function synchronizeTransientStateToPersistedState_(self)            
             % This method should set any transient state variables to
             % ensure that the object invariants are met, given the values
@@ -3407,8 +3311,15 @@ classdef WavesurferModel < ws.Model
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
         end  % method
         
-        function didSetNSweepsPerRun_(self)
-            self.Triggering_.didSetNSweepsPerRun(self.NSweepsPerRun) ;
+        function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
+            self.Acquisition.didSetDeviceName() ;
+            self.Stimulation.didSetDeviceName() ;
+            self.Triggering_.didSetDevice(deviceName, nCounters, nPFITerminals) ;
+            %self.Display.didSetDeviceName() ;
+        end  % method
+        
+        function didSetNSweepsPerRun_(self, nSweepsPerRun)
+            self.Triggering_.didSetNSweepsPerRun(nSweepsPerRun) ;
             self.broadcast('UpdateTriggering') ;
         end  % function        
     end  % protected methods block 

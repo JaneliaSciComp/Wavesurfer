@@ -46,7 +46,8 @@ classdef Triggering < ws.TriggeringSubsystem
             if isempty(self.BuiltinTriggerDABSTask_) ,
                 self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
                 sweepTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger.PFIID) ;
-                self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger.DeviceName, sweepTriggerTerminalName);
+                %builtinTrigger = self.BuiltinTrigger_
+                self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
                 self.BuiltinTriggerDABSTask_.writeDigitalData(false);
             end
             

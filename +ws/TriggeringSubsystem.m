@@ -509,7 +509,10 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
         
         function didSetDevice(self, deviceName, nCounters, nPFITerminals)
+            %fprintf('ws.TriggeringSubsystem::didSetDevice() called\n') ;
+            %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;
+            %builtinTrigger = self.BuiltinTrigger_
             for i = 1:length(self.CounterTriggers_) ,
                 self.CounterTriggers_{i}.DeviceName = deviceName ;                
             end
