@@ -492,14 +492,18 @@ classdef Controller < handle
         
         function layoutMaybe = singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) 
             coreName = strrep(strrep(controllerClassName, 'ws.', ''), 'Controller', '') ;
-            multiWindowLayoutFieldNames = fieldnames(multiWindowLayout) ;
-            layoutMaybe = {} ;
-            for i = 1:length(multiWindowLayoutFieldNames) ,
-                fieldName = multiWindowLayoutFieldNames{i} ;
-                doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
-                if doesFieldNameContainCoreName ,
-                    layoutMaybe = {multiWindowLayout.(fieldName)} ;
-                    break
+            if isempty(multiWindowLayout) ,
+                layoutMaybe = {} ;
+            else
+                multiWindowLayoutFieldNames = fieldnames(multiWindowLayout) ;
+                layoutMaybe = {} ;
+                for i = 1:length(multiWindowLayoutFieldNames) ,
+                    fieldName = multiWindowLayoutFieldNames{i} ;
+                    doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
+                    if doesFieldNameContainCoreName ,
+                        layoutMaybe = {multiWindowLayout.(fieldName)} ;
+                        break
+                    end
                 end
             end
         end  % function

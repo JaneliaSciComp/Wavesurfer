@@ -2016,7 +2016,11 @@ classdef WavesurferModel < ws.Model
             %keyboard
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
-            self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
+            if isfield(saveStruct, 'layoutForAllWindows') ,
+                self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
+            else
+                self.LayoutForAllWindows_ = [] ;
+            end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             %self.broadcast('Update');  
