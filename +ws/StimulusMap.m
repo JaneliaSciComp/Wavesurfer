@@ -336,28 +336,19 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             acquisitionDuration=rootModel.SweepDuration;
         end   % function
         
-        function out = containsStimulus(self, stimuliOrStimulus)
-            stimuli=ws.cellifyIfNeeded(stimuliOrStimulus);
-            out = false(size(stimuli));
-            
-            for index = 1:numel(stimuli)
-                validateattributes(stimuli{index}, {'ws.Stimulus'}, {'vector'});
-            end
-            
-            if isempty(stimuli)
-                return
-            end
-                        
-            %currentStimuli = [self.Bindings_.Stimulus];
-            %boundStimuli = cellfun(@(binding)(binding.Stimulus),self.Bindings_,'UniformOutput',false);
-            boundStimuli = self.Stimuli;
-            
-            for index = 1:numel(stimuli) ,
-                thisStimulus=stimuli{index};
-                isMatch=cellfun(@(boundStimulus)(boundStimulus==thisStimulus),boundStimuli);
-                if any(isMatch) ,
-                    out(index) = true;
+        function result = containsStimulus(self, testStimulus)
+            if isscalar(testStimulus) && isa(testStimulus, 'ws.Stimulus') ,                        
+                boundStimuli = self.Stimuli ;
+                result = false ;
+                for i = 1:length(boundStimuli) ,
+                    boundStimulusOrEmpty = boundStimuli{i} ;
+                    if ~isempty(boundStimulusOrEmpty) && boundStimulusOrEmpty==testStimulus ,
+                        result = true ;
+                        break
+                    end
                 end
+            else
+                result = false ;
             end
         end   % function
 

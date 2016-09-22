@@ -16,8 +16,14 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
             %st1 = ws.ChirpStimulus();
             self.verifyFalse(self.DefaultMap.containsStimulus(st3), 'The map does not contain the specified stimulus.');
             
-            self.verifyEqual(self.DefaultMap.containsStimulus({self.DefaultStim1, st3, self.DefaultStim2, st3, st3}), ...
-                [true false true false false], 'Incorrect output for vector containsStimlus.');
+%             self.verifyEqual(self.DefaultMap.containsStimulus({self.DefaultStim1, st3, self.DefaultStim2, st3, st3}), ...
+%                 [true false true false false], 'Incorrect output for vector containsStimlus.');
+            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim1), ...
+                            'Incorrect output for containsStimlus.');
+            self.verifyFalse(self.DefaultMap.containsStimulus(st3), ...
+                             'Incorrect output for containsStimlus.');
+            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim2), ...
+                            'Incorrect output for containsStimlus.');            
         end
         
         function testGetData(self)
