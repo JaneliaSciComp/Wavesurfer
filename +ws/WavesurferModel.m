@@ -3060,7 +3060,9 @@ classdef WavesurferModel < ws.Model
             
             protocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
             protocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
-            protocol.StimulusLibrary = self.Stimulation.StimulusLibrary ;                        
+            protocol.StimulusLibrary = self.Stimulation.StimulusLibrary.copyGivenParent([]) ;  
+              % We don't want to preserve the stim lib parent pointer, b/c
+              % that leads back to the entire WSM
             protocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
             protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;

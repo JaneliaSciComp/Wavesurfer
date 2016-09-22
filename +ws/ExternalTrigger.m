@@ -84,7 +84,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         
         function set.PFIID(self, value)
             if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,   % && self.Parent.isPFIIDFree(value) ,
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
                     value = double(value) ;
                     self.PFIID_ = value ;
                 else

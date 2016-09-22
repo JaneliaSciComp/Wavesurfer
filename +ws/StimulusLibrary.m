@@ -156,41 +156,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             value=isempty(self.Sequences)&&isempty(self.Maps)&&isempty(self.Stimuli);
         end  % function
         
-%         function value=get.IsLive(self)
-%             value=true;  % fallback return value
-% 
-%             % Check the maps
-%             maps=self.Maps;
-%             nMaps=length(maps);
-%             for i=1:nMaps
-%                 map=maps{i};
-%                 if ~map.IsLive ,
-%                     value=false;
-%                     return
-%                 end
-%             end
-%             
-%             % Check the sequences
-%             sequences=self.Sequences;
-%             nSequences=length(sequences);
-%             for i=1:nSequences
-%                 sequence=sequences{i};
-%                 if ~sequence.IsLive ,
-%                     value=false;
-%                     return
-%                 end
-%             end
-%                         
-%             % A more thorough implementation of this would check that all
-%             % the pointed-to stimuli, maps are in the self, and would check
-%             % that the listener arrays are at least the right type and the
-%             % right length.
-%         end  % function
-        
-%         function value=isLiveAndSelfConsistent(self)            
-%             value = self.IsLive && self.isSelfConsistent();
-%         end
-        
         function [value,err]=isSelfConsistent(self)                        
             % Make sure the Parent of all Sequences is self
             nSequences=length(self.Sequences);
@@ -379,12 +344,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function        
         
-%         function s=encodeSettings(self)
-%             % Return a something representing the current object settings,
-%             % suitable for saving to disk 
-%             s=self.copy();  % easiest thing is just to save a copy of the object to disk
-%         end  % function
-        
         function mimic(self, other)
             % Make self into something value-equal to other, in place
             self.disableBroadcasts();
@@ -436,20 +395,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
         
-%         function doppelganger=clone(self)
-%             % Make a clone of self.  This is another
-%             % instance with the same settings.
-%             import ws.*
-%             s=self.encodeSettings();
-%             doppelganger=StimulusLibrary();
-%             doppelganger.restoreSettings(s);
-%         end  % function
-
-%         function copyOfOriginal=restoreSettingsAndReturnCopyOfOriginal(self, other)
-%             copyOfOriginal=self.copy();
-%             self.mimic(other);
-%         end  % function
-
         function output = get.SelectedOutputableClassName(self)
             output=self.SelectedOutputableClassName_ ;
         end  % function
@@ -593,15 +538,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(self.Sequences_) || isempty(self.SelectedSequenceIndex_) ,
                 value = [] ;
             else
-%                 if 1<=self.SelectedSequenceIndex_ && self.SelectedSequenceIndex_<=length(self.Sequences_) ,
-%                     % all is well
-%                 else
-%                     fprintf('About to do an out-of-bounds reference.\n');
-%                     keyboard
-%                 end
                 value = self.Sequences_{self.SelectedSequenceIndex_} ;
             end
-            %value=self.findSequenceWithUUID(self.SelectedSequenceUUID_);
         end  % function
         
         function value = get.SelectedSequenceIndex(self)
@@ -703,30 +641,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
 
-%         function add(self, itemOrItems)
-%             if iscell(itemOrItems) ,
-%                 items=itemOrItems;
-%             else
-%                 items={itemOrItems};
-%             end
-%             for idx = 1:numel(items) ,
-%                 thisItem=items{idx};
-%                 validateattributes(thisItem, {'ws.Stimulus', 'ws.StimulusMap', 'ws.StimulusSequence' }, {});
-%             end
-%             
-%             for idx = 1:numel(items)
-%                 thisItem=items{idx};
-%                 if isa(thisItem, 'ws.StimulusSequence')
-%                     self.addSequences(thisItem);
-%                 elseif isa(thisItem, 'ws.StimulusMap')
-%                     self.addMaps_(thisItem);
-%                 elseif isa(thisItem, 'ws.Stimulus')
-%                     self.addStimuli_(thisItem);
-%                 end
-%                 %end
-%             end
-%         end  % function
-        
         function result = isInUse(self, itemOrItems)
             % Note that this doesn't check if the items are selected.  This
             % is by design.
@@ -824,11 +738,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.Stimuli_(indexOfStimulusToBeDeleted) = [] ;
                 end
             end
-%             % Check for self-consistency
-%             if ~self.isSelfConsistent() ,
-%                 warning('Lack of self-consistency detected!') ;
-%                 keyboard
-%             end
             % And, finally, notify dependents
             self.broadcast('Update');
         end  % function
@@ -850,54 +759,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             out = [sequences maps];
         end  % function
         
-%         function out = findItemWithUUID(self, queryUUID)
-%             items = self.getItems();
-%             uuids=cellfun(@(item)(item.UUID),items);
-%             isMatch=(uuids==queryUUID);
-%             index=find(isMatch,1);
-%             if isempty(index) ,
-%                 out = [];
-%             else
-%                 out = items{index};
-%             end
-%         end  % function
-%         
-%         function out = findSequenceWithUUID(self, queryUUID)
-%             items = self.Sequences;
-%             uuids=cellfun(@(item)(item.UUID),items);
-%             isMatch=(uuids==queryUUID);
-%             index=find(isMatch,1);
-%             if isempty(index) ,
-%                 out = [];
-%             else
-%                 out = items{index};
-%             end
-%         end  % function
-% 
-%         function out = findMapWithUUID(self, queryUUID)
-%             items = self.Maps;
-%             uuids=cellfun(@(item)(item.UUID),items);
-%             isMatch=(uuids==queryUUID);
-%             index=find(isMatch,1);
-%             if isempty(index) ,
-%                 out = [];
-%             else
-%                 out = items{index};
-%             end
-%         end  % function
-% 
-%         function out = findStimulusWithUUID(self, queryUUID)
-%             items = self.Stimuli;
-%             uuids=cellfun(@(item)(item.UUID),items);
-%             isMatch=(uuids==queryUUID);
-%             index=find(isMatch,1);
-%             if isempty(index) ,
-%                 out = [];
-%             else
-%                 out = items{index};
-%             end
-%         end  % function
-
         function out = sequenceWithName(self, name)
             validateattributes(name, {'char'}, {});
             
@@ -956,52 +817,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-%         function deleteInternalListeners(self)
-%             delete(self.SequenceListeners_);
-%             self.SequenceListeners_=event.proplistener.empty();
-%             delete(self.MapListeners_);
-%             self.MapListeners_=event.proplistener.empty();            
-%         end  % function
-            
-%         function revive(self)            
-%             %self.deleteInternalListeners();
-%             self.repairParentage();
-%             self.repairMapsAndSequences();            
-%             %self.repairInternalListeners();
-%         end  % function
-            
-%         function repairParentage(self)
-%             maps=self.Maps;
-%             nMaps=length(maps);
-%             for i=1:nMaps ,
-%                 map=maps{i};
-%                 map.Parent=self;
-%             end                            
-%         end  % function
-%         
-%         function repairMapsAndSequences(self)
-%             stimuli=self.Stimuli;
-%             maps=self.Maps;
-%             nMaps=length(maps);
-%             for i=1:nMaps ,
-%                 map=maps{i};
-%                 map.revive(stimuli);
-%             end                
-%             % At this point, all maps should be sound (not-broken)
-%             sequences=self.Sequences;
-%             nSequences=length(sequences);
-%             for i=1:nSequences ,
-%                 sequence=sequences{i};
-%                 sequence.revive(maps);
-%             end            
-%         end  % function
-                
         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            %self.disableBroadcasts();
-%             for i=1:length(self.Maps) ,
-%                 self.Maps{i}.durationPrecursorMayHaveChanged();
-%             end
-            %self.enableBroadcastsMaybe();
             self.broadcast('Update');            
         end
         
@@ -1088,15 +904,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             keyboard
         end
     end  % public methods
-    
-%     methods (Access = protected)
-%         function defineDefaultPropertyTags_(self)
-%             self.setPropertyTags('Stimuli', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Maps', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Sequences', 'IncludeInFileTypes', {'*'});
-%         end  % function
-%     end
-    
+        
     methods        
         function sequence=addNewSequence(self)
             self.disableBroadcasts();
@@ -1133,13 +941,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
                
-%         function addMapToSequence(self,sequence,map)
-%             if ws.ismemberOfCellArray({sequence},self.Sequences) && ws.ismemberOfCellArray({map},self.Maps) ,
-%                 sequence.addMap(map);
-%             end
-%             self.broadcast('Update');
-%         end  % function
-
         function duplicateSelectedItem(self)
             self.disableBroadcasts();
 
@@ -1193,35 +994,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end  % public methods block
     
     methods (Access = protected)        
-%         function deleteItem_(self, item)
-%             % Remove the given item, without any checks to make sure the
-%             % self-consistency of the library is maintained.  In general,
-%             % one should first call self.makeItemDeletable_(item) before
-%             % calling this.
-%             if isa(item, 'ws.StimulusSequence')
-%                 self.deleteSequence_(item);
-%             elseif isa(item, 'ws.StimulusMap')
-%                 self.deleteMap_(item);
-%             elseif isa(item, 'ws.Stimulus')
-%                 self.deleteStimulus_(item);
-%             end
-%         end  % function
-
-%         function deleteSequence_(self, sequence)
-%             isMatch=cellfun(@(element)(element==sequence),self.Sequences);   
-%             self.Sequences_(isMatch) = [];
-%         end  % function
-%                 
-%         function deleteMap_(self, map)
-%             isMatch=cellfun(@(element)(element==map),self.Maps);
-%             self.Maps_(isMatch) = [];
-%         end  % function
-%         
-%         function deleteStimulus_(self, stimulus)
-%             isMatch=ws.ismemberOfCellArray(self.Stimuli,{stimulus});
-%             self.Stimuli_(isMatch) = [];
-%         end  % function
-        
         function makeItemDeletable_(self, item)
             % Make it so that no other items in the library refer to the selected item,
             % and the originally-selected item is no longer selected, and is not the current
@@ -1326,128 +1098,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-%         function setSelectedItemToSomethingBesidesThisOrToNothing_(self, item)
-%             % Set the selected item to something besides item, unless item
-%             % is the only item remaining, if which case select nothing.  If
-%             % some other item is already the selected item, does nothing.
-%             % (But if nothing is currently selected, and there exists at
-%             % least one item besides item, then of the not-item items will
-%             % be selected.) item must be a scalar.  Assumes all invariants
-%             % hold on entry, and preserves all invariants.
-%             items=self.getItems();
-%             isMatch=cellfun(@(element)(element==item),items);
-%             j=find(isMatch,1);  % the index of item in the list of all items
-%             if isempty(j) ,
-%                 % item is not even an item in the library, so just need to
-%                 % make sure that some item is selected
-%                 selectedItem = self.SelectedItem ;
-%                 if isempty(selectedItem) ,
-%                     if isempty(items) ,
-%                         % There are no items in the library, so nothing to
-%                         % be done.
-%                     else
-%                         % Just set the selected item to be the first item
-%                         self.SelectedItem = item{1} ;
-%                     end
-%                 else
-%                     % There's a selected item, and item is not in the
-%                     % library, so there's nothing to do.
-%                 end
-%             else
-%                 % item is in the library, and item==items{j}
-%                 if length(items)==1 ,
-%                     % item is the last one, so the selection
-%                     % will have to be empty
-%                     self.SelectedItem = [] ;  % this sets self.SelectedItemClassName_ to  '', nothing else
-%                 else
-%                     % there are at least two items
-%                     if j>1 ,
-%                         % The usual case: point SelectedItem at the
-%                         % item before the to-be-deleted item
-%                         self.SelectedItem = items{j-1} ;
-%                     else
-%                         % item is the first, but there are
-%                         % others, so select the second item
-%                         self.SelectedItem = items{2} ;
-%                     end
-%                 end
-%             end
-%         end  % function
-        
-%         function changeSelectedStimulusToSomethingElseOrToNothing_(self, stimulus)
-%             % Make sure stimulus is not the selected stimulus, hopefully by
-%             % picking a different stimulus.  Typically called before
-%             % deleting stimulus.  Does nothing if stimulus is not the
-%             % selected stimulus.  stimulus must be a scalar.
-%             stimuli=self.Stimuli;
-%             if isempty(stimuli) ,
-%                 % This should never happen, but still...
-%                 return
-%             end            
-%             if stimulus==self.SelectedStimulus ,
-%                 % The given stimulus is the selected one,
-%                 % so change the selected stimulus.
-%                 isMatch=cellfun(@(element)(element==stimulus),stimuli);
-%                 j=find(isMatch,1);  % the index of stimulus in the list of all stimuli
-%                 % j is guaranteed to be nonempty if the library is
-%                 % self-consistent, but still...
-%                 if ~isempty(j) ,
-%                     if length(stimuli)==1 ,
-%                         % stimulus is the last one, so give up
-%                         self.SelectedStimulusIndex_ = [] ;
-%                     else
-%                         % there are at least two items
-%                         if j>1 ,
-%                             % The usual case: point SelectedStimulus at the
-%                             % item before the to-be-deleted item
-%                             self.SelectedStimulusIndex_ = j-1 ;
-%                         else
-%                             % stimulus is the first, but there are
-%                             % others, so select the second stimulus
-%                             self.SelectedStimulusIndex_ = 2 ;
-%                         end
-%                     end
-%                 end
-%             end
-%         end  % function
-        
-%         function changeSelectedMapToSomethingElseOrToNothing_(self, map)
-%             % Make sure map is not the selected map, hopefully by
-%             % picking a different map.  Typically called before
-%             % deleting map.  Does nothing if map is not the
-%             % selected map.  map must be a scalar.
-%             maps=self.Maps;
-%             if isempty(maps) ,
-%                 % This should never happen, but still...
-%                 return
-%             end            
-%             if map==self.SelectedMap ,
-%                 % The given map is the selected one,
-%                 % so change the selected map.
-%                 isMatch=cellfun(@(element)(element==map),maps);
-%                 indexOfGivenMap=find(isMatch,1);  % the index of map in the list of all maps
-%                 % j is guaranteed to be nonempty if the library is
-%                 % self-consistent, but still...
-%                 if ~isempty(indexOfGivenMap) ,
-%                     if length(maps)==1 ,
-%                         % map is the last one, so give up
-%                         self.SelectedMapIndex_ = [] ;
-%                     else
-%                         % there are at least two items
-%                         if indexOfGivenMap>1 ,
-%                             % The usual case: point SelectedMap at the
-%                             % item before the to-be-deleted item
-%                             self.SelectedMapIndex_ = indexOfGivenMap-1 ;
-%                         else
-%                             % map is the first, but there are
-%                             % others, so select the second map
-%                             self.SelectedMapIndex_ = 2 ;
-%                         end
-%                     end
-%                 end
-%             end
-%         end  % function
-        
         function ifNoSelectedItemTryToSelectItemNearThisItemButNotThisItem_(self, item)
             % Typically, item is a to-be-deleted item, and we've already
             % made sure it's no longer the selected item within its class.
@@ -1500,42 +1150,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
                 
-%             [self.SelectedSequenceIndex_, didChangeToNothing] = ...
-%                 indexOfAnItemThatIsNearTheSelectedItemButIsNotTheForbiddenItem_(theForbiddenSequence, self.Sequences, self.SelectedSequence) ;
-%             
-%             if isempty(sequences) ,
-%                 % This should never happen, but still...
-%                 return
-%             end            
-%             if theForbiddenSequence==self.SelectedSequence ,
-%                 % The given sequence is the selected one,
-%                 % so change the selected sequence.
-%                 isMatch=cellfun(@(element)(element==theForbiddenSequence),sequences);
-%                 j=find(isMatch,1);  % the index of sequence in the list of all sequences
-%                 % j is guaranteed to be nonempty if the library is
-%                 % self-consistent, but still...
-%                 if ~isempty(j) ,
-%                     if length(sequences)==1 ,
-%                         % sequence is the last one, so give up
-%                         self.SelectedSequenceIndex_ = [] ;
-%                         didChangeToNothing = true ;
-%                     else
-%                         % there are at least two sequences
-%                         if j>1 ,
-%                             % The usual case: point SelectedSequence at the
-%                             % sequence before the to-be-deleted sequence
-%                             self.SelectedSequenceIndex_ = j-1 ;
-%                         else
-%                             % sequence is the first, but there are
-%                             % others, so select the second sequence
-%                             self.SelectedSequenceIndex_ = 2 ;
-%                         end
-%                         didChangeToNothing = false ;
-%                     end
-%                 end
-%             end
-%         end  % function
-        
         function out = isItemInUse_(self, items)
             % Note that this doesn't check if the items are selected.  This
             % is by design.
@@ -1587,13 +1201,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
     end  % protected methods
             
-%     methods (Static = true)
-%         function stimulusLibrary=loadobj(pickledStimulusLibrary)            
-%             stimulusLibrary=pickledStimulusLibrary;
-%             stimulusLibrary.revive();
-%         end
-%     end
-    
     methods (Static = true, Access = protected)        
         function out = generateUntitledItemName_(itemTypeString, currentNames)
             idx = 1;
@@ -1655,23 +1262,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
             
-%             nStimuli = length(self.Stimuli_) ;
-%             nMaps = length(self.Maps_) ;
-%             nSequences = length(self.Sequences_) ;
-%             nItems = nStimuli + nMaps + nSequences ;
-            
-            % On second thought, don't think we want to change these if we
-            % can avoid it.
-%             if ~isempty(self.Stimuli_) && isempty(self.SelectedStimulusIndex_) ,
-%                 self.SelectedStimulusIndex_ = 1 ;
-%             end
-%             if ~isempty(self.Maps_) && isempty(self.SelectedMapIndex_) ,
-%                 self.SelectedMapIndex_ = 1 ;
-%             end
-%             if ~isempty(self.Sequences_) && isempty(self.SelectedSequenceIndex_) ,
-%                 self.SelectedSequenceIndex_ = 1 ;
-%             end
-             
             % Make sure the SelectedItemClassName_ is a legal value,
             % doing our best to get the right modern class for things
             % like 'ws.stimulus.Stimulus'.
@@ -1715,44 +1305,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     end
                 end
             end
-
-%             if isempty(self.SelectedItemClassName_) && nItems>0 ,
-%                 if nStimuli>0 ,
-%                     self.SelectedItemClassName_ = 'ws.Stimulus' ;
-%                 elseif nMaps>0 ,
-%                     self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-%                 else
-%                     self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
-%                 end
-%             end
-                    
-            % The code below causes some of the tests to break.
-%             if isempty(self.SelectedOutputable) && nMaps+nSequences>0 ,
-%                 if nMaps>0 ,
-%                     self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
-%                     self.SelectedOutputableIndex_ = 1 ;
-%                 else
-%                     self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
-%                     self.SelectedOutputableIndex_ = 1 ;
-%                 end                
-%             end            
         end  % function
     end  % protected methods block
     
     methods
         function addMapToSelectedItem(self)
-%             selectedSequence = self.SelectedSequence ;
-%             if ~isempty(selectedSequence) ,
-%                 selectedItem = self.SelectedItem ;
-%                 if ~isempty(selectedItem) ,
-%                     if selectedSequence==selectedItem ,
-%                         if ~isempty(self.Maps) ,
-%                             map = self.Maps{1} ;  % just add the first map to the sequence.  User can change it subsequently.
-%                             selectedSequence.addMap(map) ;
-%                         end
-%                     end
-%                 end
-%             end
             selectedItem = self.SelectedItem ;
             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 selectedItem.addMap() ;
@@ -1769,17 +1326,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
         
         function addChannelToSelectedItem(self)
-%             selectedMap = self.SelectedMap ;
-%             if ~isempty(selectedMap) ,
-%                 selectedItem = self.SelectedItem ;
-%                 if ~isempty(selectedItem) ,
-%                     if selectedMap==selectedItem ,
-%                         if ~isempty(self.Stimuli) ,
-%                             selectedMap.addBinding('');                            
-%                         end
-%                     end
-%                 end
-%             end
             selectedItem = self.SelectedItem ;
             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 selectedItem.addBinding() ;
@@ -1938,71 +1484,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
         
     end  % public methods block
-    
-%     methods (Access=protected)
-%         function defineDefaultPropertyTags_(self)
-%             % In the header file, only thing we really want is the
-%             % SelectedOutputable
-%             defineDefaultPropertyTags_@ws.Model(self);           
-%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Sequences', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Maps', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('Stimuli', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('SelectedSequence', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('SelectedMap', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('SelectedStimulus', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('SelectedItem', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('SelectedItemClassName', 'ExcludeFromFileTypes', {'header'});
-%             %self.setPropertyTags('IsLive', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('IsEmpty', 'ExcludeFromFileTypes', {'header'});            
-%         end
-%     end    
-    
-%     methods
-%         function other=copy(self)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
-%             other=ws.StimulusLibrary();
-%             other.mimic(self);
-%         end
-%     end
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-%             s.Stimuli = struct('Classes', 'cell' , ...
-%                                'AllowEmpty', true);
-%             s.Maps = struct('Classes', 'cell' , ...
-%                             'AllowEmpty', true);
-%             s.Sequences = struct('Classes', 'cell' , ...
-%                                  'AllowEmpty', true);
-%             s.SelectedOutputable = struct('Classes', {'ws.StimulusMap' 'ws.StimulusSequence'} , ...
-%                                           'AllowEmpty', true);
-%             s.SelectedItem = struct('Classes', {'ws.Stimulus' 'ws.StimulusMap' 'ws.StimulusSequence'} , ...
-%                                     'AllowEmpty', true);
-%         end  % function
-%     end  % class methods block
-    
-%     methods (Static)
-%         function uuid=translateUUID(originalUUID,originalItems,items)
-%             if isempty(originalUUID)
-%                 uuid=[];
-%                 return
-%             end            
-%             function uuid=getUUID(thing), uuid=thing.UUID; end            
-%             originalUUIDs=cellfun(@getUUID,originalItems);
-%             i=find(originalUUIDs==originalUUID,1);
-%             if isempty(i) ,
-%                 uuid=[];
-%             else
-%                 uuids=cellfun(@getUUID,items);
-%                 uuid=uuids(i);
-%             end
-%         end  % function            
-%     end  % static methods
     
     methods (Static)
         function translatedItem=translate(item,dictionary,translatedDictionary)

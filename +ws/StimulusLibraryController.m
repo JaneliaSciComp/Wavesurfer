@@ -6,9 +6,6 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     
     methods
         function self = StimulusLibraryController(wavesurferController,wavesurferModel)
-%             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
-%             self = self@ws.Controller(wavesurferController, stimulusLibraryModel, {'stimulusLibraryFigureWrapper'});
-
             % Call the superclass constructor
             stimulusLibraryModel=wavesurferModel.Stimulation.StimulusLibrary;
             self = self@ws.Controller(wavesurferController,stimulusLibraryModel);  

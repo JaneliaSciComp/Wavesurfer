@@ -146,7 +146,7 @@ classdef CounterTrigger < ws.Model
                 if (islogical(value) || isnumeric(value)) && isscalar(value) ,
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
-                    self.Parent.update();
+                    %self.Parent.update();
                     error('most:Model:invalidPropVal', ...
                           'IsMarkedForDeletion must be a truthy scalar');                  
                 end                    
@@ -182,7 +182,7 @@ classdef CounterTrigger < ws.Model
         
         function set.CounterID(self, value)
             if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,  % && self.Parent.isCounterIDFree(value),
+                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
                     value = double(value) ;
                     self.CounterID_ = value ;
                     %self.syncPFIIDToCounterID_() ;

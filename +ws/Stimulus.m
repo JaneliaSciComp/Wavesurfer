@@ -208,33 +208,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             if size(data,1)>0 ,
                 data(end,:)=0;  % don't want to leave the DACs on when we're done
             end
-        end
-        
-%         function h = plot(self, fig, ax, sampleRate)
-%             if ~exist('ax','var') || isempty(ax)
-%                 ax = axes('Parent',fig);
-%             end
-%             
-%             if ~exist('sampleRate','var') || isempty(sampleRate)
-%                 sampleRate = 20000;  % Hz
-%             end
-%             
-%             dt=1/sampleRate;  % s
-%             T=self.EndTime;  % s
-%             n=round(T/dt);
-%             t = dt*(0:(n-1))';  % s
-% 
-%             y = self.calculateSignal(t);            
-%             
-%             h = line('Parent',ax, ...
-%                      'XData',t, ...
-%                      'YData',y);
-%             
-%             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
-%             %title(ax,sprintf('Stimulus using %s', ));
-%             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-%             ylabel(ax,self.Name,'FontSize',10,'Interpreter','none');
-%         end        
+        end        
     end  % public methods block
     
     methods (Access = protected)
@@ -244,15 +218,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % subclasses.
             data = zeros(size(t));
         end
-        
-%         function defineDefaultPropertyTags_(self)
-%             self.setPropertyTags('Name', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Delay', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Amplitude', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('DCOffset', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Delegate', 'IncludeInFileTypes', {'*'});
-%         end  % function
     end
     
     %
@@ -305,11 +270,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                         delegate=feval(delegateClassName,self);
                         self.Delegate_ = delegate;
                         self.Delegate_.mimic(other.Delegate_) ;
-%                         % Now we set all the params to match self
-%                         for j = 1:length(self.Delegate.AdditionalParameterNames) ,
-%                             parameterName = self.Delegate_.AdditionalParameterNames{j} ;                
-%                             self.Delegate_.(parameterName) = other.Delegate_.(parameterName) ;
-%                         end                                    
                     else
                         source = other.getPropertyValue_(thisPropertyName) ;
                         self.setPropertyValue_(thisPropertyName, source) ;
@@ -329,34 +289,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             
             % Broadcast update
             %self.broadcast('Update');            
-        end  % function
-    
-%         function other = copyGivenParent(self,parent)
-%             other=ws.Stimulus(parent);
-%             
-%             other.Name_ = self.Name_ ;
-%             other.Delay_ = self.Delay_ ;
-%             other.Duration_ = self.Duration_ ;
-%             other.Amplitude_ = self.Amplitude_ ;
-%             other.DCOffset_ = self.DCOffset_ ;
-%             
-%             % Make a new delegate of the right kind
-%             delegateClassName=sprintf('ws.%sStimulusDelegate',self.TypeString);
-%             delegate=feval(delegateClassName,other);
-%             other.Delegate_ = delegate;
-%             
-%             % Now we set all the params to match self
-%             for i=1:length(self.Delegate.AdditionalParameterNames) ,
-%                 parameterName=self.Delegate_.AdditionalParameterNames{i};                
-%                 other.Delegate_.(parameterName)=self.Delegate_.(parameterName);
-%             end            
-%         end
-    end
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();    
-%         mdlHeaderExcludeProps = {};
-%     end
+        end  % function    
+    end  % public methods block
     
     methods (Static)
         function output = evaluateSweepExpression(expression,sweepIndex)
@@ -448,13 +382,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end            
     end
     
-%     methods (Static=true)
-%         function stimulus=loadobj(pickledStimulus)
-%             stimulus=pickledStimulus;
-%             stimulus.Delegate.Parent=stimulus;
-%         end  % function
-%     end  % static methods    
-
     methods (Access=protected)
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -466,15 +393,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end  % function
     end
 
-%     methods (Access=protected)
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Model(self);
-%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
-%         end
-%     end
-    
     methods         
         function propNames = listPropertiesForHeader(self)
             propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
