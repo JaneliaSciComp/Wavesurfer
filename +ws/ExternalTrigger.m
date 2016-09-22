@@ -5,11 +5,6 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
     % a PFI identifier (the zero-based PFI index),
     % and an edge type (rising or falling).  ALT, 2014-05-24
     
-    properties (Constant=true)
-        %IsInternal = false
-        %IsExternal = true
-    end
-    
     properties (Dependent=true)
         Name
         DeviceName  % the NI device ID string, e.g. 'Dev1'
@@ -35,7 +30,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         function self=ExternalTrigger(parent)  %#ok<INUSD>
             self@ws.Model([]) ;  % ignore parent arg
             self.Name_ = 'Destination';
-            %self.DeviceName_ = 'Dev1';
+            self.DeviceName_ = '' ;
             self.PFIID_ = 0;
             self.Edge_ = 'rising';  
             self.IsMarkedForDeletion_ = false ;

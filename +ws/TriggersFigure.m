@@ -427,8 +427,8 @@ classdef TriggersFigure < ws.MCOSFigure
             if isempty(self.Model) ,
                 return
             end            
-            self.updateSweepBasedAcquisitionControls() ;
-            self.updateSweepBasedStimulationControls() ;
+            self.updateAcquisitionTriggerControls() ;
+            self.updateStimulationTriggerControls() ;
             self.updateCounterTriggersTable() ;
             self.updateExternalTriggersTable() ;                   
         end  % function
@@ -437,8 +437,7 @@ classdef TriggersFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateControlEnablementImplementation_(self)
             wsModel = self.Model ;  % this is the WavesurferModel
-            triggeringModel = wsModel.Triggering ;
-            if isempty(triggeringModel) || ~isvalid(triggeringModel) ,
+            if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end            
             isIdle=isequal(wsModel.State,'idle');
@@ -446,19 +445,19 @@ classdef TriggersFigure < ws.MCOSFigure
             
             set(self.AcquisitionSchemePopupmenu,'Enable',ws.onIff(isIdle));
             
-            isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme ;
+            isStimulusUsingAcquisitionTriggerScheme = wsModel.StimulationUsesAcquisitionTrigger ;
             set(self.UseAcquisitionTriggerCheckbox,'Enable',ws.onIff(isIdle)) ;
             set(self.StimulationSchemePopupmenu,'Enable',ws.onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme)) ;
             
-            areAnyFreeCounterIDs = ~isempty(triggeringModel.freeCounterIDs()) ;
-            isCounterTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.CounterTriggers) ;
+            areAnyFreeCounterIDs = ~isempty(wsModel.freeCounterIDs()) ;
+            isCounterTriggerMarkedForDeletion = wsModel.isCounterTriggerMarkedForDeletion() ;
             isAnyCounterTriggerMarkedForDeletion = any(isCounterTriggerMarkedForDeletion) ;
             set(self.CounterTriggersTable,'Enable',ws.onIff(isIdle));
             set(self.AddCounterTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreeCounterIDs)) ;
             set(self.DeleteCounterTriggersButton,'Enable',ws.onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
             
-            areAnyFreePFIIDs = ~isempty(triggeringModel.freePFIIDs()) ;
-            isExternalTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.ExternalTriggers) ;
+            areAnyFreePFIIDs = ~isempty(wsModel.freePFIIDs()) ;
+            isExternalTriggerMarkedForDeletion = wsModel.isExternalTriggerMarkedForDeletion() ;
             isAnyExternalTriggerMarkedForDeletion = any(isExternalTriggerMarkedForDeletion) ;
             set(self.ExternalTriggersTable,'Enable',ws.onIff(isIdle));
             set(self.AddExternalTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreePFIIDs)) ;
@@ -467,14 +466,13 @@ classdef TriggersFigure < ws.MCOSFigure
     end
     
     methods
-        function updateSweepBasedAcquisitionControls(self,varargin)
-            model=self.Model.Triggering;
-            if isempty(model) ,
+        function updateAcquisitionTriggerControls(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            schemes = model.Schemes ;
-            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
-            rawCurrentItem=model.AcquisitionTriggerScheme.Name;
+            rawMenuItems = wsModel.triggerNames() ;
+            rawCurrentItem = wsModel.acquisitionTriggerProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
                                                  rawMenuItems, ...
                                                  rawCurrentItem);
@@ -482,63 +480,58 @@ classdef TriggersFigure < ws.MCOSFigure
     end  % methods
     
     methods
-        function updateSweepBasedStimulationControls(self,varargin)
-            model=self.Model.Triggering;
-            if isempty(model) ,
+        function updateStimulationTriggerControls(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            %import ws.setPopupMenuItemsAndSelectionBang
-            %import ws.onIff
-            set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
-            schemes = model.Schemes ;
-            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
-            rawCurrentItem=model.StimulationTriggerScheme.Name;
+            set(self.UseAcquisitionTriggerCheckbox, 'Value', wsModel.StimulationUsesAcquisitionTrigger) ;
+            rawMenuItems = wsModel.triggerNames() ;
+            rawCurrentItem = wsModel.stimulationTriggerProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
-                                                         rawMenuItems, ...
-                                                         rawCurrentItem);
+                                                 rawMenuItems, ...
+                                                 rawCurrentItem);
         end  % function       
     end  % methods
     
     methods
-        function updateCounterTriggersTable(self,varargin)
-            model=self.Model.Triggering;
-            if isempty(model) ,
+        function updateCounterTriggersTable(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.CounterTriggers);
-            nColumns=8;
-            data=cell(nRows,nColumns);
-            for i=1:nRows ,
-                trigger=model.CounterTriggers{i};
-                data{i,1}=trigger.Name;
-                data{i,2}=trigger.DeviceName;
-                data{i,3}=trigger.CounterID;
-                data{i,4}=trigger.RepeatCount;
-                data{i,5}=trigger.Interval;
-                data{i,6}=trigger.PFIID;
-                data{i,7}=ws.titleStringFromEdgeType(trigger.Edge);
-                data{i,8}=trigger.IsMarkedForDeletion;
+            nRows = wsModel.CounterTriggerCount ;
+            nColumns = 8 ;
+            data  = cell(nRows, nColumns) ;
+            for i = 1:nRows ,
+                data{i,1} = wsModel.counterTriggerProperty(i, 'Name') ;
+                data{i,2} = wsModel.counterTriggerProperty(i, 'DeviceName') ;
+                data{i,3} = wsModel.counterTriggerProperty(i, 'CounterID') ;
+                data{i,4} = wsModel.counterTriggerProperty(i, 'RepeatCount') ;
+                data{i,5} = wsModel.counterTriggerProperty(i, 'Interval') ;
+                data{i,6} = wsModel.counterTriggerProperty(i, 'PFIID') ;
+                data{i,7} = ws.titleStringFromEdgeType(wsModel.counterTriggerProperty(i, 'Edge')) ;
+                data{i,8} = wsModel.counterTriggerProperty(i, 'IsMarkedForDeletion') ;
             end
             set(self.CounterTriggersTable,'Data',data);
         end  % function
     end  % methods
     
     methods
-        function updateExternalTriggersTable(self,varargin)
-            model=self.Model.Triggering;
-            if isempty(model) ,
+        function updateExternalTriggersTable(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.ExternalTriggers);
-            nColumns=5;
-            data=cell(nRows,nColumns);
-            for i=1:nRows ,
-                trigger=model.ExternalTriggers{i};
-                data{i,1}=trigger.Name;
-                data{i,2}=trigger.DeviceName;
-                data{i,3}=trigger.PFIID;
-                data{i,4}=ws.titleStringFromEdgeType(trigger.Edge);
-                data{i,5}=trigger.IsMarkedForDeletion;
+            nRows = wsModel.ExternalTriggerCount ;
+            nColumns = 5 ;
+            data = cell(nRows, nColumns) ;
+            for i = 1:nRows ,
+                data{i,1} = wsModel.externalTriggerProperty(i, 'Name') ;
+                data{i,2} = wsModel.externalTriggerProperty(i, 'DeviceName') ;
+                data{i,3} = wsModel.externalTriggerProperty(i, 'PFIID') ;
+                data{i,4} = ws.titleStringFromEdgeType(wsModel.externalTriggerProperty(i, 'Edge')) ;
+                data{i,5} = wsModel.externalTriggerProperty(i, 'IsMarkedForDeletion') ;
             end
             set(self.ExternalTriggersTable,'Data',data);
         end  % function

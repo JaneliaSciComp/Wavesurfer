@@ -5,6 +5,8 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
         ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         TriggerCount
+        CounterTriggerCount
+        ExternalTriggerCount
         Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         AcquisitionSchemes  % This used to be [{BuiltinTrigger} ExternalTriggers], a row cell array, but
                             % Now it's an alias for Schemes.  We keep it
@@ -69,7 +71,15 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         end  % function
         
         function result = get.TriggerCount(self)
-            result = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers) ;
+            result = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
+        end
+        
+        function result = get.CounterTriggerCount(self)
+            result = length(self.CounterTriggers_) ;
+        end
+        
+        function result = get.ExternalTriggerCount(self)
+            result = length(self.ExternalTriggers_) ;
         end
         
         function out = get.AcquisitionTriggerScheme(self)
@@ -110,8 +120,12 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             end
         end  % function
         
-        function out = get.StimulationTriggerSchemeIndex(self)
-            out = self.StimulationTriggerSchemeIndex_ ;
+        function result = get.StimulationTriggerSchemeIndex(self)
+            if self.StimulationUsesAcquisitionTriggerScheme_ ,
+                result = self.NewAcquisitionTriggerSchemeIndex_ ;
+            else
+                result = self.StimulationTriggerSchemeIndex_ ;
+            end
         end  % function
 
         function setStimulationTriggerIndex(self, newValue)
@@ -205,33 +219,23 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             %self.broadcast('Update') ;
         end
 
-        function trigger = addExternalTrigger(self, pfiID)
-            % If no PFI ID is given, try to find one that is not in use
-            if ~exist('pfiID','var') || isempty(pfiID) ,
-                % Need to pick a PFI ID.
-                % We find the lowest PFI ID that is not in use.
-                pfiIDs = self.freePFIIDs() ;
-                if isempty(pfiIDs) ,
-                    % this means there is no free PFI line
-                    trigger = [] ;
-                    return
-                else
-                    pfiID = pfiIDs(1) ;
-                end
+        function trigger = addExternalTrigger(self, deviceName)
+            % Need to pick a PFI ID.
+            % We find the lowest PFI ID that is not in use.
+            pfiIDs = self.freePFIIDs() ;
+            if isempty(pfiIDs) ,
+                % this means there is no free PFI line
+                error('ws:noFreePFIID', ...
+                      'There are no free PFI lines.') ;
             end
+            pfiID = pfiIDs(1) ;
             
-            % Check that the pfiID is free
-            if self.isPFIIDInUse(pfiID) ,
-                trigger = [] ;
-                return
-            end
-
             % Create the trigger
             trigger = ws.ExternalTrigger() ;   % Triggers are now parentless
 
             % Set the trigger parameters
             trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
-            %trigger.DeviceName = self.Parent.DeviceName ; 
+            trigger.DeviceName = deviceName ; 
             trigger.PFIID = pfiID ;  % we know this PFIID is free
             trigger.Edge = 'rising' ;
             
@@ -360,6 +364,16 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         
         function value = get.StimulationUsesAcquisitionTriggerScheme(self)
             value = self.StimulationUsesAcquisitionTriggerScheme_ ;
+        end  % function
+        
+        function result = counterTriggerProperty(self, index, propertyName)
+            trigger = self.CounterTriggers_{index} ;
+            result = trigger.(propertyName) ;
+        end  % function
+        
+        function result = externalTriggerProperty(self, index, propertyName)
+            trigger = self.ExternalTriggers_{index} ;
+            result = trigger.(propertyName) ;
         end  % function
         
         function setCounterTriggerProperty(self, index, propertyName, newValue)
@@ -512,7 +526,6 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             %fprintf('ws.TriggeringSubsystem::didSetDevice() called\n') ;
             %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;
-            %builtinTrigger = self.BuiltinTrigger_
             for i = 1:length(self.CounterTriggers_) ,
                 self.CounterTriggers_{i}.DeviceName = deviceName ;                
             end
@@ -521,8 +534,6 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             end
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
-
-            %self.broadcast('Update') ;
         end        
     end  % public methods block
     
@@ -595,6 +606,31 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                       'triggerType must be a valid trigger type') ;                    
             end
         end  % method
+        
+        function result = isCounterTriggerMarkedForDeletion(self)
+            result = cellfun(@(trigger)(trigger.IsMarkedForDeletion),self.CounterTriggers_) ;
+        end  % function
+        
+        function result = isExternalTriggerMarkedForDeletion(self)
+            result = cellfun(@(trigger)(trigger.IsMarkedForDeletion),self.ExternalTriggers_) ;
+        end  % function
+        
+        function result = triggerNames(self)
+            schemes = self.Schemes ;
+            result = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;            
+        end  % function
+        
+        function result = acquisitionTriggerProperty(self, propertyName)
+            triggerIndex = self.NewAcquisitionTriggerSchemeIndex_ ;
+            trigger = self.getTriggerByIndex_(triggerIndex) ;
+            result = trigger.(propertyName) ;
+        end  % function
+        
+        function result = stimulationTriggerProperty(self, propertyName)
+            triggerIndex = self.StimulationTriggerSchemeIndex ;   % *not* StimulationTriggerSchemeIndex_
+            trigger = self.getTriggerByIndex_(triggerIndex) ;
+            result = trigger.(propertyName) ;
+        end  % function        
     end  % public methods block    
     
     methods (Access=protected)    

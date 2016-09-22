@@ -82,9 +82,11 @@ classdef WavesurferModel < ws.Model
         
         % Triggering settings
         TriggerCount
+        CounterTriggerCount
+        ExternalTriggerCount
         AcquisitionTriggerIndex  % this is an index into Schemes
         StimulationUsesAcquisitionTrigger  % boolean
-        StimulationTriggerIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
+        StimulationTriggerIndex  % this is an index into Schemes
     end
     
     properties (Access=protected)
@@ -875,7 +877,7 @@ classdef WavesurferModel < ws.Model
             self.Display.didSetSweepDurationIfFinite() ;
         end        
         
-        function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun)
+        function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
             self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
             self.broadcast('UpdateTriggering') ;
             self.Display.didSetAreSweepsFiniteDuration();
@@ -3389,7 +3391,7 @@ classdef WavesurferModel < ws.Model
         
         function addExternalTrigger(self)    
             try
-                self.Triggering_.addExternalTrigger() ;
+                self.Triggering_.addExternalTrigger(self.DeviceName) ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -3421,8 +3423,48 @@ classdef WavesurferModel < ws.Model
             result = self.Triggering_.TriggerCount ;
         end  % function
         
-%         function result = getTriggeringEvenThoughThisIsDangerous(self)
-%             result = self.Triggering_ ;
-%         end
+        function result = get.CounterTriggerCount(self)
+            result = self.Triggering_.CounterTriggerCount ;
+        end  % function
+        
+        function result = get.ExternalTriggerCount(self)
+            result = self.Triggering_.ExternalTriggerCount ;
+        end  % function
+        
+        function result = freePFIIDs(self)
+            result = self.Triggering_.freePFIIDs() ;
+        end  % function
+        
+        function result = freeCounterIDs(self)
+            result = self.Triggering_.freeCounterIDs() ;
+        end  % function
+        
+        function result = isCounterTriggerMarkedForDeletion(self)
+            result = self.Triggering_.isCounterTriggerMarkedForDeletion() ;
+        end  % function
+        
+        function result = isExternalTriggerMarkedForDeletion(self)
+            result = self.Triggering_.isExternalTriggerMarkedForDeletion() ;
+        end  % function
+        
+        function result = triggerNames(self)
+            result = self.Triggering_.triggerNames() ; 
+        end  % function        
+        
+        function result = acquisitionTriggerProperty(self, propertyName)
+            result = self.Triggering_.acquisitionTriggerProperty(propertyName) ;
+        end  % function        
+            
+        function result = stimulationTriggerProperty(self, propertyName)
+            result = self.Triggering_.stimulationTriggerProperty(propertyName) ;
+        end  % function        
+            
+        function result = counterTriggerProperty(self, index, propertyName)
+            result = self.Triggering_.counterTriggerProperty(index, propertyName) ;
+        end  % function
+        
+        function result = externalTriggerProperty(self, index, propertyName)
+            result = self.Triggering_.externalTriggerProperty(index, propertyName) ;
+        end  % function
     end  % public methods block
 end  % classdef
