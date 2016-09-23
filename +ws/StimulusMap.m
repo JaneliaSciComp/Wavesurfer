@@ -3,10 +3,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     properties (Dependent=true)
         Name
         Duration  % s
-        ChannelNames  % a cell array of strings
+        ChannelName  % a cell array of strings
         IndexOfEachStimulusInLibrary
         Stimuli  % a cell array, with [] for missing stimuli
-        Multipliers  % a double array
+        Multiplier  % a double array
     end
     
     properties (Dependent = true, Transient=true)
@@ -15,16 +15,17 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         IsDurationFree
-        %IsLive
         NBindings
     end
     
     properties (Access = protected)
         Name_ = ''
-        ChannelNames_ = {}
-        IndexOfEachStimulusInLibrary_ = {}  % for each binding, the index of the stimulus (in the library) for that binding, or empty if unspecified
-        Multipliers_ = []
         Duration_ = 1  % s, internal duration, can be overridden in some circumstances
+        % Things below are all vectors with the same length, equal to the
+        % number of elements in the map
+        ChannelName_ = {}
+        IndexOfEachStimulusInLibrary_ = {}  % for each binding, the index of the stimulus (in the library) for that binding, or empty if unspecified
+        Multiplier_ = []
         IsMarkedForDeletion_ = logical([])
     end
     
@@ -78,7 +79,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end
 
         function out = get.NBindings(self) 
-            out = length(self.ChannelNames);
+            out = length(self.ChannelName);
         end
         
         function out = get.Name(self)
@@ -98,7 +99,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             self.IsDurationFree=nan.The;  % cause the post-set event to fire
 %         end
         
-        function set.ChannelNames(self,newValue)
+        function set.ChannelName(self,newValue)
             % newValue must be a row cell array, with each element a string
             % and each string either empty or a valid output channel name
             stimulation=ws.getSubproperty(self,'Parent','Parent');
@@ -106,10 +107,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 doCheckChannelNames=false;
             else
                 doCheckChannelNames=true;
-                allChannelNames=stimulation.ChannelNames;
+                allChannelNames=stimulation.ChannelName;
             end
             
-            if iscell(newValue) && all(size(newValue)==size(self.ChannelNames_)) ,  % can't change number of bindings
+            if iscell(newValue) && all(size(newValue)==size(self.ChannelName_)) ,  % can't change number of bindings
                 nElements=length(newValue);
                 isGoodSoFar=true;
                 for i=1:nElements ,
@@ -136,7 +137,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 end
                 % if isGoodSoFar==true here, is good
                 if isGoodSoFar ,
-                    self.ChannelNames_=newValue;
+                    self.ChannelName_=newValue;
                 end   
             end            
             % notify the stim library so that views can be updated    
@@ -145,8 +146,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end                        
         end  % function
 
-        function val = get.ChannelNames(self)
-            val = self.ChannelNames_ ;
+        function val = get.ChannelName(self)
+            val = self.ChannelName_ ;
         end
 
         function set.Stimuli(self,newValue)
@@ -154,9 +155,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             % bindings.  Each element either [], or a stimulus
             % in the library
             
-            if iscell(newValue) && all(size(newValue)==size(self.ChannelNames_)) ,  % can't change number of bindings
+            if iscell(newValue) && all(size(newValue)==size(self.ChannelName_)) ,  % can't change number of bindings
                 areAllElementsOfNewValueOK = true ;
-                indexOfEachStimulusInLibrary = cell(size(self.ChannelNames_)) ;
+                indexOfEachStimulusInLibrary = cell(size(self.ChannelName_)) ;
                 for i=1:numel(newValue) ,
                     stimulus = newValue{i} ;
                     if (isempty(stimulus) && isa(stimulus,'double')) ,
@@ -200,9 +201,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end
         
-        function set.Multipliers(self,newValue)
-            if isnumeric(newValue) && all(size(newValue)==size(self.ChannelNames_)) ,  % can't change number of bindings                
-                self.Multipliers_ = double(newValue);
+        function set.Multiplier(self,newValue)
+            if isnumeric(newValue) && all(size(newValue)==size(self.ChannelName_)) ,  % can't change number of bindings                
+                self.Multiplier_ = double(newValue);
             end
             % notify the powers that be
             if ~isempty(self.Parent) ,
@@ -210,12 +211,12 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end
         
-        function output = get.Multipliers(self)
-            output = self.Multipliers_ ;
+        function output = get.Multiplier(self)
+            output = self.Multiplier_ ;
         end
                 
         function set.IsMarkedForDeletion(self,newValue)
-            if islogical(newValue) && isequal(size(newValue),size(self.ChannelNames_)) ,  % can't change number of bindings                
+            if islogical(newValue) && isequal(size(newValue),size(self.ChannelName_)) ,  % can't change number of bindings                
                 self.IsMarkedForDeletion_ = newValue;
             end
             % notify the powers that be
@@ -386,9 +387,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             
             % Create the binding
             if isChannelNameOK && isStimulusOK && isMultiplierOK ,
-                self.ChannelNames_{end+1}=channelName;
+                self.ChannelName_{end+1}=channelName;
                 self.IndexOfEachStimulusInLibrary_{end+1}=indexOfThisStimulusInLibrary;            
-                self.Multipliers_(end+1)=multiplier;
+                self.Multiplier_(end+1)=multiplier;
                 self.IsMarkedForDeletion_(end+1)=false;
             end            
             
@@ -397,11 +398,11 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end   % function
         
         function deleteBinding(self, index)
-            nBindingsOriginally=length(self.ChannelNames);
+            nBindingsOriginally=length(self.ChannelName);
             if (1<=index) && (index<=nBindingsOriginally) ,
-                self.ChannelNames_(index)=[];
+                self.ChannelName_(index)=[];
                 self.IndexOfEachStimulusInLibrary_(index)=[];
-                self.Multipliers_(index)=[];                
+                self.Multiplier_(index)=[];                
                 self.IsMarkedForDeletion_(index)=[];                
             end
             self.Parent.childMayHaveChanged(self);            
@@ -409,9 +410,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 
         function deleteMarkedBindings(self)            
             isMarkedForDeletion = self.IsMarkedForDeletion ;
-            self.ChannelNames_(isMarkedForDeletion)=[];
+            self.ChannelName_(isMarkedForDeletion)=[];
             self.IndexOfEachStimulusInLibrary_(isMarkedForDeletion)=[];
-            self.Multipliers_(isMarkedForDeletion)=[];
+            self.Multiplier_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
             self.Parent.childMayHaveChanged(self);            
         end   % function        
@@ -464,7 +465,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             data = zeros(sampleCount, nChannels);
             
             % For each named channel, overwrite a col of data
-            boundChannelNames=self.ChannelNames;
+            boundChannelNames=self.ChannelName;
             nChannelsWithStimulus = 0 ;
             for iChannel = 1:nChannels ,
                 thisChannelName=channelNames{iChannel};
@@ -481,7 +482,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                         % data
                         nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
                         rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
-                        multiplier=self.Multipliers(stimIndex);
+                        multiplier=self.Multiplier(stimIndex);
                         if isChannelAnalog(iChannel) ,
                             data(:, iChannel) = multiplier*rawSignal ;
                         else
@@ -500,7 +501,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 
 %         function value=get.IsLive(self)   %#ok<MANU>
 %             value=true;
-% %             nBindings=length(self.ChannelNames);
+% %             nBindings=length(self.ChannelName);
 % %             value=true;
 % %             for i=1:nBindings ,
 % %                 % A binding is broken when there's a stimulus UUID but no
@@ -537,7 +538,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             end
 %             
 %             % Get the channel names
-%             channelNamesInThisMap=self.ChannelNames;
+%             channelNamesInThisMap=self.ChannelName;
 %             
 %             % Try to determine whether channels are analog or digital.  Fallback to analog, if needed.
 %             nChannelsInThisMap = length(channelNamesInThisMap) ;
@@ -572,7 +573,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 % 
 %             % Get the list of all the channels in the stimulation subsystem
 %             stimulation=stimulusLibrary.Parent;
-%             channelNames=stimulation.ChannelNames;
+%             channelNames=stimulation.ChannelName;
 %             
 %             for idx = 1:nSignals ,
 %                 % Determine the index of the output channel among all the
@@ -613,7 +614,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %         
 %         function value=isLiveAndSelfConsistentElement(self) %#ok<MANU>
 %             value=true;
-% %             nBindings=length(self.ChannelNames);
+% %             nBindings=length(self.ChannelName);
 % %             value=true;
 % %             for i=1:nBindings ,
 % %                 % A binding is broken when there's a stimulus UUID but no
@@ -654,12 +655,12 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end
         
         function didSetChannelName(self, oldValue, newValue)
-            channelNames = self.ChannelNames ;
+            channelNames = self.ChannelName ;
             nChannels = length(channelNames) ;
             for i = 1:nChannels ,
                 thisChannelName = channelNames{i} ;
                 if isequal(thisChannelName, oldValue) ,
-                    self.ChannelNames_{i} = newValue ;
+                    self.ChannelName_{i} = newValue ;
                 end
             end
         end
@@ -724,7 +725,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     methods (Access=protected)
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Duration' 'ChannelNames' 'IndexOfEachStimulusInLibrary' 'Multipliers'};
+            propertyNamesToCompare={'Name' 'Duration' 'ChannelName' 'IndexOfEachStimulusInLibrary' 'Multiplier'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function
     end  % methods
@@ -739,15 +740,15 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             % Do the easy part
             other=ws.StimulusMap(parent);
             other.Name_ = self.Name_ ;
-            other.ChannelNames_ = self.ChannelNames_ ;
+            other.ChannelName_ = self.ChannelName_ ;
             other.IndexOfEachStimulusInLibrary_ = self.IndexOfEachStimulusInLibrary_ ;
-            other.Multipliers_ = self.Multipliers_ ;
+            other.Multiplier_ = self.Multiplier_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
             other.Duration_ = self.Duration_ ;
 
 %             % re-do the bindings so that they point to corresponding
 %             % elements of otherStimuli
-%             nStimuli=length(self.ChannelNames);
+%             nStimuli=length(self.ChannelName);
 %             other.Stimuli_ = cell(1,nStimuli);
 %             %uuids=ws.cellArrayPropertyAsArray(selfStimuli,'UUID');
 %             for j=1:nStimuli ,
@@ -810,31 +811,12 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
             
-            nBindings = length(self.ChannelNames_) ;
+            nBindings = length(self.ChannelName_) ;
             
             % length of things should equal nBindings
             self.IndexOfEachStimulusInLibrary_ = ws.sanitizeRowVectorLength(self.IndexOfEachStimulusInLibrary_, nBindings, {[]}) ;
-            self.Multipliers_ = ws.sanitizeRowVectorLength(self.Multipliers_, nBindings, 1) ;
+            self.Multiplier_ = ws.sanitizeRowVectorLength(self.Multiplier_, nBindings, 1) ;
             self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
         end
-    end  % protected methods block
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-%             
-%             s.Name = struct('Classes', 'char');
-%             s.Duration = struct('Classes', 'numeric', ...
-%                                 'Attributes', {{'scalar', 'nonnegative', 'real', 'finite'}});
-%             s.ChannelNames = struct('Classes', 'string');
-%             s.Multipliers = struct('Classes', 'numeric', 'Attributes', {{'row', 'real', 'finite'}});
-%             s.Stimuli = struct('Classes', 'ws.StimulusMap');                            
-%         end  % function
-%         
-% %         function self = loadobj(self)
-% %             self.IsMarkedForDeletion_ = false(size(self.ChannelNames_));
-% %               % Is MarkedForDeletion_ is transient
-% %         end
-%     end  % class methods block
-    
+    end  % protected methods block    
 end

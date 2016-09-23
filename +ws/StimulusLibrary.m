@@ -1577,7 +1577,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             else                
 %                 if ws.isIndex(indexOfElementWithinMap) && ...
 %                         1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-%                     selectedMap.Multipliers(indexOfElementWithinMap) = newValue ;
+%                     selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;
 %                 else
 %                     self.broadcast('Update') ;
 %                 end
@@ -1601,20 +1601,19 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
             selectedMap = self.SelectedMap ;  
             if ~isempty(selectedMap) ,
-                if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
+                if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
                     switch propertyName ,
                         case 'IsMarkedForDeletion' ,
                             selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
                         case 'Multiplier' ,
-                            selectedMap.Multipliers(indexOfElementWithinMap) = newValue ;                            
+                            selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
                         case 'StimulusName' ,
                             selectedMap.setStimulusByName(indexOfElementWithinMap, stimulusName) ;
                         case 'ChannelName' ,
-                            selectedMap.ChannelNames{indexOfElementWithinMap} = newValue ;                            
+                            selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
                         otherwise ,
                             % do nothing
                     end
-                    selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
                 end
             end
         end  % method
@@ -1676,6 +1675,119 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end                            
         end  % method        
         
+        function result = propertyForElementOfSelectedItem(self, indexOfElementWithinItem, propertyName)
+            className = self.SelectedItemClassName_ ;
+            if isempty(className) ,
+                error('ws:stimulusLibrary:noSelectedItem' , ...
+                      'No item is selected in the stimulus library') ;
+            elseif isequal(className, 'ws.StimulusSequence') ,
+                selectedSequenceIndex = self.SelectedSequenceIndex_ ;
+                if isempty(selectedSequenceIndex) ,
+                    error('ws:stimulusLibrary:noSelectedItem' , ...
+                          'No item is selected in the stimulus library') ;
+                else
+                    selectedSequence = self.Sequence_{selectedSequenceIndex} ;
+                    result = selectedSequence.(propertyName)(indexOfElementWithinItem) ;                    
+                end
+            elseif isequal(className, 'ws.StimulusMap') ,
+                selectedMapIndex = self.SelectedMapIndex_ ;
+                if isempty(selectedMapIndex) ,
+                    error('ws:stimulusLibrary:noSelectedItem' , ...
+                          'No item is selected in the stimulus library') ;
+                else                
+                    selectedMap = self.Maps_{selectedMapIndex} ;
+                    switch propertyName ,
+                        case 'IsMarkedForDeletion' ,
+                            result = selectedMap.IsMarkedForDeletion(indexOfElementWithinItem) ;
+                        case 'Multiplier' ,
+                            result = selectedMap.Multiplier(indexOfElementWithinItem) ;                            
+                        case 'ChannelName' ,
+                            result = selectedMap.ChannelName{indexOfElementWithinItem} ;                            
+                        case 'IndexOfStimulusInLibrary' ,
+                            result = selectedMap.IndexOfStimulusInLibrary(indexOfElementWithinItem) ;                            
+                        otherwise ,
+                            error('ws:stimulusLibrary:noSuchProperty' , ...
+                                  'Stimulus map elements do not have a property %s', propertyName) ;
+                    end
+                end
+            elseif isequal(className, 'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliHaveNoElements' , ...
+                      'Can''t get an element property of a stimulus, because stimuli have no subelements.') ;
+            else
+                error('ws:internalError', ...
+                      ['WaveSurfer had an internal error with codeword Pikachu.  ' ...
+                       'Please save your work, restart WaveSurfer, and report this error to the WaveSurfer developers.']) ;
+            end                            
+        end  % function                
+        
+        function result = itemProperty(self, className, index, propertyName)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{index} ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{index} ;
+            elseif isequal(className,'ws.Stimulus') ,
+                item = self.Stimuli_{index} ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+            result = item.(propertyName) ;
+        end  % function                        
+        
+        function result = itemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
+            % The itemIndex is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                result = item.(propertyName)(bindingIndex) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                if isequal(propertyName,'ChannelName') ,
+                    result = item.ChannelName(bindingIndex) ;  % hack
+                elseif isequal(propertyName,'Multiplier') 
+                    result = item.Multiplier(bindingIndex) ;  % hack
+                else
+                    result = item.(propertyName)(bindingIndex) ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function                        
+        
+        function result = itemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                mapIndex = item.IndexOfEachMapInLibrary(bindingIndex) ;
+                map = self.Maps_{mapIndex} ;
+                result = map.(propertyName) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                stimulusIndex = item.IndexOfEachStimulusInLibrary(bindingIndex) ;
+                stimulus = self.Stimuli_{stimulusIndex} ;
+                result = stimulus.(propertyName) ;
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function                        
+        
     end  % public methods block
     
     methods (Static)        
@@ -1719,7 +1831,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 
             % Get the list of all the channels in the stimulation subsystem
             stimulation=stimulusLibrary.Parent;
-            channelNames=stimulation.ChannelNames;
+            channelNames=stimulation.ChannelName;
             
             for idx = 1:nChannels ,
                 % Determine the index of the output channel among all the

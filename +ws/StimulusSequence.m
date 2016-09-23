@@ -12,11 +12,12 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     
     properties (Dependent=true, SetAccess=immutable)
         MapDurations
-        %IsLive
+        NBindings
     end      
     
     properties (Access = protected)
         Name_ = ''
+        % Things below are vectors of length NBindings
         IndexOfEachMapInLibrary_ = {}
         IsMarkedForDeletion_ = logical([])
     end    
@@ -42,6 +43,10 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             % same UUID.
             %self.UUID = rand();
         end  % function
+        
+        function out = get.NBindings(self) 
+            out = length(self.IndexOfEachMapInLibrary_) ;
+        end
         
 %         function val = get.CycleCount(self)
 %             val = numel(self.Maps);

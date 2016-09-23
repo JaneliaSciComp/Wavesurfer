@@ -877,5 +877,9 @@ end  % methods block
             result = self.StimulusLibrary_.classSelectionProperty(className, propertyName) ;
         end  % method        
         
+        function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
+            result = self.StimulusLibrary_.propertyForElementOfSelectedItem(indexOfElementWithinItem, propertyName) ;
+        end  % function        
+        
     end  % public methods block    
 end  % classdef

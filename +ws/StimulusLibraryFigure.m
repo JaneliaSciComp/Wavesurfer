@@ -760,24 +760,23 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 allMapNames = model.propertyFromEachStimulusLibraryItemInClass('ws.StimulusMap', 'Name') ; 
                 allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
                 
-                % THIS IS WHERE YOU STOPPED
-                
                 % Update the table
-                mapsInSequence=selectedSequence.Maps;
-                nRows=length(mapsInSequence);
-                data=cell(nRows,nColumns);
-                for i=1:nRows ,
-                    map=mapsInSequence{i};
+                nElementsInSequence = self.propertyOfStimulusLibrarySelectedItem('NBindings') ;
+                mapsInSequence = selectedSequence.Maps ;
+                nRows = nElementsInSequence ;
+                data = cell(nRows,nColumns) ;
+                for i=1:nElementsInSequence ,
+                    map = mapsInSequence{i} ;
                     if isempty(map) ,                        
                         data{i,1}='(Unspecified)';
                         data{i,2}='(Unspecified)';
                         data{i,3}='(Unspecified)';
                     else
-                        data{i,1}=map.Name;
-                        data{i,2}=sprintf('%g',map.Duration) ;
-                        data{i,3}=sprintf('%d',length(map.ChannelNames)) ;
+                        data{i,1} = map.Name ;
+                        data{i,2} = sprintf('%g',map.Duration) ;
+                        data{i,3} = sprintf('%d',length(map.ChannelNames)) ;
                     end
-                    data{i,4}=selectedSequence.IsMarkedForDeletion(i);
+                    data{i,4} = propertyForElementOfSelectedStimulusLibraryItem(i, 'IsMarkedForDeletion');
                 end
                 set(self.SequenceTable, ...
                     'ColumnFormat',{allMapsNamesWithUnspecified 'char' 'char' 'logical'}, ...
@@ -792,12 +791,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
                 return
             end
-            
-            import ws.fif
-            import ws.onIff
-
-            %invalidColor = [ 1 0.8 0.8 ] ;
-            
+                        
             % Update the name and duration            
             selectedMap=stimulusLibrary.SelectedMap;
             if isempty(selectedMap) ,
@@ -847,7 +841,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                         data{i,2}=stimulus.Name;
                         data{i,3}=stimulus.EndTime;
                     end
-                    data{i,4}=selectedMap.Multipliers(i);
+                    data{i,4}=selectedMap.Multiplier
+(i);
                     data{i,5}=selectedMap.IsMarkedForDeletion(i);
                 end
                 columnFormat={channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric' 'logical'};
@@ -864,9 +859,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
                 return
             end
-            
-            import ws.fif
-            import ws.onIff
             
             selectedStimulus=stimulusLibrary.SelectedStimulus;
             
@@ -927,68 +919,65 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
         function updateControlEnablementImplementation_(self)
             %fprintf('Inside updateControlEnablement()...\n');
 
-            import ws.fif
-            import ws.onIff
-            
             model=self.Model;
             if isempty(model) ,
                 return
             end
             wavesurferModel=ws.getSubproperty(model,'Parent','Parent');   
-            isIdle=fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
+            isIdle=ws.fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
             isSelection=~isempty(model.SelectedItem);
             isLibraryEmpty=model.IsEmpty;
             
             % File menu items
-            set(self.ClearLibraryMenuItem,'Enable',onIff(isIdle&&~isLibraryEmpty));
-            set(self.CloseMenuItem,'Enable',onIff(isIdle));
+            set(self.ClearLibraryMenuItem,'Enable',ws.onIff(isIdle&&~isLibraryEmpty));
+            set(self.CloseMenuItem,'Enable',ws.onIff(isIdle));
             
             % Edit menu items
-            set(self.AddSequenceMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
-            set(self.DeleteSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
-            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence')));
+            set(self.AddSequenceMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateSequenceMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
+            set(self.DeleteSequenceMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
+            set(self.AddMapToSequenceMenuItem,'Enable',ws.onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence')));
             set(self.DeleteMapsFromSequenceMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence') && any(model.SelectedItem.IsMarkedForDeletion) ));
-            set(self.AddMapMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
-            set(self.DeleteMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
-            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap')));
+                'Enable',ws.onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence') && any(model.SelectedItem.IsMarkedForDeletion) ));
+            set(self.AddMapMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateMapMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
+            set(self.DeleteMapMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
+            set(self.AddChannelToMapMenuItem,'Enable',ws.onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap')));
             set(self.DeleteChannelsFromMapMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
-            set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
-            set(self.DeleteStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
-            %set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
+                'Enable',ws.onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
+            set(self.AddStimulusMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateStimulusMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
+            set(self.DeleteStimulusMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
+            %set(self.DeleteItemMenuItem,'Enable',ws.onIff(isIdle&&isSelection));
             
             % Tools menu items
-            set(self.PreviewMenuItem,'Enable',onIff(isIdle&&isSelection));
+            set(self.PreviewMenuItem,'Enable',ws.onIff(isIdle&&isSelection));
             
             % The three main listboxes
-            set(self.SequencesListbox,'Enable',onIff(isIdle));
-            set(self.MapsListbox,'Enable',onIff(isIdle));
-            set(self.StimuliListbox,'Enable',onIff(isIdle));
+            set(self.SequencesListbox,'Enable',ws.onIff(isIdle));
+            set(self.MapsListbox,'Enable',ws.onIff(isIdle));
+            set(self.StimuliListbox,'Enable',ws.onIff(isIdle));
 
             % The sequence panel
             isSelectionASequence=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusSequence'));
-            set(self.SequenceNameEdit,'Enable',onIff(isIdle&&isSelectionASequence));
-            set(self.SequenceTable,'Enable',onIff(isIdle&&isSelectionASequence));
+            set(self.SequenceNameEdit,'Enable',ws.onIff(isIdle&&isSelectionASequence));
+            set(self.SequenceTable,'Enable',ws.onIff(isIdle&&isSelectionASequence));
             
             % The map panel
             isSelectionAMap=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusMap'));
-            set(self.MapNameEdit,'Enable',onIff(isIdle&&isSelectionAMap));
-            set(self.MapDurationEdit,'Enable',onIff(isIdle&&isSelectionAMap&&model.SelectedItem.IsDurationFree));
-            set(self.MapTable,'Enable',onIff(isIdle&&isSelectionAMap));
+            set(self.MapNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAMap));
+            set(self.MapDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAMap&&model.SelectedItem.IsDurationFree));
+            set(self.MapTable,'Enable',ws.onIff(isIdle&&isSelectionAMap));
             
             % The stimulus panel
             isSelectionAStimulus=isSelection&&(isequal(model.SelectedItemClassName,'ws.Stimulus'));
-            set(self.StimulusNameEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDelayEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDurationEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusAmplitudeEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDCOffsetEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusFunctionPopupmenu,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusAdditionalParametersEdits,'Enable',onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDelayEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusAmplitudeEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDCOffsetEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusFunctionPopupmenu,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusAdditionalParametersEdits,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
         end  % function
     end        
     
