@@ -27,11 +27,14 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         Amplitude
         DCOffset
         TypeString
+        AdditionalParameterNames
+        AdditionalParameterDisplayNames
+        AdditionalParameterDisplayUnitses
     end
 
-    properties (Dependent=true, SetAccess=immutable)
-        Delegate
-    end
+%     properties (Dependent=true, SetAccess=immutable)
+%         Delegate
+%     end
 
     properties (Access=protected)
         Name_ = ''
@@ -146,8 +149,20 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             val = ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.Stimulus.evaluateSweepExpression(self.Duration,1);
         end
         
-        function output = get.Delegate(self)
-            output = self.Delegate_ ;
+%         function output = get.Delegate(self)
+%             output = self.Delegate_ ;
+%         end
+        
+        function result = get.AdditionalParameterNames(self)
+            result = self.Delegate_.AdditionalParameterNames ;
+        end
+        
+        function result = get.AdditionalParameterDisplayNames(self)
+            result = self.Delegate_.AdditionalParameterDisplayNames ;
+        end
+        
+        function result = get.AdditionalParameterDisplayUnitses(self)
+            result = self.Delegate_.AdditionalParameterDisplayUnitses ;
         end
         
         function data = calculateSignal(self, t, sweepIndexWithinSet)

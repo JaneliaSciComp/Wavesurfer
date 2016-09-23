@@ -79,6 +79,9 @@ classdef WavesurferModel < ws.Model
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
+       
+        AIChannelNames
+        DIChannelNames
         
         % Triggering settings
         TriggerCount
@@ -3161,6 +3164,14 @@ classdef WavesurferModel < ws.Model
             result = [aiNames diNames aoNames doNames] ;
         end
 
+        function result = get.AIChannelNames(self)
+            result = self.Acquisition.AnalogChannelNames ;
+        end
+
+        function result = get.DIChannelNames(self)
+            result = self.Acquisition.DigitalChannelNames ;
+        end
+
         function result = get.IsAIChannelTerminalOvercommitted(self)
             result = self.IsAIChannelTerminalOvercommitted_ ;
         end
@@ -3290,18 +3301,6 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
 
     methods (Access=protected)
-%         function sanitizePersistedState_(self)
-%             % This method should perform any sanity-checking that might be
-%             % advisable after loading the persistent state from disk.
-%             % This is often useful to provide backwards compatibility
-%             
-%             self.didSetDeviceName_() ;  % Old protocol files don't store the 
-%                                         % device name in subobjects, so we call 
-%                                         % this to set the DeviceName
-%                                         % throughout to the one set in self
-%             self.didSetNSweepsPerRun_() ;  % Ditto
-%         end  % function
-        
         function synchronizeTransientStateToPersistedState_(self)            
             % This method should set any transient state variables to
             % ensure that the object invariants are met, given the values
@@ -3472,5 +3471,200 @@ classdef WavesurferModel < ws.Model
         function result = externalTriggerProperty(self, index, propertyName)
             result = self.Triggering_.externalTriggerProperty(index, propertyName) ;
         end  % function
+    end  % public methods block
+    
+    methods  % expose stim library methods at WSM level
+        function clearStimulusLibrary(self)
+            try
+                self.Stimulation_.clearStimulusLibrary() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
+            try
+                self.Stimulation_.setSelectedStimulusLibraryItemByClassNameAndIndex(className, index) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function addNewStimulusSequence(self)
+            try
+                self.Stimulation_.addNewStimulusSequence() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function duplicateSelectedStimulusLibraryItem(self)
+            try
+                self.Stimulation_.duplicateSelectedStimulusLibraryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function addMapToSelectedStimulusLibraryItem(self)
+            try
+                self.Stimulation_.addMapToSelectedStimulusLibraryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+                
+        function deleteMarkedMapsFromSequence(self)
+            try
+                self.Stimulation_.deleteMarkedMapsFromSequence() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function addNewStimulusMap(self)
+            try
+                self.Stimulation_.addNewStimulusMap() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function        
+        
+        function addChannelToSelectedStimulusLibraryItem(self)
+            try
+                self.Stimulation_.addChannelToSelectedStimulusLibraryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+                
+        function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
+            try
+                self.Stimulation_.deleteMarkedChannelsFromSelectedStimulusLibraryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+        
+        function addNewStimulus(self)
+            try
+                self.Stimulation_.addNewStimulus() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function        
+        
+        function result = isSelectedStimulusLibaryItemInUse(self)
+            result = self.Stimulation_.isSelectedStimulusLibaryItemInUse() ;
+        end  % function        
+
+        function deleteSelectedStimulusLibaryItem(self)
+            try
+                self.Stimulation_.deleteSelectedStimulusLibaryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function        
+        
+        function result = selectedStimulusLibraryItemClassName(self)
+            result = self.Stimulation_.selectedStimulusLibraryItemClassName() ;
+        end  % function        
+
+        function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
+            try
+                self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function       
+        
+        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
+            try
+                self.Stimulation_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function                
+        
+        function setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+            try
+                self.Stimulation_.setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function                
+            
+        function setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue)
+            try
+                self.Stimulation_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function        
+        
+        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
+            try
+                self.Stimulation_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function        
+        
+        function plotSelectedStimulusLibraryItem(self, figureGH)
+            sampleRate = self.SampleRate ;  % Hz 
+            channelNames = [self.AIChannelNames self.DIChannelNames] ;
+            isChannelAnalog = [true(size(self.AIChannelNames)) false(size(self.DIChannelNames))] ;
+            self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
+        end  % function      
+        
+        function result = selectedStimulusLibraryItemProperty(self, propertyName)
+            result = self.Stimulation_.selectedStimulusLibraryItemProperty(propertyName) ;
+        end  % method        
+        
+        function result = propertyFromEachStimulusLibraryItemInClass(self, className, propertyName) 
+            % Result is a cell array, even it seems like it could/should be another kind of array
+            result = self.Stimulation_.propertyFromEachStimulusLibraryItemInClass(className, propertyName) ;
+        end  % function
+        
+        function result = indexOfStimulusLibraryClassSelection(self, className)
+            result = self.Stimulation_.indexOfStimulusLibraryClassSelection(className) ;
+        end  % method                    
+
+        function result = stimulusLibraryClassSelectionProperty(self, className, propertyName)
+            result = self.Stimulation_.stimulusLibraryClassSelectionProperty(className, propertyName) ;
+        end  % method        
+        
     end  % public methods block
 end  % classdef

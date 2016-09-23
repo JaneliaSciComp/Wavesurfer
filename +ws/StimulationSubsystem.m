@@ -783,4 +783,99 @@ end  % methods block
         end
     end  % protected methods block
     
+    methods  % expose stim library methods at stimulation subsystem level
+        function clearStimulusLibrary(self)
+            self.StimulusLibrary_.clear() ;
+        end  % function
+        
+        function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
+            self.StimulusLibrary_.setSelectedItemByClassNameAndIndex(className, index) ;
+        end  % function
+        
+        function addNewStimulusSequence(self)
+            self.StimulusLibrary_.addNewSequence() ;
+        end  % function
+        
+        function duplicateSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.duplicateSelectedItem() ;
+        end  % function
+        
+        function addMapToSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.addMapToSelectedItem() ;
+        end  % function
+        
+        function deleteMarkedMapsFromSequence(self)
+            self.StimulusLibrary_.deleteMarkedMapsFromSequence() ;
+        end  % function
+        
+        function addNewStimulusMap(self)
+            self.StimulusLibrary_.addNewMap() ;
+        end  % function
+        
+        function addChannelToSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.addChannelToSelectedItem() ;
+        end  % function
+        
+        function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.deleteMarkedChannelsFromSelectedItem() ;
+        end  % function
+        
+        function addNewStimulus(self)
+            self.StimulusLibrary_.addNewStimulus() ;
+        end  % function        
+        
+        function isSelectedStimulusLibaryItemInUse(self)
+            self.StimulusLibrary_.isSelectedItemInUse() ;
+        end  % function        
+        
+        function deleteSelectedStimulusLibaryItem(self)
+            self.StimulusLibrary_.deleteSelectedItem() ;
+        end  % function        
+        
+        function result = selectedStimulusLibraryItemClassName(self)
+            result = self.StimulusLibrary_.SelectedItemClassName ;
+        end  % function        
+        
+        function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
+            self.StimulusLibrary_.setSelectedItemProperty(propertyName, newValue) ;
+        end  % function        
+        
+        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
+            self.StimulusLibrary_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
+        end  % function        
+
+        function setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+            self.StimulusLibrary_.setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+        end  % function                   
+        
+        function setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue)
+            self.StimulusLibrary_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+        end  % function                
+        
+        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
+            self.StimulusLibrary_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;            
+        end  % function                
+        
+        function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+            self.StimulusLibrary_.plotSelectedItem(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+        end  % function            
+        
+        function result = selectedStimulusLibraryItemProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedItemProperty(propertyName) ;
+        end  % method        
+        
+        function result = indexOfStimulusLibraryClassSelection(self, className)
+            result = self.StimulusLibrary_.indexOfClassSelection(className) ;
+        end  % method                    
+        
+        function result = propertyFromEachStimulusLibraryItemInClass(self, className, propertyName) 
+            % Result is a cell array, even it seems like it could/should be another kind of array
+            result = self.StimulusLibrary_.propertyFromEachItemInClass(className, propertyName) ;
+        end  % function
+        
+        function result = stimulusLibraryClassSelectionProperty(self, className, propertyName)
+            result = self.StimulusLibrary_.classSelectionProperty(className, propertyName) ;
+        end  % method        
+        
+    end  % public methods block    
 end  % classdef
