@@ -89,6 +89,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             out = self.IndexOfEachStimulusInLibrary_ ;
         end   % function
 
+        function set.IndexOfEachStimulusInLibrary(self, newValue)            
+            self.IndexOfEachStimulusInLibrary_ = newValue ;
+        end   % function
+
 %         function durationPrecursorMayHaveChanged(self,varargin)
 %             self.Duration=nan.The;  % a code to do no setting, but cause the post-set event to fire
 %             self.IsDurationFree=nan.The;  % cause the post-set event to fire
@@ -429,12 +433,12 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end  % function
         
-        function nullStimulusAtBindingIndex(self, bindingIndex)
-            % Set all occurances of stimulus in the self to []
-            if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
-                self.Stimuli{bindingIndex} = [] ;
-            end
-        end  % function
+%         function nullStimulusAtBindingIndex(self, bindingIndex)
+%             % Set all occurances of stimulus in the self to []
+%             if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
+%                 self.Stimuli{bindingIndex} = [] ;
+%             end
+%         end  % function
         
         function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
             % nBoundChannels is the number of channels *in channelNames* for which

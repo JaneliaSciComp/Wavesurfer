@@ -92,6 +92,10 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             out = self.IndexOfEachMapInLibrary_ ;
         end   % function
         
+        function set.IndexOfEachMapInLibrary(self, newValue)
+            self.IndexOfEachMapInLibrary_ = newValue ;
+        end   % function
+        
         function out = get.Maps(self)
             allMaps = self.Parent.Maps ;
             indexOfEachMapInLibrary = self.IndexOfEachMapInLibrary_ ;

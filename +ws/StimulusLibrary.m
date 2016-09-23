@@ -1327,6 +1327,44 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
             
+            nStimuli = length(self.Stimuli_) ;
+            nMaps = length(self.Maps_) ;
+            nSequences = length(self.Sequences_) ;
+            
+            % Go through the maps, make sure the stimuli they point to
+            % actually exist.
+            for i = 1:nMaps ,
+                map = self.Maps_{i} ;
+                indexOfEachStimulusInLibrary = map.IndexOfEachStimulusInLibrary ;  % cell array, each el either empty or a double scalar stimulus index
+                for j = 1:length(indexOfEachStimulusInLibrary) ,
+                    stimulusIndex = indexOfEachStimulusInLibrary{j} ;
+                    if isempty(stimulusIndex) || (ws.isIndex(stimulusIndex) && 1<=stimulusIndex && stimulusIndex<=nStimuli) ,
+                        % all is well
+                    else
+                        % stimulusIndex is not a legal value, so we set it
+                        % to empty, which means "unspecified"
+                        map.IndexOfEachStimulusInLibrary{j} = [] ;
+                    end
+                end
+            end
+
+            % Go through the sequences, make sure the maps they point to
+            % all exist.
+            for i = 1:nSequences ,
+                sequence = self.Sequences_{i} ;
+                indexOfEachMapInLibrary = sequence.IndexOfEachMapInLibrary ;  % cell array, each el either empty or a double scalar stimulus index
+                for j = 1:length(indexOfEachMapInLibrary) ,
+                    mapIndex = indexOfEachMapInLibrary{j} ;
+                    if isempty(mapIndex) || (ws.isIndex(mapIndex) && 1<=mapIndex && mapIndex<=nMaps) ,
+                        % all is well
+                    else
+                        % mapIndex is not a legal value, so we set it
+                        % to empty, which means "unspecified"
+                        sequence.IndexOfEachMapInLibrary{j} = [] ;
+                    end
+                end
+            end            
+            
             % Make sure the SelectedItemClassName_ is a legal value,
             % doing our best to get the right modern class for things
             % like 'ws.stimulus.Stimulus'.
