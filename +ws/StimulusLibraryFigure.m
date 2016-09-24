@@ -741,11 +741,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 return
             end
             
-            selectedSequence = model.SelectedSequence ;
+            %selectedSequence = model.SelectedSequence ;
             
             nColumns=4;  % number of cols in the table
-            indexOfSelectedSequence = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
-            if isempty(indexOfSelectedSequence) ,
+            sequenceIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
+            if isempty(sequenceIndex) ,
                 set(self.SequenceNameEdit,'String','');
                 data=cell(0,nColumns);
                 set(self.SequenceTable,'Data',data);            
@@ -761,94 +761,120 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
                 
                 % Update the table
-                nElementsInSequence = self.propertyOfStimulusLibrarySelectedItem('NBindings') ;
-                mapsInSequence = selectedSequence.Maps ;
-                nRows = nElementsInSequence ;
+                nBindingsInSequence = model.stimulusLibraryItemProperty('ws.StimulusSequence', sequenceIndex, 'NBindings') ;
+                %mapsInSequence = selectedSequence.Maps ;
+                nRows = nBindingsInSequence ;
                 data = cell(nRows,nColumns) ;
-                for i=1:nElementsInSequence ,
-                    map = mapsInSequence{i} ;
-                    if isempty(map) ,                        
-                        data{i,1}='(Unspecified)';
-                        data{i,2}='(Unspecified)';
-                        data{i,3}='(Unspecified)';
+                for bindingIndex = 1:nBindingsInSequence ,
+                    %map = mapsInSequence{i} ;
+                    %if isempty(map) ,                
+                    if model.isStimulusLibraryItemBindingTargetEmpty('ws.StimulusSequence', sequenceIndex, bindingIndex) ,
+                        data{bindingIndex,1}='(Unspecified)';
+                        data{bindingIndex,2}='(Unspecified)';
+                        data{bindingIndex,3}='(Unspecified)';
                     else
-                        data{i,1} = map.Name ;
-                        data{i,2} = sprintf('%g',map.Duration) ;
-                        data{i,3} = sprintf('%d',length(map.ChannelNames)) ;
+                        % data{i,1} = map.Name ;
+                        data{bindingIndex,1} = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'Name') ;
+                        %data{i,2} = sprintf('%g',map.Duration) ;
+                        duration = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'Duration') ;
+                        data{bindingIndex,2} = sprintf('%g',duration) ;                        
+                        % data{i,3} = sprintf('%d',length(map.ChannelNames)) ;
+                        nBindingsInMap = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'NBindings') ;
+                        data{bindingIndex,3} = sprintf('%d',nBindingsInMap) ;
                     end
-                    data{i,4} = propertyForElementOfSelectedStimulusLibraryItem(i, 'IsMarkedForDeletion');
+                    data{bindingIndex,4} = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'IsMarkedForDeletion');
                 end
                 set(self.SequenceTable, ...
                     'ColumnFormat',{allMapsNamesWithUnspecified 'char' 'char' 'logical'}, ...
                     'Data',data);            
             end
         end  % function
-    end  % methods block
+    end  % protected methods block
 
     methods (Access=protected)
         function updateMapPanelControlProperties_(self)
-            stimulusLibrary=self.Model;  % this is the StimulusLibrary
-            if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%             stimulusLibrary=self.Model;  % this is the StimulusLibrary
+%             if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%                 return
+%             end
+            model = self.Model ;  % this is the WSM
+            if isempty(model) || ~isvalid(model) ,
                 return
             end
-                        
+            
             % Update the name and duration            
-            selectedMap=stimulusLibrary.SelectedMap;
-            if isempty(selectedMap) ,
+            %selectedMap=stimulusLibrary.SelectedMap;
+            mapIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
+            if isempty(mapIndex) ,
                 set(self.MapNameEdit,'String','');
                 set(self.MapDurationEdit,'String','');
             else
-                set(self.MapNameEdit,'String',selectedMap.Name);
-                set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
+                %set(self.MapNameEdit,'String',selectedMap.Name);
+                mapName = self.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name') ;
+                set(self.MapNameEdit,'String',mapName);
+                %set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
+                mapDuration = self.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Duration') ;                
+                set(self.MapDurationEdit,'String',sprintf('%g',mapDuration));
             end
             
             % Update the table
             nColumns=5;
-            if isempty(selectedMap) ,
+            %if isempty(selectedMap) ,
+            if isempty(mapIndex) ,
                 nRows=0;
                 data=cell(nRows,nColumns);
                 set(self.MapTable,'Data',data);
             else
                 % Get the options for the channel names
-                stimulation=stimulusLibrary.Parent;
-                channelNames=stimulation.ChannelNames;
-                channelNamesWithUnspecified=[{'(Unspecified)'} channelNames];
+                outputChannelNames = horzcat(model.AOChannelNames, model.DOChannelNames) ;
+                channelNamesWithUnspecified = [{'(Unspecified)'} outputChannelNames];
                 
                 % Get the options for the stimulus names
-                allStimuli=stimulusLibrary.Stimuli;
-                allStimulusNames=cellfun(@(item)(item.Name),allStimuli,'UniformOutput',false);
+                %allStimuli=stimulusLibrary.Stimuli;
+                %allStimulusNames=cellfun(@(item)(item.Name),allStimuli,'UniformOutput',false);
+                allStimulusNames = model.propertyFromEachStimulusLibraryItemInClass('ws.Stimulus', 'Name') ;
                 allStimulusNamesWithUnspecified=[{'(Unspecified)'} allStimulusNames];
                 
-                nRows=selectedMap.NBindings;
-                data=cell(nRows,nColumns);
-                for i=1:nRows ,
-                    channelName=selectedMap.ChannelNames{i};
+                nBindingsInMap = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'NBindings') ;
+                nRows = nBindingsInMap ;
+                data = cell(nRows,nColumns) ;
+                for bindingIndex = 1:nRows ,
+                    %channelName=selectedMap.ChannelNames{bindingIndex};
+                    channelName = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName') ;
                     if isempty(channelName) ,
-                        data{i,1}='(Unspecified)';
+                        data{bindingIndex,1}='(Unspecified)';
                     else
-                        isValid = ismember(channelName,channelNames) ;
+                        isValid = ismember(channelName,outputChannelNames) ;
                         if isValid ,
-                            data{i,1}=channelName;
+                            data{bindingIndex,1}=channelName;
                         else
-                            data{i,1}=sprintf('%s (!)', channelName) ;
+                            data{bindingIndex,1}=sprintf('%s (!)', channelName) ;
                         end
                     end
-                    stimulus=selectedMap.Stimuli{i};
-                    if isempty(stimulus) ,
-                        data{i,2}='(Unspecified)';
-                        data{i,3}='(Unspecified)';
+                    %stimulus = selectedMap.Stimuli{bindingIndex} ;
+                    %if isempty(stimulus) ,
+                    if model.isStimulusLibraryItemBindingTargetEmpty('ws.StimulusMap', mapIndex, bindingIndex) ,
+                        data{bindingIndex,2} = '(Unspecified)' ;
+                        data{bindingIndex,3} = '(Unspecified)' ;
                     else
-                        data{i,2}=stimulus.Name;
-                        data{i,3}=stimulus.EndTime;
+                        %data{bindingIndex,2}=stimulus.Name;
+                        stimulusName = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', mapIndex, bindingIndex, 'Name') ;
+                        data{bindingIndex,2} = stimulusName ;
+                        %data{bindingIndex,3}=stimulus.EndTime;
+                        stimulusEndTime = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', mapIndex, bindingIndex, 'EndTime') ;
+                        data{bindingIndex,3} = stimulusEndTime ;
                     end
-                    data{i,4}=selectedMap.Multiplier
-(i);
-                    data{i,5}=selectedMap.IsMarkedForDeletion(i);
+                    %data{bindingIndex,4} = selectedMap.Multiplier(bindingIndex) ;
+                    multiplier = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'Multiplier') ;
+                    data{bindingIndex,4} = multiplier ;
+                    %data{bindingIndex,5} = selectedMap.IsMarkedForDeletion(bindingIndex) ;
+                    isMarkedForDeletion = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IsMarkedForDeletion') ;
+                    data{bindingIndex,5} = isMarkedForDeletion ;
                 end
-                columnFormat={channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric' 'logical'};
+                columnFormat = {channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric' 'logical'} ;
                 set(self.MapTable, ...
-                    'ColumnFormat',columnFormat, ...
-                    'Data',data);
+                    'ColumnFormat', columnFormat, ...
+                    'Data', data) ;
             end
         end  % function
     end  % methods block

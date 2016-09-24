@@ -82,6 +82,8 @@ classdef WavesurferModel < ws.Model
        
         AIChannelNames
         DIChannelNames
+        AOChannelNames
+        DOChannelNames
         
         % Triggering settings
         TriggerCount
@@ -3165,11 +3167,19 @@ classdef WavesurferModel < ws.Model
         end
 
         function result = get.AIChannelNames(self)
-            result = self.Acquisition.AnalogChannelNames ;
+            result = self.Acquisition_.AnalogChannelNames ;
         end
 
         function result = get.DIChannelNames(self)
-            result = self.Acquisition.DigitalChannelNames ;
+            result = self.Acquisition_.DigitalChannelNames ;
+        end
+
+        function result = get.AOChannelNames(self)
+            result = self.Stimulation_.AnalogChannelNames ;
+        end
+
+        function result = get.DOChannelNames(self)
+            result = self.Stimulation_.DigitalChannelNames ;
         end
 
         function result = get.IsAIChannelTerminalOvercommitted(self)
@@ -3632,9 +3642,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function        
         
-        function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
-            result = self.Stimulation_.propertyForElementOfSelectedStimulusLibraryItem(indexOfElementWithinItem, propertyName) ;
-        end  % function        
+%         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
+%             result = self.Stimulation_.propertyForElementOfSelectedStimulusLibraryItem(indexOfElementWithinItem, propertyName) ;
+%         end  % function        
         
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
             try
@@ -3669,6 +3679,38 @@ classdef WavesurferModel < ws.Model
         function result = stimulusLibraryClassSelectionProperty(self, className, propertyName)
             result = self.Stimulation_.stimulusLibraryClassSelectionProperty(className, propertyName) ;
         end  % method        
+        
+        function result = stimulusLibrarySelectedItemProperty(self, propertyName)
+            result = self.Stimulation_.stimulusLibrarySelectedItemProperty(propertyName) ;
+        end
+
+        function result = stimulusLibrarySelectedItemBindingProperty(self, bindingIndex, propertyName)
+            result = self.Stimulation_.stimulusLibrarySelectedItemBindingProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibrarySelectedItemBindingTargetProperty(self, bindingIndex, propertyName)
+            result = self.Stimulation_.stimulusLibrarySelectedItemBindingTargetProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibraryItemProperty(self, className, index, propertyName)
+            result = self.Stimulation_.stimulusLibraryItemProperty(className, index, propertyName) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.Stimulation_.itemBistimulusLibraryItemBindingPropertyndingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.Stimulation_.stimulusLibraryItemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function                                
+        
+        function result = isStimulusLibraryItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
+            result = self.Stimulation_.isStimulusLibraryItemBindingTargetEmpty(className, itemIndex, bindingIndex) ;
+        end  % function
+        
+        function result = isStimulusLibrarySelectedItemBindingTargetEmpty(self, bindingIndex)
+            result = self.Stimulation_.isStimulusLibrarySelectedItemBindingTargetEmpty(bindingIndex) ;
+        end  % function        
         
     end  % public methods block
 end  % classdef

@@ -877,9 +877,40 @@ end  % methods block
             result = self.StimulusLibrary_.classSelectionProperty(className, propertyName) ;
         end  % method        
         
-        function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
-            result = self.StimulusLibrary_.propertyForElementOfSelectedItem(indexOfElementWithinItem, propertyName) ;
-        end  % function        
+%         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
+%             result = self.StimulusLibrary_.propertyForElementOfSelectedItem(indexOfElementWithinItem, propertyName) ;
+%         end  % function        
         
+        function result = stimulusLibrarySelectedItemProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedItemProperty(propertyName) ;
+        end
+
+        function result = stimulusLibrarySelectedItemBindingProperty(self, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.selectedItemBindingProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibrarySelectedItemBindingTargetProperty(self, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.selectedItemBindingTargetProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibraryItemProperty(self, className, index, propertyName)
+            result = self.StimulusLibary_.itemProperty(className, index, propertyName) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.StimulusLibary_.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.StimulusLibary_.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function             
+        
+        function result = isStimulusLibraryItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
+            result = self.StimulusLibary_.isItemBindingTargetEmpty(className, itemIndex, bindingIndex) ;
+        end  % function
+        
+        function result = isStimulusLibrarySelectedItemBindingTargetEmpty(self, bindingIndex)
+            result = self.StimulusLibary_.isSelectedItemBindingTargetEmpty(bindingIndex) ;
+        end  % function
     end  % public methods block    
 end  % classdef

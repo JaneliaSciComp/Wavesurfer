@@ -1446,11 +1446,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
 
-        function result = selectedItemProperty(self, propertyName)
-            selectedItem = self.SelectedItem ;
-            result = selectedItem.(propertyName) ;
-        end  % method        
-        
         function setSelectedItemProperty(self, propertyName, newValue)
             selectedItem = self.SelectedItem ;
             if ~isempty(selectedItem) ,
@@ -1534,70 +1529,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % method
         
-%         function setChannelNameForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
-%             selectedMap = self.SelectedMap ;  
-%             if isempty(selectedMap) ,
-%                 self.broadcast('Update') ;
-%             else                
-%                 if ws.isString(newValue) ,
-%                     if ws.isIndex(indexOfElementWithinMap) && ...
-%                             1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-%                         selectedMap.ChannelNames{indexOfElementWithinMap} = newValue ;
-%                     else
-%                         self.broadcast('Update') ;
-%                     end
-%                 else
-%                     self.broadcast('Update') ;
-%                 end                    
-%             end
-%         end  % method
-% 
-%         function setStimulusByNameForElementOfSelectedMap(self, indexOfElementWithinMap, stimulusName) 
-%             selectedMap = self.SelectedMap ;  
-%             if isempty(selectedMap) ,
-%                 self.broadcast('Update') ;
-%             else                
-%                 if ws.isString(stimulusName) ,
-%                     if ws.isIndex(indexOfElementWithinMap) && ...
-%                             1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-%                         selectedMap.setStimulusByName(indexOfElementWithinMap, stimulusName) ;
-%                     else
-%                         self.broadcast('Update') ;
-%                     end
-%                 else
-%                     self.broadcast('Update') ;
-%                 end                    
-%             end
-%         end  % method
-%         
-%         function setMultiplierForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
-%             selectedMap = self.SelectedMap ;  
-%             if isempty(selectedMap) ,
-%                 self.broadcast('Update') ;
-%             else                
-%                 if ws.isIndex(indexOfElementWithinMap) && ...
-%                         1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-%                     selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;
-%                 else
-%                     self.broadcast('Update') ;
-%                 end
-%             end
-%         end  % method
-%         
-%         function setIsMarkedForDeletionForElementOfSelectedMap(self, indexOfElementWithinMap, newValue) 
-%             selectedMap = self.SelectedMap ;  
-%             if isempty(selectedMap) ,
-%                 self.broadcast('Update') ;
-%             else                
-%                 if ws.isIndex(indexOfElementWithinMap) && ...
-%                         1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelNames) ,
-%                     selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
-%                 else
-%                     self.broadcast('Update') ;
-%                 end
-%             end
-%         end  % method
-
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
             selectedMap = self.SelectedMap ;  
             if ~isempty(selectedMap) ,
@@ -1719,6 +1650,24 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                        'Please save your work, restart WaveSurfer, and report this error to the WaveSurfer developers.']) ;
             end                            
         end  % function                
+
+        function result = selectedItemProperty(self, propertyName)
+            className = self.SelectedItemClassName ;
+            index = self.SelectedItemIndexWithinClass ;
+            result = self.itemProperty(className, index, propertyName) ;
+        end
+
+        function result = selectedItemBindingProperty(self, bindingIndex, propertyName)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
+            result = self.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end
+        
+        function result = selectedItemBindingTargetProperty(self, bindingIndex, propertyName)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
+            result = self.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end
         
         function result = itemProperty(self, className, index, propertyName)
             % The index is the index with the class
@@ -1771,12 +1720,12 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                       'There is no item with an empty class name') ;
             elseif isequal(className,'ws.StimulusSequence') ,
                 item = self.Sequences_{itemIndex} ;
-                mapIndex = item.IndexOfEachMapInLibrary(bindingIndex) ;
+                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
                 map = self.Maps_{mapIndex} ;
                 result = map.(propertyName) ;
             elseif isequal(className,'ws.StimulusMap') ,
                 item = self.Maps_{itemIndex} ;
-                stimulusIndex = item.IndexOfEachStimulusInLibrary(bindingIndex) ;
+                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
                 stimulus = self.Stimuli_{stimulusIndex} ;
                 result = stimulus.(propertyName) ;
             elseif isequal(className,'ws.Stimulus') ,
@@ -1786,9 +1735,60 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 error('ws:stimulusLibrary:noSuchItem' , ...
                       'There is no item in the library with class name %s', className) ;
             end                                        
-        end  % function                        
+        end  % function                                
         
+        function result = isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
+                result = ~isempty(mapIndex) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
+                result = ~isempty(stimulusIndex) ;
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function
+
+        function result = isSelectedItemBindingTargetEmpty(self, bindingIndex)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;            
+            result = self.isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex) ;
+        end  % function
     end  % public methods block
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     methods (Static)        
         function plotStimulusSequence(figureGH, sequence, sampleRate, channelNames, isChannelAnalog)
