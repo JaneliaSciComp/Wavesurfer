@@ -50,7 +50,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
           % (Similar invariants to SelectedStimulusIndex)
         SelectedOutputableClassName
         SelectedOutputableIndex
-        IsEmpty
     end
     
     properties (Access = protected)
@@ -153,8 +152,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             out = self.Stimuli_ ;
         end  % function
         
-        function value = get.IsEmpty(self)
-            value = isempty(self.Sequences) && isempty(self.Maps) && isempty(self.Stimuli) ;
+        function value = isEmpty(self)
+            value = isempty(self.Sequences_) && isempty(self.Maps_) && isempty(self.Stimuli_) ;
         end  % function
         
         function [value,err]=isSelfConsistent(self)                        
@@ -1316,8 +1315,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                               {'Stimuli', 'Maps', 'Sequences', ...
                                'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
                                'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
-                               'SelectedOutputableClassName', 'SelectedOutputableIndex', ...
-                               'IsEmpty'}) ;
+                               'SelectedOutputableClassName', 'SelectedOutputableIndex'}) ;
         end  % function 
     end  % public methods block
     
@@ -1676,15 +1674,23 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                       'There is no item with an empty class name') ;
             elseif isequal(className,'ws.StimulusSequence') ,
                 item = self.Sequences_{index} ;
+                result = item.(propertyName) ;
             elseif isequal(className,'ws.StimulusMap') ,
                 item = self.Maps_{index} ;
+                result = item.(propertyName) ;
             elseif isequal(className,'ws.Stimulus') ,
                 item = self.Stimuli_{index} ;
+                if isprop(item, propertyName) ,
+                    result = item.(propertyName) ;
+                elseif isprop(item.Delegate, propertyName) ,
+                    result = item.Delegate.(propertyName) ;
+                else                    
+                    result = item.(propertyName) ;  % This will error, but will return the same error type as other failure modes
+                end                    
             else
                 error('ws:stimulusLibrary:noSuchItem' , ...
                       'There is no item in the library with class name %s', className) ;
-            end                                        
-            result = item.(propertyName) ;
+            end                              
         end  % function                        
         
         function result = itemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
@@ -1764,6 +1770,37 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             itemIndex = self.SelectedItemIndexWithinClass ;            
             result = self.isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex) ;
         end  % function
+        
+        function result = isAnItemSelected(self)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;            
+            result = ~isempty(className) && ~isempty(itemIndex) ;
+        end  % function
+
+        function result = isAnyBindingMarkedForDeletionForSelectedItem(self)
+            className = self.SelectedItemClassName ;
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noItemSelected' , ...
+                      'There is no item selected') ;
+            elseif isequal(className,'ws.StimulusSequence') || isequal(className,'ws.StimulusMap'),
+                itemIndex = self.SelectedItemIndexWithinClass ;
+                if isempty(itemIndex) ,
+                    error('ws:stimulusLibrary:noItemSelected' , ...
+                          'There is no item selected') ;
+                else
+                    item = self.Sequences_{itemIndex} ;
+                    isMarkedForDeletion = item.IsMarkedForDeletion ;
+                    result = any(isMarkedForDeletion) ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'The selected item is a stimulus, and stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:internalError' , ...
+                      ['WaveSurfer has experienced an internal error: The stimulus library selected class name is an illegal value, %s.  ' ...
+                       'Please save your work, quit WaveSurfer, and notify the developers.'], className) ;
+            end                                        
+        end
     end  % public methods block
     
     

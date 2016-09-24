@@ -912,5 +912,18 @@ end  % methods block
         function result = isStimulusLibrarySelectedItemBindingTargetEmpty(self, bindingIndex)
             result = self.StimulusLibary_.isSelectedItemBindingTargetEmpty(bindingIndex) ;
         end  % function
+        
+        function result = isStimulusLibraryEmpty(self)
+            result = self.StimulusLibary_.isEmpty() ;
+        end  % function                
+        
+        function result = isAStimulusLibraryItemSelected(self)
+            result = self.StimulusLibary_.isAnItemSelected() ;
+        end  % function                
+        
+        function result = isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem(self)
+            result = self.StimulusLibary_.isAnyBindingMarkedForDeletionForSelectedItem() ;            
+        end  % function        
+        
     end  % public methods block    
 end  % classdef

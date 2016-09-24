@@ -3712,5 +3712,17 @@ classdef WavesurferModel < ws.Model
             result = self.Stimulation_.isStimulusLibrarySelectedItemBindingTargetEmpty(bindingIndex) ;
         end  % function        
         
+        function result = isStimulusLibraryEmpty(self)
+            result = self.Stimulation_.isStimulusLibraryEmpty() ;
+        end  % function        
+        
+        function result = isAStimulusLibraryItemSelected(self)
+            result = self.Stimulation_.isAStimulusLibraryItemSelected() ;
+        end  % function        
+
+        function result = isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem(self)
+            result = self.Stimulation_.isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem() ;            
+        end  % function        
+
     end  % public methods block
 end  % classdef
