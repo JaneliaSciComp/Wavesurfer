@@ -321,12 +321,12 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulusLibrary=self.StimulusLibrary;
-            if ~isempty(stimulusLibrary) ,
-                stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end        
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             stimulusLibrary=self.StimulusLibrary;
+%             if ~isempty(stimulusLibrary) ,
+%                 stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end        
         
 %         function didSetSelectedOutputable(self)
 %             % Called by the child StimulusLibrary to notify self that the
@@ -920,5 +920,14 @@ end  % methods block
         function setSelectedOutputableByIndex(self, index)            
             self.StimulusLibary_.setSelectedOutputableByIndex(index) ;
         end  % method
+        
+        function overrideStimulusLibraryMapDuration(self, sweepDuration)
+            self.StimulusLibary_.overrideMapDuration(sweepDuration) ;
+        end  % function
+        
+        function releaseStimulusLibraryMapDuration(self)
+            self.StimulusLibary_.releaseMapDuration() ;
+        end  % function
+        
     end  % public methods block    
 end  % classdef

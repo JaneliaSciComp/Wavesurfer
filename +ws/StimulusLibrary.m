@@ -1,19 +1,19 @@
 classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
     properties (Dependent = true)
-        Stimuli  % these are all cell arrays
-        Maps  
-        Sequences
+%         Stimuli  % these are all cell arrays
+%         Maps  
+%         Sequences
         % We store the currently selected "outputable" in the stim library
         % itself.  This seems weird at first, but the big advantage is that
         % all the self-onsistency concerns are confined to the stim
         % library itself.  And the SelectedOutputable can be empty if
         % desired.
-        SelectedOutputable  % The thing currently selected for output.  Can be a sequence or a map.
-        SelectedStimulus
-        SelectedMap
-        SelectedSequence
-        SelectedItem
+%         SelectedOutputable  % The thing currently selected for output.  Can be a sequence or a map.
+%         SelectedStimulus
+%         SelectedMap
+%         SelectedSequence
+%         SelectedItem
             % This is the item currently selected in the library.  This is
             % completely orthogonal to the selected outputable.  The selected
             % outputable represents the sequence or library that will be used
@@ -65,8 +65,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         SelectedOutputableIndex_  % Underlying storage for SelectedOutputable
     end
     
+    properties (Access = protected, Transient=true)
+        AreMapDurationsOverridden_ 
+        ExternalMapDuration_
+    end
+    
     methods
-        function self=StimulusLibrary(parent)
+        function self = StimulusLibrary(parent)
             if ~exist('parent','var') ,
                 parent = [] ;  % 
             end
@@ -80,6 +85,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.SelectedStimulusIndex_ = [] ;
             self.SelectedMapIndex_ = [] ;
             self.SelectedSequenceIndex_ = [] ;
+            self.AreMapDurationsOverridden_ = false ;
+            self.ExternalMapDuration_ = [] ;  
         end
         
         function do(self, methodName, varargin)
@@ -140,17 +147,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             self.broadcast('Update');
 %         end
 
-        function out = get.Sequences(self)
-            out = self.Sequences_ ;
-        end  % function
-        
-        function out = get.Maps(self)
-            out = self.Maps_ ;
-        end  % function
-        
-        function out = get.Stimuli(self)
-            out = self.Stimuli_ ;
-        end  % function
+%         function out = get.Sequences(self)
+%             out = self.Sequences_ ;
+%         end  % function
+%         
+%         function out = get.Maps(self)
+%             out = self.Maps_ ;
+%         end  % function
+%         
+%         function out = get.Stimuli(self)
+%             out = self.Stimuli_ ;
+%         end  % function
         
         function value = isEmpty(self)
             value = isempty(self.Sequences_) && isempty(self.Maps_) && isempty(self.Stimuli_) ;
@@ -405,17 +412,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             output=self.SelectedOutputableIndex_ ;
         end  % function
         
-        function value = get.SelectedOutputable(self)
-            if isempty(self.SelectedOutputableClassName_) ,
-                value=[];  % no item is currently selected
-            elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusSequence') ,
-                value=self.Sequences{self.SelectedOutputableIndex_};
-            elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') ,                
-                value=self.Maps{self.SelectedOutputableIndex_};
-            else
-                value=[];  % this is an invariant violation, but still want to return something
-            end
-        end  % function
+%         function value = get.SelectedOutputable(self)
+%             if isempty(self.SelectedOutputableClassName_) ,
+%                 value=[];  % no item is currently selected
+%             elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusSequence') ,
+%                 value=self.Sequences{self.SelectedOutputableIndex_};
+%             elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') ,                
+%                 value=self.Maps{self.SelectedOutputableIndex_};
+%             else
+%                 value=[];  % this is an invariant violation, but still want to return something
+%             end
+%         end  % function
         
 %         function set.SelectedOutputable(self, newSelection)
 %             if ws.isASettableValue(newSelection) ,
@@ -543,19 +550,19 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         
-        function value = get.SelectedItem(self)
-            if isempty(self.SelectedItemClassName_) ,
-                value=[];  % no item is currently selected
-            elseif isequal(self.SelectedItemClassName_,'ws.StimulusSequence') ,
-                value=self.SelectedSequence;
-            elseif isequal(self.SelectedItemClassName_,'ws.StimulusMap') ,                
-                value=self.SelectedMap;
-            elseif isequal(self.SelectedItemClassName_,'ws.Stimulus') ,                
-                value=self.SelectedStimulus;
-            else
-                value=[];  % this is an invariant violation, but still want to return something
-            end
-        end  % function
+%         function value = get.SelectedItem(self)
+%             if isempty(self.SelectedItemClassName_) ,
+%                 value=[];  % no item is currently selected
+%             elseif isequal(self.SelectedItemClassName_,'ws.StimulusSequence') ,
+%                 value=self.SelectedSequence;
+%             elseif isequal(self.SelectedItemClassName_,'ws.StimulusMap') ,                
+%                 value=self.SelectedMap;
+%             elseif isequal(self.SelectedItemClassName_,'ws.Stimulus') ,                
+%                 value=self.SelectedStimulus;
+%             else
+%                 value=[];  % this is an invariant violation, but still want to return something
+%             end
+%         end  % function
         
         function value = get.SelectedItemIndexWithinClass(self)
             outputableClassName = self.SelectedItemClassName_ ;
@@ -572,39 +579,39 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-        function value = get.SelectedSequence(self)
-            if isempty(self.Sequences_) || isempty(self.SelectedSequenceIndex_) ,
-                value = [] ;
-            else
-                value = self.Sequences_{self.SelectedSequenceIndex_} ;
-            end
-        end  % function
+%         function value = get.SelectedSequence(self)
+%             if isempty(self.Sequences_) || isempty(self.SelectedSequenceIndex_) ,
+%                 value = [] ;
+%             else
+%                 value = self.Sequences_{self.SelectedSequenceIndex_} ;
+%             end
+%         end  % function
         
         function value = get.SelectedSequenceIndex(self)
             value = self.SelectedSequenceIndex_ ;
         end  % function
 
-        function value = get.SelectedMap(self)
-            if isempty(self.Maps_) || isempty(self.SelectedMapIndex_) ,
-                value = [] ;
-            else
-                value = self.Maps_{self.SelectedMapIndex_} ;
-            end
-            %value=self.findMapWithUUID(self.SelectedMapUUID_);
-        end  % function
+%         function value = get.SelectedMap(self)
+%             if isempty(self.Maps_) || isempty(self.SelectedMapIndex_) ,
+%                 value = [] ;
+%             else
+%                 value = self.Maps_{self.SelectedMapIndex_} ;
+%             end
+%             %value=self.findMapWithUUID(self.SelectedMapUUID_);
+%         end  % function
         
         function value = get.SelectedMapIndex(self)
             value = self.SelectedMapIndex_ ;
         end  % function
 
-        function value = get.SelectedStimulus(self)
-            if isempty(self.Stimuli_) || isempty(self.SelectedStimulusIndex_) ,
-                value = [] ;
-            else
-                value=self.Stimuli{self.SelectedStimulusIndex_} ;
-            end
-            %value=self.findStimulusWithUUID(self.SelectedStimulusUUID_);
-        end  % function
+%         function value = get.SelectedStimulus(self)
+%             if isempty(self.Stimuli_) || isempty(self.SelectedStimulusIndex_) ,
+%                 value = [] ;
+%             else
+%                 value=self.Stimuli{self.SelectedStimulusIndex_} ;
+%             end
+%             %value=self.findStimulusWithUUID(self.SelectedStimulusUUID_);
+%         end  % function
         
         function value = get.SelectedStimulusIndex(self)
             value = self.SelectedStimulusIndex_ ;
@@ -841,9 +848,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            self.broadcast('Update');            
-        end
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             self.broadcast('Update');            
+%         end
         
         function result=isSequenceAMatch(self,querySequence)
             result=cellfun(@(sequence)(sequence==querySequence),self.Sequences);
@@ -938,7 +945,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
             self.SelectedSequenceIndex_ = length(self.Sequences_) ;
             self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
         function addNewMap(self)
@@ -949,7 +956,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.SelectedItemClassName_ = 'ws.StimulusMap' ;
             self.SelectedMapIndex_ = length(self.Maps_) ;
             self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
                  
         function addNewStimulus(self,typeString)
@@ -965,11 +972,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
                 self.enableBroadcastsMaybe();
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
                
         function duplicateSelectedItem(self)
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
 
             % Get a handle to the item to be duplicated
             originalItem = self.SelectedItem ;  % handle
@@ -1012,8 +1019,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             %self.SelectedItem = newItem ;
             self.setSelectedItemByHandle_(newItem) ;
             
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.enableBroadcastsMaybe();
+            %self.broadcast('Update');
         end % function
 
 %         function didChangeNumberOfOutputChannels(self)
@@ -1511,14 +1518,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % This means one of the additional parameter edits was actuated
             selectedStimulus = self.SelectedStimulus ;  
             if isempty(selectedStimulus) ,
-                self.broadcast('Update') ;
+                %self.broadcast('Update') ;
             else
                 additionalParameterNames = selectedStimulus.Delegate.AdditionalParameterNames ;
                 if ws.isIndex(iParameter) && 1<=iParameter && iParameter<=length(additionalParameterNames) ,
                     propertyName = additionalParameterNames{iParameter} ;
                     selectedStimulus.Delegate.(propertyName) = newString ;  % delegate will check validity
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                 end
             end
         end  % function
@@ -1526,13 +1533,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function setElementOfSelectedSequenceToNamedMap(self, indexOfSequenceElement, mapName) 
             selectedSequence = self.SelectedSequence ;  
             if isempty(selectedSequence) ,
-                self.broadcast('Update') ;
+                %self.broadcast('Update') ;
             else                
                 if ws.isString(mapName) ,
                     indexOfMap = self.indexOfMapWithName(mapName) ;  % can be empty
                     selectedSequence.setMapByIndex(indexOfSequenceElement, indexOfMap) ;  % if isempty(indexOfMap), the map is is "unspecified"
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                 end                    
             end
         end  % method
@@ -1540,7 +1547,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
             selectedSequence = self.SelectedSequence ;  
             if isempty(selectedSequence) ,
-                self.broadcast('Update') ;
+                %self.broadcast('Update') ;
             else                
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
                     newValueAsLogical = logical(newValue) ;
@@ -1548,10 +1555,10 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                             1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps) ,
                         selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
                     else
-                        self.broadcast('Update') ;
+                        %self.broadcast('Update') ;
                     end
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                 end                    
             end
         end  % method
@@ -1705,8 +1712,12 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 item = self.Sequences_{index} ;
                 result = item.(propertyName) ;
             elseif isequal(className,'ws.StimulusMap') ,
-                item = self.Maps_{index} ;
-                result = item.(propertyName) ;
+                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
+                    result = self.ExternalMapDuration_ ;
+                else
+                    item = self.Maps_{index} ;
+                    result = item.(propertyName) ;
+                end
             elseif isequal(className,'ws.Stimulus') ,
                 item = self.Stimuli_{index} ;
                 if isprop(item, propertyName) ,
@@ -1829,6 +1840,16 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                       ['WaveSurfer has experienced an internal error: The stimulus library selected class name is an illegal value, %s.  ' ...
                        'Please save your work, quit WaveSurfer, and notify the developers.'], className) ;
             end                                        
+        end
+        
+        function overrideMapDuration(self, sweepDuration)
+        end  % function
+        
+        function releaseMapDuration(self)
+        end  % function
+        
+        function result = areMapDurationsOverridden(self)
+            result = self.AreMapDurationsOverridden_ ;
         end
     end  % public methods block
     

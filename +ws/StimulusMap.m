@@ -14,7 +14,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     end
 
     properties (Dependent = true, SetAccess=immutable, Transient=true)
-        IsDurationFree
+        %IsDurationFree
         NBindings
     end
     
@@ -229,92 +229,61 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             output = self.IsMarkedForDeletion_ ;
         end
                 
-        function value = get.Duration(self)  % always returns a double
-            try
-                % See if we can collect all the information we need to make
-                % an informed decision about whether to use the acquisition
-                % duration or our own internal duration
-                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=self.collectExternalInformationAboutDuration();
-            catch 
-                % If we can't collect enough information to make an
-                % informed decision, just fall back to the internal
-                % duration.
-                value=self.Duration_;
-                return
-            end
-            
-            % Return the acquisiton duration or the internal duration,
-            % depending
-            if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
-                value=acquisitionDuration;
-            else
-                value=self.Duration_;
-            end
+%         function value = get.Duration(self)  % always returns a double
+%             try
+%                 % See if we can collect all the information we need to make
+%                 % an informed decision about whether to use the acquisition
+%                 % duration or our own internal duration
+%                 [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=self.collectExternalInformationAboutDuration();
+%             catch 
+%                 % If we can't collect enough information to make an
+%                 % informed decision, just fall back to the internal
+%                 % duration.
+%                 value=self.Duration_;
+%                 return
+%             end
+%             
+%             % Return the acquisiton duration or the internal duration,
+%             % depending
+%             if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
+%                 value=acquisitionDuration;
+%             else
+%                 value=self.Duration_;
+%             end
+%         end   % function
+        
+        function value = get.Duration(self)
+            value = self.Duration_ ;
         end   % function
         
         function set.Duration(self, newValue)
-            if ws.isASettableValue(newValue) ,                
-                if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>=0 ,            
-                    newValue = double(newValue) ;
-                    didThrow=false ;
-                    try
-                        % See if we can collect all the information we need to make
-                        % an informed decision about whether to use the acquisition
-                        % duration or our own internal duration
-                        % (This is essentially a way to test whether the
-                        % parent-child relationships that enable us to determine
-                        % the duration from external object are set up.  If this
-                        % throws, we know that they're _not_ set up, and so we are
-                        % free to set the internal duration to the given value.)
-                        [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
-                    catch 
-                        didThrow=true ;
-                    end
-                    if didThrow ,
-                        self.Duration_ = newValue;
-                    else
-                        % If get here, we were able to collect the
-                        % external information we wanted.
-                        
-                        % Return the acquisition duration or the internal duration,
-                        % depending
-                        if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
-                           % Internal duration is overridden, so don't set it.
-                        else
-                            self.Duration_ = newValue;
-                        end
-                    end
-                else
-%                     if ~isempty(self.Parent) ,
-%                         self.Parent.childMayHaveChanged(self);
-%                     end
-                    error('most:Model:invalidPropVal', ...
-                          'Duration must be numeric, real, scalar, nonnegative, and finite.');                
-                end
+            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>=0 ,
+                newValue = double(newValue) ;
+                self.Duration_ = newValue;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Duration must be numeric, real, scalar, nonnegative, and finite.');
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end            
         end   % function
         
-        function value = get.IsDurationFree(self)
-            try
-                % See if we can collect all the information we need to make
-                % an informed decision about whether to use the acquisition
-                % duration or our own internal duration
-                [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
-            catch me %#ok<NASGU>
-                % If we can't collect enough information to make an
-                % informed decision, then we are free!  Ignorance is
-                % freedom!
-                value=true;
-                return
-            end
-            
-            % Return the acquisiton duration or the internal duration,
-            % depending
-            value=~(isSweepBased && doesStimulusUseAcquisitionTriggerScheme);
-        end   % function
+%         function value = get.IsDurationFree(self)
+%             try
+%                 % See if we can collect all the information we need to make
+%                 % an informed decision about whether to use the acquisition
+%                 % duration or our own internal duration
+%                 [isSweepBased,doesStimulusUseAcquisitionTriggerScheme]=self.collectExternalInformationAboutDuration();
+%             catch me %#ok<NASGU>
+%                 % If we can't collect enough information to make an
+%                 % informed decision, then we are free!  Ignorance is
+%                 % freedom!
+%                 value=true;
+%                 return
+%             end
+%             
+%             % Return the acquisiton duration or the internal duration,
+%             % depending
+%             value=~(isSweepBased && doesStimulusUseAcquisitionTriggerScheme);
+%         end   % function
         
 %         function set.IsDurationFree(self, newValue) %#ok<INUSD>
 %             % This does nothing, and is only present so we can cause the
@@ -322,24 +291,24 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             % change.
 %         end   % function
 
-        function [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=collectExternalInformationAboutDuration(self)
-            % Collect information that determines whether we use the
-            % internal duration or the acquisition duration.  This will
-            % throw if the parent/child relationships are not set up.
-            
-            % See if we can collect all the information we need to make
-            % an informed decision about whether to use the acquisition
-            % duration or our own internal duration
-            stimulusLibrary=self.Parent;
-            stimulationSubsystem=stimulusLibrary.Parent;
-            rootModel=stimulationSubsystem.Parent;
-            %triggeringSubsystem=rootModel.Triggering;
-            %acquisitionSubsystem=rootModel.Acquisition;  % problematic: refiller doesn't have this subsystem      
-            isSweepBased=rootModel.AreSweepsFiniteDuration;
-            doesStimulusUseAcquisitionTriggerScheme=rootModel.StimulationUsesAcquisitionTrigger ;
-            %acquisitionDuration=acquisitionSubsystem.Duration;
-            acquisitionDuration=rootModel.SweepDuration;
-        end   % function
+%         function [isSweepBased,doesStimulusUseAcquisitionTriggerScheme,acquisitionDuration]=collectExternalInformationAboutDuration(self)
+%             % Collect information that determines whether we use the
+%             % internal duration or the acquisition duration.  This will
+%             % throw if the parent/child relationships are not set up.
+%             
+%             % See if we can collect all the information we need to make
+%             % an informed decision about whether to use the acquisition
+%             % duration or our own internal duration
+%             stimulusLibrary=self.Parent;
+%             stimulationSubsystem=stimulusLibrary.Parent;
+%             rootModel=stimulationSubsystem.Parent;
+%             %triggeringSubsystem=rootModel.Triggering;
+%             %acquisitionSubsystem=rootModel.Acquisition;  % problematic: refiller doesn't have this subsystem      
+%             isSweepBased=rootModel.AreSweepsFiniteDuration;
+%             doesStimulusUseAcquisitionTriggerScheme=rootModel.StimulationUsesAcquisitionTrigger ;
+%             %acquisitionDuration=acquisitionSubsystem.Duration;
+%             acquisitionDuration=rootModel.SweepDuration;
+%         end   % function
         
         function result = containsStimulus(self, testStimulus)
             if isscalar(testStimulus) && isa(testStimulus, 'ws.Stimulus') ,                        

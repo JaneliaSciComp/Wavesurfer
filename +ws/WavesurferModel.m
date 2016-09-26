@@ -621,10 +621,10 @@ classdef WavesurferModel < ws.Model
                     valueToSet = max(value,0.1);
                     %self.willSetSweepDurationIfFinite();
                     self.SweepDurationIfFinite_ = valueToSet;
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
+                    self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                     self.didSetSweepDurationIfFinite_();
                 else
-                    %self.stimulusMapDurationPrecursorMayHaveChanged();
+                    %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                     %self.didSetSweepDurationIfFinite();
                     self.broadcast('Update');
                     error('most:Model:invalidPropVal', ...
@@ -677,7 +677,7 @@ classdef WavesurferModel < ws.Model
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
-                self.stimulusMapDurationPrecursorMayHaveChanged();
+                self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                 self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_);
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
@@ -693,14 +693,22 @@ classdef WavesurferModel < ws.Model
                 self.AreSweepsFiniteDuration=~logical(newValue);
             end
         end
-        
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulation=self.Stimulation;
-            if ~isempty(stimulation) ,
-                stimulation.stimulusMapDurationPrecursorMayHaveChanged();
-            end
+    end
+    
+    methods (Access=protected)    
+        function overrideOrReleaseStimulusMapDurationAsNeeded_(self)
+            isSweepBased = self.AreSweepsFiniteDuration ;
+            doesStimulusUseAcquisitionTriggerScheme = self.StimulationUsesAcquisitionTrigger ;
+            if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
+                self.Stimulation_.overrideStimulusLibraryMapDuration(self.SweepDuration) ;
+            else
+                self.Stimulation_.releaseStimulusLibraryMapDuration() ;
+            end 
+            self.broadcast('UpdateStimulusLibrary') ;
         end        
-        
+    end  % protected methods block
+    
+    methods
         function electrodesRemoved(self)
             % Called by the Ephys to notify that one or more electrodes
             % was removed

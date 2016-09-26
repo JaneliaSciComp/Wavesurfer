@@ -1000,7 +1000,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             % The map panel
             isSelectionAMap = isSelection&&isSelectedItemAMap ;
             set(self.MapNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAMap));
-            set(self.MapDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAMap&&model.stimulusLibrarySelectedItemProperty('IsDurationFree'))) ;
+            isMapDurationFree = ~model.areStimulusLibraryMapDurationsOverridden() ;
+            set(self.MapDurationEdit,'Enable',ws.onIff(isIdle && isSelectionAMap && isMapDurationFree)) ;
             set(self.MapTable,'Enable',ws.onIff(isIdle&&isSelectionAMap));
             
             % The stimulus panel
