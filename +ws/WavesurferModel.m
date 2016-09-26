@@ -168,6 +168,7 @@ classdef WavesurferModel < ws.Model
     events
         UpdateChannels
         UpdateTriggering
+        UpdateStimulusLibrary
         UpdateFastProtocols
         UpdateForNewData
         UpdateIsYokedToScanImage
@@ -319,7 +320,7 @@ classdef WavesurferModel < ws.Model
             self.Triggering_ = ws.Triggering([]);  % Triggering subsystem doesn't need to know its parent, now.
             self.UserCodeManager_ = ws.UserCodeManager(self);
             self.Logging_ = ws.Logging(self);
-            self.Ephys_ = ws.Ephys(self);
+            self.Ephys_ = ws.Ephys(self);            
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -342,6 +343,10 @@ classdef WavesurferModel < ws.Model
                     self.DeviceName = allDeviceNames{1} ;
                 end
             end
+            
+            % Have to call this at object creation to set the override
+            % correctly.
+            self.overrideOrReleaseStimulusMapDurationAsNeeded_();
         end  % function
         
         function delete(self)
@@ -699,6 +704,7 @@ classdef WavesurferModel < ws.Model
         function overrideOrReleaseStimulusMapDurationAsNeeded_(self)
             isSweepBased = self.AreSweepsFiniteDuration ;
             doesStimulusUseAcquisitionTriggerScheme = self.StimulationUsesAcquisitionTrigger ;
+            %isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
             if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                 self.Stimulation_.overrideStimulusLibraryMapDuration(self.SweepDuration) ;
             else
@@ -3437,9 +3443,14 @@ classdef WavesurferModel < ws.Model
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
+            self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
             self.broadcast('UpdateTriggering') ;            
         end  % function        
 
+        function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)
+            result = self.Triggering_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+        end  % function
+        
         function addCounterTrigger(self)    
             try
                 self.Triggering_.addCounterTrigger(self.DeviceName) ;
@@ -3753,7 +3764,7 @@ classdef WavesurferModel < ws.Model
         end  % function                        
         
         function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
-            result = self.Stimulation_.itemBistimulusLibraryItemBindingPropertyndingProperty(className, itemIndex, bindingIndex, propertyName) ;
+            result = self.Stimulation_.stimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
@@ -3780,5 +3791,17 @@ classdef WavesurferModel < ws.Model
             result = self.Stimulation_.isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem() ;            
         end  % function        
 
+        function result = stimulusLibraryOutputableNames(self)
+            result = self.Stimulation_.stimulusLibraryOutputableNames() ;            
+        end
+        
+        function result = stimulusLibrarySelectedOutputableProperty(self, propertyName)
+            result = self.Stimulation_.stimulusLibrarySelectedOutputableProperty(propertyName) ;            
+        end
+        
+        function result = areStimulusLibraryMapDurationsOverridden(self)
+            result = self.Stimulation_.areStimulusLibraryMapDurationsOverridden() ;            
+        end
+        
     end  % public methods block
 end  % classdef

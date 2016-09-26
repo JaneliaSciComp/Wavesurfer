@@ -631,6 +631,17 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             trigger = self.getTriggerByIndex_(triggerIndex) ;
             result = trigger.(propertyName) ;
         end  % function        
+        
+        function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)
+            % Note that this is not the same as
+            % self.StimulationUsesAcquisitionTriggerScheme!!!
+            % self.StimulationUsesAcquisitionTriggerScheme implies
+            %     self.isStimulationTriggerIdenticalToAcquisitionTrigger(),
+            % but
+            % self.isStimulationTriggerIdenticalToAcquisitionTrigger() does
+            %     not imply self.StimulationUsesAcquisitionTriggerScheme .
+            result = (self.StimulationTriggerSchemeIndex==self.AcquisitionTriggerSchemeIndex) ;
+        end
     end  % public methods block    
     
     methods (Access=protected)    

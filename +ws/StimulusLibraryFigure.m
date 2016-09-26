@@ -804,16 +804,16 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             
             % Update the name and duration            
             %selectedMap=stimulusLibrary.SelectedMap;
-            mapIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
+            mapIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusMap') ;
             if isempty(mapIndex) ,
                 set(self.MapNameEdit,'String','');
                 set(self.MapDurationEdit,'String','');
             else
                 %set(self.MapNameEdit,'String',selectedMap.Name);
-                mapName = self.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name') ;
+                mapName = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name') ;
                 set(self.MapNameEdit,'String',mapName);
                 %set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
-                mapDuration = self.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Duration') ;                
+                mapDuration = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Duration') ;                
                 set(self.MapDurationEdit,'String',sprintf('%g',mapDuration));
             end
             
@@ -901,11 +901,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                 set(self.StimulusAmplitudeEdit,'String','') ;
                 set(self.StimulusDCOffsetEdit,'String','') ;
             else
-                set(self.StimulusNameEdit,'String',self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Name')) ;
-                set(self.StimulusDelayEdit,'String',self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Delay')) ;
-                set(self.StimulusDurationEdit,'String',self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Duration')) ;
-                set(self.StimulusAmplitudeEdit,'String',self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Amplitude')) ;
-                set(self.StimulusDCOffsetEdit,'String',self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'DCOffset')) ;
+                set(self.StimulusNameEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Name')) ;
+                set(self.StimulusDelayEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Delay')) ;
+                set(self.StimulusDurationEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Duration')) ;
+                set(self.StimulusAmplitudeEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Amplitude')) ;
+                set(self.StimulusDCOffsetEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'DCOffset')) ;
             end
             
             % The "Function" popupmenu
@@ -914,7 +914,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                     'String',{'N/A'}, ...
                     'Value',1);
             else
-                selectedStimulusTypeString = self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'TypeString') ;
+                selectedStimulusTypeString = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'TypeString') ;
                 isMatch=cellfun(@(typeString)(isequal(typeString,selectedStimulusTypeString)),ws.Stimulus.AllowedTypeStrings);
                 index=find(isMatch,1);
                 if isempty(index) ,
@@ -936,11 +936,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                     set(editGH,'String','');                
                 end
             else
-                additionalParameterNames = self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'AdditionalParameterNames') ;
+                additionalParameterNames = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'AdditionalParameterNames') ;
                 for i=1:length(self.StimulusAdditionalParametersEdits) ,
                     editGH=self.StimulusAdditionalParametersEdits(i);
                     propertyName=additionalParameterNames{i};
-                    value = self.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, propertyName) ;
+                    value = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, propertyName) ;
                     set(editGH,'String',value);
                 end
             end

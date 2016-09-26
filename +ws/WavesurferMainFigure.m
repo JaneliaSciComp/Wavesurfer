@@ -1139,13 +1139,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     'Value', 1, ...
                     'BackgroundColor', warningBackgroundColor);
             else
-                outputables = stimulusLibrary.getOutputables() ;
-                outputableNames = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;
-                selectedOutputable = stimulusLibrary.SelectedOutputable ;
-                if isempty(selectedOutputable) ,
+                outputableNames = model.stimulusLibraryOutputableNames ;
+                %selectedOutputable = stimulusLibrary.SelectedOutputable ;
+                selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
+                if isempty(selectedOutputableName) ,
                     selectedOutputableNames = {} ;                    
                 else
-                    selectedOutputableNames = { selectedOutputable.Name } ;
+                    selectedOutputableNames = { selectedOutputableName } ;
                 end                
                 ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
             end

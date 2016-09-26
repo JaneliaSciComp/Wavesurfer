@@ -882,52 +882,64 @@ end  % methods block
         end
         
         function result = stimulusLibraryItemProperty(self, className, index, propertyName)
-            result = self.StimulusLibary_.itemProperty(className, index, propertyName) ;
+            result = self.StimulusLibrary_.itemProperty(className, index, propertyName) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
-            result = self.StimulusLibary_.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+            result = self.StimulusLibrary_.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
-            result = self.StimulusLibary_.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+            result = self.StimulusLibrary_.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
         end  % function             
         
         function result = isStimulusLibraryItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
-            result = self.StimulusLibary_.isItemBindingTargetEmpty(className, itemIndex, bindingIndex) ;
+            result = self.StimulusLibrary_.isItemBindingTargetEmpty(className, itemIndex, bindingIndex) ;
         end  % function
         
         function result = isStimulusLibrarySelectedItemBindingTargetEmpty(self, bindingIndex)
-            result = self.StimulusLibary_.isSelectedItemBindingTargetEmpty(bindingIndex) ;
+            result = self.StimulusLibrary_.isSelectedItemBindingTargetEmpty(bindingIndex) ;
         end  % function
         
         function result = isStimulusLibraryEmpty(self)
-            result = self.StimulusLibary_.isEmpty() ;
+            result = self.StimulusLibrary_.isEmpty() ;
         end  % function                
         
         function result = isAStimulusLibraryItemSelected(self)
-            result = self.StimulusLibary_.isAnItemSelected() ;
+            result = self.StimulusLibrary_.isAnItemSelected() ;
         end  % function                
         
         function result = isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem(self)
-            result = self.StimulusLibary_.isAnyBindingMarkedForDeletionForSelectedItem() ;            
+            result = self.StimulusLibrary_.isAnyBindingMarkedForDeletionForSelectedItem() ;            
         end  % function        
         
         function setStimulusLibraryToSimpleLibraryWithUnitPulse(self, outputChannelNames)
-            self.StimulusLibary_.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;            
+            self.StimulusLibrary_.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;            
         end
         
         function setSelectedOutputableByIndex(self, index)            
-            self.StimulusLibary_.setSelectedOutputableByIndex(index) ;
+            self.StimulusLibrary_.setSelectedOutputableByIndex(index) ;
         end  % method
         
         function overrideStimulusLibraryMapDuration(self, sweepDuration)
-            self.StimulusLibary_.overrideMapDuration(sweepDuration) ;
+            self.StimulusLibrary_.overrideMapDuration(sweepDuration) ;
         end  % function
         
         function releaseStimulusLibraryMapDuration(self)
-            self.StimulusLibary_.releaseMapDuration() ;
+            self.StimulusLibrary_.releaseMapDuration() ;
         end  % function
+        
+        function result = stimulusLibraryOutputableNames(self)
+            result = self.StimulusLibrary_.outputableNames() ;            
+        end
+        
+        function result = stimulusLibrarySelectedOutputableProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedOutputableProperty(propertyName) ;            
+        end
+        
+        function result = areStimulusLibraryMapDurationsOverridden(self)
+            result = self.StimulusLibrary_.areMapDurationsOverridden() ;            
+        end
         
     end  % public methods block    
 end  % classdef
