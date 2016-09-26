@@ -360,9 +360,9 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %             self.broadcast('DidSetIsDigitalChannelTimed');
 %         end  % function
         
-        function didSelectStimulusSequence(self, cycle)
-            self.StimulusLibrary.SelectedOutputable = cycle;
-        end  % function
+%         function didSelectStimulusSequence(self, cycle)
+%             self.StimulusLibrary.SelectedOutputable = cycle;
+%         end  % function
         
         function terminalID=analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
@@ -410,7 +410,6 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function channelUnits=get.AnalogChannelUnits(self)
-            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -429,7 +428,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+                channelUnits=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end  % function
 
@@ -534,7 +533,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
             self.Parent.didAddAnalogOutputChannel() ;
-            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
@@ -580,26 +579,15 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
-                self.AnalogChannelNames_{i} = newValue ;
-                self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
-                didSucceed = true ;
-            else
-                didSucceed = false ;
-            end
-            self.Parent.didSetAnalogOutputChannelName(didSucceed,oldValue,newValue) ;
+            self.AnalogChannelNames_{i} = newValue ;
+            self.StimulusLibrary.setChannelName(oldValue, newValue) ;
         end
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
-                self.DigitalChannelNames_{i} = newValue ;
-                self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
-                didSucceed = true ;
-            else
-                didSucceed = false ;
-            end
-            self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
+            self.DigitalChannelNames_{i} = newValue ;
+            self.StimulusLibrary.setChannelName(oldValue, newValue) ;
+            %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
         function setSingleAnalogTerminalID(self, i, newValue)
@@ -745,18 +733,18 @@ end  % methods block
         end  % function
     end
        
-    methods
-        function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
-            % This is public, but should only be called by self or Parent,
-            % hence the underscore
-            
-            %self.Parent.didChangeNumberOfOutputChannels() ;
-            stimulusLibrary = self.StimulusLibrary ;
-            if ~isempty(stimulusLibrary) ,
-                stimulusLibrary.didChangeNumberOfOutputChannels() ;
-            end
-        end
-    end
+%     methods
+%         function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
+%             % This is public, but should only be called by self or Parent,
+%             % hence the underscore
+%             
+%             %self.Parent.didChangeNumberOfOutputChannels() ;
+%             stimulusLibrary = self.StimulusLibrary ;
+%             if ~isempty(stimulusLibrary) ,
+%                 stimulusLibrary.didChangeNumberOfOutputChannels() ;
+%             end
+%         end
+%     end
     
     methods (Access=protected)
         function sanitizePersistedState_(self)
@@ -925,5 +913,12 @@ end  % methods block
             result = self.StimulusLibary_.isAnyBindingMarkedForDeletionForSelectedItem() ;            
         end  % function        
         
+        function setStimulusLibraryToSimpleLibraryWithUnitPulse(self, outputChannelNames)
+            self.StimulusLibary_.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;            
+        end
+        
+        function setSelectedOutputableByIndex(self, index)            
+            self.StimulusLibary_.setSelectedOutputableByIndex(index) ;
+        end  % method
     end  % public methods block    
 end  % classdef

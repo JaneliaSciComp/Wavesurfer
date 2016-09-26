@@ -1148,30 +1148,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     selectedOutputableNames = { selectedOutputable.Name } ;
                 end                
                 ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
-%                 if isempty(outputables) ,
-%                     set(self.SourcePopupmenu, ...
-%                         'String',{'(No outputables)'}, ...
-%                         'Value',1);                      
-%                 else
-%                     outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
-%                     selectedOutputable=stimulusLibrary.SelectedOutputable;
-%                     if isempty(selectedOutputable) ,
-%                         iSelected=[];
-%                     else
-%                         isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
-%                         iSelected=find(isSelected,1);
-%                     end                 
-%                     if isempty(iSelected) ,
-%                         outputableNamesWithFallback=[{'(None selected)'} outputableNames];
-%                         set(self.SourcePopupmenu, ...
-%                             'String',outputableNamesWithFallback, ...
-%                             'Value',1);
-%                     else
-%                         set(self.SourcePopupmenu, ...
-%                             'String',outputableNames, ...
-%                             'Value',iSelected);
-%                     end
-%                 end
             end
             
             % Update whether the "Yoke to ScanImage" menu item is checked,

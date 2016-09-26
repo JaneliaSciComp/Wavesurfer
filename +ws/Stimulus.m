@@ -78,7 +78,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                     self.Name_=newValue;
                 end                    
             end
-            self.Parent.childMayHaveChanged(self);
+            %self.Parent.childMayHaveChanged(self);
         end
 
         function set.Delay(self, value)
@@ -87,9 +87,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Delay_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end  % function
         
         function set.Duration(self, value)
@@ -98,9 +98,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Duration_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end  % function
         
         function set.Amplitude(self, value)
@@ -109,9 +109,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
             end                
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function set.DCOffset(self, value)
@@ -120,9 +120,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
             end                
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function out = get.Name(self)
@@ -383,19 +383,19 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                     self.Delegate_ = delegate;
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end            
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end            
         end
     end
     
-    methods
-        function childMayHaveChanged(self)
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
-        end            
-    end
+%     methods
+%         function childMayHaveChanged(self)
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
+%         end            
+%     end
     
     methods (Access=protected)
         function out = getPropertyValue_(self, name)

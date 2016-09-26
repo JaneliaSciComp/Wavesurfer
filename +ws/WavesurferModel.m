@@ -779,17 +779,59 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
-            ephys=self.Ephys;
-            if ~isempty(ephys)
+        function setAOChannelName(self, channelIndex, newValue)
+            nAOChannels = self.Stimulation_.NAnalogChannels ;
+            if ws.isIndex(channelIndex) && 1<=channelIndex && channelIndex<=nAOChannels ,
+                oldValue = self.Stimuluation_.AnalogChannelNames{channelIndex} ;
+                if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
+                     self.Stimuluation_.setSingleAnalogChannelName(channelIndex, newValue) ;
+                     didSucceed = true ;
+                else
+                    didSucceed = false;
+                end
+            else
+                didSucceed = false ;
+            end
+            ephys = self.Ephys ;
+            if ~isempty(ephys) ,
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
             end            
-            self.broadcast('UpdateChannels') ;
-        end
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateChannels') ;            
+        end  % function 
         
-        function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
+%             ephys=self.Ephys;
+%             if ~isempty(ephys)
+%                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+%             self.broadcast('UpdateChannels') ;
+%         end
+        
+%         function didSetDigitalOutputChannelName(self, didSucceed, oldValue, newValue) %#ok<INUSD>
+%             self.broadcast('UpdateChannels') ;
+%         end
+
+        function setDOChannelName(self, channelIndex, newValue)
+            nDOChannels = self.Stimulation_.NDigitalChannels ;
+            if ws.isIndex(channelIndex) && 1<=channelIndex && channelIndex<=nDOChannels ,
+                %oldValue = self.Stimuluation_.DigitalChannelNames{channelIndex} ;
+                if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
+                     self.Stimuluation_.setSingleDigitalChannelName(channelIndex, newValue) ;
+                     %didSucceed = true ;
+                else
+                    %didSucceed = false;
+                end
+            else
+                %didSucceed = false ;
+            end
+%             ephys = self.Ephys ;
+%             if ~isempty(ephys) ,
+%                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
+%             end            
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateChannels') ;            
+        end  % function 
         
         function didSetIsInputChannelActive(self) 
             self.Ephys.didSetIsInputChannelActive() ;
@@ -1638,7 +1680,8 @@ classdef WavesurferModel < ws.Model
             
             aiChannelName = self.Acquisition.addAnalogChannel() ;  %#ok<NASGU>
             aoChannelName = self.Stimulation.addAnalogChannel() ;
-            self.Stimulation.StimulusLibrary.setToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+            self.broadcast('UpdateStimulusLibrary') ;
             self.Display.IsEnabled = true ;
         end
     end  % methods block
@@ -2215,6 +2258,7 @@ classdef WavesurferModel < ws.Model
         
         function addAOChannel(self)
             self.Stimulation.addAnalogChannel() ;
+            self.broadcast('UpdateStimulusLibrary') ;
         end
         
         function addDIChannel(self)
@@ -2317,7 +2361,8 @@ classdef WavesurferModel < ws.Model
             self.Stimulation.addDigitalChannel_() ;
             %self.Display.didAddDigitalOutputChannel() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            self.broadcast('UpdateStimulusLibrary');
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
@@ -2348,11 +2393,12 @@ classdef WavesurferModel < ws.Model
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys.didChangeNumberOfOutputChannels();
-            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
-              % we might be able to call this from within
-              % self.Stimulation.deleteMarkedAnalogChannels, and that would
-              % generally be better, but I'm afraid of introducing new
-              % bugs...
+%             self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
+%               % we might be able to call this from within
+%               % self.Stimulation.deleteMarkedAnalogChannels, and that would
+%               % generally be better, but I'm afraid of introducing new
+%               % bugs...
+            self.broadcast('UpdateStimulusLibrary');
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2360,7 +2406,8 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedDOChannels(self)
             self.Stimulation.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
+            %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
+            self.broadcast('UpdateStimulusLibrary');
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
@@ -2983,9 +3030,10 @@ classdef WavesurferModel < ws.Model
             self.Logging.incrementSessionIndex() ;
         end
         
-        function setSelectedOutputableByIndex(self, index)
-            self.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(index) ;
-        end
+        function setSelectedOutputableByIndex(self, index)            
+            self.Stimulation_.setSelectedOutputableByIndex(index) ;
+            self.broadcast('UpdateStimulusLibrary') ;
+        end  % method
         
         function openFastProtocolByIndex(self, index)
             if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,

@@ -86,7 +86,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                     self.Name_=newValue;
                 end                    
             end
-            self.Parent.childMayHaveChanged(self);
+%             self.Parent.childMayHaveChanged(self);
         end
 
         function out = get.Name(self)
@@ -152,10 +152,10 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             if islogical(newValue) && isequal(size(newValue),size(self.IndexOfEachMapInLibrary_)) ,  % can't change number of elements
                 self.IsMarkedForDeletion_ = newValue;
             end
-            % notify the powers that be
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             % notify the powers that be
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function output = get.IsMarkedForDeletion(self)
@@ -209,9 +209,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             end
             self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
             self.IsMarkedForDeletion_(end+1) = false ;
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function
 
 %         function setMap(self, indexWithinSequence, newMap)
@@ -240,7 +240,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                     end
                 end
             end
-            library.childMayHaveChanged(self);
+%             library.childMayHaveChanged(self);
         end   % function
         
 %         function insertMap(self, map, index)
@@ -263,9 +263,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                 self.IndexOfEachMapInLibrary_{indexOfMapInSequence} = [];
                 %self.IsMarkedForDeletion_(indexOfMapInSequence) = [];
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function
         
         function deleteMap(self, indexOfMapInSequence)
@@ -274,18 +274,18 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                 self.IndexOfEachMapInLibrary_(indexOfMapInSequence) = [];
                 self.IsMarkedForDeletion_(indexOfMapInSequence) = [];
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function
 
         function deleteMarkedMaps(self)
             isMarkedForDeletion = self.IsMarkedForDeletion ;
             self.IndexOfEachMapInLibrary_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function        
 
         
@@ -306,9 +306,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                     end
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function
         
         function deleteMapByValue(self, queryMap)
@@ -319,9 +319,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
                     end
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end   % function
         
 %         function removeElements(self)

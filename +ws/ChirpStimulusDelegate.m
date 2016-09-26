@@ -33,9 +33,9 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.InitialFrequency_ = value;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
 
         function out = get.InitialFrequency(self)
@@ -48,9 +48,9 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.FinalFrequency_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
 
         function out = get.FinalFrequency(self)

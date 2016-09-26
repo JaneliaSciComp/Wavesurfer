@@ -122,7 +122,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
         
         function clear(self)
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             self.SelectedOutputableClassName_ = '' ;            
             self.SelectedOutputableIndex_ = [] ;
             self.SelectedItemClassName_ = '';
@@ -132,13 +132,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.Sequences_  = cell(1,0) ;            
             self.Maps_    = cell(1,0) ;
             self.Stimuli_ = cell(1,0) ;
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.enableBroadcastsMaybe();
+            %self.broadcast('Update');
         end
         
-        function childMayHaveChanged(self,child) %#ok<INUSD>
-            self.broadcast('Update');
-        end
+%         function childMayHaveChanged(self,child) %#ok<INUSD>
+%             self.broadcast('Update');
+%         end
 
         function out = get.Sequences(self)
             out = self.Sequences_ ;
@@ -299,7 +299,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         function setToSimpleLibraryWithUnitPulse(self, outputChannelNames)
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             self.clear();
             
             % emptyStimulus = ws.SingleStimulus('Name', 'Empty stimulus');
@@ -313,7 +313,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             pulse.Delay='0.25';
             pulse.Duration='0.5';
             %self.add(unitPulse);
-            self.SelectedItem=pulse;
+            %self.SelectedItem=pulse;
+            self.setSelectedItemByClassNameAndIndex('ws.Stimulus',1) ;
             % pulse points to something inside the stim library now
 
             % make a map that puts the just-made pulse out of the first AO channel, add
@@ -327,8 +328,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 %map.Bindings{1}.Stimulus=unitPulse;
                 %self.add(map);
                 % Make the one and only map the selected outputable
-                self.SelectedOutputable=map;
-                self.SelectedItem=pulse;
+                self.setSelectedOutputableByIndex(1) ;  % should be the one and only outputable
+                %self.SelectedItem=pulse;
+                self.setSelectedItemByClassNameAndIndex('ws.Stimulus',1) ;
             end
             
             % emptyMap = ws.StimulusMap('Name', 'Empty map');
@@ -340,13 +342,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             %self.SelectedSequenceUUID_=self.Sequences{1}.UUID;
             %self.SelectedStimulusUUID_=self.Stimuli{1}.UUID;
             %self.SelectedItemClassName_='ws.StimulusMap';
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.enableBroadcastsMaybe();
+            %self.broadcast('Update');
         end  % function        
         
         function mimic(self, other)
             % Make self into something value-equal to other, in place
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             self.SelectedOutputableClassName_ = '';
             self.SelectedOutputableIndex_ =[];
             self.SelectedItemClassName_ = '';
@@ -391,8 +393,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.SelectedItemClassName_ = other.SelectedItemClassName_ ;
             end
             
-            self.enableBroadcastsMaybe();
-            self.broadcast('Update');
+            %self.enableBroadcastsMaybe();
+            %self.broadcast('Update');
         end  % function
         
         function output = get.SelectedOutputableClassName(self)
@@ -415,38 +417,59 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-        function set.SelectedOutputable(self, newSelection)
-            if ws.isASettableValue(newSelection) ,
-                if isempty(newSelection) ,
-                    self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
-                elseif isscalar(newSelection) ,
-                    isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
-                    iMatch = find(isMatch,1) ;
-                    if ~isempty(iMatch)                    
-                        self.SelectedOutputableIndex_ = iMatch ;
-                        self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
-                    else
-                        isMatch=cellfun(@(item)(item==newSelection),self.Maps);
-                        iMatch = find(isMatch,1) ;
-                        if ~isempty(iMatch)
-                            self.SelectedOutputableIndex_ = iMatch ;
-                            self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
-                        end
-                    end
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function set.SelectedOutputable(self, newSelection)
+%             if ws.isASettableValue(newSelection) ,
+%                 if isempty(newSelection) ,
+%                     self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
+%                 elseif isscalar(newSelection) ,
+%                     isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
+%                     iMatch = find(isMatch,1) ;
+%                     if ~isempty(iMatch)                    
+%                         self.SelectedOutputableIndex_ = iMatch ;
+%                         self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
+%                     else
+%                         isMatch=cellfun(@(item)(item==newSelection),self.Maps);
+%                         iMatch = find(isMatch,1) ;
+%                         if ~isempty(iMatch)
+%                             self.SelectedOutputableIndex_ = iMatch ;
+%                             self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
+%                         end
+%                     end
+%                 end
+%             end
+%             self.broadcast('Update');
+%         end  % function
         
-        function setSelectedOutputableByIndex(self, index)
-            outputables=self.getOutputables();
+%         function setSelectedOutputableByIndexOld(self, index)
+%             outputables = self.getOutputables() ;
+%             if isempty(index) ,
+%                 self.SelectedOutputable = [] ;  % set to no selection
+%             elseif isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
+%                 outputable=outputables{index};
+%                 self.SelectedOutputable=outputable;  % this will broadcast Update
+%             else
+%                 self.broadcast('Update');
+%             end
+%         end  % function
+
+        function setSelectedOutputableByIndex(self, index)            
             if isempty(index) ,
-                self.SelectedOutputable = [] ;  % set to no selection
-            elseif isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
-                outputable=outputables{index};
-                self.SelectedOutputable=outputable;  % this will broadcast Update
+                self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
             else
-                self.broadcast('Update');
+                nSequences = length(self.Sequences_) ;
+                nMaps = length(self.Maps_) ;
+                nOutputables = nSequences + nMaps ;
+                if ws.isIndex(index) && 1<=index && index<=nOutputables ,
+                    if index<=nSequences ,
+                        indexWithinClass = index ;
+                        outputableClassName = 'ws.StimulusSequence' ;
+                    else
+                        indexWithinClass = index - nSequences ;
+                        outputableClassName = 'ws.StimulusMap' ;
+                    end
+                    self.SelectedOutputableIndex_ = indexWithinClass ;
+                    self.SelectedOutputableClassName_ = outputableClassName ;
+                end
             end
         end  % function
         
@@ -454,22 +477,22 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             output=self.SelectedItemClassName_;
         end  % function
 
-        function set.SelectedItemClassName(self,newValue)
-            if isequal(newValue,'') ,
-                self.SelectedItemClassName_='';
-            elseif isequal(newValue,'ws.StimulusSequence') ,
-                self.SelectedItemClassName_='ws.StimulusSequence';
-            elseif isequal(newValue,'ws.StimulusMap') ,
-                self.SelectedItemClassName_='ws.StimulusMap';
-            elseif isequal(newValue,'ws.Stimulus') ,
-                self.SelectedItemClassName_='ws.Stimulus';
-            else
-                self.broadcast('Update') ;
-                error('most:Model:invalidPropVal', ...
-                      'Stimulus library selected item class name must be a legal value') ;
-            end                
-            self.broadcast('Update');
-        end  % function
+%         function set.SelectedItemClassName(self,newValue)
+%             if isequal(newValue,'') ,
+%                 self.SelectedItemClassName_='';
+%             elseif isequal(newValue,'ws.StimulusSequence') ,
+%                 self.SelectedItemClassName_='ws.StimulusSequence';
+%             elseif isequal(newValue,'ws.StimulusMap') ,
+%                 self.SelectedItemClassName_='ws.StimulusMap';
+%             elseif isequal(newValue,'ws.Stimulus') ,
+%                 self.SelectedItemClassName_='ws.Stimulus';
+%             else
+%                 self.broadcast('Update') ;
+%                 error('most:Model:invalidPropVal', ...
+%                       'Stimulus library selected item class name must be a legal value') ;
+%             end                
+%             self.broadcast('Update');
+%         end  % function
 
         function setSelectedItemByClassNameAndIndex(self, className, index)
             % The index is the index with the class
@@ -483,7 +506,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
                     self.SelectedStimulusIndex_ = double(index) ;
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
                           'Stimulus library sequence index must be a scalar numeric integer between 1 and %d, or empty', length(self.Sequences)) ;                  
                 end
@@ -495,7 +518,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedItemClassName_ = 'ws.StimulusMap' ;
                     self.SelectedMapIndex_ = double(index) ;
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
                           'Stimulus library map index must be a scalar numeric integer between 1 and %d, or empty', length(self.Maps)) ;                  
                 end
@@ -507,16 +530,16 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedItemClassName_ = 'ws.Stimulus' ;
                     self.SelectedStimulusIndex_ = double(index) ;
                 else
-                    self.broadcast('Update') ;
+                    %self.broadcast('Update') ;
                     error('most:Model:invalidPropVal', ...
                           'Stimulus index must be a scalar numeric integer between 1 and %d, or empty', length(self.Stimuli)) ;                  
                 end
             else
-                self.broadcast('Update') ;
+                %self.broadcast('Update') ;
                 error('most:Model:invalidPropVal', ...
                       'Stimulus library selected item class name must be a legal value') ;
             end                            
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
         
@@ -535,14 +558,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         function value = get.SelectedItemIndexWithinClass(self)
-            className = self.SelectedItemClassName_ ;
-            if isempty(className) ,
+            outputableClassName = self.SelectedItemClassName_ ;
+            if isempty(outputableClassName) ,
                 value = [] ;  % no item is currently selected
-            elseif isequal(className,'ws.StimulusSequence') ,
+            elseif isequal(outputableClassName,'ws.StimulusSequence') ,
                 value = self.SelectedSequenceIndex_ ;
-            elseif isequal(className,'ws.StimulusMap') ,                
+            elseif isequal(outputableClassName,'ws.StimulusMap') ,                
                 value = self.SelectedMapIndex_ ;
-            elseif isequal(className,'ws.Stimulus') ,                
+            elseif isequal(outputableClassName,'ws.Stimulus') ,                
                 value = self.SelectedStimulusIndex_ ;
             else
                 value = [] ;  % this is an invariant violation, but still want to return something
@@ -587,74 +610,44 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             value = self.SelectedStimulusIndex_ ;
         end  % function
 
-        function set.SelectedItem(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isempty(newValue) ,
-                    self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
-                elseif isscalar(newValue) ,
-                    isMatch=cellfun(@(item)(item==newValue),self.Sequences);
-                    iMatch = find(isMatch,1) ;
-                    if ~isempty(iMatch)                    
-                        self.SelectedSequenceIndex_ = iMatch ;
-                        self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
-                    else
-                        isMatch=cellfun(@(item)(item==newValue),self.Maps);
-                        iMatch = find(isMatch,1) ;
-                        if ~isempty(iMatch)
-                            self.SelectedMapIndex_ = iMatch ;
-                            self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-                        else
-                            isMatch=cellfun(@(item)(item==newValue),self.Stimuli);
-                            iMatch = find(isMatch,1) ;
-                            if ~isempty(iMatch)
-                                self.SelectedStimulusIndex_ = iMatch ;
-                                self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                            end                            
-                        end
-                    end
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function set.SelectedSequence(self, newSelection)
+%             if isempty(newSelection) ,
+%                 self.SelectedSequenceIndex_=[];                
+%             elseif isscalar(newSelection) ,
+%                 isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
+%                 iMatch = find(isMatch,1);
+%                 if ~isempty(iMatch) ,
+%                     self.SelectedSequenceIndex_ = iMatch ;
+%                 end
+%             end
+%             %self.broadcast('Update');
+%         end  % function
 
-        function set.SelectedSequence(self, newSelection)
-            if isempty(newSelection) ,
-                self.SelectedSequenceIndex_=[];                
-            elseif isscalar(newSelection) ,
-                isMatch=cellfun(@(item)(item==newSelection),self.Sequences);
-                iMatch = find(isMatch,1);
-                if ~isempty(iMatch) ,
-                    self.SelectedSequenceIndex_ = iMatch ;
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function set.SelectedMap(self, newSelection)
+%             if isempty(newSelection) ,
+%                 self.SelectedMapIndex_=[];                
+%             elseif isscalar(newSelection) ,
+%                 isMatch=cellfun(@(item)(item==newSelection),self.Maps);
+%                 iMatch = find(isMatch,1);
+%                 if ~isempty(iMatch) ,
+%                     self.SelectedMapIndex_ = iMatch ;
+%                 end
+%             end
+%             %self.broadcast('Update');
+%         end  % function
 
-        function set.SelectedMap(self, newSelection)
-            if isempty(newSelection) ,
-                self.SelectedMapIndex_=[];                
-            elseif isscalar(newSelection) ,
-                isMatch=cellfun(@(item)(item==newSelection),self.Maps);
-                iMatch = find(isMatch,1);
-                if ~isempty(iMatch) ,
-                    self.SelectedMapIndex_ = iMatch ;
-                end
-            end
-            self.broadcast('Update');
-        end  % function
-
-        function set.SelectedStimulus(self, newSelection)
-            if isempty(newSelection) ,
-                self.SelectedStimulusIndex_=[];                
-            elseif isscalar(newSelection) ,
-                isMatch=cellfun(@(item)(item==newSelection),self.Stimuli);
-                iMatch = find(isMatch,1);
-                if ~isempty(iMatch) ,
-                    self.SelectedStimulusIndex_ = iMatch ;
-                end
-            end
-            self.broadcast('Update');
-        end  % function
+%         function set.SelectedStimulus(self, newSelection)
+%             if isempty(newSelection) ,
+%                 self.SelectedStimulusIndex_=[];                
+%             elseif isscalar(newSelection) ,
+%                 isMatch=cellfun(@(item)(item==newSelection),self.Stimuli);
+%                 iMatch = find(isMatch,1);
+%                 if ~isempty(iMatch) ,
+%                     self.SelectedStimulusIndex_ = iMatch ;
+%                 end
+%             end
+%             %self.broadcast('Update');
+%         end  % function
 
         function result = isSelectedItemInUse(self)
             % Note that this doesn't check if the items are selected.  This
@@ -676,21 +669,23 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function deleteSelectedItem(self)
             item = self.SelectedItem ;
-            self.deleteItem(item) ;
+            self.deleteItem_(item) ;
         end  % function
         
-        function deleteItems(self, items)
-            % Remove the given items from the stimulus library. If the
-            % to-be-removed items are used by other items, the references
-            % are first nulled to maintain the self-consistency of the
-            % library.            
-            for i=1:length(items) ,
-                item=items{i};
-                self.deleteItem(item);
-            end
-        end  % function
-        
-        function deleteItem(self,item)
+%         function deleteItems(self, items)
+%             % Remove the given items from the stimulus library. If the
+%             % to-be-removed items are used by other items, the references
+%             % are first nulled to maintain the self-consistency of the
+%             % library.            
+%             for i=1:length(items) ,
+%                 item=items{i};
+%                 self.deleteItem_(item);
+%             end
+%         end  % function
+    end
+       
+    methods (Access=protected)
+        function deleteItem_(self, item)
             % Remove the selected item from the stimulus library. If the
             % to-be-removed items are used by other items, the references
             % are first nulled to maintain the self-consistency of the
@@ -766,26 +761,28 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 end
             end
             % And, finally, notify dependents
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
-        function out = getItems(self)
+        function out = getItems_(self)
             %keyboard
             sequences=self.Sequences;
             maps=self.Maps;
             stimuli=self.Stimuli;
             out = [sequences maps stimuli];
-        end  % function
-        
-        function out = getOutputables(self)
+        end  % function        
+
+        function out = getOutputables_(self)
             % Get all the sequences and maps.  These are the things that could
             % be selected as the thing for the Stimulation subsystem to
             % output.
             sequences=self.Sequences;
             maps=self.Maps;
             out = [sequences maps];
-        end  % function
+        end  % function        
+    end  % protected methods block
         
+    methods
         function out = sequenceWithName(self, name)
             validateattributes(name, {'char'}, {});
             
@@ -884,13 +881,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
         
-        function didSetChannelName(self, oldValue, newValue)
+        function setChannelName(self, oldValue, newValue)
             maps = self.Maps ;
             for i = 1:length(maps) ,
                 map = maps{i} ;
-                map.didSetChannelName(oldValue, newValue) ;               
+                map.setChannelName(oldValue, newValue) ;               
             end
-            self.broadcast('Update');            
+            %self.broadcast('Update');            
         end
         
         function result = areItemNamesDistinct(self) 
@@ -933,7 +930,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end  % public methods
         
     methods        
-        function sequence=addNewSequence(self)
+        function addNewSequence(self)
             self.disableBroadcasts();
             sequence=ws.StimulusSequence(self);
             sequence.Name = self.generateUntitledSequenceName_();
@@ -944,7 +941,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
         
-        function map=addNewMap(self)
+        function addNewMap(self)
             self.disableBroadcasts();
             map=ws.StimulusMap(self);
             map.Name = self.generateUntitledMapName_();
@@ -955,7 +952,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.broadcast('Update');
         end  % function
                  
-        function stimulus=addNewStimulus(self,typeString)
+        function addNewStimulus(self,typeString)
             if ~exist('typeString', 'var') ,
                 typeString = 'SquarePulse' ;
             end
@@ -996,7 +993,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % So we generate new names until we find a distinct one.
             itemNames = self.itemNames() ;
             originalItemName = originalItem.Name ;
-            for copyIndex = 1:length(self.getItems()) ,  
+            for copyIndex = 1:length(self.getItems_()) ,  
                 % We will never have to try more than this number of
                 % putative names, because each item has only one name, and
                 % there are only so many items.
@@ -1012,18 +1009,49 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 end
             end
             
-            self.SelectedItem = newItem ;
+            %self.SelectedItem = newItem ;
+            self.setSelectedItemByHandle_(newItem) ;
             
             self.enableBroadcastsMaybe();
             self.broadcast('Update');
         end % function
 
-        function didChangeNumberOfOutputChannels(self)
-            self.broadcast('Update') ;
-        end
+%         function didChangeNumberOfOutputChannels(self)
+%             self.broadcast('Update') ;
+%         end
     end  % public methods block
     
     methods (Access = protected)        
+        function setSelectedItemByHandle_(self, newValue)
+            if ws.isASettableValue(newValue) ,
+                if isempty(newValue) ,
+                    self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
+                elseif isscalar(newValue) ,
+                    isMatch=cellfun(@(item)(item==newValue),self.Sequences);
+                    iMatch = find(isMatch,1) ;
+                    if ~isempty(iMatch)                    
+                        self.SelectedSequenceIndex_ = iMatch ;
+                        self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                    else
+                        isMatch=cellfun(@(item)(item==newValue),self.Maps);
+                        iMatch = find(isMatch,1) ;
+                        if ~isempty(iMatch)
+                            self.SelectedMapIndex_ = iMatch ;
+                            self.SelectedItemClassName_ = 'ws.StimulusMap' ;
+                        else
+                            isMatch=cellfun(@(item)(item==newValue),self.Stimuli);
+                            iMatch = find(isMatch,1) ;
+                            if ~isempty(iMatch)
+                                self.SelectedStimulusIndex_ = iMatch ;
+                                self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                            end                            
+                        end
+                    end
+                end
+            end
+            %self.broadcast('Update');
+        end  % function
+        
         function makeItemDeletable_(self, item)
             % Make it so that no other items in the library refer to the selected item,
             % and the originally-selected item is no longer selected, and is not the current
@@ -1095,7 +1123,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             % picking a different outputable.  Typically called before
             % deleting item.  Does nothing if outputable is not the
             % selected outputable.  outputable must be a scalar.
-            outputables=self.getOutputables();
+            outputables=self.getOutputables_();
             if isempty(outputables) ,
                 % This should never happen, but still...
                 return
@@ -1111,17 +1139,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     if length(outputables)==1 ,
                         % outputable is the last one, so the selection
                         % will have to be empty
-                        self.SelectedOutputable=[];
+                        self.setSelectedOutputableByIndex([]);
                     else
                         % there are at least two outputables
                         if j>1 ,
                             % The usual case: point SelectedOutputable at the
                             % outputable before the to-be-deleted outputable
-                            self.SelectedOutputable=outputables{j-1};
+                            self.setSelectedOutputableByIndex(j-1) ;
                         else
                             % outputable is the first outputable, but there are
                             % others, so select the second outputable
-                            self.SelectedOutputable=outputables{2};
+                            self.setSelectedOutputableByIndex(2) ;
                         end
                     end
                 end
@@ -1146,7 +1174,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             else
                 selectedItem = self.SelectedItem ;
                 if isempty(selectedItem) ,
-                    items = self.getItems() ;  % we know this is sequences, then maps, then stimuli
+                    items = self.getItems_() ;  % we know this is sequences, then maps, then stimuli
                     if isempty(items) ,
                         % If no items, then item can't be the selected item, so
                         % nothing to do
@@ -1170,7 +1198,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                                     % the second item.
                                     indexOfNewSelectedItem = 2 ;
                                 end
-                                self.SelectedItem = items{indexOfNewSelectedItem} ;
+                                %self.SelectedItem = items{indexOfNewSelectedItem} ;
+                                self.setSelectedItemByHandle_(items{indexOfNewSelectedItem}) ;
                             end
                         end
                     end

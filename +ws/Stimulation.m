@@ -574,9 +574,9 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
 %         end  % function
         
-        function didSelectStimulusSequence(self, cycle)
-            self.StimulusLibrary.SelectedOutputable = cycle;
-        end  % function
+%         function didSelectStimulusSequence(self, cycle)
+%             self.StimulusLibrary.SelectedOutputable = cycle;
+%         end  % function
         
 %         function terminalID=analogTerminalIDFromName(self,channelName)
 %             % Get the channel ID, given the name.

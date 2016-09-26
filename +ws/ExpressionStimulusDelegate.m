@@ -34,9 +34,9 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
                     % if we get here without error, safe to set
                     self.Expression_ = valueWithoutBackslashes;
                 end
-                if ~isempty(self.Parent) ,
-                    self.Parent.childMayHaveChanged();
-                end
+%                 if ~isempty(self.Parent) ,
+%                     self.Parent.childMayHaveChanged();
+%                 end
             end
         end  % function
 

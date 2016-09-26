@@ -127,7 +127,8 @@ stimulusMap1.addBinding('electrodeOut' , stimulus1);
 stimulusMap1.addBinding('velocityOut'  , stimulus2);
 stimulusMap1.addBinding('photodiodeOut', stimulus3);
 
-wsModel.Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
+%Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
+wsModel.setSelectedOutputableByIndex(1) ;  % should be the only one
 
 wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
 

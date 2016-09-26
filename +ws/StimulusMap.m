@@ -75,7 +75,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                     self.Name_=newValue;
                 end                    
             end
-            self.Parent.childMayHaveChanged(self);
+            %self.Parent.childMayHaveChanged(self);
         end
 
         function out = get.NBindings(self) 
@@ -140,10 +140,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                     self.ChannelName_=newValue;
                 end   
             end            
-            % notify the stim library so that views can be updated    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end                        
+%             % notify the stim library so that views can be updated    
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end                        
         end  % function
 
         function val = get.ChannelName(self)
@@ -182,10 +182,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 end
             end
             
-            % notify the powers that be
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             % notify the powers that be
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function output = get.Stimuli(self)
@@ -206,9 +206,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 self.Multiplier_ = double(newValue);
             end
             % notify the powers that be
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function output = get.Multiplier(self)
@@ -220,9 +220,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 self.IsMarkedForDeletion_ = newValue;
             end
             % notify the powers that be
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end
         end
         
         function output = get.IsMarkedForDeletion(self)
@@ -285,16 +285,16 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                         end
                     end
                 else
-                    if ~isempty(self.Parent) ,
-                        self.Parent.childMayHaveChanged(self);
-                    end
+%                     if ~isempty(self.Parent) ,
+%                         self.Parent.childMayHaveChanged(self);
+%                     end
                     error('most:Model:invalidPropVal', ...
                           'Duration must be numeric, real, scalar, nonnegative, and finite.');                
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end            
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged(self);
+%             end            
         end   % function
         
         function value = get.IsDurationFree(self)
@@ -393,8 +393,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 self.IsMarkedForDeletion_(end+1)=false;
             end            
             
-            % notify the powers that be
-            self.Parent.childMayHaveChanged(self);
+%             % notify the powers that be
+%             self.Parent.childMayHaveChanged(self);
         end   % function
         
         function deleteBinding(self, index)
@@ -405,7 +405,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 self.Multiplier_(index)=[];                
                 self.IsMarkedForDeletion_(index)=[];                
             end
-            self.Parent.childMayHaveChanged(self);            
+%             self.Parent.childMayHaveChanged(self);            
         end   % function
 
         function deleteMarkedBindings(self)            
@@ -414,7 +414,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             self.IndexOfEachStimulusInLibrary_(isMarkedForDeletion)=[];
             self.Multiplier_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
-            self.Parent.childMayHaveChanged(self);            
+%             self.Parent.childMayHaveChanged(self);            
         end   % function        
         
 %         function replaceStimulus(self, oldStimulus, newStimulus)
@@ -526,7 +526,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                     self.IndexOfEachStimulusInLibrary_{bindingIndex} = stimulusIndexInLibrary ;
                 end
             end
-            self.Parent.childMayHaveChanged(self);
+%             self.Parent.childMayHaveChanged(self);
         end
         
 %         function lines = plot(self, fig, ax, sampleRate)
@@ -654,7 +654,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             result=true;
         end
         
-        function didSetChannelName(self, oldValue, newValue)
+        function setChannelName(self, oldValue, newValue)
             channelNames = self.ChannelName ;
             nChannels = length(channelNames) ;
             for i = 1:nChannels ,
