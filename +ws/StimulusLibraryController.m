@@ -64,7 +64,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
         
         function AddMapToSequenceMenuItemActuated(self,source,event)  %#ok<INUSD>
-            self.Model.do('addMapToSelectedStimulusLibraryItem') ;
+            self.Model.do('addBindingToSelectedStimulusLibraryItem') ;
         end  % function
         
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -80,7 +80,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
         
         function AddChannelToMapMenuItemActuated(self, source, event)  %#ok<INUSD>
-            self.Model.do('addChannelToSelectedStimulusLibraryItem') ;            
+            self.Model.do('addBindingToSelectedStimulusLibraryItem') ;            
         end  % function
 
         function DeleteChannelsFromMapMenuItemActuated(self, source, event)  %#ok<INUSD>
@@ -216,7 +216,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
                 % this is the Map Name column
                 newMapNameRaw = event.EditData ;
                 newMapName = ws.fif(isequal(newMapNameRaw,'(Unspecified)'), '', newMapNameRaw) ;
-                self.Model.do('setElementOfSelectedSequenceToNamedMap', indexOfElementWithinSequence, newMapName) ;
+                self.Model.do('setBindingOfSelectedSequenceToNamedMap', indexOfElementWithinSequence, newMapName) ;
             elseif (columnIndex==4) ,
                 % this is the Delete? column
                 newValue = event.EditData ;

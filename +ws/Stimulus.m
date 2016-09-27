@@ -32,10 +32,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         AdditionalParameterDisplayUnitses
     end
 
-%     properties (Dependent=true, SetAccess=immutable)
-%         Delegate
-%     end
-
     properties (Access=protected)
         Name_ = ''
         Delay_ = '0.25'  % sec
@@ -52,44 +48,32 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     end
     
     methods
-        function self = Stimulus(parent,varargin)
-            self@ws.Model(parent) ;
-            self.Delegate_ = ws.SquarePulseStimulusDelegate(self);  
+        function self = Stimulus(parent, varargin)  %#ok<INUSL>
+            self@ws.Model([]) ;
+            self.Delegate_ = ws.SquarePulseStimulusDelegate([]);  
             pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
                 self.(prop{idx}) = vals{idx};
             end            
-            %if isempty(self.Parent) ,
-            %    error('wavesurfer:stimulusMustHaveParent','A stimulus has to have a parent StimulusLibrary');
-            %end
-            %self.UUID = rand();
         end
         
-        function set.Name(self,newValue)
-            if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,
-                if self.Parent.isAnItemName(newValue) ,
-                    % do nothing---the newValue is already an item name, so
-                    % we can't have it be our name.  (And if the new value
-                    % is already *our* item name, then we don't need to set
-                    % our name to the not-really-new value.
-                else
-                    self.Name_=newValue;
-                end                    
+        function set.Name(self, newValue)
+            if ws.isString(newValue) && ~isempty(newValue) ,                
+                self.Name_ = newValue ;
+            else
+                error('most:Model:invalidPropVal', ...
+                      'Stimulus name must be a nonempty string');                  
             end
-            %self.Parent.childMayHaveChanged(self);
         end
 
         function set.Delay(self, value)
             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
-                self.Delay_ = value;
+                self.Delay_ = value ;
             end                    
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
         end  % function
         
         function set.Duration(self, value)
@@ -98,9 +82,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Duration_ = value;
             end                    
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
         end  % function
         
         function set.Amplitude(self, value)
@@ -109,9 +90,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
             end                
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
         end
         
         function set.DCOffset(self, value)
@@ -120,9 +98,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
             end                
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
         end
         
         function out = get.Name(self)
@@ -253,7 +228,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Don't need to compare as StimLibraryItem's, b/c only property
             % of that is UUID, which we want to ignore
             propertyNamesToCompare={'Name' 'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Delegate'};
-            %propertyNamesToCompare=ws.findPropertiesSuchThat(self,'SetAccess','public');
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
@@ -383,19 +357,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                     self.Delegate_ = delegate;
                 end
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end            
         end
     end
-    
-%     methods
-%         function childMayHaveChanged(self)
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged(self);
-%             end
-%         end            
-%     end
     
     methods (Access=protected)
         function out = getPropertyValue_(self, name)

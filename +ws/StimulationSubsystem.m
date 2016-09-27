@@ -580,13 +580,13 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
             self.AnalogChannelNames_{i} = newValue ;
-            self.StimulusLibrary.setChannelName(oldValue, newValue) ;
+            self.StimulusLibrary_.renameChannel(oldValue, newValue) ;
         end
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
             self.DigitalChannelNames_{i} = newValue ;
-            self.StimulusLibrary.setChannelName(oldValue, newValue) ;
+            self.StimulusLibrary_.renameChannel(oldValue, newValue) ;
             %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
@@ -788,8 +788,8 @@ end  % methods block
             self.StimulusLibrary_.duplicateSelectedItem() ;
         end  % function
         
-        function addMapToSelectedStimulusLibraryItem(self)
-            self.StimulusLibrary_.addMapToSelectedItem() ;
+        function addBindingToSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.addBindingToSelectedItem() ;
         end  % function
         
         function deleteMarkedMapsFromSequence(self)
@@ -800,9 +800,9 @@ end  % methods block
             self.StimulusLibrary_.addNewMap() ;
         end  % function
         
-        function addChannelToSelectedStimulusLibraryItem(self)
-            self.StimulusLibrary_.addChannelToSelectedItem() ;
-        end  % function
+%         function addChannelToSelectedStimulusLibraryItem(self)
+%             self.StimulusLibrary_.addChannelToSelectedItem() ;
+%         end  % function
         
         function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
             self.StimulusLibrary_.deleteMarkedChannelsFromSelectedItem() ;
@@ -832,8 +832,8 @@ end  % methods block
             self.StimulusLibrary_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
         end  % function        
 
-        function setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
-            self.StimulusLibrary_.setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+        function setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+            self.StimulusLibrary_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
         end  % function                   
         
         function setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue)
@@ -884,9 +884,17 @@ end  % methods block
         function result = stimulusLibraryItemProperty(self, className, index, propertyName)
             result = self.StimulusLibrary_.itemProperty(className, index, propertyName) ;
         end  % function                        
+
+        function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
+            self.StimulusLibrary_.setItemProperty(className, index, propertyName, newValue) ;
+        end  % function                        
         
         function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
             result = self.StimulusLibrary_.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function                        
+        
+        function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
+            self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)

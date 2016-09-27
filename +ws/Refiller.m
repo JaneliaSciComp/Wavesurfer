@@ -1072,7 +1072,7 @@ classdef Refiller < handle
             
             % Set up the selected outputable cache
             stimulusOutputable = self.StimulusLibrary_.SelectedOutputable ;
-            self.SelectedOutputableCache_=stimulusOutputable ;
+            self.SelectedOutputableCache_ = stimulusOutputable ;
         end  % function        
         
 %         function startingSweepTriggering_(self)

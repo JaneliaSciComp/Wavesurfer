@@ -3591,9 +3591,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
         
-        function addMapToSelectedStimulusLibraryItem(self)
+        function addBindingToSelectedStimulusLibraryItem(self)
             try
-                self.Stimulation_.addMapToSelectedStimulusLibraryItem() ;
+                self.Stimulation_.addBindingToSelectedStimulusLibraryItem() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3621,15 +3621,15 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function        
         
-        function addChannelToSelectedStimulusLibraryItem(self)
-            try
-                self.Stimulation_.addChannelToSelectedStimulusLibraryItem() ;
-            catch exception
-                self.broadcast('UpdateStimulusLibrary') ;
-                rethrow(exception) ;
-            end
-            self.broadcast('UpdateStimulusLibrary') ;                
-        end  % function
+%         function addChannelToSelectedStimulusLibraryItem(self)
+%             try
+%                 self.Stimulation_.addChannelToSelectedStimulusLibraryItem() ;
+%             catch exception
+%                 self.broadcast('UpdateStimulusLibrary') ;
+%                 rethrow(exception) ;
+%             end
+%             self.broadcast('UpdateStimulusLibrary') ;                
+%         end  % function
                 
         function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
             try
@@ -3689,9 +3689,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function                
         
-        function setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+        function setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
             try
-                self.Stimulation_.setElementOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+                self.Stimulation_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3803,5 +3803,12 @@ classdef WavesurferModel < ws.Model
             result = self.Stimulation_.areStimulusLibraryMapDurationsOverridden() ;            
         end
         
+        function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
+            self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+        end        
+        
+        function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
+            self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+        end  % function                        
     end  % public methods block
 end  % classdef

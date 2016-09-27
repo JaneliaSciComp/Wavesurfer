@@ -74,11 +74,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end
     
     methods
-        function self = StimulusLibrary(parent)
-            if ~exist('parent','var') ,
-                parent = [] ;  % 
-            end
-            self@ws.Model(parent);
+        function self = StimulusLibrary(parent)  %#ok<INUSD>
+            self@ws.Model([]);
             self.Stimuli_ = cell(1,0) ;
             self.Maps_    = cell(1,0) ;
             self.Sequences_  = cell(1,0) ;
@@ -92,44 +89,44 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.ExternalMapDuration_ = [] ;  
         end
         
-        function do(self, methodName, varargin)
-            % This is intended to be the usual way of calling model
-            % methods.  For instance, a call to a ws.Controller
-            % controlActuated() method should generally result in a single
-            % call to .do() on it's model object, and zero direct calls to
-            % model methods.  This gives us a
-            % good way to implement functionality that is common to all
-            % model method calls, when they are called as the main "thing"
-            % the user wanted to accomplish.  For instance, we start
-            % warning logging near the beginning of the .do() method, and turn
-            % it off near the end.  That way we don't have to do it for
-            % each model method, and we only do it once per user command.            
-            root = self.Parent.Parent ;
-            root.startLoggingWarnings() ;
-            try
-                self.(methodName)(varargin{:}) ;
-            catch exception
-                % If there's a real exception, the warnings no longer
-                % matter.  But we want to restore the model to the
-                % non-logging state.
-                root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
-                rethrow(exception) ;
-            end
-            warningExceptionMaybe = root.stopLoggingWarnings() ;
-            if ~isempty(warningExceptionMaybe) ,
-                warningException = warningExceptionMaybe{1} ;
-                throw(warningException) ;
-            end
-        end
-
-        function logWarning(self, identifier, message, causeOrEmpty)
-            % Hand off to the WSM, since it does the warning logging
-            if nargin<4 ,
-                causeOrEmpty = [] ;
-            end
-            root = self.Parent.Parent ;
-            root.logWarning(identifier, message, causeOrEmpty) ;
-        end  % method
+%         function do(self, methodName, varargin)
+%             % This is intended to be the usual way of calling model
+%             % methods.  For instance, a call to a ws.Controller
+%             % controlActuated() method should generally result in a single
+%             % call to .do() on it's model object, and zero direct calls to
+%             % model methods.  This gives us a
+%             % good way to implement functionality that is common to all
+%             % model method calls, when they are called as the main "thing"
+%             % the user wanted to accomplish.  For instance, we start
+%             % warning logging near the beginning of the .do() method, and turn
+%             % it off near the end.  That way we don't have to do it for
+%             % each model method, and we only do it once per user command.            
+%             root = self.Parent.Parent ;
+%             root.startLoggingWarnings() ;
+%             try
+%                 self.(methodName)(varargin{:}) ;
+%             catch exception
+%                 % If there's a real exception, the warnings no longer
+%                 % matter.  But we want to restore the model to the
+%                 % non-logging state.
+%                 root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+%                 rethrow(exception) ;
+%             end
+%             warningExceptionMaybe = root.stopLoggingWarnings() ;
+%             if ~isempty(warningExceptionMaybe) ,
+%                 warningException = warningExceptionMaybe{1} ;
+%                 throw(warningException) ;
+%             end
+%         end
+% 
+%         function logWarning(self, identifier, message, causeOrEmpty)
+%             % Hand off to the WSM, since it does the warning logging
+%             if nargin<4 ,
+%                 causeOrEmpty = [] ;
+%             end
+%             root = self.Parent.Parent ;
+%             root.logWarning(identifier, message, causeOrEmpty) ;
+%         end  % method
         
         function clear(self)
             %self.disableBroadcasts();
@@ -179,44 +176,44 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         function [value,err]=isSelfConsistent(self)                        
-            % Make sure the Parent of all Sequences is self
-            nSequences=length(self.Sequences_);
-            for i=1:nSequences ,
-                sequence=self.Sequences_{i};
-                parent=sequence.Parent;
-                if ~(isscalar(parent) && parent==self) ,
-                    value=false;
-                    err = MException('ws:StimulusLibrary:sequenceWithBadParent', ...
-                                     'At least one sequence has a bad parent') ;
-                    return
-                end
-            end
-            
-            % Make sure the Parent of all Maps is self
-            nMaps=length(self.Maps_);
-            for i=1:nMaps ,
-                map=self.Maps_{i};
-                parent=map.Parent;
-                if ~(isscalar(parent) && parent==self) ,
-                    value=false;
-                    err = MException('ws:StimulusLibrary:mapWithBadParent', ...
-                                     'At least one map has a bad parent') ;
-                    return
-                end
-            end
-
-            % Make sure the Parent of all Stimuli is self
-            nStimuli=length(self.Stimuli_);
-            for i=1:nStimuli ,
-                thing=self.Stimuli_{i};
-                parent=thing.Parent;
-                if ~(isscalar(parent) && parent==self) ,
-                    value=false;
-                    err = MException('ws:StimulusLibrary:stimulusWithBadParent', ...
-                                     'At least one stimulus has a bad parent') ;
-                    return
-                end
-            end
+%             % Make sure the Parent of all Sequences is self
+%             nSequences=length(self.Sequences_);
+%             for i=1:nSequences ,
+%                 sequence=self.Sequences_{i};
+%                 parent=sequence.Parent;
+%                 if ~(isscalar(parent) && parent==self) ,
+%                     value=false;
+%                     err = MException('ws:StimulusLibrary:sequenceWithBadParent', ...
+%                                      'At least one sequence has a bad parent') ;
+%                     return
+%                 end
+%             end
+%             
+%             % Make sure the Parent of all Maps is self
+%             nMaps=length(self.Maps_);
+%             for i=1:nMaps ,
+%                 map=self.Maps_{i};
+%                 parent=map.Parent;
+%                 if ~(isscalar(parent) && parent==self) ,
+%                     value=false;
+%                     err = MException('ws:StimulusLibrary:mapWithBadParent', ...
+%                                      'At least one map has a bad parent') ;
+%                     return
+%                 end
+%             end
+% 
+%             % Make sure the Parent of all Stimuli is self
+%             nStimuli=length(self.Stimuli_);
+%             for i=1:nStimuli ,
+%                 thing=self.Stimuli_{i};
+%                 parent=thing.Parent;
+%                 if ~(isscalar(parent) && parent==self) ,
+%                     value=false;
+%                     err = MException('ws:StimulusLibrary:stimulusWithBadParent', ...
+%                                      'At least one stimulus has a bad parent') ;
+%                     return
+%                 end
+%             end
             
             % For all maps, make sure all the stimuli in the map are in
             % self.Stimuli_
@@ -226,7 +223,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 if isempty(map)
                     % this is fine
                 else
-                    if map.areAllStimulusIndicesValid() ,
+                    nStimuliInLibrary = length(self.Stimuli_) ;
+                    if map.areAllStimulusIndicesValid(nStimuliInLibrary) ,
                         % excellent.  excellent.
                     else
                         value=false;
@@ -245,7 +243,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 if isempty(sequence)
                     % this is fine
                 else
-                    if sequence.areAllMapIndicesValid() ,
+                    if sequence.areAllMapIndicesValid(self.NMaps) ,
                         % excellent.  excellent.
                     else
                         value=false;
@@ -320,7 +318,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             err = [] ;
         end  % function
         
-        function setToSimpleLibraryWithUnitPulse(self, outputChannelNames)
+        function setToSimpleLibraryWithUnitPulse(self, allOutputChannelNames)
             %self.disableBroadcasts();
             self.clear();
             
@@ -341,12 +339,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 
             % make a map that puts the just-made pulse out of the first AO channel, add
             % to stim library
-            if ~isempty(outputChannelNames) ,
-                outputChannelName=outputChannelNames{1};
+            if ~isempty(allOutputChannelNames) ,
+                outputChannelName=allOutputChannelNames{1};
                 map=self.addNewMap_();
                 map.Name=sprintf('Pulse out %s',outputChannelName);
                 %map=ws.StimulusMap('Name','Unit pulse out first channel');                
-                map.addBinding(outputChannelName,pulse);
+                map.addBinding();
+                map.setSingleChannelName(1, outputChannelName, allOutputChannelNames) ;
+                map.IndexOfEachStimulusInLibrary{1} = 1 ;
                 %map.Bindings{1}.Stimulus=unitPulse;
                 %self.add(map);
                 % Make the one and only map the selected outputable
@@ -680,18 +680,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function deleteSelectedItem(self)
             item = self.SelectedItem ;
             self.deleteItem_(item) ;
-        end  % function
-        
-%         function deleteItems(self, items)
-%             % Remove the given items from the stimulus library. If the
-%             % to-be-removed items are used by other items, the references
-%             % are first nulled to maintain the self-consistency of the
-%             % library.            
-%             for i=1:length(items) ,
-%                 item=items{i};
-%                 self.deleteItem_(item);
-%             end
-%         end  % function
+        end  % function        
     end
        
     methods (Access=protected)
@@ -805,32 +794,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end  % protected methods block
         
     methods
-        function out = sequenceWithName(self, name)
-            validateattributes(name, {'char'}, {});
-            
-            sequenceNames=cellfun(@(sequence)(sequence.Name),self.Sequences_,'UniformOutput',false);
-            idx = find(strcmp(name, sequenceNames), 1);
-            
-            if isempty(idx) ,
-                out = {};
-            else
-                out = self.Sequences_{idx};
-            end
-        end  % function
-        
-        function out = mapWithName(self, name)
-            validateattributes(name, {'char'}, {});
-            
-            mapNames=cellfun(@(map)(map.Name),self.Maps_,'UniformOutput',false);
-            idx = find(strcmp(name, mapNames), 1);
-            
-            if isempty(idx)
-                out = {};
-            else
-                out = self.Maps_{idx};
-            end
-        end  % function
-        
         function result = indexOfMapWithName(self, mapName)
             if ws.isString(mapName) ,
                 mapNames=cellfun(@(map)(map.Name),self.Maps_,'UniformOutput',false);
@@ -840,19 +803,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-        function out = stimulusWithName(self, name)
-            validateattributes(name, {'char'}, {});
-            
-            stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli_,'UniformOutput',false);
-            idx = find(strcmp(name, stimulusNames), 1);
-            
-            if isempty(idx)
-                out = {};
-            else
-                out = self.Stimuli_{idx};
-            end
-        end  % function
-
         function out = indexOfStimulusWithName(self, name)
             stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli_,'UniformOutput',false);
             idx = find(strcmp(name, stimulusNames), 1);            
@@ -903,11 +853,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             result=find(self.isStimulusAMatch(queryStimulus),1);
         end
         
-        function setChannelName(self, oldValue, newValue)
+        function renameChannel(self, oldValue, newValue)
             maps = self.Maps_ ;
             for i = 1:length(maps) ,
                 map = maps{i} ;
-                map.setChannelName(oldValue, newValue) ;               
+                map.renameChannel(oldValue, newValue) ;               
             end
             %self.broadcast('Update');            
         end
@@ -928,24 +878,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
         
         function result = isAnItemName(self, name)
-            itemNames = self.itemNames() ;
-            result = ismember(name,itemNames) ;
+            if ws.isString(name) ,                
+                itemNames = self.itemNames() ;
+                result = ismember(name,itemNames) ;
+            else
+                result = false ;
+            end                
         end  % function
         
-        function result = itemWithName(self, name)
-            sequence = self.sequenceWithName(name) ;
-            if isempty(sequence) ,
-                map = self.mapWithName(name) ;
-                if isempty(map) ,
-                    result = self.stimulusWithName(name) ;  % will be empty if no such stimulus
-                else
-                    result = map ;
-                end                
-            else
-                result = sequence ;
-            end
-        end  % function
-
         function debug(self) %#ok<MANU>
             keyboard
         end
@@ -1469,15 +1409,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 %self.enableBroadcastsMaybe();
             end
             %self.broadcast('Update');
-        end  % function
-        
+        end  % function        
     end  % protected methods block
     
     methods
-        function addMapToSelectedItem(self)
+        function addBindingToSelectedItem(self)
             selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
-                selectedItem.addMap() ;
+            if ~isempty(selectedItem) && (isa(selectedItem,'ws.StimulusSequence') || isa(selectedItem,'ws.StimulusMap')) ,
+                selectedItem.addBinding() ;
             else
                 % Can't add a map to anything but a sequence, so do nothing
             end
@@ -1490,14 +1429,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % method
         
-        function addChannelToSelectedItem(self)
-            selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
-                selectedItem.addBinding() ;
-            else
-                % Can't add a channel/binding to anything but a map, so do nothing
-            end
-        end  % function        
+%         function addChannelToSelectedItem(self)
+%             selectedItem = self.SelectedItem ;
+%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
+%                 selectedItem.addBinding() ;
+%             else
+%                 % Can't add a channel/binding to anything but a map, so do nothing
+%             end
+%         end  % function        
         
         function deleteMarkedChannelsFromSelectedItem(self)
             selectedItem = self.SelectedItem ;
@@ -1509,10 +1448,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
 
         function setSelectedItemProperty(self, propertyName, newValue)
-            selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) ,
-                selectedItem.(propertyName) = newValue ;
-            end
+%             selectedItem = self.SelectedItem ;
+%             if ~isempty(selectedItem) ,
+%                 selectedItem.(propertyName) = newValue ;
+%             end
+            className = self.SelectedItemClassName ;
+            index = self.SelectedItemIndexWithinClass ;
+            self.setItemProperty(className, index, propertyName, newValue) ;
         end  % method        
         
 %         function setSelectedItemName(self, newName)
@@ -1558,16 +1500,18 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
 
-        function setElementOfSelectedSequenceToNamedMap(self, indexOfSequenceElement, mapName) 
+        function setBindingOfSelectedSequenceToNamedMap(self, bindingIndex, mapName) 
             selectedSequence = self.SelectedSequence ;  
             if isempty(selectedSequence) ,
-                %self.broadcast('Update') ;
+                error('ws:stimulusLibrary:noSelectedSequence' , ...
+                      'No sequence is selected in the stimulus library') ;
             else                
                 if ws.isString(mapName) ,
-                    indexOfMap = self.indexOfMapWithName(mapName) ;  % can be empty
-                    selectedSequence.setMapByIndex(indexOfSequenceElement, indexOfMap) ;  % if isempty(indexOfMap), the map is is "unspecified"
+                    indexOfMapInLibrary = self.indexOfMapWithName(mapName) ;  % can be empty
+                    selectedSequence.setBindingTargetByIndex(bindingIndex, indexOfMapInLibrary) ;  % if isempty(indexOfMap), the map is is "unspecified"
                 else
-                    %self.broadcast('Update') ;
+                error('ws:stimulusLibrary:noSuchMap' , ...
+                      'There is no map in the library by that name') ;
                 end                    
             end
         end  % method
@@ -1601,7 +1545,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                         case 'Multiplier' ,
                             selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
                         case 'StimulusName' ,
-                            selectedMap.setStimulusByName(indexOfElementWithinMap, stimulusName) ;
+                            stimulusIndexInLibrary = self.indexOfStimulusWithName(stimulusName) ;
+                            selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
                         case 'ChannelName' ,
                             selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
                         otherwise ,
@@ -1761,6 +1706,59 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end                              
         end  % function                        
         
+        function setItemProperty(self, className, index, propertyName, newValue)
+            % The index is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                item = self.Sequences_{index} ;
+                item.(propertyName) = newValue ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
+                    error('ws:stimulusLibrary:cantSetOverriddenProperty' , ...
+                          'Can''t set the value of an overridden property') ;
+                else
+                    item = self.Maps_{index} ;
+                    item.(propertyName) = newValue ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                item = self.Stimuli_{index} ;
+                if isprop(item, propertyName) ,
+                    item.(propertyName) = newValue ;
+                elseif isprop(item.Delegate, propertyName) ,
+                    item.Delegate.(propertyName) = newValue ;
+                else                    
+                    item.(propertyName) = newValue ;  % This will error, but will return the same error type as other failure modes
+                end                    
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                              
+        end  % function                        
+        
+        function setMapBindingChannelName(self, mapIndex, bindingIndex, newValue, allOutputChannelNames)
+            if ws.isIndex(mapIndex) && 1<=mapIndex && mapIndex<=self.NMaps ,
+                item = self.Maps_{mapIndex} ;
+                item.setSingleChannelName(bindingIndex, newValue, allOutputChannelNames) ;
+            else
+                error('ws:stimulusLibrary:badMapIndex' , ...
+                      'Bad map index.') ;
+            end                
+        end
+            
         function result = itemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
             % The itemIndex is the index within the class
             if isequal(className,'') ,
@@ -1773,8 +1771,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 item = self.Maps_{itemIndex} ;
                 if isequal(propertyName,'ChannelName') ,
                     result = item.ChannelName{bindingIndex} ;  % hack
-                elseif isequal(propertyName,'Multiplier') 
-                    result = item.Multiplier(bindingIndex) ;  % hack
                 else
                     result = item.(propertyName)(bindingIndex) ;
                 end
@@ -1785,6 +1781,31 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 error('ws:stimulusLibrary:noSuchItem' , ...
                       'There is no item in the library with class name %s', className) ;
             end                                        
+        end  % function                        
+        
+        function setItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
+            % The index is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                item.(propertyName)(bindingIndex) = newValue ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                if isequal(propertyName, 'ChannelName')
+                    error('ws:stimulusLibrary:cantSetChannelName' , ...
+                          'Can''t set ChannelName via setItemBindingProperty().  Use setMapBindingChannelName().') ;
+                else
+                    item.(propertyName)(bindingIndex) = newValue ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                              
         end  % function                        
         
         function result = itemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)

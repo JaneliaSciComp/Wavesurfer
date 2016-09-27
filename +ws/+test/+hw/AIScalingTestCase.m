@@ -19,9 +19,11 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             self.verifyEqual(voltageMonitorScaleInTrode, monitorScaleInAcquisitionSubsystem) ;
 
-            pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
-            pulse.Amplitude = '3.1415' ;
-            amplitudeAsDouble = str2double(pulse.Amplitude) ;
+            amplitudeAsString = '3.1415' ;
+            amplitudeAsDouble = str2double(amplitudeAsString) ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', amplitudeAsString) ;
+            %pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
+            %pulse.Amplitude = '3.1415' ;
 
             wsModel.Stimulation.IsEnabled = true ;
 
@@ -41,10 +43,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
                 fprintf('Measured amplitude is wrong!  It''s %g, should be %g.\n', measuredAmplitude, predictedAmplitude) ;
             end
             
-            self.verifyTrue(measuredAmplitudeIsCorrect) ;
-            
-        end  % function
-        
+            self.verifyTrue(measuredAmplitudeIsCorrect) ;            
+        end  % function        
     end  % test methods
-
  end  % classdef
