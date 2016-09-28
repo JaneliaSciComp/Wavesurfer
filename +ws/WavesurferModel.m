@@ -3048,6 +3048,11 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.setSelectedOutputableByIndex(index) ;
             self.broadcast('UpdateStimulusLibrary') ;
         end  % method
+
+        function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
+            self.Stimulation_.setSelectedOutputableByIndex(className, indexWithinClass) ;
+            self.broadcast('UpdateStimulusLibrary') ;
+        end  % method        
         
         function openFastProtocolByIndex(self, index)
             if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,
@@ -3571,9 +3576,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
         
-        function addNewStimulusSequence(self)
+        function index = addNewStimulusSequence(self)
             try
-                self.Stimulation_.addNewStimulusSequence() ;
+                index = self.Stimulation_.addNewStimulusSequence() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3591,9 +3596,19 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
         
-        function addBindingToSelectedStimulusLibraryItem(self)
+        function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
             try
-                self.Stimulation_.addBindingToSelectedStimulusLibraryItem() ;
+                bindingIndex = self.Stimulation_.addBindingToSelectedStimulusLibraryItem() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % function
+                
+        function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
+            try
+                bindingIndex = self.Stimulation_.addBindingToStimulusLibraryItem(className, itemIndex) ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3611,9 +3626,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
         
-        function addNewStimulusMap(self)
+        function index = addNewStimulusMap(self)
             try
-                self.Stimulation_.addNewStimulusMap() ;
+                index = self.Stimulation_.addNewStimulusMap() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3641,9 +3656,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
         
-        function addNewStimulus(self)
+        function stimulusIndex = addNewStimulus(self)
             try
-                self.Stimulation_.addNewStimulus() ;
+                stimulusIndex = self.Stimulation_.addNewStimulus() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;

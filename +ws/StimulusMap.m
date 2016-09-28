@@ -226,12 +226,13 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end   % function
 
-        function addBinding(self)
+        function bindingIndex = addBinding(self)
             % Add a "binding" to the list of bindings
-            self.ChannelName_{end+1} = '' ;
-            self.IndexOfEachStimulusInLibrary_{end+1} = [] ;
-            self.Multiplier_(end+1) = 1 ;
-            self.IsMarkedForDeletion_(end+1) = false ;
+            bindingIndex = self.NBindings + 1 ;
+            self.ChannelName_{bindingIndex} = '' ;
+            self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;
+            self.Multiplier_(bindingIndex) = 1 ;
+            self.IsMarkedForDeletion_(bindingIndex) = false ;
         end   % function
         
         function deleteBinding(self, index)
@@ -261,57 +262,57 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end  % function
         
-        function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
-            % nBoundChannels is the number of channels *in channelNames* for which
-            % a non-empty binding was found.
-            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
-                sweepIndexWithinSet=1;
-            end
-            
-            % Create a timeline
-            duration = self.Duration ;
-            sampleCount = round(duration * sampleRate);
-            dt=1/sampleRate;
-            t0=0;  % initial sample time
-            t=(t0+dt/2)+dt*(0:(sampleCount-1))';            
-              % + dt/2 is somewhat controversial, but in the common case
-              % that pulse durations are integer multiples of dt, it
-              % ensures that each pulse is exactly (pulseDuration/dt)
-              % samples long, and avoids other unpleasant pseudorandomness
-              % when stimulus discontinuities occur right at sample times
-            
-            % Create the data array  
-            nChannels=length(channelNames);
-            data = zeros(sampleCount, nChannels);
-            
-            % For each named channel, overwrite a col of data
-            boundChannelNames=self.ChannelName;
-            nChannelsWithStimulus = 0 ;
-            for iChannel = 1:nChannels ,
-                thisChannelName=channelNames{iChannel};
-                stimIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
-                if isempty(stimIndex) ,
-                    % do nothing
-                else
-                    %thisBinding=self.Bindings_{stimIndex};
-                    thisStimulus=self.Stimuli{stimIndex}; 
-                    if isempty(thisStimulus) ,
-                        % do nothing
-                    else        
-                        % Calc the signal, scale it, overwrite the appropriate col of
-                        % data
-                        nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
-                        rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
-                        multiplier=self.Multiplier(stimIndex);
-                        if isChannelAnalog(iChannel) ,
-                            data(:, iChannel) = multiplier*rawSignal ;
-                        else
-                            data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
-                        end
-                    end
-                end
-            end
-        end  % function
+%         function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
+%             % nBoundChannels is the number of channels *in channelNames* for which
+%             % a non-empty binding was found.
+%             if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+%                 sweepIndexWithinSet=1;
+%             end
+%             
+%             % Create a timeline
+%             duration = self.Duration ;
+%             sampleCount = round(duration * sampleRate);
+%             dt=1/sampleRate;
+%             t0=0;  % initial sample time
+%             t=(t0+dt/2)+dt*(0:(sampleCount-1))';            
+%               % + dt/2 is somewhat controversial, but in the common case
+%               % that pulse durations are integer multiples of dt, it
+%               % ensures that each pulse is exactly (pulseDuration/dt)
+%               % samples long, and avoids other unpleasant pseudorandomness
+%               % when stimulus discontinuities occur right at sample times
+%             
+%             % Create the data array  
+%             nChannels=length(channelNames);
+%             data = zeros(sampleCount, nChannels);
+%             
+%             % For each named channel, overwrite a col of data
+%             boundChannelNames=self.ChannelName;
+%             nChannelsWithStimulus = 0 ;
+%             for iChannel = 1:nChannels ,
+%                 thisChannelName=channelNames{iChannel};
+%                 stimIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
+%                 if isempty(stimIndex) ,
+%                     % do nothing
+%                 else
+%                     %thisBinding=self.Bindings_{stimIndex};
+%                     thisStimulus=self.Stimuli{stimIndex}; 
+%                     if isempty(thisStimulus) ,
+%                         % do nothing
+%                     else        
+%                         % Calc the signal, scale it, overwrite the appropriate col of
+%                         % data
+%                         nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
+%                         rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
+%                         multiplier=self.Multiplier(stimIndex);
+%                         if isChannelAnalog(iChannel) ,
+%                             data(:, iChannel) = multiplier*rawSignal ;
+%                         else
+%                             data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+%                         end
+%                     end
+%                 end
+%             end
+%         end  % function
         
         function setStimulusByIndex(self, bindingIndex, stimulusIndexInLibrary)
             if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,

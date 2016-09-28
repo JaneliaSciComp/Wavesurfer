@@ -52,7 +52,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         SelectedSequenceIndex
           % (Similar invariants to SelectedStimulusIndex)
         SelectedOutputableClassName
-        SelectedOutputableIndex
+        SelectedOutputableIndex  % index within the class
     end
     
     properties (Access = protected)
@@ -66,9 +66,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         SelectedSequenceIndex_  % the index of the currently selected sequence, or [] if no sequence is selected
         SelectedOutputableClassName_
         SelectedOutputableIndex_  % Underlying storage for SelectedOutputable
-    end
-    
-    properties (Access = protected, Transient=true)
         AreMapDurationsOverridden_ 
         ExternalMapDuration_
     end
@@ -327,7 +324,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 
             % Make a too-large pulse stimulus, add to the stimulus library
             %unitPulse=ws.SquarePulseStimulus('Name','Unit pulse');
-            pulse=self.addNewStimulus_('SquarePulse');
+            pulse=self.addNewStimulus_();
             pulse.Name='Pulse';
             pulse.Amplitude='5';  % V, too big
             pulse.Delay='0.25';
@@ -426,7 +423,24 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function output = get.SelectedOutputableIndex(self)
             output=self.SelectedOutputableIndex_ ;
         end  % function
-                
+                        
+%         function value = selectedOutputable(self)
+%             % Returns a *copy* of the selected outputable.
+%             if isempty(self.SelectedOutputableClassName_) ,
+%                 value = [] ;  % no item is currently selected
+%             elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusSequence') ,
+%                 item = self.Sequences_{self.SelectedOutputableIndex_} ;
+%                 value = item.copyGivenParent([]) ;
+%             elseif isequal(self.SelectedOutputableClassName_,'ws.StimulusMap') ,                
+%                 item = self.Maps_{self.SelectedOutputableIndex_} ;
+%                 value = item.copyGivenParent([]) ;                
+%             else
+%                 % invariant violation
+%                 error('ws:internalError', ...
+%                       'WaveSurfer has encountered an internal error.  Please save your work, exit WaveSurfer, and restart it.  Also, contact the developers.') ;
+%             end
+%         end  % function
+        
 %         function set.SelectedOutputable(self, newSelection)
 %             if ws.isASettableValue(newSelection) ,
 %                 if isempty(newSelection) ,
@@ -462,23 +476,43 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             end
 %         end  % function
 
-        function setSelectedOutputableByIndex(self, index)            
-            if isempty(index) ,
+        function setSelectedOutputableByIndex(self, outputableIndex)            
+            if isempty(outputableIndex) ,
                 self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
             else
                 nSequences = length(self.Sequences_) ;
                 nMaps = length(self.Maps_) ;
                 nOutputables = nSequences + nMaps ;
-                if ws.isIndex(index) && 1<=index && index<=nOutputables ,
-                    if index<=nSequences ,
-                        indexWithinClass = index ;
+                if ws.isIndex(outputableIndex) && 1<=outputableIndex && outputableIndex<=nOutputables ,
+                    if outputableIndex<=nSequences ,
+                        indexWithinClass = outputableIndex ;
                         outputableClassName = 'ws.StimulusSequence' ;
                     else
-                        indexWithinClass = index - nSequences ;
+                        indexWithinClass = outputableIndex - nSequences ;
                         outputableClassName = 'ws.StimulusMap' ;
                     end
                     self.SelectedOutputableIndex_ = indexWithinClass ;
                     self.SelectedOutputableClassName_ = outputableClassName ;
+                end
+            end
+        end  % function
+        
+        function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
+            if isempty(className) ,
+                self.SelectedOutputableClassName_ = '' ;  % this makes it so that no item is currently selected
+            else
+                if isequal(className, 'ws.StimulusSequence') ,
+                    nSequences = length(self.Sequences_) ;
+                    if ws.isIndex(indexWithinClass) && 1<=indexWithinClass && indexWithinClass<=nSequences ,
+                        self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
+                        self.SelectedOutputableIndex_ = indexWithinClass ;
+                    end
+                elseif isequal(className, 'ws.StimulusMap') ,
+                    nMaps = length(self.Maps_) ;
+                    if ws.isIndex(indexWithinClass) && 1<=indexWithinClass && indexWithinClass<=nMaps ,
+                        self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
+                        self.SelectedOutputableIndex_ = indexWithinClass ;
+                    end
                 end
             end
         end  % function
@@ -681,9 +715,845 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             item = self.SelectedItem ;
             self.deleteItem_(item) ;
         end  % function        
-    end
-       
+        
+        function result = indexOfMapWithName(self, mapName)
+            if ws.isString(mapName) ,
+                mapNames=cellfun(@(map)(map.Name),self.Maps_,'UniformOutput',false);
+                result = find(strcmp(mapName, mapNames), 1);
+            else
+                result = [] ;
+            end
+        end  % function
+        
+        function out = indexOfStimulusWithName(self, name)
+            stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli_,'UniformOutput',false);
+            idx = find(strcmp(name, stimulusNames), 1);            
+            if isempty(idx)
+                out = [] ;
+            else
+                out = idx ;
+            end
+        end  % function
+        
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             self.broadcast('Update');            
+%         end
+        
+        function result=isSequenceAMatch(self,querySequence)
+            result=cellfun(@(sequence)(sequence==querySequence),self.Sequences_);
+        end
+        
+        function result=isMapAMatch(self,queryMap)
+            result=cellfun(@(item)(item==queryMap),self.Maps_);
+        end
+        
+        function result=isStimulusAMatch(self,queryStimulus)
+            result=cellfun(@(item)(item==queryStimulus),self.Stimuli_);
+        end
+        
+        function result=isSequenceInLibrary(self,queryItem)
+            result=any(self.isSequenceAMatch(queryItem));
+        end
+        
+        function result=isMapInLibrary(self,queryItem)
+            result=any(self.isMapAMatch(queryItem));
+        end
+        
+        function result=isStimulusInLibrary(self,queryStimulus)
+            result=any(self.isStimulusAMatch(queryStimulus));
+        end
+        
+        function result=getSequenceIndex(self,queryItem)
+            result=find(self.isSequenceAMatch(queryItem),1);
+        end
+        
+        function result=getMapIndex(self,queryItem)
+            result=find(self.isMapAMatch(queryItem),1);
+        end
+        
+        function result=getStimulusIndex(self,queryStimulus)
+            result=find(self.isStimulusAMatch(queryStimulus),1);
+        end
+        
+        function renameChannel(self, oldValue, newValue)
+            maps = self.Maps_ ;
+            for i = 1:length(maps) ,
+                map = maps{i} ;
+                map.renameChannel(oldValue, newValue) ;               
+            end
+            %self.broadcast('Update');            
+        end
+        
+        function result = areItemNamesDistinct(self) 
+            % Returns true iff all item names are distinct.  This is an
+            % object invariant.  I.e. it should always return true.
+            itemNames = self.itemNames() ;
+            uniqueItemNames = unique(itemNames) ;
+            result = (length(itemNames)==length(uniqueItemNames)) ;            
+        end
+        
+        function result = itemNames(self)
+            sequenceNames=cellfun(@(item)(item.Name),self.Sequences_,'UniformOutput',false);
+            mapNames=cellfun(@(item)(item.Name),self.Maps_,'UniformOutput',false);
+            stimulusNames=cellfun(@(item)(item.Name),self.Stimuli_,'UniformOutput',false);
+            result = horzcat(sequenceNames, mapNames, stimulusNames) ;
+        end  % function
+        
+        function result = isAnItemName(self, name)
+            if ws.isString(name) ,                
+                itemNames = self.itemNames() ;
+                result = ismember(name,itemNames) ;
+            else
+                result = false ;
+            end                
+        end  % function
+        
+        function debug(self) %#ok<MANU>
+            keyboard
+        end
+    end  % public methods
+        
+    methods        
+        function sequenceIndex = addNewSequence(self)
+            [~, sequenceIndex] = self.addNewSequence_() ;
+        end  % function
+        
+        function mapIndex = addNewMap(self)
+            [~, mapIndex] = self.addNewMap_() ;
+        end  % function
+                 
+        function stimulusIndex = addNewStimulus(self)
+            [~, stimulusIndex] = self.addNewStimulus_() ;
+        end  % function
+               
+        function duplicateSelectedItem(self)
+            %self.disableBroadcasts();
+
+            % Get a handle to the item to be duplicated
+            originalItem = self.SelectedItem ;  % handle
+            
+            % Make a new item (which will start out with a name like
+            % 'Untitled stimulus 3'
+            if isa(originalItem,'ws.StimulusSequence') ,
+                newItem = self.addNewSequence() ;
+            elseif isa(originalItem,'ws.StimulusMap')
+                newItem = self.addNewMap() ;
+            else 
+                newItem = self.addNewStimulus(originalItem.TypeString) ;
+            end
+            
+            % Copy the settings from the original item
+            newItem.mimic(originalItem) ;
+            
+            % At the moment, the name of newItem is the same as that of
+            % selectedItem.  This violates one of the StimulusLibrary
+            % invariants, that all item names within the library must be distinct.
+            % So we generate new names until we find a distinct one.
+            itemNames = self.itemNames() ;
+            originalItemName = originalItem.Name ;
+            for copyIndex = 1:length(self.getItems_()) ,  
+                % We will never have to try more than this number of
+                % putative names, because each item has only one name, and
+                % there are only so many items.
+                if copyIndex==1 ,
+                    putativeNewItemName = sprintf('%s (copy)', originalItemName) ;
+                else
+                    putativeNewItemName = sprintf('%s (copy %d)', originalItemName, copyIndex) ;
+                end
+                isNameCollision = ismember(putativeNewItemName, itemNames) ;
+                if ~isNameCollision ,
+                    newItem.Name = putativeNewItemName ;
+                    break
+                end
+            end
+            
+            %self.SelectedItem = newItem ;
+            self.setSelectedItemByHandle_(newItem) ;
+            
+            %self.enableBroadcastsMaybe();
+            %self.broadcast('Update');
+        end % function
+
+%         function didChangeNumberOfOutputChannels(self)
+%             self.broadcast('Update') ;
+%         end
+
+        function value=isequal(self,other)
+            value=isequalHelper(self,other,'ws.StimulusLibrary');
+        end  % function    
+        
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            % delete some property names 
+            % that don't need to go into the header file
+            propNames=setdiff(propNamesRaw, ...
+                              {'Stimuli', 'Maps', 'Sequences', ...
+                               'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
+                               'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
+                               'SelectedOutputableClassName', 'SelectedOutputableIndex'}) ;
+        end  % function 
+    
+        function bindingIndex = addBindingToSelectedItem(self)
+            className = self.SelectedItemClassName_ ;
+            itemIndex = self.SelectedItemIndexWithinClass_ ;
+            bindingIndex = self.addBindingToItem(className, itemIndex) ;
+        end  % method
+
+        function bindingIndex = addBindingToItem(self, className, itemIndex)
+            item = self.item_(className, itemIndex) ;
+            if isempty(item) ,
+                bindingIndex = [] ;
+            else
+                bindingIndex = item.addBinding() ;
+            end
+        end  % method
+        
+        function deleteMarkedMapsFromSequence(self)
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
+                selectedItem.deleteMarkedMaps() ;
+            end
+        end  % method
+        
+%         function addChannelToSelectedItem(self)
+%             selectedItem = self.SelectedItem ;
+%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
+%                 selectedItem.addBinding() ;
+%             else
+%                 % Can't add a channel/binding to anything but a map, so do nothing
+%             end
+%         end  % function        
+        
+        function deleteMarkedChannelsFromSelectedItem(self)
+            selectedItem = self.SelectedItem ;
+            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
+                selectedItem.deleteMarkedBindings();
+            else
+                % Can't delete bindings from anything but a map, so do nothing
+            end
+        end  % function
+
+        function setSelectedItemProperty(self, propertyName, newValue)
+%             selectedItem = self.SelectedItem ;
+%             if ~isempty(selectedItem) ,
+%                 selectedItem.(propertyName) = newValue ;
+%             end
+            className = self.SelectedItemClassName ;
+            index = self.SelectedItemIndexWithinClass ;
+            self.setItemProperty(className, index, propertyName, newValue) ;
+        end  % method        
+        
+%         function setSelectedItemName(self, newName)
+%             selectedItem = self.SelectedItem ;
+%             if isempty(selectedItem) ,
+%                 self.broadcast('Update') ;
+%             else                
+%                 selectedItem.Name = newName ;
+%             end
+%         end  % method        
+% 
+%         function setSelectedItemDuration(self, newValue)
+%             selectedItem=self.SelectedItem;
+%             if isempty(selectedItem) ,
+%                 self.broadcast('Update') ;
+%             else
+%                 selectedItem.Duration = newValue ;
+%             end
+%         end  % method        
+        
+%         function setSelectedStimulusProperty(self, propertyName, newValue)
+%             selectedStimulus = self.SelectedStimulus ;
+%             if isempty(selectedStimulus) ,
+%                 self.broadcast('Update') ;
+%             else
+%                 selectedStimulus.(propertyName) = newValue ;  % this will do the broadcast
+%             end
+%         end  % method        
+        
+        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
+            % This means one of the additional parameter edits was actuated
+            selectedStimulus = self.SelectedStimulus ;  
+            if isempty(selectedStimulus) ,
+                %self.broadcast('Update') ;
+            else
+                additionalParameterNames = selectedStimulus.Delegate.AdditionalParameterNames ;
+                if ws.isIndex(iParameter) && 1<=iParameter && iParameter<=length(additionalParameterNames) ,
+                    propertyName = additionalParameterNames{iParameter} ;
+                    selectedStimulus.Delegate.(propertyName) = newString ;  % delegate will check validity
+                else
+                    %self.broadcast('Update') ;
+                end
+            end
+        end  % function
+
+        function setBindingOfSelectedSequenceToNamedMap(self, bindingIndex, mapName) 
+            selectedSequence = self.SelectedSequence ;  
+            if isempty(selectedSequence) ,
+                error('ws:stimulusLibrary:noSelectedSequence' , ...
+                      'No sequence is selected in the stimulus library') ;
+            else                
+                if ws.isString(mapName) ,
+                    indexOfMapInLibrary = self.indexOfMapWithName(mapName) ;  % can be empty
+                    selectedSequence.setBindingTargetByIndex(bindingIndex, indexOfMapInLibrary) ;  % if isempty(indexOfMap), the map is is "unspecified"
+                else
+                error('ws:stimulusLibrary:noSuchMap' , ...
+                      'There is no map in the library by that name') ;
+                end                    
+            end
+        end  % method
+
+        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
+            selectedSequence = self.SelectedSequence ;  
+            if isempty(selectedSequence) ,
+                %self.broadcast('Update') ;
+            else                
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
+                    newValueAsLogical = logical(newValue) ;
+                    if ws.isIndex(indexOfElementWithinSequence) && ...
+                            1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps_) ,
+                        selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
+                    else
+                        %self.broadcast('Update') ;
+                    end
+                else
+                    %self.broadcast('Update') ;
+                end                    
+            end
+        end  % method
+        
+        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
+            selectedMap = self.SelectedMap ;  
+            if ~isempty(selectedMap) ,
+                if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
+                    switch propertyName ,
+                        case 'IsMarkedForDeletion' ,
+                            selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
+                        case 'Multiplier' ,
+                            selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
+                        case 'StimulusName' ,
+                            stimulusIndexInLibrary = self.indexOfStimulusWithName(stimulusName) ;
+                            selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
+                        case 'ChannelName' ,
+                            selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
+                        otherwise ,
+                            % do nothing
+                    end
+                end
+            end
+        end  % method
+    
+        function plotSelectedItemBang(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+            className = self.SelectedItemClassName_ ;
+            itemIndex = self.SelectedItemIndexWithinClass_ ;
+            self.plotItem(className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog) ;
+        end  % function                
+
+        function plotItem(self, className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog)
+            selectedItem=self.SelectedItem;
+            if isempty(selectedItem) ,
+                return
+            end
+            if isa(className, 'ws.StimulusSequence') ,
+                self.plotStimulusSequenceBang_(figureGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+            elseif isa(className, 'ws.StimulusMap') ,
+                axesGH = [] ;  % means to make own axes
+                self.plotStimulusMapBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+            elseif isa(className, 'ws.Stimulus') ,
+                axesGH = [] ;  % means to make own axes
+                self.plotStimulusBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+            else
+                % do nothing
+            end                            
+            set(figureGH, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
+        end  % function                
+        
+        function result = propertyFromEachItemInClass(self, className, propertyName) 
+            % Result is a cell array, even it seems like it could/should be another kind of array
+            if isequal(className, 'ws.StimulusSequence') ,
+                items = self.Sequences_ ;
+            elseif isequal(className, 'ws.StimulusMap') ,
+                items = self.Maps_ ;
+            elseif isequal(className, 'ws.Stimulus') ,
+                items = self.Stimuli_ ;
+            else
+                items = cell(1,0) ;
+            end                            
+            result = cellfun(@(item)(item.(propertyName)), items, 'UniformOutput', false) ;
+        end  % function
+        
+        function result = indexOfClassSelection(self, className)
+            if isequal(className, 'ws.StimulusSequence') ,
+                result = self.SelectedSequenceIndex_ ;
+            elseif isequal(className, 'ws.StimulusMap') ,
+                result = self.SelectedMapIndex_ ;
+            elseif isequal(className, 'ws.Stimulus') ,
+                result = self.SelectedStimulusIndex_ ;
+            else
+                result = [] ;
+            end                            
+        end  % method                    
+        
+        function result = classSelectionProperty(self, className, propertyName)
+            if isequal(className, 'ws.StimulusSequence') ,
+                result = self.SelectedSequence.(propertyName) ;
+            elseif isequal(className, 'ws.StimulusMap') ,
+                result = self.SelectedMap.(propertyName) ;
+            elseif isequal(className, 'ws.Stimulus') ,
+                result = self.SelectedStimulus.(propertyName) ;
+            else
+                result = [] ;
+            end                            
+        end  % method        
+        
+        function result = propertyForElementOfSelectedItem(self, indexOfElementWithinItem, propertyName)
+            className = self.SelectedItemClassName_ ;
+            if isempty(className) ,
+                error('ws:stimulusLibrary:noSelectedItem' , ...
+                      'No item is selected in the stimulus library') ;
+            elseif isequal(className, 'ws.StimulusSequence') ,
+                selectedSequenceIndex = self.SelectedSequenceIndex_ ;
+                if isempty(selectedSequenceIndex) ,
+                    error('ws:stimulusLibrary:noSelectedItem' , ...
+                          'No item is selected in the stimulus library') ;
+                else
+                    selectedSequence = self.Sequence_{selectedSequenceIndex} ;
+                    result = selectedSequence.(propertyName)(indexOfElementWithinItem) ;                    
+                end
+            elseif isequal(className, 'ws.StimulusMap') ,
+                selectedMapIndex = self.SelectedMapIndex_ ;
+                if isempty(selectedMapIndex) ,
+                    error('ws:stimulusLibrary:noSelectedItem' , ...
+                          'No item is selected in the stimulus library') ;
+                else                
+                    selectedMap = self.Maps_{selectedMapIndex} ;
+                    switch propertyName ,
+                        case 'IsMarkedForDeletion' ,
+                            result = selectedMap.IsMarkedForDeletion(indexOfElementWithinItem) ;
+                        case 'Multiplier' ,
+                            result = selectedMap.Multiplier(indexOfElementWithinItem) ;                            
+                        case 'ChannelName' ,
+                            result = selectedMap.ChannelName{indexOfElementWithinItem} ;                            
+                        case 'IndexOfStimulusInLibrary' ,
+                            result = selectedMap.IndexOfStimulusInLibrary(indexOfElementWithinItem) ;                            
+                        otherwise ,
+                            error('ws:stimulusLibrary:noSuchProperty' , ...
+                                  'Stimulus map elements do not have a property %s', propertyName) ;
+                    end
+                end
+            elseif isequal(className, 'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliHaveNoElements' , ...
+                      'Can''t get an element property of a stimulus, because stimuli have no subelements.') ;
+            else
+                error('ws:internalError', ...
+                      ['WaveSurfer had an internal error with codeword Pikachu.  ' ...
+                       'Please save your work, restart WaveSurfer, and report this error to the WaveSurfer developers.']) ;
+            end                            
+        end  % function                
+
+        function result = selectedItemProperty(self, propertyName)
+            className = self.SelectedItemClassName ;
+            index = self.SelectedItemIndexWithinClass ;
+            result = self.itemProperty(className, index, propertyName) ;
+        end
+
+        function result = selectedItemBindingProperty(self, bindingIndex, propertyName)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
+            result = self.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end
+        
+        function result = selectedItemBindingTargetProperty(self, bindingIndex, propertyName)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
+            result = self.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end
+        
+        function result = itemProperty(self, className, index, propertyName)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{index} ;
+                result = item.(propertyName) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
+                    result = self.ExternalMapDuration_ ;
+                else
+                    item = self.Maps_{index} ;
+                    result = item.(propertyName) ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                item = self.Stimuli_{index} ;
+                if isprop(item, propertyName) ,
+                    result = item.(propertyName) ;
+                elseif ismember(propertyName, item.AdditionalParameterNames),
+                    result = item.getAdditionalParameterName(propertyName) ;
+                else                    
+                    result = item.(propertyName) ;  % This will error, but will return the same error type as other failure modes
+                end                    
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                              
+        end  % function                        
+        
+        function setItemProperty(self, className, index, propertyName, newValue)
+            % The index is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                item = self.Sequences_{index} ;
+                item.(propertyName) = newValue ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
+                    error('ws:stimulusLibrary:cantSetOverriddenProperty' , ...
+                          'Can''t set the value of an overridden property') ;
+                else
+                    item = self.Maps_{index} ;
+                    item.(propertyName) = newValue ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
+                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                          '%s is already the name of another item', newValue) ;
+                end
+                item = self.Stimuli_{index} ;
+                if isprop(item, propertyName) ,
+                    item.(propertyName) = newValue ;
+                elseif ismember(propertyName, item.AdditionalParameterNames) ,
+                    item.setAdditionalParameter(propertyName, newValue) ;
+                else                    
+                    item.(propertyName) = newValue ;  % This will error, but will return the same error type as other failure modes
+                end                    
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                              
+        end  % function                        
+        
+        function setMapBindingChannelName(self, mapIndex, bindingIndex, newValue, allOutputChannelNames)
+            if ws.isIndex(mapIndex) && 1<=mapIndex && mapIndex<=self.NMaps ,
+                item = self.Maps_{mapIndex} ;
+                item.setSingleChannelName(bindingIndex, newValue, allOutputChannelNames) ;
+            else
+                error('ws:stimulusLibrary:badMapIndex' , ...
+                      'Bad map index.') ;
+            end                
+        end
+            
+        function result = itemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
+            % The itemIndex is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                result = item.(propertyName)(bindingIndex) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                if isequal(propertyName,'Multiplier') ,
+                    result = item.ChannelName(bindingIndex) ;
+                else
+                    result = item.(propertyName){bindingIndex} ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function                        
+        
+        function setItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
+            % The index is the index within the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                item.(propertyName)(bindingIndex) = newValue ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                if isequal(propertyName, 'ChannelName')
+                    error('ws:stimulusLibrary:cantSetChannelName' , ...
+                          'Can''t set ChannelName via setItemBindingProperty().  Use setMapBindingChannelName().') ;
+                else
+                    if isequal(propertyName, 'Multiplier') ,
+                        item.(propertyName)(bindingIndex) = newValue ;
+                    else
+                        item.(propertyName){bindingIndex} = newValue ;
+                    end                        
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                              
+        end  % function                        
+        
+        function result = itemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
+                map = self.Maps_{mapIndex} ;
+                result = map.(propertyName) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
+                stimulus = self.Stimuli_{stimulusIndex} ;
+                result = stimulus.(propertyName) ;
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function                                
+        
+        function result = isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
+            % The index is the index with the class
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item with an empty class name') ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                item = self.Sequences_{itemIndex} ;
+                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
+                result = isempty(mapIndex) ;
+            elseif isequal(className,'ws.StimulusMap') ,
+                item = self.Maps_{itemIndex} ;
+                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
+                result = isempty(stimulusIndex) ;
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'Stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:noSuchItem' , ...
+                      'There is no item in the library with class name %s', className) ;
+            end                                        
+        end  % function
+
+        function result = isSelectedItemBindingTargetEmpty(self, bindingIndex)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;            
+            result = self.isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex) ;
+        end  % function
+        
+        function result = isAnItemSelected(self)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;            
+            result = ~isempty(className) && ~isempty(itemIndex) ;
+        end  % function
+
+        function result = isAnyBindingMarkedForDeletionForSelectedItem(self)
+            className = self.SelectedItemClassName ;
+            if isequal(className,'') ,
+                error('ws:stimulusLibrary:noItemSelected' , ...
+                      'There is no item selected') ;
+            elseif isequal(className,'ws.StimulusSequence') || isequal(className,'ws.StimulusMap'),
+                itemIndex = self.SelectedItemIndexWithinClass ;
+                if isempty(itemIndex) ,
+                    error('ws:stimulusLibrary:noItemSelected' , ...
+                          'There is no item selected') ;
+                else
+                    %item = self.Sequences_{itemIndex} ;
+                    if isequal(className,'ws.StimulusSequence') ,
+                        item = self.Sequences_{itemIndex} ;
+                    else
+                        item = self.Maps_{itemIndex} ;
+                    end
+                    isMarkedForDeletion = item.IsMarkedForDeletion ;
+                    result = any(isMarkedForDeletion) ;
+                end
+            elseif isequal(className,'ws.Stimulus') ,
+                error('ws:stimulusLibrary:stimuliLackBindings' , ...
+                      'The selected item is a stimulus, and stimuli do not have bindings') ;
+            else
+                error('ws:stimulusLibrary:internalError' , ...
+                      ['WaveSurfer has experienced an internal error: The stimulus library selected class name is an illegal value, %s.  ' ...
+                       'Please save your work, quit WaveSurfer, and notify the developers.'], className) ;
+            end                                        
+        end
+        
+        function overrideMapDuration(self, sweepDuration)
+            self.ExternalMapDuration_ = sweepDuration ;
+            self.AreMapDurationsOverridden_ = true ;
+        end  % function
+        
+        function releaseMapDuration(self)
+            self.AreMapDurationsOverridden_ = false ;
+            self.ExternalMapDuration_ = [] ;  % for tidyness
+        end  % function
+        
+        function result = areMapDurationsOverridden(self)
+            result = self.AreMapDurationsOverridden_ ;
+        end
+        
+        function result = outputableNames(self)
+            outputables = self.getOutputables_() ;
+            result = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;            
+        end
+        
+        function result = selectedOutputableProperty(self, propertyName)
+            outputable = self.selectedOutputable_ ;
+            if isempty(outputable) ,
+                result = [] ;
+            else
+                result = outputable.(propertyName) ;
+            end
+        end        
+        
+        function [data, nChannelsWithStimulus, mapName] = ...
+                calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
+            % nBoundChannels is the number of channels *in channelNames* for which
+            % a non-empty binding was found.
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
+            end
+            
+            % Create a timeline
+            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any            
+            sampleCount = round(duration * sampleRate);
+            dt=1/sampleRate;
+            t0=0;  % initial sample time
+            t=(t0+dt/2)+dt*(0:(sampleCount-1))';            
+              % + dt/2 is somewhat controversial, but in the common case
+              % that pulse durations are integer multiples of dt, it
+              % ensures that each pulse is exactly (pulseDuration/dt)
+              % samples long, and avoids other unpleasant pseudorandomness
+              % when stimulus discontinuities occur right at sample times
+            
+            % Create the data array  
+            nChannels=length(channelNames);
+            data = zeros(sampleCount, nChannels);
+            
+            % For each named channel, overwrite a col of data
+            map = self.Maps_{mapIndex} ;  % get the map
+            mapName = map.Name ;
+            boundChannelNames=map.ChannelName;
+            nChannelsWithStimulus = 0 ;
+            for iChannel = 1:nChannels ,
+                thisChannelName=channelNames{iChannel};
+                bindingIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
+                if isempty(bindingIndex) ,
+                    % do nothing
+                else
+                    indexOfThisStimulusInLibrary = map.IndexOfEachStimulusInLibrary{bindingIndex} ; 
+                    thisStimulus = self.Stimuli_{indexOfThisStimulusInLibrary}; 
+                    if isempty(thisStimulus) ,
+                        % do nothing
+                    else        
+                        % Calc the signal, scale it, overwrite the appropriate col of
+                        % data
+                        nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
+                        rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
+                        multiplier = map.Multiplier(bindingIndex) ;
+                        if isChannelAnalog(iChannel) ,
+                            data(:, iChannel) = multiplier*rawSignal ;
+                        else
+                            data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+                        end
+                    end
+                end
+            end
+        end  % function
+        
+        function stimulusMapIndex = getCurrentStimulusMapIndex(self, episodeIndexWithinSweep, doRepeatSequence)
+            % Calculate the episode index
+            %episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
+            
+            % Determine the stimulus map, given self.SelectedOutputableCache_ and other
+            % things
+            outputable = self.selectedOutputable_() ;
+            if isempty(outputable) ,
+                isThereAMapForThisEpisode = false ;
+                isOutputableASequence = false ;  % arbitrary: doesn't get used if isThereAMap==false
+                bindingIndexWithinSequence = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+            else
+                if isa(outputable,'ws.StimulusMap')
+                    isOutputableASequence = false ;
+                    nMapsInOutputable = 1 ;
+                else
+                    % outputable must be a sequence                
+                    isOutputableASequence = true ;
+                    nMapsInOutputable = outputable.NBindings ;
+                end
+
+                % Sort out whether there's a map for this episode
+                if episodeIndexWithinSweep <= nMapsInOutputable ,
+                    isThereAMapForThisEpisode = true ;
+                    bindingIndexWithinSequence = episodeIndexWithinSweep ;
+                else
+                    if doRepeatSequence ,
+                        if nMapsInOutputable>0 ,
+                            isThereAMapForThisEpisode = true ;
+                            bindingIndexWithinSequence = mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1 ;
+                        else
+                            % Special case for when a sequence has zero
+                            % maps in it
+                            isThereAMapForThisEpisode = false ;
+                            bindingIndexWithinSequence = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+                        end                            
+                    else
+                        isThereAMapForThisEpisode = false ;
+                        bindingIndexWithinSequence = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+                    end
+                end
+            end
+            if isThereAMapForThisEpisode ,
+                if isOutputableASequence ,
+                    stimulusMapIndex = outputable.IndexOfEachMapInLibrary{bindingIndexWithinSequence} ;
+                    %stimulusMapIndex = selectedOutputable.Maps{indexOfMapWithinOutputable} ;
+                else                    
+                    % this means the outputable is a "naked" map
+                    stimulusMapIndex = self.SelectedOutputableIndex_ ;
+                end
+            else
+                stimulusMapIndex = [] ;
+            end
+        end  % function
+        
+    end  % public methods block
+    
+    
+    
+    
+    
+    
+    
+    
     methods (Access=protected)
+        function value = item_(self, className, itemIndex)
+            if isempty(className) ,
+                value=[];  % no item is currently selected
+            elseif isequal(className,'ws.StimulusSequence') ,
+                value=self.Sequences_{itemIndex} ;
+            elseif isequal(className,'ws.StimulusMap') ,                
+                value=self.Maps_{itemIndex} ;
+            elseif isequal(className,'ws.Stimulus') ,                
+                value=self.Stimuli_{itemIndex} ;
+            else
+                value=[];  % shouldn't happen       
+            end
+        end  % function        
+        
         function value = selectedOutputable_(self)
             if isempty(self.SelectedOutputableClassName_) ,
                 value=[];  % no item is currently selected
@@ -791,173 +1661,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             maps = self.Maps_ ;
             out = [sequences maps] ;
         end  % function        
-    end  % protected methods block
         
-    methods
-        function result = indexOfMapWithName(self, mapName)
-            if ws.isString(mapName) ,
-                mapNames=cellfun(@(map)(map.Name),self.Maps_,'UniformOutput',false);
-                result = find(strcmp(mapName, mapNames), 1);
-            else
-                result = [] ;
-            end
-        end  % function
-        
-        function out = indexOfStimulusWithName(self, name)
-            stimulusNames=cellfun(@(stimulus)(stimulus.Name),self.Stimuli_,'UniformOutput',false);
-            idx = find(strcmp(name, stimulusNames), 1);            
-            if isempty(idx)
-                out = [] ;
-            else
-                out = idx ;
-            end
-        end  % function
-        
-%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-%             self.broadcast('Update');            
-%         end
-        
-        function result=isSequenceAMatch(self,querySequence)
-            result=cellfun(@(sequence)(sequence==querySequence),self.Sequences_);
-        end
-        
-        function result=isMapAMatch(self,queryMap)
-            result=cellfun(@(item)(item==queryMap),self.Maps_);
-        end
-        
-        function result=isStimulusAMatch(self,queryStimulus)
-            result=cellfun(@(item)(item==queryStimulus),self.Stimuli_);
-        end
-        
-        function result=isSequenceInLibrary(self,queryItem)
-            result=any(self.isSequenceAMatch(queryItem));
-        end
-        
-        function result=isMapInLibrary(self,queryItem)
-            result=any(self.isMapAMatch(queryItem));
-        end
-        
-        function result=isStimulusInLibrary(self,queryStimulus)
-            result=any(self.isStimulusAMatch(queryStimulus));
-        end
-        
-        function result=getSequenceIndex(self,queryItem)
-            result=find(self.isSequenceAMatch(queryItem),1);
-        end
-        
-        function result=getMapIndex(self,queryItem)
-            result=find(self.isMapAMatch(queryItem),1);
-        end
-        
-        function result=getStimulusIndex(self,queryStimulus)
-            result=find(self.isStimulusAMatch(queryStimulus),1);
-        end
-        
-        function renameChannel(self, oldValue, newValue)
-            maps = self.Maps_ ;
-            for i = 1:length(maps) ,
-                map = maps{i} ;
-                map.renameChannel(oldValue, newValue) ;               
-            end
-            %self.broadcast('Update');            
-        end
-        
-        function result = areItemNamesDistinct(self) 
-            % Returns true iff all item names are distinct.  This is an
-            % object invariant.  I.e. it should always return true.
-            itemNames = self.itemNames() ;
-            uniqueItemNames = unique(itemNames) ;
-            result = (length(itemNames)==length(uniqueItemNames)) ;            
-        end
-        
-        function result = itemNames(self)
-            sequenceNames=cellfun(@(item)(item.Name),self.Sequences_,'UniformOutput',false);
-            mapNames=cellfun(@(item)(item.Name),self.Maps_,'UniformOutput',false);
-            stimulusNames=cellfun(@(item)(item.Name),self.Stimuli_,'UniformOutput',false);
-            result = horzcat(sequenceNames, mapNames, stimulusNames) ;
-        end  % function
-        
-        function result = isAnItemName(self, name)
-            if ws.isString(name) ,                
-                itemNames = self.itemNames() ;
-                result = ismember(name,itemNames) ;
-            else
-                result = false ;
-            end                
-        end  % function
-        
-        function debug(self) %#ok<MANU>
-            keyboard
-        end
-    end  % public methods
-        
-    methods        
-        function addNewSequence(self)
-            self.addNewSequence_() ;
-        end  % function
-        
-        function addNewMap(self)
-            self.addNewMap_() ;
-        end  % function
-                 
-        function addNewStimulus(self, varargin)
-            self.addNewStimulus_(varargin{:}) ;
-        end  % function
-               
-        function duplicateSelectedItem(self)
-            %self.disableBroadcasts();
-
-            % Get a handle to the item to be duplicated
-            originalItem = self.SelectedItem ;  % handle
-            
-            % Make a new item (which will start out with a name like
-            % 'Untitled stimulus 3'
-            if isa(originalItem,'ws.StimulusSequence') ,
-                newItem = self.addNewSequence() ;
-            elseif isa(originalItem,'ws.StimulusMap')
-                newItem = self.addNewMap() ;
-            else 
-                newItem = self.addNewStimulus(originalItem.TypeString) ;
-            end
-            
-            % Copy the settings from the original item
-            newItem.mimic(originalItem) ;
-            
-            % At the moment, the name of newItem is the same as that of
-            % selectedItem.  This violates one of the StimulusLibrary
-            % invariants, that all item names within the library must be distinct.
-            % So we generate new names until we find a distinct one.
-            itemNames = self.itemNames() ;
-            originalItemName = originalItem.Name ;
-            for copyIndex = 1:length(self.getItems_()) ,  
-                % We will never have to try more than this number of
-                % putative names, because each item has only one name, and
-                % there are only so many items.
-                if copyIndex==1 ,
-                    putativeNewItemName = sprintf('%s (copy)', originalItemName) ;
-                else
-                    putativeNewItemName = sprintf('%s (copy %d)', originalItemName, copyIndex) ;
-                end
-                isNameCollision = ismember(putativeNewItemName, itemNames) ;
-                if ~isNameCollision ,
-                    newItem.Name = putativeNewItemName ;
-                    break
-                end
-            end
-            
-            %self.SelectedItem = newItem ;
-            self.setSelectedItemByHandle_(newItem) ;
-            
-            %self.enableBroadcastsMaybe();
-            %self.broadcast('Update');
-        end % function
-
-%         function didChangeNumberOfOutputChannels(self)
-%             self.broadcast('Update') ;
-%         end
-    end  % public methods block
-    
-    methods (Access = protected)        
         function setSelectedItemByHandle_(self, newValue)
             if ws.isASettableValue(newValue) ,
                 if isempty(newValue) ,
@@ -1216,41 +1920,19 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 
         function out = generateUntitledSequenceName_(self)
             names=cellfun(@(element)(element.Name),self.Sequences_,'UniformOutput',false);
-            out = ws.StimulusLibrary.generateUntitledItemName_('sequence',names);
+            out = ws.StimulusLibrary.generateUntitledItemName('sequence',names);
         end  % function
         
         function out = generateUntitledMapName_(self)
             names=cellfun(@(element)(element.Name),self.Maps_,'UniformOutput',false);
-            out = ws.StimulusLibrary.generateUntitledItemName_('map',names);
+            out = ws.StimulusLibrary.generateUntitledItemName('map',names);
         end  % function
         
         function out = generateUntitledStimulusName_(self)
             names=cellfun(@(element)(element.Name),self.Stimuli_,'UniformOutput',false);
-            out = ws.StimulusLibrary.generateUntitledItemName_('stimulus',names);
+            out = ws.StimulusLibrary.generateUntitledItemName('stimulus',names);
         end  % function
-    end  % protected methods
-            
-    methods (Static = true, Access = protected)        
-        function out = generateUntitledItemName_(itemTypeString, currentNames)
-            idx = 1;
-            while true
-                name = sprintf('Untitled %s %d', itemTypeString, idx);
-                if ~ismember(name, currentNames)
-                    out = name;
-                    break;
-                end
-                idx = idx + 1;
-            end
-        end
-    end  % methods
-    
-    methods
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusLibrary');
-        end  % function    
-    end  % methods
-    
-    methods (Access=protected)
+        
        function value=isequalElement(self,other)
             % Test for "value equality" of two scalar StimulusMap's
             propertyNamesToCompare = ...
@@ -1258,33 +1940,16 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                  'SelectedOutputableClassName' 'SelectedOutputableIndex'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function       
-    end  % methods
-    
-    methods (Access=protected)
-        function out = getPropertyValue_(self, name)
-            out = self.(name);
-        end  % function
+       
+       function out = getPropertyValue_(self, name)
+           out = self.(name);
+       end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
-        function setPropertyValue_(self, name, value)
-            self.(name) = value;
-        end  % function
-    end
+       % Allows access to protected and protected variables from ws.Coding.
+       function setPropertyValue_(self, name, value)
+           self.(name) = value;
+       end  % function
     
-    methods         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
-            % delete some property names 
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'Stimuli', 'Maps', 'Sequences', ...
-                               'SelectedStimulus', 'SelectedMap', 'SelectedSequence', 'SelectedItem', ...
-                               'SelectedItemClassName', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex', ...
-                               'SelectedOutputableClassName', 'SelectedOutputableIndex'}) ;
-        end  % function 
-    end  % public methods block
-    
-    methods (Access=protected)
         function sanitizePersistedState_(self) 
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -1373,607 +2038,64 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
         
-        function sequence = addNewSequence_(self)
+        function [sequence, sequenceIndex] = addNewSequence_(self)
             %self.disableBroadcasts();
             sequence=ws.StimulusSequence(self);
             sequence.Name = self.generateUntitledSequenceName_();
             self.Sequences_{end + 1} = sequence;
+            sequenceIndex = length(self.Sequences_) ;
             self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
             self.SelectedSequenceIndex_ = length(self.Sequences_) ;
             %self.enableBroadcastsMaybe();
             %self.broadcast('Update');
         end  % function
         
-        function map = addNewMap_(self)
+        function [map, mapIndex] = addNewMap_(self)
             %self.disableBroadcasts();
             map=ws.StimulusMap(self);
             map.Name = self.generateUntitledMapName_();
             self.Maps_{end + 1} = map;
+            mapIndex = length(self.Maps_) ;
             self.SelectedItemClassName_ = 'ws.StimulusMap' ;
             self.SelectedMapIndex_ = length(self.Maps_) ;
             %self.enableBroadcastsMaybe();
             %self.broadcast('Update');
         end  % function
                  
-        function stimulus = addNewStimulus_(self,typeString)
-            if ~exist('typeString', 'var') ,
-                typeString = 'SquarePulse' ;
-            end
-            if ws.isString(typeString) && ismember(typeString,ws.Stimulus.AllowedTypeStrings) ,
-                %self.disableBroadcasts();
-                stimulus=ws.Stimulus(self,'TypeString',typeString);
-                stimulus.Name = self.generateUntitledStimulusName_();
-                self.Stimuli_{end + 1} = stimulus;
-                self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
-                %self.enableBroadcastsMaybe();
-            end
-            %self.broadcast('Update');
+        function [stimulus, stimulusIndex] = addNewStimulus_(self)
+            typeString = 'SquarePulse' ;
+            stimulus=ws.Stimulus(self,'TypeString',typeString);
+            stimulus.Name = self.generateUntitledStimulusName_();
+            self.Stimuli_{end + 1} = stimulus;
+            stimulusIndex = length(self.Stimuli_) ;
+            self.SelectedItemClassName_ = 'ws.Stimulus' ;
+            self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
         end  % function        
-    end  % protected methods block
-    
-    methods
-        function addBindingToSelectedItem(self)
-            selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) && (isa(selectedItem,'ws.StimulusSequence') || isa(selectedItem,'ws.StimulusMap')) ,
-                selectedItem.addBinding() ;
-            else
-                % Can't add a map to anything but a sequence, so do nothing
-            end
-        end  % method
         
-        function deleteMarkedMapsFromSequence(self)
-            selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
-                selectedItem.deleteMarkedMaps() ;
-            end
-        end  % method
-        
-%         function addChannelToSelectedItem(self)
-%             selectedItem = self.SelectedItem ;
-%             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
-%                 selectedItem.addBinding() ;
-%             else
-%                 % Can't add a channel/binding to anything but a map, so do nothing
-%             end
-%         end  % function        
-        
-        function deleteMarkedChannelsFromSelectedItem(self)
-            selectedItem = self.SelectedItem ;
-            if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
-                selectedItem.deleteMarkedBindings();
-            else
-                % Can't delete bindings from anything but a map, so do nothing
-            end
-        end  % function
-
-        function setSelectedItemProperty(self, propertyName, newValue)
-%             selectedItem = self.SelectedItem ;
-%             if ~isempty(selectedItem) ,
-%                 selectedItem.(propertyName) = newValue ;
-%             end
-            className = self.SelectedItemClassName ;
-            index = self.SelectedItemIndexWithinClass ;
-            self.setItemProperty(className, index, propertyName, newValue) ;
-        end  % method        
-        
-%         function setSelectedItemName(self, newName)
-%             selectedItem = self.SelectedItem ;
-%             if isempty(selectedItem) ,
-%                 self.broadcast('Update') ;
-%             else                
-%                 selectedItem.Name = newName ;
-%             end
-%         end  % method        
-% 
-%         function setSelectedItemDuration(self, newValue)
-%             selectedItem=self.SelectedItem;
-%             if isempty(selectedItem) ,
-%                 self.broadcast('Update') ;
-%             else
-%                 selectedItem.Duration = newValue ;
-%             end
-%         end  % method        
-        
-%         function setSelectedStimulusProperty(self, propertyName, newValue)
-%             selectedStimulus = self.SelectedStimulus ;
-%             if isempty(selectedStimulus) ,
-%                 self.broadcast('Update') ;
-%             else
-%                 selectedStimulus.(propertyName) = newValue ;  % this will do the broadcast
-%             end
-%         end  % method        
-        
-        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
-            % This means one of the additional parameter edits was actuated
-            selectedStimulus = self.SelectedStimulus ;  
-            if isempty(selectedStimulus) ,
-                %self.broadcast('Update') ;
-            else
-                additionalParameterNames = selectedStimulus.Delegate.AdditionalParameterNames ;
-                if ws.isIndex(iParameter) && 1<=iParameter && iParameter<=length(additionalParameterNames) ,
-                    propertyName = additionalParameterNames{iParameter} ;
-                    selectedStimulus.Delegate.(propertyName) = newString ;  % delegate will check validity
-                else
-                    %self.broadcast('Update') ;
-                end
-            end
-        end  % function
-
-        function setBindingOfSelectedSequenceToNamedMap(self, bindingIndex, mapName) 
-            selectedSequence = self.SelectedSequence ;  
-            if isempty(selectedSequence) ,
-                error('ws:stimulusLibrary:noSelectedSequence' , ...
-                      'No sequence is selected in the stimulus library') ;
-            else                
-                if ws.isString(mapName) ,
-                    indexOfMapInLibrary = self.indexOfMapWithName(mapName) ;  % can be empty
-                    selectedSequence.setBindingTargetByIndex(bindingIndex, indexOfMapInLibrary) ;  % if isempty(indexOfMap), the map is is "unspecified"
-                else
-                error('ws:stimulusLibrary:noSuchMap' , ...
-                      'There is no map in the library by that name') ;
-                end                    
-            end
-        end  % method
-
-        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
-            selectedSequence = self.SelectedSequence ;  
-            if isempty(selectedSequence) ,
-                %self.broadcast('Update') ;
-            else                
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
-                    newValueAsLogical = logical(newValue) ;
-                    if ws.isIndex(indexOfElementWithinSequence) && ...
-                            1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps_) ,
-                        selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
-                    else
-                        %self.broadcast('Update') ;
-                    end
-                else
-                    %self.broadcast('Update') ;
-                end                    
-            end
-        end  % method
-        
-        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
-            selectedMap = self.SelectedMap ;  
-            if ~isempty(selectedMap) ,
-                if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
-                    switch propertyName ,
-                        case 'IsMarkedForDeletion' ,
-                            selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
-                        case 'Multiplier' ,
-                            selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
-                        case 'StimulusName' ,
-                            stimulusIndexInLibrary = self.indexOfStimulusWithName(stimulusName) ;
-                            selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
-                        case 'ChannelName' ,
-                            selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
-                        otherwise ,
-                            % do nothing
-                    end
-                end
-            end
-        end  % method
-    
-        function plotSelectedItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
-            selectedItem=self.SelectedItem;
-            if isempty(selectedItem) ,
-                return
-            end
-            if isa(selectedItem, 'ws.StimulusSequence') ,
-                self.StimulusLibrary.plotStimulusSequence(figureGH, selectedItem, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isa(selectedItem, 'ws.StimulusMap') ,
-                axesGH = [] ;  % means to make own axes
-                self.StimulusLibrary.plotStimulusMap(figureGH, axesGH, selectedItem, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isa(selectedItem, 'ws.Stimulus') ,
-                axesGH = [] ;  % means to make own axes
-                self.StimulusLibrary.plotStimulus(figureGH, axesGH, selectedItem, samplingRate, channelNames, isChannelAnalog) ;
-            else
-                % this should never happen
-            end                            
-            set(figureGH, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
-        end  % function                
-        
-        function result = propertyFromEachItemInClass(self, className, propertyName) 
-            % Result is a cell array, even it seems like it could/should be another kind of array
-            if isequal(className, 'ws.StimulusSequence') ,
-                items = self.Sequences_ ;
-            elseif isequal(className, 'ws.StimulusMap') ,
-                items = self.Maps_ ;
-            elseif isequal(className, 'ws.Stimulus') ,
-                items = self.Stimuli_ ;
-            else
-                items = cell(1,0) ;
-            end                            
-            result = cellfun(@(item)(item.(propertyName)), items, 'UniformOutput', false) ;
-        end  % function
-        
-        function result = indexOfClassSelection(self, className)
-            if isequal(className, 'ws.StimulusSequence') ,
-                result = self.SelectedSequenceIndex_ ;
-            elseif isequal(className, 'ws.StimulusMap') ,
-                result = self.SelectedMapIndex_ ;
-            elseif isequal(className, 'ws.Stimulus') ,
-                result = self.SelectedStimulusIndex_ ;
-            else
-                result = [] ;
-            end                            
-        end  % method                    
-        
-        function result = classSelectionProperty(self, className, propertyName)
-            if isequal(className, 'ws.StimulusSequence') ,
-                result = self.SelectedSequence.(propertyName) ;
-            elseif isequal(className, 'ws.StimulusMap') ,
-                result = self.SelectedMap.(propertyName) ;
-            elseif isequal(className, 'ws.Stimulus') ,
-                result = self.SelectedStimulus.(propertyName) ;
-            else
-                result = [] ;
-            end                            
-        end  % method        
-        
-        function result = propertyForElementOfSelectedItem(self, indexOfElementWithinItem, propertyName)
-            className = self.SelectedItemClassName_ ;
-            if isempty(className) ,
-                error('ws:stimulusLibrary:noSelectedItem' , ...
-                      'No item is selected in the stimulus library') ;
-            elseif isequal(className, 'ws.StimulusSequence') ,
-                selectedSequenceIndex = self.SelectedSequenceIndex_ ;
-                if isempty(selectedSequenceIndex) ,
-                    error('ws:stimulusLibrary:noSelectedItem' , ...
-                          'No item is selected in the stimulus library') ;
-                else
-                    selectedSequence = self.Sequence_{selectedSequenceIndex} ;
-                    result = selectedSequence.(propertyName)(indexOfElementWithinItem) ;                    
-                end
-            elseif isequal(className, 'ws.StimulusMap') ,
-                selectedMapIndex = self.SelectedMapIndex_ ;
-                if isempty(selectedMapIndex) ,
-                    error('ws:stimulusLibrary:noSelectedItem' , ...
-                          'No item is selected in the stimulus library') ;
-                else                
-                    selectedMap = self.Maps_{selectedMapIndex} ;
-                    switch propertyName ,
-                        case 'IsMarkedForDeletion' ,
-                            result = selectedMap.IsMarkedForDeletion(indexOfElementWithinItem) ;
-                        case 'Multiplier' ,
-                            result = selectedMap.Multiplier(indexOfElementWithinItem) ;                            
-                        case 'ChannelName' ,
-                            result = selectedMap.ChannelName{indexOfElementWithinItem} ;                            
-                        case 'IndexOfStimulusInLibrary' ,
-                            result = selectedMap.IndexOfStimulusInLibrary(indexOfElementWithinItem) ;                            
-                        otherwise ,
-                            error('ws:stimulusLibrary:noSuchProperty' , ...
-                                  'Stimulus map elements do not have a property %s', propertyName) ;
-                    end
-                end
-            elseif isequal(className, 'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliHaveNoElements' , ...
-                      'Can''t get an element property of a stimulus, because stimuli have no subelements.') ;
-            else
-                error('ws:internalError', ...
-                      ['WaveSurfer had an internal error with codeword Pikachu.  ' ...
-                       'Please save your work, restart WaveSurfer, and report this error to the WaveSurfer developers.']) ;
-            end                            
-        end  % function                
-
-        function result = selectedItemProperty(self, propertyName)
-            className = self.SelectedItemClassName ;
-            index = self.SelectedItemIndexWithinClass ;
-            result = self.itemProperty(className, index, propertyName) ;
-        end
-
-        function result = selectedItemBindingProperty(self, bindingIndex, propertyName)
-            className = self.SelectedItemClassName ;
-            itemIndex = self.SelectedItemIndexWithinClass ;
-            result = self.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
-        end
-        
-        function result = selectedItemBindingTargetProperty(self, bindingIndex, propertyName)
-            className = self.SelectedItemClassName ;
-            itemIndex = self.SelectedItemIndexWithinClass ;
-            result = self.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
-        end
-        
-        function result = itemProperty(self, className, index, propertyName)
-            % The index is the index with the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                item = self.Sequences_{index} ;
-                result = item.(propertyName) ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
-                    result = self.ExternalMapDuration_ ;
-                else
-                    item = self.Maps_{index} ;
-                    result = item.(propertyName) ;
-                end
-            elseif isequal(className,'ws.Stimulus') ,
-                item = self.Stimuli_{index} ;
-                if isprop(item, propertyName) ,
-                    result = item.(propertyName) ;
-                elseif isprop(item.Delegate, propertyName) ,
-                    result = item.Delegate.(propertyName) ;
-                else                    
-                    result = item.(propertyName) ;  % This will error, but will return the same error type as other failure modes
-                end                    
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                              
-        end  % function                        
-        
-        function setItemProperty(self, className, index, propertyName, newValue)
-            % The index is the index within the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
-                end
-                item = self.Sequences_{index} ;
-                item.(propertyName) = newValue ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
-                end
-                if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
-                    error('ws:stimulusLibrary:cantSetOverriddenProperty' , ...
-                          'Can''t set the value of an overridden property') ;
-                else
-                    item = self.Maps_{index} ;
-                    item.(propertyName) = newValue ;
-                end
-            elseif isequal(className,'ws.Stimulus') ,
-                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
-                end
-                item = self.Stimuli_{index} ;
-                if isprop(item, propertyName) ,
-                    item.(propertyName) = newValue ;
-                elseif isprop(item.Delegate, propertyName) ,
-                    item.Delegate.(propertyName) = newValue ;
-                else                    
-                    item.(propertyName) = newValue ;  % This will error, but will return the same error type as other failure modes
-                end                    
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                              
-        end  % function                        
-        
-        function setMapBindingChannelName(self, mapIndex, bindingIndex, newValue, allOutputChannelNames)
-            if ws.isIndex(mapIndex) && 1<=mapIndex && mapIndex<=self.NMaps ,
-                item = self.Maps_{mapIndex} ;
-                item.setSingleChannelName(bindingIndex, newValue, allOutputChannelNames) ;
-            else
-                error('ws:stimulusLibrary:badMapIndex' , ...
-                      'Bad map index.') ;
-            end                
-        end
-            
-        function result = itemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
-            % The itemIndex is the index within the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                item = self.Sequences_{itemIndex} ;
-                result = item.(propertyName)(bindingIndex) ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                item = self.Maps_{itemIndex} ;
-                if isequal(propertyName,'ChannelName') ,
-                    result = item.ChannelName{bindingIndex} ;  % hack
-                else
-                    result = item.(propertyName)(bindingIndex) ;
-                end
-            elseif isequal(className,'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliLackBindings' , ...
-                      'Stimuli do not have bindings') ;
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                                        
-        end  % function                        
-        
-        function setItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
-            % The index is the index within the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                item = self.Sequences_{itemIndex} ;
-                item.(propertyName)(bindingIndex) = newValue ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                item = self.Maps_{itemIndex} ;
-                if isequal(propertyName, 'ChannelName')
-                    error('ws:stimulusLibrary:cantSetChannelName' , ...
-                          'Can''t set ChannelName via setItemBindingProperty().  Use setMapBindingChannelName().') ;
-                else
-                    item.(propertyName)(bindingIndex) = newValue ;
-                end
-            elseif isequal(className,'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliLackBindings' , ...
-                      'Stimuli do not have bindings') ;
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                              
-        end  % function                        
-        
-        function result = itemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
-            % The index is the index with the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                item = self.Sequences_{itemIndex} ;
-                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
-                map = self.Maps_{mapIndex} ;
-                result = map.(propertyName) ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                item = self.Maps_{itemIndex} ;
-                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
-                stimulus = self.Stimuli_{stimulusIndex} ;
-                result = stimulus.(propertyName) ;
-            elseif isequal(className,'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliLackBindings' , ...
-                      'Stimuli do not have bindings') ;
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                                        
-        end  % function                                
-        
-        function result = isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
-            % The index is the index with the class
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item with an empty class name') ;
-            elseif isequal(className,'ws.StimulusSequence') ,
-                item = self.Sequences_{itemIndex} ;
-                mapIndex = item.IndexOfEachMapInLibrary{bindingIndex} ;
-                result = isempty(mapIndex) ;
-            elseif isequal(className,'ws.StimulusMap') ,
-                item = self.Maps_{itemIndex} ;
-                stimulusIndex = item.IndexOfEachStimulusInLibrary{bindingIndex} ;
-                result = isempty(stimulusIndex) ;
-            elseif isequal(className,'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliLackBindings' , ...
-                      'Stimuli do not have bindings') ;
-            else
-                error('ws:stimulusLibrary:noSuchItem' , ...
-                      'There is no item in the library with class name %s', className) ;
-            end                                        
-        end  % function
-
-        function result = isSelectedItemBindingTargetEmpty(self, bindingIndex)
-            className = self.SelectedItemClassName ;
-            itemIndex = self.SelectedItemIndexWithinClass ;            
-            result = self.isItemBindingTargetEmpty(self, className, itemIndex, bindingIndex) ;
-        end  % function
-        
-        function result = isAnItemSelected(self)
-            className = self.SelectedItemClassName ;
-            itemIndex = self.SelectedItemIndexWithinClass ;            
-            result = ~isempty(className) && ~isempty(itemIndex) ;
-        end  % function
-
-        function result = isAnyBindingMarkedForDeletionForSelectedItem(self)
-            className = self.SelectedItemClassName ;
-            if isequal(className,'') ,
-                error('ws:stimulusLibrary:noItemSelected' , ...
-                      'There is no item selected') ;
-            elseif isequal(className,'ws.StimulusSequence') || isequal(className,'ws.StimulusMap'),
-                itemIndex = self.SelectedItemIndexWithinClass ;
-                if isempty(itemIndex) ,
-                    error('ws:stimulusLibrary:noItemSelected' , ...
-                          'There is no item selected') ;
-                else
-                    %item = self.Sequences_{itemIndex} ;
-                    if isequal(className,'ws.StimulusSequence') ,
-                        item = self.Sequences_{itemIndex} ;
-                    else
-                        item = self.Maps_{itemIndex} ;
-                    end
-                    isMarkedForDeletion = item.IsMarkedForDeletion ;
-                    result = any(isMarkedForDeletion) ;
-                end
-            elseif isequal(className,'ws.Stimulus') ,
-                error('ws:stimulusLibrary:stimuliLackBindings' , ...
-                      'The selected item is a stimulus, and stimuli do not have bindings') ;
-            else
-                error('ws:stimulusLibrary:internalError' , ...
-                      ['WaveSurfer has experienced an internal error: The stimulus library selected class name is an illegal value, %s.  ' ...
-                       'Please save your work, quit WaveSurfer, and notify the developers.'], className) ;
-            end                                        
-        end
-        
-        function overrideMapDuration(self, sweepDuration)
-            self.ExternalMapDuration_ = sweepDuration ;
-            self.AreMapDurationsOverridden_ = true ;
-        end  % function
-        
-        function releaseMapDuration(self)
-            self.AreMapDurationsOverridden_ = false ;
-            self.ExternalMapDuration_ = [] ;  % for tidyness
-        end  % function
-        
-        function result = areMapDurationsOverridden(self)
-            result = self.AreMapDurationsOverridden_ ;
-        end
-        
-        function result = outputableNames(self)
-            outputables = self.getOutputables_() ;
-            result = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;            
-        end
-        
-        function result = selectedOutputableProperty(self, propertyName)
-            outputable = self.selectedOutputable_ ;
-            if isempty(outputable) ,
-                result = [] ;
-            else
-                result = outputable.(propertyName) ;
-            end
-        end        
-    end  % public methods block
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    methods (Static)        
-        function plotStimulusSequence(figureGH, sequence, sampleRate, channelNames, isChannelAnalog)
+        function plotStimulusSequenceBang_(self, figureGH, sequenceIndex, sampleRate, channelNames, isChannelAnalog)
             % Plot the current stimulus sequence in figure figureGH
-            maps = sequence.Maps_ ;
-            nMaps=length(maps);
-            plotHeight=1/nMaps;
-            for idx = 1:nMaps ,
+            sequence = self.Sequences_{sequenceIndex} ;
+            nBindings = sequence.NBindings ;
+            plotHeight = 1/nBindings ;
+            for bindingIndex = 1:nBindings ,
                 % subplot doesn't allow for direct specification of the
                 % target figure
                 ax=axes('Parent',figureGH, ...
-                        'OuterPosition',[0 1-idx*plotHeight 1 plotHeight]);
-                map=maps{idx};
-                ws.StimulusLibrary.plotStimulusMap_(figureGH, ax, map, sampleRate, channelNames, isChannelAnalog) ;
-                ylabel(ax,sprintf('Map %d',idx),'FontSize',10,'Interpreter','none') ;
+                        'OuterPosition',[0 1-bindingIndex*plotHeight 1 plotHeight]);
+                mapIndex = sequence.IndexOfEachMapInLibrary{bindingIndex} ;
+                self.plotStimulusMapBangBang_(figureGH, ax, mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+                ylabel(ax,sprintf('Map %d',bindingIndex),'FontSize',10,'Interpreter','none') ;
             end
         end  % function
         
-        function plotStimulusMap(fig, ax, map, sampleRate, channelNames, isChannelAnalog)
+        function plotStimulusMapBangBang_(self, fig, ax, mapIndex, sampleRate, channelNames, isChannelAnalog)
             if ~exist('ax','var') || isempty(ax)
                 % Make our own axes
                 ax = axes('Parent',fig);
             end            
             
             % calculate the signals
-            data = map.calculateSignals(sampleRate,channelNames,isChannelAnalog);
+            [data, ~, mapName] = self.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
             n=size(data,1);
             nChannels = length(channelNames) ;
             %assert(nChannels==size(data,2)) ;
@@ -1988,9 +2110,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             
             %set(ax, 'NextPlot', 'Add');
 
-            % Get the list of all the channels in the stimulation subsystem
-            stimulation=stimulusLibrary.Parent;
-            channelNames=stimulation.ChannelName;
+%             % Get the list of all the channels in the stimulation subsystem
+%             stimulation=stimulusLibrary.Parent;
+%             channelNames=stimulation.ChannelName;
             
             for idx = 1:nChannels ,
                 % Determine the index of the output channel among all the
@@ -2016,16 +2138,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
             legend(ax, channelNames, 'Interpreter', 'None');
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-            ylabel(ax,map.Name,'FontSize',10,'Interpreter','none');
+            ylabel(ax,mapName,'FontSize',10,'Interpreter','none');
         end  % function
 
-        function plotStimulus(fig, ax, stimulus, sampleRate)
+        function plotStimulusBangBang_(self, fig, ax, stimulusIndex, sampleRate)
             %fig = self.PlotFigureGH_ ;            
             if ~exist('ax','var') || isempty(ax) ,
                 ax = axes('Parent',fig) ;
             end
             
             dt=1/sampleRate;  % s
+            stimulus = self.Stimuli_{stimulusIndex} ;
             T=stimulus.EndTime;  % s
             n=round(T/dt);
             t = dt*(0:(n-1))';  % s
@@ -2040,7 +2163,28 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
         end  % method        
-        
+    end  % protected
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    methods (Static)        
         function translatedItem=translate(item,dictionary,translatedDictionary)
             if isempty(item)
                 translatedItem=[];
@@ -2094,5 +2238,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 end
             end
         end  % function        
+        
+        function out = generateUntitledItemName(itemTypeString, currentNames)
+            idx = 1;
+            while true
+                name = sprintf('Untitled %s %d', itemTypeString, idx);
+                if ~ismember(name, currentNames)
+                    out = name;
+                    break;
+                end
+                idx = idx + 1;
+            end
+        end        
     end  % static methods
 end  % classdef

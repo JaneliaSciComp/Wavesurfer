@@ -48,7 +48,7 @@ classdef Refiller < handle
         TheFiniteDigitalOutputTask_ = []
         IsInTaskForEachAOChannel_
         IsInTaskForEachDOChannel_        
-        SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
+        %SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
     end
     
@@ -529,7 +529,7 @@ classdef Refiller < handle
             %
             % Clear the stimulation stuff
             %
-            self.SelectedOutputableCache_ = [];
+            %self.SelectedOutputableCache_ = [];
             
             % Disarm the tasks
             self.TheFiniteAnalogOutputTask_.disarm();
@@ -757,7 +757,7 @@ classdef Refiller < handle
 %         end  % method        
         
         function stoppingRunStimulation_(self)
-            self.SelectedOutputableCache_ = [];
+            %self.SelectedOutputableCache_ = [];
 
             % Disarm the tasks
             self.TheFiniteAnalogOutputTask_.disarm();
@@ -810,7 +810,7 @@ classdef Refiller < handle
         end  % function        
         
         function abortingRunStimulation_(self)
-            self.SelectedOutputableCache_ = [];
+            %self.SelectedOutputableCache_ = [];
             
             % Disarm the tasks (check that they exist first, since this
             % gets called in situations where something has gone wrong)
@@ -841,11 +841,12 @@ classdef Refiller < handle
             self.IsArmedOrStimulating_ = true;
             
             % Get the current stimulus map
-            stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+            stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinSweep, self.DoRepeatSequence_) ;
+            %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
 
             % Set the channel data in the tasks
-            self.setAnalogChannelData_(stimulusMap, indexOfEpisodeWithinSweep) ;
-            self.setDigitalChannelData_(stimulusMap, indexOfEpisodeWithinSweep) ;
+            self.setAnalogChannelData_(stimulusMapIndex, indexOfEpisodeWithinSweep) ;
+            self.setDigitalChannelData_(stimulusMapIndex, indexOfEpisodeWithinSweep) ;
 
             % Start the digital task (which will then wait for a trigger)
             self.TheFiniteDigitalOutputTask_.start() ; 
@@ -878,73 +879,80 @@ classdef Refiller < handle
             end
         end  % function
         
-        function stimulusMap = getCurrentStimulusMap_(self, episodeIndexWithinSweep)
-            % Calculate the episode index
-            %episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
-            
-            % Determine the stimulus map, given self.SelectedOutputableCache_ and other
-            % things
-            if isempty(self.SelectedOutputableCache_) ,
-                isThereAMapForThisEpisode = false ;
-                isSourceASequence = false ;  % arbitrary: doesn't get used if isThereAMap==false
-                indexOfMapWithinOutputable=[];  % arbitrary: doesn't get used if isThereAMap==false
-            else
-                if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
-                    isSourceASequence = false ;
-                    nMapsInOutputable=1;
-                else
-                    % outputable must be a sequence                
-                    isSourceASequence = true ;
-                    nMapsInOutputable=length(self.SelectedOutputableCache_.Maps);
-                end
-
-                % Sort out whether there's a map for this episode
-                if episodeIndexWithinSweep <= nMapsInOutputable ,
-                    isThereAMapForThisEpisode=true;
-                    indexOfMapWithinOutputable=episodeIndexWithinSweep;
-                else
-                    if self.DoRepeatSequence_ ,
-                        if nMapsInOutputable>0 ,
-                            isThereAMapForThisEpisode=true;
-                            indexOfMapWithinOutputable=mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1;
-                        else
-                            % Special case for when a sequence has zero
-                            % maps in it
-                            isThereAMapForThisEpisode=false;
-                            indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
-                        end                            
-                    else
-                        isThereAMapForThisEpisode=false;
-                        indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
-                    end
-                end
-            end
-            if isThereAMapForThisEpisode ,
-                if isSourceASequence ,
-                    stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapWithinOutputable};
-                else                    
-                    % this means the outputable is a "naked" map
-                    stimulusMap=self.SelectedOutputableCache_;
-                end
-            else
-                stimulusMap = [] ;
-            end
-        end  % function
+%         function stimulusMap = getCurrentStimulusMap_(self, episodeIndexWithinSweep)
+%             % Calculate the episode index
+%             %episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
+%             
+%             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
+%             % things
+%             stimulusLibrary = self.StimulusLibrary_ ;
+%             if isempty(self.SelectedOutputableCache_) ,
+%                 isThereAMapForThisEpisode = false ;
+%                 isSourceASequence = false ;  % arbitrary: doesn't get used if isThereAMap==false
+%                 indexOfMapWithinOutputable=[];  % arbitrary: doesn't get used if isThereAMap==false
+%             else
+%                 if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
+%                     isSourceASequence = false ;
+%                     nMapsInOutputable=1;
+%                 else
+%                     % outputable must be a sequence                
+%                     isSourceASequence = true ;
+%                     nMapsInOutputable=length(self.SelectedOutputableCache_.Maps);
+%                 end
+% 
+%                 % Sort out whether there's a map for this episode
+%                 if episodeIndexWithinSweep <= nMapsInOutputable ,
+%                     isThereAMapForThisEpisode=true;
+%                     indexOfMapWithinOutputable=episodeIndexWithinSweep;
+%                 else
+%                     if self.DoRepeatSequence_ ,
+%                         if nMapsInOutputable>0 ,
+%                             isThereAMapForThisEpisode=true;
+%                             indexOfMapWithinOutputable=mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1;
+%                         else
+%                             % Special case for when a sequence has zero
+%                             % maps in it
+%                             isThereAMapForThisEpisode=false;
+%                             indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+%                         end                            
+%                     else
+%                         isThereAMapForThisEpisode=false;
+%                         indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+%                     end
+%                 end
+%             end
+%             if isThereAMapForThisEpisode ,
+%                 if isSourceASequence ,
+%                     stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapWithinOutputable};
+%                 else                    
+%                     % this means the outputable is a "naked" map
+%                     stimulusMap=self.SelectedOutputableCache_;
+%                 end
+%             else
+%                 stimulusMap = [] ;
+%             end
+%         end  % function
         
-        function [nScans, nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMap, episodeIndexWithinSweep)
+        function [nScans, nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
             % Get info about which analog channels are in the task
             isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
             nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
 
             % Calculate the signals
-            if isempty(stimulusMap) ,
+            if isempty(stimulusMapIndex) ,
                 aoData = zeros(0,nAnalogChannelsInTask) ;
                 nChannelsWithStimulus = 0 ;
             else
                 channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
                 isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+%                 [aoData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
                 [aoData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 channelNamesInTask, ...
+                                                                 isChannelAnalog, ...
+                                                                 episodeIndexWithinSweep) ;  
                   % each signal of aoData is in native units
             end
             
@@ -977,7 +985,7 @@ classdef Refiller < handle
             end
         end  % function
 
-        function [nScans, nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMap, episodeIndexWithinRun)
+        function [nScans, nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
             %import ws.*
             
             % % Calculate the episode index
@@ -987,17 +995,23 @@ classdef Refiller < handle
             %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
             isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
             nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
-            if isempty(stimulusMap) ,
+            if isempty(stimulusMapIndex) ,
                 doData=zeros(0,nDigitalChannelsInTask);  
                 nChannelsWithStimulus = 0 ;
             else
                 isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
                 namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
+%                 [doData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
+%                                                  namesOfDigitalChannelsInTask, ...
+%                                                  isChannelAnalogForEachDigitalChannelInTask, ...
+%                                                  episodeIndexWithinRun);
                 [doData, nChannelsWithStimulus] = ...
-                    stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
-                                                 namesOfDigitalChannelsInTask, ...
-                                                 isChannelAnalogForEachDigitalChannelInTask, ...
-                                                 episodeIndexWithinRun);
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 namesOfDigitalChannelsInTask, ...
+                                                                 isChannelAnalogForEachDigitalChannelInTask, ...
+                                                                 episodeIndexWithinRun) ;
             end
             
             % Want to return the number of scans in the stimulus data
@@ -1070,9 +1084,9 @@ classdef Refiller < handle
             self.TheFiniteAnalogOutputTask_.arm() ;
             self.TheFiniteDigitalOutputTask_.arm() ;
             
-            % Set up the selected outputable cache
-            stimulusOutputable = self.StimulusLibrary_.SelectedOutputable ;
-            self.SelectedOutputableCache_ = stimulusOutputable ;
+%             % Set up the selected outputable cache
+%             stimulusOutputable = self.StimulusLibrary_.selectedOutputable() ;  % this makes a copy
+%             self.SelectedOutputableCache_ = stimulusOutputable ;
         end  % function        
         
 %         function startingSweepTriggering_(self)

@@ -780,24 +780,28 @@ end  % methods block
             self.StimulusLibrary_.setSelectedItemByClassNameAndIndex(className, index) ;
         end  % function
         
-        function addNewStimulusSequence(self)
-            self.StimulusLibrary_.addNewSequence() ;
+        function index = addNewStimulusSequence(self)
+            index = self.StimulusLibrary_.addNewSequence() ;
         end  % function
         
         function duplicateSelectedStimulusLibraryItem(self)
             self.StimulusLibrary_.duplicateSelectedItem() ;
         end  % function
         
-        function addBindingToSelectedStimulusLibraryItem(self)
-            self.StimulusLibrary_.addBindingToSelectedItem() ;
+        function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
+            bindingIndex = self.StimulusLibrary_.addBindingToSelectedItem() ;
+        end  % function
+        
+        function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
+            bindingIndex = self.StimulusLibrary_.addBindingToItem(className, itemIndex) ;
         end  % function
         
         function deleteMarkedMapsFromSequence(self)
             self.StimulusLibrary_.deleteMarkedMapsFromSequence() ;
         end  % function
         
-        function addNewStimulusMap(self)
-            self.StimulusLibrary_.addNewMap() ;
+        function mapIndex = addNewStimulusMap(self)
+            mapIndex = self.StimulusLibrary_.addNewMap() ;
         end  % function
         
 %         function addChannelToSelectedStimulusLibraryItem(self)
@@ -808,8 +812,8 @@ end  % methods block
             self.StimulusLibrary_.deleteMarkedChannelsFromSelectedItem() ;
         end  % function
         
-        function addNewStimulus(self)
-            self.StimulusLibrary_.addNewStimulus() ;
+        function stimulusIndex = addNewStimulus(self)
+            stimulusIndex = self.StimulusLibrary_.addNewStimulus() ;
         end  % function        
         
         function isSelectedStimulusLibaryItemInUse(self)
@@ -845,7 +849,7 @@ end  % methods block
         end  % function                
         
         function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
-            self.StimulusLibrary_.plotSelectedItem(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+            self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
         end  % function            
         
         function result = selectedStimulusLibraryItemProperty(self, propertyName)
@@ -894,7 +898,12 @@ end  % methods block
         end  % function                        
         
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
-            self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+            if isequal(propertyName, 'ChannelName') ,
+                allOutputChannelNames = self.ChannelNames ;
+                self.StimulusLibrary_.setMapBindingChannelName(itemIndex, bindingIndex, newValue, allOutputChannelNames) ;
+            else
+                self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+            end
         end  % function                        
         
         function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
@@ -927,6 +936,10 @@ end  % methods block
         
         function setSelectedOutputableByIndex(self, index)            
             self.StimulusLibrary_.setSelectedOutputableByIndex(index) ;
+        end  % method
+        
+        function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)            
+            self.StimulusLibrary_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
         end  % method
         
         function overrideStimulusLibraryMapDuration(self, sweepDuration)

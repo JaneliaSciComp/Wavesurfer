@@ -35,23 +35,44 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
 
+%             % Make a pulse stimulus, add to the stimulus library
+%             pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
+%             pulse.Name='Pulse';
+%             pulse.Amplitude='4.4';  % V
+%             pulse.Delay='0.1';
+%             pulse.Delegate.PulseDuration='0.8';
+%             pulse.Delegate.Period='1';
+
             % Make a pulse stimulus, add to the stimulus library
-            pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
-            pulse.Name='Pulse';
-            pulse.Amplitude='4.4';  % V
-            pulse.Delay='0.1';
-            pulse.Delegate.PulseDuration='0.8';
-            pulse.Delegate.Period='1';
+            pulseTrainIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'TypeString', 'SquarePulseTrain') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Name', 'Pulse Train') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Amplitude', '4.4') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Delay', '0.1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'PulseDuration', '0.8') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Period', '1') ;            
+            
+%             % make a map that puts the just-made pulse out of the first AO channel, add
+%             % to stim library
+%             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
+%             map.Name='Pulse out first AO';
+%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             map.addBinding(firstAoChannelName,pulse);
 
             % make a map that puts the just-made pulse out of the first AO channel, add
             % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Pulse out first AO';
-            firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAoChannelName,pulse);
-
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO') ;
+            firstAoChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAoChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
+            
+%             % make the new map the current sequence/map
+%             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            
             % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             % set the data file name
             thisFileName=mfilename();

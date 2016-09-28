@@ -140,6 +140,14 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             result = self.Delegate_.AdditionalParameterDisplayUnitses ;
         end
         
+        function result = getAdditionalParameter(self, parameterName)
+            result = self.Delegate_.(parameterName) ;
+        end
+        
+        function setAdditionalParameter(self, parameterName, newValue)
+            self.Delegate_.(parameterName) = newValue ;
+        end
+        
         function data = calculateSignal(self, t, sweepIndexWithinSet)
             % Process args
             if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,

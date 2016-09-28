@@ -84,10 +84,10 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             end
         end   % function
         
-        function addBinding(self)
-            indexOfMapInLibrary = [] ;
-            self.IndexOfEachMapInLibrary_{end + 1} = indexOfMapInLibrary;
-            self.IsMarkedForDeletion_(end+1) = false ;
+        function bindingIndex = addBinding(self)
+            bindingIndex = self.NBindings + 1 ;
+            self.IndexOfEachMapInLibrary_{bindingIndex} = [] ;
+            self.IsMarkedForDeletion_(bindingIndex) = false ;
         end   % function
 
         function setBindingTargetByIndex(self, bindingIndex, indexOfNewMapInLibrary)
