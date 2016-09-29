@@ -678,7 +678,6 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             else
                 %selectedSequenceIndexRaw = model.SelectedSequenceIndex ;
                 selectedSequenceIndexRaw = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
-                indexOfStimulusLibraryClassSelection
                 selectedSequenceIndex = ws.fif(isempty(selectedSequenceIndexRaw), 1, selectedSequenceIndexRaw) ;       
                 set(self.SequencesListbox, ...
                     'String', sequenceNames, ...
@@ -774,15 +773,15 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
                         data{bindingIndex,3}='(Unspecified)';
                     else
                         % data{i,1} = map.Name ;
-                        data{bindingIndex,1} = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'Name') ;
+                        data{bindingIndex,1} = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'Name') ;
                         %data{i,2} = sprintf('%g',map.Duration) ;
-                        duration = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'Duration') ;
+                        duration = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'Duration') ;
                         data{bindingIndex,2} = sprintf('%g',duration) ;                        
                         % data{i,3} = sprintf('%d',length(map.ChannelNames)) ;
-                        nBindingsInMap = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'NBindings') ;
+                        nBindingsInMap = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'NBindings') ;
                         data{bindingIndex,3} = sprintf('%d',nBindingsInMap) ;
                     end
-                    data{bindingIndex,4} = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', sequenceIndex, bindingIndex, 'IsMarkedForDeletion');
+                    data{bindingIndex,4} = model.stimulusLibraryItemBindingProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'IsMarkedForDeletion');
                 end
                 set(self.SequenceTable, ...
                     'ColumnFormat',{allMapsNamesWithUnspecified 'char' 'char' 'logical'}, ...

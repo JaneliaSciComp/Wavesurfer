@@ -36,25 +36,48 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration = 4 ;  % s
 
-            % Make a pulse stimulus, add to the stimulus library
-            godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-            godzilla.Name='Godzilla';
-            godzilla.Amplitude='1';  % V
-            godzilla.Delay='0.25';
-            godzilla.Duration='3.5';
-            thisDirName=fileparts(mfilename('fullpath'));
-            absoluteFileName = fullfile(thisDirName,'godzilla.wav') ;
-            godzilla.Delegate.FileName=absoluteFileName;
+%             % Make a pulse stimulus, add to the stimulus library
+%             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
+%             godzilla.Name='Godzilla';
+%             godzilla.Amplitude='1';  % V
+%             godzilla.Delay='0.25';
+%             godzilla.Duration='3.5';
+%             thisDirName=fileparts(mfilename('fullpath'));
+%             godzillaStimulusAbsoluteFileName = fullfile(thisDirName,'godzilla.wav') ;
+%             godzilla.Delegate.FileName=godzillaStimulusAbsoluteFileName;
 
-            % make a map that puts the just-made pulse out of the first AO channel, add
+            % Make a godzilla stimulus, add to the stimulus library
+            thisDirName = fileparts(mfilename('fullpath')) ;
+            godzillaStimulusAbsoluteFileName = fullfile(thisDirName,'godzilla.wav') ;
+            godzillaStimulusIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'TypeString', 'File') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Name', 'Godzilla') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Amplitude', '1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Delay', '0.25') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Duration', '3.5') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'FileName', godzillaStimulusAbsoluteFileName) ;
+            
+%             % make a map that puts the just-made pulse out of the first AO channel, add
+%             % to stim library
+%             map = wsModel.Stimulation.StimulusLibrary.addNewMap() ;
+%             map.Name='Godzilla out first AO';
+%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             map.addBinding(firstAoChannelName,godzilla);
+
+            % make a map that puts the just-made stimulus out of the first AO channel, add
             % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Godzilla out first AO';
-            firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAoChannelName,godzilla);
-
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
+            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;
+            
+%             % make the new map the current sequence/map
+%             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            
             % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
             wsModel.play();
@@ -91,25 +114,48 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration = 4 ;  % s
 
-            % Make a pulse stimulus, add to the stimulus library
-            godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-            godzilla.Name='Godzilla';
-            godzilla.Amplitude='1';  % V
-            godzilla.Delay='0.25';
-            godzilla.Duration='3.5';
-            thisDirName=fileparts(mfilename('fullpath'));
-            absoluteFileName = fullfile(thisDirName,'doesnt_exist.wav') ;
-            godzilla.Delegate.FileName=absoluteFileName;
+%             % Make a pulse stimulus, add to the stimulus library
+%             godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
+%             godzilla.Name='Godzilla';
+%             godzilla.Amplitude='1';  % V
+%             godzilla.Delay='0.25';
+%             godzilla.Duration='3.5';
+%             thisDirName=fileparts(mfilename('fullpath'));
+%             absoluteFileName = fullfile(thisDirName,'doesnt_exist.wav') ;
+%             godzilla.Delegate.FileName=absoluteFileName;
 
-            % make a map that puts the just-made pulse out of the first AO channel, add
+            % Make a godzilla stimulus, add to the stimulus library
+            thisDirName = fileparts(mfilename('fullpath')) ;
+            godzillaStimulusAbsoluteFileName = fullfile(thisDirName,'godzilla.wav') ;
+            godzillaStimulusIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'TypeString', 'File') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Name', 'Godzilla') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Amplitude', '1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Delay', '0.25') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Duration', '3.5') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'FileName', godzillaStimulusAbsoluteFileName) ;
+            
+%             % make a map that puts the just-made pulse out of the first AO channel, add
+%             % to stim library
+%             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
+%             map.Name='Godzilla out first AO';
+%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             map.addBinding(firstAoChannelName,godzilla);
+
+            % make a map that puts the just-made stimulus out of the first AO channel, add
             % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Godzilla out first AO';
-            firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAoChannelName,godzilla);
-
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
+            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;
+            
+%             % make the new map the current sequence/map
+%             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            
             % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
             wsModel.play();  % this should *not* throw an error
@@ -146,25 +192,28 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration = 4 ;  % s
 
-            % Make a pulse stimulus, add to the stimulus library
-            godzilla=wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-            godzilla.Name='Godzilla';
-            godzilla.Amplitude='1';  % V
-            godzilla.Delay='0.25';
-            godzilla.Duration='3.5';
-            thisDirName=fileparts(mfilename('fullpath'));
-            absoluteFileName = fullfile(thisDirName,'godzilla%d.wav') ;
-            godzilla.Delegate.FileName=absoluteFileName;
-
-            % make a map that puts the just-made pulse out of the first AO channel, add
-            % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Godzilla out first AO';
-            firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAoChannelName,godzilla);
-
-            % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            % Make a godzilla stimulus, add to the stimulus library
+            thisDirName = fileparts(mfilename('fullpath')) ;
+            godzillaStimulusAbsoluteFileName = fullfile(thisDirName,'godzilla.wav') ;
+            godzillaStimulusIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'TypeString', 'File') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Name', 'Godzilla') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Amplitude', '1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Delay', '0.25') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Duration', '3.5') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'FileName', godzillaStimulusAbsoluteFileName) ;
+            
+            % Make a map that puts the just-made stimulus out of the first AO channel, add
+            % to stim library.
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
+            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;
+            
+            % Make the new map the current sequence/map.
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
             wsModel.play();

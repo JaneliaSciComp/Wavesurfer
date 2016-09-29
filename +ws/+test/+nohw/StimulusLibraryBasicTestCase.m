@@ -15,7 +15,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             % Safe remove, item that is not referenced.  Should delete one
             % stimulus.
             stimulus = library.stimulusWithName('Unreferenced Stimulus');
-            isInUse=library.isInUse(stimulus);
+            isInUse=library.isItemInUse(stimulus);
             self.verifyFalse(isInUse);
             if all(~isInUse) ,
                 library.deleteItems({stimulus});
@@ -26,7 +26,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             % Safe remove, item that is in use.  Should not delete
             % anything.
             stimulus = library.stimulusWithName('Melvin');
-            isInUse=library.isInUse(stimulus);
+            isInUse=library.isItemInUse(stimulus);
             self.verifyTrue(isInUse);
             if all(~isInUse) ,
                 library.deleteItems({stimulus});
@@ -36,7 +36,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
 
             % Force remove, item that is in use.  Should work.
             stimulus = library.stimulusWithName('Melvin');
-            isInUse=library.isInUse(stimulus);
+            isInUse=library.isItemInUse(stimulus);
             self.verifyTrue(isInUse);
             library.deleteItems({stimulus});  % Remove it anyway
             self.verifyTrue(library.isSelfConsistent()) ;
@@ -47,8 +47,6 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             library=ws.StimulusLibrary([]);  % no parent
             
             stimulus1=library.addNewStimulus('Chirp');
-            %stimulus1=ws.ChirpStimulus('InitialFrequency',1.4545, ...
-            %                                       'FinalFrequency',45.3);  
             stimulus1.Delay=0.11;
             stimulus1.Amplitude='6.28';
             stimulus1.Name='Melvin';
@@ -56,12 +54,10 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             stimulus1.Delegate.FinalFrequency = 45.3 ;
             
             stimulus2=library.addNewStimulus('SquarePulse');
-            % stimulus2=ws.SquarePulseStimulus();
             stimulus2.Delay=0.12;
             stimulus2.Amplitude='6.29';
             stimulus2.Name='Bill';
             
-            %stimulusMap1=ws.StimulusMap('Name','Lucy the Map', 'Duration', 1.01);
             stimulusMap1=library.addNewMap();
             stimulusMap1.Name = 'Lucy the Map' ;
             stimulusMap1.Duration = 1.01 ;
@@ -90,7 +86,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             
             % Force remove, item that is in use.  Should work.
             map = library.Maps{1} ;
-            isInUse=library.isInUse(map);
+            isInUse=library.isItemInUse(map);
             self.verifyTrue(isInUse);
             library.deleteItems({map});  % Remove it anyway
             self.verifyTrue(library.isSelfConsistent()) ;
@@ -190,9 +186,10 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
     
     methods (Access = protected)
         function verifyEmptyLibrary(self, library)
-            self.verifyEmpty(library.Sequences, 'The ''Sequences'' property should be empty.');
-            self.verifyEmpty(library.Maps, 'The ''Maps'' property should be empty.');
-            self.verifyEmpty(library.Stimuli, 'The ''Stimuli'' property should be empty.');
+            self.verifyTrue(library.isEmpty(), 'The library is not empty') ;
+%             self.verifyEmpty(library.Sequences, 'The ''Sequences'' property should be empty.');
+%             self.verifyEmpty(library.Maps, 'The ''Maps'' property should be empty.');
+%             self.verifyEmpty(library.Stimuli, 'The ''Stimuli'' property should be empty.');
         end        
     end
 end

@@ -3050,7 +3050,7 @@ classdef WavesurferModel < ws.Model
         end  % method
 
         function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
-            self.Stimulation_.setSelectedOutputableByIndex(className, indexWithinClass) ;
+            self.Stimulation_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
             self.broadcast('UpdateStimulusLibrary') ;
         end  % method        
         
@@ -3616,9 +3616,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function
                 
-        function deleteMarkedMapsFromSequence(self)
+        function deleteMarkedBindingsFromSequence(self)
             try
-                self.Stimulation_.deleteMarkedMapsFromSequence() ;
+                self.Stimulation_.deleteMarkedBindingsFromSequence() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3825,5 +3825,13 @@ classdef WavesurferModel < ws.Model
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
             self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
         end  % function                        
+        
+        function result = isStimulusLibraryItemInUse(self, className, itemIndex)
+            result = self.Stimulation_.isStimulusLibraryItemInUse(className, itemIndex) ;
+        end
+        
+        function deleteStimulusLibraryItem(self, className, itemIndex)
+            self.Stimulation_.deleteStimulusLibraryItem(className, itemIndex) ;
+        end
     end  % public methods block
 end  % classdef

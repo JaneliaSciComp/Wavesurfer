@@ -68,7 +68,7 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
         end  % function
         
         function DeleteMapsFromSequenceMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.Model.do('deleteMarkedMapsFromSequence') ;
+            self.Model.do('deleteMarkedBindingsFromSequence') ;
         end  % function
 
         function AddMapMenuItemActuated(self,source,event) %#ok<INUSD>

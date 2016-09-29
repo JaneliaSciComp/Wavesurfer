@@ -68,20 +68,14 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             if islogical(newValue) && isequal(size(newValue),size(self.IndexOfEachMapInLibrary_)) ,  % can't change number of elements
                 self.IsMarkedForDeletion_ = newValue;
             end
-        end
+        end   % function
         
         function output = get.IsMarkedForDeletion(self)
             output = self.IsMarkedForDeletion_ ;
-        end
+        end   % function
         
-        function out = containsMap(self, queryMap)
-            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
-                maps = self.Maps ;
-                isMatch=cellfun(@(item)(item==queryMap),maps);
-                out = any(isMatch) ;
-            else
-                out = false ;
-            end
+        function result = containsMap(self, queryMapIndex)
+            result = any(queryMapIndex==self.IndexOfEachMapInLibrary_) ;
         end   % function
         
         function bindingIndex = addBinding(self)
@@ -102,47 +96,57 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             end
         end   % function
         
-        function nullMap(self, indexOfMapInSequence)
-            nMaps = numel(self.IndexOfEachMapInLibrary_) ;
-            if 1<=indexOfMapInSequence && indexOfMapInSequence<=nMaps && indexOfMapInSequence==round(indexOfMapInSequence) ,
-                self.IndexOfEachMapInLibrary_{indexOfMapInSequence} = [];
-            end
-        end   % function
+%         function nullMap(self, indexOfMapInSequence)
+%             nMaps = numel(self.IndexOfEachMapInLibrary_) ;
+%             if 1<=indexOfMapInSequence && indexOfMapInSequence<=nMaps && indexOfMapInSequence==round(indexOfMapInSequence) ,
+%                 self.IndexOfEachMapInLibrary_{indexOfMapInSequence} = [];
+%             end
+%         end   % function
         
-        function deleteMap(self, indexOfMapInSequence)
+        function deleteBinding(self, bindingIndex)
             nMaps = numel(self.IndexOfEachMapInLibrary_) ;
-            if 1<=indexOfMapInSequence && indexOfMapInSequence<=nMaps && indexOfMapInSequence==round(indexOfMapInSequence) ,
-                self.IndexOfEachMapInLibrary_(indexOfMapInSequence) = [];
-                self.IsMarkedForDeletion_(indexOfMapInSequence) = [];
+            if 1<=bindingIndex && bindingIndex<=nMaps && bindingIndex==round(bindingIndex) ,
+                self.IndexOfEachMapInLibrary_(bindingIndex) = [];
+                self.IsMarkedForDeletion_(bindingIndex) = [];
             end
         end   % function
 
-        function deleteMarkedMaps(self)
+        function deleteMarkedBindings(self)
             isMarkedForDeletion = self.IsMarkedForDeletion ;
             self.IndexOfEachMapInLibrary_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
         end   % function        
 
         
-        function nullMapByValue(self, queryMap)
-            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
-                for index = numel(self.Maps):-1:1 ,
-                    if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
-                        self.nullMap(index);
-                    end
-                end
-            end
-        end   % function
+%         function nullMapByValue(self, queryMap)
+%             if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
+%                 for index = numel(self.Maps):-1:1 ,
+%                     if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
+%                         self.nullMap(index);
+%                     end
+%                 end
+%             end
+%         end   % function
         
-        function deleteMapByValue(self, queryMap)
-            if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
-                for index = numel(self.Maps):-1:1 ,
-                    if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
-                        self.deleteMap(index);
-                    end
+%         function deleteMapByValue(self, queryMap)
+%             if isa(queryMap,'ws.StimulusMap') && isscalar(queryMap) ,
+%                 for index = numel(self.Maps):-1:1 ,
+%                     if ~isempty(self.Maps{index}) && self.Maps{index} == queryMap ,
+%                         self.deleteMap(index);
+%                     end
+%                 end
+%             end
+%         end   % function        
+        
+        function nullGivenTargetInAllBindings(self, targetMapIndex)
+            % Set all occurances of targetStimulusIndex in the bindings to []
+            for i = 1:self.NBindings ,
+                thisMapIndex = self.IndexOfEachMapInLibrary_{i} ;
+                if thisMapIndex==targetMapIndex ,
+                    self.IndexOfEachStimulusInLibrary_{i} = [] ;
                 end
             end
-        end   % function        
+        end  % function
     end  % methods
 
     methods

@@ -178,7 +178,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         
         function set.Multiplier(self,newValue)
             if isnumeric(newValue) && all(size(newValue)==size(self.ChannelName_)) ,  % can't change number of bindings                
-                self.Multiplier_ = double(newValue);
+                self.Multiplier_ = double(newValue) ;
             end
         end
         
@@ -188,7 +188,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 
         function set.IsMarkedForDeletion(self,newValue)
             if islogical(newValue) && isequal(size(newValue),size(self.ChannelName_)) ,  % can't change number of bindings                
-                self.IsMarkedForDeletion_ = newValue;
+                self.IsMarkedForDeletion_ = newValue ;
             end
         end
         
@@ -210,20 +210,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end   % function
                 
-        function result = containsStimulus(self, testStimulus)
-            if isscalar(testStimulus) && isa(testStimulus, 'ws.Stimulus') ,                        
-                boundStimuli = self.Stimuli ;
-                result = false ;
-                for i = 1:length(boundStimuli) ,
-                    boundStimulusOrEmpty = boundStimuli{i} ;
-                    if ~isempty(boundStimulusOrEmpty) && boundStimulusOrEmpty==testStimulus ,
-                        result = true ;
-                        break
-                    end
-                end
-            else
-                result = false ;
-            end
+        function result = containsStimulus(self, queryStimulusIndex)
+            result = cellfun(@(element)(any(element==queryStimulusIndex)), self.IndexOfEachStimulusInLibrary_) ;
         end   % function
 
         function bindingIndex = addBinding(self)
@@ -252,15 +240,6 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             self.Multiplier_(isMarkedForDeletion)=[];
             self.IsMarkedForDeletion_(isMarkedForDeletion)=[];
         end   % function        
-        
-        function nullStimulus(self, stimulus)
-            % Set all occurances of stimulus in the self to []
-            for i = 1:length(self.Stimuli) ,
-                if self.Stimuli{i} == stimulus ,
-                    self.Stimuli{i} = [];
-                end
-            end
-        end  % function
         
 %         function [data, nChannelsWithStimulus] = calculateSignals(self, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
 %             % nBoundChannels is the number of channels *in channelNames* for which
@@ -369,6 +348,16 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 end
             end
         end        
+        
+        function nullGivenTargetInAllBindings(self, targetStimulusIndex)
+            % Set all occurances of targetStimulusIndex in the bindings to []
+            for i = 1:self.NBindings ,
+                thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
+                if thisStimulusIndex==targetStimulusIndex ,
+                    self.IndexOfEachStimulusInLibrary_{i} = [] ;
+                end
+            end
+        end  % function
     end  % public methods block
     
     methods

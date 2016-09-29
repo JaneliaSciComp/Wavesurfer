@@ -397,6 +397,10 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'Maps_' ;      
                             elseif isa(result,'ws.StimulusLibrary') && isequal(fieldName, 'Sequences') ,
                                 propertyName = 'Sequences_' ;      
+                            elseif isa(result,'ws.StimulusMap') && isequal(fieldName, 'ChannelNames_') ,
+                                propertyName = 'ChannelName_' ;      
+                            elseif isa(result,'ws.StimulusMap') && isequal(fieldName, 'Multipliers_') ,
+                                propertyName = 'Multiplier_' ;      
                             elseif isequal(fieldName, 'Enabled_') ,
                                 propertyName = 'IsEnabled_' ;
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') ,

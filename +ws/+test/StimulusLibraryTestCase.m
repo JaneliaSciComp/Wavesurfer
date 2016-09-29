@@ -1,86 +1,101 @@
-classdef StimulusLibraryTestCase < matlab.unittest.TestCase
-    
+classdef StimulusLibraryTestCase < matlab.unittest.TestCase    
     methods (Static)
         function stimulusLibrary=createPopulatedStimulusLibrary()
             stimulusLibrary=ws.StimulusLibrary([]);  % no parent
             
-            stimulus1=stimulusLibrary.addNewStimulus('Chirp');
-            %stimulus1=ws.ChirpStimulus('InitialFrequency',1.4545, ...
-            %                                       'FinalFrequency',45.3);  
-            stimulus1.Delay=0.11;
-            stimulus1.Amplitude='6.28';
-            stimulus1.Name='Melvin';
-            stimulus1.Delegate.InitialFrequency = 1.4545 ;
-            stimulus1.Delegate.FinalFrequency = 45.3 ;
+%             stimulus1=stimulusLibrary.addNewStimulus('Chirp');
+%             stimulus1.Delay=0.11;
+%             stimulus1.Amplitude='6.28';
+%             stimulus1.Name='Melvin';
+%             stimulus1.Delegate.InitialFrequency = 1.4545 ;
+%             stimulus1.Delegate.FinalFrequency = 45.3 ;
             
-            stimulus2=stimulusLibrary.addNewStimulus('SquarePulse');
-            % stimulus2=ws.SquarePulseStimulus();
-            stimulus2.Delay=0.12;
-            stimulus2.Amplitude='6.29';
-            stimulus2.Name='Bill';
+            stimulus1Index = stimulusLibrary.addNewStimulus() ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'TypeString', 'Chirp') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'Name', 'Melvin') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'Amplitude', '6.28') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'Delay', 0.11) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'InitialFrequency', 1.4545) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'FinalFrequency', 45.3) ;            
             
-            stimulus3=stimulusLibrary.addNewStimulus('Sine');
-            %stimulus3=ws.SineStimulus('Frequency',1.47);
-            stimulus3.Delay=0.4;
-            stimulus3.Amplitude='-2.98';
-            stimulus3.Name='Elmer';
-            stimulus3.Delegate.Frequency = 1.47 ;
+%             stimulus2=stimulusLibrary.addNewStimulus('SquarePulse');
+%             stimulus2.Delay=0.12;
+%             stimulus2.Amplitude='6.29';
+%             stimulus2.Name='Bill';
             
-            stimulus4=stimulusLibrary.addNewStimulus('Ramp');
-            %stimulus4=ws.RampStimulus();
-            stimulus4.Delay=0.151;
-            stimulus4.Amplitude='i';
-            stimulus4.Name='Foghorn Leghorn';
+            stimulus2Index = stimulusLibrary.addNewStimulus() ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'TypeString', 'SquarePulse') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'Name', 'Bill') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'Amplitude', '6.29') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'Delay', 0.12) ;
             
-            stimulus5=stimulusLibrary.addNewStimulus('Ramp');
-            %stimulus5=ws.RampStimulus();
-            stimulus5.Delay=0.171;
-            stimulus5.Amplitude=-9;
-            stimulus5.Name='Unreferenced Stimulus';
+%             stimulus3=stimulusLibrary.addNewStimulus('Sine');
+%             stimulus3.Delay=0.4;
+%             stimulus3.Amplitude='-2.98';
+%             stimulus3.Name='Elmer';
+%             stimulus3.Delegate.Frequency = 1.47 ;
             
-            %stimuli={stimulus1 stimulus2 stimulus3 stimulus4 stimulus5};
+            stimulus3Index = stimulusLibrary.addNewStimulus() ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'TypeString', 'Sine') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'Name', 'Elmer') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'Amplitude', '-2.98') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'Delay', 0.4) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'Frequency', 1.47) ;
 
-            %stimulusMap1=ws.StimulusMap('Name','Lucy the Map', 'Duration', 1.01);
-            stimulusMap1=stimulusLibrary.addNewMap();
-            stimulusMap1.Name = 'Lucy the Map' ;
-            stimulusMap1.Duration = 1.01 ;
-            stimulusMap1.addBinding('ao0',stimulus1,1.01);
-            stimulusMap1.addBinding('ao1',stimulus2,1.02);
+%             stimulus4=stimulusLibrary.addNewStimulus('Ramp');
+%             stimulus4.Delay=0.151;
+%             stimulus4.Amplitude='i';
+%             stimulus4.Name='Foghorn Leghorn';
+            
+            stimulus4Index = stimulusLibrary.addNewStimulus() ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus4Index, 'TypeString', 'Ramp') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus4Index, 'Name', 'Foghorn Leghorn') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus4Index, 'Amplitude', 'i') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus4Index, 'Delay', 0.151) ;
 
-            %stimulusMap2=ws.StimulusMap('Name','Linus the Map', 'Duration', 2.04);
+%             stimulus5=stimulusLibrary.addNewStimulus('Ramp');
+%             stimulus5.Delay=0.171;
+%             stimulus5.Amplitude=-9;
+%             stimulus5.Name='Unreferenced Stimulus';
+            
+            stimulus5Index = stimulusLibrary.addNewStimulus() ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus5Index, 'TypeString', 'Ramp') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus5Index, 'Name', 'Unreferenced Stimulus') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus5Index, 'Amplitude', -9) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus5Index, 'Delay', 0.171) ;
+            
+%             stimulusMap1=stimulusLibrary.addNewMap();
+%             stimulusMap1.Name = 'Lucy the Map' ;
+%             stimulusMap1.Duration = 1.01 ;
+%             stimulusMap1.addBinding('ao0',stimulus1,1.01);
+%             stimulusMap1.addBinding('ao1',stimulus2,1.02);
+
+            stimulusMap1Index = stimulusLibrary.addNewMap() ;
+            stimulusLibrary.setItemProperty('ws.StimulusMap', stimulusMap1Index, 'Name', 'Lucy the Map') ;
+            binding1Index = stimulusLibrary.addBindingToItem('ws.StimulusMap', stimulusMap1Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'ChannelName', 'ao0') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'IndexOfEachStimulusInLibrary', stimulus1Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'Multiplier', 1.01) ;
+            binding2Index = stimulusLibrary.addBindingToItem('ws.StimulusMap', stimulusMap1Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'ChannelName', 'ao1') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'IndexOfEachStimulusInLibrary', stimulus2Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'Multiplier', 1.02) ;
+            
             stimulusMap2=stimulusLibrary.addNewMap();
             stimulusMap2.Name = 'Linus the Map' ;
             stimulusMap2.Duration = 2.04 ;            
             stimulusMap2.addBinding('ao0',stimulus3,2.01);
             stimulusMap2.addBinding('ao1',stimulus4,2.02);
             
-            %maps={stimulusMap1 stimulusMap2};
-            
-            %stimulusSequence=ws.StimulusSequence('Name','Cyclotron');
             stimulusSequence=stimulusLibrary.addNewSequence();
             stimulusSequence.Name = 'Cyclotron' ;
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
             stimulusSequence.addMap(stimulusMap1);
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
             stimulusSequence.addMap(stimulusMap2);            
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
 
-            %stimulusSequence2=ws.StimulusSequence('Name','Megatron');
             stimulusSequence2=stimulusLibrary.addNewSequence();
             stimulusSequence2.Name = 'Megatron' ;
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
             stimulusSequence2.addMap(stimulusMap2);
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
             stimulusSequence2.addMap(stimulusMap1);            
-            %self.verifyTrue(stimulusSequence.isLiveAndSelfConsistent());
-            
-            %cycles={stimulusSequence stimulusSequence2};
-            
-            %stimulusLibrary=ws.StimulusLibrary();
-            %stimulusLibrary.add(stimuli);            
-            %stimulusLibrary.add(maps);
-            %stimulusLibrary.add(cycles);
-        end
-    end
-
-end
+        end  % function        
+    end  % static methods block
+end  % classdef

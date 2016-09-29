@@ -21,11 +21,13 @@ classdef DeleteStimulusTestCase < matlab.unittest.TestCase
     methods (Test)        
         function theTest(self)
             wsModel = wavesurfer('--nogui') ;
-            wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulse') ;  % this is now the 2nd stimulus
-            doomedStimulus = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
-            wsModel.Stimulation.StimulusLibrary.deleteItem(doomedStimulus) ;
-            doomedStimulus2 = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
-            wsModel.Stimulation.StimulusLibrary.isInUse(doomedStimulus2) ;
+            doomedStimulusIndex = wsModel.Stimulation.StimulusLibrary.addNewStimulus() ;  % this is now the 2nd stimulus
+            %doomedStimulus = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
+            %wsModel.Stimulation.StimulusLibrary.deleteItem(doomedStimulus) ;
+            wsModel.deleteStimulusLibraryItem('ws.Stimulus', doomedStimulusIndex) ;
+            %doomedStimulus2 = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
+            doomedStimulus2Index = 1 ;
+            wsModel.isStimulusLibraryItemInUse('ws.Stimulus', doomedStimulus2Index) ;
             self.verifyTrue(true) ;
         end
     end  % test methods

@@ -47,7 +47,7 @@ classdef StimulusLibraryObjectDuplicationTestCase < ws.test.StimulusLibraryTestC
             % duration of a duplicated Map) behaves properly; ie, duplicated Map, and
             % Sequence containing duplicated Map should be updated, but  original
             % Map and Sequence containing original Map should be unchanged.
-            stimulusLibrary.Sequences{3}.deleteMap(2);
+            stimulusLibrary.Sequences{3}.deleteBinding(2);
             stimulusLibrary.Sequences{3}.addMap(stimulusLibrary.Maps{4});
             stimulusLibrary.SelectedMap = stimulusLibrary.Maps{4};
             stimulusLibrary.SelectedMap.Duration = 2*stimulusLibrary.Maps{4}.Duration;

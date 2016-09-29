@@ -796,8 +796,8 @@ end  % methods block
             bindingIndex = self.StimulusLibrary_.addBindingToItem(className, itemIndex) ;
         end  % function
         
-        function deleteMarkedMapsFromSequence(self)
-            self.StimulusLibrary_.deleteMarkedMapsFromSequence() ;
+        function deleteMarkedBindingsFromSequence(self)
+            self.StimulusLibrary_.deleteMarkedBindingsFromSequence() ;
         end  % function
         
         function mapIndex = addNewStimulusMap(self)
@@ -952,15 +952,22 @@ end  % methods block
         
         function result = stimulusLibraryOutputableNames(self)
             result = self.StimulusLibrary_.outputableNames() ;            
-        end
+        end  % function
         
         function result = stimulusLibrarySelectedOutputableProperty(self, propertyName)
             result = self.StimulusLibrary_.selectedOutputableProperty(propertyName) ;            
-        end
+        end  % function
         
         function result = areStimulusLibraryMapDurationsOverridden(self)
             result = self.StimulusLibrary_.areMapDurationsOverridden() ;            
-        end
+        end  % function
         
+        function result = isStimulusLibraryItemInUse(self, className, itemIndex)
+            result = self.StimulusLibrary_.isItemInUse(className, itemIndex) ;
+        end  % function        
+        
+        function deleteStimulusLibraryItem(self, className, itemIndex)
+            self.StimulusLibrary_.deleteItem(className, itemIndex) ;
+        end  % function        
     end  % public methods block    
 end  % classdef

@@ -32,22 +32,23 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.Stimulation.IsEnabled=true;
 
             % Make a too-large pulse stimulus, add to the stimulus library
-            pulse=model.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
-            pulse.Name='Pulse';
-            pulse.Amplitude= -20;  % V, too big
-            pulse.Delay=0.25;
-            pulse.Delegate.PulseDuration='0.5';
-            pulse.Delegate.Period='1';
-
-            % make a map that puts the just-made pulse out of the first AO channel, add
-            % to stim library
-            map=model.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Pulse out first channel';
-            firstAoChannelName=model.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAoChannelName,pulse);
-
-            % make the new map the current sequence/map
-            model.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
+%             pulse=model.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
+%             pulse.Name='Pulse';
+%             pulse.Amplitude= -20;  % V, too big
+%             pulse.Delay=0.25;
+%             pulse.Delegate.PulseDuration='0.5';
+%             pulse.Delegate.Period='1';
+% 
+%             % make a map that puts the just-made pulse out of the first AO channel, add
+%             % to stim library
+%             map=model.Stimulation.StimulusLibrary.addNewMap();
+%             map.Name='Pulse out first channel';
+%             firstAoChannelName=model.Stimulation.AnalogChannelNames{1};
+%             map.addBinding(firstAoChannelName,pulse);
+% 
+%             % make the new map the current sequence/map
+%             model.Stimulation.StimulusLibrary.SelectedOutputable=map;
 
             % attempt to output
             model.play();
