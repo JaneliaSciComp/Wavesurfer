@@ -343,7 +343,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             model=self.Model;
             if ~isempty(model) && isvalid(model) ,
                 selectedItemClassName = model.selectedStimulusLibraryItemClassName() ;
-                if isequal(selectedItemClassName, 'ws.Stimulus') ,
+                selectedItemIndexWithinClass = model.selectedStimulusLibraryItemIndexWithinClass() ;
+                if isequal(selectedItemClassName, 'ws.Stimulus') && ~isempty(selectedItemIndexWithinClass) ,
                     additionalParameterDisplayNames = model.selectedStimulusLibraryItemProperty('AdditionalParameterDisplayNames') ;
                     additionalParameterDisplayUnitses = model.selectedStimulusLibraryItemProperty('AdditionalParameterDisplayUnitses') ;
                     nAdditionalParameters=length(additionalParameterDisplayNames);

@@ -2,28 +2,30 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
     
     properties
         DefaultLibrary
-        DefaultMap
-        DefaultStim1
-        DefaultStim2
+        DefaultMapIndex
+        DefaultStimulus1Index
+        DefaultStimulus2Index
     end
     
     methods (Test)
         function testContainsStimuli(self)
-            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim1), 'The map does contain the specified stimulus.');
-            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim2), 'The map does contain the specified stimulus.');
+            self.verifyTrue(self.DefaultLibrary.isStimulusInUseByMap(self.DefaultStimulus1Index, self.DefaultMapIndex), ...
+                            'The map does not contain the specified stimulus.');
+            self.verifyTrue(self.DefaultLibrary.isStimulusInUseByMap(self.DefaultStimulus2Index, self.DefaultMapIndex), ...
+                            'The map does not contain the specified stimulus.');
             
-            st3 = self.DefaultLibrary.addNewStimulus('Chirp');
-            %st1 = ws.ChirpStimulus();
-            self.verifyFalse(self.DefaultMap.containsStimulus(st3), 'The map does not contain the specified stimulus.');
+            stimulus3Index = self.DefaultLibrary.addNewStimulus() ;
+            self.DefaultLibrary.setItemProperty('ws.Stimulus', stimulus3Index, 'TypeString', 'Chirp') ;
+            self.verifyFalse(self.DefaultLibrary.isStimulusInUseByMap(stimulus3Index, self.DefaultMapIndex), ...
+                             'The map does contain the specified stimulus, even though it shouldn''t.');
             
-%             self.verifyEqual(self.DefaultMap.containsStimulus({self.DefaultStim1, st3, self.DefaultStim2, st3, st3}), ...
-%                 [true false true false false], 'Incorrect output for vector containsStimlus.');
-            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim1), ...
-                            'Incorrect output for containsStimlus.');
-            self.verifyFalse(self.DefaultMap.containsStimulus(st3), ...
-                             'Incorrect output for containsStimlus.');
-            self.verifyTrue(self.DefaultMap.containsStimulus(self.DefaultStim2), ...
-                            'Incorrect output for containsStimlus.');            
+            self.verifyTrue(self.DefaultLibrary.isStimulusInUseByMap(self.DefaultStimulus1Index, self.DefaultMapIndex), ...
+                            'The map does not contain the specified stimulus.');                        
+            self.verifyFalse(self.DefaultLibrary.isStimulusInUseByMap(stimulus3Index, self.DefaultMapIndex), ...
+                             'The map does contain the specified stimulus, even though it shouldn''t.');                        
+            self.verifyTrue(self.DefaultLibrary.isStimulusInUseByMap(self.DefaultStimulus2Index, self.DefaultMapIndex), ...
+                            'The map does not contain the specified stimulus.');
+                        
         end
         
         function testGetData(self)
@@ -34,36 +36,54 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
     end
     
     methods (TestMethodSetup)
-        function createDefaultMap(self)
-            stimLib = ws.StimulusLibrary([]);  % no parent
+        function createDefaultMapIndex(self)
+            stimulusLibrary = ws.StimulusLibrary([]);  % no parent
             
-            st1 = stimLib.addNewStimulus('SquarePulseTrain');
-            st1.DCOffset = 0;
-            st1.Delegate.Period = 0.5;  % s
-            st1.Delegate.PulseDuration = 0.25;  % s
+%             stimulus1Index.DCOffset = 0;
+%             stimulus1Index.Delegate.Period = 0.5;  % s
+%             stimulus1Index.Delegate.PulseDuration = 0.25;  % s
             
-            %st2 = ws.SquarePulseTrainStimulus('PulseDuration', 0.25, 'Period', 0.5);
-            st2 = stimLib.addNewStimulus('SquarePulseTrain');
-            st2.DCOffset = 0;
-            st2.Delegate.Period = 0.5;  % s
-            st2.Delegate.PulseDuration = 0.25;  % s
+            stimulus1Index = stimulusLibrary.addNewStimulus();
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'TypeString', 'SquarePulseTrain') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'DCOffset', 0) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'Period', 0.5) ;            
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'PulseDuration', 0.25) ;
             
-            map = stimLib.addNewMap();
-            map.addBinding('ch1', st1);
-            map.addBinding('ch2', st2);
+%             stimulus2Index = stimulusLibrary.addNewStimulus('SquarePulseTrain');
+%             stimulus2Index.DCOffset = 0;
+%             stimulus2Index.Delegate.Period = 0.5;  % s
+%             stimulus2Index.Delegate.PulseDuration = 0.25;  % s
 
-            self.DefaultLibrary=stimLib;
-            self.DefaultMap = map;
-            self.DefaultStim1 = st1;
-            self.DefaultStim2 = st2;
+            stimulus2Index = stimulusLibrary.addNewStimulus();
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'TypeString', 'SquarePulseTrain') ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'DCOffset', 0) ;
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'Period', 0.5) ;            
+            stimulusLibrary.setItemProperty('ws.Stimulus', stimulus2Index, 'PulseDuration', 0.25) ;
+            
+%             mapIndex = stimulusLibrary.addNewMap();
+%             mapIndex.addBinding('ch1', stimulus1Index);
+%             mapIndex.addBinding('ch2', stimulus2Index);
+
+            mapIndex = stimulusLibrary.addNewMap() ;
+            bindingIndex = stimulusLibrary.addBindingToItem('ws.StimulusMap', mapIndex) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', 'ch1') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', stimulus1Index) ;
+            bindingIndex = stimulusLibrary.addBindingToItem('ws.StimulusMap', mapIndex) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', 'ch2') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', stimulus2Index) ;
+            
+            self.DefaultLibrary = stimulusLibrary ;
+            self.DefaultMapIndex = mapIndex;
+            self.DefaultStimulus1Index = stimulus1Index;
+            self.DefaultStimulus2Index = stimulus2Index;
         end
     end
     
     methods (TestMethodTeardown)
-        function removeDefaultMap(self)
-            self.DefaultStim1 = [];
-            self.DefaultStim2 = [];
-            self.DefaultMap = [];
+        function removeDefaultMapIndex(self)
+            self.DefaultStimulus1Index = [];
+            self.DefaultStimulus2Index = [];
+            self.DefaultMapIndex = [];
             self.DefaultLibrary=[];
         end
     end

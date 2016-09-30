@@ -141,6 +141,10 @@ classdef (Abstract) Coding < handle
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
+
+        function other = copy(self)
+            other = self.copyGivenParent([]) ;
+        end  % function                
         
         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
             className=class(self);

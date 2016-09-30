@@ -54,7 +54,7 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
             
             % make a sequence, but don't add any maps to it
-            sequenceIndex = wsModel.addNewSequence() ;
+            sequenceIndex = wsModel.addNewStimulusSequence() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusSequence', sequenceIndex, 'Name', 'I am empty!') ;
 
             % make the new map the current sequence/map

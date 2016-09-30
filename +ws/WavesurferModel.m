@@ -3684,6 +3684,10 @@ classdef WavesurferModel < ws.Model
             result = self.Stimulation_.selectedStimulusLibraryItemClassName() ;
         end  % function        
 
+        function result = selectedStimulusLibraryItemIndexWithinClass(self)
+            result = self.Stimulation_.selectedStimulusLibraryItemIndexWithinClass() ;
+        end  % function        
+
         function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;

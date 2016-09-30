@@ -63,15 +63,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             self.IndexOfEachStimulusInLibrary_ = newValue ;
         end   % function
 
-        function setSingleChannelName(self, bindingIndex, newValue, allOutputChannelNames)
+        function setSingleChannelName(self, bindingIndex, newValue)
             if ws.isIndex(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
                 if ws.isString(newValue) ,
-                    if ismember(newValue, allOutputChannelNames) ,
-                        self.ChannelName_{bindingIndex} = newValue ;
-                    else
-                        error('ws:stimulusLibrary:badChannelName', ...
-                              '%s is not an output channel name', newValue);                        
-                    end
+                    self.ChannelName_{bindingIndex} = newValue ;
                 else
                     error('ws:stimulusLibrary:badChannelName', ...
                           'Channel name must be a string');
@@ -82,47 +77,29 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             end
         end  % function
         
-        function setChannelName(self, newValue, allOutputChannelNames)
+        function set.ChannelName(self, newValue)
             % newValue must be a row cell array, with each element a string
             % and each string either empty or a valid output channel name
-%             stimulation=ws.getSubproperty(self,'Parent','Parent');
-%             if isempty(stimulation) ,
-%                 doCheckChannelNames=false;
-%             else
-%                 doCheckChannelNames=true;
-%                 allChannelNames=stimulation.ChannelNames;
-%             end
-            doCheckChannelNames = true ;
-            
             if iscell(newValue) && all(size(newValue)==size(self.ChannelName_)) ,  % can't change number of bindings
-                nElements=length(newValue);
+                nBindings=length(newValue);
                 isGoodSoFar=true;
-                for i=1:nElements ,
+                for i=1:nBindings ,
                     putativeChannelName=newValue{i};
-                    if ischar(putativeChannelName) && (isrow(putativeChannelName) || isempty(putativeChannelName)) ,
-                        if isempty(putativeChannelName) ,
-                            % this is ok
-                        else
-                            if doCheckChannelNames ,
-                                if ismember(putativeChannelName,allOutputChannelNames) ,
-                                    % this is ok
-                                else
-                                    isGoodSoFar=false;
-                                    break
-                                end
-                            else
-                                % this is ok
-                            end                            
-                        end
-                    else
+                    if ~ws.isString(putativeChannelName) ,
                         isGoodSoFar=false;
                         break
                     end
                 end
                 % if isGoodSoFar==true here, is good
                 if isGoodSoFar ,
-                    self.ChannelName_=newValue;
+                    self.ChannelName_ = newValue ;
+                else
+                    error('ws:stimulusLibrary:badChannelName', ...
+                          'All elements of ChannelName must be strings');                    
                 end   
+            else
+                error('ws:stimulusLibrary:badChannelName', ...
+                      'ChannelName must be a cell row array of strings, of the correct length');
             end            
         end  % function
 

@@ -75,7 +75,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
     events 
         %DidChangeNumberOfChannels
         %DidSetAnalogChannelUnitsOrScales
-        DidSetStimulusLibrary
+        %DidSetStimulusLibrary
         DidSetSampleRate
         DidSetDoRepeatSequence
         %DidSetIsDigitalChannelTimed
@@ -105,7 +105,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
                     %self.StimulusLibrary_.Parent = self ;
                 end
             end
-            self.broadcast('DidSetStimulusLibrary');
+            %self.broadcast('DidSetStimulusLibrary');
         end
         
         function out = get.SampleRate(self)
@@ -828,6 +828,10 @@ end  % methods block
             result = self.StimulusLibrary_.SelectedItemClassName ;
         end  % function        
         
+        function result = selectedStimulusLibraryItemIndexWithinClass(self)
+            result = self.StimulusLibrary_.SelectedItemIndexWithinClass ;
+        end  % function        
+        
         function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
             self.StimulusLibrary_.setSelectedItemProperty(propertyName, newValue) ;
         end  % function        
@@ -898,12 +902,7 @@ end  % methods block
         end  % function                        
         
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
-            if isequal(propertyName, 'ChannelName') ,
-                allOutputChannelNames = self.ChannelNames ;
-                self.StimulusLibrary_.setMapBindingChannelName(itemIndex, bindingIndex, newValue, allOutputChannelNames) ;
-            else
-                self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
-            end
+            self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)

@@ -1,7 +1,12 @@
 classdef StimulusLibraryTestCase < matlab.unittest.TestCase    
     methods (Static)
-        function stimulusLibrary=createPopulatedStimulusLibrary()
-            stimulusLibrary=ws.StimulusLibrary([]);  % no parent
+        function stimulusLibrary = createPopulatedStimulusLibrary()
+            stimulusLibrary = ws.StimulusLibrary([]) ;  % no parent
+            ws.test.StimulusLibraryTestCase.populateStimulusLibraryBang(stimulusLibrary) ;
+        end  % function        
+        
+        function populateStimulusLibraryBang(stimulusLibrary)
+%             stimulusLibrary=ws.StimulusLibrary([]);  % no parent
             
 %             stimulus1=stimulusLibrary.addNewStimulus('Chirp');
 %             stimulus1.Delay=0.11;
@@ -81,21 +86,46 @@ classdef StimulusLibraryTestCase < matlab.unittest.TestCase
             stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'IndexOfEachStimulusInLibrary', stimulus2Index) ;
             stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'Multiplier', 1.02) ;
             
-            stimulusMap2=stimulusLibrary.addNewMap();
-            stimulusMap2.Name = 'Linus the Map' ;
-            stimulusMap2.Duration = 2.04 ;            
-            stimulusMap2.addBinding('ao0',stimulus3,2.01);
-            stimulusMap2.addBinding('ao1',stimulus4,2.02);
+%             stimulusMap2=stimulusLibrary.addNewMap();
+%             stimulusMap2.Name = 'Linus the Map' ;
+%             stimulusMap2.Duration = 2.04 ;            
+%             stimulusMap2.addBinding('ao0',stimulus3,2.01);
+%             stimulusMap2.addBinding('ao1',stimulus4,2.02);
             
-            stimulusSequence=stimulusLibrary.addNewSequence();
-            stimulusSequence.Name = 'Cyclotron' ;
-            stimulusSequence.addMap(stimulusMap1);
-            stimulusSequence.addMap(stimulusMap2);            
+            stimulusMap2Index = stimulusLibrary.addNewMap() ;
+            stimulusLibrary.setItemProperty('ws.StimulusMap', stimulusMap2Index, 'Name', 'Linus the Map') ;
+            binding1Index = stimulusLibrary.addBindingToItem('ws.StimulusMap', stimulusMap2Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'ChannelName', 'ao0') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'IndexOfEachStimulusInLibrary', stimulus3Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'Multiplier', 2.01) ;
+            binding2Index = stimulusLibrary.addBindingToItem('ws.StimulusMap', stimulusMap2Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'ChannelName', 'ao1') ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'IndexOfEachStimulusInLibrary', stimulus4Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'Multiplier', 2.02) ;
 
-            stimulusSequence2=stimulusLibrary.addNewSequence();
-            stimulusSequence2.Name = 'Megatron' ;
-            stimulusSequence2.addMap(stimulusMap2);
-            stimulusSequence2.addMap(stimulusMap1);            
+%             stimulusSequence=stimulusLibrary.addNewSequence();
+%             stimulusSequence.Name = 'Cyclotron' ;
+%             stimulusSequence.addMap(stimulusMap1);
+%             stimulusSequence.addMap(stimulusMap2);            
+
+            sequence1Index = stimulusLibrary.addNewSequence() ;
+            stimulusLibrary.setItemProperty('ws.StimulusSequence', sequence1Index, 'Name', 'Cyclotron') ;
+            binding1Index = stimulusLibrary.addBindingToItem('ws.StimulusSequence', sequence1Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusSequence', sequence1Index, binding1Index, 'IndexOfEachMapInLibrary', stimulusMap1Index) ;
+            binding2Index = stimulusLibrary.addBindingToItem('ws.StimulusSequence', sequence1Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusSequence', sequence1Index, binding2Index, 'IndexOfEachMapInLibrary', stimulusMap2Index) ;
+
+%             stimulusSequence2=stimulusLibrary.addNewSequence();
+%             stimulusSequence2.Name = 'Megatron' ;
+%             stimulusSequence2.addMap(stimulusMap2);
+%             stimulusSequence2.addMap(stimulusMap1);            
+            
+            sequence2Index = stimulusLibrary.addNewSequence() ;
+            stimulusLibrary.setItemProperty('ws.StimulusSequence', sequence2Index, 'Name', 'Megatron') ;
+            binding1Index = stimulusLibrary.addBindingToItem('ws.StimulusSequence', sequence2Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusSequence', sequence2Index, binding1Index, 'IndexOfEachMapInLibrary', stimulusMap2Index) ;
+            binding2Index = stimulusLibrary.addBindingToItem('ws.StimulusSequence', sequence2Index) ;
+            stimulusLibrary.setItemBindingProperty('ws.StimulusSequence', sequence2Index, binding2Index, 'IndexOfEachMapInLibrary', stimulusMap1Index) ;
         end  % function        
     end  % static methods block
 end  % classdef

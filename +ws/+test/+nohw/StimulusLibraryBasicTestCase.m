@@ -10,65 +10,66 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
         function testRemoveStimulus(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 5);
+            self.verifyEqual(library.NStimuli, 5);
             
             % Safe remove, item that is not referenced.  Should delete one
             % stimulus.
-            stimulus = library.stimulusWithName('Unreferenced Stimulus');
-            isInUse=library.isItemInUse(stimulus);
+            stimulusIndex = library.indexOfItemWithNameWithinGivenClass('Unreferenced Stimulus', 'ws.Stimulus');
+            isInUse=library.isItemInUse('ws.Stimulus', stimulusIndex);
             self.verifyFalse(isInUse);
             if all(~isInUse) ,
-                library.deleteItems({stimulus});
+                library.deleteItem('ws.Stimulus', stimulusIndex);
             end
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 4);
+            self.verifyEqual(library.NStimuli, 4);
             
             % Safe remove, item that is in use.  Should not delete
             % anything.
-            stimulus = library.stimulusWithName('Melvin');
-            isInUse=library.isItemInUse(stimulus);
+            stimulusIndex = library.indexOfItemWithNameWithinGivenClass('Melvin', 'ws.Stimulus');
+            isInUse=library.isItemInUse('ws.Stimulus', stimulusIndex);
             self.verifyTrue(isInUse);
             if all(~isInUse) ,
-                library.deleteItems({stimulus});
+                library.deleteItem('ws.Stimulus', stimulusIndex);
             end
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 4);
+            self.verifyEqual(library.NStimuli, 4);
 
             % Force remove, item that is in use.  Should work.
-            stimulus = library.stimulusWithName('Melvin');
-            isInUse=library.isItemInUse(stimulus);
+            stimulusIndex = library.indexOfItemWithNameWithinGivenClass('Melvin', 'ws.Stimulus');
+            isInUse=library.isItemInUse('ws.Stimulus', stimulusIndex);
             self.verifyTrue(isInUse);
-            library.deleteItems({stimulus});  % Remove it anyway
+            library.deleteItem('ws.Stimulus', stimulusIndex);  % Remove it anyway
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 3);
+            self.verifyEqual(library.NStimuli, 3);
         end
         
         function testRemoveStimulus2(self)
-            library=ws.StimulusLibrary([]);  % no parent
-            
-            stimulus1=library.addNewStimulus('Chirp');
-            stimulus1.Delay=0.11;
-            stimulus1.Amplitude='6.28';
-            stimulus1.Name='Melvin';
-            stimulus1.Delegate.InitialFrequency = 1.4545 ;
-            stimulus1.Delegate.FinalFrequency = 45.3 ;
-            
-            stimulus2=library.addNewStimulus('SquarePulse');
-            stimulus2.Delay=0.12;
-            stimulus2.Amplitude='6.29';
-            stimulus2.Name='Bill';
-            
-            stimulusMap1=library.addNewMap();
-            stimulusMap1.Name = 'Lucy the Map' ;
-            stimulusMap1.Duration = 1.01 ;
-            stimulusMap1.addBinding('ao0',stimulus1,1.01);
-            stimulusMap1.addBinding('ao1',stimulus2,1.02);
+            library = self.createPopulatedStimulusLibrary();
+%             library=ws.StimulusLibrary([]);  % no parent
+%             
+%             stimulus1=library.addNewStimulus('Chirp');
+%             stimulus1.Delay=0.11;
+%             stimulus1.Amplitude='6.28';
+%             stimulus1.Name='Melvin';
+%             stimulus1.Delegate.InitialFrequency = 1.4545 ;
+%             stimulus1.Delegate.FinalFrequency = 45.3 ;
+%             
+%             stimulus2=library.addNewStimulus('SquarePulse');
+%             stimulus2.Delay=0.12;
+%             stimulus2.Amplitude='6.29';
+%             stimulus2.Name='Bill';
+%             
+%             stimulusMap1=library.addNewMap();
+%             stimulusMap1.Name = 'Lucy the Map' ;
+%             stimulusMap1.Duration = 1.01 ;
+%             stimulusMap1.addBinding('ao0',stimulus1,1.01);
+%             stimulusMap1.addBinding('ao1',stimulus2,1.02);
             
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 2) ;
+            self.verifyEqual(library.NStimuli, 5) ;
             
             % Delete the first stimulus
-            library.deleteItem(stimulus1) ;
+            library.deleteItem('ws.Stimulus', 1) ;
             [isSelfConsistent,err] = library.isSelfConsistent() ;
             if isSelfConsistent ,
                 message = '' ;
@@ -76,78 +77,78 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
                 message = err.message ;
             end
             self.verifyTrue(isSelfConsistent,message) ;
-            self.verifyEqual(numel(library.Stimuli), 1) ;
+            self.verifyEqual(library.NStimuli, 4) ;
         end
         
         function testRemoveMap(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Stimuli), 5);
+            self.verifyEqual(library.NStimuli, 5);
             
             % Force remove, item that is in use.  Should work.
-            map = library.Maps{1} ;
-            isInUse=library.isItemInUse(map);
+            mapIndex = 1 ;
+            isInUse=library.isItemInUse('ws.StimulusMap', mapIndex);
             self.verifyTrue(isInUse);
-            library.deleteItems({map});  % Remove it anyway
+            library.deleteItem('ws.StimulusMap', mapIndex);  % Remove it anyway
             self.verifyTrue(library.isSelfConsistent()) ;
-        end
+        end  % function
         
         function testRemoveSequence(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Sequences), 2, 'Wrong number of initial cycles.');
+            self.verifyEqual(library.NSequences, 2, 'Wrong number of initial cycles.');
             
             % Remove cycle.  Should work.
-            sequence = library.sequenceWithName('Cyclotron');
-            library.deleteItems({sequence});
+            sequenceIndex = library.indexOfItemWithNameWithinGivenClass('Cyclotron', 'ws.StimulusSequence');
+            library.deleteItem('ws.StimulusSequence', sequenceIndex);
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyEqual(numel(library.Sequences), 1);
-        end
+            self.verifyEqual(library.NSequences, 1);
+        end  % function
         
         function testRemovalOfSelectedOutputable(self)
-            library = ws.StimulusLibrary([]);
-            outputChannelNames={'ao0' 'ao1'};
-            library.setToSimpleLibraryWithUnitPulse(outputChannelNames);
+            library = ws.StimulusLibrary([]) ;
+            outputChannelNames = {'ao0' 'ao1'} ;
+            library.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;
             self.verifyTrue(library.isSelfConsistent()) ;
-            library.addNewSequence();  % the simple lib has no sequences in it
+            sequenceIndex = library.addNewSequence() ;  % the simple lib has no sequences in it
             self.verifyTrue(library.isSelfConsistent()) ;
             % There should be one cycle (with no maps in it) and one map.
-            library.SelectedOutputable=library.Sequences{1};
+            library.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', sequenceIndex) ;
+            %library.SelectedOutputable = library.Sequences{sequenceIndex} ;
             self.verifyTrue(library.isSelfConsistent()) ;
-            library.deleteItems(library.Sequences(1));  % this should cause the map (the only other outputable) to be selected
+            library.deleteItem('ws.StimulusSequence', sequenceIndex) ;  % this should cause the map (the only other outputable) to be selected
             self.verifyTrue(library.isSelfConsistent()) ;
-            self.verifyTrue(library.SelectedOutputable==library.Maps{1});
-        end
+            %self.verifyTrue(library.SelectedOutputable==library.Maps{1}) ;
+            self.verifyTrue(isequal(library.SelectedOutputableClassName, 'ws.StimulusMap')) ;
+            self.verifyTrue(isequal(library.SelectedOutputableIndex, 1)) ;
+        end  % function
         
         function testRemoveEverything(self)
             library = self.createPopulatedStimulusLibrary();
             self.verifyTrue(library.isSelfConsistent()) ;
             
             % Remove all the sequences
-            nSequencesLeft = length(library.Sequences) ;
+            nSequencesLeft = library.NSequences ;
             while nSequencesLeft>0 ,
-                lastSequence = library.Sequences{end} ;
-                library.deleteItem(lastSequence) ;
+                library.deleteItem('ws.StimulusSequence', nSequencesLeft) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nSequencesLeft = length(library.Sequences) ;                
+                nSequencesLeft = library.NSequences ;                
             end
             
             % Remove all the maps
-            nMapsLeft = length(library.Maps) ;
+            nMapsLeft = library.NMaps ;
             while nMapsLeft>0 ,
-                lastMap = library.Maps{end} ;
-                library.deleteItem(lastMap) ;
+                library.deleteItem('ws.StimulusMap', nMapsLeft) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nMapsLeft = length(library.Maps) ;                
+                nMapsLeft = library.NMaps ;                
             end
             
             % Remove all the stimuli
-            nStimuliLeft = length(library.Stimuli) ;
+            nStimuliLeft = library.NStimuli ;
             while nStimuliLeft>0 ,
-                lastStimulus = library.Stimuli{end} ;
-                library.deleteItem(lastStimulus) ;
+                library.deleteItem('ws.Stimulus', nStimuliLeft) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nStimuliLeft = length(library.Stimuli) ;                
+                nStimuliLeft = library.NStimuli ;
             end            
         end  % function
         
@@ -156,30 +157,27 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
             self.verifyTrue(library.isSelfConsistent()) ;
             
             % Remove all the sequences
-            nSequencesLeft = length(library.Sequences) ;
+            nSequencesLeft = library.NSequences ;
             while nSequencesLeft>0 ,
-                sequence = library.Sequences{1} ;
-                library.deleteItem(sequence) ;
+                library.deleteItem('ws.StimulusSequence', 1) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nSequencesLeft = length(library.Sequences) ;                
+                nSequencesLeft = library.NSequences ;                
             end
             
             % Remove all the maps
-            nMapsLeft = length(library.Maps) ;
+            nMapsLeft = library.NMaps ;
             while nMapsLeft>0 ,
-                map = library.Maps{1} ;
-                library.deleteItem(map) ;
+                library.deleteItem('ws.StimulusMap', 1) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nMapsLeft = length(library.Maps) ;                
+                nMapsLeft = library.NMaps ;                
             end
             
             % Remove all the stimuli
-            nStimuliLeft = length(library.Stimuli) ;
+            nStimuliLeft = library.NStimuli ;
             while nStimuliLeft>0 ,
-                stimulus = library.Stimuli{1} ;
-                library.deleteItem(stimulus) ;
+                library.deleteItem('ws.Stimulus', 1) ;
                 self.verifyTrue(library.isSelfConsistent()) ;
-                nStimuliLeft = length(library.Stimuli) ;                
+                nStimuliLeft = library.NStimuli ;
             end            
         end  % function
     end  % test methods

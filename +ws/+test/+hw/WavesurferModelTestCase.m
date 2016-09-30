@@ -19,95 +19,76 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     methods (Test)
         function testTooLargeStimulus(self)
             % Create an WavesurferModel
-            %thisDirName=fileparts(mfilename('fullpath'));
             model=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
-            
+            model.addStarterChannelsAndStimulusLibrary() ;
+
+            % Add a few more channels
             model.addAIChannel() ;
             model.addAIChannel() ;
-            model.addAIChannel() ;
-            model.addAOChannel() ;
             
             % Enable stimulation subsystem
             model.Stimulation.IsEnabled=true;
 
             % Make a too-large pulse stimulus, add to the stimulus library
-            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
-%             pulse=model.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
-%             pulse.Name='Pulse';
-%             pulse.Amplitude= -20;  % V, too big
-%             pulse.Delay=0.25;
-%             pulse.Delegate.PulseDuration='0.5';
-%             pulse.Delegate.Period='1';
-% 
-%             % make a map that puts the just-made pulse out of the first AO channel, add
-%             % to stim library
-%             map=model.Stimulation.StimulusLibrary.addNewMap();
-%             map.Name='Pulse out first channel';
-%             firstAoChannelName=model.Stimulation.AnalogChannelNames{1};
-%             map.addBinding(firstAoChannelName,pulse);
-% 
-%             % make the new map the current sequence/map
-%             model.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            model.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
 
             % attempt to output
             model.play();
-            
-            % wait for task to finish
-            %pause(3);
             
             % this is successful if no exceptions are thrown            
             self.verifyTrue(true);                        
         end  % function
         
+        
+        
         function testSavingAndLoadingStimulusLibraryWithinWavesurferModel(self)
             % Create an WavesurferModel
-            %thisDirName=fileparts(mfilename('fullpath'));
-            em=ws.WavesurferModel(true);  % true => is the one true wavesurfer
-            %em.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));
-            
-            em.addAIChannel() ;
-            em.addAIChannel() ;
-            em.addAIChannel() ;
-            em.addAOChannel() ;
+            wsModel = ws.WavesurferModel(true) ;  % true => is the one true wavesurfer
+
+            % Add some more channels
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
             
             % Make it so the stim library map durations are not overridden
             % by the WavesurferModel sweep duration, which would mess things up.
             %em.Triggering.AcquisitionUsesASAPTriggering=false;
-            em.AreSweepsContinuous = true ;
-            em.StimulationUsesAcquisitionTrigger = false ;
+            wsModel.AreSweepsContinuous = true ;
+            wsModel.StimulationUsesAcquisitionTrigger = false ;
             
             % Clear the stim lib within the WavesurferModel
-            em.Stimulation.StimulusLibrary.clear();
+            wsModel.clearStimulusLibrary();
 
             % Populate the Wavesurfer Stim library
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
-            %em.Stimulation.StimulusLibrary.mimic(stimulusLibrary);
-            em.Stimulation.StimulusLibrary = stimulusLibrary ;
-            clear stimulusLibrary ;
+%             stimulusLibrary=self.createPopulatedStimulusLibrary();
+%             wsModel.Stimulation.StimulusLibrary = stimulusLibrary ;
+%             clear stimulusLibrary ;
+            ws.test.StimulusLibraryTestCase.populateStimulusLibraryBang(wsModel.Stimulation.StimulusLibrary) ;  % class method call
             
             % Make a copy of it in the populated state
-            stimulusLibraryCopy=em.Stimulation.StimulusLibrary.copyGivenParent([]);
+            stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copyGivenParent([]) ;
             
             % Save the protocol to disk
-            %protocolSettings=em.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=em.encodeForPersistence();  %#ok<NASGU>
-            fileName=[tempname() '.mat'];
-            save(fileName,'protocolSettings');
+            protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
+            fileName = [tempname() '.mat'] ;
+            save(fileName, 'protocolSettings') ;
 
             % Clear the stim library in the model
-            em.Stimulation.StimulusLibrary.clear();
+            wsModel.clearStimulusLibrary() ;
             
             % Restore the protocol (including the stim library)
-            s=load(fileName);
-            protocolSettingsCheck=s.protocolSettings;
+            s = load(fileName) ;
+            protocolSettingsCheck = s.protocolSettings ;
             %em.decodeProperties(protocolSettingsCheck);
-            em = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old em object
+            wsModel = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old wsModel object
 
             % compare the stim library in model to the copy of the
             % populated version
-            self.verifyEqual(em.Stimulation.StimulusLibrary,stimulusLibraryCopy);
+            self.verifyEqual(wsModel.Stimulation.StimulusLibrary,stimulusLibraryCopy) ;
         end  % function
+        
+        
         
         function testEncodingOfStimulusSource(self)
             % Create an WavesurferModel

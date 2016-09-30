@@ -11,7 +11,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     end      
     
     properties (Dependent=true, SetAccess=immutable)
-        MapDurations
+        %MapDurations
         NBindings
     end      
     
@@ -39,9 +39,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             out = length(self.IndexOfEachMapInLibrary_) ;
         end
         
-        function val = get.MapDurations(self)
-            val=cellfun(@(map)(map.Duration),self.Maps);
-        end   % function
+%         function val = get.MapDurations(self)
+%             val=cellfun(@(map)(map.Duration),self.Maps);
+%         end   % function
         
         function set.Name(self,newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,                
@@ -75,7 +75,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end   % function
         
         function result = containsMap(self, queryMapIndex)
-            result = any(queryMapIndex==self.IndexOfEachMapInLibrary_) ;
+            result = any(cellfun(@(mapIndex)(mapIndex==queryMapIndex), self.IndexOfEachMapInLibrary_)) ;
         end   % function
         
         function bindingIndex = addBinding(self)
@@ -143,7 +143,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             for i = 1:self.NBindings ,
                 thisMapIndex = self.IndexOfEachMapInLibrary_{i} ;
                 if thisMapIndex==targetMapIndex ,
-                    self.IndexOfEachStimulusInLibrary_{i} = [] ;
+                    self.IndexOfEachMapInLibrary_{i} = [] ;
                 end
             end
         end  % function
@@ -177,7 +177,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
             nBindings = self.NBindings ;
             for i=1:nBindings ,
                 thisMapIndex = self.IndexOfEachMapInLibrary{i} ;
-                if ~(ws.isIndex(thisMapIndex) && 1<=thisMapIndex || thisMapIndex<=nMapsInLibrary) ,
+                if isempty(thisMapIndex) || (ws.isIndex(thisMapIndex) && 1<=thisMapIndex || thisMapIndex<=nMapsInLibrary) ,
+                    % all good
+                else
                     result=false;
                     return
                 end
