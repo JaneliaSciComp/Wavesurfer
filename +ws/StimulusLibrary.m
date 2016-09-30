@@ -1068,22 +1068,24 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function                
 
         function plotItem(self, className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog)
-            selectedItem=self.selectedItem_();
-            if isempty(selectedItem) ,
-                return
-            end
-            if isa(className, 'ws.StimulusSequence') ,
+            if isequal(className, 'ws.StimulusSequence') ,
                 self.plotStimulusSequenceBang_(figureGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isa(className, 'ws.StimulusMap') ,
+            elseif isequal(className, 'ws.StimulusMap') ,
                 axesGH = [] ;  % means to make own axes
                 self.plotStimulusMapBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isa(className, 'ws.Stimulus') ,
+            elseif isequal(className, 'ws.Stimulus') ,
                 axesGH = [] ;  % means to make own axes
-                self.plotStimulusBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+                self.plotStimulusBangBang_(figureGH, axesGH, itemIndex, samplingRate) ;
             else
                 % do nothing
             end                            
-            set(figureGH, 'Name', sprintf('Stimulus Preview: %s', selectedItem.Name));
+            % Set figure name
+            if isempty(className) || isempty(itemIndex) ,
+                % do nothing
+            else
+                itemName = self.itemProperty(className, itemIndex, 'Name') ;
+                set(figureGH, 'Name', sprintf('Stimulus Preview: %s', itemName));
+            end
         end  % function                
         
         function result = propertyFromEachItemInClass(self, className, propertyName) 

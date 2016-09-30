@@ -3753,9 +3753,9 @@ classdef WavesurferModel < ws.Model
         end  % function        
         
         function plotSelectedStimulusLibraryItem(self, figureGH)
-            sampleRate = self.SampleRate ;  % Hz 
-            channelNames = [self.AIChannelNames self.DIChannelNames] ;
-            isChannelAnalog = [true(size(self.AIChannelNames)) false(size(self.DIChannelNames))] ;
+            sampleRate = self.Stimulation_.SampleRate ;  % Hz 
+            channelNames = [self.AOChannelNames self.DOChannelNames] ;
+            isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
             self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
         end  % function      
         
