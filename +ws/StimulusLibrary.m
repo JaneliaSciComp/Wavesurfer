@@ -693,7 +693,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function        
         
         function deleteSelectedItem(self)
-            item = self.SelectedItem ;
+            item = self.selectedItem_() ;
             self.deleteItem_(item) ;
         end  % function        
 
@@ -873,7 +873,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 end
             end
             
-            %self.SelectedItem = newItem ;
+            %self.selectedItem_() = newItem ;
             self.setSelectedItemByHandle_(newItem) ;
             
             %self.enableBroadcastsMaybe();
@@ -901,7 +901,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     
         function bindingIndex = addBindingToSelectedItem(self)
             className = self.SelectedItemClassName_ ;
-            itemIndex = self.SelectedItemIndexWithinClass_ ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
             bindingIndex = self.addBindingToItem(className, itemIndex) ;
         end  % method
 
@@ -915,14 +915,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
         
         function deleteMarkedBindingsFromSequence(self)
-            selectedItem = self.SelectedItem ;
+            selectedItem = self.selectedItem_() ;
             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusSequence') ,
                 selectedItem.deleteMarkedBindings() ;
             end
         end  % method
         
 %         function addChannelToSelectedItem(self)
-%             selectedItem = self.SelectedItem ;
+%             selectedItem = self.selectedItem_() ;
 %             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
 %                 selectedItem.addBinding() ;
 %             else
@@ -931,7 +931,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %         end  % function        
         
         function deleteMarkedChannelsFromSelectedItem(self)
-            selectedItem = self.SelectedItem ;
+            selectedItem = self.selectedItem_() ;
             if ~isempty(selectedItem) && isa(selectedItem,'ws.StimulusMap') ,
                 selectedItem.deleteMarkedBindings();
             else
@@ -940,7 +940,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
 
         function setSelectedItemProperty(self, propertyName, newValue)
-%             selectedItem = self.SelectedItem ;
+%             selectedItem = self.selectedItem_() ;
 %             if ~isempty(selectedItem) ,
 %                 selectedItem.(propertyName) = newValue ;
 %             end
@@ -950,7 +950,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method        
         
 %         function setSelectedItemName(self, newName)
-%             selectedItem = self.SelectedItem ;
+%             selectedItem = self.selectedItem_() ;
 %             if isempty(selectedItem) ,
 %                 self.broadcast('Update') ;
 %             else                
@@ -959,7 +959,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %         end  % method        
 % 
 %         function setSelectedItemDuration(self, newValue)
-%             selectedItem=self.SelectedItem;
+%             selectedItem=self.selectedItem_();
 %             if isempty(selectedItem) ,
 %                 self.broadcast('Update') ;
 %             else
@@ -978,7 +978,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
             % This means one of the additional parameter edits was actuated
-            selectedStimulus = self.SelectedStimulus ;  
+            selectedStimulus = self.selectedItemWithinClass_('ws.Stimulus') ;  
             if isempty(selectedStimulus) ,
                 %self.broadcast('Update') ;
             else
@@ -993,7 +993,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
 
         function setBindingOfSelectedSequenceToNamedMap(self, bindingIndex, mapName) 
-            selectedSequence = self.SelectedSequence ;  
+            selectedSequence = self.selectedItemWithinClass_('ws.StimulusSequence') ;  
             if isempty(selectedSequence) ,
                 error('ws:stimulusLibrary:noSelectedSequence' , ...
                       'No sequence is selected in the stimulus library') ;
@@ -1009,7 +1009,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
 
         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
-            selectedSequence = self.SelectedSequence ;  
+            selectedSequence = self.selectedItemWithinClass_('ws.StimulusSequence') ;  
             if isempty(selectedSequence) ,
                 %self.broadcast('Update') ;
             else                
@@ -1028,7 +1028,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % method
         
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
-            selectedMap = self.SelectedMap ;  
+            selectedMap = self.selectedItemWithinClass_('ws.StimulusMap') ;  
             if ~isempty(selectedMap) ,
                 if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
                     switch propertyName ,
@@ -1037,7 +1037,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                         case 'Multiplier' ,
                             selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
                         case 'StimulusName' ,
-                            stimulusIndexInLibrary = self.indexOfItemWithNameWithinGivenClass(stimulusName, 'ws.Stimulus') ;
+                            stimulusIndexInLibrary = self.indexOfItemWithNameWithinGivenClass(propertyName, 'ws.Stimulus') ;
                             selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
                         case 'ChannelName' ,
                             selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
@@ -1050,12 +1050,12 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     
         function plotSelectedItemBang(self, figureGH, samplingRate, channelNames, isChannelAnalog)
             className = self.SelectedItemClassName_ ;
-            itemIndex = self.SelectedItemIndexWithinClass_ ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
             self.plotItem(className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog) ;
         end  % function                
 
         function plotItem(self, className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog)
-            selectedItem=self.SelectedItem;
+            selectedItem=self.selectedItem_();
             if isempty(selectedItem) ,
                 return
             end
@@ -2021,7 +2021,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                                     % the second item.
                                     indexOfNewSelectedItem = 2 ;
                                 end
-                                %self.SelectedItem = items{indexOfNewSelectedItem} ;
                                 self.setSelectedItemByHandle_(items{indexOfNewSelectedItem}) ;
                             end
                         end

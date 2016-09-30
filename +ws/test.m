@@ -29,5 +29,5 @@ function result = test(varargin)
     end
     
     % Run the tests
-    result = testSuite.run();
+    result = testSuite.run() ;
 end

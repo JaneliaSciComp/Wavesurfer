@@ -3708,7 +3708,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function                
         
-        function setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+        function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
             try
                 self.Stimulation_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
             catch exception
@@ -3718,7 +3718,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function                
             
-        function setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue)
+        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
             try
                 self.Stimulation_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
             catch exception

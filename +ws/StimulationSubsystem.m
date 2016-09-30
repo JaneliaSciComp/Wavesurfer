@@ -840,11 +840,11 @@ end  % methods block
             self.StimulusLibrary_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
         end  % function        
 
-        function setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName)
+        function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
             self.StimulusLibrary_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
         end  % function                   
         
-        function setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue)
+        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
             self.StimulusLibrary_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
         end  % function                
         
