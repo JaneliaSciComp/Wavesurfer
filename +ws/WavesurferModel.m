@@ -3666,13 +3666,13 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function        
         
-        function result = isSelectedStimulusLibaryItemInUse(self)
-            result = self.Stimulation_.isSelectedStimulusLibaryItemInUse() ;
+        function result = isSelectedStimulusLibraryItemInUse(self)
+            result = self.Stimulation_.isSelectedStimulusLibraryItemInUse() ;
         end  % function        
 
-        function deleteSelectedStimulusLibaryItem(self)
+        function deleteSelectedStimulusLibraryItem(self)
             try
-                self.Stimulation_.deleteSelectedStimulusLibaryItem() ;
+                self.Stimulation_.deleteSelectedStimulusLibraryItem() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -3718,15 +3718,25 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function                
             
-        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
+%         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
+%             try
+%                 self.Stimulation_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+%             catch exception
+%                 self.broadcast('UpdateStimulusLibrary') ;
+%                 rethrow(exception) ;
+%             end
+%             self.broadcast('UpdateStimulusLibrary') ;                
+%         end  % function        
+
+        function setBindingOfSelectedMapToNamedStimulus(self, indexOfBindingWithinMap, newStimulusName)
             try
-                self.Stimulation_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+                self.Stimulation_.setBindingOfSelectedMapToNamedStimulus(indexOfBindingWithinMap, newStimulusName) ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-        end  % function        
+        end  % function                
         
 %         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
 %             result = self.Stimulation_.propertyForElementOfSelectedStimulusLibraryItem(indexOfElementWithinItem, propertyName) ;
@@ -3823,11 +3833,23 @@ classdef WavesurferModel < ws.Model
         end
         
         function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
-            self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+            try
+                self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
         end        
         
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
-            self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+            try
+                self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
         end  % function                        
         
         function result = isStimulusLibraryItemInUse(self, className, itemIndex)
@@ -3835,7 +3857,24 @@ classdef WavesurferModel < ws.Model
         end
         
         function deleteStimulusLibraryItem(self, className, itemIndex)
-            self.Stimulation_.deleteStimulusLibraryItem(className, itemIndex) ;
+            try
+                self.Stimulation_.deleteStimulusLibraryItem(className, itemIndex) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
         end
+        
+        function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
+            try
+                self.Stimulation_.setSelectedStimulusLibraryItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+        end  % method        
+        
     end  % public methods block
 end  % classdef

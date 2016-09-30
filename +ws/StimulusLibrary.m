@@ -680,7 +680,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function result = isSelectedItemInUse(self)
             % Note that this doesn't check if the items are selected.  This
             % is by design.
-            result = self.isItemInUse_(self.SelectedItemClassName, self.SelectItemIndexWithinClass);
+            result = self.isItemInUse_(self.SelectedItemClassName, self.SelectedItemIndexWithinClass);
         end  % function
         
         function result = isItemInUse(self, className, itemIndex)
@@ -940,10 +940,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
 
         function setSelectedItemProperty(self, propertyName, newValue)
-%             selectedItem = self.selectedItem_() ;
-%             if ~isempty(selectedItem) ,
-%                 selectedItem.(propertyName) = newValue ;
-%             end
             className = self.SelectedItemClassName ;
             index = self.SelectedItemIndexWithinClass ;
             self.setItemProperty(className, index, propertyName, newValue) ;
@@ -982,10 +978,10 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(selectedStimulus) ,
                 %self.broadcast('Update') ;
             else
-                additionalParameterNames = selectedStimulus.Delegate.AdditionalParameterNames ;
+                additionalParameterNames = selectedStimulus.AdditionalParameterNames ;
                 if ws.isIndex(iParameter) && 1<=iParameter && iParameter<=length(additionalParameterNames) ,
                     propertyName = additionalParameterNames{iParameter} ;
-                    selectedStimulus.Delegate.(propertyName) = newString ;  % delegate will check validity
+                    selectedStimulus.setAdditionalParameter(propertyName, newString) ;  % stimulus will check validity
                 else
                     %self.broadcast('Update') ;
                 end
@@ -1008,45 +1004,62 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % method
 
-        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
-            selectedSequence = self.selectedItemWithinClass_('ws.StimulusSequence') ;  
-            if isempty(selectedSequence) ,
-                %self.broadcast('Update') ;
+%         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue) 
+%             selectedSequence = self.selectedItemWithinClass_('ws.StimulusSequence') ;  
+%             if isempty(selectedSequence) ,
+%                 %self.broadcast('Update') ;
+%             else                
+%                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
+%                     newValueAsLogical = logical(newValue) ;
+%                     if ws.isIndex(indexOfElementWithinSequence) && ...
+%                             1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps_) ,
+%                         selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
+%                     else
+%                         %self.broadcast('Update') ;
+%                     end
+%                 else
+%                     %self.broadcast('Update') ;
+%                 end                    
+%             end
+%         end  % method
+        
+        function setBindingOfSelectedMapToNamedStimulus(self, bindingIndex, newTargetName) 
+            selectedItem = self.selectedItemWithinClass_('ws.StimulusMap') ;  
+            if isempty(selectedItem) ,
+                error('ws:stimulusLibrary:noSelectedMap' , ...
+                      'No map is selected in the stimulus library') ;
             else                
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isreal(newValue) && isfinite(newValue))) ,
-                    newValueAsLogical = logical(newValue) ;
-                    if ws.isIndex(indexOfElementWithinSequence) && ...
-                            1<=indexOfElementWithinSequence && indexOfElementWithinSequence<=length(selectedSequence.Maps_) ,
-                        selectedSequence.IsMarkedForDeletion(indexOfElementWithinSequence) = newValueAsLogical ;
-                    else
-                        %self.broadcast('Update') ;
-                    end
+                if ws.isString(newTargetName) ,
+                    indexOfStimulusInLibrary = self.indexOfItemWithNameWithinGivenClass(newTargetName, 'ws.Stimulus') ;  % can be empty
+                    selectedItem.setBindingTargetByIndex(bindingIndex, indexOfStimulusInLibrary) ;  % if isempty(indexOfMap), the map is is "unspecified"
                 else
-                    %self.broadcast('Update') ;
+                    error('ws:stimulusLibrary:noSuchMap' , ...
+                          'There is no map in the library by that name') ;
                 end                    
             end
         end  % method
+
         
-        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
-            selectedMap = self.selectedItemWithinClass_('ws.StimulusMap') ;  
-            if ~isempty(selectedMap) ,
-                if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
-                    switch propertyName ,
-                        case 'IsMarkedForDeletion' ,
-                            selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
-                        case 'Multiplier' ,
-                            selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
-                        case 'StimulusName' ,
-                            stimulusIndexInLibrary = self.indexOfItemWithNameWithinGivenClass(propertyName, 'ws.Stimulus') ;
-                            selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
-                        case 'ChannelName' ,
-                            selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
-                        otherwise ,
-                            % do nothing
-                    end
-                end
-            end
-        end  % method
+%         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue) 
+%             selectedMap = self.selectedItemWithinClass_('ws.StimulusMap') ;  
+%             if ~isempty(selectedMap) ,
+%                 if ws.isIndex(indexOfElementWithinMap) && 1<=indexOfElementWithinMap && indexOfElementWithinMap<=length(selectedMap.ChannelName) ,
+%                     switch propertyName ,
+%                         case 'IsMarkedForDeletion' ,
+%                             selectedMap.IsMarkedForDeletion(indexOfElementWithinMap) = newValue ;
+%                         case 'Multiplier' ,
+%                             selectedMap.Multiplier(indexOfElementWithinMap) = newValue ;                            
+%                         case 'StimulusName' ,
+%                             stimulusIndexInLibrary = self.indexOfItemWithNameWithinGivenClass(propertyName, 'ws.Stimulus') ;
+%                             selectedMap.setStimulusByIndex(indexOfElementWithinMap, stimulusIndexInLibrary) ;
+%                         case 'ChannelName' ,
+%                             selectedMap.ChannelName{indexOfElementWithinMap} = newValue ;                            
+%                         otherwise ,
+%                             % do nothing
+%                     end
+%                 end
+%             end
+%         end  % method
     
         function plotSelectedItemBang(self, figureGH, samplingRate, channelNames, isChannelAnalog)
             className = self.SelectedItemClassName_ ;
@@ -1321,6 +1334,17 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                       'There is no item in the library with class name %s', className) ;
             end                                        
         end  % function                        
+        
+        function setSelectedItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
+            itemIndex = self.selectedItemIndexWithinClass(className) ;
+            self.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue)
+        end  % method        
+
+        function setSelectedItemBindingProperty(self, bindingIndex, propertyName, newValue)
+            className = self.SelectedItemClassName ;
+            itemIndex = self.SelectedItemIndexWithinClass ;
+            self.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue)
+        end  % method        
         
         function setItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
             % The index is the index within the class
@@ -1603,7 +1627,22 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function result = isMapInUseBySequence(self, mapIndex, sequenceIndex)
             sequence = self.Sequences_{sequenceIndex} ;
             result = ( ~isempty(sequence) && any(sequence.containsMap(mapIndex)) ) ;
-        end  % function                
+        end  % function        
+        
+        function itemIndex = selectedItemIndexWithinClass(self, className) 
+            if isempty(className) ,
+                itemIndex = [] ;
+            elseif isequal(className,'ws.StimulusSequence') ,
+                itemIndex = self.SelectedSequenceIndex_ ;
+            elseif isequal(className,'ws.StimulusMap') ,                
+                itemIndex = self.SelectedMapIndex_ ;
+            elseif isequal(className,'ws.Stimulus') ,                
+                itemIndex = self.SelectedStimulusIndex_ ;
+            else
+                itemIndex = [] ;  % shouldn't happen       
+            end            
+        end  % function
+        
     end  % public methods block
     
     methods (Access=protected)

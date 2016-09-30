@@ -270,17 +270,29 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 %             end
 %         end  % function
         
-        function setStimulusByIndex(self, bindingIndex, stimulusIndexInLibrary)
-            if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
-                %library = self.Parent ;
-                %stimulusIndexInLibrary = library.indexOfStimulusWithName(stimulusName) ;
-                if isempty(stimulusIndexInLibrary) ,
-                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;  % "null" the stimulus
+        function setBindingTargetByIndex(self, bindingIndex, indexOfNewTargetWithinClass)
+            % A "binding target", in this case, is a map.
+            nBindings = self.NBindings ;
+            if ws.isIndex(bindingIndex) && 1<=bindingIndex && bindingIndex<=nBindings ,
+                if isempty(indexOfNewTargetWithinClass) ,
+                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;
                 else
-                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = stimulusIndexInLibrary ;
+                    self.IndexOfEachStimulusInLibrary_{bindingIndex} = indexOfNewTargetWithinClass ;
                 end
             end
-        end
+        end   % function
+
+%         function setBindingTargetByIndex(self, bindingIndex, stimulusIndexInLibrary)
+%             if bindingIndex==round(bindingIndex) && 1<=bindingIndex && bindingIndex<=self.NBindings ,
+%                 %library = self.Parent ;
+%                 %stimulusIndexInLibrary = library.indexOfStimulusWithName(stimulusName) ;
+%                 if isempty(stimulusIndexInLibrary) ,
+%                     self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;  % "null" the stimulus
+%                 else
+%                     self.IndexOfEachStimulusInLibrary_{bindingIndex} = stimulusIndexInLibrary ;
+%                 end
+%             end
+%         end
         
         function result=areAllStimulusIndicesValid(self, nStimuliInLibrary)
             %library = self.Parent ;

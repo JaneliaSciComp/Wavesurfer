@@ -210,44 +210,44 @@ classdef StimulusLibraryController < ws.Controller      %& ws.EventSubscriber
     
         function SequenceTableCellEdited(self,source,event)  %#ok<INUSL>
             indices = event.Indices ;
-            indexOfElementWithinSequence = indices(1) ;  % the row index
+            bindingIndex = indices(1) ;  % the row index
             columnIndex = indices(2) ;
             if (columnIndex==1) ,
                 % this is the Map Name column
                 newMapNameRaw = event.EditData ;
                 newMapName = ws.fif(isequal(newMapNameRaw,'(Unspecified)'), '', newMapNameRaw) ;
-                self.Model.do('setBindingOfSelectedSequenceToNamedMap', indexOfElementWithinSequence, newMapName) ;
+                self.Model.do('setBindingOfSelectedSequenceToNamedMap', bindingIndex, newMapName) ;
             elseif (columnIndex==4) ,
                 % this is the Delete? column
-                newValue = event.EditData ;
-                self.Model.do('setIsMarkedForDeletionForElementOfSelectedSequence', indexOfElementWithinSequence, newValue) ;
+                newIsMarkedForDeletion = event.EditData ;
+                self.Model.do('setSelectedStimulusLibraryItemWithinClassBindingProperty', 'ws.StimulusSequence', bindingIndex, 'IsMarkedForDeletion', newIsMarkedForDeletion) ;
             end
         end  % function
     
         function MapTableCellEdited(self,source,event)  %#ok<INUSL>
             indices = event.Indices ;
-            indexOfElementWithinMap = indices(1) ;  % the row index
+            indexOfBindingWithinMap = indices(1) ;  % the row index
             columnIndex = indices(2) ;
             if (columnIndex==1) ,
                 % this is the Channel Name column
                 newChannelNameRaw = event.EditData ;
                 newChannelName = ws.fif(isequal(newChannelNameRaw,'(Unspecified)'), '', newChannelNameRaw) ;
-                self.Model.do('setPropertyForElementOfSelectedMap', indexOfElementWithinMap, 'ChannelName', newChannelName) ; 
+                self.Model.do('setSelectedStimulusLibraryItemWithinClassBindingProperty', 'ws.StimulusMap', indexOfBindingWithinMap, 'ChannelName', newChannelName) ; 
             elseif (columnIndex==2) ,
                 % this is the Stimulus Name column
                 newStimulusNameRaw = event.EditData ;
                 newStimulusName = ws.fif(isequal(newStimulusNameRaw,'(Unspecified)'), '', newStimulusNameRaw) ;
-                self.Model.do('setPropertyForElementOfSelectedMap', indexOfElementWithinMap, 'StimulusName', newStimulusName) ; 
+                self.Model.do('setBindingOfSelectedMapToNamedStimulus', indexOfBindingWithinMap, newStimulusName) ; 
             elseif (columnIndex==4) ,
                 % this is the Multiplier column
                 newMultiplierAsString = event.EditData ;
                 newMultiplier = str2double(newMultiplierAsString) ;
-                self.Model.do('setPropertyForElementOfSelectedMap', indexOfElementWithinMap, 'Multiplier', newMultiplier) ; 
+                self.Model.do('setSelectedStimulusLibraryItemWithinClassBindingProperty', 'ws.StimulusMap', indexOfBindingWithinMap, 'Multiplier', newMultiplier) ; 
             elseif (columnIndex==5) ,
                 % this is the Delete? column
                 newIsMarkedForDeletion = event.EditData ;
                 %self.Model.do('setIsMarkedForDeletionForElementOfSelectedMap', indexOfElementWithinMap, newIsMarkedForDeletion) ;
-                self.Model.do('setPropertyForElementOfSelectedMap', indexOfElementWithinMap, 'IsMarkedForDeletion', newIsMarkedForDeletion) ; 
+                self.Model.do('setSelectedStimulusLibraryItemWithinClassBindingProperty', 'ws.StimulusMap', indexOfBindingWithinMap, 'IsMarkedForDeletion', newIsMarkedForDeletion) ; 
             end                        
         end  % function
         

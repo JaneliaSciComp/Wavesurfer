@@ -816,11 +816,11 @@ end  % methods block
             stimulusIndex = self.StimulusLibrary_.addNewStimulus() ;
         end  % function        
         
-        function isSelectedStimulusLibaryItemInUse(self)
-            self.StimulusLibrary_.isSelectedItemInUse() ;
+        function result = isSelectedStimulusLibraryItemInUse(self)
+            result = self.StimulusLibrary_.isSelectedItemInUse() ;
         end  % function        
         
-        function deleteSelectedStimulusLibaryItem(self)
+        function deleteSelectedStimulusLibraryItem(self)
             self.StimulusLibrary_.deleteSelectedItem() ;
         end  % function        
         
@@ -844,13 +844,21 @@ end  % methods block
             self.StimulusLibrary_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
         end  % function                   
         
-        function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
-            self.StimulusLibrary_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
-        end  % function                
+%         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
+%             self.StimulusLibrary_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+%         end  % function                
         
-        function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
-            self.StimulusLibrary_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;            
-        end  % function                
+        function setBindingOfSelectedMapToNamedStimulus(self, bindingIndex, newTargetName)
+            self.StimulusLibrary_.setBindingOfSelectedMapToNamedStimulus(bindingIndex, newTargetName) ;
+        end  % function                   
+        
+%         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
+%             self.StimulusLibrary_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;            
+%         end  % function                
+        
+        function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
+            self.StimulusLibrary_.setSelectedItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
+        end  % method        
         
         function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
             self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
