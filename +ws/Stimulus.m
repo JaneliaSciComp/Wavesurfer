@@ -26,10 +26,11 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % duration being specified elsewhere.
         Amplitude
         DCOffset
-        TypeString
+        TypeString        
         AdditionalParameterNames
         AdditionalParameterDisplayNames
         AdditionalParameterDisplayUnitses
+        Delegate
     end
 
     properties (Access=protected)
@@ -124,9 +125,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             val = ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.Stimulus.evaluateSweepExpression(self.Duration,1);
         end
         
-%         function output = get.Delegate(self)
-%             output = self.Delegate_ ;
-%         end
+        function output = get.Delegate(self)
+            output = self.Delegate_.copy() ;
+        end
         
         function result = get.AdditionalParameterNames(self)
             result = self.Delegate_.AdditionalParameterNames ;
