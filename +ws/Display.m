@@ -353,6 +353,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             %self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
             %self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
             self.XAutoScroll_ = (self.XSpan<self.Parent.Acquisition.Duration) ;
+            self.broadcast('ClearData') ;
         end  % function
         
         function completingRun(self)
