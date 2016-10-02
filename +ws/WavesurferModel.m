@@ -1692,8 +1692,8 @@ classdef WavesurferModel < ws.Model
             % the newly-created map.  This is intended to be run on a
             % "virgin" wavesurferModel.
             
-            aiChannelName = self.Acquisition.addAnalogChannel() ;  %#ok<NASGU>
-            aoChannelName = self.Stimulation.addAnalogChannel() ;
+            aiChannelName = self.addAIChannel() ;  %#ok<NASGU>
+            aoChannelName = self.addAOChannel() ;
             self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
             self.broadcast('UpdateStimulusLibrary') ;
             self.Display.IsEnabled = true ;
@@ -2266,12 +2266,15 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function addAIChannel(self)
-            self.Acquisition.addAnalogChannel() ;
+        function channelName = addAIChannel(self)
+            channelName = self.Acquisition_.addAnalogChannel() ;
         end
         
-        function addAOChannel(self)
-            self.Stimulation.addAnalogChannel() ;
+        function channelName = addAOChannel(self)
+            channelName = self.Stimulation_.addAnalogChannel() ;
+            self.syncIsAOChannelTerminalOvercommitted_() ;            
+            self.Ephys.didChangeNumberOfOutputChannels() ;
+            self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('UpdateStimulusLibrary') ;
         end
         
@@ -2342,13 +2345,13 @@ classdef WavesurferModel < ws.Model
 %             self.broadcast('UpdateChannels');
 %         end
         
-        function didAddAnalogOutputChannel(self)
-            self.syncIsAOChannelTerminalOvercommitted_() ;            
-            %self.Display.didAddAnalogOutputChannel() ;
-            self.Ephys.didChangeNumberOfOutputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-        end
+%         function didAddAnalogOutputChannel(self)
+%             self.syncIsAOChannelTerminalOvercommitted_() ;            
+%             %self.Display.didAddAnalogOutputChannel() ;
+%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.broadcast('UpdateChannels');  % causes channels figure to update
+%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+%         end
 
 %         function didAddDigitalOutputChannel(self)
 %             %self.Display.didAddDigitalOutputChannel() ;
@@ -3047,6 +3050,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedOutputableByIndex(self, index)            
             self.Stimulation_.setSelectedOutputableByIndex(index) ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('Update') ;
         end  % method
 
         function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
@@ -3584,6 +3588,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;                
         end  % function
         
         function duplicateSelectedStimulusLibraryItem(self)
@@ -3634,6 +3639,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;  % Need to update the list of outputables                            
         end  % function        
         
 %         function addChannelToSelectedStimulusLibraryItem(self)
@@ -3678,6 +3684,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;                
         end  % function        
         
         function result = selectedStimulusLibraryItemClassName(self)
@@ -3864,6 +3871,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;  % Need to update the list of outputables, maybe
         end
         
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)

@@ -818,11 +818,19 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
     methods        
         function sequenceIndex = addNewSequence(self)
+            nOutputablesAtStart = self.NSequences + self.NMaps ;
             [~, sequenceIndex] = self.addNewSequence_() ;
+            if nOutputablesAtStart==0 && self.NSequences>0 ,
+                self.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 1) ;
+            end
         end  % function
         
         function mapIndex = addNewMap(self)
+            nOutputablesAtStart = self.NSequences + self.NMaps ;
             [~, mapIndex] = self.addNewMap_() ;
+            if nOutputablesAtStart==0 && self.NMaps>0 ,
+                self.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', 1) ;
+            end
         end  % function
                  
         function stimulusIndex = addNewStimulus(self)

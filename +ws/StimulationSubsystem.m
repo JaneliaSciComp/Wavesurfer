@@ -532,7 +532,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
-            self.Parent.didAddAnalogOutputChannel() ;
+            %self.Parent.didAddAnalogOutputChannel() ;
             %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             
             %self.broadcast('DidChangeNumberOfChannels');            

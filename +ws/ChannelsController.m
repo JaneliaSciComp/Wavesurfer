@@ -135,7 +135,7 @@ classdef ChannelsController < ws.Controller
 
         function AddAOChannelButtonActuated(self,source,event)  %#ok<INUSD>
             %self.Model.Stimulation.addAnalogChannel() ;
-            self.Model.Stimulation.do('addAnalogChannel') ;            
+            self.Model.do('addAOChannel') ;            
         end
         
         function DeleteAOChannelsButtonActuated(self,source,event)  %#ok<INUSD>

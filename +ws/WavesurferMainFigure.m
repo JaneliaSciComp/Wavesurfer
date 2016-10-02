@@ -1131,15 +1131,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateProgressBarProperties_();
             
             % Update the Stimulation/Source popupmenu
-            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
-            stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
-            if isempty(stimulusLibrary) ,
-                set(self.SourcePopupmenu, ...
-                    'String', {'(No library)'}, ...
-                    'Value', 1, ...
-                    'BackgroundColor', warningBackgroundColor);
-            else
-                outputableNames = model.stimulusLibraryOutputableNames ;
+%             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
+%             stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
+%             if isempty(stimulusLibrary) ,
+%                 set(self.SourcePopupmenu, ...
+%                     'String', {'(No library)'}, ...
+%                     'Value', 1, ...
+%                     'BackgroundColor', warningBackgroundColor);
+%             else
+                outputableNames = model.stimulusLibraryOutputableNames() ;
                 %selectedOutputable = stimulusLibrary.SelectedOutputable ;
                 selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
                 if isempty(selectedOutputableName) ,
@@ -1147,8 +1147,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 else
                     selectedOutputableNames = { selectedOutputableName } ;
                 end                
-                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
-            end
+                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
+%             end
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
             % based on the model state
