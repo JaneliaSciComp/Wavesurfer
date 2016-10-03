@@ -160,7 +160,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
-               model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
+               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
                %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
@@ -1261,7 +1261,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateEnablementAndVisibilityOfLoggingControls_();
 
             % Status bar controls
-            set(self.ProgressBarAxes,'Visible',onIff(isAcquiring));
+            if ~isAcquiring , 
+                set(self.ProgressBarAxes,'Visible','off') ;
+            end
         end
     end
     
@@ -1445,7 +1447,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
-            %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
+            fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
+            dbstack
             model=self.Model;
             state=model.State;
             if isequal(state,'running') ,

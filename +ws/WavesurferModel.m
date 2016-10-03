@@ -1190,13 +1190,13 @@ classdef WavesurferModel < ws.Model
             end
             
             % Change our own state to running
+            self.NTimesDataAvailableCalledSinceRunStart_=0;  % Have to do this now so that progress bar doesn't start in old position when continuous acq
             self.setState_('running') ;
             self.IsPerformingRun_ = true ;
             
             % Handle timing stuff
             self.TimeOfLastWillPerformSweep_=[];
             self.FromRunStartTicId_=tic();
-            self.NTimesDataAvailableCalledSinceRunStart_=0;
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
             self.DesiredNScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
