@@ -10,6 +10,11 @@ classdef FiniteOutputTask < handle
         %ChannelNames
         IsArmed  % generally shouldn't set props, etc when armed (but setting ChannelData is actually OK)
         OutputDuration
+        IsChannelInTask
+          % this is information that the task itself doesn't use, but it
+          % becomes relevant when the task is created, and stops being
+          % relevant when the task is destroyed, so it makes sense to keep
+          % it with the task.
     end
     
     properties (Dependent = true)
@@ -36,6 +41,7 @@ classdef FiniteOutputTask < handle
         %ChannelNames_ = cell(1,0)
         ChannelData_
         IsOutputBufferSyncedToChannelData_ = false
+        IsChannelInTask_ = true(1,0)  % Some channels are not actually in the task, b/c of conflicts
     end
     
 %     events
@@ -43,7 +49,7 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, deviceNames, terminalIDs, sampleRate)
+        function self = FiniteOutputTask(taskType, taskName, deviceNames, terminalIDs, isChannelInTask, sampleRate)
             nChannels=length(terminalIDs);
             
 %             % Store the parent
@@ -64,6 +70,7 @@ classdef FiniteOutputTask < handle
             self.DeviceNames_ = deviceNames ;
             self.TerminalIDs_ = terminalIDs ;
             %self.ChannelNames_ = channelNames ;
+            self.IsChannelInTask_ = isChannelInTask ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -154,6 +161,10 @@ classdef FiniteOutputTask < handle
         
         function value = get.IsDigital(self)
             value = ~self.IsAnalog_;
+        end  % function
+        
+        function value = get.IsChannelInTask(self)
+            value = self.IsChannelInTask_ ;
         end  % function
         
         function clearChannelData(self)

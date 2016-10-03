@@ -3117,34 +3117,41 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
+            
+            s = whos('looperProtocol') ;
+            looperProtocolSizeInBytes = s.bytes
         end  % method
         
-        function protocol = getRefillerProtocol_(self)
-            protocol = struct() ;
-            protocol.DeviceName = self.DeviceName ;
-            protocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
-            protocol.SweepDuration = self.SweepDuration ;
-            protocol.StimulationSampleRate = self.Stimulation.SampleRate ;
+        function refillerProtocol = getRefillerProtocol_(self)
+            refillerProtocol = struct() ;
+            refillerProtocol.DeviceName = self.DeviceName ;
+            refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
+            refillerProtocol.SweepDuration = self.SweepDuration ;
+            refillerProtocol.StimulationSampleRate = self.Stimulation.SampleRate ;
 
-            protocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
-            protocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
-            protocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            refillerProtocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
+            refillerProtocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
+            refillerProtocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
             
-            protocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
-            protocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
-            protocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            refillerProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            refillerProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            refillerProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
             
-            protocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
-            protocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
-            protocol.StimulusLibrary = self.Stimulation.StimulusLibrary.copyGivenParent([]) ;  
-              % We don't want to preserve the stim lib parent pointer, b/c
-              % that leads back to the entire WSM
-            protocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
-            protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
+            refillerProtocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
+            refillerProtocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
+            refillerProtocol.StimulusLibrary = self.Stimulation.StimulusLibrary.copy() ;  
+              % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
+              % don't want to preserve the stim lib parent pointer, b/c
+              % that leads back to the entire WSM.
+            refillerProtocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
+            refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
-            protocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
-            protocol.TheUserObject = self.UserCodeManager.TheObject ;
+            refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            refillerProtocol.TheUserObject = self.UserCodeManager.TheObject ;
+            
+            s = whos('refillerProtocol') ;
+            refillerProtocolSizeInBytes = s.bytes
         end  % method        
     end  % protected methods block
     
