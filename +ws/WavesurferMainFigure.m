@@ -1447,8 +1447,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
-            fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
-            dbstack
+            %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
+            %dbstack
             model=self.Model;
             state=model.State;
             if isequal(state,'running') ,

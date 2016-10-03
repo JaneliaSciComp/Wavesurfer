@@ -618,7 +618,7 @@ classdef Refiller < handle
             
             if self.IsStimulationEnabled_ ,
                 self.IsPerformingEpisode_ = true ;
-                fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+                %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
                 self.callUserMethod_('startingEpisode') ;
                 self.fillOutputBuffersAndStartOutputTasks_(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
@@ -641,7 +641,7 @@ classdef Refiller < handle
 
             % Update state
             self.IsPerformingEpisode_ = false;
-            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
@@ -654,7 +654,7 @@ classdef Refiller < handle
             end
             self.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
-            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingEpisode_(self)
@@ -663,7 +663,7 @@ classdef Refiller < handle
             end
             self.callUserMethod_('abortingEpisode');            
             self.IsPerformingEpisode_ = false ;            
-            fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
                 
         function result = areTasksDoneStimulation_(self)

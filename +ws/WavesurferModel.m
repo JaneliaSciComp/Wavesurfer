@@ -3118,8 +3118,8 @@ classdef WavesurferModel < ws.Model
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
             
-            s = whos('looperProtocol') ;
-            looperProtocolSizeInBytes = s.bytes
+            %s = whos('looperProtocol') ;
+            %looperProtocolSizeInBytes = s.bytes
         end  % method
         
         function refillerProtocol = getRefillerProtocol_(self)
@@ -3150,8 +3150,8 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
             refillerProtocol.TheUserObject = self.UserCodeManager.TheObject ;
             
-            s = whos('refillerProtocol') ;
-            refillerProtocolSizeInBytes = s.bytes
+            %s = whos('refillerProtocol') ;
+            %refillerProtocolSizeInBytes = s.bytes
         end  % method        
     end  % protected methods block
     
