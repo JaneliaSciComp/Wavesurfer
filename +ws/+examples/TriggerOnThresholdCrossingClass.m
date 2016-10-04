@@ -183,7 +183,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 desiredDOStateWhenUntimed(outputDOChannelIndex) = newValueForRTOutput ;
                 isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
                 desiredOutputForEachUntimedDOChannel = desiredDOStateWhenUntimed(isDOChannelUntimed) ;
-                looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
+                looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
                 if newValueForRTOutput ,
                     % We just executed a rising edge of the trigger output
                     self.NTriggersStartedThisSweep_ = self.NTriggersStartedThisSweep_ + 1 ;
