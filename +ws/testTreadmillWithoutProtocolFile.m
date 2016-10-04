@@ -3,7 +3,7 @@
 ws.clear() ;
 
 %[wsModel,wsController] = wavesurfer('repo/+ws/+examples/Machine_Data_File_rasterTreadMill.m') ;
-[wsModel,wsController] = wavesurfer() ;
+[wsModel,wsController] = wavesurfer('--debug') ;
 
 % delete all pre-existing channels
 wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(:) = true ;
@@ -94,38 +94,75 @@ wsModel.Acquisition.AnalogChannelScales = [0.001 0.01] ;  % electrode, velocity
 wsModel.Acquisition.AnalogChannelUnits = {'mV' 'cm/s'} ;  % electrode, velocity
 wsModel.Stimulation.IsDigitalChannelTimed = [true false] ;
 
-wsModel.Stimulation.StimulusLibrary.clear() ;  % clear out pre-defined stimuli
+wsModel.clearStimulusLibrary() ;  % clear out pre-defined stimuli
 
-stimulus1 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-stimulus1.Name='Electrode Stimulus';
-stimulus1.Delay='0';
-stimulus1.Duration='1010';
-stimulus1.Amplitude='1';
-stimulus1.DCOffset='0';
-stimulus1.Delegate.FileName = 'treadmillWaveforms/electrodeStimulus.wav' ;
+% stimulus1 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
+% stimulus1.Name='Electrode Stimulus';
+% stimulus1.Delay='0';
+% stimulus1.Duration='1010';
+% stimulus1.Amplitude='1';
+% stimulus1.DCOffset='0';
+% stimulus1.Delegate.FileName = 'treadmillWaveforms/electrodeStimulus.wav' ;
 
-stimulus2 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-stimulus2.Name='Velocity Stimulus';
-stimulus2.Delay='0';
-stimulus2.Duration='1010';
-stimulus2.Amplitude='1';
-stimulus2.DCOffset='0';
-stimulus2.Delegate.FileName = 'treadmillWaveforms/velocityStimulus.wav' ;
+electrodeStimulusIndex = wsModel.addNewStimulus() ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'TypeString', 'File') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'Name', 'Electrode Stimulus') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'Delay', '0') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'Amplitude', '1') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'Duration', '1010') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', electrodeStimulusIndex, 'FileName', 'treadmillWaveforms/electrodeStimulus.wav') ;            
 
-stimulus3 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
-stimulus3.Name='Photodiode Stimulus';
-stimulus3.Delay='0';
-stimulus3.Duration='1010';
-stimulus3.Amplitude='1';
-stimulus3.DCOffset='0';
-stimulus3.Delegate.FileName = 'treadmillWaveforms/photodiodeStimulus.wav' ;
+% stimulus2 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
+% stimulus2.Name='Velocity Stimulus';
+% stimulus2.Delay='0';
+% stimulus2.Duration='1010';
+% stimulus2.Amplitude='1';
+% stimulus2.DCOffset='0';
+% stimulus2.Delegate.FileName = 'treadmillWaveforms/velocityStimulus.wav' ;
 
-stimulusMap1=wsModel.Stimulation.StimulusLibrary.addNewMap();
-stimulusMap1.Name = 'Christine' ;
-stimulusMap1.Duration = 1010 ;
-stimulusMap1.addBinding('electrodeOut' , stimulus1);
-stimulusMap1.addBinding('velocityOut'  , stimulus2);
-stimulusMap1.addBinding('photodiodeOut', stimulus3);
+velocityStimulusIndex = wsModel.addNewStimulus() ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'TypeString', 'File') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'Name', 'Velocity Stimulus') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'Delay', '0') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'Amplitude', '1') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'Duration', '1010') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', velocityStimulusIndex, 'FileName', 'treadmillWaveforms/velocityStimulus.wav') ;            
+
+% stimulus3 = wsModel.Stimulation.StimulusLibrary.addNewStimulus('File');
+% stimulus3.Name='Photodiode Stimulus';
+% stimulus3.Delay='0';
+% stimulus3.Duration='1010';
+% stimulus3.Amplitude='1';
+% stimulus3.DCOffset='0';
+% stimulus3.Delegate.FileName = 'treadmillWaveforms/photodiodeStimulus.wav' ;
+
+photodiodeStimulusIndex = wsModel.addNewStimulus() ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'TypeString', 'File') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'Name', 'Photodiode Stimulus') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'Delay', '0') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'Amplitude', '1') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'Duration', '1010') ;
+wsModel.setStimulusLibraryItemProperty('ws.Stimulus', photodiodeStimulusIndex, 'FileName', 'treadmillWaveforms/photodiodeStimulus.wav') ;            
+
+% stimulusMap1=wsModel.Stimulation.StimulusLibrary.addNewMap();
+% stimulusMap1.Name = 'Christine' ;
+% stimulusMap1.Duration = 1010 ;
+% stimulusMap1.addBinding('electrodeOut' , stimulus1);
+% stimulusMap1.addBinding('velocityOut'  , stimulus2);
+% stimulusMap1.addBinding('photodiodeOut', stimulus3);
+
+mapIndex = wsModel.addNewStimulusMap() ;
+wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Christine') ;
+wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Duration', 1010) ;
+bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', 'electrodeOut') ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', electrodeStimulusIndex) ;
+bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', 'velocityOut') ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', velocityStimulusIndex) ;
+bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', 'photodiodeOut') ;
+wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', photodiodeStimulusIndex) ;
 
 %Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
 wsModel.setSelectedOutputableByIndex(1) ;  % should be the only one
