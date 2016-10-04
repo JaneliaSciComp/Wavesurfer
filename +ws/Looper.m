@@ -377,6 +377,13 @@ classdef Looper < handle
         end  % function        
     end  % RPC methods block   
 
+    methods  % public methods, typically called by user code
+        function setDigitalOutputStateIfUntimedQuicklyAndDirtily(self, newValue)
+            % This method does no error checking, for minimum latency
+            self.UntimedDigitalOutputTask_.setChannelDataQuicklyAndDirtily(newValue) ;
+        end        
+    end
+    
     methods (Access=protected)
         function acquisitionSweepComplete_(self)
             % Called by the acq subsystem when it's done acquiring for the

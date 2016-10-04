@@ -318,7 +318,7 @@ classdef RasterTreadMill < ws.UserClass
             %fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
             v = analogData(:,self.ElectrodeChannel) ;
             newValue = any(v>=self.SpikeThreshold) ;
-            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
+            looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
         end
         
         % these are are called in the refiller process

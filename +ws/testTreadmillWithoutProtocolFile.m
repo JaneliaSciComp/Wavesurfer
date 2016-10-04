@@ -3,7 +3,7 @@
 ws.clear() ;
 
 %[wsModel,wsController] = wavesurfer('repo/+ws/+examples/Machine_Data_File_rasterTreadMill.m') ;
-[wsModel,wsController] = wavesurfer('--debug') ;
+[wsModel,wsController] = wavesurfer() ;
 
 % delete all pre-existing channels
 wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(:) = true ;
