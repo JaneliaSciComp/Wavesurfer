@@ -107,7 +107,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 % Initialize things that should be initialized at the
                 % start of a sweep.
                 %self.HasRTOutputBeenInitializedInThisSweep_ = false ;
-                fs = looper.Acquisition.SampleRate ;  % Hz
+                fs = looper.AcquisitionSampleRate ;  % Hz
                 self.NScansToBlankAfterRisingEdge_ = self.DurationToBlankAfterRisingEdge*fs ;
                 self.NScansToBlankAfterFallingEdge_ = self.DurationToBlankAfterFallingEdge*fs ;
                 self.LastRTOutput_ = [] ;
@@ -177,11 +177,11 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             % If the new output value differs from the old, set it
             if isFirstCallInSweep || newValueForRTOutput ~= self.LastRTOutput_ ,
                 %fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
-                doStateWhenUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
+                doStateWhenUntimed = looper.DigitalOutputStateIfUntimed ;
                 outputDOChannelIndex = self.OutputDOChannelIndex ;
                 desiredDOStateWhenUntimed = doStateWhenUntimed ;
                 desiredDOStateWhenUntimed(outputDOChannelIndex) = newValueForRTOutput ;
-                isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
+                isDOChannelUntimed = ~looper.IsDOChannelTimed ;
                 desiredOutputForEachUntimedDOChannel = desiredDOStateWhenUntimed(isDOChannelUntimed) ;
                 looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
                 if newValueForRTOutput ,

@@ -1,6 +1,14 @@
 classdef Looper < handle
     % The main Looper object.
     
+    properties  (Dependent=true)   % These are mainly for use in user code.  
+        NSweepsCompletedInThisRun
+        AcquistionSampleRate
+        IsDOChannelTimed
+        DigitalOutputStateIfUntimed
+        SweepDuration
+    end
+    
     properties (Access = protected)        
         DeviceName_ = ''
         NDIOTerminals_ = 0
@@ -110,6 +118,42 @@ classdef Looper < handle
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        
+        
+        function result = get.NSweepsCompletedInThisRun(self)
+            result = self.NSweepsCompletedInThisRun_ ;
+        end  % function
+        
+        function result = get.AcquistionSampleRate(self)
+            result = self.AcquisitionSampleRate_ ;
+        end  % function
+        
+        function result = get.IsDOChannelTimed(self)
+            result = self.IsDOChannelTimed_ ;
+        end  % function
+        
+        function result = get.DigitalOutputStateIfUntimed(self)
+            result = self.DigitalOutputStateIfUntimed_ ;
+        end  % function
+        
+        function set.DigitalOutputStateIfUntimed(self, newValue)
+            if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+                    (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                coercedNewValue = logical(newValue) ;
+                self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
+                if ~isempty(self.UntimedDigitalOutputTask_) ,
+                    self.UntimedDigitalOutputTask_.setChannelDataFancy(self.DigitalOutputStateIfUntimed_, ...
+                                                                       self.IsInUntimedDOTaskForEachUntimedDOChannel_,  ...
+                                                                       self.IsDOChannelTimed_) ;
+                end
+            else
+                error('most:Model:invalidPropVal', ...
+                      'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+            end
+        end  % function
+        
+        function result = get.SweepDuration(self)
+            result = self.SweepDuration_ ;
+        end  % function
         
         function runMainLoop(self)
             % Put something in the console, so user know's what this funny
@@ -319,15 +363,18 @@ classdef Looper < handle
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
             self.DigitalOutputStateIfUntimed_ = newValue ;
-            if ~isempty(self.UntimedDigitalOutputTask_) ,
-                isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
-                isDOChannelUntimed = ~self.IsDOChannelTimed_ ;
-                outputStateIfUntimedForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
-                outputStateForEachUntimedDOChannel = outputStateIfUntimedForEachDOChannel(isDOChannelUntimed) ;
-                outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDOChannel(isInUntimedDOTaskForEachUntimedDOChannel) ;
-                if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
-                    self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
-                end
+            if ~isempty(self.UntimedDigitalOutputTask_) ,                
+%                 isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
+%                 isDOChannelUntimed = ~self.IsDOChannelTimed_ ;
+%                 outputStateIfUntimedForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
+%                 outputStateForEachUntimedDOChannel = outputStateIfUntimedForEachDOChannel(isDOChannelUntimed) ;
+%                 outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDOChannel(isInUntimedDOTaskForEachUntimedDOChannel) ;
+%                 if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+%                     self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+%                 end
+                self.UntimedDigitalOutputTask_.setChannelDataFancy(self.DigitalOutputStateIfUntimed_, ...
+                                                                   self.IsInUntimedDOTaskForEachUntimedDOChannel_,  ...
+                                                                   self.IsDOChannelTimed_) ;
             end            
             result = [] ;
         end  % function
@@ -910,6 +957,20 @@ classdef Looper < handle
             end
         end  % function
 
+        function result = syncUntimedDigitalOutputTaskToDigitalOutputStateIfUntimed_(self, digitalOutputStateIfUntimed)
+            if ~isempty(self.UntimedDigitalOutputTask_) ,
+                isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
+                isDOChannelUntimed = ~self.IsDOChannelTimed_ ;
+                outputStateIfUntimedForEachDOChannel = digitalOutputStateIfUntimed ;
+                outputStateForEachUntimedDOChannel = outputStateIfUntimedForEachDOChannel(isDOChannelUntimed) ;
+                outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDOChannel(isInUntimedDOTaskForEachUntimedDOChannel) ;
+                if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+                    self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+                end
+            end            
+            result = [] ;
+        end  % function
+        
         function result = getAnalogScalingCoefficients_(self)
             if isempty(self.TimedAnalogInputTask_) ,
                 result = [] ;

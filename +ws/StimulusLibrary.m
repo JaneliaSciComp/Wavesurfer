@@ -384,7 +384,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             self.Maps_=cell(1,0);  % clear the maps
             self.Stimuli_=cell(1,0);  % clear the stimuli
             
-            if isempty(other)
+            if isempty(other) ,
                 % Want to handle this case, but there's not much to do here
             else
                 % Make a deep copy of the stimuli
@@ -416,6 +416,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 self.SelectedMapIndex_ = other.SelectedMapIndex_ ;
                 self.SelectedSequenceIndex_ = other.SelectedSequenceIndex_ ;
                 self.SelectedItemClassName_ = other.SelectedItemClassName_ ;
+                % Copy other the duration override state
+                self.AreMapDurationsOverridden_ = other.AreMapDurationsOverridden_ ;
+                self.ExternalMapDuration_ = other.ExternalMapDuration_ ;
             end
             
             %self.enableBroadcastsMaybe();
@@ -1528,7 +1531,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             
             % Create a timeline
-            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any            
+            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration')   % This takes proper account of an external override, if any            
             sampleCount = round(duration * sampleRate);
             dt=1/sampleRate;
             t0=0;  % initial sample time
