@@ -363,6 +363,8 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCRequester_ = [] ;
                 self.IPCPublisher_ = [] ;
             end
+            ws.deleteIfValidHandle(self.UserCodeManager_) ;  % Causes user object to be explicitly deleted, if there is one
+            self.UserCodeManager_ = [] ;
         end
         
         function debug(self) %#ok<MANU>

@@ -28,8 +28,10 @@ classdef UserCodeManager < ws.Subsystem
             self.IsEnabled=true;            
         end  % function
 
-        function delete(self) %#ok<INUSD>
+        function delete(self)
             %keyboard
+            ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
+            self.TheObject_ = [] ;
         end
         
         function result = get.ClassName(self)

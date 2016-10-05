@@ -129,7 +129,7 @@ function success = build(varargin)
     end
 
     if (~testzmq(ZMQ_LIB_PATH) || ~testzmq(ZMQ_INCLUDE_PATH))
-      error('make:matlab-zmq:badConfig', ...
+      error('make:matlabzmq:badConfig', ...
         'Could not find ZMQ files, please edit ''config.m'' and try again.');
     end
   end

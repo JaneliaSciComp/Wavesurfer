@@ -3,7 +3,7 @@ classdef Looper < handle
     
     properties  (Dependent=true)   % These are mainly for use in user code.  
         NSweepsCompletedInThisRun
-        AcquistionSampleRate
+        AcquisitionSampleRate
         IsDOChannelTimed
         DigitalOutputStateIfUntimed
         SweepDuration
@@ -24,7 +24,6 @@ classdef Looper < handle
         IsDOChannelTimed_ = false(1,0)     
         DOChannelNames_ = cell(1,0)
         AcquisitionSampleRate_ = []
-
         AIChannelNames_ = cell(1,0)
         AIChannelScales_ = zeros(1,0)
         IsAIChannelActive_ = false(1,0)
@@ -123,7 +122,7 @@ classdef Looper < handle
             result = self.NSweepsCompletedInThisRun_ ;
         end  % function
         
-        function result = get.AcquistionSampleRate(self)
+        function result = get.AcquisitionSampleRate(self)
             result = self.AcquisitionSampleRate_ ;
         end  % function
         

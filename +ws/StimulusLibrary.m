@@ -1531,7 +1531,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             
             % Create a timeline
-            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration')   % This takes proper account of an external override, if any            
+            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any            
             sampleCount = round(duration * sampleRate);
             dt=1/sampleRate;
             t0=0;  % initial sample time

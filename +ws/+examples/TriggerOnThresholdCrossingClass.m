@@ -26,7 +26,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         NScansSinceBlankingRisingEdge_
         NScansSinceBlankingFallingEdge_
         FinalBlankingValue_  % the last value of the blanking signal from the previous call to samplesAcquired
-        NSweepsCompletedInThisRunAtLastCheck_
+        NSweepsCompletedInThisRunAtLastCheck_ = -1  % set to this so always different from the true value on first call to samplesAcquired()
         NTriggersStartedThisSweep_
         NTriggersCompletedThisSweep_
         NScansToBlankAfterRisingEdge_
@@ -44,7 +44,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             self.MaximumNumberOfTriggersPerSweep = 1 ;  % only trigger once per sweep by default
             self.DurationToBlankAfterRisingEdge = 2 ;  % s
             self.DurationToBlankAfterFallingEdge = 4 ;  % s
-            self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
+            %self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
         end
         
         function delete(self) %#ok<INUSD>
@@ -100,6 +100,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % Check if this is the first call of the run, and act
             % accordingly
+            %nSweepsCompletedInThisRunAtLastCheck_ = self.NSweepsCompletedInThisRunAtLastCheck_
             nSweepsCompletedInThisRun = looper.NSweepsCompletedInThisRun ;
             if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
                 % This must be the first call to samplesAcquired() in 
@@ -120,8 +121,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
                 isFirstCallInSweep = true ;
             else
-                isFirstCallInSweep = false ;
-                
+                isFirstCallInSweep = false ;                
             end
             
             % Determine how many scans have passed since the most-recent
@@ -151,7 +151,13 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % Determine the output value
             %fprintf('nScansSinceBlankingEdge: %8d\n', nScansSinceBlankingEdge) ;
-            if self.IsEnabled ,
+            if self.IsEnabled ,                
+                %nScansSinceBlankingRisingEdge
+                %nScansToBlankAfterRisingEdge_ = self.NScansToBlankAfterRisingEdge_
+                %nScansSinceBlankingFallingEdge
+                %nScansToBlankAfterFallingEdge_ = self.NScansToBlankAfterFallingEdge_
+                %nTriggersCompletedThisSweep_ = self.NTriggersCompletedThisSweep_
+                %maximumNumberOfTriggersPerSweep = self.MaximumNumberOfTriggersPerSweep                
                 if nScansSinceBlankingRisingEdge>self.NScansToBlankAfterRisingEdge_ && ...
                    nScansSinceBlankingFallingEdge>self.NScansToBlankAfterFallingEdge_ && ...
                    self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
