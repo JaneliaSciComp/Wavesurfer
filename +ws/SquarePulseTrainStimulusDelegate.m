@@ -34,9 +34,9 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.Period_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
 %         function set.Period(self, value)
@@ -52,9 +52,9 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.PulseDuration_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
 
 %         function set.PulseDuration(self, value)

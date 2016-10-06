@@ -91,65 +91,65 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
             %self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)       
-            terminalNamesWithDeviceName = mdfStructure.physicalOutputChannelNames ;
-            
-            if ~isempty(terminalNamesWithDeviceName) ,
-                channelNames = mdfStructure.outputChannelNames;
-
-                % Deal with the device names, setting the WSM DeviceName if
-                % it's not set yet.
-                deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
-                uniqueDeviceNames=unique(deviceNames);
-                if length(uniqueDeviceNames)>1 ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                deviceName = uniqueDeviceNames{1} ;                
-                if isempty(self.Parent.DeviceName) ,
-                    self.Parent.DeviceName = deviceName ;
-                end
-
-                % Get the channel IDs
-                terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+%         function initializeFromMDFStructure(self, mdfStructure)       
+%             terminalNamesWithDeviceName = mdfStructure.physicalOutputChannelNames ;
+%             
+%             if ~isempty(terminalNamesWithDeviceName) ,
+%                 channelNames = mdfStructure.outputChannelNames;
+% 
+%                 % Deal with the device names, setting the WSM DeviceName if
+%                 % it's not set yet.
+%                 deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+%                 uniqueDeviceNames=unique(deviceNames);
+%                 if length(uniqueDeviceNames)>1 ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'WaveSurfer only supports a single NI card at present.');                      
+%                 end
+%                 deviceName = uniqueDeviceNames{1} ;                
+%                 if isempty(self.Parent.DeviceName) ,
+%                     self.Parent.DeviceName = deviceName ;
+%                 end
+% 
+%                 % Get the channel IDs
+%                 terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+%                 isAnalog = strcmp(channelTypes,'ao');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names, etc
+%                 %analogDeviceNames = deviceNames(isAnalog) ;
+%                 %digitalDeviceNames = deviceNames(isDigital) ;
+%                 analogTerminalIDs = terminalIDs(isAnalog) ;
+%                 digitalTerminalIDs = terminalIDs(isDigital) ;            
+%                 analogChannelNames = channelNames(isAnalog) ;
+%                 digitalChannelNames = channelNames(isDigital) ;
+% 
+%                 % add the analog channels
+%                 nAnalogChannels = length(analogChannelNames);
+%                 for i = 1:nAnalogChannels ,
+%                     self.addAnalogChannel() ;
+%                     indexOfChannelInSelf = self.NAnalogChannels ;
+%                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
+%                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+%                 end
+%                 
+%                 % add the digital channels
+%                 nDigitalChannels = length(digitalChannelNames);
+%                 for i = 1:nDigitalChannels ,
+%                     self.Parent.addDOChannel() ;
+%                     indexOfChannelInSelf = self.NDigitalChannels ;
+%                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
+%                     self.Parent.setSingleDOChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+%                 end                
+%                 
+%                 % Intialize the stimulus library, just to keep compatible
+%                 % with the old behavior
+%                 self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
+%             end
+%         end  % function
                 
-                % Figure out which are analog and which are digital
-                channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
-                isAnalog = strcmp(channelTypes,'ao');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names, etc
-                %analogDeviceNames = deviceNames(isAnalog) ;
-                %digitalDeviceNames = deviceNames(isDigital) ;
-                analogTerminalIDs = terminalIDs(isAnalog) ;
-                digitalTerminalIDs = terminalIDs(isDigital) ;            
-                analogChannelNames = channelNames(isAnalog) ;
-                digitalChannelNames = channelNames(isDigital) ;
-
-                % add the analog channels
-                nAnalogChannels = length(analogChannelNames);
-                for i = 1:nAnalogChannels ,
-                    self.addAnalogChannel() ;
-                    indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
-                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-                end
-                
-                % add the digital channels
-                nDigitalChannels = length(digitalChannelNames);
-                for i = 1:nDigitalChannels ,
-                    self.Parent.addDOChannel() ;
-                    indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
-                    self.Parent.setSingleDOChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-                end                
-                
-                % Intialize the stimulus library, just to keep compatible
-                % with the old behavior
-                self.StimulusLibrary.setToSimpleLibraryWithUnitPulse(self.ChannelNames);                
-            end
-        end  % function
-        
 %         function delete(self)
 %             %fprintf('Stimulation::delete()\n');            
 % %             self.TheFiniteAnalogOutputTask_ = [] ;
@@ -367,7 +367,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %                     end
 %                 else
 %                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
@@ -388,7 +388,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %                         end
 %                     end
 %                 else
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
@@ -574,9 +574,9 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %             %fprintf('Time in Stimulation.armForEpisode(): %0.3f s\n',T);
 %         end  % function
         
-        function didSelectStimulusSequence(self, cycle)
-            self.StimulusLibrary.SelectedOutputable = cycle;
-        end  % function
+%         function didSelectStimulusSequence(self, cycle)
+%             self.StimulusLibrary.SelectedOutputable = cycle;
+%         end  % function
         
 %         function terminalID=analogTerminalIDFromName(self,channelName)
 %             % Get the channel ID, given the name.

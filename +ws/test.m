@@ -1,4 +1,4 @@
-function res = test(varargin)
+function result = test(varargin)
     %testWavesurfer  Run wavesurfer automated tests.
     %
     %   testWavesurfer() runs all wavesurfer automated tests.
@@ -11,16 +11,23 @@ function res = test(varargin)
     %   line.
 
     % By default include the tests that don't require hardware.
-    suite = matlab.unittest.TestSuite.fromPackage('ws.test.nohw');
+    noHardwareTestSuite = matlab.unittest.TestSuite.fromPackage('ws.test.nohw');
 
     % Add the hardware tests if appropriate based on the input arguments.
-    if nargin == 0 || ~strcmpi(varargin{1}, 'nohw')
-        ts = matlab.unittest.TestSuite.fromPackage('ws.test.hw');
-        if ~isempty(ts)
-            suite = [ts, suite];
-        end
+    if any(strcmp('--nohw', varargin)) ,
+        % Just the no-harware tests 
+        testSuite = noHardwareTestSuite ;
+    else
+        withHardwareTestSuite = matlab.unittest.TestSuite.fromPackage('ws.test.hw');
+        testSuite = horzcat(withHardwareTestSuite, noHardwareTestSuite) ;
     end
 
-    % unittest execution manager.
-    res = suite.run();
+    % Make sure we don't have duplicate tests, which happens sometimes, for
+    % some reason
+    if length(unique({testSuite.Name})) ~= length(testSuite) ,
+        error('There seem to be duplicated tests!') ;
+    end
+    
+    % Run the tests
+    result = testSuite.run() ;
 end

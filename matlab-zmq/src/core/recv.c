@@ -86,10 +86,10 @@ int configure_flag(const mxArray **params, int nParams)
  * while prepare it to return to MATLAB. Also handle the second optional return */
 void configure_return(int nlhs, mxArray **plhs, int msgLen, size_t bufLen, void *buffer) {
     if (msgLen > bufLen) {
-        mexWarnMsgIdAndTxt("zmq:core:recv:bufferTooSmall",
+        mexErrMsgIdAndTxt("zmq:core:recv:bufferTooSmall",
             "Message is %d bytes long, but buffer is %d. Truncated.",
             msgLen, bufLen);
-        plhs[0] = uint8_array_to_m((void*) buffer, bufLen);
+        //plhs[0] = uint8_array_to_m((void*) buffer, bufLen);
     } else {
         plhs[0] = uint8_array_to_m((void*) buffer, msgLen);
     }

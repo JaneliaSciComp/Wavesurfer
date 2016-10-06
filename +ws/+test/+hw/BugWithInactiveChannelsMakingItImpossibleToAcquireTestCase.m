@@ -19,11 +19,18 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 
     methods (Test)
         function theTestWithoutUI(self)
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_8_AIs.m'), ...
-                               isCommandLineOnly);
+            isCommandLineOnly='--nogui';
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer(isCommandLineOnly);
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+                                                      
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Acquisition.IsAnalogChannelActive = [true true false true true true true false];
             wsModel.Stimulation.IsEnabled=true;

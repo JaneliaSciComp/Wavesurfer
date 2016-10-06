@@ -26,10 +26,10 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % duration being specified elsewhere.
         Amplitude
         DCOffset
-        TypeString
-    end
-
-    properties (Dependent=true, SetAccess=immutable)
+        TypeString        
+        AdditionalParameterNames
+        AdditionalParameterDisplayNames
+        AdditionalParameterDisplayUnitses
         Delegate
     end
 
@@ -49,44 +49,32 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     end
     
     methods
-        function self = Stimulus(parent,varargin)
-            self@ws.Model(parent) ;
-            self.Delegate_ = ws.SquarePulseStimulusDelegate(self);  
+        function self = Stimulus(parent, varargin)  %#ok<INUSL>
+            self@ws.Model([]) ;
+            self.Delegate_ = ws.SquarePulseStimulusDelegate([]);  
             pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
             prop = pvArgs(1:2:end);
             vals = pvArgs(2:2:end);
             for idx = 1:length(vals)
                 self.(prop{idx}) = vals{idx};
             end            
-            %if isempty(self.Parent) ,
-            %    error('wavesurfer:stimulusMustHaveParent','A stimulus has to have a parent StimulusLibrary');
-            %end
-            %self.UUID = rand();
         end
         
-        function set.Name(self,newValue)
-            if ischar(newValue) && isrow(newValue) && ~isempty(newValue) ,
-                if self.Parent.isAnItemName(newValue) ,
-                    % do nothing---the newValue is already an item name, so
-                    % we can't have it be our name.  (And if the new value
-                    % is already *our* item name, then we don't need to set
-                    % our name to the not-really-new value.
-                else
-                    self.Name_=newValue;
-                end                    
+        function set.Name(self, newValue)
+            if ws.isString(newValue) && ~isempty(newValue) ,                
+                self.Name_ = newValue ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Stimulus name must be a nonempty string');                  
             end
-            self.Parent.childMayHaveChanged(self);
         end
 
         function set.Delay(self, value)
             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
-                self.Delay_ = value;
+                self.Delay_ = value ;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
         end  % function
         
         function set.Duration(self, value)
@@ -95,9 +83,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Duration_ = value;
             end                    
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
         end  % function
         
         function set.Amplitude(self, value)
@@ -106,9 +91,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
             end                
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
         end
         
         function set.DCOffset(self, value)
@@ -117,9 +99,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 % if we get here without error, safe to set
                 self.DCOffset_ = value;
             end                
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
         end
         
         function out = get.Name(self)
@@ -147,7 +126,27 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end
         
         function output = get.Delegate(self)
-            output = self.Delegate_ ;
+            output = self.Delegate_.copy() ;
+        end
+        
+        function result = get.AdditionalParameterNames(self)
+            result = self.Delegate_.AdditionalParameterNames ;
+        end
+        
+        function result = get.AdditionalParameterDisplayNames(self)
+            result = self.Delegate_.AdditionalParameterDisplayNames ;
+        end
+        
+        function result = get.AdditionalParameterDisplayUnitses(self)
+            result = self.Delegate_.AdditionalParameterDisplayUnitses ;
+        end
+        
+        function result = getAdditionalParameter(self, parameterName)
+            result = self.Delegate_.(parameterName) ;
+        end
+        
+        function setAdditionalParameter(self, parameterName, newValue)
+            self.Delegate_.(parameterName) = newValue ;
         end
         
         function data = calculateSignal(self, t, sweepIndexWithinSet)
@@ -208,33 +207,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             if size(data,1)>0 ,
                 data(end,:)=0;  % don't want to leave the DACs on when we're done
             end
-        end
-        
-%         function h = plot(self, fig, ax, sampleRate)
-%             if ~exist('ax','var') || isempty(ax)
-%                 ax = axes('Parent',fig);
-%             end
-%             
-%             if ~exist('sampleRate','var') || isempty(sampleRate)
-%                 sampleRate = 20000;  % Hz
-%             end
-%             
-%             dt=1/sampleRate;  % s
-%             T=self.EndTime;  % s
-%             n=round(T/dt);
-%             t = dt*(0:(n-1))';  % s
-% 
-%             y = self.calculateSignal(t);            
-%             
-%             h = line('Parent',ax, ...
-%                      'XData',t, ...
-%                      'YData',y);
-%             
-%             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
-%             %title(ax,sprintf('Stimulus using %s', ));
-%             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-%             ylabel(ax,self.Name,'FontSize',10,'Interpreter','none');
-%         end        
+        end        
     end  % public methods block
     
     methods (Access = protected)
@@ -244,15 +217,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % subclasses.
             data = zeros(size(t));
         end
-        
-%         function defineDefaultPropertyTags_(self)
-%             self.setPropertyTags('Name', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Delay', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Duration', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Amplitude', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('DCOffset', 'IncludeInFileTypes', {'*'});
-%             self.setPropertyTags('Delegate', 'IncludeInFileTypes', {'*'});
-%         end  % function
     end
     
     %
@@ -273,7 +237,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Don't need to compare as StimLibraryItem's, b/c only property
             % of that is UUID, which we want to ignore
             propertyNamesToCompare={'Name' 'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Delegate'};
-            %propertyNamesToCompare=ws.findPropertiesSuchThat(self,'SetAccess','public');
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
@@ -305,11 +268,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                         delegate=feval(delegateClassName,self);
                         self.Delegate_ = delegate;
                         self.Delegate_.mimic(other.Delegate_) ;
-%                         % Now we set all the params to match self
-%                         for j = 1:length(self.Delegate.AdditionalParameterNames) ,
-%                             parameterName = self.Delegate_.AdditionalParameterNames{j} ;                
-%                             self.Delegate_.(parameterName) = other.Delegate_.(parameterName) ;
-%                         end                                    
                     else
                         source = other.getPropertyValue_(thisPropertyName) ;
                         self.setPropertyValue_(thisPropertyName, source) ;
@@ -329,34 +287,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             
             % Broadcast update
             %self.broadcast('Update');            
-        end  % function
-    
-%         function other = copyGivenParent(self,parent)
-%             other=ws.Stimulus(parent);
-%             
-%             other.Name_ = self.Name_ ;
-%             other.Delay_ = self.Delay_ ;
-%             other.Duration_ = self.Duration_ ;
-%             other.Amplitude_ = self.Amplitude_ ;
-%             other.DCOffset_ = self.DCOffset_ ;
-%             
-%             % Make a new delegate of the right kind
-%             delegateClassName=sprintf('ws.%sStimulusDelegate',self.TypeString);
-%             delegate=feval(delegateClassName,other);
-%             other.Delegate_ = delegate;
-%             
-%             % Now we set all the params to match self
-%             for i=1:length(self.Delegate.AdditionalParameterNames) ,
-%                 parameterName=self.Delegate_.AdditionalParameterNames{i};                
-%                 other.Delegate_.(parameterName)=self.Delegate_.(parameterName);
-%             end            
-%         end
-    end
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();    
-%         mdlHeaderExcludeProps = {};
-%     end
+        end  % function    
+    end  % public methods block
     
     methods (Static)
         function output = evaluateSweepExpression(expression,sweepIndex)
@@ -434,27 +366,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                     self.Delegate_ = delegate;
                 end
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end            
         end
     end
     
-    methods
-        function childMayHaveChanged(self)
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged(self);
-            end
-        end            
-    end
-    
-%     methods (Static=true)
-%         function stimulus=loadobj(pickledStimulus)
-%             stimulus=pickledStimulus;
-%             stimulus.Delegate.Parent=stimulus;
-%         end  % function
-%     end  % static methods    
-
     methods (Access=protected)
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -466,15 +380,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end  % function
     end
 
-%     methods (Access=protected)
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Model(self);
-%             %self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AllowedTypeStrings', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AllowedTypeDisplayStrings', 'ExcludeFromFileTypes', {'header'});
-%         end
-%     end
-    
     methods         
         function propNames = listPropertiesForHeader(self)
             propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            

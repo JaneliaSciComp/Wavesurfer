@@ -9,6 +9,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     % velocity are continuously updated with the results of all the
     % cumulative data since the User Class was last instantiated.
     
+    properties (Dependent=true)
+        IsInDebugMode
+    end
+    
     properties (Access = protected)
         % User settable parameters
         
@@ -24,6 +28,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         
         % Used to store data
         BarPositionHistogramTotal_
+        
+        % Used to turn on/off debugging mode
+        IsInDebugMode_ = false
+        FakeInputDataAbsoluteFileName_ = ''
     end
     
     properties (Transient = true, Access=protected)
@@ -116,9 +124,13 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         OneMinusAlpha_
         RCFilteredForwardDisplacementPrevious_
         
-        % Used for testing
-      %  DataFromFile_
-      %  TotalNumberOfScans_
+        % Use this to figure out if call to samplesAcquired() is first such
+        % call in sweep.
+        NSweepsCompletedInThisRunAtLastCheck_ = -1  % set to this so always different from the true value on first call to samplesAcquired()
+        
+        % Used for debugging
+        FakeInputDataForDebugging_        
+        NFakeScansUsedSoFarThisSweep_ = 0  % The total number of scans read from the debug data store and inserted into the incoming data stream
     end
     
     methods
@@ -130,8 +142,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             else
                 self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
             end
-            %filepath = ('c:/users/ackermand/desktop/temporary files/wavesurferuserclass/');
-            %self.DataFromFile_ = load([filepath 'secondSweep.mat']);
+            % % Next 2 lines are TESTING
+            % filepath = ('C:/Users/taylora/Dropbox/janelia/wavesurfer/informal-tests/');
+            % self.FakeInputDataForDebugging_ = load([filepath 'flyLocomotionFirstSweepTruncated.mat']);
             % Set up bar histogram information that will be used by
             % frontend and looper
             self.NumberOfBarPositionHistogramBins_ = 16;
@@ -183,9 +196,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end  
             
             self.CurrentLEDState_ = 'Off';
-            
-            % Used for testing
-            % self.TotalNumberOfScans_ = 0;
         end
         
         function delete(self)
@@ -198,6 +208,22 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             ws.deleteIfValidHGHandle(self.BarPositionHistogramFigureHandle_);
             ws.deleteIfValidHGHandle(self.ForwardVsRotationalVelocityHeatmapFigureHandle_);
             ws.deleteIfValidHGHandle(self.HeadingVsRotationalVelocityHeatmapFigureHandle_);
+        end
+        
+        function result = get.IsInDebugMode(self)
+            result = self.IsInDebugMode_ ;
+        end
+        
+        function setFakeInputDataForDebugging(self, fakeInputDataAbsoluteFileName)
+            self.FakeInputDataAbsoluteFileName_ = fakeInputDataAbsoluteFileName ;
+            s = load(self.FakeInputDataAbsoluteFileName_) ;
+            self.FakeInputDataForDebugging_ = s.data ;  % transient, so not copied over to looper, refiller
+            self.IsInDebugMode_ = true ;
+        end
+        
+        function clearFakeInputDataForDebugging(self)
+            self.IsInDebugMode_ = false ;
+            self.FakeInputDataAbsoluteFileName_ = '' ;
         end
         
         % These methods are called in the frontend process
@@ -227,6 +253,14 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             if isempty(self.MaximumDownsamplingRatio_ )
                 self.MaximumDownsamplingRatio_ =1;
             end
+            
+%             % Load the fake data from file if in debug mode
+%             if self.IsInDebugMode_ ,
+%                 if nSweepsCompletedInThisRun==0 ,
+%                     s = load(self.FakeInputDataAbsoluteFileName_) ;
+%                     self.FakeInputDataForDebugging_ = s.data ;
+%                 end
+%             end
         end
         
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -262,10 +296,14 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             self.BarPositionUnwrappedForPlotting_ = [];
             
             % Storing these data over the whole sweep
-            self.StoreSweepTime_ = NaN(self.MaximumNumberOfScansPerSweep_,1);
-            self.StoreSweepBarPositionUnwrapped_ = NaN(self.MaximumNumberOfScansPerSweep_,1);
-            self.StoreSweepBarPositionWrapped_ = NaN(self.MaximumNumberOfScansPerSweep_,1);
-            self.StoreSweepCumulativeRotation_ = NaN(self.MaximumNumberOfScansPerSweep_,1);
+            %maximumNumberOfScansPerSweep = self.MaximumNumberOfScansPerSweep_
+            self.StoreSweepTime_ = nan(self.MaximumNumberOfScansPerSweep_,1);
+            self.StoreSweepBarPositionUnwrapped_ = nan(self.MaximumNumberOfScansPerSweep_,1);
+            self.StoreSweepBarPositionWrapped_ = nan(self.MaximumNumberOfScansPerSweep_,1);
+            self.StoreSweepCumulativeRotation_ = nan(self.MaximumNumberOfScansPerSweep_,1);
+            
+            % Relevant if in debug mode
+            self.NFakeScansUsedSoFarThisSweep_ = 0;                        
         end
         
         % When a sweep stops for any reason, we plot all the data to the
@@ -302,8 +340,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             self.TimeRecent_ = timeAtStartOfDataAvailableCall + self.DeltaTime_*(0:(nScans-1))';
             
             
-          %  analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+nScans,:); % This is for troubleshooting
-          %  self.TotalNumberOfScans_=self.TotalNumberOfScans_+nScans;
+            % Next two lines are for TESTING
+            if self.IsInDebugMode_ ,
+                analogData = self.FakeInputDataForDebugging_(self.NFakeScansUsedSoFarThisSweep_+1:self.NFakeScansUsedSoFarThisSweep_+nScans,:); 
+                self.NFakeScansUsedSoFarThisSweep_=self.NFakeScansUsedSoFarThisSweep_+nScans;
+            end
           
             % Analyze the fly locomotion, a function provided by Stephanie
             % Wegener. This updates self.BarPositionUnwrappedRecent_,
@@ -407,10 +448,32 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSD,INUSL>
             % This is used to acquire the data, and performs the necessary
             % analysis to trigger an LED
-            numberOfScansRecent = size(analogData,1);
             
-       %     analogData = self.DataFromFile_.data(self.TotalNumberOfScans_+1:self.TotalNumberOfScans_+numberOfScansRecent,:);
-       %     self.TotalNumberOfScans_ = self.TotalNumberOfScans_+numberOfScansRecent;
+            % Check if this is the first call of the run, and act
+            % accordingly
+            nSweepsCompletedInThisRun = looper.NSweepsCompletedInThisRun ;
+            if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
+                % This must be the first call to samplesAcquired() in 
+                % this sweep.
+                if self.IsInDebugMode_ ,
+                    if nSweepsCompletedInThisRun==0 ,
+                        s = load(self.FakeInputDataAbsoluteFileName_) ;
+                        self.FakeInputDataForDebugging_ = s.data ;
+                    end
+                end
+                self.NFakeScansUsedSoFarThisSweep_ = 0 ;
+                self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
+            end
+            
+            % Get the number of scans acquired since the last call to
+            % samplesAcquired()
+            numberOfScansRecent = size(analogData,1) ;
+            
+            % NEXt 2 lines are TESTING
+            if self.IsInDebugMode_ ,                            
+                analogData = self.FakeInputDataForDebugging_(self.NFakeScansUsedSoFarThisSweep_+1:self.NFakeScansUsedSoFarThisSweep_+numberOfScansRecent,:);
+                self.NFakeScansUsedSoFarThisSweep_ = self.NFakeScansUsedSoFarThisSweep_+numberOfScansRecent;
+            end
        
             % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
             self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_);
@@ -419,7 +482,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 % Then a run just started
                 self.LooperBarPositionHistogramTotal_ = self.BarPositionHistogramTotal_; % Sync looper bar positions to those acquired in frontend
                 self.NSweepsCompletedInThisRunPrevious_ = NaN;
-                self.DeltaTime_ = 1/looper.Acquisition.SampleRate;
+                self.DeltaTime_ = 1/looper.AcquisitionSampleRate;
                 self.Alpha_ = self.DeltaTime_/(self.Tau_+self.DeltaTime_);
                 self.OneMinusAlpha_ = 1 - self.Alpha_;
                 self.RunAlreadyStarted_ = true;
@@ -445,7 +508,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-            self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.Acquisition.SampleRate;
+            self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.AcquisitionSampleRate;
             
             % Use RC filter of forward displacement to determine if fly is
             % moving forward enough to turn LED on.
@@ -516,7 +579,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             desiredDigitalOutputStateIfUntimed(self.LEDDigitalOutputChannelIndex_) = strcmp(onOrOff,'On'); % If equal, will set LED on. Else will set it to off.
             isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
             desiredOutputForEachUntimedDigitalOutputChannel = desiredDigitalOutputStateIfUntimed(isDOChannelUntimed) ;
-            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDigitalOutputChannel) ;
+            looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDigitalOutputChannel) ;
         end
         
         function generateFigures(self)

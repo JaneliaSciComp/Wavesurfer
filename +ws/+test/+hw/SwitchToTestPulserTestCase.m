@@ -19,11 +19,14 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer('--nogui');
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;                                 
+                           
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
@@ -34,24 +37,29 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
-            pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
-            pulse.Name='Pulse';
-            pulse.Amplitude='4.4';  % V
-            pulse.Delay='0.1';
-            pulse.Delegate.PulseDuration='0.8';
-            pulse.Delegate.Period='1';
-
-            % make a map that puts the just-made pulse out of the first AO channel, add
+            pulseTrainIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'TypeString', 'SquarePulseTrain') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Name', 'Pulse Train') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Amplitude', '4.4') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Delay', '0.1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'PulseDuration', '0.8') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Period', '1') ;            
+            
+            % Make a map that puts the just-made pulse out of the first AO channel and the first DO channel, add
             % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Pulse out first AO, DO';
-            firstAOChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAOChannelName,pulse);
-            firstDOChannelName=wsModel.Stimulation.DigitalChannelNames{1};
-            map.addBinding(firstDOChannelName,pulse);
-
-            % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
+            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
+            binding2Index = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, binding2Index, 'ChannelName', firstDOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, binding2Index, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
+            
+            % Make the new map the current sequence/map
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             % set the data file name
             thisFileName=mfilename();
@@ -66,15 +74,15 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             pause(1);
             wsModel.record();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nSweeps;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             % Delete the data file
             delete(dataFilePatternAbsolute);

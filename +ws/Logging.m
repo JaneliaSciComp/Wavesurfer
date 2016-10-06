@@ -86,7 +86,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'FileLocation must be a string');                    
                 end
             end
@@ -112,7 +112,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'FileBaseName must be a string');                    
                 end
             end
@@ -130,7 +130,7 @@ classdef Logging < ws.Subsystem
                     self.NextSweepIndex_ = newValue;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'NextSweepIndex must be a (scalar) nonnegative integer');
                 end
             end
@@ -151,7 +151,7 @@ classdef Logging < ws.Subsystem
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -168,7 +168,7 @@ classdef Logging < ws.Subsystem
                     self.DoIncludeDate_ = logical(newValue);
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoIncludeDate must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -191,7 +191,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('UpdateDoIncludeSessionIndex');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -214,12 +214,12 @@ classdef Logging < ws.Subsystem
                         end
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'SessionIndex must be an integer greater than or equal to one');
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Can''t set SessionIndex when DoIncludeSessionIndex is false');
                     
                 end
@@ -416,10 +416,10 @@ classdef Logging < ws.Subsystem
             %
             % Want to rename the data file to reflect the actual number of sweeps acquired
             %
-            exception = [] ;
             if self.DidCreateCurrentDataFile_ ,
                 % A data file was created.  Might need to rename it, or delete it.
                 originalAbsoluteLogFileName = self.CurrentRunAbsoluteFileName_ ;
+                originalLogFileName = ws.leafFileName(originalAbsoluteLogFileName) ;  % might need later, and cheap to compute
                 firstSweepIndex = self.FirstSweepIndex_ ;
                 if isempty(self.LastSweepIndexForWhichDatasetCreated_) ,
                     % This means no sweeps were actually added to the log file.
@@ -429,10 +429,13 @@ classdef Logging < ws.Subsystem
                 end
                 if numberOfPartialSweepsLogged == 0 ,
                     % If no sweeps logged, and we actually created the data file for the current run, delete the file
-                    if self.DidCreateCurrentDataFile_ ,
-                        ws.deleteFileWithoutWarning(originalAbsoluteLogFileName);
-                    else
-                        % nothing to do
+                    try
+                        ws.deleteFileWithoutWarning(originalAbsoluteLogFileName) ;
+                    catch exception ,
+                        self.logWarning('ws:unableToDeleteLogFile', ...
+                                        sprintf('Unable to delete data file %s after stop/abort', ...
+                                                originalLogFileName), ...
+                                        exception) ;                            
                     end
                 else    
                     % We logged some sweeps, but maybe not the number number requested.  Check for this, renaming the
@@ -440,29 +443,55 @@ classdef Logging < ws.Subsystem
                     newLogFileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
                     if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
-                        % This might happen, e.g. if the number of sweeps is inf
+                        % Nothing to do in this case.
+                        % This case might happen, e.g. if the number of sweeps is inf
                         % do nothing.
                     else
+                        isSafeToMoveFile = false ;
                         % Check for filename collisions, if that's what user wants
                         if exist(newAbsoluteLogFileName, 'file') == 2 ,
                             if self.IsOKToOverwrite ,
-                                % don't need to check anything
+                                % Don't need to check anything.
                                 % But need to delete pre-existing files, otherwise h5create
                                 % will just add datasets to a pre-existing file.
-                                ws.deleteFileWithoutWarning(newAbsoluteLogFileName);
+                                try
+                                    ws.deleteFileWithoutWarning(newAbsoluteLogFileName) ;
+                                    isSafeToMoveFile = true ;
+                                catch exception ,
+                                    self.logWarning('ws:unableToRenameLogFile', ...
+                                                    sprintf(horzcat('Unable to rename data file %s to %s after stop/abort, ', ...
+                                                                    'because couldn''t delete pre-existing file %s'), ...
+                                                            originalLogFileName, ...
+                                                            newLogFileName, ...
+                                                            newLogFileName), ...
+                                                    exception) ;
+                                end
                             else
-                                [~,stem,ext] = fileparts(originalAbsoluteLogFileName) ;
-                                originalLogFileName = [stem ext] ;
-                                exception = MException('wavesurfer:unableToRenameLogFile', ...
-                                                       'Unable to rename data file %s to %s after stop/abort, because file %s already exists', ...
-                                                       originalLogFileName, ...
-                                                       newLogFileName, ...
-                                                       newLogFileName);
+                                % This means there's a filename collision,
+                                % and user doesn't want us to overwrite
+                                % files without asking.
+                                isSafeToMoveFile = false ; 
+                                self.logWarning('ws:unableToRenameLogFile', ...
+                                                sprintf('Unable to rename data file %s to %s after stop/abort, because file %s already exists', ...
+                                                        originalLogFileName, ...
+                                                        newLogFileName, ...
+                                                        newLogFileName) ) ;
                             end
+                        else
+                            % Target file doesn't exist, so safe to move
+                            isSafeToMoveFile = true ;
                         end
                         % If all is well here, rename the file
-                        if isempty(exception) ,
-                            movefile(originalAbsoluteLogFileName,newAbsoluteLogFileName);
+                        if isSafeToMoveFile ,
+                            try
+                                movefile(originalAbsoluteLogFileName, newAbsoluteLogFileName) ;
+                            catch exception ,
+                                self.logWarning('ws:unableToRenameLogFile', ...
+                                                sprintf('Unable to rename data file %s to %s after stop/abort', ...
+                                                        originalLogFileName, ...
+                                                        newLogFileName), ...
+                                                exception) ;
+                            end                                
                         end                
                     end
                 end
@@ -473,13 +502,13 @@ classdef Logging < ws.Subsystem
             % Now do things common to performance and abortion
             self.nullOutTransients_();
 
-            % Now throw that exception, if there was one
-            %dbclear all
-            if isempty(exception) ,                
-                % do nothing
-            else
-                throw(exception);
-            end            
+%             % Now throw that exception, if there was one
+%             %dbclear all
+%             if isempty(exception) ,                
+%                 % do nothing
+%             else
+%                 throw(exception);
+%             end            
         end  % function
             
         function nullOutTransients_(self)

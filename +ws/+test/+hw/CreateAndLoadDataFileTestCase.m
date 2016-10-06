@@ -19,12 +19,18 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
     methods (Test)
 
         function testAnalogAndDigital(self)
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer('--nogui');
 
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            wsModel.addDOChannel() ;
+            
+            wsModel.Acquisition.SampleRate=20000;  % Hz            
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
@@ -34,24 +40,29 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
 
             % Make a pulse stimulus, add to the stimulus library
-            pulse=wsModel.Stimulation.StimulusLibrary.addNewStimulus('SquarePulseTrain');
-            pulse.Name='Pulse';
-            pulse.Amplitude='4.4';  % V
-            pulse.Delay='0.1';
-            pulse.Delegate.PulseDuration='0.8';
-            pulse.Delegate.Period='1';
-
-            % make a map that puts the just-made pulse out of the first AO channel, add
+            pulseTrainIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'TypeString', 'SquarePulseTrain') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Name', 'Pulse Train') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Amplitude', '4.4') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Delay', '0.1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'PulseDuration', '0.8') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', pulseTrainIndex, 'Period', '1') ;            
+            
+            % Make a map that puts the just-made pulse out of the first AO channel and the first DO channel, add
             % to stim library
-            map=wsModel.Stimulation.StimulusLibrary.addNewMap();
-            map.Name='Pulse out first AO, DO';
-            firstAOChannelName=wsModel.Stimulation.AnalogChannelNames{1};
-            map.addBinding(firstAOChannelName,pulse);
-            firstDOChannelName=wsModel.Stimulation.DigitalChannelNames{1};
-            map.addBinding(firstDOChannelName,pulse);
-
-            % make the new map the current sequence/map
-            wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
+            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
+            binding2Index = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, binding2Index, 'ChannelName', firstDOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, binding2Index, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
+            
+            % Make the new map the current sequence/map
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             % set the data file name
             thisFileName=mfilename();
@@ -76,16 +87,23 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
             
             % These should not error, at the least...
-            fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
-            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
+            fs = dataAsStruct.header.Acquisition.SampleRate;
+            self.verifyEqual(fs, 20000) ;
+            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;
+            self.verifyEqual(length(analogChannelNames),4) ;
             analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
-            %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
-            %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
-            %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
+            
+            % Check some of the stim library parts of the header
+            stimulusLibraryHeader = dataAsStruct.header.Stimulation.StimulusLibrary 
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableClassName')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableIndex')) ;
             
             % Delete the data file
             delete(dataFilePatternAbsolute);

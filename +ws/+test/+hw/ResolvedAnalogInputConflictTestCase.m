@@ -16,9 +16,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            protocolOrMDFFileName = [] ;
-            isCommandLineOnly = true ;             
-            wsModel=wavesurfer(protocolOrMDFFileName, isCommandLineOnly) ;
+            wsModel=wavesurfer('--nogui') ;
 
             wsModel.Acquisition.addAnalogChannel() ;
             wsModel.Acquisition.addAnalogChannel() ;
@@ -34,6 +32,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
             end
             wsModel.Acquisition.setSingleAnalogTerminalID(2,1) ;  % this resolves the conflict
             wsModel.play() ;  % this errors, even though it shouldn't...
+            self.verifyTrue(true) ;
         end  % function
     end  % test methods
 

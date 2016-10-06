@@ -4,8 +4,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function theTest(self)
-            isCommandLineOnly = true ;
-            wsModel = wavesurfer([],isCommandLineOnly) ;
+            wsModel = wavesurfer('--nogui') ;
 
             wsModel.Ephys.ElectrodeManager.addNewElectrode() ;
             electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1} ;
@@ -20,9 +19,13 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
             self.verifyEqual(currentCommandScaleInTrode, commandScaleInStimulationSubsystem) ;
 
-            pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
-            pulse.Amplitude = '3.1415' ;
-            amplitudeAsDouble = str2double(pulse.Amplitude) ;
+            amplitudeAsString = '3.1415' ;
+            amplitudeAsDouble = str2double(amplitudeAsString) ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', amplitudeAsString) ;
+
+%             pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
+%             pulse.Amplitude = '3.1415' ;
+%             amplitudeAsDouble = str2double(pulse.Amplitude) ;
 
             wsModel.Stimulation.IsEnabled = true ;
 

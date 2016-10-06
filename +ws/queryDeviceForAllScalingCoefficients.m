@@ -2,7 +2,7 @@ function scalingCoefficients = queryDeviceForAllScalingCoefficients(deviceName)
     % This assumes the device is used with default termination on all AI
     % channels, and the number of cols in scalingCoefficients is equal to
     % the number of single-ended AI channels on the board.
-    nSingleEndedAITerminals = ws.RootModel.getNumberOfSingleEndedAITerminalsFromDevice(deviceName) ;  % this is the number of channels if they're all differential
+    nSingleEndedAITerminals = ws.getNumberOfSingleEndedAITerminalsFromDevice(deviceName) ;  % this is the number of channels if they're all differential
     parent = [] ;
     taskType = 'analog' ;
     taskName = 'mortimer' ;

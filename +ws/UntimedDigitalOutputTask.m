@@ -101,6 +101,17 @@ classdef UntimedDigitalOutputTask < handle
             self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
         
+        function setChannelDataFancy(self, outputStateIfUntimedForEachDOChannel, isInUntimedDOTaskForEachUntimedDOChannel, isDOChannelTimed)
+            % This is a utility for setting the channel data, that meshes
+            % well with the data stored in the Looper.
+            isDOChannelUntimed = ~isDOChannelTimed ;
+            outputStateForEachUntimedDOChannel = outputStateIfUntimedForEachDOChannel(isDOChannelUntimed) ;
+            outputStateForEachChannelInUntimedDOTask = outputStateForEachUntimedDOChannel(isInUntimedDOTaskForEachUntimedDOChannel) ;
+            if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
+                self.ChannelData = outputStateForEachChannelInUntimedDOTask ;
+            end
+        end
+            
         function value = get.ChannelData(self)
             value = self.ChannelData_;
         end  % function
@@ -112,7 +123,7 @@ classdef UntimedDigitalOutputTask < handle
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
                 else
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
                 end
             end

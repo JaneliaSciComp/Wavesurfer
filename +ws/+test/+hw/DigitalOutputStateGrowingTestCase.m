@@ -2,6 +2,7 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
+            delete(findall(0,'Type','figure')) ;            
             daqSystem = ws.dabs.ni.daqmx.System();
             ws.deleteIfValidHandle(daqSystem.tasks);
         end
@@ -9,6 +10,7 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
+            delete(findall(0,'Type','figure')) ;            
             daqSystem = ws.dabs.ni.daqmx.System();
             ws.deleteIfValidHandle(daqSystem.tasks);
         end
@@ -16,9 +18,8 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            protocolOrMDFFileName = [] ;
-            isCommandLineOnly = true ;             
-            wsModel=wavesurfer(protocolOrMDFFileName, isCommandLineOnly) ;
+            isCommandLineOnly = '--nogui' ;             
+            wsModel=wavesurfer(isCommandLineOnly) ;
 
             wsModel.Stimulation.IsEnabled=true;
             self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0);

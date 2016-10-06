@@ -19,17 +19,23 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly=true ;
-            thisDirName=fileparts(mfilename('fullpath'));
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
-                               isCommandLineOnly);
+            %thisDirName=fileparts(mfilename('fullpath'));
+            %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'));
+            [wsModel,wsController]=wavesurfer();
 
-            %wsModel.Acquisition.SampleRate=20000;  % Hz
+            % set up channels 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addDOChannel() ;
+            wsModel.addDOChannel() ;
+            
             wsModel.Stimulation.IsEnabled = true ;
-            %wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled = true ;
-            %wsModel.Logging.IsEnabled=false;
-
             wsModel.AreSweepsContinuous = true ;
 
             wsModel.UserCodeManager.ClassName = 'ws.examples.ExampleUserClass' ;
@@ -44,6 +50,8 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
             stop(aTimer) ;
             delete(aTimer) ;
 
+            wsController.quit() ;
+            wsController = [] ;  %#ok<NASGU>
             wsModel = [] ;  %#ok<NASGU>    % release the WavesurferModel
             
             self.verifyTrue(true) ;            

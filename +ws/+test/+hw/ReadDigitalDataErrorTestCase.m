@@ -1,7 +1,6 @@
 classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on the current path, 
-    % and be named Machine_Data_File_8_AIs.m.
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -19,11 +18,19 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'), ...
-                               isCommandLineOnly);
+            isCommandLineOnly='--nogui';
+            %thisDirName=fileparts(mfilename('fullpath'));            
+            wsModel=wavesurfer(isCommandLineOnly);
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addDIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            wsModel.addDOChannel() ;
+            
             wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz

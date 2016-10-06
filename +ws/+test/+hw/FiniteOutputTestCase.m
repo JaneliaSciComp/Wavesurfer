@@ -22,7 +22,8 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             terminalIDs = [0 1] ;
             %channelNames = { 'ao0' 'ao1' } ;
             fs=20000;  % Hz
-            theTask = ws.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs, fs);
+            isChannelInTask = true(size(terminalIDs)) ;
+            theTask = ws.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs, isChannelInTask, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s
@@ -48,8 +49,9 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             deviceNames = { 'Dev1' 'Dev1' } ;
             terminalIDs = [0 1] ;
             %channelNames = { 'do0' 'do1' } ;
-            fs=20000;  % Hz
-            theTask = ws.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs, fs);
+            isChannelInTask = true(size(terminalIDs)) ;
+            fs=20000;  % Hz            
+            theTask = ws.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs, isChannelInTask, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s

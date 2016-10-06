@@ -28,7 +28,6 @@ classdef IPCRequester < ws.ZMQConnecter
             try
                 %fprintf('Just before recv\n');
                 %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
-                %serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
                 serializedMessage = self.Socket.recv(262144, 'ZMQ_DONTWAIT') ;                
                 %serializedMessage = zmq.core.recv(self.Socket) ;  % this should block
                 %fprintf('Just after recv\n');
@@ -46,7 +45,7 @@ classdef IPCRequester < ws.ZMQConnecter
                 elseif isequal(me.identifier,'zmq:core:recv:bufferTooSmall') ,
                     % serializedMessage will be truncated, and thus not
                     % unserializable, and thus useless
-                    warning('Got a message too long for the buffer in IPCSubscriber');
+                    warning('Got a message too long for the buffer in IPCRequester');
                     isMessageAvailable = false;
                     %methodName = '' ;
                     %methodError = [] ;

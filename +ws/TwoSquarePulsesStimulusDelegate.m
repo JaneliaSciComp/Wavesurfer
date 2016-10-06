@@ -43,9 +43,9 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.FirstPulseAmplitude_ = newValue;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
         function set.FirstPulseDuration(self, newValue)
@@ -54,9 +54,9 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.FirstPulseDuration_ = newValue;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
         function set.DelayBetweenPulses(self, newValue)
@@ -65,9 +65,9 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.DelayBetweenPulses_ = newValue;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
         function set.SecondPulseAmplitude(self, newValue)
@@ -76,9 +76,9 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.SecondPulseAmplitude_ = newValue;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
         function set.SecondPulseDuration(self, newValue)
@@ -87,9 +87,9 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.SecondPulseDuration_ = newValue;
             end
-            if ~isempty(self.Parent) ,
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
         
         function out = get.FirstPulseAmplitude(self)

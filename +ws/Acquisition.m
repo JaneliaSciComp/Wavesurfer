@@ -9,60 +9,60 @@ classdef Acquisition < ws.AcquisitionSubsystem
             self@ws.AcquisitionSubsystem(parent);
         end
         
-        function initializeFromMDFStructure(self, mdfStructure)
-            terminalNamesWithDeviceName = mdfStructure.physicalInputChannelNames ;  % these should be of the form 'Dev1/ao0' or 'Dev1/line3'            
-            
-            if ~isempty(terminalNamesWithDeviceName) ,
-                channelNames = mdfStructure.inputChannelNames;
-
-                % Deal with the device names, setting the WSM DeviceName if
-                % it's not set yet.
-                deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
-                uniqueDeviceNames=unique(deviceNames);
-                if length(uniqueDeviceNames)>1 ,
-                    error('ws:MoreThanOneDeviceName', ...
-                          'WaveSurfer only supports a single NI card at present.');                      
-                end
-                deviceName = uniqueDeviceNames{1} ;                
-                if isempty(self.Parent.DeviceName) ,
-                    self.Parent.DeviceName = deviceName ;
-                end
-
-                % Get the channel IDs
-                terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
-                
-                % Figure out which are analog and which are digital
-                channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
-                isAnalog = strcmp(channelTypes,'ai');
-                isDigital = ~isAnalog;
-
-                % Sort the channel names, etc
-                %analogDeviceNames = deviceNames(isAnalog) ;
-                %digitalDeviceNames = deviceNames(isDigital) ;
-                analogTerminalIDs = terminalIDs(isAnalog) ;
-                digitalTerminalIDs = terminalIDs(isDigital) ;            
-                analogChannelNames = channelNames(isAnalog) ;
-                digitalChannelNames = channelNames(isDigital) ;
-
-                % add the analog channels
-                nAnalogChannels = length(analogChannelNames);
-                for i = 1:nAnalogChannels ,
-                    self.addAnalogChannel() ;
-                    indexOfChannelInSelf = self.NAnalogChannels ;
-                    self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
-                    self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
-                end
-                
-                % add the digital channels
-                nDigitalChannels = length(digitalChannelNames);
-                for i = 1:nDigitalChannels ,
-                    self.Parent.addDIChannel() ;
-                    indexOfChannelInSelf = self.NDigitalChannels ;
-                    self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
-                    self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
-                end                
-            end
-        end  % function
+%         function initializeFromMDFStructure(self, mdfStructure)
+%             terminalNamesWithDeviceName = mdfStructure.physicalInputChannelNames ;  % these should be of the form 'Dev1/ao0' or 'Dev1/line3'            
+%             
+%             if ~isempty(terminalNamesWithDeviceName) ,
+%                 channelNames = mdfStructure.inputChannelNames;
+% 
+%                 % Deal with the device names, setting the WSM DeviceName if
+%                 % it's not set yet.
+%                 deviceNames = ws.deviceNamesFromTerminalNames(terminalNamesWithDeviceName);
+%                 uniqueDeviceNames=unique(deviceNames);
+%                 if length(uniqueDeviceNames)>1 ,
+%                     error('ws:MoreThanOneDeviceName', ...
+%                           'WaveSurfer only supports a single NI card at present.');                      
+%                 end
+%                 deviceName = uniqueDeviceNames{1} ;                
+%                 if isempty(self.Parent.DeviceName) ,
+%                     self.Parent.DeviceName = deviceName ;
+%                 end
+% 
+%                 % Get the channel IDs
+%                 terminalIDs = ws.terminalIDsFromTerminalNames(terminalNamesWithDeviceName);
+%                 
+%                 % Figure out which are analog and which are digital
+%                 channelTypes = ws.channelTypesFromTerminalNames(terminalNamesWithDeviceName);
+%                 isAnalog = strcmp(channelTypes,'ai');
+%                 isDigital = ~isAnalog;
+% 
+%                 % Sort the channel names, etc
+%                 %analogDeviceNames = deviceNames(isAnalog) ;
+%                 %digitalDeviceNames = deviceNames(isDigital) ;
+%                 analogTerminalIDs = terminalIDs(isAnalog) ;
+%                 digitalTerminalIDs = terminalIDs(isDigital) ;            
+%                 analogChannelNames = channelNames(isAnalog) ;
+%                 digitalChannelNames = channelNames(isDigital) ;
+% 
+%                 % add the analog channels
+%                 nAnalogChannels = length(analogChannelNames);
+%                 for i = 1:nAnalogChannels ,
+%                     self.addAnalogChannel() ;
+%                     indexOfChannelInSelf = self.NAnalogChannels ;
+%                     self.setSingleAnalogChannelName(indexOfChannelInSelf, analogChannelNames{i}) ;                    
+%                     self.setSingleAnalogTerminalID(indexOfChannelInSelf, analogTerminalIDs(i)) ;
+%                 end
+%                 
+%                 % add the digital channels
+%                 nDigitalChannels = length(digitalChannelNames);
+%                 for i = 1:nDigitalChannels ,
+%                     self.Parent.addDIChannel() ;
+%                     indexOfChannelInSelf = self.NDigitalChannels ;
+%                     self.setSingleDigitalChannelName(indexOfChannelInSelf, digitalChannelNames{i}) ;
+%                     self.Parent.setSingleDIChannelTerminalID(indexOfChannelInSelf, digitalTerminalIDs(i)) ;
+%                 end                
+%             end
+%         end  % function
         
 %         function settings = packageCoreSettings(self)
 %             settings=struct() ;
