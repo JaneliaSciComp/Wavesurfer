@@ -1275,8 +1275,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 if isequal(propertyName, 'Name') 
                     didSetOutputableName = true ;
                     if self.isAnItemName(newValue) ,
-                        error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                              '%s is already the name of another item', newValue) ;
+                        error('ws:invalidPropertyValue' , ...
+                              '%s is already the name of another stimulus library item', newValue) ;
                     end
                 end
                 item = self.Sequences_{index} ;
@@ -1285,21 +1285,21 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 if isequal(propertyName, 'Name') 
                     didSetOutputableName = true ;                    
                     if self.isAnItemName(newValue) ,
-                        error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                              '%s is already the name of another item', newValue) ;
+                        error('ws:invalidPropertyValue' , ...
+                              '%s is already the name of another stimulus library item', newValue) ;
                     end
                 end
                 if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
-                    error('ws:stimulusLibrary:cantSetOverriddenProperty' , ...
-                          'Can''t set the value of an overridden property') ;
+                    error('ws:invalidPropertyValue' , ...
+                          'Can''t set the value of Duration when overridden') ;
                 else
                     item = self.Maps_{index} ;
                     item.(propertyName) = newValue ;
                 end
             elseif isequal(className,'ws.Stimulus') ,
                 if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
+                    error('ws:invalidPropertyValue' , ...
+                          '%s is already the name of another stimulus library item', newValue) ;
                 end
                 item = self.Stimuli_{index} ;
                 if isprop(item, propertyName) ,
