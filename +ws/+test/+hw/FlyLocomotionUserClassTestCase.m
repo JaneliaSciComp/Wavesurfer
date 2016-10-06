@@ -22,46 +22,45 @@ classdef FlyLocomotionUserClassTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
 
             % set up channels 
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAOChannel() ;
-%             wsModel.addAOChannel() ;
-%             wsModel.addDIChannel() ;
-%             wsModel.addDIChannel() ;
-%             wsModel.addDOChannel() ;
-%             wsModel.addDOChannel() ;
-            
+            %             wsModel.addAIChannel() ;
+            %             wsModel.addAIChannel() ;
+            %             wsModel.addAIChannel() ;
+            %             wsModel.addAIChannel() ;
+            %             wsModel.addAOChannel() ;
+            %             wsModel.addAOChannel() ;
+            %             wsModel.addDIChannel() ;
+            %             wsModel.addDIChannel() ;
+            %             wsModel.addDOChannel() ;
+            %             wsModel.addDOChannel() ;
+
             %wsModel.Stimulation.IsEnabled = true ;
             %wsModel.AreSweepsContinuous = true ;
             wsModel.SweepDuration = 10 ;  % s
-            
+
             wsModel.UserCodeManager.ClassName = 'ws.examples.FlyLocomotionLiveUpdating' ;
             thisDirName = fileparts(mfilename('fullpath')) ;
             dataFileName = fullfile(thisDirName,'flyLocomotionFirstSweepTruncated.mat') ;
-            s = load(dataFileName) ;
-            fakeInputDataForDebugging = s.data ;          
-            wsModel.UserCodeManager.TheObject.setFakeInputDataForDebugging(fakeInputDataForDebugging) ;
+            %s = load(dataFileName) ;
+            %fakeInputDataForDebugging = s.data ;          
+            wsModel.UserCodeManager.TheObject.setFakeInputDataForDebugging(dataFileName) ;
             self.verifyTrue(wsModel.UserCodeManager.TheObject.IsInDebugMode) ;
-            
-%             aTimer = timer('ExecutionMode', 'singleShot', ...
-%                            'StartDelay', 20, ...
-%                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
-            
-%             start(aTimer) ;
-            wsModel.play() ;  % this will block
-%             stop(aTimer) ;
-%             delete(aTimer) ;
 
-%             wsController.quit() ;
-%             wsController = [] ;  %#ok<NASGU>
+            %             aTimer = timer('ExecutionMode', 'singleShot', ...
+            %                            'StartDelay', 20, ...
+            %                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
+
+            %             start(aTimer) ;
+            wsModel.play() ;  % this will block
+            %             stop(aTimer) ;
+            %             delete(aTimer) ;
+
+            %             wsController.quit() ;
+            %             wsController = [] ;  %#ok<NASGU>
             wsModel.UserCodeManager.TheObject.clearFakeInputDataForDebugging() ;
             self.verifyFalse(wsModel.UserCodeManager.TheObject.IsInDebugMode) ;
+
             wsModel.delete() ;  % Explicitly delete to cause explicit deletion of the user object, and (hopefully) destruction of any user object figures
-            wsModel = [] ;  %#ok<NASGU> 
-            
-            self.verifyTrue(true) ;  % If we get here without errors, we call that success
+            wsModel = [] ;         %#ok<NASGU>
         end  % function
     end  % test methods
 

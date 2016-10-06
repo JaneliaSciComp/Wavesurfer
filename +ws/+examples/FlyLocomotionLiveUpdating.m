@@ -31,7 +31,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         
         % Used to turn on/off debugging mode
         IsInDebugMode_ = false
-        FakeInputDataForDebugging_
+        FakeInputDataAbsoluteFileName_ = ''
     end
     
     properties (Transient = true, Access=protected)
@@ -129,6 +129,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         NSweepsCompletedInThisRunAtLastCheck_ = -1  % set to this so always different from the true value on first call to samplesAcquired()
         
         % Used for debugging
+        FakeInputDataForDebugging_        
         NFakeScansUsedSoFarThisSweep_ = 0  % The total number of scans read from the debug data store and inserted into the incoming data stream
     end
     
@@ -213,14 +214,16 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             result = self.IsInDebugMode_ ;
         end
         
-        function setFakeInputDataForDebugging(self, fakeInputDataForDebugging)
-            self.FakeInputDataForDebugging_ = fakeInputDataForDebugging ;
+        function setFakeInputDataForDebugging(self, fakeInputDataAbsoluteFileName)
+            self.FakeInputDataAbsoluteFileName_ = fakeInputDataAbsoluteFileName ;
+            s = load(self.FakeInputDataAbsoluteFileName_) ;
+            self.FakeInputDataForDebugging_ = s.data ;  % transient, so not copied over to looper, refiller
             self.IsInDebugMode_ = true ;
         end
         
         function clearFakeInputDataForDebugging(self)
             self.IsInDebugMode_ = false ;
-            self.FakeInputDataForDebugging_ = [] ;
+            self.FakeInputDataAbsoluteFileName_ = '' ;
         end
         
         % These methods are called in the frontend process
@@ -250,6 +253,14 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             if isempty(self.MaximumDownsamplingRatio_ )
                 self.MaximumDownsamplingRatio_ =1;
             end
+            
+%             % Load the fake data from file if in debug mode
+%             if self.IsInDebugMode_ ,
+%                 if nSweepsCompletedInThisRun==0 ,
+%                     s = load(self.FakeInputDataAbsoluteFileName_) ;
+%                     self.FakeInputDataForDebugging_ = s.data ;
+%                 end
+%             end
         end
         
         function completingRun(self,wsModel,eventName) %#ok<INUSD>
@@ -444,6 +455,12 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
                 % This must be the first call to samplesAcquired() in 
                 % this sweep.
+                if self.IsInDebugMode_ ,
+                    if nSweepsCompletedInThisRun==0 ,
+                        s = load(self.FakeInputDataAbsoluteFileName_) ;
+                        self.FakeInputDataForDebugging_ = s.data ;
+                    end
+                end
                 self.NFakeScansUsedSoFarThisSweep_ = 0 ;
                 self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
             end
