@@ -64,7 +64,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             stimulusLibrary=self.createPopulatedStimulusLibrary();
 %             wsModel.Stimulation.StimulusLibrary = stimulusLibrary ;
 %             clear stimulusLibrary ;
-            ws.test.StimulusLibraryTestCase.populateStimulusLibraryBang(wsModel.Stimulation.StimulusLibrary) ;  % class method call
+            %ws.test.StimulusLibraryTestCase.populateStimulusLibraryBang(wsModel.Stimulation.StimulusLibrary) ;  % class method call
+            wsModel.populateStimulusLibraryForTesting() ;
             
             % Make a copy of it in the populated state
             stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copyGivenParent([]) ;
@@ -200,14 +201,15 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.clearStimulusLibrary() ;
 
             % Populate the Wavesurfer Stim library
-            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
-            wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary) ;
-            clear stimulusLibrary
+            wsModel.populateStimulusLibraryForTesting() ;
+            %stimulusLibrary = self.createPopulatedStimulusLibrary() ;
+            %wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary) ;
+            %clear stimulusLibrary
            
             % All map durations should be not free
             %isDurationOverridden= ~[wsModel.Stimulation.StimulusLibrary.Maps.IsDurationFree];
             %isDurationOverridden= ~ws.cellArrayPropertyAsArray(wsModel.Stimulation.StimulusLibrary.Maps,'IsDurationFree') ;
-            areDurationsOverridden = wsModel.Stimulation.StimulusLibrary.areMapDurationsOverridden() ;
+            areDurationsOverridden = wsModel.areStimulusLibraryMapDurationsOverridden() ;
             self.verifyTrue(areDurationsOverridden, 'Not all map durations are overridden') ;
             
             % Save the protocol to disk
@@ -228,7 +230,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % All map durations should be not free, again
             %isDurationOverridden= ~[wsModel.Stimulation.StimulusLibrary.Maps.IsDurationFree];
             %isDurationOverridden= ~ws.cellArrayPropertyAsArray(wsModel.Stimulation.StimulusLibrary.Maps,'IsDurationFree') ;
-            areDurationsOverridden = wsModel.Stimulation.StimulusLibrary.areMapDurationsOverridden() ;
+            areDurationsOverridden = wsModel.areStimulusLibraryMapDurationsOverridden() ;
             self.verifyTrue(areDurationsOverridden, 'Not all map durations are overridden');
             %keyboard
         end  % function      

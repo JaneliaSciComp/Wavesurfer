@@ -3900,5 +3900,16 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % method        
         
+        function populateStimulusLibraryForTesting(self)
+            try
+                self.Stimulation_.populateStimulusLibraryForTesting() ;
+            catch exception
+                self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('Update') ;
+                rethrow(exception) ;
+            end
+            self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;
+        end  % function        
     end  % public methods block
 end  % classdef

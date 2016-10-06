@@ -976,5 +976,9 @@ end  % methods block
         function deleteStimulusLibraryItem(self, className, itemIndex)
             self.StimulusLibrary_.deleteItem(className, itemIndex) ;
         end  % function        
+        
+        function populateStimulusLibraryForTesting(self)
+            self.StimulusLibrary_.populateForTesting() ;
+        end  % function
     end  % public methods block    
 end  % classdef

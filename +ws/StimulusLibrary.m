@@ -1662,8 +1662,83 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 itemIndex = [] ;  % shouldn't happen       
             end            
         end  % function
-        
+    
+        function populateForTesting(self)
+            stimulus1Index = self.addNewStimulus() ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'TypeString', 'Chirp') ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'Name', 'Melvin') ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'Amplitude', '6.28') ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'Delay', 0.11) ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'InitialFrequency', 1.4545) ;
+            self.setItemProperty('ws.Stimulus', stimulus1Index, 'FinalFrequency', 45.3) ;            
+            
+            stimulus2Index = self.addNewStimulus() ;
+            self.setItemProperty('ws.Stimulus', stimulus2Index, 'TypeString', 'SquarePulse') ;
+            self.setItemProperty('ws.Stimulus', stimulus2Index, 'Name', 'Bill') ;
+            self.setItemProperty('ws.Stimulus', stimulus2Index, 'Amplitude', '6.29') ;
+            self.setItemProperty('ws.Stimulus', stimulus2Index, 'Delay', 0.12) ;
+            
+            stimulus3Index = self.addNewStimulus() ;
+            self.setItemProperty('ws.Stimulus', stimulus3Index, 'TypeString', 'Sine') ;
+            self.setItemProperty('ws.Stimulus', stimulus3Index, 'Name', 'Elmer') ;
+            self.setItemProperty('ws.Stimulus', stimulus3Index, 'Amplitude', '-2.98') ;
+            self.setItemProperty('ws.Stimulus', stimulus3Index, 'Delay', 0.4) ;
+            self.setItemProperty('ws.Stimulus', stimulus3Index, 'Frequency', 1.47) ;
+
+            stimulus4Index = self.addNewStimulus() ;
+            self.setItemProperty('ws.Stimulus', stimulus4Index, 'TypeString', 'Ramp') ;
+            self.setItemProperty('ws.Stimulus', stimulus4Index, 'Name', 'Foghorn Leghorn') ;
+            self.setItemProperty('ws.Stimulus', stimulus4Index, 'Amplitude', 'i') ;
+            self.setItemProperty('ws.Stimulus', stimulus4Index, 'Delay', 0.151) ;
+
+            stimulus5Index = self.addNewStimulus() ;
+            self.setItemProperty('ws.Stimulus', stimulus5Index, 'TypeString', 'Ramp') ;
+            self.setItemProperty('ws.Stimulus', stimulus5Index, 'Name', 'Unreferenced Stimulus') ;
+            self.setItemProperty('ws.Stimulus', stimulus5Index, 'Amplitude', -9) ;
+            self.setItemProperty('ws.Stimulus', stimulus5Index, 'Delay', 0.171) ;
+            
+            stimulusMap1Index = self.addNewMap() ;
+            self.setItemProperty('ws.StimulusMap', stimulusMap1Index, 'Name', 'Lucy the Map') ;
+            binding1Index = self.addBindingToItem('ws.StimulusMap', stimulusMap1Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'ChannelName', 'ao0') ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'IndexOfEachStimulusInLibrary', stimulus1Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding1Index, 'Multiplier', 1.01) ;
+            binding2Index = self.addBindingToItem('ws.StimulusMap', stimulusMap1Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'ChannelName', 'ao1') ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'IndexOfEachStimulusInLibrary', stimulus2Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap1Index, binding2Index, 'Multiplier', 1.02) ;
+            
+            stimulusMap2Index = self.addNewMap() ;
+            self.setItemProperty('ws.StimulusMap', stimulusMap2Index, 'Name', 'Linus the Map') ;
+            binding1Index = self.addBindingToItem('ws.StimulusMap', stimulusMap2Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'ChannelName', 'ao0') ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'IndexOfEachStimulusInLibrary', stimulus3Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding1Index, 'Multiplier', 2.01) ;
+            binding2Index = self.addBindingToItem('ws.StimulusMap', stimulusMap2Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'ChannelName', 'ao1') ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'IndexOfEachStimulusInLibrary', stimulus4Index) ;
+            self.setItemBindingProperty('ws.StimulusMap', stimulusMap2Index, binding2Index, 'Multiplier', 2.02) ;
+
+            sequence1Index = self.addNewSequence() ;
+            self.setItemProperty('ws.StimulusSequence', sequence1Index, 'Name', 'Cyclotron') ;
+            binding1Index = self.addBindingToItem('ws.StimulusSequence', sequence1Index) ;
+            self.setItemBindingProperty('ws.StimulusSequence', sequence1Index, binding1Index, 'IndexOfEachMapInLibrary', stimulusMap1Index) ;
+            binding2Index = self.addBindingToItem('ws.StimulusSequence', sequence1Index) ;
+            self.setItemBindingProperty('ws.StimulusSequence', sequence1Index, binding2Index, 'IndexOfEachMapInLibrary', stimulusMap2Index) ;
+
+            sequence2Index = self.addNewSequence() ;
+            self.setItemProperty('ws.StimulusSequence', sequence2Index, 'Name', 'Megatron') ;
+            binding1Index = self.addBindingToItem('ws.StimulusSequence', sequence2Index) ;
+            self.setItemBindingProperty('ws.StimulusSequence', sequence2Index, binding1Index, 'IndexOfEachMapInLibrary', stimulusMap2Index) ;
+            binding2Index = self.addBindingToItem('ws.StimulusSequence', sequence2Index) ;
+            self.setItemBindingProperty('ws.StimulusSequence', sequence2Index, binding2Index, 'IndexOfEachMapInLibrary', stimulusMap1Index) ;
+        end  % function                
     end  % public methods block
+    
+    
+    
+    
+    
     
     methods (Access=protected)
         function result = selectedItemWithinClass_(self, className) 
