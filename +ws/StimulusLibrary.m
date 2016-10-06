@@ -950,10 +950,10 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
 
-        function setSelectedItemProperty(self, propertyName, newValue)
+        function didSetOutputableName = setSelectedItemProperty(self, propertyName, newValue)
             className = self.SelectedItemClassName ;
             index = self.SelectedItemIndexWithinClass ;
-            self.setItemProperty(className, index, propertyName, newValue) ;
+            didSetOutputableName = self.setItemProperty(className, index, propertyName, newValue) ;
         end  % method        
         
 %         function setSelectedItemName(self, newName)
@@ -1265,22 +1265,29 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end                              
         end  % function                        
         
-        function setItemProperty(self, className, index, propertyName, newValue)
+        function didSetOutputableName = setItemProperty(self, className, index, propertyName, newValue)
             % The index is the index within the class
+            didSetOutputableName = false ;  % the by-far-most-common result, but we overwrite if needed
             if isequal(className,'') ,
                 error('ws:stimulusLibrary:noSuchItem' , ...
                       'There is no item with an empty class name') ;
             elseif isequal(className,'ws.StimulusSequence') ,
-                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
+                if isequal(propertyName, 'Name') 
+                    didSetOutputableName = true ;
+                    if self.isAnItemName(newValue) ,
+                        error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                              '%s is already the name of another item', newValue) ;
+                    end
                 end
                 item = self.Sequences_{index} ;
                 item.(propertyName) = newValue ;
             elseif isequal(className,'ws.StimulusMap') ,
-                if isequal(propertyName, 'Name') && self.isAnItemName(newValue) ,
-                    error('ws:stimulusLibrary:nameAlreadyInUse' , ...
-                          '%s is already the name of another item', newValue) ;
+                if isequal(propertyName, 'Name') 
+                    didSetOutputableName = true ;                    
+                    if self.isAnItemName(newValue) ,
+                        error('ws:stimulusLibrary:nameAlreadyInUse' , ...
+                              '%s is already the name of another item', newValue) ;
+                    end
                 end
                 if isequal(propertyName, 'Duration') && self.AreMapDurationsOverridden_ ,
                     error('ws:stimulusLibrary:cantSetOverriddenProperty' , ...

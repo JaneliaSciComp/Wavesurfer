@@ -832,8 +832,8 @@ end  % methods block
             result = self.StimulusLibrary_.SelectedItemIndexWithinClass ;
         end  % function        
         
-        function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
-            self.StimulusLibrary_.setSelectedItemProperty(propertyName, newValue) ;
+        function didSetOutputableName = setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
+            didSetOutputableName = self.StimulusLibrary_.setSelectedItemProperty(propertyName, newValue) ;
         end  % function        
         
         function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
@@ -901,8 +901,8 @@ end  % methods block
             result = self.StimulusLibrary_.itemProperty(className, index, propertyName) ;
         end  % function                        
 
-        function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
-            self.StimulusLibrary_.setItemProperty(className, index, propertyName, newValue) ;
+        function didSetOutputableName = setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
+            didSetOutputableName = self.StimulusLibrary_.setItemProperty(className, index, propertyName, newValue) ;
         end  % function                        
         
         function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)

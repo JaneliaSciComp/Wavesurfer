@@ -3706,10 +3706,13 @@ classdef WavesurferModel < ws.Model
 
         function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
             try
-                self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;
+                didSetOutputableName = self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
+            end
+            if didSetOutputableName ,
+                self.broadcast('Update') ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
         end  % function       
@@ -3850,10 +3853,14 @@ classdef WavesurferModel < ws.Model
         
         function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
             try
-                self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+                didSetOutputableName = self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
+            end
+            % Special case to deal with renaming an outputable
+            if didSetOutputableName ,
+                self.broadcast('Update') ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
         end        
