@@ -379,7 +379,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('ClearData') ;
             self.broadcast('Update') ;
         end
-        
+         
         function didAddDigitalInputChannel(self)
             self.IsDigitalChannelDisplayed_(1,end+1) = true ;
             self.PlotHeightFromDigitalChannelIndex_ = horzcat(self.PlotHeightFromDigitalChannelIndex_, 1) ;
@@ -889,26 +889,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         
         function didSetAreSweepsFiniteDuration(self)
             % Called by the parent to notify of a change to the acquisition
-            % duration
-            
-            % Want any listeners on XSpan set to get called
-            %if self.IsXSpanSlavedToAcquistionDuration ,
-%             for idx = 1:numel(self.Scopes) ,
-%                 self.Scopes_{idx}.XSpan = self.XSpan;  % N.B.: _not_ = self.XSpan_ !!
-%             end
-            self.broadcast('UpdateXSpan');
-            %end    
-            %self.XSpan = nan;
+            % duration            
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateXSpan') ;
         end
         
         function didSetSweepDurationIfFinite(self)
             % Called by the parent to notify of a change to the acquisition
             % duration.            
             if self.IsXSpanSlavedToAcquistionDuration ,
-                %self.clearData_() ;
                 self.broadcast('ClearData') ;
             end                
-            self.broadcast('UpdateXSpan');
+            self.broadcast('UpdateXSpan') ;
         end
         
 %         function out = get.NPlots(self)
