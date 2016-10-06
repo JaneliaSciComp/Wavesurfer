@@ -66,7 +66,7 @@ classdef UserCodeManager < ws.Subsystem
                 end
             else
                 self.broadcast('Update');  % replace the bad value with the old value in the view
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Invalid value for property ''ClassName'' supplied.');
             end
         end  % function
@@ -87,7 +87,7 @@ classdef UserCodeManager < ws.Subsystem
 %                     self.AbortCallsComplete_ = valueAsLogical ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'Invalid value for property ''AbortCallsComplete'' supplied.');
 %                 end
 %             end

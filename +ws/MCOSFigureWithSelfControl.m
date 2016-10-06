@@ -385,7 +385,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                 end
                 exceptionMaybe = {} ;
             catch exception
-                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
                     % ignore completely, don't even pass on to output
                     exceptionMaybe = {} ;
                 else

@@ -533,7 +533,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %                 self.SelectedItemClassName_='ws.Stimulus';
 %             else
 %                 self.broadcast('Update') ;
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'Stimulus library selected item class name must be a legal value') ;
 %             end                
 %             self.broadcast('Update');
@@ -552,7 +552,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedSequenceIndex_ = double(index) ;
                 else
                     %self.broadcast('Update') ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Stimulus library sequence index must be a scalar numeric integer between 1 and %d, or empty', length(self.Sequences_)) ;                  
                 end
             elseif isequal(className,'ws.StimulusMap') ,
@@ -564,7 +564,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedMapIndex_ = double(index) ;
                 else
                     %self.broadcast('Update') ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Stimulus library map index must be a scalar numeric integer between 1 and %d, or empty', length(self.Maps_)) ;                  
                 end
             elseif isequal(className,'ws.Stimulus') ,
@@ -576,12 +576,12 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedStimulusIndex_ = double(index) ;
                 else
                     %self.broadcast('Update') ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Stimulus index must be a scalar numeric integer between 1 and %d, or empty', length(self.Stimuli_)) ;                  
                 end
             else
                 %self.broadcast('Update') ;
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Stimulus library selected item class name must be a legal value') ;
             end                            
             %self.broadcast('Update');

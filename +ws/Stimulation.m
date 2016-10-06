@@ -367,7 +367,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %                     end
 %                 else
 %                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
@@ -388,7 +388,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
 %                         end
 %                     end
 %                 else
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end

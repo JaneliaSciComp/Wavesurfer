@@ -142,7 +142,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('Update');
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to toggleIsAnalogChannelDisplayed must be a valid AI channel index') ;
             end                
         end
@@ -163,7 +163,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('Update');
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to toggleIsDigitalChannelDisplayed must be a valid DI channel index') ;
             end                
         end
@@ -224,7 +224,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     self.UpdateRate_ = newValue;
                 else
                     self.broadcast('DidSetUpdateRate');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'UpdateRate must be a scalar finite positive number') ;
                 end
             end
@@ -261,7 +261,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('UpdateXSpan');
             if ~didSucceed ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'XSpan must be a scalar finite positive number') ;
             end                
         end  % function
@@ -279,7 +279,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     % end
                 else
                     self.broadcast('UpdateXOffset');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'XOffset must be a scalar finite number') ;
                 end
             end
@@ -299,7 +299,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('Update') ;
             if ~wasSet ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
             end
         end
@@ -333,7 +333,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('Update');            
             if ~isNewValueAllowed ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
             end                
         end
@@ -459,7 +459,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     self.IsGridOn_ = logical(newValue) ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsGridOn must be a scalar, and must be logical, 0, or 1');
                 end
             end
@@ -476,7 +476,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     self.AreColorsNormal_ = logical(newValue) ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
                 end
             end
@@ -493,7 +493,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     self.DoShowButtons_ = logical(newValue) ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoShowButtons must be a scalar, and must be logical, 0, or 1');
                 end
             end
@@ -510,7 +510,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                     self.DoColorTraces_ = logical(newValue) ;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoColorTraces must be a scalar, and must be logical, 0, or 1');
                 end
             end
@@ -542,7 +542,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to scrollUp() must be a valid AI channel index') ;
             end                
         end  % function
@@ -568,7 +568,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to scrollDown() must be a valid AI channel index') ;
             end                
         end  % function
@@ -593,7 +593,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to zoomIn() must be a valid AI channel index') ;
             end                
         end  % function
@@ -618,7 +618,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Argument to zoomIn() must be a valid AI channel index') ;
             end                
         end  % function
@@ -639,7 +639,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             end
 %             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
 %             if ~isValid ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
 %             end                
 %         end  % function
@@ -1027,7 +1027,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
             self.broadcast('DidSetIsEnabled') ;
             if ~didSucceed ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
             end
         end

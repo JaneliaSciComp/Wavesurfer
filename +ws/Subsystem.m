@@ -133,7 +133,7 @@ classdef (Abstract) Subsystem < ws.Model
             end
             self.broadcast('DidSetIsEnabled') ;
             if ~didSucceed ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
             end
         end  % function

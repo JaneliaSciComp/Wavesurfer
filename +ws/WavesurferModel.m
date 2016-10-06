@@ -576,7 +576,7 @@ classdef WavesurferModel < ws.Model
             if isnumeric(newValue) && isscalar(newValue) && isreal(newValue) && 1<=newValue && newValue<=self.NFastProtocols && (round(newValue)==newValue) ,
                 self.IndexOfSelectedFastProtocol_ = double(newValue) ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'IndexOfSelectedFastProtocol (scalar) positive integer between 1 and NFastProtocols, inclusive');
             end
         end
@@ -604,13 +604,13 @@ classdef WavesurferModel < ws.Model
                         self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
                     else
                         self.broadcast('Update') ;
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'NSweepsPerRun cannot be set when sweeps are continuous') ;
                         
                     end
                 else
                     self.broadcast('Update') ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
                 end
             end
@@ -634,7 +634,7 @@ classdef WavesurferModel < ws.Model
                     %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                     %self.didSetSweepDurationIfFinite();
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'SweepDurationIfFinite must be a (scalar) positive finite value');
                 end
             end
@@ -663,7 +663,7 @@ classdef WavesurferModel < ws.Model
                     end                        
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'SweepDuration must be a (scalar) positive value');
                 end
             end
@@ -2746,12 +2746,12 @@ classdef WavesurferModel < ws.Model
                         end                        
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'DeviceName must be the name of an NI DAQmx device');       
                     end                        
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DeviceName must be a nonempty string');       
                 end
             end
@@ -3016,11 +3016,11 @@ classdef WavesurferModel < ws.Model
                     fastProtocol = self.FastProtocols{index} ;
                     fastProtocol.ProtocolFileName = newFileName ;
                 else
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Fast protocol file name must be an absolute path');              
                 end
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
         end  % method
@@ -3032,11 +3032,11 @@ classdef WavesurferModel < ws.Model
                     fastProtocol = self.FastProtocols{index} ;
                     fastProtocol.AutoStartType = newValue ;
                 else
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
                 end
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
         end  % method        

@@ -145,7 +145,7 @@ classdef Looper < handle
                                                                        self.IsDOChannelTimed_) ;
                 end
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
             end
         end  % function

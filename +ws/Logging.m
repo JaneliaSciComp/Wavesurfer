@@ -86,7 +86,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'FileLocation must be a string');                    
                 end
             end
@@ -112,7 +112,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'FileBaseName must be a string');                    
                 end
             end
@@ -130,7 +130,7 @@ classdef Logging < ws.Subsystem
                     self.NextSweepIndex_ = newValue;
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'NextSweepIndex must be a (scalar) nonnegative integer');
                 end
             end
@@ -151,7 +151,7 @@ classdef Logging < ws.Subsystem
                     self.IsOKToOverwrite_ = logical(newValue);
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -168,7 +168,7 @@ classdef Logging < ws.Subsystem
                     self.DoIncludeDate_ = logical(newValue);
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoIncludeDate must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -191,7 +191,7 @@ classdef Logging < ws.Subsystem
                     end
                 else
                     self.broadcast('UpdateDoIncludeSessionIndex');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
                 end
             end
@@ -214,12 +214,12 @@ classdef Logging < ws.Subsystem
                         end
                     else
                         self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'SessionIndex must be an integer greater than or equal to one');
                     end
                 else
                     self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Can''t set SessionIndex when DoIncludeSessionIndex is false');
                     
                 end

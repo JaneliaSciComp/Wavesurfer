@@ -71,7 +71,7 @@ classdef CounterTrigger < ws.Model
         function set.RepeatCount(self, newValue)
             if self.IsInternalRepeatCountOverridden_ ,
                 %self.Parent.update();
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Can''t set RepeatCount when it is overridden');
             else
                 if ws.CounterTrigger.isValidRepeatCount(newValue) ,
@@ -79,7 +79,7 @@ classdef CounterTrigger < ws.Model
                     %self.Parent.update();
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'RepeatCount must be a (scalar) positive integer, or inf');
                 end                
             end
@@ -90,7 +90,7 @@ classdef CounterTrigger < ws.Model
                 self.IsInternalRepeatCountOverridden_ = true ;
                 self.ExternalRepeatCount_ = double(newValue) ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'RepeatCount must be a (scalar) positive integer, or inf');
             end
         end
@@ -111,7 +111,7 @@ classdef CounterTrigger < ws.Model
                     self.Interval_ = value ;
                 else
                     %self.Parent.update() ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Interval must be a (scalar) positive integer') ;       
                 end
             end
@@ -147,7 +147,7 @@ classdef CounterTrigger < ws.Model
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsMarkedForDeletion must be a truthy scalar');                  
                 end                    
             end
@@ -160,7 +160,7 @@ classdef CounterTrigger < ws.Model
                     self.Name_ = value ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
@@ -173,7 +173,7 @@ classdef CounterTrigger < ws.Model
                     self.Edge_ = value;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
@@ -188,7 +188,7 @@ classdef CounterTrigger < ws.Model
                     %self.syncPFIIDToCounterID_() ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'CounterID must be a (scalar) nonnegative integer');                  
                 end                    
             end

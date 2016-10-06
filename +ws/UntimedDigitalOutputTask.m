@@ -123,7 +123,7 @@ classdef UntimedDigitalOutputTask < handle
                     self.ChannelData_ = newValue;
                     self.syncOutputBufferToChannelData_();
                 else
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
                 end
             end

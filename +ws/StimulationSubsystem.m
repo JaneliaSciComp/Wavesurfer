@@ -125,7 +125,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             end
             self.broadcast('DidSetSampleRate');
             if ~isValueValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                     'SampleRate must be a positive finite numeric scalar');
             end                
         end  % function
@@ -140,7 +140,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %                     end
 %                 else
 %                     self.broadcast('DidSetSampleRate');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'SampleRate must be a positive scalar');                  
 %                 end                    
 %             end
@@ -353,7 +353,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %                     end
 %                 else
 %                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
@@ -702,7 +702,7 @@ end  % methods block
                 else
                     self.Parent.didSetIsDigitalOutputTimed();
                     %self.broadcast('DidSetIsDigitalChannelTimed');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
                 end
             else
@@ -722,7 +722,7 @@ end  % methods block
                 else
                     %self.broadcast('DidSetDigitalOutputStateIfUntimed');
                     self.Parent.didSetDigitalOutputStateIfUntimed() ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
                 end
             else

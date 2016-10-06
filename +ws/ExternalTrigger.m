@@ -62,7 +62,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                     self.Name_ = value ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Name must be a nonempty string');                  
                 end                    
             end
@@ -75,7 +75,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
 %                     self.DeviceName_ = value ;
 %                 else
 %                     self.Parent.update();
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'DeviceName must be a string');                  
 %                 end                    
 %             end
@@ -89,7 +89,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                     self.PFIID_ = value ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'PFIID must be a (scalar) nonnegative integer');                  
                 end                    
             end
@@ -102,7 +102,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                     self.Edge_ = value;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Edge must be ''rising'' or ''falling''');                  
                 end                                        
             end
@@ -119,7 +119,7 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
                     self.IsMarkedForDeletion_ = logical(value) ;
                 else
                     %self.Parent.update();
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsMarkedForDeletion must be a truthy scalar');                  
                 end                    
             end

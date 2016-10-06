@@ -115,7 +115,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                     acquisitionTrigger.overrideRepeatCount(nSweepsPerRun) ;
                 end
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'AcquisitionTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');                
             end
         end  % function
@@ -131,7 +131,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         function setStimulationTriggerIndex(self, newValue)
             if ws.isASettableValue(newValue) ,
                 if self.StimulationUsesAcquisitionTriggerScheme ,
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
                 else
                     nSchemes = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
@@ -139,7 +139,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                     else
                         % self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                     end
                 end
@@ -356,7 +356,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                 %self.stimulusMapDurationPrecursorMayHaveChanged_();  
             else
                 % self.broadcast('Update');
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                     'StimulationUsesAcquisitionTriggerScheme must be a scalar, and must be logical, 0, or 1');
             end
             %self.broadcast('Update') ;            
@@ -379,7 +379,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         function setCounterTriggerProperty(self, index, propertyName, newValue)
             if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
                 self.broadcast('Update') ;
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Illegal or taken counter ID') ;
             end
             trigger = self.CounterTriggers_{index} ;
@@ -395,7 +395,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         function setExternalTriggerProperty(self, index, propertyName, newValue)
             if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
                 self.broadcast('Update') ;
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Illegal or taken PFI ID') ;
             end
             trigger = self.ExternalTriggers_{index} ;
@@ -574,7 +574,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
                         % self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'Invalid trigger index') ;
                     end  
                 elseif isequal(triggerType, 'counter') ,
@@ -583,7 +583,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
                         % self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'Invalid trigger index') ;
                     end  
                 elseif isequal(triggerType, 'external') ,
@@ -592,7 +592,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                         theTrigger.(propertyName) = newValue ;  % This should do some validation, and do a broadcast in any case
                     else
                         % self.broadcast('Update');
-                        error('most:Model:invalidPropVal', ...
+                        error('ws:invalidPropertyValue', ...
                               'Invalid trigger index') ;
                     end  
                 else
@@ -602,7 +602,7 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
                 end                    
             else                
                 % self.broadcast('Update');
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'triggerType must be a valid trigger type') ;                    
             end
         end  % method

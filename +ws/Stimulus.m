@@ -64,7 +64,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             if ws.isString(newValue) && ~isempty(newValue) ,                
                 self.Name_ = newValue ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Stimulus name must be a nonempty string');                  
             end
         end

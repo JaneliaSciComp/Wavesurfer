@@ -42,7 +42,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             if ws.isString(newValue) && ~isempty(newValue) ,                
                 self.Name_ = newValue ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Stimulus name must be a nonempty string');                  
             end
         end
@@ -182,7 +182,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
                 newValue = double(newValue) ;
                 self.Duration_ = newValue;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'Duration must be numeric, real, scalar, nonnegative, and finite.');
             end
         end   % function

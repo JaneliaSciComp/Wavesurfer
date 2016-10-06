@@ -331,7 +331,7 @@ classdef Controller < handle
                 end
                 exceptionMaybe = {} ;
             catch exception
-                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
                     % ignore completely, don't even pass on to output
                     exceptionMaybe = {} ;
                 else
@@ -346,7 +346,7 @@ classdef Controller < handle
             % fake the actuation of a control, often in a testing script.
             % So, for instance, if only ws:warnings occur, if prints them,
             % rather than showing a dialog box.  Also, this lets
-            % non-warning errors (including most:Model:invalidPropVal)
+            % non-warning errors (including ws:invalidPropertyValue)
             % percolate upward, unlike controlActuated().  Also, this
             % always calls [controlName 'Actuated'], rather than using
             % source.Type to determine the method name.  That's becuase
@@ -406,7 +406,7 @@ classdef Controller < handle
     methods (Static=true)
         function setWithBenefits(object,propertyName,newValue)
             % Do object.(propertyName)=newValue, but catch any
-            % most:Model:invalidPropVal exception generated.  If that
+            % ws:invalidPropertyValue exception generated.  If that
             % exception is generated, just ignore it.  The model is
             % responsible for broadcasting an Update event in the case of a
             % attempt to set an invalid value, which should cause the
@@ -415,7 +415,7 @@ classdef Controller < handle
             try 
                 object.(propertyName)=newValue;
             catch exception
-                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
                     % Ignore it
                 else
                     rethrow(exception);
