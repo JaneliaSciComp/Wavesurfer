@@ -9,10 +9,12 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     properties
         IsEnabled
         InputAIChannelIndex
-        OutputDOChannelIndex
         BlankingDIChannelIndex
+        OutputDOChannelIndex
         InputThreshold  % In native units of the AI input channel
-        NScansToBlank  % After a rising edge on the blanking channel
+        MaximumNumberOfTriggersPerSweep
+        DurationToBlankAfterRisingEdge  % s
+        DurationToBlankAfterFallingEdge  % s        
     end  % properties
 
     % Information that you want to stick around between calls to the
@@ -22,8 +24,13 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     properties (Transient, Access=protected)        
         LastRTOutput_
         NScansSinceBlankingRisingEdge_
+        NScansSinceBlankingFallingEdge_
         FinalBlankingValue_  % the last value of the blanking signal from the previous call to samplesAcquired
-        NSweepsCompletedInThisRunAtLastCheck_
+        NSweepsCompletedInThisRunAtLastCheck_ = -1  % set to this so always different from the true value on first call to samplesAcquired()
+        NTriggersStartedThisSweep_
+        NTriggersCompletedThisSweep_
+        NScansToBlankAfterRisingEdge_
+        NScansToBlankAfterFallingEdge_        
     end
     
     methods
@@ -31,11 +38,13 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             % creates the "user object"
             self.IsEnabled = true ;
             self.InputAIChannelIndex = 1 ;
-            self.OutputDOChannelIndex = 1 ;
             self.BlankingDIChannelIndex = 1 ;
-            self.InputThreshold = 1 ;  
-            self.NScansToBlank = 40000 ;  % 2 sec at normal sampling freq
-            self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
+            self.OutputDOChannelIndex = 1 ;
+            self.InputThreshold = 1 ;
+            self.MaximumNumberOfTriggersPerSweep = 1 ;  % only trigger once per sweep by default
+            self.DurationToBlankAfterRisingEdge = 2 ;  % s
+            self.DurationToBlankAfterFallingEdge = 4 ;  % s
+            %self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
         end
         
         function delete(self) %#ok<INUSD>
@@ -91,68 +100,114 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             
             % Check if this is the first call of the run, and act
             % accordingly
+            %nSweepsCompletedInThisRunAtLastCheck_ = self.NSweepsCompletedInThisRunAtLastCheck_
             nSweepsCompletedInThisRun = looper.NSweepsCompletedInThisRun ;
             if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
                 % This must be the first call to samplesAcquired() in 
                 % this sweep.
                 % Initialize things that should be initialized at the
                 % start of a sweep.
-                self.LastRTOutput_ = -1 ;  % set to this so always different from the first calculated RT value
+                %self.HasRTOutputBeenInitializedInThisSweep_ = false ;
+                fs = looper.AcquisitionSampleRate ;  % Hz
+                self.NScansToBlankAfterRisingEdge_ = self.DurationToBlankAfterRisingEdge*fs ;
+                self.NScansToBlankAfterFallingEdge_ = self.DurationToBlankAfterFallingEdge*fs ;
+                self.LastRTOutput_ = [] ;
                 self.NScansSinceBlankingRisingEdge_ = inf ;
+                self.NScansSinceBlankingFallingEdge_ = inf ;
                 self.FinalBlankingValue_ = false ;
+                self.NTriggersStartedThisSweep_ = 0 ;
+                self.NTriggersCompletedThisSweep_ = 0 ;
                 % Record the new NSweepsCompletedInThisRun
                 self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
+                isFirstCallInSweep = true ;
+            else
+                isFirstCallInSweep = false ;                
             end
             
             % Determine how many scans have passed since the most-recent
-            % rising edge of the blanking TTL
-            nScans = size(digitalData,1) ;
+            % rising/falling edge of the blanking TTL
+            %nScans = size(digitalData,1) ;
+            nScans = size(analogData,1) ;
             blanking = logical(bitget(digitalData, self.BlankingDIChannelIndex)) ;
+            %analogBlanking = analogData(end, self.BlankingDIChannelIndex) ;  % V
+            %rectifiedAnalogBlanking = abs(analogBlanking) ;  % V
+            %blanking = (rectifiedAnalogBlanking>2.5) ;
             blankingPadded = vertcat(self.FinalBlankingValue_, blanking) ;
-            didBlankingRise = diff(blankingPadded) ;
-            indexOfLastBlankingRise = find(didBlankingRise, 1, 'last') ;
-            if isempty(indexOfLastBlankingRise) , 
+            blankingChange = diff(double(blankingPadded)) ;
+            isBlankingRisingEdge = (blankingChange==1) ;
+            isBlankingFallingEdge = (blankingChange==(-1)) ;            
+            indexOfLastBlankingRisingEdge = find(isBlankingRisingEdge, 1, 'last') ;
+            indexOfLastBlankingFallingEdge = find(isBlankingFallingEdge, 1, 'last') ;
+            if isempty(indexOfLastBlankingRisingEdge) , 
                 nScansSinceBlankingRisingEdge = self.NScansSinceBlankingRisingEdge_ + nScans ;
             else
-                nScansSinceBlankingRisingEdge = nScans - indexOfLastBlankingRise ;
+                nScansSinceBlankingRisingEdge = nScans - indexOfLastBlankingRisingEdge ;
+            end
+            if isempty(indexOfLastBlankingFallingEdge) , 
+                nScansSinceBlankingFallingEdge = self.NScansSinceBlankingFallingEdge_ + nScans ;
+            else
+                nScansSinceBlankingFallingEdge = nScans - indexOfLastBlankingFallingEdge ;
             end
             
             % Determine the output value
-            if self.IsEnabled ,
-                if nScansSinceBlankingRisingEdge>self.NScansToBlank ,                    
+            %fprintf('nScansSinceBlankingEdge: %8d\n', nScansSinceBlankingEdge) ;
+            if self.IsEnabled ,                
+                %nScansSinceBlankingRisingEdge
+                %nScansToBlankAfterRisingEdge_ = self.NScansToBlankAfterRisingEdge_
+                %nScansSinceBlankingFallingEdge
+                %nScansToBlankAfterFallingEdge_ = self.NScansToBlankAfterFallingEdge_
+                %nTriggersCompletedThisSweep_ = self.NTriggersCompletedThisSweep_
+                %maximumNumberOfTriggersPerSweep = self.MaximumNumberOfTriggersPerSweep                
+                if nScansSinceBlankingRisingEdge>self.NScansToBlankAfterRisingEdge_ && ...
+                   nScansSinceBlankingFallingEdge>self.NScansToBlankAfterFallingEdge_ && ...
+                   self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
                     lastInputValue = analogData(end, self.InputAIChannelIndex) ;
-                    if lastInputValue > self.InputThreshold ,
+                    rectifiedLastInputValue = abs(lastInputValue) ;
+                    if rectifiedLastInputValue > self.InputThreshold ,
                         newValueForRTOutput = 1 ;
+                        %fprintf('true option 1\n') ;
                     else
                         newValueForRTOutput = 0 ;
-                        %fprintf('option 1\n') ;
+                        %fprintf('false option 1\n') ;
                     end
                 else
                     newValueForRTOutput = 0 ;
-                    %fprintf('option 2\n') ;
+                    %fprintf('false option 2\n') ;
                 end
             else
                 newValueForRTOutput = 0 ;
-                %fprintf('option 3\n') ;
+                %fprintf('false option 3\n') ;
             end
             %fprintf('newValueForRTOutput: %d\n', newValueForRTOutput) ;
             
             % If the new output value differs from the old, set it
-            if newValueForRTOutput ~= self.LastRTOutput_ ,
-                fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
-                doStateWhenUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
+            if isFirstCallInSweep || newValueForRTOutput ~= self.LastRTOutput_ ,
+                %fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
+                doStateWhenUntimed = looper.DigitalOutputStateIfUntimed ;
                 outputDOChannelIndex = self.OutputDOChannelIndex ;
                 desiredDOStateWhenUntimed = doStateWhenUntimed ;
                 desiredDOStateWhenUntimed(outputDOChannelIndex) = newValueForRTOutput ;
-                isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
+                isDOChannelUntimed = ~looper.IsDOChannelTimed ;
                 desiredOutputForEachUntimedDOChannel = desiredDOStateWhenUntimed(isDOChannelUntimed) ;
-                looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
+                looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDOChannel) ;            
+                if newValueForRTOutput ,
+                    % We just executed a rising edge of the trigger output
+                    self.NTriggersStartedThisSweep_ = self.NTriggersStartedThisSweep_ + 1 ;
+                else                        
+                    % We just executed a falling edge of the trigger output
+                    % But we only count it if this is *not* the first
+                    % call in the sweep.
+                    if ~isFirstCallInSweep ,
+                        self.NTriggersCompletedThisSweep_ = self.NTriggersCompletedThisSweep_ + 1 ;
+                    end
+                end
                 self.LastRTOutput_ = newValueForRTOutput ;
             end
             
             % Update the things that need to be updated after each call to
             % this function
             self.NScansSinceBlankingRisingEdge_ = nScansSinceBlankingRisingEdge ;
+            self.NScansSinceBlankingFallingEdge_ = nScansSinceBlankingFallingEdge ;
             self.FinalBlankingValue_ = blanking(end) ;                        
         end
         

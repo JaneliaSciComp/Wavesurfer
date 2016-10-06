@@ -1,106 +1,55 @@
-classdef Refiller < ws.RootModel
+classdef Refiller < handle
     % The main Refiller model object.
     
-    properties (Dependent = true)
-        Triggering
-        %Acquisition
-        Stimulation
-        %Display
-        %Logging
-        UserCodeManager
-        %Ephys
-        SweepDuration  % the sweep duration, in s
-        SweepDurationIfFinite
-        AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
-        AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
-%         NSweepsPerRun  
-%             % Number of sweeps to perform during run.  If in
-%             % sweep-based mode, this is a pass through to the repeat count
-%             % of the start trigger.  If in continuous mode, it is always 1.
-%         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
-%         NTimesSamplesAcquiredCalledSinceRunStart
-        %ClockAtRunStart  
-          % We want this written to the data file header, but not persisted in
-          % the .cfg file.  Having this property publically-gettable, and having
-          % ClockAtRunStart_ transient, achieves this.
-        AcquisitionKeystoneTaskCache
-        StimulationKeystoneTaskCache
-    end
-    
     properties (Access = protected)        
-        %IsYokedToScanImage_ = false
-        Triggering_
-        %Acquisition_
-        Stimulation_
-        %Display_
-        %Logging_
-        UserCodeManager_
-        %Ephys_
-        AreSweepsFiniteDuration_ = true
+        DeviceName_ = ''
+
         NSweepsPerRun_ = 1
-        SweepDurationIfFinite_ = 1  % s
+        SweepDuration_ = []
+
+        StimulationTrigger_
+        
+        IsStimulationEnabled_ = false
+        StimulationSampleRate_ = []
+        StimulusLibrary_ = []
+        DoRepeatSequence_ = true
+        IsStimulationTriggerIdenticalToAcquistionTrigger_ = []
+        
+        AOChannelNames_ = cell(1,0)
+        AOChannelScales_ = zeros(1,0)
+        IsAOChannelActive_ = false(1,0)
+        AOTerminalIDs_ = zeros(1,0)
+        IsAOChannelTerminalOvercommitted_ = false(1,0) 
+        
+        DOChannelNames_ = cell(1,0)
+        IsDOChannelTimed_ = false(1,0)     
+        DOTerminalIDs_ = zeros(1,0)
+        IsDOChannelTerminalOvercommitted_ = false(1,0)               
+        
+        IsUserCodeManagerEnabled_
+        TheUserObject_        
     end
 
     properties (Access=protected, Transient=true)
-        %RPCServer_
-        %RPCClient_
         IPCPublisher_
         IPCSubscriber_  % subscriber for the frontend
         IPCReplier_  % to reply to frontend rep-req requests
-        %State_ = ws.ApplicationState.Uninitialized
-        Subsystems_
-        NSweepsCompletedSoFarThisRun_ = 0
-        t_
-        NScansAcquiredSoFarThisSweep_
-        FromRunStartTicId_  
-        FromSweepStartTicId_
-        TimeOfLastSamplesAcquired_
-        NTimesSamplesAcquiredCalledSinceRunStart_ = 0
-        %PollingTimer_
-        %MinimumPollingDt_
-        TimeOfLastPollInSweep_
-        %ClockAtRunStart_
-        %DoContinuePolling_
-        %IsSweepComplete_
         DoesFrontendWantToStopRun_        
-        WasExceptionThrown_
-        ThrownException_
         DoKeepRunningMainLoop_
         IsPerformingRun_ = false
-        IsPerformingSweep_ = false
+        %IsPerformingSweep_ = false
         IsPerformingEpisode_ = false
-        NEpisodesPerSweep_
-        NEpisodesCompletedSoFarThisSweep_
+        %NEpisodesPerSweep_
+        NEpisodesPerRun_
+        %NEpisodesCompletedSoFarThisSweep_
         NEpisodesCompletedSoFarThisRun_
-        AcquisitionKeystoneTaskCache_
         StimulationKeystoneTaskCache_
-    end
-    
-%     events
-%         % As of 2014-10-16, none of these events are subscribed to
-%         % anywhere in the WS code.  But we'll leave them in as hooks for
-%         % user customization.
-%         startingSweep
-%         didCompleteSweep
-%         didAbortSweep
-%         startingRun
-%         didCompleteRun
-%         didAbortRun        %NScopesMayHaveChanged
-%         dataAvailable
-%     end
-    
-    events
-        % These events _are_ used by WS itself.
-        %UpdateIsYokedToScanImage
-        %DidSetAbsoluteProtocolFileName
-        %DidSetAbsoluteUserSettingsFileName        
-        %DidLoadProtocolFile
-        %DidSetStateAwayFromNoMDF
-        %WillSetState
-        %DidSetState
-        %DidSetAreSweepsFiniteDurationOrContinuous
-        %DataAvailable
-        %DidCompleteSweep
+        TheFiniteAnalogOutputTask_ = []
+        TheFiniteDigitalOutputTask_ = []
+        %IsInTaskForEachAOChannel_
+        %IsInTaskForEachDOChannel_        
+        %SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
+        IsArmedOrStimulating_ = false
     end
     
     methods
@@ -110,14 +59,6 @@ classdef Refiller < ws.RootModel
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Call the superclass constructor
-            self@ws.RootModel();
-            
-            % Set up sockets
-%             self.RPCServer_ = ws.RPCServer(ws.WavesurferModel.RefillerRPCPortNumber) ;
-%             self.RPCServer_.setDelegate(self) ;
-%             self.RPCServer_.bind() ;
-
             % Set up IPC publisher socket to let others know about what's
             % going on with the Refiller
             self.IPCPublisher_ = ws.IPCPublisher(refillerIPCPublisherPortNumber) ;
@@ -131,46 +72,7 @@ classdef Refiller < ws.RootModel
             
             % Create the replier socket so the frontend can boss us around
             self.IPCReplier_ = ws.IPCReplier(refillerIPCReplierPortNumber, self) ;
-            %self.IPCReplier_.setDelegate(self) ;
             self.IPCReplier_.bind() ;            
-            
-%             % Send a message to let the frontend know we're alive
-%             fprintf('Refiller::Refiller(): About to send refillerIsAlive\n') ;
-%             self.IPCPublisher_.send('refillerIsAlive');            
-%             self.IPCPublisher_.send('refillerIsAlive');            
-            
-%             self.RPCClient_ = ws.RPCClient(ws.WavesurferModel.FrontendIPCPublisherPortNumber) ;
-%             self.RPCClient_.connect() ;
-            
-            %self.State_ = ws.ApplicationState.Uninitialized;
-            %self.IsYokedToScanImage_ = false;
-            %self.AreSweepsFiniteDuration_=true;
-            %self.NSweepsPerRun_ = 1;
-            
-%             % Initialize the fast protocols
-%             self.FastProtocols_(self.NFastProtocols) = ws.fastprotocol.FastProtocol();    
-%             self.IndexOfSelectedFastProtocol=1;
-            
-            % Create all subsystems.
-            %self.Acquisition_ = ws.RefillerAcquisition(self);
-            self.Stimulation_ = ws.RefillerStimulation(self);
-            %self.Display = ws.Display(self);
-            self.Triggering_ = ws.RefillerTriggering(self);
-            self.UserCodeManager_ = ws.UserCodeManager(self);
-            %self.Logging = ws.Logging(self);
-            %self.Ephys = ws.Ephys(self);
-            
-            % Create a list for methods to iterate when excercising the
-            % subsystem API without needing to know all of the property
-            % names.  Ephys must come before Acquisition to ensure the
-            % right channels are enabled and the smart-electrode associated
-            % gains are right, and before Display and Logging so that the
-            % data values are correct.
-            self.Subsystems_ = {self.Triggering, self.Stimulation, self.UserCodeManager};            
-
-            % The object is now initialized, but not very useful until an
-            % MDF is specified.
-            %self.State = ws.ApplicationState.NoMDF;
         end
         
         function delete(self)
@@ -182,30 +84,6 @@ classdef Refiller < ws.RootModel
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        
-        
-%         function unstring(self)
-%             % Called to eliminate all the child-to-parent references, so
-%             % that all the descendents will be properly deleted once the
-%             % last reference to the WavesurferModel goes away.
-%             if ~isempty(self.Acquisition) ,
-%                 self.Acquisition.unstring();
-%             end
-%             if ~isempty(self.Stimulation) ,
-%                 self.Stimulation.unstring();
-%             end
-%             if ~isempty(self.Triggering) ,
-%                 self.Triggering.unstring();
-%             end
-%             if ~isempty(self.Logging) ,
-%                 self.Logging.unstring();
-%             end
-%             if ~isempty(self.UserCodeManager) ,
-%                 self.UserCodeManager.unstring();
-%             end
-%             if ~isempty(self.Ephys) ,
-%                 self.Ephys.unstring();
-%             end
-%         end
         
         function runMainLoop(self)
             % Put something in the console, so user know's what this funny
@@ -219,61 +97,48 @@ classdef Refiller < ws.RootModel
             while self.DoKeepRunningMainLoop_ ,
                 %fprintf('\n\n\nRefiller: At top of main loop\n');
                 if self.IsPerformingRun_ ,
-                    % Action in a run depends on whether we are also in a
-                    % sweep, or are in-between sweeps
-                    if self.IsPerformingSweep_ ,
-                        %fprintf('Refiller: In a sweep\n') ;
-                        if self.DoesFrontendWantToStopRun_ ,
-                            %fprintf('Refiller: self.DoesFrontendWantToStopRun_\n');
-                            % When done, clean up after sweep
-                            if self.IsPerformingEpisode_ ,
-                                self.stopTheOngoingEpisode_() ;
-                            end
-                            self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
+                    % Action in a run depends on whether we are also in an
+                    % episode, or are in-between episodes
+                    if self.DoesFrontendWantToStopRun_ ,
+                        if self.IsPerformingEpisode_ ,
+                            self.stopTheOngoingEpisode_() ;
+                        end
+                        self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        self.IPCPublisher_.send('refillerStoppedRun') ;
+                    else
+                        % Check the finite outputs, refill them if
+                        % needed.
+                        if self.IsPerformingEpisode_ ,
+                            areStimulationTasksDone = self.areTasksDoneStimulation_() ;
+                            if areStimulationTasksDone ,
+                                self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                                % Start a new episode immediately, without
+                                % checking for more messages.
+                                if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                    self.startEpisode_() ;  % start another episode
+                                end                                        
+                            end                                                            
                         else
-                            %fprintf('Refiller: ~self.DoesFrontendWantToStopRun_\n');
-                            % Check for messages, but don't wait for them
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;
-                              % Don't need to process self.IPCReplier_ messages, b/c no req-rep
-                              % messages should be arriving during a sweep.                            
-
-                            % Check the finite outputs, refill them if
-                            % needed.
-                            if self.IsPerformingEpisode_ ,
-                                %areTasksDone = self.Stimulation.areTasksDone() ;
-                                areStimulationTasksDone = self.Stimulation.areTasksDone() ;
-                                %areTasksDone = self.Stimulation.areTasksDone() && self.Triggering.areTasksDone() ;
-                                if areStimulationTasksDone ,
-                                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-                                    %isAnotherEpisodeNeeded = self.Stimulation.isAnotherEpisodeNeeded() ;
-                                    if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerSweep_ ,
-                                        self.startEpisode_() ;
-                                    else
-                                        self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
-                                    end                                        
-                                end                                
+                            % If we're not performing an episode, see if
+                            % we need to start one.
+                            if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                                self.startEpisode_() ;  % start another episode
                             else
-                                % If we're in a sweep, but not performing
-                                % an episode, check to see if the counter
-                                % task is done, if there is one.
-                                if self.NEpisodesCompletedSoFarThisSweep_ >= self.NEpisodesPerSweep_ ,
-                                    self.completeTheOngoingSweepIfTriggeringTasksAreDone_() ;
-                                end
+                                % If we get here, the run is ongoing, but
+                                % timed stimulation is done.  So we pause
+                                % to not peg the CPU.
+                                pause(0.010);  % don't want to peg CPU when done
                             end
                         end
-                    else
-                        %fprintf('Refiller: In a run, but not a sweep\n');
-                        if self.DoesFrontendWantToStopRun_ ,
-                            self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
-                            self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                            self.IPCPublisher_.send('refillerStoppedRun') ;
-                        else
-                            % Check for messages, but don't block
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;                            
-                            self.IPCReplier_.processMessagesIfAvailable() ;
-                            % no pause here, b/c want to start sweep as
-                            % soon as frontend tells us to
-                        end                        
+                        
+                        % Check for messages, but don't wait for them
+                        % We do this last, instead of first, because
+                        % processing messages can e.g. change
+                        % self.IsPerformingRun_, etc.
+                        self.IPCSubscriber_.processMessagesIfAvailable() ;
+                          % Don't need to process self.IPCReplier_ messages, b/c no req-rep
+                          % messages should be arriving during a sweep.                            
                     end
                 else
                     %fprintf('Refiller: Not in a run, about to check for messages\n');
@@ -286,7 +151,7 @@ classdef Refiller < ws.RootModel
                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
                     end
                     %self.frontendIsBeingDeleted();
-                    pause(0.010);  % don't want to peg CPU when not acquiring
+                    pause(0.010);  % don't want to peg CPU when idle
                 end
             end
         end  % function
@@ -303,10 +168,10 @@ classdef Refiller < ws.RootModel
         end  % function
         
         function result = startingRun(self, ...
-                                      wavesurferModelSettings, ...
-                                      acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                      isTerminalOvercommitedForEachAIChannel, ...
-                                      isTerminalOvercommitedForEachDIChannel, ...
+                                      currentFrontendPath, ...                
+                                      currentFrontendPwd, ...
+                                      refillerProtocol, ...
+                                      stimulationKeystoneTask, ...
                                       isTerminalOvercommitedForEachAOChannel, ...
                                       isTerminalOvercommitedForEachDOChannel)
             % Make the refiller settings look like the
@@ -315,10 +180,10 @@ classdef Refiller < ws.RootModel
             % This is called via (req-req) RPC, so must return exactly one value.
 
             % Prepare for the run
-            result = self.prepareForRun_(wavesurferModelSettings, ...
-                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                         isTerminalOvercommitedForEachAIChannel, ...
-                                         isTerminalOvercommitedForEachDIChannel, ...
+            result = self.prepareForRun_(currentFrontendPath, ...                
+                                         currentFrontendPwd, ...
+                                         refillerProtocol, ...
+                                         stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAOChannel, ...
                                          isTerminalOvercommitedForEachDOChannel) ;
         end  % function
@@ -326,8 +191,38 @@ classdef Refiller < ws.RootModel
         function result = completingRun(self)
             % Called by the WSM when the run is completed.
 
-            % Cleanup after run
-            self.completeTheOngoingRun_() ;
+            %
+            % This can happen when the refiller is still in mid-episode.
+            % If this happens, need to terminate the episode.
+            %
+            if self.IsPerformingEpisode_ ,
+                self.stopTheOngoingEpisode_() ;
+                
+                % Set all outputs to zero
+                self.makeSureAllOutputsAreZero_() ;            
+            end
+            
+            %
+            % Cleanup after run            
+            %
+            
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
+            
+            % Clear the output tasks
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            
+            %
+            % Note that we are done with the run
+            %
+            self.IsPerformingRun_ = false ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            
+            %
+            % Set the result, b/c we have to return *some* result
+            %
             result = [] ;
         end  % function
         
@@ -347,9 +242,9 @@ classdef Refiller < ws.RootModel
                 self.abortTheOngoingEpisode_() ;
             end
             
-            if self.IsPerformingSweep_ ,
-                self.abortTheOngoingSweep_() ;
-            end
+%             if self.IsPerformingSweep_ ,
+%                 self.abortTheOngoingSweep_() ;
+%             end
             
             if self.IsPerformingRun_ ,
                 self.abortTheOngoingRun_() ;
@@ -358,8 +253,8 @@ classdef Refiller < ws.RootModel
             result = [] ;
         end  % function        
         
-%         function result = startingSweepLooper(self,indexOfSweepWithinRun)  %#ok<INUSD>
-%             % Sent by the wavesurferModel to prompt the Looper to prepare
+%         function result = startingSweep(self,indexOfSweepWithinRun)
+%             % Sent by the wavesurferModel to prompt the Refiller to prepare
 %             % to run a sweep.  But the sweep doesn't start until the
 %             % WavesurferModel calls startSweep().
 %             %
@@ -367,22 +262,9 @@ classdef Refiller < ws.RootModel
 %             % value.  If a runtime error occurs, it will cause the frontend
 %             % process to hang.
 % 
-%             % Do nothing, since we're not the looper
-%             result = [] ;
+%             % Prepare for the run
+%             %result = self.prepareForSweep_(indexOfSweepWithinRun) ;
 %         end  % function
-
-        function result = startingSweep(self,indexOfSweepWithinRun)
-            % Sent by the wavesurferModel to prompt the Refiller to prepare
-            % to run a sweep.  But the sweep doesn't start until the
-            % WavesurferModel calls startSweep().
-            %
-            % This is called via RPC, so must return exactly one return
-            % value.  If a runtime error occurs, it will cause the frontend
-            % process to hang.
-
-            % Prepare for the run
-            result = self.prepareForSweep_(indexOfSweepWithinRun) ;
-        end  % function
 
         function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
@@ -405,8 +287,7 @@ classdef Refiller < ws.RootModel
         
         function result = releaseTimedHardwareResources(self)
             % This is a req-rep method
-            self.releaseTimedHardwareResources_();
-            %self.IPCPublisher_.send('refillerDidReleaseTimedHardwareResources');            
+            self.releaseHardwareResources_();  % All the refiller resources are timed resources
             result = [] ;
         end
         
@@ -424,27 +305,23 @@ classdef Refiller < ws.RootModel
         
         function result = didAddDigitalOutputChannelInFrontend(self, ...
                                                                channelNameForEachDOChannel, ...
-                                                               deviceNameForEachDOChannel, ...
                                                                terminalIDForEachDOChannel, ...
                                                                isTimedForEachDOChannel, ...
                                                                onDemandOutputForEachDOChannel, ...
                                                                isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
-            %self.Stimulation.addDigitalChannel() ;
             result = [] ;
         end  % function
         
         function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
                                                                    channelNameForEachDOChannel, ...
-                                                                   deviceNameForEachDOChannel, ...
                                                                    terminalIDForEachDOChannel, ...
                                                                    isTimedForEachDOChannel, ...
                                                                    onDemandOutputForEachDOChannel, ...
                                                                    isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
-            %self.Stimulation.removeDigitalChannel(removedChannelIndex) ;
             result = [] ;
         end  % function
 
-        function result = frontendJustLoadedProtocol(self,wavesurferModelSettings, isDOChannelTerminalOvercommitted) %#ok<INUSD>
+        function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -477,352 +354,20 @@ classdef Refiller < ws.RootModel
         
     end  % RPC methods block
     
-    methods
-        function out = get.Triggering(self)
-            out = self.Triggering_ ;
-        end
-        
-        function out = get.Stimulation(self)
-            out = self.Stimulation_ ;
-        end
-        
-        function out = get.UserCodeManager(self)
-            out = self.UserCodeManager_ ;
-        end
-        
-%         function out = get.NSweepsCompletedInThisRun(self)
-%             out = self.NSweepsCompletedSoFarThisRun_ ;
-%         end
-% 
-%         function val = get.NSweepsPerRun(self)
-%             if self.AreSweepsContinuous ,
-%                 val = 1;
-%             else
-%                 %val = self.Triggering.SweepTrigger.Source.RepeatCount;
-%                 val = self.NSweepsPerRun_;
-%             end
-%         end  % function
-%         
-%         function set.NSweepsPerRun(self, newValue)
-%             % Sometimes want to trigger the listeners without actually
-%             % setting, and without throwing an error
-%             if ws.isASettableValue(newValue) ,
-%                 % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-%                 %value=self.validatePropArg('NSweepsPerRun',value);
-%                 if isnumeric(newValue) && isscalar(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
-%                     % If get here, value is a valid value for this prop
-%                     if self.AreSweepsFiniteDuration ,
-%                         self.Triggering.willSetNSweepsPerRun();
-%                         self.NSweepsPerRun_ = newValue;
-%                         self.Triggering.didSetNSweepsPerRun();
-%                     end
-%                 else
-%                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
-%                           'NSweepsPerRun must be a (scalar) positive integer, or inf');       
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
-        
-        function out = get.SweepDurationIfFinite(self)
-            out = self.SweepDurationIfFinite_ ;
-        end  % function
-        
-        function set.SweepDurationIfFinite(self, value)
-            %fprintf('Acquisition::set.Duration()\n');
-            if ws.isASettableValue(value) , 
-                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
-                    valueToSet = max(value,0.1);
-                    self.willSetSweepDurationIfFinite();
-                    self.SweepDurationIfFinite_ = valueToSet;
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDurationIfFinite();
-                else
-                    self.stimulusMapDurationPrecursorMayHaveChanged();
-                    self.didSetSweepDurationIfFinite();
-                    error('most:Model:invalidPropVal', ...
-                          'SweepDurationIfFinite must be a (scalar) positive finite value');
-                end
-            end
-        end  % function
-        
-        function value = get.SweepDuration(self)
-            if self.AreSweepsContinuous ,
-                value=inf;
-            else
-                value=self.SweepDurationIfFinite_ ;
-            end
-        end  % function
-        
-        function set.SweepDuration(self, newValue)
-            % Fail quietly if a nonvalue
-            if ws.isASettableValue(newValue),             
-                % Check value and set if valid
-                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
-                    % If get here, newValue is a valid value for this prop
-                    if isfinite(newValue) ,
-                        self.AreSweepsFiniteDuration = true ;
-                        self.SweepDurationIfFinite = newValue ;
-                    else                        
-                        self.AreSweepsContinuous = true ;
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('most:Model:invalidPropVal', ...
-                          'SweepDuration must be a (scalar) positive value');
-                end
-            end
-            self.broadcast('Update');
-        end  % function
-
-        function value=get.AreSweepsFiniteDuration(self)
-            value=self.AreSweepsFiniteDuration_;
-        end
-        
-        function set.AreSweepsFiniteDuration(self,newValue)
-            %fprintf('inside set.AreSweepsFiniteDuration.  self.AreSweepsFiniteDuration_: %d\n', self.AreSweepsFiniteDuration_);
-            %newValue            
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                %fprintf('setting self.AreSweepsFiniteDuration_ to %d\n',logical(newValue));
-                self.willSetAreSweepsFiniteDuration();
-                self.AreSweepsFiniteDuration_=logical(newValue);
-                %self.AreSweepsContinuous=nan.The;
-                %self.NSweepsPerRun=nan.The;
-                %self.SweepDuration=nan.The;
-                self.stimulusMapDurationPrecursorMayHaveChanged();
-                self.didSetAreSweepsFiniteDuration();
-            end
-            %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
-            self.broadcast('Update');
-        end
-        
-        function value=get.AreSweepsContinuous(self)
-            value=~self.AreSweepsFiniteDuration_;
-        end
-        
-        function set.AreSweepsContinuous(self,newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.AreSweepsFiniteDuration=~logical(newValue);
-            end
-        end
-        
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulation=self.Stimulation;
-            if ~isempty(stimulation) ,
-                stimulation.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end        
-        
-        function electrodesRemoved(self)
-            % Called by the Ephys to notify that one or more electrodes
-            % was removed
-            % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodesRemoved();
-            end
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodesRemoved();
-            end
-        end
-        
-        function electrodeMayHaveChanged(self,electrode,propertyName)
-            % Called by the Ephys to notify that the electrode
-            % may have changed.
-            % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodeMayHaveChanged(electrode,propertyName);
-            end
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodeMayHaveChanged(electrode,propertyName);
-            end
-        end  % function
-
-        function self=didSetAnalogChannelUnitsOrScales(self)
-            %fprintf('WavesurferModel.didSetAnalogChannelUnitsOrScales():\n')
-            %dbstack
-            display=self.Display;
-            if ~isempty(display)
-                display.didSetAnalogChannelUnitsOrScales();
-            end            
-            ephys=self.Ephys;
-            if ~isempty(ephys)
-                ephys.didSetAnalogChannelUnitsOrScales();
-            end            
-        end
-        
-%         function willPerformTestPulse(self)
-%             % Called by the TestPulserModel to inform the WavesurferModel that
-%             % it is about to start test pulsing.
-%             
-%             % I think the main thing we want to do here is to change the
-%             % Wavesurfer mode to TestPulsing
-%             if isequal(self.State,'idle') ,
-%                 self.State = 'test_pulsing' ;
-%             end
-%         end
-%         
-%         function didPerformTestPulse(self)
-%             % Called by the TestPulserModel to inform the WavesurferModel that
-%             % it has just finished test pulsing.
-%             
-%             if isequal(self.State,'test_pulsing') ,
-%                 self.State = 'idle' ;
-%             end
-%         end  % function
-%         
-%         function didAbortTestPulse(self)
-%             % Called by the TestPulserModel when a problem arises during test
-%             % pulsing, that (hopefully) the TestPulseModel has been able to
-%             % gracefully recover from.
-%             
-%             if isequal(self.State,'test_pulsing') ,
-%                 self.State = 'idle' ;
-%             end
-%         end  % function
-        
-%         function acquisitionSweepComplete(self)
-%             % Called by the acq subsystem when it's done acquiring for the
-%             % sweep.
-%             fprintf('Refiller::acquisitionSweepComplete()\n');
-%             self.checkIfReadyToCompleteOngoingSweep_();            
-%         end  % function
-        
-%         function stimulationEpisodeComplete(self)
-%             % Called by the stimulation subsystem when it is done outputting
-%             % the sweep
-%             
-%             %fprintf('Refiller::stimulationEpisodeComplete()\n');
-%             %fprintf('WavesurferModel.zcbkStimulationComplete: %0.3f\n',toc(self.FromRunStartTicId_));
-%             self.checkIfReadyToCompleteOngoingSweep_();
-%         end  % function
-%         
-%         function internalStimulationCounterTriggerTaskComplete(self)
-%             %fprintf('WavesurferModel::internalStimulationCounterTriggerTaskComplete()\n');
-%             %dbstack
-%             self.checkIfReadyToCompleteOngoingSweep_();
-%         end
-        
-%         function checkIfReadyToCompleteOngoingSweep_(self)
-%             % Either calls self.cleanUpAfterSweepAndDaisyChainNextAction_(), or does nothing,
-%             % depending on the states of the Acquisition, Stimulation, and
-%             % Triggering subsystems.  Generally speaking, we want to make
-%             % sure that all three subsystems are done with the sweep before
-%             % calling self.cleanUpAfterSweepAndDaisyChainNextAction_().
-%             %keyboard
-%             if self.Stimulation.IsEnabled ,
-%                 if self.Triggering.StimulationTriggerScheme == self.Triggering.AcquisitionTriggerScheme ,
-%                     % acq and stim trig sources are identical
-%                     if self.Acquisition.IsArmedOrAcquiring || self.Stimulation.IsArmedOrStimulating ,
-%                         % do nothing
-%                     else
-%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeTheOngoingSweep_();
-%                     end
-%                 else
-%                     % acq and stim trig sources are distinct
-%                     % this means the stim trigger basically runs on
-%                     % its own until it's done
-%                     if self.Acquisition.IsArmedOrAcquiring ,
-%                         % do nothing
-%                     else
-%                         %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                         self.completeTheOngoingSweep_();
-%                     end
-%                 end
-%             else
-%                 % Stimulation subsystem is disabled
-%                 if self.Acquisition.IsArmedOrAcquiring , 
-%                     % do nothing
-%                 else
-%                     %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-%                     self.completeTheOngoingSweep_();
-%                 end
-%             end            
-%         end  % function
-                
-%         function samplesAcquired(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-%             % Called "from below" when data is available
-%             self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
-%             %profile resume
-%             % time between subsequent calls to this
-% %            t=toc(self.FromRunStartTicId_);
-% %             if isempty(self.TimeOfLastSamplesAcquired_) ,
-% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f\n',t);
-% %             else
-% %                 %dt=t-self.TimeOfLastSamplesAcquired_;
-% %                 %fprintf('zcbkSamplesAcquired:     t: %7.3f    dt: %7.3f\n',t,dt);
-% %             end
-%             self.TimeOfLastSamplesAcquired_=timeSinceRunStartAtStartOfData;
-%            
-%             % Actually handle the data
-%             %data = eventData.Samples;
-%             %expectedChannelNames = self.Acquisition.ActiveChannelNames;
-%             self.haveDataAvailable_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData);
-%             %profile off
-%         end
-        
-        function willSetAreSweepsFiniteDuration(self)
-            self.Triggering.willSetAreSweepsFiniteDuration();
-        end
-        
-        function didSetAreSweepsFiniteDuration(self)
-            self.Triggering.didSetAreSweepsFiniteDuration();
-            %self.Display.didSetAreSweepsFiniteDuration();
-        end        
-
-        function willSetSweepDurationIfFinite(self)
-            self.Triggering.willSetSweepDurationIfFinite();
-        end
-        
-        function didSetSweepDurationIfFinite(self)
-            %self.broadcast('Update');
-            %self.SweepDuration=nan.The;  % this will cause the WavesurferMainFigure to update
-            self.Triggering.didSetSweepDurationIfFinite();
-            %self.Display.didSetSweepDurationIfFinite();
-        end        
-                
-%         function result=get.FastProtocols(self)
-%             result = self.FastProtocols_;
-%         end
-        
-%         function didSetAcquisitionSampleRate(self,newValue)
-%             ephys = self.Ephys ;
-%             if ~isempty(ephys) ,
-%                 ephys.didSetAcquisitionSampleRate(newValue) ;
-%             end
-%         end
-        
-%         function value = get.NTimesSamplesAcquiredCalledSinceRunStart(self)
-%             value=self.NTimesSamplesAcquiredCalledSinceRunStart_;
-%         end
-
-        function value = get.AcquisitionKeystoneTaskCache(self)
-            value = self.AcquisitionKeystoneTaskCache_ ;
-        end
-        
-        function value = get.StimulationKeystoneTaskCache(self)
-            value = self.StimulationKeystoneTaskCache_ ;
-        end
-    end  % public methods block
-    
     methods (Access = protected)
         function releaseHardwareResources_(self)
-            self.releaseTimedHardwareResources_() ;  % All the refiller resources are timed
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            %self.IsInTaskForEachAOChannel_ = [] ;
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            %self.IsInTaskForEachDOChannel_ = [] ;
+            %self.teardownCounterTriggers_();            
         end
-        
-        function releaseTimedHardwareResources_(self)
-            %self.Acquisition.releaseHardwareResources();
-            self.Stimulation.releaseHardwareResources();
-            self.Triggering.releaseHardwareResources();
-            %self.Ephys.releaseHardwareResources();
-        end
-        
+                
         function result = prepareForRun_(self, ...
-                                         wavesurferModelSettings, ...
-                                         acquisitionKeystoneTask, stimulationKeystoneTask, ...
-                                         isTerminalOvercommitedForEachAIChannel, ...
-                                         isTerminalOvercommitedForEachDIChannel, ...
+                                         currentFrontendPath, ...    
+                                         currentFrontendPwd, ...                                         
+                                         refillerProtocol, ...
+                                         stimulationKeystoneTask, ...
                                          isTerminalOvercommitedForEachAOChannel, ...
                                          isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
@@ -834,297 +379,227 @@ classdef Refiller < ws.RootModel
                 return
             end
             
+            % Set the path to match that of the frontend (partly so we can
+            % find the user class, if specified)
+            path(currentFrontendPath) ;
+            cd(currentFrontendPwd) ;
+            
             % Make our own settings mimic those of wavesurferModelSettings
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
-            wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            %keyboard
-            self.mimicWavesurferModel_(wsModel) ;
+            self.setRefillerProtocol_(refillerProtocol) ;
             
             % Cache the keystone task for the run
-            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
+            %self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
             self.StimulationKeystoneTaskCache_ = stimulationKeystoneTask ;            
             
             % Set the overcommitment arrays
-            self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+            %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
             self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
-            self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+            %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
             self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
-            % Determine episodes per sweep
-            if self.Stimulation.IsEnabled ,
-                if self.AreSweepsFiniteDuration ,
-                    % This means one episode per sweep, always
-                    self.NEpisodesPerSweep_ = 1 ;
+            % Determine episodes per run
+            if self.IsStimulationEnabled_ ,
+                if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
+                    self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
+                elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+                    % stim trigger scheme is a counter trigger
+                    self.NEpisodesPerRun_ = self.StimulationTrigger_.RepeatCount ;
                 else
-                    % Means continuous acq, so need to consult stim trigger
-                    if isa(self.Stimulation.TriggerScheme, 'ws.BuiltinTrigger') ,
-                        self.NEpisodesPerSweep_ = 1 ;                    
-                    elseif isa(self.Stimulation.TriggerScheme, 'ws.CounterTrigger') ,
-                        % stim trigger scheme is a counter trigger
-                        self.NEpisodesPerSweep_ = self.Stimulation.TriggerScheme.RepeatCount ;
+                    % stim trigger scheme is an external trigger
+                    if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
+                        self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
                     else
-                        % stim trigger scheme is an external trigger
-                        self.NEpisodesPerSweep_ = inf ;  % by convention
+                        self.NEpisodesPerRun_ = inf ;  % by convention
                     end
                 end
             else
-                self.NEpisodesPerSweep_ = 0 ;
+                self.NEpisodesPerRun_ = 0 ;
             end
+            %nEpisodesPerRun = self.NEpisodesPerRun_ 
+            
+%             % Determine episodes per sweep
+%             if self.IsStimulationEnabled_ ,
+%                 if isfinite(self.SweepDuration_) ,
+%                     % This means one episode per sweep, always
+%                     self.NEpisodesPerSweep_ = 1 ;
+%                 else
+%                     % Means continuous acq, so need to consult stim trigger
+%                     if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
+%                         self.NEpisodesPerSweep_ = 1 ;                    
+%                     elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+%                         % stim trigger scheme is a counter trigger
+%                         self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
+%                     else
+%                         % stim trigger scheme is an external trigger
+%                         self.NEpisodesPerSweep_ = inf ;  % by convention
+%                     end
+%                 end
+%             else
+%                 self.NEpisodesPerSweep_ = 0 ;
+%             end
 
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            self.NSweepsCompletedSoFarThisRun_ = 0 ;
+            %self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.IsPerformingRun_ = true ;                        
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
 
             % Tell all the subsystems to prepare for the run
             try
-                for idx = 1:numel(self.Subsystems_) ,
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingRun();
-                    end
-                end
+                %self.startingRunTriggering_() ;
+                self.startingRunStimulation_() ;                
             catch me
                 % Something went wrong
                 self.abortTheOngoingRun_() ;
-                %self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',me) ;
-                %self.changeReadiness(+1) ;
                 me.rethrow() ;
             end
             
             % Initialize timing variables
-            self.FromRunStartTicId_ = tic() ;
-            self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
+            %self.FromRunStartTicId_ = tic() ;
+            %self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
+            % (Maybe) start an episode, which will wait for a trigger to *really*
+            % start.
+            if self.NEpisodesPerRun_ > 0 ,
+                self.startEpisode_() ;
+            end
+            
             % Return empty
             result = [] ;
-            % Notify the fronted that we're ready
-            %self.IPCPublisher_.send('refillerReadyForRunOrPerhapsNot',[]) ;  % empty matrix signals no error
-            %keyboard            
         end  % function
         
-        function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
-            % Get everything set up for the Refiller to run a sweep, but
-            % don't pulse the master trigger yet.
-
-            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
-                % If we're not in the right mode, ignore this message.
-                % This can now happen in normal operation, so we want to
-                % just ignore it silently.
-                result = [] ;
-                return
-            end
-%             if ~self.IsPerformingRun_ ,
-%                 error('ws:Refiller:askedToPrepareForSweepWhileNotInRun', ...
-%                       'The refiller was asked to prepare for a sweep while not in a run') ;
+%         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+%             % Get everything set up for the Refiller to run a sweep, but
+%             % don't pulse the master trigger yet.
+% 
+%             if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+%                 % If we're not in the right mode, ignore this message.
+%                 % This can now happen in normal operation, so we want to
+%                 % just ignore it silently.
+%                 result = [] ;
+%                 return
 %             end
-%             if self.IsPerformingSweep_ ,
-%                 error('ws:Refiller:askedToPrepareForSweepWhileInSweep', ...
-%                       'The refiller was asked to prepare for a sweep while already in a sweep') ;
+%             
+%             % Reset the sample count for the sweep
+%             %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
+%             %self.NScansAcquiredSoFarThisSweep_ = 0;
+%             %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
+%             
+%             % Start the counter task, if any
+%             %self.startCounterTasks_() ;
+%             
+%             % At this point, all the hardware-timed tasks the refiller is
+%             % responsible for should be "started" (in the DAQmx sense)
+%             % and simply waiting for their trigger to go high to truly
+%             % start.                
+%                 
+%             % Almost-Final preparations...
+%             self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
+%             self.IsPerformingSweep_ = true ;
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+% 
+%             % Start an episode
+%             self.startEpisode_() ;
+%             
+%             % Nothing to return
+%             result = [] ;
+%             %self.IPCPublisher_.send('refillerReadyForSweep') ;
+%         end  % function
+
+%         function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
+%             if isfinite(self.SweepDuration_) ,
+%                 areTriggeringTasksDone = true ;
+%             else
+%                 areTriggeringTasksDone = self.areTasksDoneTriggering_() ;
 %             end
-            
-            % Reset the sample count for the sweep
-            %fprintf('Refiller:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
-            self.NScansAcquiredSoFarThisSweep_ = 0;
-            %self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
-            
-            % Call startingSweep() on all the enabled subsystems
-            for i = 1:numel(self.Subsystems_) ,
-                if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.startingSweep();
-                end
-            end
-            
-            % Start the counter timer tasks, which will trigger the
-            % hardware-timed AI, AO, DI, and DO tasks.  But the counter
-            % timer tasks will not start running until they themselves
-            % are triggered by the master trigger.
-            %self.Triggering.startAllTriggerTasks();  % why not do this in Triggering::startingSweep?  Is there an ordering issue?
-              % We now do this this RefillerTriggering::startingSweep()
-            
-            % At this point, all the hardware-timed tasks the refiller is
-            % responsible for should be "started" (in the DAQmx sense)
-            % and simply waiting for their trigger to go high to truly
-            % start.                
-                
-            % Almost-Final preparations...
-            self.NEpisodesCompletedSoFarThisSweep_ = 0 ;
-            self.IsPerformingSweep_ = true ;
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-
-            % Start an episode
-            self.startEpisode_() ;
-            
-            % Nothing to return
-            result = [] ;
-            %self.IPCPublisher_.send('refillerReadyForSweep') ;
-        end  % function
-
-        function completeTheOngoingSweepIfTriggeringTasksAreDone_(self)
-            if self.AreSweepsFiniteDuration_ ,
-                areTriggeringTasksDone = true ;
-            else
-                areTriggeringTasksDone = self.Triggering.areTasksDone() ;
-            end
-            if areTriggeringTasksDone ,
-                self.completeTheOngoingSweep_() ;
-            end        
-        end
+%             if areTriggeringTasksDone ,
+%                 self.completeTheOngoingSweep_() ;
+%             end        
+%         end
         
-        function completeTheOngoingSweep_(self)
-            % Notify all the subsystems that the sweep is done
-            for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.completingSweep();
-                end
-            end
-            
-            % Note that we are no longer performing a sweep
-            self.IsPerformingSweep_ = false ;            
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-
-            % Bump the number of completed sweeps
-            self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
-            
-            % Notify the front end
-            self.IPCPublisher_.send('refillerCompletedSweep') ;
-        end  % function
+%         function completeTheOngoingSweep_(self)
+%             % Stop the counter tasks, if any
+%             %self.stopCounterTasks_();                        
+%             
+%             % Note that we are no longer performing a sweep
+%             self.IsPerformingSweep_ = false ;            
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+% 
+%             % Bump the number of completed sweeps
+%             %self.NSweepsCompletedSoFarThisRun_ = self.NSweepsCompletedSoFarThisRun_ + 1;
+%             
+%             % Notify the front end
+%             self.IPCPublisher_.send('refillerCompletedSweep') ;
+%         end  % function
         
-        function stopTheOngoingSweep_(self)
-            % Stops the ongoing sweep.
-            
-            for i = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.stoppingSweep();
-                end
-            end
-            
-            self.IsPerformingSweep_ = false ;
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-            
-            %self.callUserCodeManager_('didStopSweep');
-        end  % function
+%         function stopTheOngoingSweep_(self)
+%             % Stops the ongoing sweep.
+%             %self.stopCounterTasks_();
+%             self.IsPerformingSweep_ = false ;
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+%         end  % function
 
-        function abortTheOngoingSweep_(self)            
-            for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.abortingSweep() ;
-                end
-            end
-            
-            self.IsPerformingSweep_ = false ;          
-            %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
-        end            
+%         function abortTheOngoingSweep_(self)            
+%             %self.stopCounterTasks_();
+%             self.IsPerformingSweep_ = false ;          
+%             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+%         end            
         
-        function completeTheOngoingRun_(self)
-            % Stop assumes the object is running and completed successfully.  It generates
-            % successful end of run event.
-            for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.completingRun();
-                end
-            end
-
-            self.IsPerformingRun_ = false ;
-            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
-            
-            %self.callUserCodeManager_('didCompleteRun');
-        end  % function
+%         function completeTheOngoingRun_(self)
+%             % Disarm the tasks
+%             self.TheFiniteAnalogOutputTask_.disarm();
+%             self.TheFiniteDigitalOutputTask_.disarm();            
+%             
+%             % Clear the output tasks tasks
+%             self.TheFiniteAnalogOutputTask_ = [] ;            
+%             self.IsInTaskForEachAOChannel_ = [] ;
+%             self.TheFiniteDigitalOutputTask_ = [] ;            
+%             self.IsInTaskForEachDOChannel_ = [] ;
+%             
+%             %
+%             % Note that we are done with the run
+%             %
+%             self.IsPerformingRun_ = false ;
+%             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+%         end  % function
         
         function stopTheOngoingRun_(self)
-            for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.stoppingRun() ;
-                end
-            end            
+            % Set all outputs to zero
+            self.makeSureAllOutputsAreZero_() ;
+            
+            % Clear the tasks
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+
+            % Update our internal state
             self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingRun_(self)            
-            for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.abortingRun() ;
-                end
-            end
+            % Clear the triggering stuff
+%             self.teardownCounterTriggers_();            
+%             self.IsTriggeringBuiltin_ = [] ;
+%             self.IsTriggeringCounterBased_ = [] ;
+%             self.IsTriggeringExternal_ = [] ;
+
+            self.abortingRunStimulation_() ;
+            
             self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
-%         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-%             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
-%             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
-%             nScans=size(rawAnalogData,1);
-%             %nChannels=size(data,2);
-%             %assert(nChannels == numel(expectedChannelNames));
-%                         
-%             if (nScans>0)
-%                 % update the current time
-%                 dt=1/self.Acquisition.SampleRate;
-%                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
-% 
-%                 % Scale the analog data
-%                 channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
-%                 inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-%                 if isempty(rawAnalogData) ,
-%                     scaledAnalogData=zeros(size(rawAnalogData));
-%                 else
-%                     data = double(rawAnalogData);
-%                     combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                     scaledAnalogData=bsxfun(@times,data,combinedScaleFactors); 
-%                 end
-% 
-%                 % Notify each subsystem that data has just been acquired
-%                 %T=zeros(1,7);
-%                 %state = self.State_ ;
-%                 isSweepBased = self.AreSweepsFiniteDuration_ ;
-%                 t = self.t_;
-%                 % No need to inform Triggering subsystem
-%                 self.Acquisition.samplesAcquired(isSweepBased, ...
-%                                                  t, ...
-%                                                  scaledAnalogData, ...
-%                                                  rawAnalogData, ...
-%                                                  rawDigitalData, ...
-%                                                  timeSinceRunStartAtStartOfData);  % acq system is always enabled
-%                 if self.UserCodeManager.IsEnabled ,                             
-%                     self.UserCodeManager.samplesAcquired(isSweepBased, ...
-%                                                        t, ...
-%                                                        scaledAnalogData, ...
-%                                                        rawAnalogData, ...
-%                                                        rawDigitalData, ...
-%                                                        timeSinceRunStartAtStartOfData);
-%                 end
-%                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
-% 
-%                 % Toss the data to the subscribers
-%                 fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
-%                 self.IPCPublisher_.send('samplesAcquired', ...
-%                                         self.NScansAcquiredSoFarThisSweep_, ...
-%                                         rawAnalogData, ...
-%                                         rawDigitalData, ...
-%                                         timeSinceRunStartAtStartOfData ) ;
-%                 
-%                 % Update the number of scans acquired
-%                 self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
-% 
-%                 %self.broadcast('DataAvailable');
-%                 
-%                 %self.callUserCodeManager_('dataAvailable');  
-%                     % now called by UserCodeManager dataAvailable() method
-%             end
-%         end  % function
-        
-        function callUserMethod_(self, eventName, varargin)
-            % Handle user functions.  It would be possible to just make the UserCodeManager
-            % subsystem a regular listener of these events.  Handling it
-            % directly removes at 
-            % least one layer of function calls and allows for user functions for 'events'
-            % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName, varargin{:});
-            
-            % Handle as standard event if applicable.
-            %self.broadcast(eventName);
+        function callUserMethod_(self, methodName, varargin)
+            try
+                if ~isempty(self.TheUserObject_) ,
+                    self.TheUserObject_.(methodName)(self, methodName, varargin{:});
+                end
+            catch exception ,
+                warning('Error in user class method samplesAcquired.  Exception report follows.') ;
+                disp(exception.getReport()) ;
+            end            
         end  % function                
         
         function startEpisode_(self)
@@ -1132,20 +607,20 @@ classdef Refiller < ws.RootModel
                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
                       'The refiller was asked to start an episode while not in a run') ;
             end
-            if ~self.IsPerformingSweep_ ,
-                error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
-                      'The refiller was asked to start an episode while not in a sweep') ;
-            end
+%             if ~self.IsPerformingSweep_ ,
+%                 error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
+%                       'The refiller was asked to start an episode while not in a sweep') ;
+%             end
             if self.IsPerformingEpisode_ ,
                 error('ws:Refiller:askedToStartEpisodeWhileInEpisode', ...
                       'The refiller was asked to start an episode while already in an epsiode') ;
             end
             
-            if self.Stimulation.IsEnabled ,
+            if self.IsStimulationEnabled_ ,
                 self.IsPerformingEpisode_ = true ;
                 %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
                 self.callUserMethod_('startingEpisode') ;
-                self.Stimulation.startingEpisode(self.NEpisodesCompletedSoFarThisRun_+1) ;
+                self.fillOutputBuffersAndStartOutputTasks_(self.NEpisodesCompletedSoFarThisRun_+1) ;
             end
         end
         
@@ -1157,8 +632,8 @@ classdef Refiller < ws.RootModel
             % lines make this the case.
 
             % Notify the Stimulation subsystem
-            if self.Stimulation.IsEnabled ,
-                self.Stimulation.completingEpisode() ;
+            if self.IsStimulationEnabled_ ,
+                self.completingEpisode_() ;
             end
             
             % Call user method
@@ -1167,20 +642,15 @@ classdef Refiller < ws.RootModel
             % Update state
             self.IsPerformingEpisode_ = false;
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-            self.NEpisodesCompletedSoFarThisSweep_ = self.NEpisodesCompletedSoFarThisSweep_ + 1 ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
             
-%             % If we might have more episodes to deliver, arm for next one
-%             if self.NEpisodesCompletedSoFarThisSweep_ < self.NEpisodesPerRun_ ,
-%                 self.armForEpisode_() ;
-%             end                                    
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
             %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
         end  % function
         
         function stopTheOngoingEpisode_(self)
-            if self.Stimulation.IsEnabled ,
-                self.Stimulation.stoppingEpisode();
+            if self.IsStimulationEnabled_ ,
+                self.stoppingEpisode_() ;
             end
             self.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
@@ -1188,99 +658,571 @@ classdef Refiller < ws.RootModel
         end  % function
         
         function abortTheOngoingEpisode_(self)
-            if self.Stimulation.IsEnabled ,
-                self.Stimulation.abortingEpisode();
+            if self.IsStimulationEnabled_ ,
+                self.abortingEpisode_() ;
             end
             self.callUserMethod_('abortingEpisode');            
             self.IsPerformingEpisode_ = false ;            
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
                 
-    end % protected methods block
-    
-    methods (Access = protected)        
-        % Allows access to protected and protected variables from ws.Coding.
-        function out = getPropertyValue_(self, name)
-            out = self.(name);
-        end  % function
+        function result = areTasksDoneStimulation_(self)
+            % Check if the tasks are done.  This doesn't change the object
+            % state at all.
+            
+            % Call the task to do the real work
+            if self.IsArmedOrStimulating_ ,
+                % if isArmedOrStimulating_ is true, the tasks should be
+                % non-empty (this is an object invariant)
+                isAnalogTaskDone=self.TheFiniteAnalogOutputTask_.isDone();
+                isDigitalTaskDone = self.TheFiniteDigitalOutputTask_.isDone();
+                result = isAnalogTaskDone && isDigitalTaskDone ;
+                % if areTasksDone ,
+                %     self.IsArmedOrStimulating_ = false ;
+                % end
+            else
+                % doneness is not really defined if
+                % self.IsArmedOrStimulating_ is false
+                result = [] ;
+            end
+        end
         
-        % Allows access to protected and protected variables from ws.Coding.
-        function setPropertyValue_(self, name, value)
-            self.(name) = value;
-        end  % function        
-    end  % methods ( Access = protected )
-    
-    methods (Access=protected) 
-        function mimicWavesurferModel_(self, wsModel)
-            % Cause self to resemble other, for the purposes of running an
-            % experiment with the settings defined in wsModel.
+%         function setupCounterTriggers_(self)        
+%             self.teardownCounterTriggers_() ;  % just in case there's an old one hanging around
+%             stimulationTriggerScheme = self.StimulationTrigger_ ;            
+%             if self.IsStimulationEnabled_ && isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                 self.StimulationCounterTask_ = self.createCounterTask_(stimulationTriggerScheme) ;                
+%             end            
+%         end  % function       
+        
+%         function task = createCounterTask_(self, trigger)
+%             % Create the counter task
+%             deviceName = self.DeviceName_ ;
+%             counterID = trigger.CounterID ;
+%             taskName = sprintf('WaveSurfer Counter Trigger Task for CTR%d', counterID) ;
+%             task = ...
+%                 ws.CounterTriggerTask(self, ...
+%                                       deviceName, ...
+%                                       counterID, ...
+%                                       taskName);
+%             
+%             % Set freq, repeat count                               
+%             interval=trigger.Interval;
+%             task.RepeatFrequency = 1/interval;
+%             repeatCount=trigger.RepeatCount;
+%             task.RepeatCount = repeatCount;
+%             
+%             % Set the PFIID, whether or not we should need to. It seems
+%             % that we really do need to do this, even though we now
+%             % (6/27/2016) always use the default PFI for output.  Weird.
+%             pfiID = trigger.PFIID ;
+%             task.exportSignal(sprintf('PFI%d', pfiID)) ;
+%             
+%             % TODO: Need to set the edge polarity!!!
+%             
+%             % Note that this counter *must* be the stim trigger, since
+%             % can't use a counter for acq trigger.
+%             % Set it up to trigger off the acq trigger, since don't want to
+%             % fire anything until we've started acquiring.
+%             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+%             triggerTerminalName = sprintf('%s/StartTrigger', keystoneTask) ;
+%             %task.configureStartTrigger(self.AcquisitionTriggerScheme.PFIID, self.AcquisitionTriggerScheme.Edge);
+%             task.configureStartTrigger(triggerTerminalName, 'rising');
+%         end  % method        
+        
+%         function teardownCounterTriggers_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop();
+%                 catch me  %#ok<NASGU>
+%                     % if there's a problem, can't really do much about
+%                     % it...
+%                 end
+%             end
+%             self.StimulationCounterTask_ = [];
+%         end  % function        
+%         
+%         function startCounterTasks_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 self.StimulationCounterTask_.start() ;
+%             end            
+%         end  % method        
+%         
+%         function stopCounterTasks_(self)
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop() ;
+%                 catch me  %#ok<NASGU>
+%                     % if there's a problem, can't really do much about
+%                     % it...
+%                 end
+%             end
+%         end  % method
+%         
+%         function result = areTasksDoneTriggering_(self)
+%             % Check if the tasks are done.  This doesn't change the object
+%             % state at all.
+%             
+%             if self.IsTriggeringBuiltin_ ,
+%                 result = true ;  % there's no counter task, and the builtin trigger fires only once per sweep, so we're done
+%             elseif self.IsTriggeringCounterBased_ ,
+%                 result = self.StimulationCounterTask_.isDone() ;
+%             else
+%                 % triggering is external, which is never done
+%                 result = false ;
+%             end
+%         end  % method        
+        
+        function stoppingRunStimulation_(self)
+            %self.SelectedOutputableCache_ = [];
+
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
+
+            % The tasks should already be stopped, but they might have
+            % non-zero outputs.  So we fill the output buffers with a short
+            % run of zeros, then start the task again.
+            self.TheFiniteAnalogOutputTask_.zeroChannelData();
+            self.TheFiniteDigitalOutputTask_.zeroChannelData();            
+
+            self.TheFiniteAnalogOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
+            self.TheFiniteDigitalOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
             
-            % Have to do this before decoding properties, or bad things will happen
-            self.releaseTimedHardwareResources_();
+            self.TheFiniteAnalogOutputTask_.arm();
+            self.TheFiniteDigitalOutputTask_.arm();            
             
-            % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
-            
-            % Set each property to the corresponding one
-            for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Stimulation_', 'UserCodeManager_'})) ,
-                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimicWavesurferModel_(wsModel.getPropertyValue_(thisPropertyName)) ;
-                elseif any(strcmp(thisPropertyName,{'Acquisition_', 'Display_', 'Ephys_', 'FastProtocols_', 'Logging_'})) ,
-                    % do nothing                   
-                else
-                    if isprop(wsModel,thisPropertyName) ,
-                        source = wsModel.getPropertyValue_(thisPropertyName) ;
-                        self.setPropertyValue_(thisPropertyName, source) ;
-                    end
+            self.TheFiniteAnalogOutputTask_.start();
+            self.TheFiniteDigitalOutputTask_.start();            
+
+            % Wait for the tasks to stop, but don't wait forever...
+            % The idea here is to make a good faith effort to zero the
+            % outputs, but not to ever go into an infinite loop that brings
+            % everything crashing to a halt.
+            for i=1:100 ,
+                if self.TheFiniteAnalogOutputTask_.isDone() ,
+                    break
                 end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
+            end
+            for i=1:100 ,
+                if self.TheFiniteDigitalOutputTask_.isDone() ,
+                    break
+                end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
             end
             
-            % Do sanity-checking on persisted state
-            self.sanitizePersistedState_() ;
+            self.TheFiniteAnalogOutputTask_.stop();
+            self.TheFiniteDigitalOutputTask_.stop();            
             
-            % Make sure the transient state is consistent with
-            % the non-transient state
-            self.synchronizeTransientStateToPersistedState_() ;                                                
-        end  % function
-    end  % public methods block
-    
-%     methods (Access=protected)
-%         function initializeFromMDFStructure_(self, mdfStructure)                        
-%             % Initialize the acquisition subsystem given the MDF data
-%             %self.Acquisition.initializeFromMDFStructure(mdfStructure);
-%             
-%             % Initialize the stimulation subsystem given the MDF
-%             self.Stimulation.initializeFromMDFStructure(mdfStructure);
-% 
-%             % Initialize the triggering subsystem given the MDF
-%             self.Triggering.initializeFromMDFStructure(mdfStructure);
-%             
-%             % Add the default scopes to the display
-%             %self.Display.initializeScopes();
-%             
-%             % Change our state to reflect the presence of the MDF file
-%             %self.setState_('idle');
-%         end  % function
-%     end  % methods block        
-    
-    methods (Access=protected)
-        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
-            % This method should set any transient state variables to
-            % ensure that the object invariants are met, given the values
-            % of the persisted state variables.  The default implementation
-            % does nothing, but subclasses can override it to make sure the
-            % object invariants are satisfied after an object is decoded
-            % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
-            % a new object is instantiated, and after its persistent state
-            % variables have been set to the encoded values.
+            % Disarm the tasks (again)
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();                        
             
-            % We override this for the refiller b/c the default method
-            % accessed the Acquisition subsystem, which we don't have.  And
-            % this all seems to work out OK.
-        end
-    end
+            % Clear the NI daq tasks
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            %self.IsInTaskForEachAOChannel_ = [] ;
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            %self.IsInTaskForEachDOChannel_ = [] ;
+        end  % function        
+        
+        function makeSureAllOutputsAreZero_(self)
+            % Disarm the tasks
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();            
 
+            % The tasks should already be stopped, but they might have
+            % non-zero outputs.  So we fill the output buffers with a short
+            % run of zeros, then start the task again.
+            self.TheFiniteAnalogOutputTask_.zeroChannelData();
+            self.TheFiniteDigitalOutputTask_.zeroChannelData();            
+
+            self.TheFiniteAnalogOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
+            self.TheFiniteDigitalOutputTask_.TriggerTerminalName = '' ;  % this will make it start w/o waiting for a trigger
+            
+            self.TheFiniteAnalogOutputTask_.arm();
+            self.TheFiniteDigitalOutputTask_.arm();            
+            
+            self.TheFiniteAnalogOutputTask_.start();
+            self.TheFiniteDigitalOutputTask_.start();            
+
+            % Wait for the tasks to stop, but don't wait forever...
+            % The idea here is to make a good faith effort to zero the
+            % outputs, but not to ever go into an infinite loop that brings
+            % everything crashing to a halt.
+            for i=1:100 ,
+                if self.TheFiniteAnalogOutputTask_.isDone() ,
+                    break
+                end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
+            end
+            for i=1:100 ,
+                if self.TheFiniteDigitalOutputTask_.isDone() ,
+                    break
+                end
+                pause(0.01) ;  % This is OK since it's running in the refiller.
+            end
+            
+            self.TheFiniteAnalogOutputTask_.stop();
+            self.TheFiniteDigitalOutputTask_.stop();            
+            
+            % Disarm the tasks (again)
+            self.TheFiniteAnalogOutputTask_.disarm();
+            self.TheFiniteDigitalOutputTask_.disarm();                        
+            
+%             % Clear the NI daq tasks
+%             self.TheFiniteAnalogOutputTask_ = [] ;            
+%             %self.IsInTaskForEachAOChannel_ = [] ;
+%             self.TheFiniteDigitalOutputTask_ = [] ;            
+%             %self.IsInTaskForEachDOChannel_ = [] ;
+        end  % function        
+        
+        function abortingRunStimulation_(self)
+            %self.SelectedOutputableCache_ = [];
+            
+            % Disarm the tasks (check that they exist first, since this
+            % gets called in situations where something has gone wrong)
+            if ~isempty(self.TheFiniteAnalogOutputTask_) && isvalid(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_.disarm();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) && isvalid(self.TheFiniteDigitalOutputTask_) ,
+                self.TheFiniteDigitalOutputTask_.disarm();
+            end
+            
+            % Clear the NI daq tasks
+            self.TheFiniteAnalogOutputTask_ = [] ;            
+            %self.IsInTaskForEachAOChannel_ = [] ;
+            self.TheFiniteDigitalOutputTask_ = [] ;            
+            %self.IsInTaskForEachDOChannel_ = [] ;
+        end  % function        
+        
+        function fillOutputBuffersAndStartOutputTasks_(self, indexOfEpisodeWithinSweep)
+            % Called by the Refiller when it's starting an episode
+            
+            if self.IsArmedOrStimulating_ ,
+                % probably an error to call this method when
+                % self.IsArmedOrStimulating_ is true
+                return
+            end
+            
+            % Initialized some transient instance variables
+            self.IsArmedOrStimulating_ = true;
+            
+            % Get the current stimulus map
+            stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinSweep, self.DoRepeatSequence_) ;
+            %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+
+            % Set the channel data in the tasks
+            self.setAnalogChannelData_(stimulusMapIndex, indexOfEpisodeWithinSweep) ;
+            self.setDigitalChannelData_(stimulusMapIndex, indexOfEpisodeWithinSweep) ;
+
+            % Start the digital task (which will then wait for a trigger)
+            self.TheFiniteDigitalOutputTask_.start() ; 
+            
+            % Start the analog task (which will then wait for a trigger)
+            self.TheFiniteAnalogOutputTask_.start() ;                
+        end  % function
+        
+        function completingEpisode_(self)
+            if self.IsArmedOrStimulating_ ,
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
+                self.IsArmedOrStimulating_ = false ;
+            end
+        end  % method
+        
+        function stoppingEpisode_(self)
+            if self.IsArmedOrStimulating_ ,
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
+                self.IsArmedOrStimulating_ = false ;
+            end
+        end  % function
+                
+        function abortingEpisode_(self)
+            if self.IsArmedOrStimulating_ ,
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;                
+                self.IsArmedOrStimulating_ = false ;
+            end
+        end  % function
+        
+%         function stimulusMap = getCurrentStimulusMap_(self, episodeIndexWithinSweep)
+%             % Calculate the episode index
+%             %episodeIndexWithinSweep=self.NEpisodesCompleted_+1;
+%             
+%             % Determine the stimulus map, given self.SelectedOutputableCache_ and other
+%             % things
+%             stimulusLibrary = self.StimulusLibrary_ ;
+%             if isempty(self.SelectedOutputableCache_) ,
+%                 isThereAMapForThisEpisode = false ;
+%                 isSourceASequence = false ;  % arbitrary: doesn't get used if isThereAMap==false
+%                 indexOfMapWithinOutputable=[];  % arbitrary: doesn't get used if isThereAMap==false
+%             else
+%                 if isa(self.SelectedOutputableCache_,'ws.StimulusMap')
+%                     isSourceASequence = false ;
+%                     nMapsInOutputable=1;
+%                 else
+%                     % outputable must be a sequence                
+%                     isSourceASequence = true ;
+%                     nMapsInOutputable=length(self.SelectedOutputableCache_.Maps);
+%                 end
+% 
+%                 % Sort out whether there's a map for this episode
+%                 if episodeIndexWithinSweep <= nMapsInOutputable ,
+%                     isThereAMapForThisEpisode=true;
+%                     indexOfMapWithinOutputable=episodeIndexWithinSweep;
+%                 else
+%                     if self.DoRepeatSequence_ ,
+%                         if nMapsInOutputable>0 ,
+%                             isThereAMapForThisEpisode=true;
+%                             indexOfMapWithinOutputable=mod(episodeIndexWithinSweep-1,nMapsInOutputable)+1;
+%                         else
+%                             % Special case for when a sequence has zero
+%                             % maps in it
+%                             isThereAMapForThisEpisode=false;
+%                             indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+%                         end                            
+%                     else
+%                         isThereAMapForThisEpisode=false;
+%                         indexOfMapWithinOutputable = [] ;  % arbitrary: doesn't get used if isThereAMap==false
+%                     end
+%                 end
+%             end
+%             if isThereAMapForThisEpisode ,
+%                 if isSourceASequence ,
+%                     stimulusMap=self.SelectedOutputableCache_.Maps{indexOfMapWithinOutputable};
+%                 else                    
+%                     % this means the outputable is a "naked" map
+%                     stimulusMap=self.SelectedOutputableCache_;
+%                 end
+%             else
+%                 stimulusMap = [] ;
+%             end
+%         end  % function
+        
+        function [nScans, nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
+            % Get info about which analog channels are in the task
+            %isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
+            isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
+
+            % Calculate the signals
+            if isempty(stimulusMapIndex) ,
+                aoData = zeros(0,nAnalogChannelsInTask) ;
+                nChannelsWithStimulus = 0 ;
+            else
+                channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
+                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+%                 [aoData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                [aoData, nChannelsWithStimulus] = ...
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 channelNamesInTask, ...
+                                                                 isChannelAnalog, ...
+                                                                 episodeIndexWithinSweep) ;  
+                  % each signal of aoData is in native units
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans = size(aoData,1);
+            
+            % If any channel scales are problematic, deal with this
+            analogChannelScales=self.AOChannelScales_(isInTaskForEachAnalogChannel);  % (native units)/V
+            inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
+            sanitizedInverseAnalogChannelScales = ...
+                ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+
+            % scale the data by the channel scales
+            if isempty(aoData) ,
+                aoDataScaled=aoData;
+            else
+                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+            end
+            % all signals in aoDataScaled are in V
+            
+            % limit the data to [-10 V, +10 V]
+            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
+
+            % Finally, assign the stimulation data to the the relevant part
+            % of the output task
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                error('Adam is dumb');
+            else
+                self.TheFiniteAnalogOutputTask_.ChannelData = aoDataScaledAndLimited;
+            end
+        end  % function
+
+        function [nScans, nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
+            %import ws.*
+            
+            % % Calculate the episode index
+            % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
+            
+            % Calculate the signals
+            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
+            %isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
+            isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
+            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
+            if isempty(stimulusMapIndex) ,
+                doData=zeros(0,nDigitalChannelsInTask);  
+                nChannelsWithStimulus = 0 ;
+            else
+                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
+                namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
+%                 [doData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
+%                                                  namesOfDigitalChannelsInTask, ...
+%                                                  isChannelAnalogForEachDigitalChannelInTask, ...
+%                                                  episodeIndexWithinRun);
+                [doData, nChannelsWithStimulus] = ...
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 namesOfDigitalChannelsInTask, ...
+                                                                 isChannelAnalogForEachDigitalChannelInTask, ...
+                                                                 episodeIndexWithinRun) ;
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans= size(doData,1);
+            
+            % limit the data to {false,true}
+            doDataLimited=logical(doData);
+
+            % Finally, assign the stimulation data to the the relevant part
+            % of the output task
+            self.TheFiniteDigitalOutputTask_.ChannelData = doDataLimited;
+        end  % function        
+        
+%         function startingRunTriggering_(self) 
+%             %fprintf('RefillerTriggering::startingRun()\n');
+%             self.setupCounterTriggers_();
+%             stimulationTriggerScheme = self.StimulationTrigger_ ;            
+%             if isa(stimulationTriggerScheme,'ws.BuiltinTrigger') ,
+%                 self.IsTriggeringBuiltin_ = true ;
+%                 self.IsTriggeringCounterBased_ = false ;
+%                 self.IsTriggeringExternal_ = false ;                
+%             elseif isa(stimulationTriggerScheme,'ws.CounterTrigger') ,
+%                 self.IsTriggeringBuiltin_ = false ;
+%                 self.IsTriggeringCounterBased_ = true ;
+%                 self.IsTriggeringExternal_ = false ;
+%             elseif isa(stimulationTriggerScheme,'ws.ExternalTrigger') ,
+%                 self.IsTriggeringBuiltin_ = false ;
+%                 self.IsTriggeringCounterBased_ = false ;
+%                 self.IsTriggeringExternal_ = true ;
+%             end
+%         end  % function        
+        
+        function startingRunStimulation_(self)
+            % Make the NI daq tasks, if don't have already
+            self.acquireHardwareResourcesStimulation_() ;
+                        
+            % Set up the task triggering
+            keystoneTask = self.StimulationKeystoneTaskCache_ ;
+            if isequal(keystoneTask,'ai') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'di') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'ao') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
+            elseif isequal(keystoneTask,'do') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
+                self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteDigitalOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
+            else
+                % Getting here means there was a programmer error
+                error('ws:InternalError', ...
+                      'Adam is a dum-dum, and the magic number is 8347875');
+            end
+            
+            % Clear out any pre-existing output waveforms
+            self.TheFiniteAnalogOutputTask_.clearChannelData() ;
+            self.TheFiniteDigitalOutputTask_.clearChannelData() ;
+
+            % Arm the tasks
+            self.TheFiniteAnalogOutputTask_.arm() ;
+            self.TheFiniteDigitalOutputTask_.arm() ;
+            
+%             % Set up the selected outputable cache
+%             stimulusOutputable = self.StimulusLibrary_.selectedOutputable() ;  % this makes a copy
+%             self.SelectedOutputableCache_ = stimulusOutputable ;
+        end  % function        
+        
+%         function startingSweepTriggering_(self)
+%             %fprintf('RefillerTriggering::startingSweep()\n');
+%             self.startCounterTasks_();
+%         end  % function
+        
+        function setRefillerProtocol_(self, protocol)
+            self.DeviceName_ = protocol.DeviceName ;
+            self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
+            self.SweepDuration_ = protocol.SweepDuration ;
+            self.StimulationSampleRate_ = protocol.StimulationSampleRate ;
+
+            self.AOChannelNames_ = protocol.AOChannelNames ;
+            self.AOChannelScales_ = protocol.AOChannelScales ;
+            self.AOTerminalIDs_ = protocol.AOTerminalIDs ;
+            
+            self.DOChannelNames_ = protocol.DOChannelNames ;
+            self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
+            self.DOTerminalIDs_ = protocol.DOTerminalIDs ;
+            
+            self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
+            self.StimulationTrigger_ = protocol.StimulationTrigger ;            
+            self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
+            self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
+            self.IsStimulationTriggerIdenticalToAcquistionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ ;
+
+            self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
+            self.TheUserObject_ = protocol.TheUserObject ;
+        end  % method       
+        
+        function acquireHardwareResourcesStimulation_(self)
+            if isempty(self.TheFiniteAnalogOutputTask_) ,
+                deviceNameForEachAOChannel = repmat({self.DeviceName_}, size(self.AOChannelNames_)) ;
+                isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted_ ;
+                isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
+                deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
+                terminalIDForEachChannelInAOTask = self.AOTerminalIDs_(isInTaskForEachAOChannel) ;                
+                self.TheFiniteAnalogOutputTask_ = ...
+                    ws.FiniteOutputTask('analog', ...
+                                        'WaveSurfer Finite Analog Output Task', ...
+                                        deviceNameForEachChannelInAOTask, ...
+                                        terminalIDForEachChannelInAOTask, ...
+                                        isInTaskForEachAOChannel, ...
+                                        self.StimulationSampleRate_) ;
+                %self.TheFiniteAnalogOutputTask_.SampleRate = self.SampleRate ;
+                %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
+            end
+            if isempty(self.TheFiniteDigitalOutputTask_) ,
+                deviceNameForEachDOChannel = repmat({self.DeviceName_}, size(self.DOChannelNames_)) ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
+                isTimedForEachDOChannel = self.IsDOChannelTimed_ ;
+                isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
+                deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
+                terminalIDForEachChannelInDOTask = self.DOTerminalIDs_(isInTaskForEachDOChannel) ;                
+                self.TheFiniteDigitalOutputTask_ = ...
+                    ws.FiniteOutputTask('digital', ...
+                                           'WaveSurfer Finite Digital Output Task', ...
+                                           deviceNameForEachChannelInDOTask, ...
+                                           terminalIDForEachChannelInDOTask, ...
+                                           isInTaskForEachDOChannel, ...
+                                           self.StimulationSampleRate_) ;
+                %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
+                %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
+            end
+        end  % method
+        
+    end  % protected methods block    
 end  % classdef

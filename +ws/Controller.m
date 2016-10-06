@@ -75,7 +75,7 @@ classdef Controller < handle
         end
         
         function self=setAreUpdatesEnabledForFigure(self,newValue)
-            self.Figure.AreUpdatesEnabled=newValue;
+            self.Figure.AreUpdatesEnabled = newValue ;
         end        
     end
     
@@ -127,7 +127,7 @@ classdef Controller < handle
     end  % methods
     
     methods (Access = protected, Sealed = true)
-        function layoutForAllWindows=addThisWindowLayoutToLayout(self, layoutForAllWindows)
+        function layoutForAllWindows = addThisWindowLayoutToLayout(self, layoutForAllWindows)
             % Add layout info for this window (just this one window) to
             % a struct representing the layout of all windows in the app
             % session.
@@ -135,36 +135,11 @@ classdef Controller < handle
             % Framework specific transformation.
             thisWindowLayout = self.encodeWindowLayout_();
             
-            layoutVarNameForClass = self.getLayoutVariableNameForClass();
-            if isfield(layoutForAllWindows,layoutVarNameForClass)
-                % If the class field is already present, add the single tag
-                tag=get(self.Figure,'Tag');
-                layoutForAllWindows.(layoutVarNameForClass).(tag)=thisWindowLayout.(tag);
-            else
-                % If the class field is not present, thisWindowLayout
-                % becomes the whole field
-                layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
-            end
+            layoutVarNameForClass = ws.Controller.layoutVariableNameFromControllerClassName(class(self));
+            layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
         end
     end
 
-    methods (Access = protected, Sealed = true)
-        function varName = getLayoutVariableNameForClass(self, varargin)
-            if nargin == 1
-                str = class(self);
-            else
-                str = varargin{1};
-            end
-            
-            varName = sprintf('%s_layout', str);
-            varName = regexprep(varName, '\.','__');
-            % Make sure we don't go beyonf matlab var name length limit
-            if length(varName)>63 ,
-                varName=varName(end-62:end);
-            end
-        end
-    end    
-    
 %     methods (Access = protected)
 %         function out = encodeWindowLayout_(self) %#ok<MANU>
 %             % Subclasses can encode size, position, visibility, and other features.  Current
@@ -178,41 +153,43 @@ classdef Controller < handle
 %     end
         
     methods (Access = protected)
-        function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
-            window = self.Figure;
-            layoutOfWindowsInClassButOnlyForThisWindow = struct();
-            tag = get(window, 'Tag');
-            layoutOfWindowsInClassButOnlyForThisWindow.(tag).Position = get(window, 'Position');
-            visible=get(window, 'Visible');
+        function layout = encodeWindowLayout_(self)
+            fig = self.Figure ;
+            position = get(fig, 'Position') ;
+            visible = get(fig, 'Visible') ;
             if ischar(visible) ,
-                isVisible=strcmpi(visible,'on');
+                isVisible = strcmpi(visible,'on') ;
             else
-                isVisible=visible;
+                isVisible = visible ;
             end
-            layoutOfWindowsInClassButOnlyForThisWindow.(tag).Visible = isVisible;
-%             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-%             else
-%                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-%             end
+            layout = struct('Position', {position}, 'IsVisible', {isVisible}) ;
         end
     end
     
     methods (Access = protected)
         function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
-            figureObject = self.Figure;
-            tag = get(figureObject, 'Tag');
-            if isfield(layoutOfWindowsInClass, tag) ,
-                layoutOfThisWindow = layoutOfWindowsInClass.(tag);
+            figureObject = self.Figure ;
+            fieldNames = fieldnames(layoutOfWindowsInClass) ;
+            if isscalar(fieldNames) ,
+                % This means it's an older protocol file, with the layout
+                % stored in a single field with a sometimes-weird name.
+                % But the name doesn't really matter.
+                fieldName = fieldNames{1} ;
+                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
+                isVisibleFieldName = 'Visible' ;
+            else
+                % This means it's a newer protocol file, with (hopefully)
+                % two fields, Position and IsVisible.
+                layoutOfThisWindow = layoutOfWindowsInClass ;
+                isVisibleFieldName = 'IsVisible' ;
+            end
+            if isfield(layoutOfThisWindow, 'Position') ,
                 rawPosition = layoutOfThisWindow.Position ;
-                %outerPositionBeforeMove = get(figureObject,'OuterPosition')
                 set(figureObject, 'Position', rawPosition);
-                %outerPositionAfterMove = get(figureObject,'OuterPosition')
                 figureObject.constrainPositionToMonitors(monitorPositions) ;
-                %outerPositionAfterConstrain = get(figureObject,'OuterPosition')
-                if isfield(layoutOfThisWindow,'Visible') ,
-                    set(figureObject, 'Visible', layoutOfThisWindow.Visible);
-                end
+            end
+            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
+                set(figureObject, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
             end
         end
     end
@@ -317,64 +294,119 @@ classdef Controller < handle
     end  % protected methods that are designed to be optionally overridden
     
     methods
-        function controlActuated(self,controlName,source,event,varargin)            
+        function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)            
+            % The gateway for all UI-initiated commands.  exceptionMaybe is
+            % an empty cell array if all goes well.  If something goes
+            % awry, we raise a dialog, and then return the exception in a
+            % length-one cell array.  But note that upon return, the user
+            % has already been notified that an exception occurred.  Still,
+            % subclasses may want to call this method, and may want to know
+            % if anything went wrong during execution.
             try
-                %controlName
                 if isempty(source) ,
-                    % this means the control actuated was a 'faux' control
+                    % This enables us to easily do fake actuations
                     methodName=[controlName 'Actuated'] ;
                     if ismethod(self,methodName) ,
-                        self.(methodName)(source,event,varargin{:});
+                        self.(methodName)(source,event,varargin{:}) ;
                     end
-                else
-                    type=get(source,'Type');
+                else                    
+                    type=get(source,'Type') ;
                     if isequal(type,'uitable') ,
                         if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                            methodName=[controlName 'CellEdited'];
+                            methodName=[controlName 'CellEdited'] ;
                         else
-                            methodName=[controlName 'CellSelected'];
+                            methodName=[controlName 'CellSelected'] ;
                         end
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:});
+                            self.(methodName)(source,event,varargin{:}) ;
                         end                    
                     elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
                         methodName=[controlName 'Actuated'] ;
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:});
+                            self.(methodName)(source,event,varargin{:}) ;
                         end
                     else
                         % odd --- just ignore
                     end
                 end
-            catch me
-                self.Model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
-                
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-
-%                     fprintf('ws.Controller::controlActuated: An error occured:\n');
-%                     id = me.identifier
-%                     msg = me.message
-%                     report = me.getReport()
-
-                 if isempty(me.cause) 
-                     ws.errordlg(me.message,'Error','modal');
-                 else
-                     firstCause = me.cause{1} ;
-                     errorString = sprintf('%s:\n%s',me.message,firstCause.message) ;
-                     ws.errordlg(errorString, 'Error', 'modal');
-                 end                     
-%                end
+                exceptionMaybe = {} ;
+            catch exception
+                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
+                    % ignore completely, don't even pass on to output
+                    exceptionMaybe = {} ;
+                else
+                    self.raiseDialogOnException_(exception) ;
+                    exceptionMaybe = { exception } ;
+                end
             end
-        end  % function       
-    end
+        end  % function
+        
+        function fakeControlActuatedInTest(self, controlName, varargin)            
+            % This is like controlActuated(), but used when you want to
+            % fake the actuation of a control, often in a testing script.
+            % So, for instance, if only ws:warnings occur, if prints them,
+            % rather than showing a dialog box.  Also, this lets
+            % non-warning errors (including ws:invalidPropertyValue)
+            % percolate upward, unlike controlActuated().  Also, this
+            % always calls [controlName 'Actuated'], rather than using
+            % source.Type to determine the method name.  That's becuase
+            % there's generally no real source for fake actuations.
+            try
+                methodName=[controlName 'Actuated'] ;
+                if ismethod(self,methodName) ,
+                    source = [] ;
+                    event = [] ;
+                    self.(methodName)(source,event,varargin{:}) ;
+                end
+            catch exception
+                indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+                isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+                if isWarning ,
+                    fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
+                    disp(exception.getReport()) ;
+                    fprintf('(End of report for warning-level exception.)\n\n') ;
+                else
+                    rethrow(exception) ;
+                end
+            end
+        end  % function
+    end  % public methods block
+    
+    methods (Access=protected)        
+        function raiseDialogOnException_(self, exception)
+            model = self.Model ;
+            if ~isempty(model) ,
+                model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
+            end
+            indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+            isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+            if isWarning ,
+                dialogContentString = exception.message ;
+                dialogTitleString = ws.fif(length(exception.cause)<=1, 'Warning', 'Warnings') ;
+            else
+                if isempty(exception.cause)
+                    dialogContentString = exception.message ;
+                    dialogTitleString = 'Error' ;
+                else
+                    primaryCause = exception.cause{1} ;
+                    if isempty(primaryCause.cause) ,
+                        dialogContentString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
+                        dialogTitleString = 'Error' ;
+                    else
+                        secondaryCause = primaryCause.cause{1} ;
+                        dialogContentString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
+                        dialogTitleString = 'Error' ;
+                    end
+                end            
+            end
+            ws.errordlg(dialogContentString, dialogTitleString, 'modal') ;                
+        end  % method
+    end  % protected methods block
     
     methods (Static=true)
         function setWithBenefits(object,propertyName,newValue)
             % Do object.(propertyName)=newValue, but catch any
-            % most:Model:invalidPropVal exception generated.  If that
+            % ws:invalidPropertyValue exception generated.  If that
             % exception is generated, just ignore it.  The model is
             % responsible for broadcasting an Update event in the case of a
             % attempt to set an invalid value, which should cause the
@@ -383,7 +415,7 @@ classdef Controller < handle
             try 
                 object.(propertyName)=newValue;
             catch exception
-                if isequal(exception.identifier,'most:Model:invalidPropVal') ,
+                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
                     % Ignore it
                 else
                     rethrow(exception);
@@ -435,30 +467,47 @@ classdef Controller < handle
         function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
             % Find a layout that applies to whatever subclass of controller
             % self happens to be (if any), and use it to position self's
-            % figure's window.
-            
-            if isempty(multiWindowLayout)
-                return
-            end
-            
-            layoutVarNameForThisClass = self.getLayoutVariableNameForClass();
-            
-            if isfield(multiWindowLayout, layoutVarNameForThisClass) ,
-                layoutForThisClass=multiWindowLayout.(layoutVarNameForThisClass);
-                self.decodeWindowLayout(layoutForThisClass, monitorPositions);
-%                 if self.IsSuiGeneris ,
-%                     windowLayout = layoutForThisClass;
-%                     self.decodeWindowLayout(windowLayout);
-%                 else
-%                     tag=get(self.Window,'Tag');
-%                     if isfield(layoutForAllWindows.(layoutVarNameForThisClass),tag)
-%                         windowLayout=layoutForAllWindows.(layoutVarNameForThisClass).(tag);
-%                         self.decodeWindowLayout(windowLayout);
-%                     end
-%                 end
+            % figure's window.            
+            if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
+                layoutMaybe = ws.Controller.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
+                if ~isempty(layoutMaybe) ,
+                    layoutForThisClass = layoutMaybe{1} ;
+                    self.decodeWindowLayout(layoutForThisClass, monitorPositions);
+                end
             end
         end  % function        
     end
     
+    methods (Static=true)
+        function result = layoutVariableNameFromControllerClassName(controllerClassName)
+            controllerClassNameWithoutPrefix = strrep(controllerClassName, 'ws.', '') ;
+            figureClassName = strrep(controllerClassNameWithoutPrefix, 'Controller', 'Figure') ;
+            % Make sure we don't go beyond matlab var name length limit
+            if length(figureClassName)>63 ,
+                result = figureClassName(1:63) ;
+            else
+                result = figureClassName ;
+            end
+        end  % method
+        
+        function layoutMaybe = singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) 
+            coreName = strrep(strrep(controllerClassName, 'ws.', ''), 'Controller', '') ;
+            if isempty(multiWindowLayout) ,
+                layoutMaybe = {} ;
+            else
+                multiWindowLayoutFieldNames = fieldnames(multiWindowLayout) ;
+                layoutMaybe = {} ;
+                for i = 1:length(multiWindowLayoutFieldNames) ,
+                    fieldName = multiWindowLayoutFieldNames{i} ;
+                    doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
+                    if doesFieldNameContainCoreName ,
+                        layoutMaybe = {multiWindowLayout.(fieldName)} ;
+                        break
+                    end
+                end
+            end
+        end  % function
+        
+    end  % static methods block
     
 end  % classdef

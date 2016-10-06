@@ -11,6 +11,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
     
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
+            delete(findall(0,'Style','Figure')) ;
             daqSystem = ws.dabs.ni.daqmx.System();
             ws.deleteIfValidHandle(daqSystem.tasks);
         end
@@ -18,10 +19,18 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testCorrectNumberOfElectrodes(self)
-            isCommandLineOnly=false;
             thisDirName=fileparts(mfilename('fullpath'));
-            [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                isCommandLineOnly);
+            %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
+            [wsModel,wsController]=wavesurfer() ;
+
+%             % Add the channels
+%             wsModel.addAIChannel() ;
+%             wsModel.addAIChannel() ;
+%             wsModel.addAIChannel() ;
+%             wsModel.addAIChannel() ;
+%             wsModel.addAOChannel() ;
+%             wsModel.addAOChannel() ;
+%             wsModel.addDOChannel() ;
             
             % Load a fast protocol with 2 electrodes and one with 6
             % electrodes
@@ -35,25 +44,32 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             % Load fast protocol 1 with 2 electrodes, then fast protocol 2 with 6 electrodes
             % Store number of electrodes in figure and manager for
             % comparison
-            index=1;
-            for currentButton=[1,2] 
-                pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButton);
-                wsController.FastProtocolButtonsActuated(pressedButtonHandle);
-                currentController=1;
-                while  ~isa(wsController.ChildControllers{currentController},'ws.ElectrodeManagerController')
-                    currentController=currentController+1;
+            for i = 1:2 ,
+                %pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButtonIndex);
+                try
+                    %wsController.FastProtocolButtonsActuated(pressedButtonHandle);
+                    wsController.fakeControlActuatedInTest('FastProtocolButtons', i) ;
+                catch exception
+                    % If just warnings, print them but proceed.  Otherwise,
+                    % rethrow.
+                    indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+                    isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+                    if isWarning ,
+                        disp(exception.getReport()) ;
+                    else
+                        rethrow(exception) ;
+                    end
                 end
                 
-                electrodeManagerController = wsController.ChildControllers{currentController};
-                storeNumberOfElectrodesInFigure(index) = length(electrodeManagerController.Figure.LabelEdits);
-                storeNumberOfElectrodesInModel(index) = wsModel.Ephys.ElectrodeManager.NElectrodes;
-                index = index + 1;
+                electrodeManagerController = wsController.ElectrodeManagerController ;
+                storeNumberOfElectrodesInFigure(i) = length(electrodeManagerController.Figure.LabelEdits);
+                storeNumberOfElectrodesInModel(i) = wsModel.Ephys.ElectrodeManager.NElectrodes;
             end
             
             % Compare number of electrodes in figure and model
             self.verifyEqual( storeNumberOfElectrodesInFigure,storeNumberOfElectrodesInModel);
             
-            wsController.windowCloseRequested() ;
+            wsController.quit() ;
         end  % function
         
     end  % test methods

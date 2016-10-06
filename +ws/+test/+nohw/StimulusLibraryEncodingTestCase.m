@@ -54,35 +54,30 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyFalse(stimulus==stimulusCheck);  % test (lack of) identity
         end  % function
         
-        function testCopyingOfStimuli(self)
-            import ws.cellisequal
-            import ws.cellisequaln
-            import ws.cellne
-            
+        function testCopyingOfStimuli(self)            
             % create some stimuli, etc.
-            %stimuli=self.makeExampleStimulusParts();
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
-            stimuli=stimulusLibrary.Stimuli; 
+            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
+            stimuli = stimulusLibrary.Stimuli ; 
 
             % copy
-            stimuliCopy=cellfun(@(stimulus)(stimulus.copyGivenParent([])),stimuli,'UniformOutput',false);
+            stimuliCopy = cellfun(@(stimulus)(stimulus.copy()),stimuli,'UniformOutput',false) ;
             
             % check value quality
-            isEqualInValue=cellisequal(stimuli,stimuliCopy);
+            isEqualInValue = ws.cellisequal(stimuli,stimuliCopy) ;
             self.verifyTrue(all(isEqualInValue));  % test value equality
             
             % verify lack of identity
-            isDistinct=cellne(stimuli,stimuliCopy);  % test identity (i.e. pointer equality)
+            isDistinct=ws.cellne(stimuli,stimuliCopy);  % test identity (i.e. pointer equality)
             self.verifyTrue(all(isDistinct));
             
             % another copy, to make sure no aliasing is going on
-            stimuliCopyCopyModded=cellfun(@(stimulus)(stimulus.copyGivenParent([])),stimuliCopy,'UniformOutput',false);
-            stimuliCopyCopyModded{1}.Delegate.InitialFrequency='45.44323';
+            stimuliCopyCopyModded = cellfun(@(stimulus)(stimulus.copy()),stimuliCopy,'UniformOutput',false) ;
+            stimuliCopyCopyModded{1}.setAdditionalParameter('InitialFrequency', '45.44323') ;
             
             % 2nd copy should be different from original and 1st copy
-            self.verifyTrue(all(cellisequal(stimuli,stimuliCopy)));  % test value equality
-            self.verifyFalse(all(cellisequal(stimuli,stimuliCopyCopyModded)));  % test value equality
-            self.verifyFalse(all(cellisequal(stimuliCopy,stimuliCopyCopyModded)));  % test value equality
+            self.verifyTrue(all(ws.cellisequal(stimuli,stimuliCopy)));  % test value equality
+            self.verifyFalse(all(ws.cellisequal(stimuli,stimuliCopyCopyModded)));  % test value equality
+            self.verifyFalse(all(ws.cellisequal(stimuliCopy,stimuliCopyCopyModded)));  % test value equality
         end  % function
         
 %         function testSavingOfChannelBinding(self)
@@ -170,80 +165,73 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
         
         function testSavingOfStimulusLibrary(self)
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
+            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
             
-            %stimulusLibrary=ws.StimulusLibrary();
-            %stimulusLibrary.add(stimuli);            
-            %stimulusLibrary.add(maps);
-            %stimulusLibrary.add(sequences);            
-            stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
-            self.verifyTrue(stimulusLibrary.isSelfConsistent());
+            %stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
+            stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
+            self.verifyTrue(stimulusLibrary.isSelfConsistent()) ;
             
-            fileName=[tempname() '.mat'];
-            save(fileName,'stimulusLibrary');
+            fileName=[tempname() '.mat'] ;
+            save(fileName,'stimulusLibrary') ;
             
-            s=load(fileName);
-            stimulusLibraryCheck=s.stimulusLibrary;
+            s = load(fileName) ;
+            stimulusLibraryCheck = s.stimulusLibrary ;
             
             self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
             self.verifyEqual(stimulusLibrary.Stimuli,stimulusLibraryCheck.Stimuli);  % test value equality
             self.verifyEqual(stimulusLibrary.Maps,stimulusLibraryCheck.Maps);  % test value equality
             self.verifyEqual(stimulusLibrary.Sequences,stimulusLibraryCheck.Sequences);  % test value equality
-            self.verifyEqual(stimulusLibrary.SelectedOutputable,stimulusLibraryCheck.SelectedOutputable);  % test value equality
+            self.verifyEqual(stimulusLibrary.selectedOutputable(),stimulusLibraryCheck.selectedOutputable());  % test value equality
             self.verifyFalse(stimulusLibrary==stimulusLibraryCheck);  % test (lack of) identity
         end  % function        
 
         function testRestoringSettingsOfStimulusLibrary(self)
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
+            stimulusLibrary=self.createPopulatedStimulusLibrary() ;
             
             %stimulusLibrary=ws.StimulusLibrary();
             %stimulusLibrary.add(stimuli);
             %stimulusLibrary.add(maps);
             %stimulusLibrary.add(sequences);
-            stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
+            stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
             
-            stimulusLibraryCheck=ws.StimulusLibrary([]);
-            stimulusLibraryCheck.mimic(stimulusLibrary);
+            stimulusLibraryCheck = ws.StimulusLibrary([]) ;
+            stimulusLibraryCheck.mimic(stimulusLibrary) ;
             
-            self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
+            self.verifyTrue(stimulusLibraryCheck.isSelfConsistent()) ;  % test soundness of the restored one            
             %self.verifyEqual(stimulusLibrary.Stimuli,stimulusLibraryCheck.Stimuli);  % test value equality
             %self.verifyEqual(stimulusLibrary.Maps,stimulusLibraryCheck.Maps);  % test value equality
             %self.verifyEqual(stimulusLibrary.Cycles,stimulusLibraryCheck.Cycles);  % test value equality
-            self.verifyEqual(stimulusLibrary,stimulusLibraryCheck);  % test value equality
-            self.verifyFalse(stimulusLibrary==stimulusLibraryCheck);  % test (lack of) identity
+            self.verifyEqual(stimulusLibrary, stimulusLibraryCheck) ;  % test value equality
+            self.verifyFalse(stimulusLibrary==stimulusLibraryCheck) ;  % test (lack of) identity
         end  % function
 
         function testCopyingOfStimulusLibrary(self)
             % create some stimuli, etc.
-            %[stimuli,maps,sequences]=self.makeExampleStimulusParts();
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
+            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
 
             % create a library
-            %stimulusLibrary=ws.StimulusLibrary();
-            %stimulusLibrary.add(stimuli);            
-            %stimulusLibrary.add(maps);
-            %stimulusLibrary.add(sequences);            
-            stimulusLibrary.SelectedOutputable=stimulusLibrary.Sequences{2};            
+            stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
             
             % copy
-            stimulusLibraryCopy=stimulusLibrary.copyGivenParent([]);
+            stimulusLibraryCopy = stimulusLibrary.copy() ;
             
             % check
-            self.verifyTrue(stimulusLibraryCopy.isSelfConsistent());
-            self.verifyEqual(stimulusLibrary,stimulusLibraryCopy);  % test value equality
-            self.verifyTrue(all(stimulusLibrary~=stimulusLibraryCopy));  % test (lack of) identity
+            self.verifyTrue(stimulusLibraryCopy.isSelfConsistent()) ;
+            self.verifyEqual(stimulusLibrary,stimulusLibraryCopy) ;  % test value equality
+            self.verifyTrue(all(stimulusLibrary~=stimulusLibraryCopy)) ;  % test (lack of) identity
             
             % another copy, to make sure no aliasing is going on
-            stimulusLibraryCopyCopy=stimulusLibraryCopy.copyGivenParent([]);
-            stimulus1=stimulusLibraryCopyCopy.Stimuli{1};  % should be an alias
-            stimulus1.Delegate.InitialFrequency='45.44323';  % should modify stimulusLibraryCopyCopy
+            stimulusLibraryCopyCopy = stimulusLibraryCopy.copy() ;
+            %stimulus1 = stimulusLibraryCopyCopy.Stimuli{1};  % should be an alias
+            %stimulus1.Delegate.InitialFrequency='45.44323';  % should modify stimulusLibraryCopyCopy
+            stimulusLibraryCopyCopy.setItemProperty('ws.Stimulus', 1, 'InitialFrequency', '45.44323') ;
             
             % 2nd copy should be different from original and 1st copy
-            self.verifyTrue(stimulusLibraryCopyCopy.isSelfConsistent());
-            self.verifyEqual(stimulusLibrary,stimulusLibraryCopy);  % test value equality
-            self.verifyNotEqual(stimulusLibrary,stimulusLibraryCopyCopy);  % test value equality
-            self.verifyNotEqual(stimulusLibraryCopy,stimulusLibraryCopyCopy);  % test value equality
+            self.verifyTrue(stimulusLibraryCopyCopy.isSelfConsistent()) ;
+            self.verifyEqual(stimulusLibrary, stimulusLibraryCopy) ;  % test value equality
+            self.verifyNotEqual(stimulusLibrary, stimulusLibraryCopyCopy) ;  % test value equality
+            self.verifyNotEqual(stimulusLibraryCopy, stimulusLibraryCopyCopy) ;  % test value equality
         end  % function
 
     end  % test methods

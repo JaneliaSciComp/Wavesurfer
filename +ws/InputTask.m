@@ -75,11 +75,11 @@ classdef InputTask < handle
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
             
             % Create the task, channels
-            nChannels=length(terminalIDs);            
+            nChannels=length(terminalIDs) ;            
             if nChannels==0 ,
-                self.DabsDaqTask_ = [];
+                self.DabsDaqTask_ = [] ;
             else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
             end            
             
             % Create a tic id
@@ -118,11 +118,23 @@ classdef InputTask < handle
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-                catch me
-                    error('There was a problem setting up the input task');
+                catch cause
+                    rawException = MException('ws:daqmx:taskFailedVerification', ...
+                                              'There was a problem with the parameters of the input task, and it failed verification') ;
+                    exception = addCause(rawException, cause) ;
+                    throw(exception) ;
                 end
-                if self.DabsDaqTask_.sampClkRate~=sampleRate ,
-                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                try
+                    taskSampleClockRate = self.DabsDaqTask_.sampClkRate ;
+                catch cause
+                    rawException = MException('ws:daqmx:errorGettingTaskSampleClockRate', ...
+                                              'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
+                    exception = addCause(rawException, cause) ;
+                    throw(exception) ;
+                end                    
+                if taskSampleClockRate~=sampleRate ,
+                    error('ws:sampleClockRateNotEqualToDesiredClockRate', ...
+                          'Unable to set the DAQmx sample rate to the desired sampling rate');
                 end
                 
                 % If analog, get the scaling coefficients
@@ -141,7 +153,7 @@ classdef InputTask < handle
             self.SampleRate_ = sampleRate ;
             
             if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
             end            
             self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
@@ -366,7 +378,7 @@ classdef InputTask < handle
         
 %         function set.ActiveChannels(self, value)
 %             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'ActiveChannels must be empty or a vector of integers.');       
 %             end
 %             
@@ -431,7 +443,7 @@ classdef InputTask < handle
         
 %         function set.SampleRate(self,value)
 %             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'SampleRate must be a positive integer');       
 %             end            
 %             
@@ -464,7 +476,7 @@ classdef InputTask < handle
         
 %         function set.DurationPerDataAvailableCallback(self, value)
 %             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
 %             end            
 %             self.DurationPerDataAvailableCallback_ = value;
@@ -484,7 +496,7 @@ classdef InputTask < handle
         
         function set.AcquisitionDuration(self, value)
             if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'AcquisitionDuration must be a positive scalar');       
             end            
             self.AcquisitionDuration_ = value;
@@ -501,7 +513,7 @@ classdef InputTask < handle
         
 %         function set.TriggerDelegate(self, value)
 %             if ~( isequal(value,[]) || (isa(value,'ws.HasPFIIDAndEdge') && isscalar(value)) )  ,
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'TriggerDelegate must be empty or a scalar ws.HasPFIIDAndEdge');       
 %             end            
 %             self.TriggerDelegate_ = value;
@@ -517,7 +529,7 @@ classdef InputTask < handle
             elseif ws.isString(newValue) ,
                 self.TriggerTerminalName_ = newValue;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'TriggerTerminalName must be empty or a string');
             end
         end  % function
@@ -532,7 +544,7 @@ classdef InputTask < handle
             elseif ws.isAnEdgeType(newValue) ,
                 self.TriggerEdge_ = newValue ;
             else
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
             end            
         end  % function
@@ -545,7 +557,7 @@ classdef InputTask < handle
 %             if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
 %                 self.ClockTiming_ = value;
 %             else
-%                 error('most:Model:invalidPropVal', ...
+%                 error('ws:invalidPropertyValue', ...
 %                       'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
 %             end            
 %         end  % function           

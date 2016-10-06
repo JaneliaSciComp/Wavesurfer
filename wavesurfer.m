@@ -1,39 +1,51 @@
-function varargout = wavesurfer(protocolOrMDFFileName, isCommandLineOnly, doRunInDebugMode)
-    %wavesurfer  Launch Wavesurfer
+function varargout = wavesurfer(varargin)
+    %WAVESURFER  Launch WaveSurfer, an application for data acquisition.
     %
-    %   wavesurfer(isCommandLineOnly,mdfFileName) launches
-    %   the Wavesurfer GUI.  All input arguments are optional.
+    %   "WAVESURFER", by itself, launches the WaveSurfer graphical user
+    %   interface (GUI).
     %
-    %   mdfFileName is the name of the Machine Data File.  If not provided,
-    %   Wavesurfer will look for a file named Machine_Data_File.m on the Matlab
-    %   path.
+    %   "WAVESURFER <protocolFileName>" launches the WaveSurfer GUI,
+    %   opening the named protocol file on launch.
     %
-    %   isCommandLineOnly, if true, does not launch the GUI.  The default is
-    %   false, i.e. the default is to launch the GUI.
+    %   "WAVESURFER --debug" launches WaveSurfer in debugging mode.  This
+    %   makes the satellite process windows visible instead of hidden.
     %
-    %   wsModel = wavesurfer() returns an application object, wsModel.  This
-    %   may be useful for scripting or testing.
+    %   "WAVESURFER --nogui" launches WaveSurfer without the graphical user
+    %   interface.
+    %      
+    %   "wsModel = WAVESURFER()" returns an application object, wsModel.
+    %   This may be useful for scripting or testing.
     %
-    %   [wsModel, wsController] = wavesurfer() also returns the controller
-    %   object, wsController.  It is an error to use this form when
-    %   isCommandLineOnly is true.
+    %   "[wsModel, wsController] = WAVESURFER()" also returns the
+    %   controller object, wsController.  It is an error to use this form
+    %   with the --nogui option.
+    %
+    %   Except where noted, most of the above forms can be combined in the
+    %   usual standard ways.  So, for instance,
+    %
+    %     [wsModel, wsController] = WAVESURFER('my-protocol.cfg', '--debug')
+    %
+    %   does what you would expect.
 
-    % Takes a while to start, to give some feedback
+    % Takes a while to start, so give some feedback
     fprintf('Starting WaveSurfer...');
     
-    % Deal with arguments
-    if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
-        isCommandLineOnly=false;
-    end
-    if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName) ,
-        wasProtocolOrMDFFileNameGivenAtCommandLine=false;
-        protocolOrMDFFileName='';
-    else
-        wasProtocolOrMDFFileNameGivenAtCommandLine=true;
-    end
-    if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
-        doRunInDebugMode = false ;
-    end
+    % Process arguments
+    [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(varargin) ;
+    
+%     % Deal with arguments
+%     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
+%         isCommandLineOnly=false;
+%     end
+%     if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName) ,
+%         wasProtocolOrMDFFileNameGivenAtCommandLine=false;
+%         protocolOrMDFFileName='';
+%     else
+%         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
+%     end
+%     if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
+%         doRunInDebugMode = false ;
+%     end
     
 %     if ~exist('mode','var') || isempty(mode) ,
 %         mode = 'release' ;
@@ -66,7 +78,9 @@ function varargout = wavesurfer(protocolOrMDFFileName, isCommandLineOnly, doRunI
                 model.initializeFromMDFFileName(protocolOrMDFFileName);
             else
                 % Need to do via controller, to keep the figure updated
-                controller.initializeGivenMDFFileName(protocolOrMDFFileName);
+                %controller.initializeGivenMDFFileName(protocolOrMDFFileName);
+                error('ws:mdfFileNotSupportedWhenUIPresent', ...
+                      'WaveSurfer no longer supports the use of MDF files in the presence of the UI') ;
             end            
         elseif isequal(extension,'.cfg')
             % it's a protocol file
@@ -79,8 +93,8 @@ function varargout = wavesurfer(protocolOrMDFFileName, isCommandLineOnly, doRunI
                 % We do this via controlActuated() to get the usual
                 % try-catch behaviors when a control is actuated in the UI
                 source = [] ;
-                event = struct('fileName',protocolOrMDFFileName) ;
-                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event) ;
+                event = [] ;
+                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event, protocolOrMDFFileName) ;
             end
         else
             % do nothing
@@ -102,3 +116,33 @@ function varargout = wavesurfer(protocolOrMDFFileName, isCommandLineOnly, doRunI
     % Declare WS started
     fprintf('done.\n');    
 end  % function
+
+
+
+function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(args)
+    % Deal with --debug, --nodebug
+    isDebugMatch = strcmp('--debug', args) ;
+    isNoDebugMatch = strcmp('--nodebug', args) ;
+    doRunInDebugMode = any(isDebugMatch) ;    
+    argsWithoutDebug = args(~(isDebugMatch|isNoDebugMatch)) ;
+
+    % Deal with --gui, --nogui
+    isGuiMatch = strcmp('--gui', argsWithoutDebug) ;
+    isNoguiMatch = strcmp('--nogui', argsWithoutDebug) ;
+    isCommandLineOnly = any(isNoguiMatch) ;
+    argsLeft = argsWithoutDebug(~(isGuiMatch|isNoguiMatch)) ;
+    
+    % Deal with the rest of the args
+    if isempty(argsLeft) ,
+        wasProtocolOrMDFFileNameGivenAtCommandLine = false ;
+        protocolOrMDFFileName = '' ;
+    elseif isscalar(argsLeft) ,
+        wasProtocolOrMDFFileNameGivenAtCommandLine = true ;
+        protocolOrMDFFileName = argsLeft{1} ;        
+    else
+        % too many args
+        error('ws:tooManyArgsToWavesurfer', ...
+              'Too many arguments to wavesurfer()') ;
+    end
+end  % function
+

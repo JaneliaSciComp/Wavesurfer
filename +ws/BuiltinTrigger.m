@@ -18,84 +18,94 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
     
     properties (Access=protected)
         Name_
-        %DeviceName_
+        DeviceName_
         PFIID_
         Edge_
     end
     
     methods
-        function self=BuiltinTrigger(parent)
-            self@ws.Model(parent) ;
+        function self=BuiltinTrigger(parent)  %#ok<INUSD>            
+            self@ws.Model([]) ;  % have to accept parent arg, but ignore it
+            %fprintf('ws.BuiltinTrigger constructor called\n') ;
+            %dbstack
             self.Name_ = 'Built-in Trigger (PFI8)' ;
-            %self.DeviceName_ = '' ;
+            self.DeviceName_ = '' ;
             self.PFIID_ = 8 ;
             self.Edge_ = 'rising' ;
         end
         
         function value=get.Name(self)
-            value=self.Name_;
+            value = self.Name_ ;
+        end
+
+        function value = get.DeviceName(self)
+            value = self.DeviceName_ ;
         end
         
-        function value=get.DeviceName(self)
-            value = self.Parent.Parent.DeviceName ;
-            %value = self.DeviceName_ ;
-            
-%             % Look high and low throughout the system for a device name
-%             triggeringSubsystem = self.Parent ;
-%             counterTriggers = triggeringSubsystem.CounterTriggers ;
-%             if isempty(counterTriggers) ,
-%                 externalTriggers = triggeringSubsystem.ExternalTriggers ;
-%                 if isempty(externalTriggers) ,
-%                     rootModel = triggeringSubsystem.Parent ;
-%                     if isprop(rootModel,'Acquisition') ,
-%                         acquisitionSubsystem = rootModel.Acquisition ;
-%                         acquisitionDeviceNames = acquisitionSubsystem.DeviceNames ;
-%                         if isempty(acquisitionDeviceNames) ,
-%                             didGetDeviceNameFromAcquisitionSubsystem = false ;
-%                             valueFromAcquisitionSubsystem = [] ;                            
-%                         else
-%                             didGetDeviceNameFromAcquisitionSubsystem = true ;
-%                             valueFromAcquisitionSubsystem = acquisitionDeviceNames{1} ;                            
-%                         end
-%                     else
-%                         didGetDeviceNameFromAcquisitionSubsystem = false ;
-%                         valueFromAcquisitionSubsystem = [] ;
-%                     end                    
-%                     if didGetDeviceNameFromAcquisitionSubsystem ,
-%                         value = valueFromAcquisitionSubsystem ;
-%                     else
-%                         % Probe the stimulation subsystem
-%                         if isprop(rootModel,'Stimulation') ,
-%                             stimulationSubsystem = rootModel.Stimulation ;
-%                             stimulationDeviceNames = stimulationSubsystem.DeviceNames ;
-%                             if isempty(stimulationDeviceNames) ,
-%                                 didGetDeviceNameFromStimulationSubsystem = false ;
-%                                 valueFromStimulationSubsystem = [] ;                            
-%                             else
-%                                 didGetDeviceNameFromStimulationSubsystem = true ;
-%                                 valueFromStimulationSubsystem = stimulationDeviceNames{1} ;                            
-%                             end
-%                         else
-%                             didGetDeviceNameFromStimulationSubsystem = false ;
-%                             valueFromStimulationSubsystem = [] ;
-%                         end                    
-%                         if didGetDeviceNameFromStimulationSubsystem ,
-%                             value = valueFromStimulationSubsystem ;
-%                         else
-%                             % Harrumph: there doesn't seem to be any
-%                             % anywhere to get the device name from                       
-%                             value = '' ;
-%                         end                        
-%                     end
-%                 else
-%                     firstExternalTrigger = counterTriggers{1} ;
-%                     value = firstExternalTrigger.DeviceName ;                    
-%                 end
-%             else
-%                 firstCounterTrigger = counterTriggers{1} ;
-%                 value = firstCounterTrigger.DeviceName ;
-%             end            
-        end
+        function set.DeviceName(self, deviceName)  % should only be called by triggering subsystem
+            self.DeviceName_ = deviceName ;
+        end        
+        
+%         function value=get.DeviceName(self)
+%             value = self.Parent.Parent.DeviceName ;
+%             %value = self.DeviceName_ ;
+%             
+% %             % Look high and low throughout the system for a device name
+% %             triggeringSubsystem = self.Parent ;
+% %             counterTriggers = triggeringSubsystem.CounterTriggers ;
+% %             if isempty(counterTriggers) ,
+% %                 externalTriggers = triggeringSubsystem.ExternalTriggers ;
+% %                 if isempty(externalTriggers) ,
+% %                     rootModel = triggeringSubsystem.Parent ;
+% %                     if isprop(rootModel,'Acquisition') ,
+% %                         acquisitionSubsystem = rootModel.Acquisition ;
+% %                         acquisitionDeviceNames = acquisitionSubsystem.DeviceNames ;
+% %                         if isempty(acquisitionDeviceNames) ,
+% %                             didGetDeviceNameFromAcquisitionSubsystem = false ;
+% %                             valueFromAcquisitionSubsystem = [] ;                            
+% %                         else
+% %                             didGetDeviceNameFromAcquisitionSubsystem = true ;
+% %                             valueFromAcquisitionSubsystem = acquisitionDeviceNames{1} ;                            
+% %                         end
+% %                     else
+% %                         didGetDeviceNameFromAcquisitionSubsystem = false ;
+% %                         valueFromAcquisitionSubsystem = [] ;
+% %                     end                    
+% %                     if didGetDeviceNameFromAcquisitionSubsystem ,
+% %                         value = valueFromAcquisitionSubsystem ;
+% %                     else
+% %                         % Probe the stimulation subsystem
+% %                         if isprop(rootModel,'Stimulation') ,
+% %                             stimulationSubsystem = rootModel.Stimulation ;
+% %                             stimulationDeviceNames = stimulationSubsystem.DeviceNames ;
+% %                             if isempty(stimulationDeviceNames) ,
+% %                                 didGetDeviceNameFromStimulationSubsystem = false ;
+% %                                 valueFromStimulationSubsystem = [] ;                            
+% %                             else
+% %                                 didGetDeviceNameFromStimulationSubsystem = true ;
+% %                                 valueFromStimulationSubsystem = stimulationDeviceNames{1} ;                            
+% %                             end
+% %                         else
+% %                             didGetDeviceNameFromStimulationSubsystem = false ;
+% %                             valueFromStimulationSubsystem = [] ;
+% %                         end                    
+% %                         if didGetDeviceNameFromStimulationSubsystem ,
+% %                             value = valueFromStimulationSubsystem ;
+% %                         else
+% %                             % Harrumph: there doesn't seem to be any
+% %                             % anywhere to get the device name from                       
+% %                             value = '' ;
+% %                         end                        
+% %                     end
+% %                 else
+% %                     firstExternalTrigger = counterTriggers{1} ;
+% %                     value = firstExternalTrigger.DeviceName ;                    
+% %                 end
+% %             else
+% %                 firstCounterTrigger = counterTriggers{1} ;
+% %                 value = firstCounterTrigger.DeviceName ;
+% %             end            
+%         end
                 
         function value=get.PFIID(self)
             value=self.PFIID_;
@@ -111,7 +121,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.DeviceName_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'Name must be a string');                  
 %                 end                    
 %             end
@@ -124,7 +134,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.Name_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'Name must be a nonempty string');                  
 %                 end                    
 %             end
@@ -137,7 +147,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.DeviceName_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'DeviceName must be a string');                  
 %                 end                    
 %             end
@@ -151,7 +161,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.PFIID_ = value ;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'PFIID must be a (scalar) nonnegative integer');                  
 %                 end                    
 %             end
@@ -164,7 +174,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
 %                     self.Edge_ = value;
 %                 else
 %                     self.broadcast('Update');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'Edge must be ''rising'' or ''falling''');                  
 %                 end                                        
 %             end

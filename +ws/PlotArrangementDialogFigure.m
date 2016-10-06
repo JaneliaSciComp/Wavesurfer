@@ -167,7 +167,8 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
             topMarginHeight=2;
             leftMarginWidth=10;
             widthBetweenChannelColAndIsDisplayedCol=5;
-            channelColWidth=50;
+            maxChannelTextExtent = ws.maximalExtent(self.ChannelNameTexts_) ;
+            channelColWidth = maxChannelTextExtent(1)+4 ;  % the +4 is a shim
             isDisplayedColWidth = 36 ;
             widthBetweenIsDisplayedColAndPlotSizeCol = 2 ;
             plotSizeEditWidth=30;

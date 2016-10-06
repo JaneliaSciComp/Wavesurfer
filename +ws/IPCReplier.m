@@ -26,11 +26,10 @@ classdef IPCReplier < ws.ZMQBinder
             end
         end
         
-        function [isMessageAvailable, methodName, methodError, methodResult] = processMessageIfAvailable(self)
+        function isMessageAvailable = processMessageIfAvailable(self)
             try
                 %fprintf('Just before recv\n');
                 %fprintf('IPCSubscriber::processMessageIfAvailable(): About to call zmq.core.recv()\n') ;
-                %serializedMessage = zmq.core.recv(self.Socket, 262144, 'ZMQ_DONTWAIT') ;
                 serializedMessage = self.Socket.recv(262144, 'ZMQ_DONTWAIT') ;                
                 %serializedMessage = zmq.core.recv(self.Socket) ;  % this should block
                 %fprintf('Just after recv\n');
@@ -40,18 +39,19 @@ classdef IPCReplier < ws.ZMQBinder
                     % not truly exceptional
                     %fprintf('No message available.\n');
                     isMessageAvailable = false;
-                    methodName = '' ;
-                    methodError = [] ;
-                    methodResult = [] ;
+                    %methodName = '' ;
+                    %methodError = [] ;
+                    %methodResult = [] ;
                     return
                 elseif isequal(me.identifier,'zmq:core:recv:bufferTooSmall') ,
                     % serializedMessage will be truncated, and thus not
                     % unserializable, and thus useless
                     warning('Got a message too long for the buffer in IPCSubscriber');
-                    isMessageAvailable = false;
-                    methodName = '' ;
-                    methodError = [] ;
-                    methodResult = [] ;
+                    isMessageAvailable = true ;
+                    %methodName = '' ;
+                    %methodError = [] ;
+                    %methodResult = [] ;
+                    self.send_([], me) ;  % Have to send a response or else the rep-seq sockets get unhappy
                     return
                 else
                     %fprintf('There was an interesting error calling zmq.core.recv.  self.Socket: %d\n',self.Socket);

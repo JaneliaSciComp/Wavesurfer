@@ -1,8 +1,6 @@
 classdef StimulusLibraryFigure < ws.MCOSFigure
     properties  % these are protected by gentleman's agreement
         FileMenu
-        %ImportLibraryMenuItem
-        %ExportLibraryMenuItem
         ClearLibraryMenuItem
         CloseMenuItem
 
@@ -71,7 +69,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     end  % properties
     
     methods
-        function self=StimulusLibraryFigure(model,controller)
+        function self=StimulusLibraryFigure(model, controller)
             self = self@ws.MCOSFigure(model,controller);            
             set(self.FigureGH, ...
                 'Tag','stimulusLibraryFigureWrapper', ...
@@ -108,12 +106,8 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
            self.update();
            
            % Subscribe to model event(s)
-           model.subscribeMe(self,'Update','','update');
-           wavesurferModel=ws.getSubproperty(model,'Parent','Parent');
-           if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-               wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
-               %wavesurferModel.subscribeMe(self,'DidChangeNumberOfOutputChannels','','update');
-           end
+           model.subscribeMe(self,'UpdateStimulusLibrary','','update');
+           model.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % constructor
     end
     
@@ -335,12 +329,11 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             
             % This default implementation does nothing, and is appropriate
             % only if all the controls are fixed.
-            import ws.deleteIfValidHGHandle
 
             % Delete the existing ones
-            deleteIfValidHGHandle(self.StimulusAdditionalParametersTexts);
-            deleteIfValidHGHandle(self.StimulusAdditionalParametersEdits);
-            deleteIfValidHGHandle(self.StimulusAdditionalParametersUnitsTexts);
+            ws.deleteIfValidHGHandle(self.StimulusAdditionalParametersTexts);
+            ws.deleteIfValidHGHandle(self.StimulusAdditionalParametersEdits);
+            ws.deleteIfValidHGHandle(self.StimulusAdditionalParametersUnitsTexts);
             self.StimulusAdditionalParametersTexts=zeros(1,0);
             self.StimulusAdditionalParametersEdits=zeros(1,0);
             self.StimulusAdditionalParametersUnitsTexts=zeros(1,0);
@@ -349,17 +342,16 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             % label text, the edit, and the units text)
             model=self.Model;
             if ~isempty(model) && isvalid(model) ,
-                selectedStimulus=model.SelectedStimulus;
-                if ~isempty(selectedStimulus) ,
-                    %additionalParameterNames=selectedStimulus.AdditionalParameterNames;
-                    additionalParameterDisplayNames=selectedStimulus.Delegate.AdditionalParameterDisplayNames;
-                    additionalParameterDisplayUnitses=selectedStimulus.Delegate.AdditionalParameterDisplayUnitses;
+                selectedItemClassName = model.selectedStimulusLibraryItemClassName() ;
+                selectedItemIndexWithinClass = model.selectedStimulusLibraryItemIndexWithinClass() ;
+                if isequal(selectedItemClassName, 'ws.Stimulus') && ~isempty(selectedItemIndexWithinClass) ,
+                    additionalParameterDisplayNames = model.selectedStimulusLibraryItemProperty('AdditionalParameterDisplayNames') ;
+                    additionalParameterDisplayUnitses = model.selectedStimulusLibraryItemProperty('AdditionalParameterDisplayUnitses') ;
                     nAdditionalParameters=length(additionalParameterDisplayNames);
                     self.StimulusAdditionalParametersTexts=zeros(1,nAdditionalParameters);
                     self.StimulusAdditionalParametersEdits=zeros(1,nAdditionalParameters);
                     self.StimulusAdditionalParametersUnitsTexts=zeros(1,nAdditionalParameters);
                     for i=1:nAdditionalParameters ,
-                        %additionalParameterName=additionalParameterNames{i};
                         additionalParameterDisplayName=additionalParameterDisplayNames{i};
                         additionalParameterDisplayUnits=additionalParameterDisplayUnitses{i};
                         self.StimulusAdditionalParametersTexts(i) = ...
@@ -666,70 +658,73 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self)
             %fprintf('StimulusLibraryFigure::updateControlPropertiesImplementation_\n');
-            stimulusLibrary=self.Model;  % this is the StimulusLibrary
-            if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+            model = self.Model ;  % this is the WSM
+            if isempty(model) || ~isvalid(model) ,
                 return
             end
             
-            import ws.fif
-            import ws.onIff
-            
-            selectedItemClassName=stimulusLibrary.SelectedItemClassName;
-            isSelectedItemASequence=isequal(selectedItemClassName,'ws.StimulusSequence');
-            isSelectedItemAMap=isequal(selectedItemClassName,'ws.StimulusMap');
-            isSelectedItemAStimulus=isequal(selectedItemClassName,'ws.Stimulus');
-            
-            sequences=stimulusLibrary.Sequences;
-            sequenceNames=cellfun(@(sequence)(sequence.Name),sequences,'UniformOutput',false);
+            selectedItemClassName = model.selectedStimulusLibraryItemClassName() ;
+            isSelectedItemASequence = isequal(selectedItemClassName,'ws.StimulusSequence') ;
+            isSelectedItemAMap = isequal(selectedItemClassName,'ws.StimulusMap') ;
+            isSelectedItemAStimulus = isequal(selectedItemClassName,'ws.Stimulus') ;
+
+            % Sequences
+            % sequences=model.Sequences;
+            % sequenceNames=cellfun(@(sequence)(sequence.Name),sequences,'UniformOutput',false);
+            sequenceNames = model.propertyFromEachStimulusLibraryItemInClass('ws.StimulusSequence', 'Name') ; 
             if isempty(sequenceNames) ,
                 set(self.SequencesListbox, ...
-                    'String',{'(None)'}, ...
-                    'Value',1);
+                    'String', {'(None)'}, ...
+                    'Value', 1) ;
             else
-                selectedSequenceIndexRaw = stimulusLibrary.SelectedSequenceIndex ;
+                %selectedSequenceIndexRaw = model.SelectedSequenceIndex ;
+                selectedSequenceIndexRaw = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
                 selectedSequenceIndex = ws.fif(isempty(selectedSequenceIndexRaw), 1, selectedSequenceIndexRaw) ;       
                 set(self.SequencesListbox, ...
-                    'String',sequenceNames, ...
-                    'Value',selectedSequenceIndex);
+                    'String', sequenceNames, ...
+                    'Value', selectedSequenceIndex) ;
             end
 
-            maps=stimulusLibrary.Maps;
-            mapNames=cellfun(@(map)(map.Name),maps,'UniformOutput',false);
+            % Maps
+            % maps=model.Maps;
+            % mapNames=cellfun(@(map)(map.Name),maps,'UniformOutput',false);
+            mapNames = model.propertyFromEachStimulusLibraryItemInClass('ws.StimulusMap', 'Name') ; 
             if isempty(mapNames) ,
                 set(self.MapsListbox, ...
                     'String', {'(None)'}, ...
                     'Value', 1) ;
             else
-                %selectedMapIndex=stimulusLibrary.getMapIndex(stimulusLibrary.SelectedMap);
-                selectedMapIndexRaw = stimulusLibrary.SelectedMapIndex ;
+                selectedMapIndexRaw = model.indexOfStimulusLibraryClassSelection('ws.StimulusMap') ;
                 selectedMapIndex = ws.fif(isempty(selectedMapIndexRaw), 1, selectedMapIndexRaw) ;
                 set(self.MapsListbox, ...
                     'String', mapNames, ...
                     'Value', selectedMapIndex) ;
             end
             
-            stimuli=stimulusLibrary.Stimuli;
-            stimulusNames=cellfun(@(stimulus)(stimulus.Name),stimuli,'UniformOutput',false);
+            % Stimuli
+            % stimuli=model.Stimuli;
+            % stimulusNames=cellfun(@(stimulus)(stimulus.Name),stimuli,'UniformOutput',false);
+            stimulusNames = model.propertyFromEachStimulusLibraryItemInClass('ws.Stimulus', 'Name') ; 
             if isempty(stimulusNames) ,
                 set(self.StimuliListbox, ...
-                    'String',{'(None)'}, ...
-                    'Value',1);
+                    'String', {'(None)'}, ...
+                    'Value', 1);
             else
-                selectedStimulusIndexRaw = stimulusLibrary.SelectedStimulusIndex ;
+                selectedStimulusIndexRaw = model.indexOfStimulusLibraryClassSelection('ws.Stimulus') ;
                 selectedStimulusIndex = ws.fif(isempty(selectedStimulusIndexRaw), 1, selectedStimulusIndexRaw) ;                
                 set(self.StimuliListbox, ...
-                    'String',stimulusNames, ...
-                    'Value',selectedStimulusIndex);
+                    'String', stimulusNames, ...
+                    'Value', selectedStimulusIndex) ;
             end
             
-            set(self.SequencesListboxText,'FontWeight',fif(isSelectedItemASequence,'bold','normal'));
-            set(self.SequencePanel,'Visible',onIff(isSelectedItemASequence));
+            set(self.SequencesListboxText,'FontWeight',ws.fif(isSelectedItemASequence,'bold','normal'));
+            set(self.SequencePanel,'Visible',ws.onIff(isSelectedItemASequence));
                         
-            set(self.MapsListboxText,'FontWeight',fif(isSelectedItemAMap,'bold','normal'));
-            set(self.MapPanel,'Visible',onIff(isSelectedItemAMap));
+            set(self.MapsListboxText,'FontWeight',ws.fif(isSelectedItemAMap,'bold','normal'));
+            set(self.MapPanel,'Visible',ws.onIff(isSelectedItemAMap));
             
-            set(self.StimuliListboxText,'FontWeight',fif(isSelectedItemAStimulus,'bold','normal'));
-            set(self.StimulusPanel,'Visible',onIff(isSelectedItemAStimulus));
+            set(self.StimuliListboxText,'FontWeight',ws.fif(isSelectedItemAStimulus,'bold','normal'));
+            set(self.StimulusPanel,'Visible',ws.onIff(isSelectedItemAStimulus));
             
             % Update the controls in the three panels
             self.updateSequencePanelControlProperties_();
@@ -741,154 +736,186 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access=protected)
         function updateSequencePanelControlProperties_(self)
-            stimulusLibrary=self.Model;  % this is the StimulusLibrary
-            if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+            model = self.Model ;  % this is the WSM
+            if isempty(model) || ~isvalid(model) ,
                 return
             end
             
-            import ws.fif
-            import ws.onIff
-            
-            selectedSequence=stimulusLibrary.SelectedSequence;
+            %selectedSequence = model.SelectedSequence ;
             
             nColumns=4;  % number of cols in the table
-            if isempty(selectedSequence) ,
+            sequenceIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusSequence') ;
+            if isempty(sequenceIndex) ,
                 set(self.SequenceNameEdit,'String','');
                 data=cell(0,nColumns);
                 set(self.SequenceTable,'Data',data);            
             else
                 % Update the name
-                set(self.SequenceNameEdit,'String',selectedSequence.Name);
+                sequenceName = model.stimulusLibraryClassSelectionProperty('ws.StimulusSequence', 'Name') ;
+                set(self.SequenceNameEdit,'String',sequenceName);
 
                 % Get the options for the map names
-                allMaps=stimulusLibrary.Maps;
-                allMapNames=cellfun(@(map)(map.Name),allMaps,'UniformOutput',false);
-                %allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
+                %allMaps=model.Maps;
+                %allMapNames=cellfun(@(map)(map.Name),allMaps,'UniformOutput',false);
+                allMapNames = model.propertyFromEachStimulusLibraryItemInClass('ws.StimulusMap', 'Name') ; 
+                allMapsNamesWithUnspecified=[{'(Unspecified)'} allMapNames];
                 
                 % Update the table
-                mapsInSequence=selectedSequence.Maps;
-                nRows=length(mapsInSequence);
-                data=cell(nRows,nColumns);
-                for i=1:nRows ,
-                    map=mapsInSequence{i};
-                    data{i,1}=map.Name;
-                    data{i,2}=map.Duration;
-                    data{i,3}=length(map.ChannelNames);
-                    data{i,4}=selectedSequence.IsMarkedForDeletion(i);
+                nBindingsInSequence = model.stimulusLibraryItemProperty('ws.StimulusSequence', sequenceIndex, 'NBindings') ;
+                %mapsInSequence = selectedSequence.Maps ;
+                nRows = nBindingsInSequence ;
+                data = cell(nRows,nColumns) ;
+                for bindingIndex = 1:nBindingsInSequence ,
+                    %map = mapsInSequence{i} ;
+                    %if isempty(map) ,                
+                    if model.isStimulusLibraryItemBindingTargetEmpty('ws.StimulusSequence', sequenceIndex, bindingIndex) ,
+                        data{bindingIndex,1}='(Unspecified)';
+                        data{bindingIndex,2}='(Unspecified)';
+                        data{bindingIndex,3}='(Unspecified)';
+                    else
+                        % data{i,1} = map.Name ;
+                        data{bindingIndex,1} = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'Name') ;
+                        %data{i,2} = sprintf('%g',map.Duration) ;
+                        duration = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'Duration') ;
+                        data{bindingIndex,2} = sprintf('%g',duration) ;                        
+                        % data{i,3} = sprintf('%d',length(map.ChannelNames)) ;
+                        nBindingsInMap = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'NBindings') ;
+                        data{bindingIndex,3} = sprintf('%d',nBindingsInMap) ;
+                    end
+                    data{bindingIndex,4} = model.stimulusLibraryItemBindingProperty('ws.StimulusSequence', sequenceIndex, bindingIndex, 'IsMarkedForDeletion');
                 end
                 set(self.SequenceTable, ...
-                    'ColumnFormat',{fif(isempty(allMapNames),'char',allMapNames) 'numeric' 'numeric' 'logical'}, ...
+                    'ColumnFormat',{allMapsNamesWithUnspecified 'char' 'char' 'logical'}, ...
                     'Data',data);            
             end
         end  % function
-    end  % methods block
+    end  % protected methods block
 
     methods (Access=protected)
         function updateMapPanelControlProperties_(self)
-            stimulusLibrary=self.Model;  % this is the StimulusLibrary
-            if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%             stimulusLibrary=self.Model;  % this is the StimulusLibrary
+%             if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%                 return
+%             end
+            model = self.Model ;  % this is the WSM
+            if isempty(model) || ~isvalid(model) ,
                 return
             end
             
-            import ws.fif
-            import ws.onIff
-
-            %invalidColor = [ 1 0.8 0.8 ] ;
-            
             % Update the name and duration            
-            selectedMap=stimulusLibrary.SelectedMap;
-            if isempty(selectedMap) ,
+            %selectedMap=stimulusLibrary.SelectedMap;
+            mapIndex = model.indexOfStimulusLibraryClassSelection('ws.StimulusMap') ;
+            if isempty(mapIndex) ,
                 set(self.MapNameEdit,'String','');
                 set(self.MapDurationEdit,'String','');
             else
-                set(self.MapNameEdit,'String',selectedMap.Name);
-                set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
+                %set(self.MapNameEdit,'String',selectedMap.Name);
+                mapName = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name') ;
+                set(self.MapNameEdit,'String',mapName);
+                %set(self.MapDurationEdit,'String',sprintf('%g',selectedMap.Duration));
+                mapDuration = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Duration') ;                
+                set(self.MapDurationEdit,'String',sprintf('%g',mapDuration));
             end
             
             % Update the table
             nColumns=5;
-            if isempty(selectedMap) ,
+            %if isempty(selectedMap) ,
+            if isempty(mapIndex) ,
                 nRows=0;
                 data=cell(nRows,nColumns);
                 set(self.MapTable,'Data',data);
             else
                 % Get the options for the channel names
-                stimulation=stimulusLibrary.Parent;
-                channelNames=stimulation.ChannelNames;
-                channelNamesWithUnspecified=[{'(Unspecified)'} channelNames];
+                outputChannelNames = horzcat(model.AOChannelNames, model.DOChannelNames) ;
+                channelNamesWithUnspecified = [{'(Unspecified)'} outputChannelNames];
                 
                 % Get the options for the stimulus names
-                allStimuli=stimulusLibrary.Stimuli;
-                allStimulusNames=cellfun(@(item)(item.Name),allStimuli,'UniformOutput',false);
+                %allStimuli=stimulusLibrary.Stimuli;
+                %allStimulusNames=cellfun(@(item)(item.Name),allStimuli,'UniformOutput',false);
+                allStimulusNames = model.propertyFromEachStimulusLibraryItemInClass('ws.Stimulus', 'Name') ;
                 allStimulusNamesWithUnspecified=[{'(Unspecified)'} allStimulusNames];
                 
-                nRows=selectedMap.NBindings;
-                data=cell(nRows,nColumns);
-                for i=1:nRows ,
-                    channelName=selectedMap.ChannelNames{i};
+                nBindingsInMap = model.stimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'NBindings') ;
+                nRows = nBindingsInMap ;
+                data = cell(nRows,nColumns) ;
+                for bindingIndex = 1:nRows ,
+                    %channelName=selectedMap.ChannelNames{bindingIndex};
+                    channelName = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName') ;
                     if isempty(channelName) ,
-                        data{i,1}='(Unspecified)';
+                        data{bindingIndex,1}='(Unspecified)';
                     else
-                        isValid = ismember(channelName,channelNames) ;
+                        isValid = ismember(channelName,outputChannelNames) ;
                         if isValid ,
-                            data{i,1}=channelName;
+                            data{bindingIndex,1}=channelName;
                         else
-                            data{i,1}=sprintf('%s (!)', channelName) ;
+                            data{bindingIndex,1}=sprintf('%s (!)', channelName) ;
                         end
                     end
-                    stimulus=selectedMap.Stimuli{i};
-                    if isempty(stimulus) ,
-                        data{i,2}='(Unspecified)';
-                        data{i,3}='(Unspecified)';
+                    %stimulus = selectedMap.Stimuli{bindingIndex} ;
+                    %if isempty(stimulus) ,
+                    if model.isStimulusLibraryItemBindingTargetEmpty('ws.StimulusMap', mapIndex, bindingIndex) ,
+                        data{bindingIndex,2} = '(Unspecified)' ;
+                        data{bindingIndex,3} = '(Unspecified)' ;
                     else
-                        data{i,2}=stimulus.Name;
-                        data{i,3}=stimulus.EndTime;
+                        %data{bindingIndex,2}=stimulus.Name;
+                        stimulusName = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', mapIndex, bindingIndex, 'Name') ;
+                        data{bindingIndex,2} = stimulusName ;
+                        %data{bindingIndex,3}=stimulus.EndTime;
+                        stimulusEndTime = model.stimulusLibraryItemBindingTargetProperty('ws.StimulusMap', mapIndex, bindingIndex, 'EndTime') ;
+                        data{bindingIndex,3} = stimulusEndTime ;
                     end
-                    data{i,4}=selectedMap.Multipliers(i);
-                    data{i,5}=selectedMap.IsMarkedForDeletion(i);
+                    %data{bindingIndex,4} = selectedMap.Multiplier(bindingIndex) ;
+                    multiplier = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'Multiplier') ;
+                    data{bindingIndex,4} = multiplier ;
+                    %data{bindingIndex,5} = selectedMap.IsMarkedForDeletion(bindingIndex) ;
+                    isMarkedForDeletion = model.stimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IsMarkedForDeletion') ;
+                    data{bindingIndex,5} = isMarkedForDeletion ;
                 end
-                columnFormat={channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric' 'logical'};
+                columnFormat = {channelNamesWithUnspecified allStimulusNamesWithUnspecified 'numeric' 'numeric' 'logical'} ;
                 set(self.MapTable, ...
-                    'ColumnFormat',columnFormat, ...
-                    'Data',data);
+                    'ColumnFormat', columnFormat, ...
+                    'Data', data) ;
             end
         end  % function
     end  % methods block
 
     methods (Access=protected)
         function updateStimulusPanelControlProperties_(self)
-            stimulusLibrary=self.Model;  % this is the StimulusLibrary
-            if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%             stimulusLibrary=self.Model;  % this is the StimulusLibrary
+%             if isempty(stimulusLibrary) || ~isvalid(stimulusLibrary) ,
+%                 return
+%             end
+            model = self.Model ;  % this is the WSM
+            if isempty(model) || ~isvalid(model) ,
                 return
             end
             
-            import ws.fif
-            import ws.onIff
-            
-            selectedStimulus=stimulusLibrary.SelectedStimulus;
+            %selectedStimulus = stimulusLibrary.SelectedStimulus ;
+            stimulusIndex = model.indexOfStimulusLibraryClassSelection('ws.Stimulus') ;            
             
             % The name & common parameters
-            if isempty(selectedStimulus) ,
-                set(self.StimulusNameEdit,'String','');
-                set(self.StimulusDelayEdit,'String','');
-                set(self.StimulusDurationEdit,'String','');
-                set(self.StimulusAmplitudeEdit,'String','');
-                set(self.StimulusDCOffsetEdit,'String','');
+            if isempty(stimulusIndex) ,
+                set(self.StimulusNameEdit,'String','') ;
+                set(self.StimulusDelayEdit,'String','') ;
+                set(self.StimulusDurationEdit,'String','') ;
+                set(self.StimulusAmplitudeEdit,'String','') ;
+                set(self.StimulusDCOffsetEdit,'String','') ;
             else
-                set(self.StimulusNameEdit,'String',selectedStimulus.Name);
-                set(self.StimulusDelayEdit,'String',selectedStimulus.Delay);
-                set(self.StimulusDurationEdit,'String',selectedStimulus.Duration);
-                set(self.StimulusAmplitudeEdit,'String',selectedStimulus.Amplitude);
-                set(self.StimulusDCOffsetEdit,'String',selectedStimulus.DCOffset);
+                set(self.StimulusNameEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Name')) ;
+                set(self.StimulusDelayEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Delay')) ;
+                set(self.StimulusDurationEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Duration')) ;
+                set(self.StimulusAmplitudeEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Amplitude')) ;
+                set(self.StimulusDCOffsetEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'DCOffset')) ;
             end
             
             % The "Function" popupmenu
-            if isempty(selectedStimulus) ,
+            if isempty(stimulusIndex) ,
                 set(self.StimulusFunctionPopupmenu, ...
                     'String',{'N/A'}, ...
                     'Value',1);
             else
-                isMatch=cellfun(@(typeString)(isequal(typeString,selectedStimulus.TypeString)),ws.Stimulus.AllowedTypeStrings);
+                selectedStimulusTypeString = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'TypeString') ;
+                isMatch=cellfun(@(typeString)(isequal(typeString,selectedStimulusTypeString)),ws.Stimulus.AllowedTypeStrings);
                 index=find(isMatch,1);
                 if isempty(index) ,
                     % this should never happen
@@ -903,17 +930,17 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             end
             
             % The idiomatic parameters
-            if isempty(selectedStimulus) ,
+            if isempty(stimulusIndex) ,
                 for i=1:length(self.StimulusAdditionalParametersEdits) ,
                     editGH=self.StimulusAdditionalParametersEdits(i);
                     set(editGH,'String','');                
                 end
             else
-                additionalParameterNames=selectedStimulus.Delegate.AdditionalParameterNames;
+                additionalParameterNames = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'AdditionalParameterNames') ;
                 for i=1:length(self.StimulusAdditionalParametersEdits) ,
                     editGH=self.StimulusAdditionalParametersEdits(i);
                     propertyName=additionalParameterNames{i};
-                    value=selectedStimulus.Delegate.(propertyName);
+                    value = model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, propertyName) ;
                     set(editGH,'String',value);
                 end
             end
@@ -922,70 +949,70 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
 
     methods (Access=protected)
         function updateControlEnablementImplementation_(self)
-            %fprintf('Inside updateControlEnablement()...\n');
-
-            import ws.fif
-            import ws.onIff
-            
             model=self.Model;
             if isempty(model) ,
                 return
             end
-            wavesurferModel=ws.getSubproperty(model,'Parent','Parent');   
-            isIdle=fif(isempty(wavesurferModel),true,isequal(wavesurferModel.State,'idle'));
-            isSelection=~isempty(model.SelectedItem);
-            isLibraryEmpty=model.IsEmpty;
+            
+            isIdle = isequal(model.State,'idle') ;
+            isSelection = model.isAStimulusLibraryItemSelected() ; 
+            isLibraryEmpty = model.isStimulusLibraryEmpty() ;
+            selectedItemClassName = model.selectedStimulusLibraryItemClassName() ;
+            isSelectedItemASequence = isequal(selectedItemClassName,'ws.StimulusSequence') ;
+            isSelectedItemAMap = isequal(selectedItemClassName,'ws.StimulusMap') ;
+            isSelectedItemAStimulus = isequal(selectedItemClassName,'ws.Stimulus') ;
             
             % File menu items
-            set(self.ClearLibraryMenuItem,'Enable',onIff(isIdle&&~isLibraryEmpty));
-            set(self.CloseMenuItem,'Enable',onIff(isIdle));
+            set(self.ClearLibraryMenuItem,'Enable',ws.onIff(isIdle && ~isLibraryEmpty));
+            set(self.CloseMenuItem,'Enable',ws.onIff(isIdle));
             
             % Edit menu items
-            set(self.AddSequenceMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
-            set(self.DeleteSequenceMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusSequence')));
-            set(self.AddMapToSequenceMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence')));
+            set(self.AddSequenceMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateSequenceMenuItem,'Enable',ws.onIff(isIdle && isSelection && isSelectedItemASequence));
+            set(self.DeleteSequenceMenuItem,'Enable',ws.onIff(isIdle && isSelection && isSelectedItemASequence));
+            set(self.AddMapToSequenceMenuItem,'Enable',ws.onIff(isIdle && isSelection && isSelectedItemASequence));
             set(self.DeleteMapsFromSequenceMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusSequence') && any(model.SelectedItem.IsMarkedForDeletion) ));
-            set(self.AddMapMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
-            set(self.DeleteMapMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.StimulusMap')));
-            set(self.AddChannelToMapMenuItem,'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap')));
+                'Enable',ws.onIff(isIdle && isSelection && isSelectedItemASequence && model.isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem() )) ;
+            set(self.AddMapMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateMapMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isSelectedItemAMap));
+            set(self.DeleteMapMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isSelectedItemAMap));
+            set(self.AddChannelToMapMenuItem,'Enable',ws.onIff(isIdle && isSelection && isSelectedItemAMap));
             set(self.DeleteChannelsFromMapMenuItem, ...
-                'Enable',onIff(isIdle && isSelection && isa(model.SelectedItem,'ws.StimulusMap') && any(model.SelectedItem.IsMarkedForDeletion) ));
-            set(self.AddStimulusMenuItem,'Enable',onIff(isIdle));
-            set(self.DuplicateStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
-            set(self.DeleteStimulusMenuItem,'Enable',onIff(isIdle&&isSelection&&isa(model.SelectedItem,'ws.Stimulus')));
-            %set(self.DeleteItemMenuItem,'Enable',onIff(isIdle&&isSelection));
+                'Enable',ws.onIff(isIdle && isSelection && isSelectedItemAMap && model.isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem() ));
+            set(self.AddStimulusMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DuplicateStimulusMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isSelectedItemAStimulus));
+            set(self.DeleteStimulusMenuItem,'Enable',ws.onIff(isIdle&&isSelection&&isSelectedItemAStimulus));
+            %set(self.DeleteItemMenuItem,'Enable',ws.onIff(isIdle&&isSelection));
             
             % Tools menu items
-            set(self.PreviewMenuItem,'Enable',onIff(isIdle&&isSelection));
+            set(self.PreviewMenuItem,'Enable',ws.onIff(isIdle&&isSelection));
             
             % The three main listboxes
-            set(self.SequencesListbox,'Enable',onIff(isIdle));
-            set(self.MapsListbox,'Enable',onIff(isIdle));
-            set(self.StimuliListbox,'Enable',onIff(isIdle));
+            set(self.SequencesListbox,'Enable',ws.onIff(isIdle));
+            set(self.MapsListbox,'Enable',ws.onIff(isIdle));
+            set(self.StimuliListbox,'Enable',ws.onIff(isIdle));
 
             % The sequence panel
-            isSelectionASequence=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusSequence'));
-            set(self.SequenceNameEdit,'Enable',onIff(isIdle&&isSelectionASequence));
-            set(self.SequenceTable,'Enable',onIff(isIdle&&isSelectionASequence));
+            isSelectionASequence = isSelection && isSelectedItemASequence ;
+            set(self.SequenceNameEdit,'Enable',ws.onIff(isIdle&&isSelectionASequence));
+            set(self.SequenceTable,'Enable',ws.onIff(isIdle&&isSelectionASequence));
             
             % The map panel
-            isSelectionAMap=isSelection&&(isequal(model.SelectedItemClassName,'ws.StimulusMap'));
-            set(self.MapNameEdit,'Enable',onIff(isIdle&&isSelectionAMap));
-            set(self.MapDurationEdit,'Enable',onIff(isIdle&&isSelectionAMap&&model.SelectedItem.IsDurationFree));
-            set(self.MapTable,'Enable',onIff(isIdle&&isSelectionAMap));
+            isSelectionAMap = isSelection&&isSelectedItemAMap ;
+            set(self.MapNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAMap));
+            isMapDurationFree = ~model.areStimulusLibraryMapDurationsOverridden() ;
+            set(self.MapDurationEdit,'Enable',ws.onIff(isIdle && isSelectionAMap && isMapDurationFree)) ;
+            set(self.MapTable,'Enable',ws.onIff(isIdle&&isSelectionAMap));
             
             % The stimulus panel
-            isSelectionAStimulus=isSelection&&(isequal(model.SelectedItemClassName,'ws.Stimulus'));
-            set(self.StimulusNameEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDelayEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDurationEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusAmplitudeEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDCOffsetEdit,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusFunctionPopupmenu,'Enable',onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusAdditionalParametersEdits,'Enable',onIff(isIdle&&isSelectionAStimulus));
+            isSelectionAStimulus = isSelection && isSelectedItemAStimulus ;
+            set(self.StimulusNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDelayEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusAmplitudeEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusDCOffsetEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusFunctionPopupmenu,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+            set(self.StimulusAdditionalParametersEdits,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
         end  % function
     end        
     

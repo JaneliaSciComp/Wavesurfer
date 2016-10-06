@@ -24,19 +24,23 @@ classdef DisplayController < ws.Controller
         end
         
         function ShowGridMenuItemGHActuated(self, varargin)
-            self.Model.toggleIsGridOn();
+            %self.Model.toggleIsGridOn();
+            self.Model.do('toggleIsGridOn') ;
         end  % method        
 
         function DoShowButtonsMenuItemGHActuated(self, varargin)
-            self.Model.toggleDoShowButtons();
+            %self.Model.toggleDoShowButtons();
+            self.Model.do('toggleDoShowButtons') ;
         end  % method        
 
         function doColorTracesMenuItemActuated(self, varargin)
-            self.Model.toggleDoColorTraces();
+            %self.Model.toggleDoColorTraces() ;
+            self.Model.do('toggleDoColorTraces') ;
         end  % method        
         
         function InvertColorsMenuItemGHActuated(self, varargin)
-            self.Model.toggleAreColorsNormal();
+            %self.Model.toggleAreColorsNormal();
+            self.Model.do('toggleAreColorsNormal');
         end  % method        
 
         function arrangementMenuItemActuated(self, varargin)
@@ -47,11 +51,10 @@ classdef DisplayController < ws.Controller
             isDisplayed = horzcat(self.Model.IsAnalogChannelDisplayed, self.Model.IsDigitalChannelDisplayed) ;
             plotHeights = horzcat(self.Model.PlotHeightFromAnalogChannelIndex, self.Model.PlotHeightFromDigitalChannelIndex) ;
             rowIndexFromChannelIndex = horzcat(self.Model.RowIndexFromAnalogChannelIndex, self.Model.RowIndexFromDigitalChannelIndex) ;
-            %nChannels = length(channelNames) ;
-            %plotHeights = ones(1,nChannels) ;
-            %plotOrdinality = 1:nChannels ;
+            %callbackFunction = ...
+            %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             callbackFunction = ...
-                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder_(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
+                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.do('setPlotHeightsAndOrder',isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             self.PlotArrangementDialogFigure_ = ...
                 ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
                                                parentFigurePosition, ...
@@ -60,45 +63,52 @@ classdef DisplayController < ws.Controller
         end  % method        
 
         function AnalogChannelMenuItemsActuated(self, source, event, aiChannelIndex)  %#ok<INUSL>
-            self.Model.toggleIsAnalogChannelDisplayed(aiChannelIndex) ;
+            %self.Model.toggleIsAnalogChannelDisplayed(aiChannelIndex) ;
+            self.Model.do('toggleIsAnalogChannelDisplayed', aiChannelIndex) ;
         end  % method        
 
         function DigitalChannelMenuItemsActuated(self, source, event, diChannelIndex)  %#ok<INUSL>
-            self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
+            %self.Model.toggleIsDigitalChannelDisplayed(diChannelIndex) ;
+            self.Model.do('toggleIsDigitalChannelDisplayed', diChannelIndex) ;
         end  % method        
                                 
         function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.scrollUp(plotIndex);
+            %self.Model.scrollUp(plotIndex);
+            self.Model.do('scrollUp', plotIndex) ;
         end
                 
         function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.scrollDown(plotIndex);
+            %self.Model.scrollDown(plotIndex);
+            self.Model.do('scrollDown', plotIndex) ;
         end
                 
         function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.zoomIn(plotIndex);
+            %self.Model.zoomIn(plotIndex);
+            self.Model.do('zoomIn', plotIndex) ;
         end
                 
         function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Model.zoomOut(plotIndex);
+            %self.Model.zoomOut(plotIndex);
+            self.Model.do('zoomOut', plotIndex) ;
         end
                 
         function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Figure.setYAxisLimitsTightToData(plotIndex);
+            self.Figure.setYAxisLimitsTightToData(plotIndex) ;
         end  % method       
         
         function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.Figure.toggleAreYLimitsLockedTightToData(plotIndex);
+            self.Figure.toggleAreYLimitsLockedTightToData(plotIndex) ;
         end  % method       
 
         function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
-            self.MyYLimDialogFigure=[];  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogFigure=[] ;  % if not first call, this should cause the old controller to be garbage collectable
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
             aiChannelIndex = self.Model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
             yLimits = self.Model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
             yUnits = self.Model.Parent.Acquisition.AnalogChannelUnits{aiChannelIndex} ;
-            callbackFunction = @(newYLimits)(self.Model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
+            %callbackFunction = @(newYLimits)(self.Model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
+            callbackFunction = @(newYLimits)(self.Model.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        
@@ -110,68 +120,6 @@ classdef DisplayController < ws.Controller
             self.unsubscribeFromAll() ;
             self.Figure.castOffAllAttachments() ;
         end                
-    end        
-    
-    methods (Access=protected)
-%         function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-%             % This method is inhierited from AbstractController, and is
-%             % called after the user indicates she wants to close the
-%             % window.  Returns true if the window should _not_ close, false
-%             % if it should go ahead and close.
-%             
-%             % If acquisition is happening, ignore the close window request
-%             wavesurferModel = ws.getSubproperty(self,'Model','Parent','Parent') ;
-%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,                
-%                 isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-%                 if isIdle ,
-%                     shouldStayPut=false;
-%                 else                 
-%                     shouldStayPut=true;
-%                 end
-%             else
-%                 shouldStayPut=false;                
-%             end
-%         end  % function
-    end % protected methods block
-    
-%     methods (Access=protected)
-%         function layoutOfWindowsInClassButOnlyForThisWindow = encodeWindowLayout_(self)
-%             window = self.Figure;
-%             layoutOfWindowsInClassButOnlyForThisWindow = struct();
-%             tag = get(window, 'Tag');
-%             layoutOfWindowsInClassButOnlyForThisWindow.(tag).Position = get(window, 'Position');
-%             isVisible=self.Model.IsVisibleWhenDisplayEnabled;
-%             layoutOfWindowsInClassButOnlyForThisWindow.(tag).IsVisibleWhenDisplayEnabled = isVisible;
-% %             if ws.most.gui.AdvancedPanelToggler.isFigToggleable(window)
-% %                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = ws.most.gui.AdvancedPanelToggler.saveToggleState(window);
-% %             else
-% %                 layoutOfWindowsInClassButOnlyForThisWindow.(tag).Toggle = [];
-% %             end
-%         end
-%         
-%         function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
-%             window = self.Figure ;
-%             tag = get(window, 'Tag');
-%             if isfield(layoutOfWindowsInClass, tag) ,
-%                 thisWindowLayout = layoutOfWindowsInClass.(tag);
-%                 set(window, 'Position', thisWindowLayout.Position);
-%                 window.constrainPositionToMonitors(monitorPositions) ;
-%                 if isfield(thisWindowLayout,'IsVisibleWhenDisplayEnabled') ,
-%                     %set(window, 'Visible', layoutInfo.Visible);
-%                     % Have to do this at the controller level, so that the
-%                     % WavesurferModel gets updated.
-%                     model=self.Model;
-%                     if ~isempty(model) ,
-%                         model.IsVisibleWhenDisplayEnabled=thisWindowLayout.IsVisibleWhenDisplayEnabled;
-%                     end
-%                 end
-%             end
-%         end  % function
-% 
-%     end  % protected methods block
-    
-%     properties (SetAccess=protected)
-%        propBindings = struct();
-%     end
+    end            
     
 end  % classdef

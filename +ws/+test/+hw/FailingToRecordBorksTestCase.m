@@ -19,11 +19,13 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'), ...
-                               isCommandLineOnly);
+            wsModel=wavesurfer('--nogui');
 
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+                           
             % Turn on stimulation (there's a single pulse output by
             % default)
             wsModel.Stimulation.IsEnabled=true;
@@ -64,18 +66,18 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             pause(0.1);
             
             % start the acq, which should work this time
-            wsModel.record();
+            wsModel.record();  % this blocks
             
-            % Wait for acq to complete
-            dtBetweenChecks=0.1;  % s
-            maxTimeToWait=2;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=1 ,
-                    break
-                end
-            end                   
+%             % Wait for acq to complete
+%             dtBetweenChecks=0.1;  % s
+%             maxTimeToWait=2;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=1 ,
+%                     break
+%                 end
+%             end                   
 
             % Delete the data file
             dataDirNameAbsolute=wsModel.Logging.FileLocation;

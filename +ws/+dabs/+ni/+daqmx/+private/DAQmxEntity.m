@@ -303,6 +303,10 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
                 val = [];
             elseif ~ismember(responseCode, [obj.apiResponseCodeSuccess obj.apiFilteredResponseCodes])
                 obj.apiProcessErrorResponseCode(responseCode, ['DAQmxGet' obj.gsPropPrefix devPropName]);
+                % if it was just a warning, then
+                % obj.apiProcessErrorResponseCode() will return (as opposed
+                % to throwing), and we need to return something...
+                val = outArgs{end};
             else
                 val = outArgs{end};
             end

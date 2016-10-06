@@ -2,9 +2,6 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     
     methods
         function self = UserCodeManagerController(wavesurferController,wavesurferModel)
-%             userFunctionsModel=wavesurferModel.UserCodeManager;
-%             self = self@ws.Controller(wavesurferController, userFunctionsModel, {'userFunctionsFigureWrapper'});
-            
             % Call the superclass constructor
             userFunctionsModel=wavesurferModel.UserCodeManager;
             self = self@ws.Controller(wavesurferController,userFunctionsModel);
@@ -16,24 +13,24 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     end  % methods block
     
     methods
-        function controlActuated(self,controlName,source,event,varargin)            
-            try
-                type=get(source,'Type');
-                if isequal(type,'uicontrol') ,
-                    methodName=[controlName 'Actuated'];
-                    if ismethod(self,methodName) ,
-                        self.(methodName)(source,event);
-                    end
-                end
-            catch me
-%                 isInDebugMode=~isempty(dbstatus());
-%                 if isInDebugMode ,
-%                     rethrow(me);
-%                 else
-                    ws.errordlg(me.message,'Error','modal');
+%         function controlActuated(self,controlName,source,event,varargin)            
+%             try
+%                 type=get(source,'Type');
+%                 if isequal(type,'uicontrol') ,
+%                     methodName=[controlName 'Actuated'];
+%                     if ismethod(self,methodName) ,
+%                         self.(methodName)(source,event);
+%                     end
 %                 end
-            end
-        end  % function       
+%             catch me
+% %                 isInDebugMode=~isempty(dbstatus());
+% %                 if isInDebugMode ,
+% %                     rethrow(me);
+% %                 else
+%                     ws.errordlg(me.message,'Error','modal');
+% %                 end
+%             end
+%         end  % function       
         
         function quittingWavesurfer(self)   
             quittingWavesurfer@ws.Controller(self) ;
@@ -41,7 +38,8 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
             % get deleted.  Hopefully user does this in the user class
             % delete() method, so we notify the model that we're quitting,
             % which will prompt it to manually delete the user object.
-            self.Model.quittingWavesurfer() ;            
+            %self.Model.quittingWavesurfer() ;         
+            self.Model.do('quittingWavesurfer') ;
         end  % function
         
     end
@@ -69,26 +67,28 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
 %         end  % function
 %     end % protected methods block    
 
-    properties (SetAccess=protected)
-       propBindings = struct(); 
-    end
+%     properties (SetAccess=protected)
+%        propBindings = struct(); 
+%     end
     
     methods
         function ClassNameEditActuated(self,source,event) %#ok<INUSD>
-            newString=get(source,'String');
-            ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
+            newString = get(source,'String') ;
+            %ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
+            self.Model.do('set', 'ClassName', newString) ;
         end
 
         function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
-            self.Model.instantiateUserObject();
+            %self.Model.instantiateUserObject();
+            self.Model.do('instantiateUserObject') ;            
         end
         
-        function ChooseButtonActuated(self,source,event) %#ok<INUSD>
-            mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
-            if ~isempty(mAbsoluteFileName) ,
-                self.Model.Logging.FileLocation = mAbsoluteFileName;
-            end
-        end
+%         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
+%             mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
+%             if ~isempty(mAbsoluteFileName) ,
+%                 self.Model.Logging.FileLocation = mAbsoluteFileName;
+%             end            
+%         end
     end
     
 end

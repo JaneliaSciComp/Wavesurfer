@@ -34,7 +34,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         NTimedDigitalChannels        
         NChannels
         IsChannelAnalog
-        TriggerScheme
+        %TriggerScheme
         %IsAnalogChannelTerminalOvercommitted
         %IsDigitalChannelTerminalOvercommitted
     end
@@ -75,7 +75,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
     events 
         %DidChangeNumberOfChannels
         %DidSetAnalogChannelUnitsOrScales
-        DidSetStimulusLibrary
+        %DidSetStimulusLibrary
         DidSetSampleRate
         DidSetDoRepeatSequence
         %DidSetIsDigitalChannelTimed
@@ -105,7 +105,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
                     %self.StimulusLibrary_.Parent = self ;
                 end
             end
-            self.broadcast('DidSetStimulusLibrary');
+            %self.broadcast('DidSetStimulusLibrary');
         end
         
         function out = get.SampleRate(self)
@@ -125,7 +125,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             end
             self.broadcast('DidSetSampleRate');
             if ~isValueValid ,
-                error('most:Model:invalidPropVal', ...
+                error('ws:invalidPropertyValue', ...
                     'SampleRate must be a positive finite numeric scalar');
             end                
         end  % function
@@ -140,7 +140,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %                     end
 %                 else
 %                     self.broadcast('DidSetSampleRate');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'SampleRate must be a positive scalar');                  
 %                 end                    
 %             end
@@ -229,9 +229,10 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-        function output = get.TriggerScheme(self)
-            output = self.Parent.Triggering.StimulationTriggerScheme ;
-        end
+%         function output = get.TriggerScheme(self)
+%             triggering = self.Parent.getTriggeringEvenThoughThisIsDangerous() ;
+%             output = triggering.StimulationTriggerScheme ;
+%         end
         
 %         function output = get.DeviceNames(self)
 %             output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
@@ -320,12 +321,12 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end
         
-        function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-            stimulusLibrary=self.StimulusLibrary;
-            if ~isempty(stimulusLibrary) ,
-                stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
-            end
-        end        
+%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
+%             stimulusLibrary=self.StimulusLibrary;
+%             if ~isempty(stimulusLibrary) ,
+%                 stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
+%             end
+%         end        
         
 %         function didSetSelectedOutputable(self)
 %             % Called by the child StimulusLibrary to notify self that the
@@ -352,16 +353,16 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
 %                     end
 %                 else
 %                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('most:Model:invalidPropVal', ...
+%                     error('ws:invalidPropertyValue', ...
 %                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
 %                 end
 %             end
 %             self.broadcast('DidSetIsDigitalChannelTimed');
 %         end  % function
         
-        function didSelectStimulusSequence(self, cycle)
-            self.StimulusLibrary.SelectedOutputable = cycle;
-        end  % function
+%         function didSelectStimulusSequence(self, cycle)
+%             self.StimulusLibrary.SelectedOutputable = cycle;
+%         end  % function
         
         function terminalID=analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
@@ -409,7 +410,6 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         end  % function
         
         function channelUnits=get.AnalogChannelUnits(self)
-            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -428,7 +428,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+                channelUnits=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end  % function
 
@@ -484,7 +484,7 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         function setSingleAnalogChannelScale(self,i,newValue)
             isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
             isChangeable= ~isChangeableFull(i);
-            if isChangeable ,
+            if isChangeable && isfinite(newValue) && newValue>0 ,
                 self.AnalogChannelScales_(i)=newValue;
             end
             self.Parent.didSetAnalogChannelUnitsOrScales();            
@@ -532,8 +532,8 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
-            self.Parent.didAddAnalogOutputChannel() ;
-            self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+            %self.Parent.didAddAnalogOutputChannel() ;
+            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             
             %self.broadcast('DidChangeNumberOfChannels');            
         end  % function
@@ -579,26 +579,15 @@ classdef (Abstract) StimulationSubsystem < ws.Subsystem   % & ws.DependentProper
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
-                self.AnalogChannelNames_{i} = newValue ;
-                self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
-                didSucceed = true ;
-            else
-                didSucceed = false ;
-            end
-            self.Parent.didSetAnalogOutputChannelName(didSucceed,oldValue,newValue) ;
+            self.AnalogChannelNames_{i} = newValue ;
+            self.StimulusLibrary_.renameChannel(oldValue, newValue) ;
         end
         
         function setSingleDigitalChannelName(self, i, newValue)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
-                self.DigitalChannelNames_{i} = newValue ;
-                self.StimulusLibrary.didSetChannelName(oldValue, newValue) ;
-                didSucceed = true ;
-            else
-                didSucceed = false ;
-            end
-            self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
+            self.DigitalChannelNames_{i} = newValue ;
+            self.StimulusLibrary_.renameChannel(oldValue, newValue) ;
+            %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
         function setSingleAnalogTerminalID(self, i, newValue)
@@ -713,7 +702,7 @@ end  % methods block
                 else
                     self.Parent.didSetIsDigitalOutputTimed();
                     %self.broadcast('DidSetIsDigitalChannelTimed');
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
                 end
             else
@@ -733,7 +722,7 @@ end  % methods block
                 else
                     %self.broadcast('DidSetDigitalOutputStateIfUntimed');
                     self.Parent.didSetDigitalOutputStateIfUntimed() ;
-                    error('most:Model:invalidPropVal', ...
+                    error('ws:invalidPropertyValue', ...
                           'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
                 end
             else
@@ -744,18 +733,18 @@ end  % methods block
         end  % function
     end
        
-    methods
-        function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
-            % This is public, but should only be called by self or Parent,
-            % hence the underscore
-            
-            %self.Parent.didChangeNumberOfOutputChannels() ;
-            stimulusLibrary = self.StimulusLibrary ;
-            if ~isempty(stimulusLibrary) ,
-                stimulusLibrary.didChangeNumberOfOutputChannels() ;
-            end
-        end
-    end
+%     methods
+%         function notifyLibraryThatDidChangeNumberOfOutputChannels_(self)
+%             % This is public, but should only be called by self or Parent,
+%             % hence the underscore
+%             
+%             %self.Parent.didChangeNumberOfOutputChannels() ;
+%             stimulusLibrary = self.StimulusLibrary ;
+%             if ~isempty(stimulusLibrary) ,
+%                 stimulusLibrary.didChangeNumberOfOutputChannels() ;
+%             end
+%         end
+%     end
     
     methods (Access=protected)
         function sanitizePersistedState_(self)
@@ -782,4 +771,214 @@ end  % methods block
         end
     end  % protected methods block
     
+    methods  % expose stim library methods at stimulation subsystem level
+        function clearStimulusLibrary(self)
+            self.StimulusLibrary_.clear() ;
+        end  % function
+        
+        function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
+            self.StimulusLibrary_.setSelectedItemByClassNameAndIndex(className, index) ;
+        end  % function
+        
+        function index = addNewStimulusSequence(self)
+            index = self.StimulusLibrary_.addNewSequence() ;
+        end  % function
+        
+        function duplicateSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.duplicateSelectedItem() ;
+        end  % function
+        
+        function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
+            bindingIndex = self.StimulusLibrary_.addBindingToSelectedItem() ;
+        end  % function
+        
+        function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
+            bindingIndex = self.StimulusLibrary_.addBindingToItem(className, itemIndex) ;
+        end  % function
+        
+        function deleteMarkedBindingsFromSequence(self)
+            self.StimulusLibrary_.deleteMarkedBindingsFromSequence() ;
+        end  % function
+        
+        function mapIndex = addNewStimulusMap(self)
+            mapIndex = self.StimulusLibrary_.addNewMap() ;
+        end  % function
+        
+%         function addChannelToSelectedStimulusLibraryItem(self)
+%             self.StimulusLibrary_.addChannelToSelectedItem() ;
+%         end  % function
+        
+        function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.deleteMarkedChannelsFromSelectedItem() ;
+        end  % function
+        
+        function stimulusIndex = addNewStimulus(self)
+            stimulusIndex = self.StimulusLibrary_.addNewStimulus() ;
+        end  % function        
+        
+        function result = isSelectedStimulusLibraryItemInUse(self)
+            result = self.StimulusLibrary_.isSelectedItemInUse() ;
+        end  % function        
+        
+        function deleteSelectedStimulusLibraryItem(self)
+            self.StimulusLibrary_.deleteSelectedItem() ;
+        end  % function        
+        
+        function result = selectedStimulusLibraryItemClassName(self)
+            result = self.StimulusLibrary_.SelectedItemClassName ;
+        end  % function        
+        
+        function result = selectedStimulusLibraryItemIndexWithinClass(self)
+            result = self.StimulusLibrary_.SelectedItemIndexWithinClass ;
+        end  % function        
+        
+        function didSetOutputableName = setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
+            didSetOutputableName = self.StimulusLibrary_.setSelectedItemProperty(propertyName, newValue) ;
+        end  % function        
+        
+        function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
+            self.StimulusLibrary_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
+        end  % function        
+
+        function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
+            self.StimulusLibrary_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+        end  % function                   
+        
+%         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
+%             self.StimulusLibrary_.setIsMarkedForDeletionForElementOfSelectedSequence(indexOfElementWithinSequence, newValue) ;
+%         end  % function                
+        
+        function setBindingOfSelectedMapToNamedStimulus(self, bindingIndex, newTargetName)
+            self.StimulusLibrary_.setBindingOfSelectedMapToNamedStimulus(bindingIndex, newTargetName) ;
+        end  % function                   
+        
+%         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
+%             self.StimulusLibrary_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;            
+%         end  % function                
+        
+        function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
+            self.StimulusLibrary_.setSelectedItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
+        end  % method        
+        
+        function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+            self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+        end  % function            
+        
+        function result = selectedStimulusLibraryItemProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedItemProperty(propertyName) ;
+        end  % method        
+        
+        function result = indexOfStimulusLibraryClassSelection(self, className)
+            result = self.StimulusLibrary_.indexOfClassSelection(className) ;
+        end  % method                    
+        
+        function result = propertyFromEachStimulusLibraryItemInClass(self, className, propertyName) 
+            % Result is a cell array, even it seems like it could/should be another kind of array
+            result = self.StimulusLibrary_.propertyFromEachItemInClass(className, propertyName) ;
+        end  % function
+        
+        function result = stimulusLibraryClassSelectionProperty(self, className, propertyName)
+            result = self.StimulusLibrary_.classSelectionProperty(className, propertyName) ;
+        end  % method        
+        
+%         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
+%             result = self.StimulusLibrary_.propertyForElementOfSelectedItem(indexOfElementWithinItem, propertyName) ;
+%         end  % function        
+        
+        function result = stimulusLibrarySelectedItemProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedItemProperty(propertyName) ;
+        end
+
+        function result = stimulusLibrarySelectedItemBindingProperty(self, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.selectedItemBindingProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibrarySelectedItemBindingTargetProperty(self, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.selectedItemBindingTargetProperty(bindingIndex, propertyName) ;
+        end
+        
+        function result = stimulusLibraryItemProperty(self, className, index, propertyName)
+            result = self.StimulusLibrary_.itemProperty(className, index, propertyName) ;
+        end  % function                        
+
+        function didSetOutputableName = setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
+            didSetOutputableName = self.StimulusLibrary_.setItemProperty(className, index, propertyName, newValue) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.itemBindingProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function                        
+        
+        function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
+            self.StimulusLibrary_.setItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+        end  % function                        
+        
+        function result = stimulusLibraryItemBindingTargetProperty(self, className, itemIndex, bindingIndex, propertyName)
+            result = self.StimulusLibrary_.itemBindingTargetProperty(className, itemIndex, bindingIndex, propertyName) ;
+        end  % function             
+        
+        function result = isStimulusLibraryItemBindingTargetEmpty(self, className, itemIndex, bindingIndex)
+            result = self.StimulusLibrary_.isItemBindingTargetEmpty(className, itemIndex, bindingIndex) ;
+        end  % function
+        
+        function result = isStimulusLibrarySelectedItemBindingTargetEmpty(self, bindingIndex)
+            result = self.StimulusLibrary_.isSelectedItemBindingTargetEmpty(bindingIndex) ;
+        end  % function
+        
+        function result = isStimulusLibraryEmpty(self)
+            result = self.StimulusLibrary_.isEmpty() ;
+        end  % function                
+        
+        function result = isAStimulusLibraryItemSelected(self)
+            result = self.StimulusLibrary_.isAnItemSelected() ;
+        end  % function                
+        
+        function result = isAnyBindingMarkedForDeletionForStimulusLibrarySelectedItem(self)
+            result = self.StimulusLibrary_.isAnyBindingMarkedForDeletionForSelectedItem() ;            
+        end  % function        
+        
+        function setStimulusLibraryToSimpleLibraryWithUnitPulse(self, outputChannelNames)
+            self.StimulusLibrary_.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;            
+        end
+        
+        function setSelectedOutputableByIndex(self, index)            
+            self.StimulusLibrary_.setSelectedOutputableByIndex(index) ;
+        end  % method
+        
+        function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)            
+            self.StimulusLibrary_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
+        end  % method
+        
+        function overrideStimulusLibraryMapDuration(self, sweepDuration)
+            self.StimulusLibrary_.overrideMapDuration(sweepDuration) ;
+        end  % function
+        
+        function releaseStimulusLibraryMapDuration(self)
+            self.StimulusLibrary_.releaseMapDuration() ;
+        end  % function
+        
+        function result = stimulusLibraryOutputableNames(self)
+            result = self.StimulusLibrary_.outputableNames() ;            
+        end  % function
+        
+        function result = stimulusLibrarySelectedOutputableProperty(self, propertyName)
+            result = self.StimulusLibrary_.selectedOutputableProperty(propertyName) ;            
+        end  % function
+        
+        function result = areStimulusLibraryMapDurationsOverridden(self)
+            result = self.StimulusLibrary_.areMapDurationsOverridden() ;            
+        end  % function
+        
+        function result = isStimulusLibraryItemInUse(self, className, itemIndex)
+            result = self.StimulusLibrary_.isItemInUse(className, itemIndex) ;
+        end  % function        
+        
+        function deleteStimulusLibraryItem(self, className, itemIndex)
+            self.StimulusLibrary_.deleteItem(className, itemIndex) ;
+        end  % function        
+        
+        function populateStimulusLibraryForTesting(self)
+            self.StimulusLibrary_.populateForTesting() ;
+        end  % function
+    end  % public methods block    
 end  % classdef

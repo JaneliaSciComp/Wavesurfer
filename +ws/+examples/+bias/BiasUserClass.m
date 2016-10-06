@@ -1,14 +1,13 @@
 classdef BiasUserClass < ws.UserClass
 
-    properties(Access=private)
+    properties
         enabled = 1;                          % Enable/Disable Camera
         
         %% PointGrey/Flea3 properties
-        bias;                                 % handle to bias object
         bias_nCams = 2;                       % number of cameras controlled through bias
         bias_ip = '127.0.0.1';                % bias listens on this ip
         bias_port = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
-        bias_cfgFile = 'bias_config_1.json';  % specify json cfg file for bias to use
+        bias_cfgFiles = {'Camera0_config_Jay20160726.json' 'Camera1_config_Jay20160726.json'};  % specify json cfg file for bias to use
         cameraOn = 1;
         hardTrig = 1;
         frameRate = 500;
@@ -22,26 +21,30 @@ classdef BiasUserClass < ws.UserClass
         %Camera 1
         bias_cam1_frameRate = 500;
         bias_cam1_movieFormat = 'avi';
-        bias_cam1_ROI = [360,240,368,296];
+        bias_cam1_ROI = [504,418,384,260];
         bias_cam1_triggerMode = 'External';
-        bias_cam1_shutterValue = 1;
+        bias_cam1_shutterValue = 157;
         
         %Camera 2
         bias_cam2_frameRate = 500;
         bias_cam2_movieFormat = 'avi';
-        bias_cam2_ROI = [368,316,368,296];
+        bias_cam2_ROI = [312,318,384,260];
         bias_cam2_triggerMode = 'External';
-        bias_cam2_shutterValue = 1;
+        bias_cam2_shutterValue = 157;
         
         % Bookkeeping
-        IsIInFrontend
         %HasRunStart = false
     end  % properties
             
+    properties (Access=protected, Transient=true)
+        bias                                 % handle to bias object(s)
+        IsIInFrontend        
+    end
+    
     methods
         %% User functions    
-        function self = BiasUserClass(rootModel)
-            if isa(rootModel,'ws.WavesurferModel') ,
+        function self = BiasUserClass(userCodeManager)
+            if isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,
                 self.IsIInFrontend = true ;
                 self.initialize();
             else
@@ -152,8 +155,8 @@ classdef BiasUserClass < ws.UserClass
         function configure(obj)
             disp('Calling BIAS config.');            
             for i=1:obj.bias_nCams
-                if exist(obj.bias_cfgFile,'file');
-                    obj.bias{i}.loadConfiguration(obj.bias_cfgFile);
+                if exist(obj.bias_cfgFiles{i},'file');
+                    obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
                 end
             end
             for i=1:obj.bias_nCams

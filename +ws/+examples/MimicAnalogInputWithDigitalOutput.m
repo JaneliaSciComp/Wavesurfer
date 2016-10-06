@@ -89,7 +89,7 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
 %             wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = ...
 %                 (vSample>2.5) ;
             newOutput = (vSample>2.5) ;
-            looper.Stimulation.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;
+            looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;
             %fprintf('Just read %d scans of data.\n',nScans);                                    
         end
         

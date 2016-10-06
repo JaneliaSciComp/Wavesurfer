@@ -52,9 +52,6 @@ classdef TriggersFigure < ws.MCOSFigure
            
            % Sync to the model
            self.update();
-           
-%            % Make the figure visible
-%            set(self.FigureGH,'Visible','on');
         end  % constructor
     end
     
@@ -77,10 +74,6 @@ classdef TriggersFigure < ws.MCOSFigure
                         'BorderType','none', ...
                         'FontWeight','bold', ...
                         'Title','Acquisition');
-%             self.UseASAPTriggeringCheckbox = ...
-%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
-%                           'Style','checkbox', ...
-%                           'String','Use ASAP triggering');
             self.AcquisitionSchemeText = ...
                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
                           'Style','text', ...
@@ -183,23 +176,6 @@ classdef TriggersFigure < ws.MCOSFigure
                     elseif isequal(get(propertyThing,'Type'),'uitable') 
                         set(propertyThing,'CellEditCallback',@(source,event)(self.controlActuated(propertyName,source,event)));                        
                     end
-                    
-%                     % Set Font
-%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'FontName','Tahoma');
-%                         set(propertyThing,'FontSize',8);
-%                     end
-%                     
-%                     % Set Units
-%                     if isequal(get(propertyThing,'Type'),'uicontrol') || isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'Units','pixels');
-%                     end
-                    
-%                     % Set border type
-%                     if isequal(get(propertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'BorderType','none', ...
-%                                           'FontWeight','bold');
-%                     end
                 end
             end
         end  % function        
@@ -302,18 +278,6 @@ classdef TriggersFigure < ws.MCOSFigure
             popupmenuYOffset=panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-height;  %checkboxYOffset-heightFromPopupmenuToRest-height;
             ws.positionPopupmenuAndLabelBang(self.AcquisitionSchemeText,self.AcquisitionSchemePopupmenu, ...
                                           rulerXOffset,popupmenuYOffset,popupmenuWidth)            
-
-%             % Checkbox
-%             checkboxFullExtent=get(self.UseASAPTriggeringCheckbox,'Extent');
-%             checkboxExtent=checkboxFullExtent(3:4);
-%             checkboxPosition=get(self.UseASAPTriggeringCheckbox,'Position');
-%             checkboxXOffset=rulerXOffset;
-%             checkboxWidth=checkboxExtent(1)+16;  % size of the checkbox itself
-%             checkboxHeight=checkboxPosition(4);
-%             checkboxYOffset=popupmenuYOffset-heightFromPopupmenuToRest-checkboxHeight;  % panelHeight-heightOfPanelTitle-heightFromTopToPopupmenu-checkboxHeight;            
-%             set(self.UseASAPTriggeringCheckbox, ...
-%                 'Position',[checkboxXOffset checkboxYOffset ...
-%                             checkboxWidth checkboxHeight]);            
         end  % function
     end
 
@@ -458,168 +422,116 @@ classdef TriggersFigure < ws.MCOSFigure
         end
     end
     
-    methods
-        function delete(self) %#ok<INUSD>
-%             if ishghandle(self.FigureGH) ,
-%                 delete(self.FigureGH);
-%             end
-        end  % function       
-    end  % methods    
-
-%     methods
-%         function controlActuated(self,controlName,source,event)
-%             if isempty(self.Controller) ,
-%                 % do nothing
-%             else
-%                 self.Controller.controlActuated(controlName,source,event);
-%                 %self.Controller.updateModel(source,event,guidata(self.FigureGH));
-%             end
-%         end  % function       
-%     end  % methods
-
     methods (Access=protected)
-        function updateControlPropertiesImplementation_(self,varargin)
+        function updateControlPropertiesImplementation_(self, varargin)
             if isempty(self.Model) ,
                 return
             end            
-            self.updateSweepBasedAcquisitionControls();
-            self.updateSweepBasedStimulationControls();
-            %self.updateContinuousModeControls();
-            self.updateCounterTriggersTable();
-            self.updateExternalTriggersTable();                   
+            self.updateAcquisitionTriggerControls() ;
+            self.updateStimulationTriggerControls() ;
+            self.updateCounterTriggersTable() ;
+            self.updateExternalTriggersTable() ;                   
         end  % function
     end  % methods
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self)
-            triggeringModel=self.Model;
-            if isempty(triggeringModel) || ~isvalid(triggeringModel) ,
+            wsModel = self.Model ;  % this is the WavesurferModel
+            if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end            
-            wsModel=triggeringModel.Parent;  % this is the WavesurferModel
             isIdle=isequal(wsModel.State,'idle');
-            isSweepBased = wsModel.AreSweepsFiniteDuration;
+            %isSweepBased = wsModel.AreSweepsFiniteDuration;
             
-            import ws.onIff
+            set(self.AcquisitionSchemePopupmenu,'Enable',ws.onIff(isIdle));
             
-            set(self.AcquisitionSchemePopupmenu,'Enable',onIff(isIdle));
+            isStimulusUsingAcquisitionTriggerScheme = wsModel.StimulationUsesAcquisitionTrigger ;
+            set(self.UseAcquisitionTriggerCheckbox,'Enable',ws.onIff(isIdle)) ;
+            set(self.StimulationSchemePopupmenu,'Enable',ws.onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme)) ;
             
-            %acquisitionUsesASAPTriggering=triggeringModel.AcquisitionUsesASAPTriggering;
-            isStimulusUsingAcquisitionTriggerScheme=triggeringModel.StimulationUsesAcquisitionTriggerScheme;
-            %isAcquisitionSchemeInternal=triggeringModel.AcquisitionTriggerScheme.IsInternal;
-            %set(self.UseASAPTriggeringCheckbox,'Enable',onIff(isIdle&&isSweepBased&&isAcquisitionSchemeInternal));
-            set(self.UseAcquisitionTriggerCheckbox,'Enable',onIff(isIdle&&~isSweepBased));
-            set(self.StimulationSchemePopupmenu,'Enable',onIff(isIdle&&~isStimulusUsingAcquisitionTriggerScheme));
-            
-            %set(self.ContinuousSchemePopupmenu,'Enable',onIff(isIdle));
-            
-            areAnyFreeCounterIDs = ~isempty(triggeringModel.freeCounterIDs()) ;
-            isCounterTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.CounterTriggers) ;
+            areAnyFreeCounterIDs = ~isempty(wsModel.freeCounterIDs()) ;
+            isCounterTriggerMarkedForDeletion = wsModel.isCounterTriggerMarkedForDeletion() ;
             isAnyCounterTriggerMarkedForDeletion = any(isCounterTriggerMarkedForDeletion) ;
-            set(self.CounterTriggersTable,'Enable',onIff(isIdle));
-            set(self.AddCounterTriggerButton,'Enable',onIff(isIdle&&areAnyFreeCounterIDs)) ;
-            set(self.DeleteCounterTriggersButton,'Enable',onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
+            set(self.CounterTriggersTable,'Enable',ws.onIff(isIdle));
+            set(self.AddCounterTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreeCounterIDs)) ;
+            set(self.DeleteCounterTriggersButton,'Enable',ws.onIff(isIdle&&isAnyCounterTriggerMarkedForDeletion)) ;
             
-            areAnyFreePFIIDs = ~isempty(triggeringModel.freePFIIDs()) ;
-            isExternalTriggerMarkedForDeletion = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggeringModel.ExternalTriggers) ;
+            areAnyFreePFIIDs = ~isempty(wsModel.freePFIIDs()) ;
+            isExternalTriggerMarkedForDeletion = wsModel.isExternalTriggerMarkedForDeletion() ;
             isAnyExternalTriggerMarkedForDeletion = any(isExternalTriggerMarkedForDeletion) ;
-            set(self.ExternalTriggersTable,'Enable',onIff(isIdle));
-            set(self.AddExternalTriggerButton,'Enable',onIff(isIdle&&areAnyFreePFIIDs)) ;
-            set(self.DeleteExternalTriggersButton,'Enable',onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
+            set(self.ExternalTriggersTable,'Enable',ws.onIff(isIdle));
+            set(self.AddExternalTriggerButton,'Enable',ws.onIff(isIdle&&areAnyFreePFIIDs)) ;
+            set(self.DeleteExternalTriggersButton,'Enable',ws.onIff(isIdle&&isAnyExternalTriggerMarkedForDeletion)) ;
         end  % function
     end
     
     methods
-        function updateSweepBasedAcquisitionControls(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+        function updateAcquisitionTriggerControls(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            %import ws.setPopupMenuItemsAndSelectionBang
-            %import ws.onIff
-            schemes = model.AcquisitionSchemes ;
-            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
-            rawCurrentItem=model.AcquisitionTriggerScheme.Name;
+            rawMenuItems = wsModel.triggerNames() ;
+            rawCurrentItem = wsModel.acquisitionTriggerProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.AcquisitionSchemePopupmenu, ...
-                                                         rawMenuItems, ...
-                                                         rawCurrentItem);
+                                                 rawMenuItems, ...
+                                                 rawCurrentItem);
         end  % function       
     end  % methods
     
     methods
-        function updateSweepBasedStimulationControls(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+        function updateStimulationTriggerControls(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            %import ws.setPopupMenuItemsAndSelectionBang
-            %import ws.onIff
-            set(self.UseAcquisitionTriggerCheckbox,'Value',model.StimulationUsesAcquisitionTriggerScheme);
-            schemes = model.Schemes ;
-            rawMenuItems = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;
-            rawCurrentItem=model.StimulationTriggerScheme.Name;
+            set(self.UseAcquisitionTriggerCheckbox, 'Value', wsModel.StimulationUsesAcquisitionTrigger) ;
+            rawMenuItems = wsModel.triggerNames() ;
+            rawCurrentItem = wsModel.stimulationTriggerProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.StimulationSchemePopupmenu, ...
-                                                         rawMenuItems, ...
-                                                         rawCurrentItem);
+                                                 rawMenuItems, ...
+                                                 rawCurrentItem);
         end  % function       
     end  % methods
     
     methods
-%         function updateContinuousModeControls(self,varargin)
-%             model=self.Model;
-%             if isempty(model) ,
-%                 return
-%             end
-%             import ws.setPopupMenuItemsAndSelectionBang
-%             import ws.onIff
-%             rawMenuItems={model.CounterTriggers.Name};
-%             rawCurrentItem=model.ContinuousModeTriggerScheme.Target.Name;
-%             setPopupMenuItemsAndSelectionBang(self.ContinuousSchemePopupmenu, ...
-%                                               rawMenuItems, ...
-%                                               rawCurrentItem);
-%         end  % function       
-    end  % methods
-
-    methods
-        function updateCounterTriggersTable(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+        function updateCounterTriggersTable(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.CounterTriggers);
-            nColumns=8;
-            data=cell(nRows,nColumns);
-            for i=1:nRows ,
-                trigger=model.CounterTriggers{i};
-                data{i,1}=trigger.Name;
-                data{i,2}=trigger.DeviceName;
-                data{i,3}=trigger.CounterID;
-                data{i,4}=trigger.RepeatCount;
-                data{i,5}=trigger.Interval;
-                data{i,6}=trigger.PFIID;
-                data{i,7}=ws.titleStringFromEdgeType(trigger.Edge);
-                data{i,8}=trigger.IsMarkedForDeletion;
+            nRows = wsModel.CounterTriggerCount ;
+            nColumns = 8 ;
+            data  = cell(nRows, nColumns) ;
+            for i = 1:nRows ,
+                data{i,1} = wsModel.counterTriggerProperty(i, 'Name') ;
+                data{i,2} = wsModel.counterTriggerProperty(i, 'DeviceName') ;
+                data{i,3} = wsModel.counterTriggerProperty(i, 'CounterID') ;
+                data{i,4} = wsModel.counterTriggerProperty(i, 'RepeatCount') ;
+                data{i,5} = wsModel.counterTriggerProperty(i, 'Interval') ;
+                data{i,6} = wsModel.counterTriggerProperty(i, 'PFIID') ;
+                data{i,7} = ws.titleStringFromEdgeType(wsModel.counterTriggerProperty(i, 'Edge')) ;
+                data{i,8} = wsModel.counterTriggerProperty(i, 'IsMarkedForDeletion') ;
             end
             set(self.CounterTriggersTable,'Data',data);
         end  % function
     end  % methods
     
     methods
-        function updateExternalTriggersTable(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+        function updateExternalTriggersTable(self, varargin)
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.ExternalTriggers);
-            nColumns=5;
-            data=cell(nRows,nColumns);
-            for i=1:nRows ,
-                trigger=model.ExternalTriggers{i};
-                data{i,1}=trigger.Name;
-                data{i,2}=trigger.DeviceName;
-                data{i,3}=trigger.PFIID;
-                data{i,4}=ws.titleStringFromEdgeType(trigger.Edge);
-                data{i,5}=trigger.IsMarkedForDeletion;
+            nRows = wsModel.ExternalTriggerCount ;
+            nColumns = 5 ;
+            data = cell(nRows, nColumns) ;
+            for i = 1:nRows ,
+                data{i,1} = wsModel.externalTriggerProperty(i, 'Name') ;
+                data{i,2} = wsModel.externalTriggerProperty(i, 'DeviceName') ;
+                data{i,3} = wsModel.externalTriggerProperty(i, 'PFIID') ;
+                data{i,4} = ws.titleStringFromEdgeType(wsModel.externalTriggerProperty(i, 'Edge')) ;
+                data{i,5} = wsModel.externalTriggerProperty(i, 'IsMarkedForDeletion') ;
             end
             set(self.ExternalTriggersTable,'Data',data);
         end  % function
@@ -627,39 +539,12 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateSubscriptionsToModelEvents_(self)
-            % Unsubscribe from all events, then subsribe to all the
-            % approprate events of model.  model should be a Triggering subsystem
-            %self.unsubscribeFromAll();
-            model=self.Model;
-            if ~isempty(model) && isvalid(model) ,
-                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedAcquisitionControls');
-                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetTarget','','updateSweepBasedStimulationControls');  
-
-                % Add subscriptions for updating control enablement
-                model.Parent.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                %model.Parent.subscribeMe(self,'DidSetAreSweepsFiniteDurationOrContinuous','','update');
-                model.subscribeMe(self,'Update','','update');
-                %model.AcquisitionTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-                %model.StimulationTriggerScheme.subscribeMe(self,'DidSetIsInternal','','updateControlEnablement');  
-
-                % Add subscriptions for the changeable fields of each element
-                % of model.CounterTriggers
-                self.updateSubscriptionsToSourceProperties_();
+            wsm = self.Model ;  % a WSM
+            if ~isempty(wsm) && isvalid(wsm) ,
+                wsm.subscribeMe(self,'DidSetState','','updateControlEnablement');
+                wsm.subscribeMe(self,'UpdateTriggering','','update');
             end
         end
-        
-        function updateSubscriptionsToSourceProperties_(self,varargin)
-            % Add subscriptions for the changeable fields of each source
-            model=self.Model;
-            sources = model.CounterTriggers;            
-            for i = 1:length(sources) ,
-                source=sources{i};
-                source.unsubscribeMeFromAll(self);
-                %source.subscribeMe(self, 'PostSet', 'Interval', 'updateCounterTriggersTable');
-                %source.subscribeMe(self, 'PostSet', 'RepeatCount', 'updateCounterTriggersTable');
-                source.subscribeMe(self, 'Update', '', 'updateCounterTriggersTable');
-            end
-        end
-    end
+    end  % protected methods block
     
 end  % classdef

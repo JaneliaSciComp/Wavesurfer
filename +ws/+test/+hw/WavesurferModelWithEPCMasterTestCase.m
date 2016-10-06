@@ -1,8 +1,7 @@
 classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be in
-    % the current directory, and be named Machine_Data_File.m.  Also must
-    % have EPCMaster running, with batch interface turned on.
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)  Also must have EPCMaster running, with batch
+    % interface turned on.
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -21,10 +20,15 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
     methods (Test)
         function testTestPulseModeChange(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             model=ws.WavesurferModel(true);
-            model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
+            %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             %model=ws.WavesurferModel('Machine_Data_file.m');
+            
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAOChannel() ;
             
             % Create two new electrodes in ElectrodeManager
             model.Ephys.ElectrodeManager.addNewElectrode();
@@ -59,10 +63,15 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         
         function testTestPulseModeChangeWithMultipleElectrodes(self)
             % Create an WavesurferModel
-            thisDirName=fileparts(mfilename('fullpath'));
+            %thisDirName=fileparts(mfilename('fullpath'));
             isITheOneTrueWavesurferModel = true ;
             model=ws.WavesurferModel(isITheOneTrueWavesurferModel);
-            model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
+            %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
+            
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAIChannel() ;
+            model.addAOChannel() ;
             
             % Create two new electrodes in ElectrodeManager
             model.Ephys.ElectrodeManager.addNewElectrode();
@@ -105,13 +114,15 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         
         function testUpdateBeforeRunCheckbox(self)
             % Create a WavesurferModel
-            model=ws.WavesurferModel(true);
+            isITheOneTrueWavesurferModel = true ;
+            wsModel = ws.WavesurferModel(isITheOneTrueWavesurferModel) ;
+            %wsModel = wavesurfer('--nogui') ;
             
             % Load configuration file with one Heka EPC electrode
             thisDirName=fileparts(mfilename('fullpath'));
-            model.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
-            electrodeManager = model.Ephys.ElectrodeManager;
-            testPulser = model.Ephys.TestPulser;
+            wsModel.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
+            electrodeManager = wsModel.Ephys.ElectrodeManager;
+            testPulser = wsModel.Ephys.TestPulser;
             electrodeIndex = 1;
             
             % Create another EPCMasterSocket object so we can modify
@@ -134,7 +145,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %self.verifyTrue(all(testPulserShouldAllBeTrue));
             
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
-            self.checkTimingAndUpdating_(@model.play, @model.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(runShouldAllBeTrue));        
         end  % function
     end

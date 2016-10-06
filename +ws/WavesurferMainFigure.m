@@ -160,7 +160,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                
-               model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
+               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
                %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
@@ -528,9 +528,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             propertyNames={mc.PropertyList.Name};
             for i=1:length(propertyNames) ,
                 propertyName=propertyNames{i};
-%                 if isequal(propertyName,'FastProtocolButtons') 
-%                     keyboard
-%                 end
                 propertyThing=self.(propertyName);
                 if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
                     % Sometimes propertyThing is a vector, but if so
@@ -546,19 +543,29 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         if get(examplePropertyThing,'Parent')==self.FigureGH ,
                             % do nothing for top-level menus
                         else
-                            set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                            if isscalar(propertyThing)
+                                set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                            else
+                                % For arrays, pass the index to the
+                                % callback
+                                for j = 1:length(propertyThing) ,
+                                    set(propertyThing(j),'Callback',@(source,event)(self.controlActuated(propertyName,source,event,j)));
+                                end                                    
+                            end
                         end
-                    elseif ( isequal(get(examplePropertyThing,'Type'),'uicontrol') && ~isequal(get(examplePropertyThing,'Style'),'text') ) ,
+                    elseif isequal(get(examplePropertyThing,'Type'),'uicontrol') && ~isequal(get(examplePropertyThing,'Style'),'text') ,
                         % set the callback for any uicontrol that is not a
                         % text
-                        set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                        if isscalar(propertyThing)
+                            set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
+                        else
+                            % For arrays, pass the index to the
+                            % callback
+                            for j = 1:length(propertyThing) ,
+                                set(propertyThing(j),'Callback',@(source,event)(self.controlActuated(propertyName,source,event,j)));
+                            end
+                        end
                     end
-                    
-%                     % Set Font
-%                     if isequal(get(examplePropertyThing,'Type'),'uicontrol') || isequal(get(examplePropertyThing,'Type'),'uipanel') ,
-%                         set(propertyThing,'FontName','Tahoma');
-%                         set(propertyThing,'FontSize',8);
-%                     end
                     
                     % Set Units
                     if isequal(get(examplePropertyThing,'Type'),'axes'),
@@ -1124,48 +1131,24 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateProgressBarProperties_();
             
             % Update the Stimulation/Source popupmenu
-            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
-            stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
-            if isempty(stimulusLibrary) ,
-                set(self.SourcePopupmenu, ...
-                    'String', {'(No library)'}, ...
-                    'Value', 1, ...
-                    'BackgroundColor', warningBackgroundColor);
-            else
-                outputables = stimulusLibrary.getOutputables() ;
-                outputableNames = cellfun(@(item)(item.Name),outputables,'UniformOutput',false) ;
-                selectedOutputable = stimulusLibrary.SelectedOutputable ;
-                if isempty(selectedOutputable) ,
+%             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
+%             stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
+%             if isempty(stimulusLibrary) ,
+%                 set(self.SourcePopupmenu, ...
+%                     'String', {'(No library)'}, ...
+%                     'Value', 1, ...
+%                     'BackgroundColor', warningBackgroundColor);
+%             else
+                outputableNames = model.stimulusLibraryOutputableNames() ;
+                %selectedOutputable = stimulusLibrary.SelectedOutputable ;
+                selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
+                if isempty(selectedOutputableName) ,
                     selectedOutputableNames = {} ;                    
                 else
-                    selectedOutputableNames = { selectedOutputable.Name } ;
+                    selectedOutputableNames = { selectedOutputableName } ;
                 end                
-                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu,outputableNames,selectedOutputableNames,[],'(No outputables)')                
-%                 if isempty(outputables) ,
-%                     set(self.SourcePopupmenu, ...
-%                         'String',{'(No outputables)'}, ...
-%                         'Value',1);                      
-%                 else
-%                     outputableNames=cellfun(@(item)(item.Name),outputables,'UniformOutput',false);                
-%                     selectedOutputable=stimulusLibrary.SelectedOutputable;
-%                     if isempty(selectedOutputable) ,
-%                         iSelected=[];
-%                     else
-%                         isSelected= cellfun(@(item)(item==selectedOutputable),outputables);
-%                         iSelected=find(isSelected,1);
-%                     end                 
-%                     if isempty(iSelected) ,
-%                         outputableNamesWithFallback=[{'(None selected)'} outputableNames];
-%                         set(self.SourcePopupmenu, ...
-%                             'String',outputableNamesWithFallback, ...
-%                             'Value',1);
-%                     else
-%                         set(self.SourcePopupmenu, ...
-%                             'String',outputableNames, ...
-%                             'Value',iSelected);
-%                     end
-%                 end
-            end
+                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
+%             end
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
             % based on the model state
@@ -1278,7 +1261,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateEnablementAndVisibilityOfLoggingControls_();
 
             % Status bar controls
-            set(self.ProgressBarAxes,'Visible',onIff(isAcquiring));
+            if ~isAcquiring , 
+                set(self.ProgressBarAxes,'Visible','off') ;
+            end
         end
     end
     
@@ -1463,6 +1448,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateProgressBarProperties_(self)
             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
+            %dbstack
             model=self.Model;
             state=model.State;
             if isequal(state,'running') ,

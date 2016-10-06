@@ -31,9 +31,9 @@ classdef SineStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.Frequency_ = value;
             end                    
-            if ~isempty(self.Parent) ,                            
-                self.Parent.childMayHaveChanged();
-            end
+%             if ~isempty(self.Parent) ,                            
+%                 self.Parent.childMayHaveChanged();
+%             end
         end  % function
 
         function out = get.Frequency(self)

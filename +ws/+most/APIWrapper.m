@@ -629,99 +629,127 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
             % Method's behavior is modulated by the value of 'apiResponseCodeProcessor'
             % If none of the provided behaviors is appropriate, this method can also be overridden.
             
-            errorString = '';
-            warningOnly = false;
+            % Deal with args
+            if nargin<3 ,
+                funcName = '' ;
+            end
+
+            % Define a default error string
+            if isempty(funcName) ,
+                defaultErrorString = [obj.apiPrettyName ' error (' num2str(responseCode) ')'] ;
+            else
+                defaultErrorString = [obj.apiPrettyName ' error (' num2str(responseCode) ') in call to API function ''' funcName ''''] ;
+            end            
             
-            responseCodeInfo = [];
-            switch obj.apiResponseCodeProcessor
-                
+            % For DAQmx, obj.apiResponseCodeProcessor seems to typically be the
+            % string 'apiResponseCodeHookFcn'.  --ALT, 2016-09-08
+            % This switch sets errorStringOrEmpty and responseCodeInfoOrEmpty.  Seemingly,
+            % at least one of these will be empty.
+            switch obj.apiResponseCodeProcessor                
                 case 'apiResponseCodeHookFcn'
                     try
-                        responseCodeInfo = obj.apiResponseCodeHookFcn(responseCode);
-                    catch ME
-                        errorString = sprintf('Received response code indicating error (%d). Unable to decode.\n',responseCode);
+                        errorStringOrEmpty = '' ;
+                        responseCodeInfoOrEmpty = obj.apiResponseCodeHookFcn(responseCode) ;
+                        % For DAQmx, responseCodeInfo seems to typically be
+                        % a struct like:
+                        %   responseCodeInfo =
+                        %  
+                        %              errorName: '200012'
+                        %       errorDescription: 'Clock rate specified exceeds the maximum conversion rate of the ADC. ADC overrun errors are likely.'
+                        %            warningOnly: 1
+                    catch exception  %#ok<NASGU>
+                        errorStringOrEmpty = sprintf('Received response code indicating error (%d). Unable to decode.\n',responseCode) ;
+                        responseCodeInfoOrEmpty = [] ;
                     end
                 case 'none'
-                    errorString = getDefaultErrorString(nargin);
+                    errorStringOrEmpty = defaultErrorString ;
+                    responseCodeInfoOrEmpty = [] ;
                 otherwise
-                    %A responseCodeMap is used
-                    
-                    responseCodeMap = obj.accessAPIDataVar('apiResponseCodeMap');
+                    % A responseCodeMap is used                    
+                    responseCodeMap = obj.accessAPIDataVar('apiResponseCodeMap') ;
                     
                     if ~responseCodeMap.isKey(responseCode)
-                        errorString = getDefaultErrorString(nargin);
+                        errorStringOrEmpty = defaultErrorString ;
+                        responseCodeInfoOrEmpty = [] ;
                     else
-                        responseCodeInfo = responseCodeMap(responseCode);
+                        errorStringOrEmpty = '' ;
+                        responseCodeInfoOrEmpty = responseCodeMap(responseCode) ;
                     end
             end
             
-            if isempty(errorString)
+            % Seemingly, at least one of errorStringOrEmpty and responseCodeInfo
+            % will be empty at this point. --ALT, 2016-09-08             
+            
+            if isempty(errorStringOrEmpty) ,  
+                % In this case, use responseCodeInfoOrEmpty to calculate an errorString.
                 
-                if ischar(responseCodeInfo)
-                    errorName = responseCodeInfo;
-                    errorDescription = '';
-                elseif isempty(responseCodeInfo)
-                    errorName = num2str(responseCode);
-                    errorDescription = '';
-                elseif isstruct(responseCodeInfo)
-                    errorName = responseCodeInfo.errorName;
-                    errorDescription = responseCodeInfo.errorDescription;
-                    if isfield(responseCodeInfo,'warningOnly')
-                        warningOnly = responseCodeInfo.warningOnly;
+                % First, extract an errorName, and errorDescription, and
+                % whether it's a full-on error or only a warning.
+                if ischar(responseCodeInfoOrEmpty) ,
+                    errorName = responseCodeInfoOrEmpty ;
+                    errorDescription = '' ;
+                    isWarningOnly = false ;
+                elseif isempty(responseCodeInfoOrEmpty) ,
+                    errorName = num2str(responseCode) ;
+                    errorDescription = '' ;
+                    isWarningOnly = false ;
+                elseif isstruct(responseCodeInfoOrEmpty) ,
+                    errorName = responseCodeInfoOrEmpty.errorName ;
+                    errorDescription = responseCodeInfoOrEmpty.errorDescription ;
+                    if isfield(responseCodeInfoOrEmpty,'warningOnly') ,
+                        isWarningOnly = responseCodeInfoOrEmpty.warningOnly ;
+                    else
+                        isWarningOnly = false ;
                     end
                 else
-                    error('Unexpected responseCode information supplied by either responseCodeMap or ''apiResponseCodeFcn'' ');
+                    error('ws:most:APIWrapper:unexpectedResponseCodeType', ...
+                          'Unexpected responseCode information supplied by either responseCodeMap or ''apiResponseCodeFcn'' ') ;
                 end
                 
-                if warningOnly
-                    responseType = 'warning';
+                % Using errorName, errorDescription, isWarning, and
+                % funcName, build up the errorString.
+                if isWarningOnly ,
+                    protoErrorString1 = sprintf('%s warning', obj.apiPrettyName) ;
                 else
-                    responseType = 'error';
+                    protoErrorString1 = sprintf('%s error', obj.apiPrettyName) ;
                 end
                 
-                errorString = sprintf('%s %s', obj.apiPrettyName, responseType);
-                
-                if ~isempty(errorName)
-                    errorString = [errorString sprintf(' (%s)', errorName)];
+                if isempty(errorName) ,
+                    protoErrorString2 = protoErrorString1 ;
+                else
+                    protoErrorString2 = [protoErrorString1 sprintf(' (%s)', errorName)] ;
                 end
                 
-                if nargin >= 3
-                    errorString = [errorString sprintf(' in call to API function ''%s''', funcName)];
+                if isempty(funcName) ,
+                    protoErrorString3 = protoErrorString2 ;
+                else                    
+                    protoErrorString3 = [protoErrorString2 sprintf(' in call to API function ''%s''', funcName)] ;
                 end
                 
-                if ~isempty(errorDescription)
-                    errorString = [errorString sprintf(':\n %s',errorDescription)];
+                if isempty(errorDescription) ,
+                    errorString = protoErrorString3 ;
+                else
+                    errorString = [protoErrorString3 sprintf(':\n %s',errorDescription)] ;
                 end
-                
-                %                 if isempty(errorName) && isempty(errorDescription)
-                %                     errorString = getDefaultErrorString(nargin);
-                %                 elseif isempty(errorDescription)
-                %                     errorString = [errorString errorName];
-                %                 elseif isempty(errorName)
-                %                     errorString = [errorString sprintf('\n %s',errorDescription)];
-                %                 else
-                %                     errorString = [errorString sprintf('\n (%s) %s',errorName,errorDescription)];
-                %                 end
-            end
+            else                
+                errorString = errorStringOrEmpty ;
+                isWarningOnly = false ;
+            end   % if isempty(errorString)
             
-            %Issue warning or exception
-            if warningOnly
-                s = warning('query','backtrace');
-                warning([ws.most.util.className(obj) ':APICallWarning'],errorString);
-                warning(s.state, 'backtrace');
+            % Only things we've computed that are used below are
+            % isWarningOnly and errorString.
+            
+            % Issue warning or throw exception
+            isWarningOnly  = false ;  % Let's try this, as an experiement, b/c warnings are problematic.
+            if isWarningOnly ,
+                s = warning('query','backtrace') ;
+                warning([ws.most.util.className(obj) ':APICallWarning'], errorString) ;
+                warning(s.state, 'backtrace') ;
             else
-                ME = MException([ws.most.util.className(obj) ':APICallError'],errorString);
-                ME.throwAsCaller();
-            end
-            
-            function errorString = getDefaultErrorString(narginVal)
-                if narginVal  < 3
-                    errorString = [obj.apiPrettyName ' error (' num2str(responseCode) ')'];
-                else
-                    errorString = [obj.apiPrettyName ' error (' num2str(responseCode) ') in call to API function ''' funcName ''''];
-                end
-            end
-        end
+                exception = MException([ws.most.util.className(obj) ':APICallError'], errorString) ;
+                exception.throwAsCaller() ;
+            end            
+        end  % method
     end
     
     %% PROTECTED/PRIVATE METHODS

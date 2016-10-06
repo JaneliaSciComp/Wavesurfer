@@ -1,6 +1,6 @@
 classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)
+    % To run these tests, need to have an NI daq attached.  (Can be a
+    % simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -26,7 +26,7 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
             defaultPorts(2).portAddress = 'tcp://127.0.0.1:8082';
             defaultPorts(3).portAddress = 'tcp://127.0.0.1:8083';
             
-            for i=1:3
+            for i=1:3 ,
                 %defaultPorts(i).context = zmq.core.ctx_new();
                 defaultPorts(i).context = zmq.Context();
                 %defaultPorts(i).socket  = zmq.core.socket(defaultPorts(i).context, 'ZMQ_PUSH');
@@ -41,14 +41,20 @@ classdef BindToOpenTCPPortsTestCase < matlab.unittest.TestCase
                 end
             end
             
-            isCommandLineOnly=true;
-            thisDirName=fileparts(mfilename('fullpath'));
+            %isCommandLineOnly='--nogui';
+            %thisDirName=fileparts(mfilename('fullpath'));
         
             % Try to start WaveSurfer. It will fail if it uses the default
             % ports and does not check for open ports.
             try
-                wsModel = wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'), ...
-                    isCommandLineOnly);  %#ok<NASGU>
+                wsModel = wavesurfer('--nogui');
+
+                wsModel.addAIChannel() ;
+                wsModel.addAIChannel() ;
+                wsModel.addAIChannel() ;
+                wsModel.addAOChannel() ;
+                wsModel.addDOChannel() ;
+                                 
                 ableToBindWavesurfer=true;
             catch                
                 ableToBindWavesurfer=false;
