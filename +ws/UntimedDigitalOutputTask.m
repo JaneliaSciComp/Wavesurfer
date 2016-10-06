@@ -71,7 +71,7 @@ classdef UntimedDigitalOutputTask < handle
         function delete(self)
             if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,                
                 try
-                    self.clearChannelData();  % set all channels off before deleting
+                    self.zeroChannelData();  % set all channels off before deleting
                 catch me %#ok<NASGU>
                     % just ignore, since can't throw during a delete method
                 end
@@ -96,7 +96,7 @@ classdef UntimedDigitalOutputTask < handle
             end
         end  % function
         
-        function clearChannelData(self)
+        function zeroChannelData(self)
             nChannels=length(self.TerminalIDs);
             self.ChannelData = false(1,nChannels);  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function
