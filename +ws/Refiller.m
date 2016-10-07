@@ -50,6 +50,7 @@ classdef Refiller < handle
         %IsInTaskForEachDOChannel_        
         %SelectedOutputableCache_ = []  % cache used only during stimulation (set during startingRun(), set to [] in completingRun())
         IsArmedOrStimulating_ = false
+        DidNotifyFrontendThatWeCompletedAllEpisodes_
     end
     
     methods
@@ -105,7 +106,9 @@ classdef Refiller < handle
                         end
                         self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        fprintf('About to send "refillerStoppedRun"\n') ;
                         self.IPCPublisher_.send('refillerStoppedRun') ;
+                        fprintf('Just sent "refillerStoppedRun"\n') ;
                     else
                         % Check the finite outputs, refill them if
                         % needed.
@@ -126,9 +129,18 @@ classdef Refiller < handle
                                 self.startEpisode_() ;  % start another episode
                             else
                                 % If we get here, the run is ongoing, but
-                                % timed stimulation is done.  So we pause
-                                % to not peg the CPU.
-                                pause(0.010);  % don't want to peg CPU when done
+                                % we've completed the episodes, whether
+                                % we've noted that fact or not.
+                                if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
+                                    % If nothing to do, pause so as not to
+                                    % per CPU
+                                    pause(0.010) ;
+                                else
+                                    % Notify the frontend
+                                    self.IPCPublisher_.send('refillerCompletedEpisodes') ;
+                                    self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
+                                    %self.completeTheEpisodes_() ;
+                                end
                             end
                         end
                         
@@ -142,13 +154,15 @@ classdef Refiller < handle
                     end
                 else
                     %fprintf('Refiller: Not in a run, about to check for messages\n');
-                    % We're not currently running a sweep
+                    % We're not currently in a run
                     % Check for messages, but don't block
                     self.IPCSubscriber_.processMessagesIfAvailable() ;
                     self.IPCReplier_.processMessagesIfAvailable() ;
                     if self.DoesFrontendWantToStopRun_ ,
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                        fprintf('About to send "refillerStoppedRun"\n') ;
                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
+                        fprintf('Just sent "refillerStoppedRun"\n') ;
                     end
                     %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when idle
@@ -189,6 +203,8 @@ classdef Refiller < handle
         end  % function
 
         function result = completingRun(self)
+            fprintf('completingRun()\n') ;
+            
             % Called by the WSM when the run is completed.
 
             %
@@ -207,8 +223,12 @@ classdef Refiller < handle
             %
             
             % Disarm the tasks
-            self.TheFiniteAnalogOutputTask_.disarm();
-            self.TheFiniteDigitalOutputTask_.disarm();            
+            if ~isempty(self.TheFiniteAnalogOutputTask_) ,
+                self.TheFiniteAnalogOutputTask_.disarm();
+            end
+            if ~isempty(self.TheFiniteDigitalOutputTask_) ,
+                self.TheFiniteDigitalOutputTask_.disarm();
+            end
             
             % Clear the output tasks
             self.TheFiniteAnalogOutputTask_ = [] ;            
@@ -231,6 +251,7 @@ classdef Refiller < handle
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
+            fprintf('Got message "frontendWantsToStopRun"\n') ;            
             self.DoesFrontendWantToStopRun_ = true ;
             result = [] ;
         end
@@ -443,6 +464,7 @@ classdef Refiller < handle
             self.DoesFrontendWantToStopRun_ = false ;
             %self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
+            self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
             self.IsPerformingRun_ = true ;                        
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
 
@@ -547,25 +569,29 @@ classdef Refiller < handle
 %             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
 %         end            
         
-%         function completeTheOngoingRun_(self)
-%             % Disarm the tasks
-%             self.TheFiniteAnalogOutputTask_.disarm();
-%             self.TheFiniteDigitalOutputTask_.disarm();            
+%         function completeTheEpisodes_(self)
+%             fprintf('completeTheEpisodes()\n') ;
+% %             % Disarm the tasks
+% %             self.TheFiniteAnalogOutputTask_.disarm();
+% %             self.TheFiniteDigitalOutputTask_.disarm();            
+% %             
+% %             % Clear the output tasks
+% %             self.TheFiniteAnalogOutputTask_ = [] ;            
+% %             self.TheFiniteDigitalOutputTask_ = [] ;            
 %             
-%             % Clear the output tasks tasks
-%             self.TheFiniteAnalogOutputTask_ = [] ;            
-%             self.IsInTaskForEachAOChannel_ = [] ;
-%             self.TheFiniteDigitalOutputTask_ = [] ;            
-%             self.IsInTaskForEachDOChannel_ = [] ;
 %             
 %             %
-%             % Note that we are done with the run
+%             % Note that we are done with the epsiodes
 %             %
-%             self.IsPerformingRun_ = false ;
+%             self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
 %             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+%             
+%             % Notify the front end
+%             self.IPCPublisher_.send('refillerCompletedEpisodes') ;            
 %         end  % function
         
         function stopTheOngoingRun_(self)
+            fprintf('stopTheOngoingRun_()\n') ;
             % Set all outputs to zero
             self.makeSureAllOutputsAreZero_() ;
             
@@ -579,6 +605,7 @@ classdef Refiller < handle
         end  % function
         
         function abortTheOngoingRun_(self)            
+            fprintf('abortTheOngoingRun_()\n') ;
             % Clear the triggering stuff
 %             self.teardownCounterTriggers_();            
 %             self.IsTriggeringBuiltin_ = [] ;
@@ -774,6 +801,7 @@ classdef Refiller < handle
 %         end  % method        
         
         function stoppingRunStimulation_(self)
+            fprintf('stoppingRunStimulation()\n') ;
             %self.SelectedOutputableCache_ = [];
 
             % Disarm the tasks
@@ -878,6 +906,7 @@ classdef Refiller < handle
         end  % function        
         
         function abortingRunStimulation_(self)
+            fprintf('abortingRunStimulation_()\n') ;
             %self.SelectedOutputableCache_ = [];
             
             % Disarm the tasks (check that they exist first, since this
