@@ -389,3 +389,7 @@ Version History
 
 0.933    Sep 6, 2016     README bug fix.
 
+0.94     Oct 6, 2016     Changes to triggering to make it more
+                         flexible.  Also made satellite processes
+                         leaner, and made changes to the stimulus
+                         library go through the main WavesurferModel.

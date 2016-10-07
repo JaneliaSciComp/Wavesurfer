@@ -19,9 +19,7 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
     methods (Test)
 
         function testAnalogAndDigital(self)
-            isCommandLineOnly='--nogui';
-            %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -89,16 +87,23 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
             
             % These should not error, at the least...
-            fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
-            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
+            fs = dataAsStruct.header.Acquisition.SampleRate;
+            self.verifyEqual(fs, 20000) ;
+            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;
+            self.verifyEqual(length(analogChannelNames),4) ;
             analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
-            %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
-            %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
-            %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
+            
+            % Check some of the stim library parts of the header
+            stimulusLibraryHeader = dataAsStruct.header.Stimulation.StimulusLibrary 
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableClassName')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableIndex')) ;
             
             % Delete the data file
             delete(dataFilePatternAbsolute);

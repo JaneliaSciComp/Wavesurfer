@@ -79,7 +79,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster & matlab.mixin.SetGe
         function propNames = listPropertiesForHeader(self)
             propNamesRaw = listPropertiesForHeader@ws.Coding(self) ;            
             propNames=setdiff(propNamesRaw, ...
-                              {'Parent'}) ;
+                              {'Parent' 'IsReady'}) ;
         end  % function         
         
         function debug(self) %#ok<MANU>
