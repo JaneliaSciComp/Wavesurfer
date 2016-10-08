@@ -191,6 +191,8 @@ classdef WavesurferModel < ws.Model
             if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
                 doRunInDebugMode = false ;
             end
+            doRunInDebugMode = true ;
+            dbstop('if','error') ;
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -1222,7 +1224,9 @@ classdef WavesurferModel < ws.Model
             
             self.changeReadiness(+1);  % do this now to give user hint that they can press stop during run...
 
-            % Move on to performing the sweeps
+            %
+            % Move on to the main within-run loop
+            %
             %self.IsSweepComplete_ = true ;  % Set this to true just so the first sweep gets started
             didThrow = false ;
             exception = [] ;
@@ -1293,7 +1297,7 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-        function [didCompleteSweep,didThrow,exception] = performSweep_(self)
+        function performSweep_(self)
             % time between subsequent calls to this, etc
             t=toc(self.FromRunStartTicId_);
             self.TimeOfLastWillPerformSweep_=t;
@@ -1319,90 +1323,81 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('startingSweep');            
             
             % Call startingSweep() on all the enabled subsystems
-            try
-                for idx = 1:numel(self.Subsystems_)
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingSweep();
-                    end
+            for idx = 1:numel(self.Subsystems_)
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.startingSweep();
                 end
-                                
-                % Wait for the looper to respond
-                self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-                timeout = 12 ;  % s
-                err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
-                if ~isempty(err) ,
-                    % Something went wrong
-                    self.abortOngoingRun_();
-                    self.changeReadiness(+1);
-                    throw(err);
-                end
-                
-                % Set the sweep timer
-                self.FromSweepStartTicId_=tic();
-
-                % Pulse the master trigger to start the sweep!
-                %fprintf('About to pulse the master trigger!\n');
-                self.IsPerformingSweep_ = true ;  
-                    % have to wait until now to set this true, so that old
-                    % samplesAcquired messages are ignored when we're
-                    % waiting for looperReadyForSweep and
-                    % refillerReadyForSweep messages above.
-                self.Triggering_.pulseBuiltinTrigger();
-                
-                % Now poll
-                self.IsSweepComplete_ = false ;
-                %self.DidLooperCompleteSweep_ = false ;
-                %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
-                self.WasRunStoppedInLooper_ = false ;
-                self.WasRunStoppedInRefiller_ = false ;
-                self.WasRunStopped_ = false ;
-                %self.TimeOfLastDrawnow_ = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
-                %profile resume ;
-                while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
-                    %fprintf('At top of within-sweep loop...\n') ;
-                    self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                    % do a drawnow() if it's been too long...
-                    timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                    if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                        drawnow() ;
-                        self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                    end
-                end    
-                %profile off ;
-                %isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
-                %didUserRequestStop = self.WasRunStopped_ ;  
-                %self.IsSweepComplete_ = [] ;
-                %self.WasRunStoppedInLooper_ = [] ;
-                %self.WasRunStoppedInRefiller_ = [] ;
-                %self.WasRunStopped_ = [] ;  % want this to stay as true/false
-                %end  % function                
-                
-                % End the sweep in the way appropriate, either a "complete",
-                % a stop, or an abort
-                if self.IsSweepComplete_ ,
-                    self.completeTheOngoingSweep_() ;
-                    didCompleteSweep = true ;
-                elseif self.WasRunStopped_ ,
-                    self.stopTheOngoingSweep_();
-                    didCompleteSweep = false ;
-                else
-                    % Something must have gone wrong...
-                    self.abortTheOngoingSweep_();
-                    didCompleteSweep = false ;
-                end
-                
-                % No errors thrown, so set return values accordingly
-                didThrow = false ;  
-                exception = [] ;
-            catch me
-                self.abortTheOngoingSweep_();
-                didCompleteSweep = false ;
-                %didUserRequestStop = false ;
-                didThrow = true ;
-                exception = me ;
-                return
             end
+
+            % Wait for the looper to respond
+            self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+            timeout = 12 ;  % s
+            err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+            if ~isempty(err) ,
+                % Something went wrong
+                self.abortOngoingRun_();
+                self.changeReadiness(+1);
+                throw(err);
+            end
+
+            % Set the sweep timer
+            self.FromSweepStartTicId_=tic();
+
+            % Pulse the master trigger to start the sweep!
+            %fprintf('About to pulse the master trigger!\n');
+            self.IsPerformingSweep_ = true ;  
+                % have to wait until now to set this true, so that old
+                % samplesAcquired messages are ignored when we're
+                % waiting for looperReadyForSweep and
+                % refillerReadyForSweep messages above.
+            self.Triggering_.pulseBuiltinTrigger();
+
+            % Now poll
+            self.IsSweepComplete_ = false ;
+            %self.DidLooperCompleteSweep_ = false ;
+            %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
+            self.WasRunStoppedInLooper_ = false ;
+            self.WasRunStoppedInRefiller_ = false ;
+            self.WasRunStopped_ = false ;
+            %self.TimeOfLastDrawnow_ = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
+            %profile resume ;
+            while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
+                %fprintf('At top of within-sweep loop...\n') ;
+                self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                % do a drawnow() if it's been too long...
+                timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                    drawnow() ;
+                    self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                end
+            end    
+            %profile off ;
+            %isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
+            %didUserRequestStop = self.WasRunStopped_ ;  
+            %self.IsSweepComplete_ = [] ;
+            %self.WasRunStoppedInLooper_ = [] ;
+            %self.WasRunStoppedInRefiller_ = [] ;
+            %self.WasRunStopped_ = [] ;  % want this to stay as true/false
+            %end  % function                
+
+            % End the sweep in the way appropriate, either a "complete",
+            % a stop, or an abort
+            if self.IsSweepComplete_ ,
+                self.completeTheOngoingSweep_() ;
+                %didCompleteSweep = true ;
+            elseif self.WasRunStopped_ ,
+                self.stopTheOngoingSweep_();
+                %didCompleteSweep = false ;
+            else
+                % Something must have gone wrong...
+                self.abortTheOngoingSweep_();
+                %didCompleteSweep = false ;
+            end
+
+            % No errors thrown, so set return values accordingly
+            %didThrow = false ;  
+            %exception = [] ;
         end  % function
 
         % A run can end for one of three reasons: it is manually stopped by

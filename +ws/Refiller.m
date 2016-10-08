@@ -91,6 +91,7 @@ classdef Refiller < handle
             % window is.
             fprintf('This is the ''refiller'' process.  It is part of WaveSurfer.\n');
             fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
+            dbstop('if','error') ;
             %pause(5);            
             % Main loop
             %timeSinceSweepStart=nan;  % hack
