@@ -260,6 +260,7 @@ classdef Logging < ws.Subsystem
             
             % Note that we have not yet created the current data file
             self.DidCreateCurrentDataFile_ = false ;
+            fprintf('Just did self.DidCreateCurrentDataFile_ = false\n') ;
             
             % Set the chunk size for writing data to disk
             nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
@@ -323,6 +324,7 @@ classdef Logging < ws.Subsystem
             %ws.h5savestr(self.CurrentRunAbsoluteFileName_, '/headerstr', stringOfAssignmentStatements, doCreateFile);
             ws.h5save(self.CurrentRunAbsoluteFileName_, '/header', headerStruct, doCreateFile);
             self.DidCreateCurrentDataFile_ = true ;
+            fprintf('Just did self.DidCreateCurrentDataFile_ = true\n') ;
             
 %             % Save the "header" information to a sidecar file instead.
 %             % This should be more flexible that embedding the "header" data
@@ -410,13 +412,14 @@ classdef Logging < ws.Subsystem
         end
         
         function stoppingOrAbortingRun_(self)
-            %fprintf('Logging::abortingRun()\n');
+            fprintf('Logging::stoppingOrAbortingRun_()\n');
         
             %dbstop if caught
             %
             % Want to rename the data file to reflect the actual number of sweeps acquired
-            %
+            %            
             if self.DidCreateCurrentDataFile_ ,
+                fprintf('self.DidCreateCurrentDataFile_ is true\n') ;
                 % A data file was created.  Might need to rename it, or delete it.
                 originalAbsoluteLogFileName = self.CurrentRunAbsoluteFileName_ ;
                 originalLogFileName = ws.leafFileName(originalAbsoluteLogFileName) ;  % might need later, and cheap to compute
@@ -438,7 +441,7 @@ classdef Logging < ws.Subsystem
                                         exception) ;                            
                     end
                 else    
-                    % We logged some sweeps, but maybe not the number number requested.  Check for this, renaming the
+                    % We logged some sweeps, but maybe not the number requested.  Check for this, renaming the
                     % data file if needed.
                     newLogFileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
@@ -497,6 +500,7 @@ classdef Logging < ws.Subsystem
                 end
             else
                 % No data file was created, so nothing to do.
+                fprintf('self.DidCreateCurrentDataFile_ is false\n') ;
             end
 
             % Now do things common to performance and abortion

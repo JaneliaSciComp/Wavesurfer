@@ -437,8 +437,9 @@ classdef WavesurferModel < ws.Model
         function result = refillerCompletedEpisodes(self)
             % Call by the Refiller, via ZMQ pub-sub, when it has completed
             % all the episodes in the run
-            %fprintf('WavesurferModel::refillerCompletedRun()\n');
+            %fprintf('WavesurferModel::refillerCompletedRun()\n');            
             self.DidRefillerCompleteEpisodes_ = true ;
+            fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
             %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
             result = [] ;
         end
@@ -1043,6 +1044,7 @@ classdef WavesurferModel < ws.Model
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
             self.DidRefillerCompleteEpisodes_ = false ;
+            fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
@@ -1209,6 +1211,7 @@ classdef WavesurferModel < ws.Model
             % Change our own state to running
             self.NTimesDataAvailableCalledSinceRunStart_=0;  % Have to do this now so that progress bar doesn't start in old position when continuous acq
             self.setState_('running') ;
+            self.IsPerformingSweep_ = false ;  % the first sweep starts later, if at all
             self.IsPerformingRun_ = true ;
             
             % Handle timing stuff
@@ -1298,7 +1301,7 @@ classdef WavesurferModel < ws.Model
             
             % At this point, self.IsPerformingRun_ is true
             % Do post-run clean up
-            if ~self.DidAnySweepFailToCompleteSoFar_ ,
+            if self.AreAllSweepsCompleted_ ,
                 % Wrap up run in which all sweeps completed
                 self.wrapUpRunInWhichAllSweepsCompleted_() ;
             elseif self.WasRunStopped_ ,
@@ -1630,7 +1633,9 @@ classdef WavesurferModel < ws.Model
         
         function stopTheOngoingRun_(self)
             % Called when the user stops the run in the middle, typically
-            % by pressing the stop button.
+            % by pressing the stop button.            
+            
+            fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
             % Notify other processes --- or not, we don't currently need
             % this
@@ -1659,6 +1664,8 @@ classdef WavesurferModel < ws.Model
         function abortOngoingRun_(self)
             % Called when a run fails for some undesirable reason.
             
+            fprintf('WavesurferModel::abortOngoingRun_()\n') ;
+
             % Notify other processes
             self.IPCPublisher_.send('abortingRun') ;
 

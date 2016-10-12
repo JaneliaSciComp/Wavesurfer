@@ -139,6 +139,7 @@ classdef Refiller < handle
                                 else
                                     % Notify the frontend
                                     self.IPCPublisher_.send('refillerCompletedEpisodes') ;
+                                    fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
                                     self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
                                     %self.completeTheEpisodes_() ;
                                 end

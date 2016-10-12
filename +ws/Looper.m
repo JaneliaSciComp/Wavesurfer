@@ -643,6 +643,7 @@ classdef Looper < handle
 
             % Set up the task triggering
             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+            acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_
             if isequal(keystoneTask,'ai') ,
                 self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
                 self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
