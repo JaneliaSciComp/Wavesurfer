@@ -672,6 +672,7 @@ classdef Refiller < handle
             self.IsPerformingEpisode_ = false;
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
+            nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
             
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
             %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);

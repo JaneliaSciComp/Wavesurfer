@@ -1305,6 +1305,9 @@ classdef WavesurferModel < ws.Model
                 % Wrap up run in which all sweeps completed
                 self.wrapUpRunInWhichAllSweepsCompleted_() ;
             elseif self.WasRunStopped_ ,
+                if self.IsPerformingSweep_ ,
+                    self.stopTheOngoingSweep_() ;
+                end
                 self.stopTheOngoingRun_();
             else
                 % Something went wrong
@@ -1382,7 +1385,8 @@ classdef WavesurferModel < ws.Model
 
         function closeSweep_(self)
             % End the sweep in the way appropriate, either a "complete",
-            % a stop, or an abort
+            % a stop, or an abort.
+            % Precondition: self.IsPerformingSweep_ (is true)
             if self.DidLooperCompleteSweep_ ,
                 self.completeTheOngoingSweep_() ;
                 %didCompleteSweep = true ;
@@ -1539,6 +1543,8 @@ classdef WavesurferModel < ws.Model
 %         end  % function
                 
         function completeTheOngoingSweep_(self)
+            fprintf('WavesurferModel::completeTheOngoingSweep_()\n') ;
+            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
             % Bump the number of completed sweeps
@@ -1565,6 +1571,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function stopTheOngoingSweep_(self)
+            fprintf('WavesurferModel::stopTheOngoingSweep_()\n') ;
+
             % Stop the ongoing sweep following user request            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
@@ -1586,6 +1594,7 @@ classdef WavesurferModel < ws.Model
 
         function abortTheOngoingSweep_(self)
             % Clean up after a sweep shits the bed.
+            fprintf('WavesurferModel::abortTheOngoingSweep_()\n') ;
             
             % Notify all the subsystems that the sweep aborted
             for i = numel(self.Subsystems_):-1:1 ,
