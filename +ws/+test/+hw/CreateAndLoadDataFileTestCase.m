@@ -99,7 +99,7 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             
             % Check some of the stim library parts of the header
             header = dataAsStruct.header ;
-            stimulusLibraryHeader = header.Stimulation.StimulusLibrary 
+            stimulusLibraryHeader = header.Stimulation.StimulusLibrary ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;

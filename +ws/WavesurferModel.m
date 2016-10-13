@@ -56,7 +56,7 @@ classdef WavesurferModel < ws.Model
         IndexOfSelectedFastProtocol  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         Acquisition
         Stimulation
-        %Triggering
+        Triggering
         Display
         Logging
         UserCodeManager
@@ -542,9 +542,9 @@ classdef WavesurferModel < ws.Model
             out = self.Stimulation_ ;
         end
         
-%         function out = get.Triggering(self)
-%             out = self.Triggering_ ;
-%         end
+        function out = get.Triggering(self)
+            out = self.Triggering_ ;
+        end
         
         function out = get.UserCodeManager(self)
             out = self.UserCodeManager_ ;

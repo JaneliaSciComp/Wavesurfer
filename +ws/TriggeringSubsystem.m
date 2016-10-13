@@ -8,9 +8,9 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
         CounterTriggerCount
         ExternalTriggerCount
         Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
-        AcquisitionSchemes  % This used to be [{BuiltinTrigger} ExternalTriggers], a row cell array, but
-                            % Now it's an alias for Schemes.  We keep it
-                            % around for backwards-compatibility.
+%         AcquisitionSchemes  % This used to be [{BuiltinTrigger} ExternalTriggers], a row cell array, but
+%                             % Now it's an alias for Schemes.  We keep it
+%                             % around for backwards-compatibility.
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
         AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
@@ -61,10 +61,10 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             out = self.CounterTriggers_;
         end  % function
         
-        function out = get.AcquisitionSchemes(self)
-            %out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
-            out = self.Schemes ;
-        end  % function
+%         function out = get.AcquisitionSchemes(self)
+%             %out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
+%             out = self.Schemes ;
+%         end  % function
         
         function out = get.Schemes(self)
             out = [ {self.BuiltinTrigger} self.CounterTriggers self.ExternalTriggers ] ;
