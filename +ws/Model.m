@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster & matlab.mixin.SetGet
+classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.SetGet
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         Parent  
         IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
@@ -104,6 +104,14 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster & matlab.mixin.SetGe
                 result = true;  % if the root doesn't have a State, then we'll assume it's not running/test-pulsing
             end
         end
+        
+%         function result = get(self, propertyName) 
+%             result = self.(propertyName) ;
+%         end
+%         
+%         function set(self, propertyName, newValue)
+%             self.(propertyName) = newValue ;
+%         end           
     end  % public methods block
     
     methods (Access = protected)
