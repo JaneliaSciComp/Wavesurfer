@@ -98,12 +98,19 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
             
             % Check some of the stim library parts of the header
-            stimulusLibraryHeader = dataAsStruct.header.Stimulation.StimulusLibrary 
+            header = dataAsStruct.header ;
+            stimulusLibraryHeader = header.Stimulation.StimulusLibrary 
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableClassName')) ;
             self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableIndex')) ;
+            
+            % Check that some of the triggering info is there
+            self.verifyTrue(isfield(header, 'Triggering')) ;
+            triggering = header.Triggering ;
+            self.verifyTrue(isfield(triggering, 'AcquisitionTriggerScheme')) ;
+            self.verifyTrue(isfield(triggering, 'StimulationTriggerScheme')) ;
             
             % Delete the data file
             delete(dataFilePatternAbsolute);
