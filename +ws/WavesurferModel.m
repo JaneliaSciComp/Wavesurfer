@@ -193,8 +193,8 @@ classdef WavesurferModel < ws.Model
             if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
                 doRunInDebugMode = false ;
             end
-            doRunInDebugMode = true ;
-            dbstop('if','error') ;
+            %doRunInDebugMode = true ;
+            %dbstop('if','error') ;
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -1353,7 +1353,20 @@ classdef WavesurferModel < ws.Model
                 end
             end
 
-            % Wait for the looper to respond
+            % Notify the refiller that we're starting a sweep, wait for the refiller to respond
+            if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
+                self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+                timeout = 11 ;  % s
+                err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+                if ~isempty(err) ,
+                    % Something went wrong
+                    self.abortOngoingRun_();
+                    self.changeReadiness(+1);
+                    throw(err);
+                end
+            end
+            
+            % Notify the looper that we're starting a sweep, wait for the looper to respond
             self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
             timeout = 12 ;  % s
             err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;

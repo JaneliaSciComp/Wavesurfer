@@ -18,19 +18,16 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)            
-            isCommandLineOnly = '--nogui' ;             
-            wsModel = wavesurfer(isCommandLineOnly) ;
+            wsModel = wavesurfer('--nogui') ;
             wsModel.NSweepsPerRun = 3 ;
             wsModel.Stimulation.IsEnabled = true ;
-%             trigger = wsModel.addCounterTrigger() ;
-%             trigger.RepeatCount = 2 ;
-%             trigger.Interval = 1.5 ;
             wsModel.addCounterTrigger() ;
             wsModel.setTriggerProperty('counter', 1, 'RepeatCount', 2) ;
             wsModel.setTriggerProperty('counter', 1, 'Interval', 1.5) ;            
             wsModel.StimulationUsesAcquisitionTrigger = false ;
             wsModel.StimulationTriggerIndex = 2 ;  % this should be the newly-defined counter trigger
             didTimerCallbackFire = false ;            
+            
             function timerCallback(source, event)  %#ok<INUSD>
                 % The timer callback.  If WS is working properly, the timer
                 % will be stopped before this fires at all.
@@ -38,6 +35,7 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
                 didTimerCallbackFire = true ;
                 wsModel.stop() ;
             end            
+            
             timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
                                           'TimerFcn',@timerCallback, ...
                                           'StartDelay',20, ...
