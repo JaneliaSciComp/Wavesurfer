@@ -7,7 +7,6 @@ wsbuild/EphusTestFramework/obj/
 *.p
 *.mold
 *.molder
-*.mat
 *.ncb
 *.suo
 *.pdb
