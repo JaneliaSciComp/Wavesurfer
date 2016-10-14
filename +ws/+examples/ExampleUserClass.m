@@ -8,7 +8,9 @@ classdef ExampleUserClass < ws.UserClass
     % object.
     properties
         Greeting = 'Hello, there!'
-        TimeAtStartOfLastRunAsString_ = ''  % should only be accessed from the methods below, but making it protected is a pain.
+        TimeAtStartOfLastRunAsString_ = ''  
+          % TimeAtStartOfLastRunAsString_ should only be accessed from 
+          % the methods below, but making it protected is a pain.
     end
     
     methods        

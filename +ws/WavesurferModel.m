@@ -56,7 +56,7 @@ classdef WavesurferModel < ws.Model
         IndexOfSelectedFastProtocol  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         Acquisition
         Stimulation
-        %Triggering
+        Triggering
         Display
         Logging
         UserCodeManager
@@ -142,14 +142,15 @@ classdef WavesurferModel < ws.Model
         ClockAtRunStart_
         %DoContinuePolling_
         %DidLooperCompleteSweep_
-        %DidRefillerCompleteSweep_
-        IsSweepComplete_
+        DidRefillerCompleteEpisodes_
+        DidAnySweepFailToCompleteSoFar_
         WasRunStopped_        
         WasRunStoppedInLooper_        
         WasRunStoppedInRefiller_        
         WasExceptionThrown_
         ThrownException_
         NSweepsCompletedInThisRun_ = 0
+        AreAllSweepsCompleted_
         IsITheOneTrueWavesurferModel_
         DesiredNScansPerUpdate_        
         NScansPerUpdate_        
@@ -163,6 +164,9 @@ classdef WavesurferModel < ws.Model
         WarningCount_ = 0
         WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
         LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
+        DrawnowTicId_
+        TimeOfLastDrawnow_
+        DidLooperCompleteSweep_
     end
     
     events
@@ -189,6 +193,8 @@ classdef WavesurferModel < ws.Model
             if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
                 doRunInDebugMode = false ;
             end
+            %doRunInDebugMode = true ;
+            %dbstop('if','error') ;
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
             
@@ -395,7 +401,13 @@ classdef WavesurferModel < ws.Model
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
                 %self.WasRunStoppedByUser_ = true ;
-                self.IPCPublisher_.send('frontendWantsToStopRun');  % the looper gets this message and stops the run, then publishes 'looperDidStopRun'
+                %fprintf('About to publish "frontendWantsToStopRun"\n') ;
+                self.IPCPublisher_.send('frontendWantsToStopRun');  
+                %fprintf('Just published "frontendWantsToStopRun"\n') ;
+                  % the looper gets this message and stops the run, then
+                  % publishes 'looperStoppedRun'.
+                  % similarly, the refiller gets this message, stops the
+                  % run, then publishes 'refillerStoppedRun'.
             end
         end  % function
     end
@@ -418,17 +430,19 @@ classdef WavesurferModel < ws.Model
             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
             %fprintf('WavesurferModel::looperCompletedSweep()\n');
             %self.DidLooperCompleteSweep_ = true ;
-            self.IsSweepComplete_ = true ;
+            self.DidLooperCompleteSweep_ = true ;
             result = [] ;
         end
         
-%         function result = refillerCompletedSweep(self)
-%             % Call by the Refiller, via ZMQ pub-sub, when it has completed a sweep
-%             %fprintf('WavesurferModel::refillerCompletedSweep()\n');
-%             self.DidRefillerCompleteSweep_ = true ;
-%             self.IsSweepComplete_ = self.DidLooperCompleteSweep_ ;
-%             result = [] ;
-%         end
+        function result = refillerCompletedEpisodes(self)
+            % Call by the Refiller, via ZMQ pub-sub, when it has completed
+            % all the episodes in the run
+            %fprintf('WavesurferModel::refillerCompletedRun()\n');            
+            self.DidRefillerCompleteEpisodes_ = true ;
+            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
+            %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
+            result = [] ;
+        end
         
         function result = looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
@@ -528,9 +542,9 @@ classdef WavesurferModel < ws.Model
             out = self.Stimulation_ ;
         end
         
-%         function out = get.Triggering(self)
-%             out = self.Triggering_ ;
-%         end
+        function out = get.Triggering(self)
+            out = self.Triggering_ ;
+        end
         
         function out = get.UserCodeManager(self)
             out = self.UserCodeManager_ ;
@@ -707,6 +721,12 @@ classdef WavesurferModel < ws.Model
             isSweepBased = self.AreSweepsFiniteDuration ;
             doesStimulusUseAcquisitionTriggerScheme = self.StimulationUsesAcquisitionTrigger ;
             %isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                % Is this the best design?  Seems maybe over-complicated.
+                % Future Adam: If you change to using
+                % isStimulationTriggerIdenticalToAcquisitionTrigger() to
+                % determine whether map durations are overridden, leave a
+                % note as to why you did that, preferably with a particular
+                % "failure mode" in the current scheme.
             if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                 self.Stimulation_.overrideStimulusLibraryMapDuration(self.SweepDuration) ;
             else
@@ -1026,8 +1046,11 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            % Initialize the sweep counter
-            self.NSweepsCompletedInThisRun_ = 0;
+            % Initialize the sweep counter, etc.
+            self.NSweepsCompletedInThisRun_ = 0 ;
+            self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
+            self.DidRefillerCompleteEpisodes_ = false ;
+            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
@@ -1194,6 +1217,7 @@ classdef WavesurferModel < ws.Model
             % Change our own state to running
             self.NTimesDataAvailableCalledSinceRunStart_=0;  % Have to do this now so that progress bar doesn't start in old position when continuous acq
             self.setState_('running') ;
+            self.IsPerformingSweep_ = false ;  % the first sweep starts later, if at all
             self.IsPerformingRun_ = true ;
             
             % Handle timing stuff
@@ -1212,41 +1236,98 @@ classdef WavesurferModel < ws.Model
             
             self.changeReadiness(+1);  % do this now to give user hint that they can press stop during run...
 
-            % Move on to performing the sweeps
-            didCompleteLastSweep = true ;
-            didUserRequestStop = false ;
+            %
+            % Move on to the main within-run loop
+            %
+            %self.DidMostRecentSweepComplete_ = true ;  % Set this to true just so the first sweep gets started
             didThrow = false ;
             exception = [] ;
-            iSweep=1 ;
+            self.DrawnowTicId_ = tic() ;  % Need this for timing between drawnow()'s
+            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;  % we don't really do a a drawnow() here, but need to init
+            %didPerformFinalDrawnow = false ;
             %for iSweep = 1:self.NSweepsPerRun ,
             % Can't use a for loop b/c self.NSweepsPerRun can be Inf
-            while iSweep<=self.NSweepsPerRun ,
-                if didCompleteLastSweep ,
-                    [didCompleteLastSweep,didUserRequestStop,didThrow,exception] = self.performSweep_() ;
+            %while iSweep<=self.NSweepsPerRun && ~self.RefillerCompletedSweep ,            
+            self.WasRunStoppedInLooper_ = false ;
+            self.WasRunStoppedInRefiller_ = false ;
+            self.WasRunStopped_ = false ;
+            %self.NSweepsPerformed_ = 0 ;  % in this run
+            self.DidAnySweepFailToCompleteSoFar_ = false ;
+            %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
+            while ~self.WasRunStopped_ && ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                if self.IsPerformingSweep_ ,
+                    if self.DidLooperCompleteSweep_ ,
+                        try
+                            self.closeSweep_() ;
+                        catch me
+                            self.abortTheOngoingSweep_();
+                            didThrow = true ;
+                            exception = me ;
+                        end
+                    else
+                        %fprintf('At top of within-sweep loop...\n') ;
+                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                        % do a drawnow() if it's been too long...
+                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow() ;
+                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                        end                    
+                    end
                 else
-                    break
+                    % We are not currently performing a sweep, so check if we need to start one
+                    if self.AreAllSweepsCompleted_ ,
+                        % All sweeps are were performed, but the refiller must not be done yet if we got here
+                        % Keep checking messages so we know when the
+                        % refiller is done.  Also keep listening for looper
+                        % messages, although I'm not sure we need to...
+                        %fprintf('About to check for messages after completing all sweeps\n');
+                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+                        %fprintf('Check for messages after completing all sweeps\n');
+                        % do a drawnow() if it's been too long...
+                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow() ;
+                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                        end
+                    else                        
+                        try
+                            self.openSweep_() ;
+                        catch me
+                            self.abortTheOngoingSweep_();
+                            didThrow = true ;
+                            exception = me ;
+                        end
+                    end
                 end
-                iSweep = iSweep + 1 ;
             end
             
-            % Do some kind of clean up
-            if didCompleteLastSweep ,
+            % At this point, self.IsPerformingRun_ is true
+            % Do post-run clean up
+            if self.AreAllSweepsCompleted_ ,
                 % Wrap up run in which all sweeps completed
                 self.wrapUpRunInWhichAllSweepsCompleted_() ;
-            elseif didUserRequestStop ,
+            elseif self.WasRunStopped_ ,
+                if self.IsPerformingSweep_ ,
+                    self.stopTheOngoingSweep_() ;
+                end
                 self.stopTheOngoingRun_();
             else
                 % Something went wrong
                 self.abortOngoingRun_();
             end
-
+            % At this point, self.IsPerformingRun_ is false
+            
             % If an exception was thrown, re-throw it
             if didThrow ,
                 rethrow(exception) ;
             end
         end  % function
         
-        function [didCompleteSweep,didUserRequestStop,didThrow,exception] = performSweep_(self)
+        function openSweep_(self)
             % time between subsequent calls to this, etc
             t=toc(self.FromRunStartTicId_);
             self.TimeOfLastWillPerformSweep_=t;
@@ -1272,99 +1353,178 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('startingSweep');            
             
             % Call startingSweep() on all the enabled subsystems
-            try
-                for idx = 1:numel(self.Subsystems_)
-                    if self.Subsystems_{idx}.IsEnabled ,
-                        self.Subsystems_{idx}.startingSweep();
-                    end
+            for idx = 1:numel(self.Subsystems_)
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.startingSweep();
                 end
-                
-%                 % Tell the refiller to ready itself (we do this first b/c
-%                 % this starts the DAQmx tasks, and we want the output
-%                 % task(s) to start before the input task(s)
-%                 % self.IPCPublisher_.send('startingSweepRefiller',self.NSweepsCompletedInThisRun_+1) ;
-%                 
-%                 % Wait for the refiller to respond
-%                 timeout = 11 ;  % s
-%                 self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-%                 err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
-%                 if ~isempty(err) ,
-%                     % Something went wrong
-%                     self.abortOngoingRun_();
-%                     self.changeReadiness(+1);
-%                     throw(err);
-%                 end
-                
-                % % Tell the looper to ready itself
-                % self.IPCPublisher_.send('startingSweepLooper',self.NSweepsCompletedInThisRun_+1) ;
-                
-                % Wait for the looper to respond
-                self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-                timeout = 12 ;  % s
-                err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+            end
+
+            % Notify the refiller that we're starting a sweep, wait for the refiller to respond
+            if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
+                self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+                timeout = 11 ;  % s
+                err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
                     self.changeReadiness(+1);
                     throw(err);
                 end
-                
-                % Set the sweep timer
-                self.FromSweepStartTicId_=tic();
-
-                %% Start the timer that will poll for data and task doneness
-                %self.PollingTimer_.start();
-
-                % Any system waiting for an internal or external trigger was armed and waiting
-                % in the subsystem startingSweep() above.
-                %self.Triggering.startMeMaybe(self.State, self.NSweepsPerRun, self.NSweepsCompletedInThisRun);            
-                %self.Triggering.startAllTriggerTasksAndPulseSweepTrigger();
-
-                % Pulse the master trigger to start the sweep!
-                %fprintf('About to pulse the master trigger!\n');
-                self.IsPerformingSweep_ = true ;  
-                    % have to wait until now to set this true, so that old
-                    % samplesAcquired messages are ignored when we're
-                    % waiting for looperReadyForSweep and
-                    % refillerReadyForSweep messages above.
-                self.Triggering_.pulseBuiltinTrigger();
-                
-%                 err = self.LooperRPCClient('startSweep') ;
-%                 if ~isempty(err) ,
-%                     self.abortOngoingRun_('problem');
-%                     self.changeReadiness(+1);
-%                     throw(err);                
-%                 end
-                
-                % Now poll
-                [isAllClearForCompletion,didUserRequestStop] = self.runWithinSweepLoop_();
-                
-                % End the sweep in the way appropriate, either a "complete",
-                % a stop, or an abort
-                if isAllClearForCompletion ,
-                    self.completeTheOngoingSweep_() ;
-                    didCompleteSweep = true ;
-                elseif didUserRequestStop ,
-                    self.stopTheOngoingSweep_();
-                    didCompleteSweep = false ;
-                else
-                    % Something must have gone wrong...
-                    self.abortTheOngoingSweep_();
-                    didCompleteSweep = false ;
-                end
-                
-                % No errors thrown, so set return values accordingly
-                didThrow = false ;  
-                exception = [] ;
-            catch me
-                self.abortTheOngoingSweep_();
-                didCompleteSweep = false ;
-                didUserRequestStop = false ;
-                didThrow = true ;
-                exception = me ;
-                return
             end
+            
+            % Notify the looper that we're starting a sweep, wait for the looper to respond
+            self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+            timeout = 12 ;  % s
+            err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+            if ~isempty(err) ,
+                % Something went wrong
+                self.abortOngoingRun_();
+                self.changeReadiness(+1);
+                throw(err);
+            end
+
+            % Set the sweep timer
+            self.FromSweepStartTicId_=tic();
+
+            % Pulse the master trigger to start the sweep!
+            %fprintf('About to pulse the master trigger!\n');
+            self.DidLooperCompleteSweep_ = false ;
+            %self.DidAnySweepFailToCompleteSoFar_ = true ;
+            self.IsPerformingSweep_ = true ;  
+                % have to wait until now to set this true, so that old
+                % samplesAcquired messages are ignored when we're
+                % waiting for looperReadyForSweep and
+                % refillerReadyForSweep messages above.
+            self.Triggering_.pulseBuiltinTrigger();
+
+            % Now poll
+            %self.DidLooperCompleteSweep_ = false ;
+            %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
+        end
+
+        function closeSweep_(self)
+            % End the sweep in the way appropriate, either a "complete",
+            % a stop, or an abort.
+            % Precondition: self.IsPerformingSweep_ (is true)
+            if self.DidLooperCompleteSweep_ ,
+                self.completeTheOngoingSweep_() ;
+                %didCompleteSweep = true ;
+            elseif self.WasRunStopped_ ,
+                self.stopTheOngoingSweep_() ;
+                %didCompleteSweep = false ;
+            else
+                % Something must have gone wrong...
+                self.abortTheOngoingSweep_() ;
+                %didCompleteSweep = false ;
+            end
+
+            % No errors thrown, so set return values accordingly
+            %didThrow = false ;  
+            %exception = [] ;
         end  % function
+        
+%         function performSweep_(self)
+%             % time between subsequent calls to this, etc
+%             t=toc(self.FromRunStartTicId_);
+%             self.TimeOfLastWillPerformSweep_=t;
+%             
+%             % clear timing stuff that is strictly within-sweep
+%             %self.TimeOfLastSamplesAcquired_=[];            
+%             
+%             % Reset the sample count for the sweep
+%             self.NScansAcquiredSoFarThisSweep_ = 0;
+%             
+%             % update the current time
+%             self.t_=0;            
+%             
+%             % Pretend that we last polled at time 0
+%             self.TimeOfLastPollInSweep_ = 0 ;  % s 
+%             
+%             % As of the next line, the wavesurferModel is offically
+%             % performing a sweep
+%             % Actually, we'll wait until a bit later to set this true
+%             %self.IsPerformingSweep_ = true ;
+%             
+%             % Call user functions 
+%             self.callUserMethod_('startingSweep');            
+%             
+%             % Call startingSweep() on all the enabled subsystems
+%             for idx = 1:numel(self.Subsystems_)
+%                 if self.Subsystems_{idx}.IsEnabled ,
+%                     self.Subsystems_{idx}.startingSweep();
+%                 end
+%             end
+% 
+%             % Wait for the looper to respond
+%             self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+%             timeout = 12 ;  % s
+%             err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+%             if ~isempty(err) ,
+%                 % Something went wrong
+%                 self.abortOngoingRun_();
+%                 self.changeReadiness(+1);
+%                 throw(err);
+%             end
+% 
+%             % Set the sweep timer
+%             self.FromSweepStartTicId_=tic();
+% 
+%             % Pulse the master trigger to start the sweep!
+%             %fprintf('About to pulse the master trigger!\n');
+%             self.IsPerformingSweep_ = true ;  
+%                 % have to wait until now to set this true, so that old
+%                 % samplesAcquired messages are ignored when we're
+%                 % waiting for looperReadyForSweep and
+%                 % refillerReadyForSweep messages above.
+%             self.Triggering_.pulseBuiltinTrigger();
+% 
+%             % Now poll
+%             ~self.DidAnySweepFailToCompleteSoFar_ = false ;
+%             %self.DidLooperCompleteSweep_ = false ;
+%             %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
+%             self.WasRunStoppedInLooper_ = false ;
+%             self.WasRunStoppedInRefiller_ = false ;
+%             self.WasRunStopped_ = false ;
+%             %self.TimeOfLastDrawnow_ = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
+%             %profile resume ;
+%             while ~(~self.DidAnySweepFailToCompleteSoFar_ || self.WasRunStopped_) ,
+%                 %fprintf('At top of within-sweep loop...\n') ;
+%                 self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+%                 self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
+%                 % do a drawnow() if it's been too long...
+%                 timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+%                 if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+%                     drawnow() ;
+%                     self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+%                 end
+%             end    
+%             %profile off ;
+%             %isSweepComplete = ~self.DidAnySweepFailToCompleteSoFar_ ;  % don't want to rely on this state more than we have to
+%             %didUserRequestStop = self.WasRunStopped_ ;  
+%             %~self.DidAnySweepFailToCompleteSoFar_ = [] ;
+%             %self.WasRunStoppedInLooper_ = [] ;
+%             %self.WasRunStoppedInRefiller_ = [] ;
+%             %self.WasRunStopped_ = [] ;  % want this to stay as true/false
+%             %end  % function                
+% 
+%             % End the sweep in the way appropriate, either a "complete",
+%             % a stop, or an abort
+%             if ~self.DidAnySweepFailToCompleteSoFar_ ,
+%                 self.completeTheOngoingSweep_() ;
+%                 %didCompleteSweep = true ;
+%             elseif self.WasRunStopped_ ,
+%                 self.stopTheOngoingSweep_();
+%                 %didCompleteSweep = false ;
+%             else
+%                 % Something must have gone wrong...
+%                 self.abortTheOngoingSweep_();
+%                 %didCompleteSweep = false ;
+%             end
+% 
+%             % No errors thrown, so set return values accordingly
+%             %didThrow = false ;  
+%             %exception = [] ;
+%         end  % function
 
         % A run can end for one of three reasons: it is manually stopped by
         % the user in the middle, something goes wrong, and it completes
@@ -1402,6 +1562,8 @@ classdef WavesurferModel < ws.Model
 %         end  % function
                 
         function completeTheOngoingSweep_(self)
+            %fprintf('WavesurferModel::completeTheOngoingSweep_()\n') ;
+            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
             % Bump the number of completed sweeps
@@ -1418,6 +1580,9 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('completingSweep');
 
             % As of next line, sweep is officially over
+            %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
+            %self.IsMostRecentSweepComplete_ = true ;
+            self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;
             self.IsPerformingSweep_ = false ;
 
             % Broadcast event
@@ -1425,6 +1590,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function stopTheOngoingSweep_(self)
+            %fprintf('WavesurferModel::stopTheOngoingSweep_()\n') ;
+
             % Stop the ongoing sweep following user request            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
@@ -1439,11 +1606,14 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('stoppingSweep');                    
 
             % As of next line, sweep is officially over
+            %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
+            self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = false ;                    
         end  % function
 
         function abortTheOngoingSweep_(self)
             % Clean up after a sweep shits the bed.
+            %fprintf('WavesurferModel::abortTheOngoingSweep_()\n') ;
             
             % Notify all the subsystems that the sweep aborted
             for i = numel(self.Subsystems_):-1:1 ,
@@ -1463,11 +1633,13 @@ classdef WavesurferModel < ws.Model
             self.callUserMethod_('abortingSweep');
             
             % declare the sweep over
+            %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
+            self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = false ;            
         end  % function
                 
         function wrapUpRunInWhichAllSweepsCompleted_(self)
-            % Clean up after a run completes successfully.
+            % Clean up after all sweeps complete successfully.
             
             % Notify other processes
             self.IPCPublisher_.send('completingRun') ;
@@ -1489,7 +1661,9 @@ classdef WavesurferModel < ws.Model
         
         function stopTheOngoingRun_(self)
             % Called when the user stops the run in the middle, typically
-            % by pressing the stop button.
+            % by pressing the stop button.            
+            
+            %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
             % Notify other processes --- or not, we don't currently need
             % this
@@ -1518,6 +1692,8 @@ classdef WavesurferModel < ws.Model
         function abortOngoingRun_(self)
             % Called when a run fails for some undesirable reason.
             
+            %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
+
             % Notify other processes
             self.IPCPublisher_.send('abortingRun') ;
 
@@ -2474,39 +2650,7 @@ classdef WavesurferModel < ws.Model
 %         end  % function
 %     end
     
-    methods (Access=protected)
-        function [isSweepComplete,wasStoppedByUser] = runWithinSweepLoop_(self)
-            % Runs the main message-processing loop during a sweep.
-            
-            self.IsSweepComplete_ = false ;
-            %self.DidLooperCompleteSweep_ = false ;
-            %self.DidRefillerCompleteSweep_ = ~self.Stimulation.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
-            self.WasRunStoppedInLooper_ = false ;
-            self.WasRunStoppedInRefiller_ = false ;
-            self.WasRunStopped_ = false ;
-            drawnowTicId = tic() ;
-            timeOfLastDrawnow = toc(drawnowTicId) ;  % don't really do a drawnow() now, but that's OK            
-            %profile resume ;
-            while ~(self.IsSweepComplete_ || self.WasRunStopped_) ,
-                %fprintf('At top of within-sweep loop...\n') ;
-                self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                % do a drawnow() if it's been too long...
-                timeSinceLastDrawNow = toc(drawnowTicId) - timeOfLastDrawnow ;
-                if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                    drawnow() ;
-                    timeOfLastDrawnow = toc(drawnowTicId) ;
-                end
-            end    
-            %profile off ;
-            isSweepComplete = self.IsSweepComplete_ ;  % don't want to rely on this state more than we have to
-            wasStoppedByUser = self.WasRunStopped_ ;  % don't want to rely on this state more than we have to
-            self.IsSweepComplete_ = [] ;
-            self.WasRunStoppedInLooper_ = [] ;
-            self.WasRunStoppedInRefiller_ = [] ;
-            self.WasRunStopped_ = [] ;
-        end  % function
-        
+    methods (Access=protected)        
 %         function poll_(self)
 %             %fprintf('\n\n\nWavesurferModel::poll()\n');
 %             timeSinceSweepStart = toc(self.FromSweepStartTicId_);

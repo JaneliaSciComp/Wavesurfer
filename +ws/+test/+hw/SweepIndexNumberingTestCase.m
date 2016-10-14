@@ -20,7 +20,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTestWithoutUI(self)
             %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui') ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -29,9 +29,9 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
-            wsModel.Acquisition.Duration = 10; %s
+            wsModel.Acquisition.Duration = 10 ;  % s
             %wsModel.Acquisition.SampleRate=20000;  % Hz
-            %wsModel.Stimulation.IsEnabled=false;
+            wsModel.Stimulation.IsEnabled = true ;
             %wsModel.Stimulation.SampleRate=20000;  % Hz
             %wsModel.Display.IsEnabled=true;
             
@@ -60,8 +60,8 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % since no trigger will be created.
             timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
                                           'TimerFcn',@(~,~)(wsModel.stop()), ...
-                                          'StartDelay',5, ...
-                                          'Period', 10);  % do this repeatedly in case first is missed
+                                          'StartDelay',10, ...
+                                          'Period', 20);  % do this repeatedly in case first is missed
             start(timerToStopWavesurfer);
             wsModel.record();  % this will block
             stop(timerToStopWavesurfer);
@@ -72,9 +72,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = ~isempty(filesCreated);
             self.verifyFalse(wasAnOutputFileCreated) ;
-            %arrayOfWhatShouldBeTrue(1) = ~wasAnOutputFileCreated;
             self.verifyEqual(wsModel.Logging.NextSweepIndex, 1) ;
-            %arrayOfWhatShouldBeTrue(2) = (wsModel.Logging.NextSweepIndex == 1);
             
             % Now start and stop a sweep before it is finished; the data
             % file should only contain the collected data rather than
@@ -108,19 +106,14 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             else
                 dataWrittenCorrectly = false ;
             end
-            self.verifyTrue(dataWrittenCorrectly) ;
-            %arrayOfWhatShouldBeTrue(3) = dataWrittenCorrectly;
+            self.verifyTrue(dataWrittenCorrectly, 'The data was not written correctly') ;
 
             % Delete the data file, timer
             delete(dataFilePatternAbsolute);
             delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 2) ;
-            %arrayOfWhatShouldBeTrue(4) = (wsModel.Logging.NextSweepIndex == 2);
-            
-            % Verify that everything worked
-            %self.verifyEqual(arrayOfWhatShouldBeTrue,ones(4,1));
+            self.verifyEqual(wsModel.Logging.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
         end  % function
     end  % test methods
 
