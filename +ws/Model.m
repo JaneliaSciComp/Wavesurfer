@@ -105,13 +105,13 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.Se
             end
         end
         
-%         function result = get(self, propertyName) 
-%             result = self.(propertyName) ;
-%         end
-%         
-%         function set(self, propertyName, newValue)
-%             self.(propertyName) = newValue ;
-%         end           
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
     end  % public methods block
     
     methods (Access = protected)
