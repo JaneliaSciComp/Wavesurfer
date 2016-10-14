@@ -721,6 +721,12 @@ classdef WavesurferModel < ws.Model
             isSweepBased = self.AreSweepsFiniteDuration ;
             doesStimulusUseAcquisitionTriggerScheme = self.StimulationUsesAcquisitionTrigger ;
             %isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                % Is this the best design?  Seems maybe over-complicated.
+                % Future Adam: If you change to using
+                % isStimulationTriggerIdenticalToAcquisitionTrigger() to
+                % determine whether map durations are overridden, leave a
+                % note as to why you did that, preferably with a particular
+                % "failure mode" in the current scheme.
             if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                 self.Stimulation_.overrideStimulusLibraryMapDuration(self.SweepDuration) ;
             else
