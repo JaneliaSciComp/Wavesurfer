@@ -394,6 +394,6 @@ Version History
                          leaner, and made changes to the stimulus
                          library go through the main WavesurferModel.
 
-0.941    Oct 13, 2016    Run will now continue past end of acquisition
+0.941    Oct 14, 2016    Run will now continue past end of acquisition
                          if stimulation is ongoing.  Also fixed hangs
                          in some situations.
