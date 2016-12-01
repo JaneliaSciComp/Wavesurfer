@@ -447,7 +447,10 @@ const char* MCT_scaleFactorUnitsToString(UINT uScaleFactorUnits, UINT uHardwareT
             case 0:
                 return "V/V";//Membrane Potential [10 V/V]
             case 1:
-                return "V/nA";//Membrane Current [0.5 V/nA]
+                if (uScaleFactorUnits==5)
+                    return "V/uA";
+                else
+                    return "V/nA";  //Membrane Current [0.5 V/nA]
             case 2:
                 return "V/V";//Pipette Potential [1 V/V]
             case 3:
