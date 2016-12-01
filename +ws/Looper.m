@@ -184,9 +184,9 @@ classdef Looper < handle
                         if self.DoesFrontendWantToStopRun_ ,
                             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                             self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
-                            fprintf('About to send "looperStoppedRun"\n')  ;
+                            %fprintf('About to send "looperStoppedRun"\n')  ;
                             self.IPCPublisher_.send('looperStoppedRun') ;
-                            fprintf('Just sent "looperStoppedRun"\n')  ;
+                            %fprintf('Just sent "looperStoppedRun"\n')  ;
                         else
                             % Check for messages, but don't block
                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
@@ -203,9 +203,9 @@ classdef Looper < handle
                     self.IPCReplier_.processMessagesIfAvailable() ;
                     if self.DoesFrontendWantToStopRun_ ,
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        fprintf('About to send "looperStoppedRun"\n')  ;
+                        %fprintf('About to send "looperStoppedRun"\n')  ;
                         self.IPCPublisher_.send('looperStoppedRun') ;  % just do this to keep front-end happy
-                        fprintf('Just sent "looperStoppedRun"\n')  ;
+                        %fprintf('Just sent "looperStoppedRun"\n')  ;
                     end                    
                     %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when not acquiring
@@ -267,7 +267,7 @@ classdef Looper < handle
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
-            fprintf('Got message "frontendWantsToStopRun"\n') ;
+            %fprintf('Got message "frontendWantsToStopRun"\n') ;
             self.DoesFrontendWantToStopRun_ = true ;
             result = [] ;
         end

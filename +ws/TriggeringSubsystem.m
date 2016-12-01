@@ -192,31 +192,38 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             trigger.Interval = 1 ;  % s
             trigger.Edge = 'rising' ;
             self.enableBroadcastsMaybe() ;
+
+            % Note the number of counter triggers before adding this new
+            % one
+            nCounterTriggersBefore = length(self.CounterTriggers_) ;
             
-            % Add the just-created trigger to thel list of counter triggers
+            % Add the just-created trigger to the list of counter triggers
             self.CounterTriggers_{1,end + 1} = trigger ;
             
-            %self.broadcast('Update') ;
+            % Adjust the current acq, stim trigger indices so they stay
+            % pointed to the same triggers as before we added the new counter
+            % trigger.
+            self.NewAcquisitionTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterAddCounterTrigger(self.NewAcquisitionTriggerSchemeIndex_, nCounterTriggersBefore) ;
+            self.StimulationTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterAddCounterTrigger(self.StimulationTriggerSchemeIndex_, nCounterTriggersBefore) ;
         end  % function
 
         function deleteMarkedCounterTriggers(self)
             triggers = self.CounterTriggers_ ;
             doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion),triggers) ;            
-            indicesToDeleteInCounterTriggers = find(doDelete) ;
-            % Counter triggers can't be used for the acquisition trigger,
-            % so no need to check those, but...
-            % If the stimulation trigger is about to be deleted, set the
-            % stimulation trigger to the built-in trigger.  Do this even
-            % if the stimulation trigger is "shadowed" by the acquisition
-            % trigger.
-            indicesToDeleteInStimulationTriggers = 1 + indicesToDeleteInCounterTriggers ;            
-            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
-                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
-            end            
-            % Finally, delete the marked external triggers
+                        
+            % Delete the marked counter triggers
             doKeep = ~doDelete ;
             self.CounterTriggers_ = triggers(doKeep) ;
-            %self.broadcast('Update') ;
+            
+            % Adjust the current acq, stim trigger indices so they stay
+            % pointed to the same triggers as before we deleted some counter
+            % triggers.
+            self.NewAcquisitionTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterDeleteCounterTriggers(self.NewAcquisitionTriggerSchemeIndex_, doDelete) ;
+            self.StimulationTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterDeleteCounterTriggers(self.StimulationTriggerSchemeIndex_, doDelete) ;
         end
 
         function trigger = addExternalTrigger(self, deviceName)
@@ -241,32 +248,30 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             
             % Add the just-created trigger to thel list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
-            %self.broadcast('Update') ;
+            
+            % No need to adjust the indices of the acq, stim trigger, b/c
+            % we added the new trigger to the *end* of the external
+            % triggers, and the external triggers are at the end of the
+            % list of all triggers.
         end  % function
-                        
+        
         function deleteMarkedExternalTriggers(self)
             triggers = self.ExternalTriggers_ ;
             doDelete = cellfun(@(trigger)(trigger.IsMarkedForDeletion), triggers) ;
-            indicesToDeleteInExternalTriggers = find(doDelete) ;
-            % If the acquisition trigger is about to be deleted, set the
-            % Acquisition trigger to the built-in trigger
-            indicesToDeleteInAcquisitionTriggers = 1 + indicesToDeleteInExternalTriggers ;            
-            if ismember(self.AcquisitionTriggerSchemeIndex, indicesToDeleteInAcquisitionTriggers) ,
-                self.AcquisitionTriggerSchemeIndex_ = 1 ;  % the built-in trigger
-            end
-            % If the stimulation trigger is about to be deleted, set the
-            % stimulation trigger to the built-in trigger.  Do this even
-            % if the stimulation trigger is "shadowed" by the acquisition
-            % trigger.
-            indicesToDeleteInStimulationTriggers = 1 + length(self.CounterTriggers) + indicesToDeleteInExternalTriggers ;            
-            if ismember(self.StimulationTriggerSchemeIndex, indicesToDeleteInStimulationTriggers) ,
-                self.StimulationTriggerSchemeIndex_ = 1 ;  % the built-in trigger
-            end
-            % Finally, delete the marked external triggers
+            
+            % Delete the marked external triggers
             doKeep = ~doDelete ;
             self.ExternalTriggers_ = triggers(doKeep) ;
-            %self.broadcast('Update') ;
-        end
+
+            % Adjust the current acq, stim trigger indices so they stay
+            % pointed to the same triggers as before we deleted some counter
+            % triggers.
+            nCounterTriggers = length(self.CounterTriggers_) ;
+            self.NewAcquisitionTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterDeleteExternalTriggers(self.NewAcquisitionTriggerSchemeIndex_, nCounterTriggers, doDelete) ;
+            self.StimulationTriggerSchemeIndex_ = ...
+                ws.TriggeringSubsystem.triggerIndexAfterDeleteExternalTriggers(self.StimulationTriggerSchemeIndex_, nCounterTriggers, doDelete) ;        
+        end  % function
         
         function result = allCounterIDs(self)
             %nCounterIDsInHardware = self.Parent.NCounters ;
@@ -660,4 +665,68 @@ classdef (Abstract) TriggeringSubsystem < ws.Subsystem
             end
         end  % function
     end  % protected methods block
+    
+    methods (Static)
+        function indexAfter = triggerIndexAfterAddCounterTrigger(indexBefore, nCounterTriggersBefore)
+            % When add counter trigger, it's added to the end of the
+            % existing counter triggers.  Trigger indices are indices into
+            % self.Schemes, so are built-in, then counter triggers, then
+            % external triggers.
+            
+            if indexBefore <= 1+nCounterTriggersBefore ,
+                indexAfter = indexBefore ;
+            else
+                indexAfter = indexBefore + 1 ;
+            end            
+        end  % function
+
+        function indexAfter = triggerIndexAfterDeleteCounterTriggers(indexBefore, isCounterTriggerMarkedForDeletion)
+            nCounterTriggersBefore = length(isCounterTriggerMarkedForDeletion) ;
+            if indexBefore==1 ,
+                % Index points to the built-in trigger, so no change.
+                indexAfter = 1 ;
+            elseif indexBefore>1+nCounterTriggersBefore ,
+                % Means indexBefore points to an external trigger, do
+                % decrement by number of counter triggers being deleted.
+                indexAfter = indexBefore - sum(isCounterTriggerMarkedForDeletion) ;
+            else
+                % Index points to a counter trigger.
+                counterTriggerIndexBefore = indexBefore - 1 ;  % index into the list of counter triggers
+                if isCounterTriggerMarkedForDeletion(counterTriggerIndexBefore) ,
+                    % If the indicated trigger is being deleted, we revert
+                    % to the built-in trigger
+                    indexAfter = 1 ;
+                else
+                    % Decrement index by number of triggers marked for
+                    % deletion "above" the indicated one in the list of all
+                    % triggers (assuming a vertical list).
+                    nTriggersToBeDeletedAbove = sum(isCounterTriggerMarkedForDeletion(1:counterTriggerIndexBefore-1)) ;
+                    counterTriggerIndexAfter = counterTriggerIndexBefore - nTriggersToBeDeletedAbove ;
+                    indexAfter = counterTriggerIndexAfter + 1 ;
+                end
+            end
+        end  % function        
+
+        function indexAfter = triggerIndexAfterDeleteExternalTriggers(indexBefore, nCounterTriggers, isExternalTriggerMarkedForDeletion)
+            if indexBefore <= 1+nCounterTriggers ,
+                % indexBefore points to the built-in trigger, or a counter trigger, so no change.
+                indexAfter = indexBefore ;
+            else
+                % Index points to an external trigger.
+                externalTriggerIndexBefore = indexBefore - 1 - nCounterTriggers ;  % index into the list of external triggers
+                if isExternalTriggerMarkedForDeletion(externalTriggerIndexBefore) ,
+                    % If the indicated trigger is being deleted, we revert
+                    % to the built-in trigger
+                    indexAfter = 1 ;
+                else
+                    % Decrement index by number of triggers marked for
+                    % deletion "above" the indicated one in the list of all
+                    % triggers (assuming a vertical list).
+                    nTriggersToBeDeletedAbove = sum(isExternalTriggerMarkedForDeletion(1:externalTriggerIndexBefore-1)) ;
+                    externalTriggerIndexAfter = externalTriggerIndexBefore - nTriggersToBeDeletedAbove ;
+                    indexAfter = externalTriggerIndexAfter + nCounterTriggers + 1 ;
+                end
+            end
+        end  % function        
+    end  % static methods block
 end  % classdef

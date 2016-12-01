@@ -104,9 +104,9 @@ classdef Refiller < handle
                         end
                         self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        fprintf('About to send "refillerStoppedRun"\n') ;
+                        %fprintf('About to send "refillerStoppedRun"\n') ;
                         self.IPCPublisher_.send('refillerStoppedRun') ;
-                        fprintf('Just sent "refillerStoppedRun"\n') ;
+                        %fprintf('Just sent "refillerStoppedRun"\n') ;
                     else
                         % Check the finite outputs, refill them if
                         % needed.
@@ -148,7 +148,7 @@ classdef Refiller < handle
                                 else
                                     % Notify the frontend
                                     self.IPCPublisher_.send('refillerCompletedEpisodes') ;
-                                    fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
+                                    %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
                                     self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
                                     %self.completeTheEpisodes_() ;
                                 end
@@ -170,9 +170,9 @@ classdef Refiller < handle
                     self.IPCReplier_.processMessagesIfAvailable() ;
                     if self.DoesFrontendWantToStopRun_ ,
                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        fprintf('About to send "refillerStoppedRun"\n') ;
+                        %fprintf('About to send "refillerStoppedRun"\n') ;
                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
-                        fprintf('Just sent "refillerStoppedRun"\n') ;
+                        %fprintf('Just sent "refillerStoppedRun"\n') ;
                     end
                     %self.frontendIsBeingDeleted();
                     pause(0.010);  % don't want to peg CPU when idle
@@ -202,7 +202,7 @@ classdef Refiller < handle
             % wavesurferModelSettings, set everything else up for a run.
             %
             % This is called via (req-req) RPC, so must return exactly one value.
-            fprintf('Got message startingRun\n') ;
+            %fprintf('Got message startingRun\n') ;
 
             % Prepare for the run
             result = self.prepareForRun_(currentFrontendPath, ...                
@@ -214,7 +214,7 @@ classdef Refiller < handle
         end  % function
 
         function result = completingRun(self)
-            fprintf('Got message completingRun\n') ;
+            %fprintf('Got message completingRun\n') ;
             
             % Called by the WSM when the run is completed.
 
@@ -262,14 +262,14 @@ classdef Refiller < handle
             % instance.  Stops the current sweep and run, if any.
 
             % Actually stop the ongoing run
-            fprintf('Got message frontendWantsToStopRun\n') ;            
+            %fprintf('Got message frontendWantsToStopRun\n') ;            
             self.DoesFrontendWantToStopRun_ = true ;
             result = [] ;
         end
         
         function result = abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
-            fprintf('Got message abortingRun\n') ;            
+            %fprintf('Got message abortingRun\n') ;            
 
             if self.IsPerformingEpisode_ ,
                 self.abortTheOngoingEpisode_() ;
@@ -302,7 +302,7 @@ classdef Refiller < handle
 
         function result = frontendIsBeingDeleted(self) 
             % Called by the frontend (i.e. the WSM) in its delete() method
-            fprintf('Got message frontendIsBeingDeleted\n') ;            
+            %fprintf('Got message frontendIsBeingDeleted\n') ;            
             
             % We tell ourselves to stop running the main loop.  This should
             % cause runMainLoop() to exit, which causes the script that we
@@ -316,21 +316,21 @@ classdef Refiller < handle
         
         function result = areYallAliveQ(self)
             %fprintf('Refiller::areYallAlive()\n') ;            
-            fprintf('Got message areYallAliveQ\n') ;            
+            %fprintf('Got message areYallAliveQ\n') ;            
             self.IPCPublisher_.send('refillerIsAlive');
             result = [] ;
         end  % function        
         
         function result = releaseTimedHardwareResources(self)
             % This is a req-rep method
-            fprintf('Got message releaseTimedHardwareResources\n') ;            
+            %fprintf('Got message releaseTimedHardwareResources\n') ;            
             self.releaseHardwareResources_();  % All the refiller resources are timed resources
             result = [] ;
         end
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue) %#ok<INUSD>
             % Refiller doesn't need to do anything in response to this
-            fprintf('Got message digitalOutputStateIfUntimedWasSetInFrontend\n') ;            
+            %fprintf('Got message digitalOutputStateIfUntimedWasSetInFrontend\n') ;            
             result = [] ;
         end
         
@@ -338,7 +338,7 @@ classdef Refiller < handle
             %nothing to do, b/c we release the hardware resources at the
             %end of a run now
             %self.releaseHardwareResources_() ;
-            fprintf('Got message isDigitalOutputTimedWasSetInFrontend\n') ;            
+            %fprintf('Got message isDigitalOutputTimedWasSetInFrontend\n') ;            
             result = [] ;
         end  % function
         
@@ -348,7 +348,7 @@ classdef Refiller < handle
                                                                isTimedForEachDOChannel, ...
                                                                onDemandOutputForEachDOChannel, ...
                                                                isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
-            fprintf('Got message didAddDigitalOutputChannelInFrontend\n') ;                                                                       
+            %fprintf('Got message didAddDigitalOutputChannelInFrontend\n') ;                                                                       
             result = [] ;
         end  % function
         
@@ -358,7 +358,7 @@ classdef Refiller < handle
                                                                    isTimedForEachDOChannel, ...
                                                                    onDemandOutputForEachDOChannel, ...
                                                                    isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
-            fprintf('Got message didRemoveDigitalOutputChannelsInFrontend\n') ;                                                                       
+            %fprintf('Got message didRemoveDigitalOutputChannelsInFrontend\n') ;                                                                       
             result = [] ;
         end  % function
 
@@ -371,29 +371,29 @@ classdef Refiller < handle
             % We don't need to do anything, because the refiller doesn't
             % really do much until a run is started, and we get the
             % frontend state then
-            fprintf('Got message frontendJustLoadedProtocol\n') ;                                                                                   
+            %fprintf('Got message frontendJustLoadedProtocol\n') ;                                                                                   
             result = [] ;
         end  % function        
         
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
             % We don't need to do anything in response to this message
-            fprintf('Got message singleDigitalOutputTerminalIDWasSetInFrontend\n') ;                                                                                   
+            %fprintf('Got message singleDigitalOutputTerminalIDWasSetInFrontend\n') ;                                                                                   
             result = [] ;
         end  % function
         
         function result = singleDigitalInputTerminalIDWasSetInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
             % We don't need to do anything in response to this message
-            fprintf('Got message singleDigitalInputTerminalIDWasSetInFrontend\n') ;                                                                                   
+            %fprintf('Got message singleDigitalInputTerminalIDWasSetInFrontend\n') ;                                                                                   
             result = [] ;
         end  % function
         
         function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
-            fprintf('Got message didAddDigitalInputChannelInFrontend\n') ;                                                                                   
+            %fprintf('Got message didAddDigitalInputChannelInFrontend\n') ;                                                                                   
             result = [] ;
         end  % function
         
         function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
-            fprintf('Got message didDeleteDigitalInputChannelsInFrontend\n') ;                                                                                   
+            %fprintf('Got message didDeleteDigitalInputChannelsInFrontend\n') ;                                                                                   
             result = [] ;
         end  % function        
     end  % RPC methods block
@@ -489,7 +489,7 @@ classdef Refiller < handle
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
             self.IsPerformingRun_ = true ;                        
-            fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
 
             % Set up the triggering of the output tasks
             try
@@ -619,7 +619,7 @@ classdef Refiller < handle
 %         end  % function
         
         function stopTheOngoingRun_(self)
-            fprintf('stopTheOngoingRun_()\n') ;
+            %fprintf('stopTheOngoingRun_()\n') ;
             % Set all outputs to zero
             self.makeSureAllOutputsAreZero_() ;
             
@@ -633,7 +633,7 @@ classdef Refiller < handle
         end  % function
         
         function abortTheOngoingRun_(self)            
-            fprintf('abortTheOngoingRun_()\n') ;
+            %fprintf('abortTheOngoingRun_()\n') ;
             % Clear the triggering stuff
 %             self.teardownCounterTriggers_();            
 %             self.IsTriggeringBuiltin_ = [] ;
@@ -658,7 +658,7 @@ classdef Refiller < handle
         end  % function                
         
         function startEpisode_(self)
-            fprintf('startEpisode_()\n');
+            %fprintf('startEpisode_()\n');
             if ~self.IsPerformingRun_ ,
                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
                       'The refiller was asked to start an episode while not in a run') ;
@@ -713,7 +713,7 @@ classdef Refiller < handle
         function completeTheOngoingEpisode_(self)
             % Called from runMainLoop() when a single episode of stimulation is
             % completed.  
-            fprintf('completeTheOngoingEpisode_()\n');
+            %fprintf('completeTheOngoingEpisode_()\n');
             % We only want this method to do anything once per episode, and the next three
             % lines make this the case.
 
@@ -740,7 +740,7 @@ classdef Refiller < handle
         end  % function
         
         function stopTheOngoingEpisode_(self)
-            fprintf('stopTheOngoingEpisode_()\n');
+            %fprintf('stopTheOngoingEpisode_()\n');
             if self.IsStimulationEnabled_ ,
                 if self.AreTasksStarted_ ,
                     self.TheFiniteAnalogOutputTask_.stop() ;
@@ -754,7 +754,7 @@ classdef Refiller < handle
         end  % function
         
         function abortTheOngoingEpisode_(self)
-            fprintf('abortTheOngoingEpisode_()\n');
+            %fprintf('abortTheOngoingEpisode_()\n');
             if self.IsStimulationEnabled_ ,
                 if self.AreTasksStarted_ ,
                     self.TheFiniteAnalogOutputTask_.stop() ;
@@ -874,7 +874,7 @@ classdef Refiller < handle
 %         end  % method        
         
         function stoppingRunStimulation_(self)
-            fprintf('stoppingRunStimulation()\n') ;
+            %fprintf('stoppingRunStimulation()\n') ;
             %self.SelectedOutputableCache_ = [];
 
             % Disarm the tasks
@@ -979,7 +979,7 @@ classdef Refiller < handle
         end  % function        
         
         function abortingRunStimulation_(self)
-            fprintf('abortingRunStimulation_()\n') ;
+            %fprintf('abortingRunStimulation_()\n') ;
             %self.SelectedOutputableCache_ = [];
             
             % Disarm the tasks (check that they exist first, since this

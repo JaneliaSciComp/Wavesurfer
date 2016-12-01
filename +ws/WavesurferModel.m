@@ -401,9 +401,9 @@ classdef WavesurferModel < ws.Model
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
                 %self.WasRunStoppedByUser_ = true ;
-                fprintf('About to publish "frontendWantsToStopRun"\n') ;
+                %fprintf('About to publish "frontendWantsToStopRun"\n') ;
                 self.IPCPublisher_.send('frontendWantsToStopRun');  
-                fprintf('Just published "frontendWantsToStopRun"\n') ;
+                %fprintf('Just published "frontendWantsToStopRun"\n') ;
                   % the looper gets this message and stops the run, then
                   % publishes 'looperStoppedRun'.
                   % similarly, the refiller gets this message, stops the
@@ -439,7 +439,7 @@ classdef WavesurferModel < ws.Model
             % all the episodes in the run
             %fprintf('WavesurferModel::refillerCompletedRun()\n');            
             self.DidRefillerCompleteEpisodes_ = true ;
-            fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
+            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
             %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
             result = [] ;
         end
@@ -447,7 +447,7 @@ classdef WavesurferModel < ws.Model
         function result = looperStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
-            fprintf('WavesurferModel::looperStoppedRun()\n');
+            %fprintf('WavesurferModel::looperStoppedRun()\n');
             self.WasRunStoppedInLooper_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
             result = [] ;
@@ -490,7 +490,7 @@ classdef WavesurferModel < ws.Model
         function result = refillerStoppedRun(self)
             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
             % run (in response to a frontendWantsToStopRun message)
-            fprintf('WavesurferModel::refillerStoppedRun()\n');
+            %fprintf('WavesurferModel::refillerStoppedRun()\n');
             self.WasRunStoppedInRefiller_ = true ;
             self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
             result = [] ;
@@ -721,6 +721,12 @@ classdef WavesurferModel < ws.Model
             isSweepBased = self.AreSweepsFiniteDuration ;
             doesStimulusUseAcquisitionTriggerScheme = self.StimulationUsesAcquisitionTrigger ;
             %isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                % Is this the best design?  Seems maybe over-complicated.
+                % Future Adam: If you change to using
+                % isStimulationTriggerIdenticalToAcquisitionTrigger() to
+                % determine whether map durations are overridden, leave a
+                % note as to why you did that, preferably with a particular
+                % "failure mode" in the current scheme.
             if isSweepBased && doesStimulusUseAcquisitionTriggerScheme ,
                 self.Stimulation_.overrideStimulusLibraryMapDuration(self.SweepDuration) ;
             else
@@ -1044,7 +1050,7 @@ classdef WavesurferModel < ws.Model
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
             self.DidRefillerCompleteEpisodes_ = false ;
-            fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
+            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
@@ -1556,7 +1562,7 @@ classdef WavesurferModel < ws.Model
 %         end  % function
                 
         function completeTheOngoingSweep_(self)
-            fprintf('WavesurferModel::completeTheOngoingSweep_()\n') ;
+            %fprintf('WavesurferModel::completeTheOngoingSweep_()\n') ;
             
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
@@ -1584,7 +1590,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function stopTheOngoingSweep_(self)
-            fprintf('WavesurferModel::stopTheOngoingSweep_()\n') ;
+            %fprintf('WavesurferModel::stopTheOngoingSweep_()\n') ;
 
             % Stop the ongoing sweep following user request            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
@@ -1607,7 +1613,7 @@ classdef WavesurferModel < ws.Model
 
         function abortTheOngoingSweep_(self)
             % Clean up after a sweep shits the bed.
-            fprintf('WavesurferModel::abortTheOngoingSweep_()\n') ;
+            %fprintf('WavesurferModel::abortTheOngoingSweep_()\n') ;
             
             % Notify all the subsystems that the sweep aborted
             for i = numel(self.Subsystems_):-1:1 ,
@@ -1657,7 +1663,7 @@ classdef WavesurferModel < ws.Model
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.            
             
-            fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
+            %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
             % Notify other processes --- or not, we don't currently need
             % this
@@ -1686,7 +1692,7 @@ classdef WavesurferModel < ws.Model
         function abortOngoingRun_(self)
             % Called when a run fails for some undesirable reason.
             
-            fprintf('WavesurferModel::abortOngoingRun_()\n') ;
+            %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
             % Notify other processes
             self.IPCPublisher_.send('abortingRun') ;
