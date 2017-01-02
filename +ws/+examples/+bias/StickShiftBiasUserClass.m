@@ -1,10 +1,9 @@
 classdef StickShiftBiasUserClass < ws.UserClass
 
-    properties(Access=private)
+    properties
         enabled = 1;                          % Enable/Disable Camera
         
         %% PointGrey/Flea3 properties
-        bias;                                 % cell array of handles to biasInterface objects
         bias_nCams = 2;                       % number of cameras controlled through bias
         bias_ip = '127.0.0.1';                % bias listens on this ip
         bias_port = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
@@ -33,15 +32,17 @@ classdef StickShiftBiasUserClass < ws.UserClass
 %         bias_cam2_triggerMode = 'External';
 %         bias_cam2_shutterValue = 157;
         
-        % Bookkeeping
-        IsIInFrontend
-        %HasRunStart = false
     end  % properties
             
+    properties (Access=protected, Transient=true)
+        bias                                 % handle to bias object(s)
+        IsIInFrontend        
+    end
+    
     methods
         %% User functions    
-        function self = StickShiftBiasUserClass(rootModel)
-            if isa(rootModel,'ws.WavesurferModel') ,
+        function self = StickShiftBiasUserClass(userCodeManager)
+            if isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,
                 self.IsIInFrontend = true ;
                 self.initializeBiasInterface();
             else
@@ -135,7 +136,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             disp('Calling BIAS init.');
             fprintf('Number of cameras found: %d\n', obj.bias_nCams) ;
             for i=1:obj.bias_nCams
-                obj.bias{i} = biasws.biasInterface(obj.bias_ip,obj.bias_port(i));
+                obj.bias{i} = ws.examples.bias.BiasInterface(obj.bias_ip,obj.bias_port(i));
                 obj.bias{i}.justConnectToCamera() ;
 %                 obj.bias{i}.initializeCamera(...
 %                     obj.(sprintf('bias_cam%d_frameRate',i)),...
