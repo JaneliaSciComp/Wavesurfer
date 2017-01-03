@@ -1,13 +1,18 @@
 classdef StickShiftBiasUserClass < ws.UserClass
 
     properties (Constant=true)
-        cameraCount = 2;                       % number of cameras controlled through bias
         serverIPAddressAsString = '127.0.0.1';                % bias listens on this ip
-        serverPortPerCamera = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
+        serverFirstCameraPort = 5010 ;
+        serverPortStride = 10 ;  % We assume bias listens at port serverFirstCameraPort for the 1st camera, serverFirstCameraPort+serverPortStride for 2nd, etc
     end  % constant properties
             
+    properties (Dependent=true)
+        cameraCount
+    end
+    
     properties (Access=protected, Transient=true)
         areCameraInterfacesInitialized_ = false
+        cameraCount_
         biasCameraInterfaces_    % cell array of handles to bias camera interface object(s)
         isIInFrontend_ 
     end
@@ -109,33 +114,56 @@ classdef StickShiftBiasUserClass < ws.UserClass
             %nScans = size(analogData,1);
             %fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
         end
+        
+        function result = get.cameraCount(self)
+            result = self.cameraCount_ ;
+        end
     end  % methods
 
 
     methods (Access=private)
         function initializeBiasCameraInterfaces_(self)
             disp('Calling BIAS init.');
-            fprintf('Number of cameras found: %d\n', self.cameraCount) ;
-            for i=1:self.cameraCount ,
-                self.biasCameraInterfaces_{i} = ws.examples.bias.SimpleBiasCameraInterface(self.serverIPAddressAsString, self.serverPortPerCamera(i));
-                self.biasCameraInterfaces_{i}.connectAndGetConfiguration() ;
+            cameraCount = 0 ;  %#ok<PROP>
+            for iCamera = 1:16 ,  % no one will have more cameras than this
+                portNumber = self.serverFirstCameraPort + (iCamera-1)*self.serverPortStride ;
+                cameraInterface = ws.examples.bias.SimpleBiasCameraInterface(self.serverIPAddressAsString, portNumber) ;
+                try
+                    cameraInterface.connectAndGetConfiguration() ;
+                catch me
+                    if isequal(me.identifier, 'SimpleBiasCameraInterface:unableToConnectToBIASServer') ,
+                        break ;
+                    else
+                        me.rethrow() ;
+                    end
+                end
+                % if get here, must have successfully connected to camera i
+                cameraCount = iCamera ;  %#ok<PROP>
+                self.biasCameraInterfaces_{1,iCamera} = cameraInterface ;
             end
-            for i=1:self.cameraCount ,
-                self.biasCameraInterfaces_{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
-            end
+            self.cameraCount_ = cameraCount ;  %#ok<PROP>
+            fprintf('Number of cameras found: %d\n', cameraCount) ;  %#ok<PROP>
+%             % Get status from each camera, to make sure BIAS is really
+%             % ready to go
+%             for iCamera = 1:cameraCount ,
+%                 self.biasCameraInterfaces_{iCamera}.getStatus() ;
+%             end
+            % Finally, set the semaphore
             self.areCameraInterfacesInitialized_ = true ;
         end
 
         function configureForSweep_(self)
-            disp('Calling BIAS config.');            
-            for i=1:self.cameraCount ,
-                self.biasCameraInterfaces_{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is ready
+            disp('Calling BIAS config.');
+            % Get status from each camera, to make sure BIAS is really
+            % ready to go
+            for i=1:self.cameraCount_ ,
+                self.biasCameraInterfaces_{i}.getStatus() ; 
             end
         end
         
         function start_(self)
             disp('Calling BIAS start.');
-            for i=1:self.cameraCount ,
+            for i=1:self.cameraCount_ ,
                 self.biasCameraInterfaces_{i}.startCapture() ;
             end
 
@@ -144,7 +172,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             maxNumberOfChecks = 1000 ;
             for i=1:maxNumberOfChecks ,
                 areAllCamerasCapturing = true ;
-                for j=1:self.cameraCount ,
+                for j=1:self.cameraCount_ ,
                     response = self.biasCameraInterfaces_{j}.getStatus() ;   % call this just to make sure BIAS is capturing
                     if ~response.value.capturing ,
                         areAllCamerasCapturing = false ;
@@ -165,7 +193,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             maxNumberOfChecks = 10 ;
             for i=1:maxNumberOfChecks ,
                 isACameraCapturing = false ;
-                for j=1:self.cameraCount
+                for j=1:self.cameraCount_
                     response = self.biasCameraInterfaces_{j}.getStatus() ;   % call this just to make sure BIAS is done
                     if response.value.capturing ,
                         isACameraCapturing = true ;
@@ -173,29 +201,29 @@ classdef StickShiftBiasUserClass < ws.UserClass
                     end
                 end
                 if isACameraCapturing ,
-                    pause(checkInterval) ;    % have to wait a bit for both cams to be done
+                    pause(checkInterval) ;    % have to wait a bit for all cams to be done
                 else
                     break ;
                 end
             end
             disp('Calling BIAS stop.');
-            for i=1:self.cameraCount ,
+            for i=1:self.cameraCount_ ,
                 self.biasCameraInterfaces_{i}.stopCapture() ;
             end
         end
                 
         function finalizeBiasCameraInterfaces_(self)
             disp('Calling BIAS finalize.');
-            for i=1:self.cameraCount ,
+            for i=1:self.cameraCount_ ,
                 try
                     self.biasCameraInterfaces_{i}.disconnect();
                 catch me  %#ok<NASGU>
                     % ignore
                 end
                 delete(self.biasCameraInterfaces_{i});
-                self.biasCameraInterfaces_{i} = [] ;
+                self.biasCameraInterfaces_{i} = [] ;  % set the cell to empty, but don't change length of cell array
             end
-            self.biasCameraInterfaces_ = [] ;  
+            self.biasCameraInterfaces_ = cell(1,0) ;  % set to zero-length cell array
             self.areCameraInterfacesInitialized_ = false ;
         end
     end  % private methods block
