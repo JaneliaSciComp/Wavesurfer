@@ -1,102 +1,84 @@
 classdef StickShiftBiasUserClass < ws.UserClass
 
-    properties
-        enabled = 1;                          % Enable/Disable Camera
-        
-        %% PointGrey/Flea3 properties
-        bias_nCams = 2;                       % number of cameras controlled through bias
-        bias_ip = '127.0.0.1';                % bias listens on this ip
-        bias_port = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
-        %bias_cfgFiles = {'Camera0_config_Jay20160726.json' 'Camera1_config_Jay20160726.json'};  % specify json cfg file for bias to use
-        %cameraOn = 1;
-        %hardTrig = 1;
-        %frameRate = 500;
-        %camTrigCOChan = 2;
-        %boardID = 'Dev1';
-        %hCamTrig;                             % Handle to counter out channel
-        %cameraStartEvent = 'Start';           % One of 'TTL' or 'Start'. Starts camera acq when either TTL button is pressed or Start btn is pressed
-        %ttlPulseChan = 3;                     % TTL output channel; Should be same as TTL pulse chan in ReachTask.m
-        
-%         %% BIAS Properties (frameRate, movieFormat, ROI, triggerMode)
-%         %Camera 1
-%         bias_cam1_frameRate = 500;
-%         bias_cam1_movieFormat = 'avi';
-%         bias_cam1_ROI = [504,418,384,260];
-%         bias_cam1_triggerMode = 'External';
-%         bias_cam1_shutterValue = 157;
-%         
-%         %Camera 2
-%         bias_cam2_frameRate = 500;
-%         bias_cam2_movieFormat = 'avi';
-%         bias_cam2_ROI = [312,318,384,260];
-%         bias_cam2_triggerMode = 'External';
-%         bias_cam2_shutterValue = 157;
-        
-    end  % properties
+    properties (Constant=true)
+        cameraCount = 2;                       % number of cameras controlled through bias
+        serverIPAddressAsString = '127.0.0.1';                % bias listens on this ip
+        serverPortPerCamera = 5010:10:5040;             % bias listens at this port; for camera i, port  = 5000 + 10*i;
+    end  % constant properties
             
     properties (Access=protected, Transient=true)
-        biasCameraInterfaces                                 % cell array of handles to bias camera interface object(s)
-        IsIInFrontend        
+        areCameraInterfacesInitialized_ = false
+        biasCameraInterfaces_    % cell array of handles to bias camera interface object(s)
+        isIInFrontend_ 
     end
     
     methods
-        %% User functions    
         function self = StickShiftBiasUserClass(userCodeManager)
-            if isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,
-                self.IsIInFrontend = true ;
-                self.initializeBiasInterface();
-            else
-                self.IsIInFrontend = false ;
-            end
+            self.isIInFrontend_ = ( isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ) ;
         end
         
         function delete(self)
-            if self.IsIInFrontend ,
-                % self.close();  % doesn't seem to work right...
+            if self.areCameraInterfacesInitialized_ ,
+                self.finalizeBiasCameraInterfaces_() ;
             end
         end
         
         function startingRun(self,~,~)
             fprintf('Starting a run.\n');
-            self.configureForRun();
-            self.start();
+            if self.isIInFrontend_ ,
+                if ~self.areCameraInterfacesInitialized_ ,
+                    self.initializeBiasCameraInterfaces_() ;
+                end
+            end
         end
         
         function startingSweep(~,~,~)
             % Called just before each trial
             fprintf('Starting a sweep.\n');
+            if self.isIInFrontend_ ,
+                self.configureForSweep_();
+                self.start_();
+            end
         end
         
         function completingSweep(~,~,~)
             %dbstack;
             fprintf('Completing a sweep.\n');
+            if self.isIInFrontend_ ,
+                self.stop_();
+            end
         end
         
         function abortingSweep(~,~,~)
             %dbstack;
+            fprintf('Oh noes!  A sweep aborted.\n');
+            if self.isIInFrontend_ ,
+                self.stop_();
+            end
         end
         
         function stoppingSweep(~,~,~)
             %dbstack;
+            fprintf('A sweep was stopped.\n');
+            if self.isIInFrontend_ ,
+                self.stop_();
+            end
         end
         
-        function completingRun(self,~,~)
+        function completingRun(self,~,~) %#ok<INUSD>
             % Called just after each set of trials (a.k.a. each
             % "experiment")
             fprintf('Completing a run.\n');
-            self.stop();
         end
         
-        function abortingRun(self,~,~)
+        function abortingRun(self,~,~) %#ok<INUSD>
             % Called if a trial set goes wrong, after the call to
             % trialDidAbort()
             fprintf('Oh noes!  A run aborted.\n');
-            self.stop();
         end
         
-        function stoppingRun(self,~,~)
+        function stoppingRun(self,~,~) %#ok<INUSD>
             fprintf('A run was stopped.\n');
-            self.stop();
         end
         
         function dataAvailable(~,~,~)
@@ -131,60 +113,39 @@ classdef StickShiftBiasUserClass < ws.UserClass
 
 
     methods (Access=private)
-        %% Bias Operations
-        function initializeBiasInterface(obj)
+        function initializeBiasCameraInterfaces_(self)
             disp('Calling BIAS init.');
-            fprintf('Number of cameras found: %d\n', obj.bias_nCams) ;
-            for i=1:obj.bias_nCams
-                obj.biasCameraInterfaces{i} = ws.examples.bias.BiasCameraInterface(obj.bias_ip, obj.bias_port(i));
-                obj.biasCameraInterfaces{i}.justConnectToCamera() ;
-%                 obj.biasCameraInterfaces{i}.initializeCamera(...
-%                     obj.(sprintf('bias_cam%d_frameRate',i)),...
-%                     obj.(sprintf('bias_cam%d_movieFormat',i)),...
-%                     obj.(sprintf('bias_cam%d_ROI',i)),...
-%                     obj.(sprintf('bias_cam%d_triggerMode',i)),...
-%                     obj.(sprintf('bias_cam%d_shutterValue',i))...
-%                 );
+            fprintf('Number of cameras found: %d\n', self.cameraCount) ;
+            for i=1:self.cameraCount ,
+                self.biasCameraInterfaces_{i} = ws.examples.bias.SimpleBiasCameraInterface(self.serverIPAddressAsString, self.serverPortPerCamera(i));
+                self.biasCameraInterfaces_{i}.connectAndGetConfiguration() ;
             end
-            for i=1:obj.bias_nCams
-                obj.biasCameraInterfaces{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
+            for i=1:self.cameraCount ,
+                self.biasCameraInterfaces_{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
             end
+            self.areCameraInterfacesInitialized_ = true ;
         end
 
-        function configureForRun(obj)
+        function configureForSweep_(self)
             disp('Calling BIAS config.');            
-%             for i=1:obj.bias_nCams
-%                 if exist(obj.bias_cfgFiles{i},'file');
-%                     obj.biasCameraInterfaces{i}.loadConfiguration(obj.bias_cfgFiles{i});
-%                 end
-%             end
-            for i=1:obj.bias_nCams
-                obj.biasCameraInterfaces{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
+            for i=1:self.cameraCount ,
+                self.biasCameraInterfaces_{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is ready
             end
         end
         
-        function start(obj)
+        function start_(self)
             disp('Calling BIAS start.');
-            for i=1:obj.bias_nCams
-                obj.biasCameraInterfaces{i}.startCapture;
-%                 if obj.HasRunStart ,
-%                      % do nothing
-%                 else
-%                     pauseDuration = 0.2 
-%                     pause(pauseDuration) ;  % wait a bit on first start
-%                 end
+            for i=1:self.cameraCount ,
+                self.biasCameraInterfaces_{i}.startCapture() ;
             end
-%             if ~obj.HasRunStart ,
-%                 obj.HasRunStart = true ;
-%             end
 
             % wait for bias to be ready
             checkInterval = 0.1 ;  % s
             maxNumberOfChecks = 1000 ;
             for i=1:maxNumberOfChecks ,
                 areAllCamerasCapturing = true ;
-                for j=1:obj.bias_nCams ,
-                    response = obj.biasCameraInterfaces{j}.getStatus() ;   % call this just to make sure BIAS is capturing
+                for j=1:self.cameraCount ,
+                    response = self.biasCameraInterfaces_{j}.getStatus() ;   % call this just to make sure BIAS is capturing
                     if ~response.value.capturing ,
                         areAllCamerasCapturing = false ;
                         break ;
@@ -196,17 +157,16 @@ classdef StickShiftBiasUserClass < ws.UserClass
                     pause(checkInterval) ;    % have to wait a bit for both cams to be capturing
                 end
             end
-        end  % method
-        
+        end  % method        
                 
-        function stop(obj)
+        function stop_(self)
             % wait for bias to be done
             checkInterval = 0.1 ;  % s
             maxNumberOfChecks = 10 ;
             for i=1:maxNumberOfChecks ,
                 isACameraCapturing = false ;
-                for j=1:obj.bias_nCams
-                    response = obj.biasCameraInterfaces{j}.getStatus() ;   % call this just to make sure BIAS is done
+                for j=1:self.cameraCount
+                    response = self.biasCameraInterfaces_{j}.getStatus() ;   % call this just to make sure BIAS is done
                     if response.value.capturing ,
                         isACameraCapturing = true ;
                         break ;
@@ -219,26 +179,26 @@ classdef StickShiftBiasUserClass < ws.UserClass
                 end
             end
             disp('Calling BIAS stop.');
-            for i=1:obj.bias_nCams
-                obj.biasCameraInterfaces{i}.stopCapture;
+            for i=1:self.cameraCount ,
+                self.biasCameraInterfaces_{i}.stopCapture() ;
             end
         end
                 
-        function close(obj)
-            % (ngc) when should I call this?
-            disp('Calling BIAS close.');
-            for i=1:obj.bias_nCams
+        function finalizeBiasCameraInterfaces_(self)
+            disp('Calling BIAS finalize.');
+            for i=1:self.cameraCount ,
                 try
-                    obj.biasCameraInterfaces{i}.disconnect();
-                    obj.biasCameraInterfaces{i}.closeWindow;
-                    delete(obj.biasCameraInterfaces{i});
-                catch
-                    disp('ERROR: on disconnect...Kill BIAS')
-                    obj.biasCameraInterfaces{end}.kill;
+                    self.biasCameraInterfaces_{i}.disconnect();
+                catch me  %#ok<NASGU>
+                    % ignore
                 end
+                delete(self.biasCameraInterfaces_{i});
+                self.biasCameraInterfaces_{i} = [] ;
             end
+            self.biasCameraInterfaces_ = [] ;  
+            self.areCameraInterfacesInitialized_ = false ;
         end
-    end
+    end  % private methods block
     
 end  % classdef
 
