@@ -35,7 +35,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
     end  % properties
             
     properties (Access=protected, Transient=true)
-        bias                                 % handle to bias object(s)
+        biasCameraInterfaces                                 % cell array of handles to bias camera interface object(s)
         IsIInFrontend        
     end
     
@@ -130,15 +130,15 @@ classdef StickShiftBiasUserClass < ws.UserClass
     end  % methods
 
 
-    methods(Access=private)
+    methods (Access=private)
         %% Bias Operations
         function initializeBiasInterface(obj)
             disp('Calling BIAS init.');
             fprintf('Number of cameras found: %d\n', obj.bias_nCams) ;
             for i=1:obj.bias_nCams
-                obj.bias{i} = ws.examples.bias.BiasInterface(obj.bias_ip,obj.bias_port(i));
-                obj.bias{i}.justConnectToCamera() ;
-%                 obj.bias{i}.initializeCamera(...
+                obj.biasCameraInterfaces{i} = ws.examples.bias.BiasCameraInterface(obj.bias_ip, obj.bias_port(i));
+                obj.biasCameraInterfaces{i}.justConnectToCamera() ;
+%                 obj.biasCameraInterfaces{i}.initializeCamera(...
 %                     obj.(sprintf('bias_cam%d_frameRate',i)),...
 %                     obj.(sprintf('bias_cam%d_movieFormat',i)),...
 %                     obj.(sprintf('bias_cam%d_ROI',i)),...
@@ -147,7 +147,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
 %                 );
             end
             for i=1:obj.bias_nCams
-                obj.bias{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
+                obj.biasCameraInterfaces{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
             end
         end
 
@@ -155,18 +155,18 @@ classdef StickShiftBiasUserClass < ws.UserClass
             disp('Calling BIAS config.');            
 %             for i=1:obj.bias_nCams
 %                 if exist(obj.bias_cfgFiles{i},'file');
-%                     obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
+%                     obj.biasCameraInterfaces{i}.loadConfiguration(obj.bias_cfgFiles{i});
 %                 end
 %             end
             for i=1:obj.bias_nCams
-                obj.bias{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
+                obj.biasCameraInterfaces{i}.getStatus() ;  % call this just to make sure (hopefully) that BIAS is done
             end
         end
         
         function start(obj)
             disp('Calling BIAS start.');
             for i=1:obj.bias_nCams
-                obj.bias{i}.startCapture;
+                obj.biasCameraInterfaces{i}.startCapture;
 %                 if obj.HasRunStart ,
 %                      % do nothing
 %                 else
@@ -184,7 +184,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             for i=1:maxNumberOfChecks ,
                 areAllCamerasCapturing = true ;
                 for j=1:obj.bias_nCams ,
-                    response = obj.bias{j}.getStatus() ;   % call this just to make sure BIAS is capturing
+                    response = obj.biasCameraInterfaces{j}.getStatus() ;   % call this just to make sure BIAS is capturing
                     if ~response.value.capturing ,
                         areAllCamerasCapturing = false ;
                         break ;
@@ -206,7 +206,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             for i=1:maxNumberOfChecks ,
                 isACameraCapturing = false ;
                 for j=1:obj.bias_nCams
-                    response = obj.bias{j}.getStatus() ;   % call this just to make sure BIAS is done
+                    response = obj.biasCameraInterfaces{j}.getStatus() ;   % call this just to make sure BIAS is done
                     if response.value.capturing ,
                         isACameraCapturing = true ;
                         break ;
@@ -220,7 +220,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
             disp('Calling BIAS stop.');
             for i=1:obj.bias_nCams
-                obj.bias{i}.stopCapture;
+                obj.biasCameraInterfaces{i}.stopCapture;
             end
         end
                 
@@ -229,12 +229,12 @@ classdef StickShiftBiasUserClass < ws.UserClass
             disp('Calling BIAS close.');
             for i=1:obj.bias_nCams
                 try
-                    obj.bias{i}.disconnect();
-                    obj.bias{i}.closeWindow;
-                    delete(obj.bias{i});
+                    obj.biasCameraInterfaces{i}.disconnect();
+                    obj.biasCameraInterfaces{i}.closeWindow;
+                    delete(obj.biasCameraInterfaces{i});
                 catch
                     disp('ERROR: on disconnect...Kill BIAS')
-                    obj.bias{end}.kill;
+                    obj.biasCameraInterfaces{end}.kill;
                 end
             end
         end
