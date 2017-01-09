@@ -129,7 +129,8 @@ classdef StickShiftBiasUserClass < ws.UserClass
                 portNumber = self.serverFirstCameraPort + (iCamera-1)*self.serverPortStride ;
                 cameraInterface = ws.examples.bias.SimpleBiasCameraInterface(self.serverIPAddressAsString, portNumber) ;
                 try
-                    cameraInterface.connectAndGetConfiguration() ;
+                    %cameraInterface.connectAndGetConfiguration() ;
+                    response = cameraInterface.getStatus() ; %#ok<NASGU>
                 catch me
                     if isequal(me.identifier, 'SimpleBiasCameraInterface:unableToConnectToBIASServer') ,
                         break ;
@@ -157,7 +158,10 @@ classdef StickShiftBiasUserClass < ws.UserClass
             % Get status from each camera, to make sure BIAS is really
             % ready to go
             for i=1:self.cameraCount_ ,
-                self.biasCameraInterfaces_{i}.getStatus() ; 
+                response = self.biasCameraInterfaces_{i}.getStatus() ; 
+                if ~response.value.connected ,
+                    error('BIAS is not connected to camera %d', i-1) ;
+                end
             end
         end
         
@@ -216,7 +220,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             disp('Calling BIAS finalize.');
             for i=1:self.cameraCount_ ,
                 try
-                    self.biasCameraInterfaces_{i}.disconnect();
+                    %self.biasCameraInterfaces_{i}.disconnect();
                 catch me  %#ok<NASGU>
                     % ignore
                 end
