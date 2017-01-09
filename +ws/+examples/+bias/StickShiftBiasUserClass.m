@@ -37,7 +37,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
         end
         
-        function startingSweep(~,~,~)
+        function startingSweep(self ,~, ~)
             % Called just before each trial
             fprintf('Starting a sweep.\n');
             if self.isIInFrontend_ ,
@@ -46,7 +46,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
         end
         
-        function completingSweep(~,~,~)
+        function completingSweep(self, ~, ~)
             %dbstack;
             fprintf('Completing a sweep.\n');
             if self.isIInFrontend_ ,
@@ -54,7 +54,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
         end
         
-        function abortingSweep(~,~,~)
+        function abortingSweep(self,~,~)
             %dbstack;
             fprintf('Oh noes!  A sweep aborted.\n');
             if self.isIInFrontend_ ,
@@ -62,7 +62,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
         end
         
-        function stoppingSweep(~,~,~)
+        function stoppingSweep(self,~,~)
             %dbstack;
             fprintf('A sweep was stopped.\n');
             if self.isIInFrontend_ ,
