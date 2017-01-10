@@ -131,8 +131,8 @@ classdef UserCodeManager < ws.Subsystem
                 self.logWarning('ws:userCodeError', ...
                                 sprintf('Error in user class method %s',eventName), ...
                                 me) ;
-                %fprintf('Stack trace for user class method error:\n');
-                %display(me.getReport());
+                fprintf('Stack trace for user class method error:\n');
+                display(me.getReport());
             end
         end  % function
         
@@ -150,8 +150,8 @@ classdef UserCodeManager < ws.Subsystem
                 self.logWarning('ws:userCodeError', ...
                                 'Error in user class method samplesAcquired', ...
                                 me) ;
-                %fprintf('Stack trace for user class method error:\n');
-                %display(me.getReport());
+                fprintf('Stack trace for user class method error:\n');
+                display(me.getReport());
             end            
         end
         
