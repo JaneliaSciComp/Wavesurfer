@@ -23,7 +23,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
         end
         
         function delete(self)            
-            fprintf('Deleting the BIAS user object') ;
+            fprintf('Deleting the BIAS user object\n') ;
             if self.areCameraInterfacesInitialized_ ,
                 for i=1:self.cameraCount_ ,
                     try
@@ -103,9 +103,14 @@ classdef StickShiftBiasUserClass < ws.UserClass
                         pause(checkInterval) ;    % have to wait a bit for both cams to be capturing
                     end
                 end                
-                % If get here, either all cameras are capturing, or we gave
-                % up waiting.  Should we throw an error if not all cameras are capturing?                
             end
+            
+            % Warn if any cameras not capturing
+            if ~areAllCamerasCapturing ,
+                fprintf('Warning: Gave up waiting for all camera to be capturing\n') ;
+            else
+                fprintf('For sweep start, all cameras say they''re capturing\n') ;
+            end 
         end
         
         function completingSweep(self, ~, ~)
@@ -172,6 +177,11 @@ classdef StickShiftBiasUserClass < ws.UserClass
         function completingOrAbortingOrStoppingASweep_(self)
             % wait for bias to be done
             if self.isIInFrontend_ ,
+                % Have to wait for a bit for all cameras to be done, we
+                % discovered through a great deal of painful trial and
+                % error.
+                pause(0.1) ;
+                
                 % Tell bias to stop capturing
                 for i=1:self.cameraCount_ ,
                     self.biasCameraInterfaces_{i}.stopCapture() ;
@@ -194,10 +204,13 @@ classdef StickShiftBiasUserClass < ws.UserClass
                     else
                         break ;
                     end
-                end                
-                % If we get here, either all cameras are stopped or we gave
-                % up waiting.  Should we do something special if we gave up
-                % waiting?
+                end     
+                
+                if isACameraCapturing ,
+                    fprintf('Warning: Gave up waiting for all cameras to not be capturing\n') ;
+                else
+                    fprintf('For sweep end, all cameras say they''re not capturing\n') ;
+                end 
             end
         end
     end  % private methods block
