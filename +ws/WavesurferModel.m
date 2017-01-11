@@ -2846,6 +2846,17 @@ classdef WavesurferModel < ws.Model
         end  % function
     end  % protected methods block
     
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+            % Set the override state for the stimulus map durations
+            self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
+        end
+    end  % protected methods block
+    
     methods (Access=protected) 
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
