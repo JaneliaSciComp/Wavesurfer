@@ -125,7 +125,7 @@ and David Ackerman.
 Contributions
 -------------
 
-WaveSurfer includes code from the JSONLab project, by 
+WaveSurfer includes code from the JSONlab project, by 
 Qianqian Fang (https://github.com/fangq/jsonlab).  This code is covered 
 by its own copyright and licensing.  We thank Dr. Fang for making it 
 publicly available.
