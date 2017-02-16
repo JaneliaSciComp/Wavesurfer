@@ -19,6 +19,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
     
     methods
         function self = StickShiftBiasUserClass(userCodeManager)
+            fprintf('Creating the BIAS user object\n') ;
             self.isIInFrontend_ = ( isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ) ;
         end
         
@@ -77,7 +78,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
                 % ready to go
                 for i=1:self.cameraCount_ ,
                     response = self.biasCameraInterfaces_{i}.getStatus() ; 
-                    if ~response.value.connected ,
+                    if ~isfield(response,'value') || ~isfield(response.value,'connected') || ~response.value.connected ,
                         error('BIAS is not connected to camera %d', i-1) ;
                     end
                 end
@@ -194,9 +195,25 @@ classdef StickShiftBiasUserClass < ws.UserClass
                     isACameraCapturing = false ;
                     for j=1:self.cameraCount_
                         response = self.biasCameraInterfaces_{j}.getStatus() ;   % call this just to make sure BIAS is done
-                        if response.value.capturing ,
-                            isACameraCapturing = true ;
-                            break ;
+                        if numel(response)==1 && isfield(response,'value') && isfield(response.value,'capturing') ,
+                            isThisCameraCapturing = response.value.capturing ;
+                            if numel(isThisCameraCapturing)==1 ,
+                                if isThisCameraCapturing ,
+                                    % A camera is still capturing, so we
+                                    % can exit the for
+                                    % j=1:self.cameraCount_ loop
+                                    isACameraCapturing = true ;
+                                    break ;
+                                else
+                                    % Communication is fine, and camera is
+                                    % not capturing, so go on to check the
+                                    % next camera.
+                                end
+                            else
+                                fprintf('Problem communicating with camera %d at end of a sweep: We''ll assume it is done capturing.\n', j-1) ;                                    
+                            end
+                        else
+                            fprintf('Problem communicating with camera %d at end of a sweep: We''ll assume it is done capturing.\n', j-1) ;                            
                         end
                     end
                     if isACameraCapturing ,
