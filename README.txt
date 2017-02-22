@@ -411,3 +411,8 @@ Version History
                          Updated and streamlined Bias user code.
                          Also fixed bug with map durations loaded
                          from protocol files.
+
+0.943    Feb 22, 2017    Fixes to BIAS-WS interface, incorporating our
+                         own version of JSONLab.
+                      
+                         
