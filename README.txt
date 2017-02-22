@@ -122,6 +122,15 @@ WaveSurfer is currently developed by Adam L. Taylor, Ben J. Arthur,
 and David Ackerman.
 
 
+Contributions
+-------------
+
+WaveSurfer includes code from the JSONlab project, by 
+Qianqian Fang (https://github.com/fangq/jsonlab).  This code is covered 
+by its own copyright and licensing.  We thank Dr. Fang for making it 
+publicly available.
+
+
 Support
 -------
 
@@ -402,3 +411,8 @@ Version History
                          Updated and streamlined Bias user code.
                          Also fixed bug with map durations loaded
                          from protocol files.
+
+0.943    Feb 22, 2017    Fixes to BIAS-WS interface, incorporating our
+                         own version of JSONLab.
+                      
+                         

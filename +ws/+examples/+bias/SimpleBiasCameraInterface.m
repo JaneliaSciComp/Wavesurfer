@@ -151,7 +151,10 @@ classdef SimpleBiasCameraInterface < handle
                     me.rethrow() ;
                 end
             end
-            response = loadjson(responseString);
+            % JSONlab 1.5 seems to wrap the responses in a cell, so we
+            % unwrap.
+            responseAsSingletonCellArray = loadjson(responseString) ;
+            response = responseAsSingletonCellArray{1} ;
         end
     end
 end
