@@ -212,13 +212,47 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             self.updateReadinessImplementation_();
         end
 
-        function positionUpperLeftRelativeToOtherUpperRight_(self, other, offset)
+        function doWithModel_(self, varargin)
+            if ~isempty(self.Model_) ,
+                self.Model_.do(varargin{:}) ;
+            end
+        end
+        
+        function positionUpperLeftRelativeToOtherUpperRight_(self, referenceFigurePosition, offset)
             % Positions the upper left corner of the figure relative to the upper
             % *right* corner of the other figure.  offset is 2x1, with the 1st
             % element the number of pixels from the right side of the other figure,
             % the 2nd the number of pixels from the top of the other figure.
 
-            ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
+            %ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
+            
+            % Get our position
+            figureGH = self.FigureGH_ ;
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            position=get(figureGH,'position');
+            set(figureGH,'units',originalUnits);
+            figureSize=position(3:4);
+
+            % Get the reference figure position
+            %originalUnits=get(referenceFigureGH,'units');
+            %set(referenceFigureGH,'units','pixels');
+            %referenceFigurePosition=get(referenceFigureGH,'position');
+            %set(referenceFigureGH,'units',originalUnits);
+            referenceFigureOffset=referenceFigurePosition(1:2);
+            referenceFigureSize=referenceFigurePosition(3:4);
+
+            % Calculate a new offset that will position us as wanted
+            origin = referenceFigureOffset + referenceFigureSize ;
+            figureHeight=figureSize(2);
+            newOffset = [ origin(1) + offset(1) ...
+                          origin(2) + offset(2) - figureHeight ] ;
+
+            % Set figure position, using the new offset but the same size as before
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            set(figureGH,'position',[newOffset figureSize]);
+            set(figureGH,'units',originalUnits);            
         end
         
         createFixedControls_(self)
@@ -398,7 +432,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
     
     methods (Access=protected)
         function raiseDialogOnException_(self, exception)
-            model = self.Model ;
+            model = self.Model_ ;
             if ~isempty(model) ,
                 model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
             end
