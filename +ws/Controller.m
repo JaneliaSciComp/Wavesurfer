@@ -10,19 +10,6 @@ classdef Controller < handle
         Parent_
         Model_
         Figure_
-        HideFigureOnClose_ = true  % By default do not destroy the window when closed, just hide
-%         IsSuiGeneris_ = true  
-%             % Whether or not multiple instances of the controller class can
-%             % exist at a time. If true, only one instance of the controller
-%             % class can exist at a time.  If false, multiple instances of
-%             % the controller class can exist at a time. Currently, Most of
-%             % our controllers are sui generis, so true is a good default.
-%             % (Making this abstract creates headaches.  Ditto making
-%             % SetAccess=immutable, or Constant=true, all of which would
-%             % arguably make sense.)  You should only set this in the
-%             % constructor, and not change it for the lifetime of the
-%             % object.  Also, it should have the same value for all
-%             % instances of the class.
     end
         
     methods
@@ -214,17 +201,7 @@ classdef Controller < handle
             if shouldStayPut ,
                 % Do nothing
             else
-                if self.HideFigureOnClose_ ,
-                    % This is not simply a call to hide() because some frameworks will require
-                    % modification to the evt object, other actions to actually cancel an
-                    % in-progress close event.
-                    self.hideFigure();
-                else
-                    % Actually release the window.  This may actual result in
-                    % active deletion of the controller so care should be taken in adding any code
-                    % to this method after this call.
-                    self.deleteFigureGH();
-                end
+                self.hideFigure();
             end
         end
     end

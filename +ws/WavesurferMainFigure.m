@@ -18,6 +18,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         
         ProtocolMenu
         %ScopesMenuItem
+        GeneralSettingsMenuItem
         ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
@@ -44,55 +45,55 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         FastProtocolText
         FastProtocolButtons
         
-        AcquisitionPanel
-        SweepBasedRadiobutton
-        ContinuousRadiobutton
-        AcquisitionSampleRateText
-        AcquisitionSampleRateEdit
-        AcquisitionSampleRateUnitsText
-        NSweepsText
-        NSweepsEdit
-        SweepDurationText
-        SweepDurationEdit
-        SweepDurationUnitsText        
-        
-        StimulationPanel
-        StimulationEnabledCheckbox
-        StimulationSampleRateText
-        StimulationSampleRateEdit
-        StimulationSampleRateUnitsText
-        SourceText
-        SourcePopupmenu
-        EditStimulusLibraryButton
-        RepeatsCheckbox
-        
-        DisplayPanel
-        DisplayEnabledCheckbox
-        UpdateRateText
-        UpdateRateEdit
-        UpdateRateUnitsText
-        SpanText
-        SpanEdit
-        SpanUnitsText
-        AutoSpanCheckbox
-        
-        LoggingPanel
-        BaseNameText
-        BaseNameEdit
-        OverwriteCheckbox
-        LocationText
-        LocationEdit
-        ShowLocationButton
-        ChangeLocationButton
-        IncludeDateCheckbox
-        SessionIndexCheckbox        
-        SessionIndexText
-        SessionIndexEdit
-        IncrementSessionIndexButton
-        NextSweepText
-        NextSweepEdit
-        FileNameText
-        FileNameEdit
+%         AcquisitionPanel
+%         SweepBasedRadiobutton
+%         ContinuousRadiobutton
+%         AcquisitionSampleRateText
+%         AcquisitionSampleRateEdit
+%         AcquisitionSampleRateUnitsText
+%         NSweepsText
+%         NSweepsEdit
+%         SweepDurationText
+%         SweepDurationEdit
+%         SweepDurationUnitsText        
+%         
+%         StimulationPanel
+%         StimulationEnabledCheckbox
+%         StimulationSampleRateText
+%         StimulationSampleRateEdit
+%         StimulationSampleRateUnitsText
+%         SourceText
+%         SourcePopupmenu
+%         EditStimulusLibraryButton
+%         RepeatsCheckbox
+%         
+%         DisplayPanel
+%         DisplayEnabledCheckbox
+%         UpdateRateText
+%         UpdateRateEdit
+%         UpdateRateUnitsText
+%         SpanText
+%         SpanEdit
+%         SpanUnitsText
+%         AutoSpanCheckbox
+%         
+%         LoggingPanel
+%         BaseNameText
+%         BaseNameEdit
+%         OverwriteCheckbox
+%         LocationText
+%         LocationEdit
+%         ShowLocationButton
+%         ChangeLocationButton
+%         IncludeDateCheckbox
+%         SessionIndexCheckbox        
+%         SessionIndexText
+%         SessionIndexEdit
+%         IncrementSessionIndexButton
+%         NextSweepText
+%         NextSweepEdit
+%         FileNameText
+%         FileNameEdit
         
         StatusText
         ProgressBarAxes
@@ -109,7 +110,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 %             self.Model=model;
 %             self.Controller=controller;
             set(self.FigureGH, ...
-                'Tag','wavesurferMainFigureWrapper', ...
                 'Units','Pixels', ...
                 'Resize','off', ...
                 'Name',sprintf('WaveSurfer %s',ws.versionString()), ...
@@ -132,8 +132,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
            self.layout_();
            ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
            
-           % Initialize the guidata
-           self.initializeGuidata_();
+%            % Initialize the guidata
+%            self.initializeGuidata_();
            
            % Do an update to sync with model
            self.update();
@@ -145,28 +145,28 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
                model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
 
-               model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               
-               model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
-               model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
-               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
-               model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
-               
-               model.Display.subscribeMe(self,'Update','','update');
-               %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
-               model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
-               model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
-               model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               
-               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
-               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
-               model.Logging.subscribeMe(self,'Update','','updateControlProperties');
-               model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
+%                model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+%                
+%                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
+%                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+%                %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
+%                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
+%                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
+%                
+%                model.Display.subscribeMe(self,'Update','','update');
+%                %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
+%                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
+%                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
+%                %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
+%                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
+%                
+%                %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
+%                %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
+%                %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
+%                %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
+%                %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
+%                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
+%                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
 
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
                model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
@@ -219,6 +219,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Tools menu
             self.ProtocolMenu=uimenu('Parent',self.FigureGH, ...
                                   'Label','Protocol');
+            self.GeneralSettingsMenuItem = ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Label','General Settings...');
             self.ChannelsMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Device & Channels...');
@@ -311,187 +314,187 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                               'String',sprintf('%d',i));                
             end
             
-            % Acquisition Panel
-            self.AcquisitionPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Acquisition');
-            self.SweepBasedRadiobutton = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','radiobutton', ...
-                          'String','Sweep-based');
-            self.ContinuousRadiobutton = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','radiobutton', ...
-                          'String','Continuous');
-            self.AcquisitionSampleRateText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Sample Rate:');
-            self.AcquisitionSampleRateEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.AcquisitionSampleRateUnitsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.NSweepsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','# of Sweeps:');
-            self.NSweepsEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.SweepDurationText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Sweep Duration:');
-            self.SweepDurationEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.SweepDurationUnitsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            
-            % Stimulation Panel
-            self.StimulationPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Stimulation');
-            self.StimulationEnabledCheckbox = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','checkbox', ...
-                          'String','Enabled');
-            self.StimulationSampleRateText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Sample Rate:');
-            self.StimulationSampleRateEdit = ...
-                ws.uiedit('Parent',self.StimulationPanel, ...
-                          'HorizontalAlignment','right');
-            self.StimulationSampleRateUnitsText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.SourceText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Source:');
-            self.SourcePopupmenu = ...
-                ws.uipopupmenu('Parent',self.StimulationPanel, ...
-                               'String',{'Thing 1';'Thing 2'});
-            self.EditStimulusLibraryButton = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Edit...');
-            self.RepeatsCheckbox = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','checkbox', ...
-                          'String','Repeats');
-            
-            % Display Panel
-            self.DisplayPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Display');
-            self.DisplayEnabledCheckbox = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','checkbox', ...
-                          'String','Enabled');
-            self.UpdateRateText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Update Rate:');
-            self.UpdateRateEdit = ...
-                ws.uiedit('Parent',self.DisplayPanel, ...
-                          'HorizontalAlignment','right');
-            self.UpdateRateUnitsText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.SpanText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Span:');
-            self.SpanEdit = ...
-                ws.uiedit('Parent',self.DisplayPanel, ...
-                          'HorizontalAlignment','right');
-            self.SpanUnitsText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            self.AutoSpanCheckbox = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','checkbox', ...
-                          'String','Auto');
-                    
-            % Logging Panel
-            self.LoggingPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Logging');
-            self.BaseNameText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Base Name:');
-            self.BaseNameEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left');
-            self.OverwriteCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','Overwrite without asking');
-            self.LocationText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Folder:');
-            self.LocationEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left', ...
-                          'Enable','off');
-            self.ShowLocationButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Show');
-            self.ChangeLocationButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Change...');
-            self.IncludeDateCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','Include date');
-            self.SessionIndexCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','');
-            self.SessionIndexText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Session:');
-            self.SessionIndexEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','right');
-            self.IncrementSessionIndexButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','+');
-            self.NextSweepText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Current Sweep:');  % text is 'Next Sweep:' most of the time, but this is for sizing
-            self.NextSweepEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','right');
-            self.FileNameText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','File Name:');
-            self.FileNameEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left', ...
-                          'Enable','off');
+%             % Acquisition Panel
+%             self.AcquisitionPanel = ...
+%                 ws.uipanel('Parent',self.FigureGH, ...
+%                         'Units','pixels',...
+%                         'Title','Acquisition');
+%             self.SweepBasedRadiobutton = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','radiobutton', ...
+%                           'String','Sweep-based');
+%             self.ContinuousRadiobutton = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','radiobutton', ...
+%                           'String','Continuous');
+%             self.AcquisitionSampleRateText = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','text', ...
+%                           'String','Sample Rate:');
+%             self.AcquisitionSampleRateEdit = ...
+%                 ws.uiedit('Parent',self.AcquisitionPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.AcquisitionSampleRateUnitsText = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','text', ...
+%                           'String','Hz');
+%             self.NSweepsText = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','text', ...
+%                           'String','# of Sweeps:');
+%             self.NSweepsEdit = ...
+%                 ws.uiedit('Parent',self.AcquisitionPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.SweepDurationText = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','text', ...
+%                           'String','Sweep Duration:');
+%             self.SweepDurationEdit = ...
+%                 ws.uiedit('Parent',self.AcquisitionPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.SweepDurationUnitsText = ...
+%                 ws.uicontrol('Parent',self.AcquisitionPanel, ...
+%                           'Style','text', ...
+%                           'String','s');
+%             
+%             % Stimulation Panel
+%             self.StimulationPanel = ...
+%                 ws.uipanel('Parent',self.FigureGH, ...
+%                         'Units','pixels',...
+%                         'Title','Stimulation');
+%             self.StimulationEnabledCheckbox = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Enabled');
+%             self.StimulationSampleRateText = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','text', ...
+%                           'String','Sample Rate:');
+%             self.StimulationSampleRateEdit = ...
+%                 ws.uiedit('Parent',self.StimulationPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.StimulationSampleRateUnitsText = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','text', ...
+%                           'String','Hz');
+%             self.SourceText = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','text', ...
+%                           'String','Source:');
+%             self.SourcePopupmenu = ...
+%                 ws.uipopupmenu('Parent',self.StimulationPanel, ...
+%                                'String',{'Thing 1';'Thing 2'});
+%             self.EditStimulusLibraryButton = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','Edit...');
+%             self.RepeatsCheckbox = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Repeats');
+%             
+%             % Display Panel
+%             self.DisplayPanel = ...
+%                 ws.uipanel('Parent',self.FigureGH, ...
+%                         'Units','pixels',...
+%                         'Title','Display');
+%             self.DisplayEnabledCheckbox = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Enabled');
+%             self.UpdateRateText = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','text', ...
+%                           'String','Update Rate:');
+%             self.UpdateRateEdit = ...
+%                 ws.uiedit('Parent',self.DisplayPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.UpdateRateUnitsText = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','text', ...
+%                           'String','Hz');
+%             self.SpanText = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','text', ...
+%                           'String','Span:');
+%             self.SpanEdit = ...
+%                 ws.uiedit('Parent',self.DisplayPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.SpanUnitsText = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','text', ...
+%                           'String','s');
+%             self.AutoSpanCheckbox = ...
+%                 ws.uicontrol('Parent',self.DisplayPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Auto');
+%                     
+%             % Logging Panel
+%             self.LoggingPanel = ...
+%                 ws.uipanel('Parent',self.FigureGH, ...
+%                         'Units','pixels',...
+%                         'Title','Logging');
+%             self.BaseNameText = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','text', ...
+%                           'String','Base Name:');
+%             self.BaseNameEdit = ...
+%                 ws.uiedit('Parent',self.LoggingPanel, ...
+%                           'HorizontalAlignment','left');
+%             self.OverwriteCheckbox = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Overwrite without asking');
+%             self.LocationText = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','text', ...
+%                           'String','Folder:');
+%             self.LocationEdit = ...
+%                 ws.uiedit('Parent',self.LoggingPanel, ...
+%                           'HorizontalAlignment','left', ...
+%                           'Enable','off');
+%             self.ShowLocationButton = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','Show');
+%             self.ChangeLocationButton = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','Change...');
+%             self.IncludeDateCheckbox = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','Include date');
+%             self.SessionIndexCheckbox = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','checkbox', ...
+%                           'String','');
+%             self.SessionIndexText = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','text', ...
+%                           'String','Session:');
+%             self.SessionIndexEdit = ...
+%                 ws.uiedit('Parent',self.LoggingPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.IncrementSessionIndexButton = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','+');
+%             self.NextSweepText = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','text', ...
+%                           'String','Current Sweep:');  % text is 'Next Sweep:' most of the time, but this is for sizing
+%             self.NextSweepEdit = ...
+%                 ws.uiedit('Parent',self.LoggingPanel, ...
+%                           'HorizontalAlignment','right');
+%             self.FileNameText = ...
+%                 ws.uicontrol('Parent',self.LoggingPanel, ...
+%                           'Style','text', ...
+%                           'String','File Name:');
+%             self.FileNameEdit = ...
+%                 ws.uiedit('Parent',self.LoggingPanel, ...
+%                           'HorizontalAlignment','left', ...
+%                           'Enable','off');
                       
             % Stuff at the bottom of the window
             self.StatusText = ...
@@ -585,8 +588,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             figureWidth=750;
             
             toolbarAreaHeight=36;
-            topRowAreaHeight=136;
-            loggingAreaHeight=112+26;
+            topRowAreaHeight=0;
+            loggingAreaHeight=0;
             statusBarAreaHeight=30;
             
             figureHeight=toolbarAreaHeight+topRowAreaHeight+loggingAreaHeight+statusBarAreaHeight;
@@ -633,60 +636,60 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
             end
             
-            %
-            % The "top row" containing the acq, stim, and display panels
-            %
-            panelInset=2;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
-            topRowAreaXOffset=4;
-            topRowPanelAreaWidth=(figureWidth-topRowAreaXOffset)/3;
-            topRowAreaYOffset=statusBarAreaHeight+loggingAreaHeight;
+%             %
+%             % The "top row" containing the acq, stim, and display panels
+%             %
+%             panelInset=2;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
+%             topRowAreaXOffset=4;
+%             topRowPanelAreaWidth=(figureWidth-topRowAreaXOffset)/3;
+%             topRowAreaYOffset=statusBarAreaHeight+loggingAreaHeight;
+%             
+%             % The Acquisition panel
+%             acquisitionPanelXOffset=topRowAreaXOffset+panelInset;
+%             acquisitionPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
+%             acquisitionPanelYOffset=topRowAreaYOffset+panelInset;
+%             acquisitionPanelHeight=topRowAreaHeight-panelInset-panelInset;
+%             set(self.AcquisitionPanel,'Position',[acquisitionPanelXOffset acquisitionPanelYOffset acquisitionPanelWidth acquisitionPanelHeight]);
+%             %set(self.AcquisitionPanel,'BackgroundColor',[1 1 1]);
+% 
+%             % The Stimulation panel
+%             stimulationPanelXOffset=topRowAreaXOffset+topRowPanelAreaWidth+panelInset;
+%             stimulationPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
+%             stimulationPanelYOffset=topRowAreaYOffset+panelInset;
+%             stimulationPanelHeight=topRowAreaHeight-panelInset-panelInset;
+%             set(self.StimulationPanel,'Position',[stimulationPanelXOffset stimulationPanelYOffset stimulationPanelWidth stimulationPanelHeight]);
+%             %set(self.StimulationPanel,'BackgroundColor',[1 1 1]);
+% 
+%             % The Display panel
+%             displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
+%             displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
+%             displayPanelYOffset=topRowAreaYOffset+panelInset;
+%             displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
+%             set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
+% 
+%             % The Display panel
+%             displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
+%             displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
+%             displayPanelYOffset=topRowAreaYOffset+panelInset;
+%             displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
+%             set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
+
             
-            % The Acquisition panel
-            acquisitionPanelXOffset=topRowAreaXOffset+panelInset;
-            acquisitionPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            acquisitionPanelYOffset=topRowAreaYOffset+panelInset;
-            acquisitionPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.AcquisitionPanel,'Position',[acquisitionPanelXOffset acquisitionPanelYOffset acquisitionPanelWidth acquisitionPanelHeight]);
-            %set(self.AcquisitionPanel,'BackgroundColor',[1 1 1]);
-
-            % The Stimulation panel
-            stimulationPanelXOffset=topRowAreaXOffset+topRowPanelAreaWidth+panelInset;
-            stimulationPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            stimulationPanelYOffset=topRowAreaYOffset+panelInset;
-            stimulationPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.StimulationPanel,'Position',[stimulationPanelXOffset stimulationPanelYOffset stimulationPanelWidth stimulationPanelHeight]);
-            %set(self.StimulationPanel,'BackgroundColor',[1 1 1]);
-
-            % The Display panel
-            displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
-            displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            displayPanelYOffset=topRowAreaYOffset+panelInset;
-            displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
-
-            % The Display panel
-            displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
-            displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            displayPanelYOffset=topRowAreaYOffset+panelInset;
-            displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
-
-            
-            %
-            % The Logging panel
-            %            
-            bottomRowAreaXOffset=4;
-            loggingPanelXOffset=bottomRowAreaXOffset+panelInset;
-            loggingPanelWidth=figureWidth-bottomRowAreaXOffset-panelInset-panelInset;
-            loggingPanelYOffset=statusBarAreaHeight+panelInset;
-            loggingPanelHeight=loggingAreaHeight-panelInset-panelInset;
-            set(self.LoggingPanel,'Position',[loggingPanelXOffset loggingPanelYOffset loggingPanelWidth loggingPanelHeight]);            
-            
-            % Contents of panels
-            self.layoutAcquisitionPanel_(acquisitionPanelWidth,acquisitionPanelHeight);
-            self.layoutStimulationPanel_(stimulationPanelWidth,stimulationPanelHeight);
-            self.layoutDisplayPanel_(displayPanelWidth,displayPanelHeight);
-            self.layoutLoggingPanel_(loggingPanelWidth,loggingPanelHeight);
+%             %
+%             % The Logging panel
+%             %            
+%             bottomRowAreaXOffset=4;
+%             loggingPanelXOffset=bottomRowAreaXOffset+panelInset;
+%             loggingPanelWidth=figureWidth-bottomRowAreaXOffset-panelInset-panelInset;
+%             loggingPanelYOffset=statusBarAreaHeight+panelInset;
+%             loggingPanelHeight=loggingAreaHeight-panelInset-panelInset;
+%             set(self.LoggingPanel,'Position',[loggingPanelXOffset loggingPanelYOffset loggingPanelWidth loggingPanelHeight]);            
+%             
+%             % Contents of panels
+%             self.layoutAcquisitionPanel_(acquisitionPanelWidth,acquisitionPanelHeight);
+%             self.layoutStimulationPanel_(stimulationPanelWidth,stimulationPanelHeight);
+%             self.layoutDisplayPanel_(displayPanelWidth,displayPanelHeight);
+%             self.layoutLoggingPanel_(loggingPanelWidth,loggingPanelHeight);
             
             % The status area
             statusTextWidth=160;
@@ -709,319 +712,319 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         end  % function
     end  % protected methods
     
-    methods (Access = protected)
-        function layoutAcquisitionPanel_(self,acquisitionPanelWidth,acquisitionPanelHeight)
-            %
-            % Contents of acquisition panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToRadiobuttonBar=6;
-            heightFromRadiobuttonBarToGrid=8;
-            gridRowHeight=20;
-            interRowHeight=6;
-            editXOffset=100;
-            editWidth=80;
-            widthBetweenRadiobuttons=20;
-            
-            % Row of two radiobuttons
-            sweepBasedRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
-            sweepBasedRadiobuttonExtent=sweepBasedRadiobuttonExtent(3:4);  % no info in 1:2
-            sweepBasedRadiobuttonWidth=sweepBasedRadiobuttonExtent(1)+16;  % 16 is the size of the radiobutton itself
+%     methods (Access = protected)
+% %         function layoutAcquisitionPanel_(self,acquisitionPanelWidth,acquisitionPanelHeight)
+% %             %
+% %             % Contents of acquisition panel
+% %             %
+% %             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
+% %             heightFromTopToRadiobuttonBar=6;
+% %             heightFromRadiobuttonBarToGrid=8;
+% %             gridRowHeight=20;
+% %             interRowHeight=6;
+% %             editXOffset=100;
+% %             editWidth=80;
+% %             widthBetweenRadiobuttons=20;
+% %             
+% %             % Row of two radiobuttons
+% %             sweepBasedRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
+% %             sweepBasedRadiobuttonExtent=sweepBasedRadiobuttonExtent(3:4);  % no info in 1:2
+% %             sweepBasedRadiobuttonWidth=sweepBasedRadiobuttonExtent(1)+16;  % 16 is the size of the radiobutton itself
+% % 
+% %             continuousRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
+% %             continuousRadiobuttonExtent=continuousRadiobuttonExtent(3:4);  % no info in 1:2
+% %             continuousRadiobuttonWidth=continuousRadiobuttonExtent(1)+16;
+% %             
+% %             sweepBasedRadiobuttonPosition=get(self.SweepBasedRadiobutton,'Position');
+% %             sweepBasedRadiobuttonHeight=sweepBasedRadiobuttonPosition(4);
+% %             radiobuttonBarHeight=sweepBasedRadiobuttonHeight;
+% %             radiobuttonBarWidth=sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons+continuousRadiobuttonWidth;
+% %             
+% %             radiobuttonBarXOffset=(acquisitionPanelWidth-radiobuttonBarWidth)/2;
+% %             radiobuttonBarYOffset=acquisitionPanelHeight-heightOfPanelTitle-heightFromTopToRadiobuttonBar-radiobuttonBarHeight;
+% % 
+% %             set(self.SweepBasedRadiobutton,'Position',[radiobuttonBarXOffset radiobuttonBarYOffset sweepBasedRadiobuttonWidth radiobuttonBarHeight]);
+% %             xOffset=radiobuttonBarXOffset+sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons;
+% %             set(self.ContinuousRadiobutton,'Position',[xOffset radiobuttonBarYOffset continuousRadiobuttonWidth radiobuttonBarHeight]);
+% % 
+% %             % Sample rate row
+% %             gridRowYOffset=radiobuttonBarYOffset-heightFromRadiobuttonBarToGrid-gridRowHeight;
+% %             ws.positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
+% %                                           editXOffset,gridRowYOffset,editWidth)
+% %                                       
+% %             % # of sweeps row
+% %             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
+% %             ws.positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
+% %                                           editXOffset,gridRowYOffset,editWidth)
+% %             
+% %             % Sweep duration row
+% %             gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
+% %             ws.positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
+% %                                           editXOffset,gridRowYOffset,editWidth)            
+% %         end  % function
+%     end
 
-            continuousRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
-            continuousRadiobuttonExtent=continuousRadiobuttonExtent(3:4);  % no info in 1:2
-            continuousRadiobuttonWidth=continuousRadiobuttonExtent(1)+16;
-            
-            sweepBasedRadiobuttonPosition=get(self.SweepBasedRadiobutton,'Position');
-            sweepBasedRadiobuttonHeight=sweepBasedRadiobuttonPosition(4);
-            radiobuttonBarHeight=sweepBasedRadiobuttonHeight;
-            radiobuttonBarWidth=sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons+continuousRadiobuttonWidth;
-            
-            radiobuttonBarXOffset=(acquisitionPanelWidth-radiobuttonBarWidth)/2;
-            radiobuttonBarYOffset=acquisitionPanelHeight-heightOfPanelTitle-heightFromTopToRadiobuttonBar-radiobuttonBarHeight;
-
-            set(self.SweepBasedRadiobutton,'Position',[radiobuttonBarXOffset radiobuttonBarYOffset sweepBasedRadiobuttonWidth radiobuttonBarHeight]);
-            xOffset=radiobuttonBarXOffset+sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons;
-            set(self.ContinuousRadiobutton,'Position',[xOffset radiobuttonBarYOffset continuousRadiobuttonWidth radiobuttonBarHeight]);
-
-            % Sample rate row
-            gridRowYOffset=radiobuttonBarYOffset-heightFromRadiobuttonBarToGrid-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)
-                                      
-            % # of sweeps row
-            gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
-                                          editXOffset,gridRowYOffset,editWidth)
-            
-            % Sweep duration row
-            gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)            
-        end  % function
-    end
-
-    methods (Access = protected)
-        function layoutStimulationPanel_(self,stimulationPanelWidth,stimulationPanelHeight) %#ok<INUSL>
-            %
-            % Contents of stimulation panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToEnabledCheckbox=4;
-            heightFromCheckboxToRest=4;
-            heightFromSampleRateEditToSourcePopupmenu=6;
-            editXOffset=80;
-            editWidth=80;
-            editHeight=20;
-            popupmenuWidth=154;
-            editButtonWidth=80;
-            editButtonHeight=22;
-            widthFromEditButtonToRepeatsCheckbox=16;
-            heightFromSourcePopupmenuToEditButton=10;
-            
-            % Enabled checkbox
-            stimulationEnabledCheckboxXOffset=editXOffset;
-            stimulationEnabledCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
-            stimulationEnabledCheckboxWidth=stimulationEnabledCheckboxPosition(3);
-            stimulationEnabledCheckboxHeight=stimulationEnabledCheckboxPosition(4);
-            stimulationEnabledCheckboxYOffset=stimulationPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-stimulationEnabledCheckboxHeight;            
-            set(self.StimulationEnabledCheckbox, ...
-                'Position',[stimulationEnabledCheckboxXOffset stimulationEnabledCheckboxYOffset ...
-                            stimulationEnabledCheckboxWidth stimulationEnabledCheckboxHeight]);
-            
-            % Sample rate row
-            gridRowYOffset=stimulationEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.StimulationSampleRateText,self.StimulationSampleRateEdit,self.StimulationSampleRateUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)
-                                      
-            % Source popupmenu
-            position=get(self.SourcePopupmenu,'Position');
-            height=position(4);
-            gridRowYOffset=gridRowYOffset-heightFromSampleRateEditToSourcePopupmenu-height;
-            ws.positionPopupmenuAndLabelBang(self.SourceText,self.SourcePopupmenu, ...
-                                          editXOffset,gridRowYOffset,popupmenuWidth)
-            
-            % Edit... button
-            gridRowYOffset=gridRowYOffset-heightFromSourcePopupmenuToEditButton-editButtonHeight;
-            set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
-            
-            % "Repeats" checkbox
-            repeatsCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
-            width=repeatsCheckboxPosition(3);
-            height=repeatsCheckboxPosition(4);            
-            xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
-            yOffset=gridRowYOffset+(editButtonHeight-height)/2;
-            set(self.RepeatsCheckbox,'Position',[xOffset yOffset width height]);
-        end  % function
-    end
+%     methods (Access = protected)
+%         function layoutStimulationPanel_(self,stimulationPanelWidth,stimulationPanelHeight) %#ok<INUSL>
+%             %
+%             % Contents of stimulation panel
+%             %
+%             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
+%             heightFromTopToEnabledCheckbox=4;
+%             heightFromCheckboxToRest=4;
+%             heightFromSampleRateEditToSourcePopupmenu=6;
+%             editXOffset=80;
+%             editWidth=80;
+%             editHeight=20;
+%             popupmenuWidth=154;
+%             editButtonWidth=80;
+%             editButtonHeight=22;
+%             widthFromEditButtonToRepeatsCheckbox=16;
+%             heightFromSourcePopupmenuToEditButton=10;
+%             
+%             % Enabled checkbox
+%             stimulationEnabledCheckboxXOffset=editXOffset;
+%             stimulationEnabledCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
+%             stimulationEnabledCheckboxWidth=stimulationEnabledCheckboxPosition(3);
+%             stimulationEnabledCheckboxHeight=stimulationEnabledCheckboxPosition(4);
+%             stimulationEnabledCheckboxYOffset=stimulationPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-stimulationEnabledCheckboxHeight;            
+%             set(self.StimulationEnabledCheckbox, ...
+%                 'Position',[stimulationEnabledCheckboxXOffset stimulationEnabledCheckboxYOffset ...
+%                             stimulationEnabledCheckboxWidth stimulationEnabledCheckboxHeight]);
+%             
+%             % Sample rate row
+%             gridRowYOffset=stimulationEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
+%             ws.positionEditLabelAndUnitsBang(self.StimulationSampleRateText,self.StimulationSampleRateEdit,self.StimulationSampleRateUnitsText, ....
+%                                           editXOffset,gridRowYOffset,editWidth)
+%                                       
+%             % Source popupmenu
+%             position=get(self.SourcePopupmenu,'Position');
+%             height=position(4);
+%             gridRowYOffset=gridRowYOffset-heightFromSampleRateEditToSourcePopupmenu-height;
+%             ws.positionPopupmenuAndLabelBang(self.SourceText,self.SourcePopupmenu, ...
+%                                           editXOffset,gridRowYOffset,popupmenuWidth)
+%             
+%             % Edit... button
+%             gridRowYOffset=gridRowYOffset-heightFromSourcePopupmenuToEditButton-editButtonHeight;
+%             set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
+%             
+%             % "Repeats" checkbox
+%             repeatsCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
+%             width=repeatsCheckboxPosition(3);
+%             height=repeatsCheckboxPosition(4);            
+%             xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
+%             yOffset=gridRowYOffset+(editButtonHeight-height)/2;
+%             set(self.RepeatsCheckbox,'Position',[xOffset yOffset width height]);
+%         end  % function
+%     end
+%     
+%     methods (Access = protected)
+%         function layoutDisplayPanel_(self,displayPanelWidth,displayPanelHeight) %#ok<INUSL>
+%             %
+%             % Contents of display panel
+%             %
+%             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
+%             heightFromTopToEnabledCheckbox=4;
+%             heightFromCheckboxToRest=4;
+%             heightBetweenEdits=6;
+%             editXOffset=80;
+%             editWidth=80;
+%             editHeight=20;
+%             autoSpanXOffset=190;
+%             
+%             % Enabled checkbox
+%             displayEnabledCheckboxXOffset=editXOffset;
+%             displayEnabledCheckboxPosition=get(self.DisplayEnabledCheckbox,'Position');
+%             displayEnabledCheckboxWidth=displayEnabledCheckboxPosition(3);
+%             displayEnabledCheckboxHeight=displayEnabledCheckboxPosition(4);
+%             displayEnabledCheckboxYOffset=displayPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-displayEnabledCheckboxHeight;            
+%             set(self.DisplayEnabledCheckbox, ...
+%                 'Position',[displayEnabledCheckboxXOffset displayEnabledCheckboxYOffset ...
+%                             displayEnabledCheckboxWidth displayEnabledCheckboxHeight]);
+%             
+%             % Update rate row
+%             yOffset=displayEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
+%             ws.positionEditLabelAndUnitsBang(self.UpdateRateText,self.UpdateRateEdit,self.UpdateRateUnitsText, ....
+%                                           editXOffset,yOffset,editWidth)
+%                                       
+%             % Span row
+%             yOffset=yOffset-heightBetweenEdits-editHeight;
+%             ws.positionEditLabelAndUnitsBang(self.SpanText,self.SpanEdit,self.SpanUnitsText, ....
+%                                           editXOffset,yOffset,editWidth)
+%                                                   
+%             % Auto span checkbox
+%             autoSpanCheckboxExtent=get(self.AutoSpanCheckbox,'Extent');
+%             width=autoSpanCheckboxExtent(3)+16;  % size of the checkbox itself
+%             autoSpanCheckboxPosition=get(self.AutoSpanCheckbox,'Position');
+%             height=autoSpanCheckboxPosition(4);            
+%             xOffset=autoSpanXOffset;
+%             yOffset=yOffset+(editHeight-height)/2;
+%             set(self.AutoSpanCheckbox,'Position',[xOffset yOffset width height]);
+%         end  % function
+%     end
+%     
+%     methods (Access = protected)
+%         function layoutLoggingPanel_(self,loggingPanelWidth,loggingPanelHeight)
+%             %
+%             % Contents of logging panel
+%             %
+%             heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
+%             heightFromTopToTopRow=10;
+%             heightBetweenEdits=6;
+%             xOffsetOfEdits=80;
+%             editHeight=20;
+%             rightMarginWidth=10;
+%             widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
+%             widthLeftOfBaseNameEdit=6;
+%             showButtonWidth=70;
+%             changeLocationButtonWidth=90;
+%             widthBetweenLocationWidgets=6;
+%             nextSweepEditWidth=50;
+%             nextSweepLabelFixedWidth=80;  % We fix this, because the label text changes
+%             fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
+%             widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
+%             
+%             % Compute some things shared by several rows
+%             widthOfBaseNameAndLocationEdits = ...
+%                 widthOfStuffToRightOfEditTexts-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
+% 
+%             %
+%             % Location row
+%             %
+%             
+%             % Location edit and label
+%             locationEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
+%             ws.positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
+%                                           xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
+% 
+%             % Show button
+%             showButtonXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthBetweenLocationWidgets;
+%             set(self.ShowLocationButton,'Position',[showButtonXOffset locationEditYOffset showButtonWidth editHeight]);
+%             
+%             % Change location button
+%             changeLocationButtonXOffset=showButtonXOffset+showButtonWidth+widthBetweenLocationWidgets;
+%             set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
+% 
+%             %
+%             % Base name row
+%             %
+%             
+%             % BaseName Edit and label
+%             baseNameEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
+%             ws.positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
+%                                           xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
+% 
+%             
+%                                       
+%             %
+%             % Date, session, sweep row
+%             %
+%             
+%             dataSessionAndSweepRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
+%             
+%             % Include date checkbox
+%             includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
+%             includeDateCheckboxWidth=includeDateCheckboxExtent(3)+16;  % size of the checkbox itself
+%             includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
+%             includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
+%             includeDateCheckboxXOffset=xOffsetOfEdits;
+%             includeDateCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
+%             set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
+%                                                      includeDateCheckboxWidth includeDateCheckboxHeight]);
+%             
+%             % Session index checkbox
+%             sessionIndexCheckboxExtent=get(self.SessionIndexCheckbox,'Extent');
+%             sessionIndexCheckboxWidth=sessionIndexCheckboxExtent(3)+16;  % size of the checkbox itself
+%             sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
+%             sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
+%             sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
+%             sessionIndexCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
+%             set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
+%                                                       sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
+%             
+%             % Session index edit and label
+%             xOffsetOfSessionIndexEditFromCheckbox = 66 ;  % this is brittle, have to change if change session index label text, or font, etc.
+%             sessionIndexEditWidth = 50 ;
+%             sessionIndexEditXOffset =  ...
+%                 sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
+%             sessionIndexEditYOffset = dataSessionAndSweepRowYOffset ;
+%             ws.positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
+%                                           sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
+%                                       
+%             % Increment session index button
+%             incrementSessionIndexButtonWidth = 20 ;
+%             incrementSessionIndexButtonHeight = 20 ;            
+%             widthFromIncrementSessionIndexToButton = 5 ;
+%             incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
+%             incrementSessionIndexButtonYOffset = dataSessionAndSweepRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
+%             set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
+%                                                              incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
+%                                       
+%             % Next Sweep edit and label
+%             nextSweepEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextSweepEditWidth ;
+%             nextSweepEditYOffset = dataSessionAndSweepRowYOffset ;
+%             ws.positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
+%                                           nextSweepEditXOffset,nextSweepEditYOffset,nextSweepEditWidth, ...
+%                                           nextSweepLabelFixedWidth);
+%             
+% 
+%             %
+%             % File Name Row
+%             %
+%             fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
+%             fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
+%             ws.positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
+%                                           xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
+%                                           fileNameLabelFixedWidth) ;
+%                                       
+%             % Overwrite without asking checkbox
+%             overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
+%             overwriteCheckboxWidth=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
+%             overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
+%             overwriteCheckboxHeight=overwriteCheckboxPosition(4);            
+%             overwriteCheckboxXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthLeftOfBaseNameEdit;
+%             overwriteCheckboxYOffset=fileNameEditYOffset+(editHeight-overwriteCheckboxHeight)/2;
+%             set(self.OverwriteCheckbox,'Position',[overwriteCheckboxXOffset overwriteCheckboxYOffset overwriteCheckboxWidth overwriteCheckboxHeight]);
+%                                       
+%         end  % function
+%     end
     
-    methods (Access = protected)
-        function layoutDisplayPanel_(self,displayPanelWidth,displayPanelHeight) %#ok<INUSL>
-            %
-            % Contents of display panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToEnabledCheckbox=4;
-            heightFromCheckboxToRest=4;
-            heightBetweenEdits=6;
-            editXOffset=80;
-            editWidth=80;
-            editHeight=20;
-            autoSpanXOffset=190;
-            
-            % Enabled checkbox
-            displayEnabledCheckboxXOffset=editXOffset;
-            displayEnabledCheckboxPosition=get(self.DisplayEnabledCheckbox,'Position');
-            displayEnabledCheckboxWidth=displayEnabledCheckboxPosition(3);
-            displayEnabledCheckboxHeight=displayEnabledCheckboxPosition(4);
-            displayEnabledCheckboxYOffset=displayPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-displayEnabledCheckboxHeight;            
-            set(self.DisplayEnabledCheckbox, ...
-                'Position',[displayEnabledCheckboxXOffset displayEnabledCheckboxYOffset ...
-                            displayEnabledCheckboxWidth displayEnabledCheckboxHeight]);
-            
-            % Update rate row
-            yOffset=displayEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.UpdateRateText,self.UpdateRateEdit,self.UpdateRateUnitsText, ....
-                                          editXOffset,yOffset,editWidth)
-                                      
-            % Span row
-            yOffset=yOffset-heightBetweenEdits-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.SpanText,self.SpanEdit,self.SpanUnitsText, ....
-                                          editXOffset,yOffset,editWidth)
-                                                  
-            % Auto span checkbox
-            autoSpanCheckboxExtent=get(self.AutoSpanCheckbox,'Extent');
-            width=autoSpanCheckboxExtent(3)+16;  % size of the checkbox itself
-            autoSpanCheckboxPosition=get(self.AutoSpanCheckbox,'Position');
-            height=autoSpanCheckboxPosition(4);            
-            xOffset=autoSpanXOffset;
-            yOffset=yOffset+(editHeight-height)/2;
-            set(self.AutoSpanCheckbox,'Position',[xOffset yOffset width height]);
-        end  % function
-    end
+%     methods (Access = protected)
+%         function initializeGuidata_(self)
+%             % Set up the figure guidata the way it would be if this were a
+%             % GUIDE UI, or close enough to fool a ws.most.Controller.
+%             handles=ws.WavesurferMainFigure.initializeGuidataHelper_(struct(),self.FigureGH);
+%             % Add a pointer to self to the figure guidata
+%             handles.FigureObject=self;
+%             % commit to the guidata
+%             guidata(self.FigureGH,handles);
+%         end  % function        
+%     end  % protected methods block
     
-    methods (Access = protected)
-        function layoutLoggingPanel_(self,loggingPanelWidth,loggingPanelHeight)
-            %
-            % Contents of logging panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToTopRow=10;
-            heightBetweenEdits=6;
-            xOffsetOfEdits=80;
-            editHeight=20;
-            rightMarginWidth=10;
-            widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
-            widthLeftOfBaseNameEdit=6;
-            showButtonWidth=70;
-            changeLocationButtonWidth=90;
-            widthBetweenLocationWidgets=6;
-            nextSweepEditWidth=50;
-            nextSweepLabelFixedWidth=80;  % We fix this, because the label text changes
-            fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
-            widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
-            
-            % Compute some things shared by several rows
-            widthOfBaseNameAndLocationEdits = ...
-                widthOfStuffToRightOfEditTexts-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
-
-            %
-            % Location row
-            %
-            
-            % Location edit and label
-            locationEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
-                                          xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
-
-            % Show button
-            showButtonXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthBetweenLocationWidgets;
-            set(self.ShowLocationButton,'Position',[showButtonXOffset locationEditYOffset showButtonWidth editHeight]);
-            
-            % Change location button
-            changeLocationButtonXOffset=showButtonXOffset+showButtonWidth+widthBetweenLocationWidgets;
-            set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
-
-            %
-            % Base name row
-            %
-            
-            % BaseName Edit and label
-            baseNameEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
-                                          xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
-
-            
-                                      
-            %
-            % Date, session, sweep row
-            %
-            
-            dataSessionAndSweepRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
-            
-            % Include date checkbox
-            includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
-            includeDateCheckboxWidth=includeDateCheckboxExtent(3)+16;  % size of the checkbox itself
-            includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
-            includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
-            includeDateCheckboxXOffset=xOffsetOfEdits;
-            includeDateCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
-            set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
-                                                     includeDateCheckboxWidth includeDateCheckboxHeight]);
-            
-            % Session index checkbox
-            sessionIndexCheckboxExtent=get(self.SessionIndexCheckbox,'Extent');
-            sessionIndexCheckboxWidth=sessionIndexCheckboxExtent(3)+16;  % size of the checkbox itself
-            sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
-            sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
-            sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
-            sessionIndexCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
-            set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
-                                                      sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
-            
-            % Session index edit and label
-            xOffsetOfSessionIndexEditFromCheckbox = 66 ;  % this is brittle, have to change if change session index label text, or font, etc.
-            sessionIndexEditWidth = 50 ;
-            sessionIndexEditXOffset =  ...
-                sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
-            sessionIndexEditYOffset = dataSessionAndSweepRowYOffset ;
-            ws.positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
-                                          sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
-                                      
-            % Increment session index button
-            incrementSessionIndexButtonWidth = 20 ;
-            incrementSessionIndexButtonHeight = 20 ;            
-            widthFromIncrementSessionIndexToButton = 5 ;
-            incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
-            incrementSessionIndexButtonYOffset = dataSessionAndSweepRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
-            set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
-                                                             incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
-                                      
-            % Next Sweep edit and label
-            nextSweepEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextSweepEditWidth ;
-            nextSweepEditYOffset = dataSessionAndSweepRowYOffset ;
-            ws.positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
-                                          nextSweepEditXOffset,nextSweepEditYOffset,nextSweepEditWidth, ...
-                                          nextSweepLabelFixedWidth);
-            
-
-            %
-            % File Name Row
-            %
-            fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
-            fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
-            ws.positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
-                                          xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
-                                          fileNameLabelFixedWidth) ;
-                                      
-            % Overwrite without asking checkbox
-            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
-            overwriteCheckboxWidth=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
-            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
-            overwriteCheckboxHeight=overwriteCheckboxPosition(4);            
-            overwriteCheckboxXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthLeftOfBaseNameEdit;
-            overwriteCheckboxYOffset=fileNameEditYOffset+(editHeight-overwriteCheckboxHeight)/2;
-            set(self.OverwriteCheckbox,'Position',[overwriteCheckboxXOffset overwriteCheckboxYOffset overwriteCheckboxWidth overwriteCheckboxHeight]);
-                                      
-        end  % function
-    end
-    
-    methods (Access = protected)
-        function initializeGuidata_(self)
-            % Set up the figure guidata the way it would be if this were a
-            % GUIDE UI, or close enough to fool a ws.most.Controller.
-            handles=ws.WavesurferMainFigure.initializeGuidataHelper_(struct(),self.FigureGH);
-            % Add a pointer to self to the figure guidata
-            handles.FigureObject=self;
-            % commit to the guidata
-            guidata(self.FigureGH,handles);
-        end  % function        
-    end  % protected methods block
-    
-    methods (Static=true)
-        function handles=initializeGuidataHelper_(handles,containerGH)
-            % For a figure or uipanel graphics handle, containerGH, adds
-            % fields to the scalar structure handle, one per control in
-            % containerGH.  The field name is equal to the Tag of the child
-            % control.  If the child control is a uipanel, recursively adds
-            % fields for the controls within the panel.  The resulting
-            % struct is returned in handles.
-            childControlGHs=get(containerGH,'Children');
-            nChildren=length(childControlGHs);
-            for i=1:nChildren ,
-                childControlGH=childControlGHs(i);
-                tag=get(childControlGH,'Tag');
-                handles.(tag)=childControlGH;
-                % If a uipanel, recurse
-                if isequal(get(childControlGH,'Type'),'uipanel') ,
-                    handles=ws.WavesurferMainFigure.initializeGuidataHelper_(handles,childControlGH);
-                end
-            end
-            % Add the container itself
-            tag=get(containerGH,'Tag');
-            handles.(tag)=containerGH;
-        end  % function        
-    end  % protected methods block
+%     methods (Static=true)
+%         function handles=initializeGuidataHelper_(handles,containerGH)
+%             % For a figure or uipanel graphics handle, containerGH, adds
+%             % fields to the scalar structure handle, one per control in
+%             % containerGH.  The field name is equal to the Tag of the child
+%             % control.  If the child control is a uipanel, recursively adds
+%             % fields for the controls within the panel.  The resulting
+%             % struct is returned in handles.
+%             childControlGHs=get(containerGH,'Children');
+%             nChildren=length(childControlGHs);
+%             for i=1:nChildren ,
+%                 childControlGH=childControlGHs(i);
+%                 tag=get(childControlGH,'Tag');
+%                 handles.(tag)=childControlGH;
+%                 % If a uipanel, recurse
+%                 if isequal(get(childControlGH,'Type'),'uipanel') ,
+%                     handles=ws.WavesurferMainFigure.initializeGuidataHelper_(handles,childControlGH);
+%                 end
+%             end
+%             % Add the container itself
+%             tag=get(containerGH,'Tag');
+%             handles.(tag)=containerGH;
+%         end  % function        
+%     end  % protected methods block
 
     methods (Access = protected)
         function updateControlsInExistance_(self) %#ok<MANU>
@@ -1045,49 +1048,28 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 return
             end
             
-            import ws.onIff
-            import ws.fif
+%             import ws.onIff
+%             import ws.fif
             
-            isIdle = isequal(model.State,'idle');
+            %isIdle = isequal(model.State,'idle');
 
-%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
-%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
-%             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
+%             % Acquisition panel
+%             set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
+%             set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
+%             set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
+%             set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
+%             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
 %             
-%             % Need to handle stim.CanEnable
-%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
-%             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
-%             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
+%             % Stimulation panel (most of it)
+%             set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
+%             set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
+%             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
 %             
-%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
-%             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
-%             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
-%             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
-%             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
-%             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
-%             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
-            
-            % Acquisition panel
-            set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
-            set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
-            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
-            set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
-            set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
-            
-            % Stimulation panel (most of it)
-            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
-            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
-            set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
-            
-            % Display panel
-            set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
-            set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
-            set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
-            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+%             % Display panel
+%             set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
+%             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
+%             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
+%             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
@@ -1098,22 +1080,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     'TooltipString', thisProtocolFileName)
             end
             
-            % Logging panel
-            set(self.LocationEdit, 'String', model.Logging.FileLocation);
-            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
-            set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
-            set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
-            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
-            set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
-            %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
-            if ~isIdle&&model.Logging.IsEnabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
-            else
-                set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
-            end            
-            set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
+%             % Logging panel
+%             set(self.LocationEdit, 'String', model.Logging.FileLocation);
+%             set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
+%             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
+%             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
+%             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
+%             set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
+%             %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
+%             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
+%             %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
+%             if ~isIdle&&model.Logging.IsEnabled ,
+%                 set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
+%             else
+%                 set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
+%             end            
+%             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
             % Status text
             if isequal(model.State,'running') ,
@@ -1130,29 +1112,20 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Progress bar
             self.updateProgressBarProperties_();
             
-            % Update the Stimulation/Source popupmenu
-%             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
-%             stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
-%             if isempty(stimulusLibrary) ,
-%                 set(self.SourcePopupmenu, ...
-%                     'String', {'(No library)'}, ...
-%                     'Value', 1, ...
-%                     'BackgroundColor', warningBackgroundColor);
+%             % Update the Stimulation/Source popupmenu
+%             outputableNames = model.stimulusLibraryOutputableNames() ;
+%             %selectedOutputable = stimulusLibrary.SelectedOutputable ;
+%             selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
+%             if isempty(selectedOutputableName) ,
+%                 selectedOutputableNames = {} ;                    
 %             else
-                outputableNames = model.stimulusLibraryOutputableNames() ;
-                %selectedOutputable = stimulusLibrary.SelectedOutputable ;
-                selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
-                if isempty(selectedOutputableName) ,
-                    selectedOutputableNames = {} ;                    
-                else
-                    selectedOutputableNames = { selectedOutputableName } ;
-                end                
-                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
-%             end
+%                 selectedOutputableNames = { selectedOutputableName } ;
+%             end                
+%             ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
             % based on the model state
-            set(self.YokeToScanimageMenuItem,'Checked',onIff(model.IsYokedToScanImage));
+            set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
             
             % The save menu items
             self.updateSaveProtocolMenuItem_();
@@ -1168,7 +1141,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-            import ws.*
+%             import ws.*
 
             % If no model, can't really do anything
             model=self.Model;
@@ -1183,22 +1156,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
-            isSweepBased=model.AreSweepsFiniteDuration;
+            %isSweepBased=model.AreSweepsFiniteDuration;
             %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
             %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
             isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
-            %set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
-            % set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
-            set(self.OpenProtocolMenuItem,'Enable',onIff(isNoDevice||isIdle));            
-            set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveUserSettingsMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveUserSettingsAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoDevice));
-            %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
+            %set(self.LoadMachineDataFileMenuItem,'Enable',ws.onIff(isNoDevice));
+            % set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isNoDevice||isIdle));            
+            set(self.SaveProtocolMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveProtocolAsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.LoadUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveUserSettingsAsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
+            %set(self.QuitMenuItem,'Enable',ws.onIff(true));  % always available          
             
             %% Run Menu
             %window.StartMenu.IsEnabled=isIdle;
@@ -1206,59 +1179,60 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %window.StopMenu.IsEnabled= isAcquiring;
             
             % Tools Menu
-            set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-            set(self.DisplayMenuItem,'Enable',onIff(isIdle));
-            %set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(true));  
+            set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.GeneralSettingsMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
+            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
               % if desired.
-            set(self.TriggersMenuItem,'Enable',onIff(isIdle));
-            set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-            set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
-            set(self.ElectrodesMenuItem,'Enable',onIff(isIdle));
-            set(self.TestPulseMenuItem,'Enable',onIff(isIdle));
-            set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
+            set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.StimulusLibraryMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
             
             % Help menu
-            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoDevice));
+            set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
             
             % Toolbar buttons
-            set(self.PlayButton,'Enable',onIff(isIdle));
-            set(self.RecordButton,'Enable',onIff(isIdle));
-            set(self.StopButton,'Enable',onIff(isAcquiring));
+            set(self.PlayButton,'Enable',ws.onIff(isIdle));
+            set(self.RecordButton,'Enable',ws.onIff(isIdle));
+            set(self.StopButton,'Enable',ws.onIff(isAcquiring));
             
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols{i}.IsNonempty));
+                set(self.FastProtocolButtons(i),'Enable',ws.onIff( isIdle && model.FastProtocols{i}.IsNonempty));
             end
 
-            % Acquisition controls
-            set(self.SweepBasedRadiobutton,'Enable',onIff(isIdle));
-            set(self.ContinuousRadiobutton,'Enable',onIff(isIdle));            
-            set(self.AcquisitionSampleRateEdit,'Enable',onIff(isIdle));
-            set(self.NSweepsEdit,'Enable',onIff(isIdle&&isSweepBased));
-            set(self.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
-            
-            % Stimulation controls
-            %isStimulationEnableable = model.Stimulation.CanEnable ;
-            isStimulationEnableable = true ;
-            isStimulusEnabled=model.Stimulation.IsEnabled;
-            %stimulusLibrary=model.Stimulation.StimulusLibrary;            
-            %isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
-            set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
-            set(self.StimulationSampleRateEdit,'Enable',onIff(isIdle && isStimulusEnabled));
-            %set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
-            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.EditStimulusLibraryButton,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.RepeatsCheckbox,'Enable',onIff(isIdle && isStimulusEnabled));
-
-            % Display controls
-            self.updateEnablementAndVisibilityOfDisplayControls_();
-            
-            % Logging controls
-            self.updateEnablementAndVisibilityOfLoggingControls_();
+%             % Acquisition controls
+%             set(self.SweepBasedRadiobutton,'Enable',ws.onIff(isIdle));
+%             set(self.ContinuousRadiobutton,'Enable',ws.onIff(isIdle));            
+%             set(self.AcquisitionSampleRateEdit,'Enable',ws.onIff(isIdle));
+%             set(self.NSweepsEdit,'Enable',ws.onIff(isIdle&&isSweepBased));
+%             set(self.SweepDurationEdit,'Enable',ws.onIff(isIdle&&isSweepBased));
+%             
+%             % Stimulation controls
+%             %isStimulationEnableable = model.Stimulation.CanEnable ;
+%             isStimulationEnableable = true ;
+%             isStimulusEnabled=model.Stimulation.IsEnabled;
+%             %stimulusLibrary=model.Stimulation.StimulusLibrary;            
+%             %isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
+%             set(self.StimulationEnabledCheckbox,'Enable',ws.onIff(isIdle && isStimulationEnableable));
+%             set(self.StimulationSampleRateEdit,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+%             %set(self.SourcePopupmenu,'Enable',ws.onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
+%             set(self.SourcePopupmenu,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+%             set(self.EditStimulusLibraryButton,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+%             set(self.RepeatsCheckbox,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+% 
+%             % Display controls
+%             self.updateEnablementAndVisibilityOfDisplayControls_();
+%             
+%             % Logging controls
+%             self.updateEnablementAndVisibilityOfLoggingControls_();
 
             % Status bar controls
             if ~isAcquiring , 
@@ -1320,10 +1294,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 %             
 %             % Set the enablement of the Scopes menu item
 %             isIdle=isequal(model.State,'idle');
-%             set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+%             set(scopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
 %             
 %             % Set the Visibility of the Remove item in the Scope submenu
-%             set(removeItem,'Visible',onIff(model.Display.NScopes>0));
+%             set(removeItem,'Visible',ws.onIff(model.Display.NScopes>0));
 %             
 %             % For each ScopeModel, create a menu item to remove the
 %             % scope, with an appropriate command binding, and add it to
@@ -1346,78 +1320,78 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 %                 menuItem = uimenu('Parent',scopesMenuItem, ...
 %                                   'Label',model.Display.Scopes{i}.Title, ...
 %                                   'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
-%                                   'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
+%                                   'Checked',ws.onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
 %                                   'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
 %                 self.ShowHideChannelMenuItems(end+1)=menuItem;                       
 %             end
 %         end  % function
 %     end
     
-    methods (Access = protected)
-        function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
-            import ws.*
-            
-            % Get the figureObject
-            %figureGH=self.hGUIsArray;  % should be a scalar
-            %handles=guidata(figureGH);
-            %figureObject=handles.FigureObject;            
-            %figureObject=self.Figure;            
-            %window=self.hGUIData.WavesurferWindow;
-            
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            isIdle=isequal(model.State,'idle');            
-
-            displaySubsystem = model.Display ;
-            isDisplayEnabled=displaySubsystem.IsEnabled;
-            set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
-            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
-            %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
-        end  % function
-    end
-    
-    methods (Access = protected)
-        function updateEnablementAndVisibilityOfLoggingControls_(self,varargin)
-            import ws.*
-
-            % Get the figureObject
-            %figureGH=self.hGUIsArray;  % should be a scalar
-            %handles=guidata(figureGH);
-            %figureObject=handles.FigureObject;            
-            %window=self.hGUIData.WavesurferWindow;
-            %figureObject=self.Figure;
-            
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            isIdle=isequal(model.State,'idle');
-
-            %isLoggingEnabled=model.Logging.IsEnabled;
-            %isLoggingEnabled=true;            
-            %set(self.LoggingEnabled,'Enable',onIff(isIdle));
-            doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
-
-            set(self.BaseNameEdit,'Enable',onIff(isIdle));
-            set(self.OverwriteCheckbox,'Enable',onIff(isIdle));
-            %set(self.LocationEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ShowLocationButton,'Enable',onIff(isIdle));
-            set(self.ChangeLocationButton,'Enable',onIff(isIdle));
-            set(self.IncludeDateCheckbox,'Enable',onIff(isIdle));
-            set(self.SessionIndexCheckbox,'Enable',onIff(isIdle));
-            set(self.SessionIndexEdit,'Enable',onIff(isIdle&&doIncludeSessionIndex));
-            set(self.IncrementSessionIndexButton,'Enable',onIff(isIdle&&doIncludeSessionIndex));            
-            set(self.NextSweepEdit,'Enable',onIff(isIdle));
-            
-            
-        end  % function
-    end        
+%     methods (Access = protected)
+%         function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
+%             import ws.*
+%             
+%             % Get the figureObject
+%             %figureGH=self.hGUIsArray;  % should be a scalar
+%             %handles=guidata(figureGH);
+%             %figureObject=handles.FigureObject;            
+%             %figureObject=self.Figure;            
+%             %window=self.hGUIData.WavesurferWindow;
+%             
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             
+%             isIdle=isequal(model.State,'idle');            
+% 
+%             displaySubsystem = model.Display ;
+%             isDisplayEnabled=displaySubsystem.IsEnabled;
+%             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
+%             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
+%             %set(self.AutomaticRate,'Enable',ws.onIff(isIdle && isDisplayEnabled));
+%             set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
+%             set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
+%         end  % function
+%     end
+%     
+%     methods (Access = protected)
+%         function updateEnablementAndVisibilityOfLoggingControls_(self,varargin)
+%             import ws.*
+% 
+%             % Get the figureObject
+%             %figureGH=self.hGUIsArray;  % should be a scalar
+%             %handles=guidata(figureGH);
+%             %figureObject=handles.FigureObject;            
+%             %window=self.hGUIData.WavesurferWindow;
+%             %figureObject=self.Figure;
+%             
+%             model=self.Model;
+%             if isempty(model) ,
+%                 return
+%             end
+%             
+%             isIdle=isequal(model.State,'idle');
+% 
+%             %isLoggingEnabled=model.Logging.IsEnabled;
+%             %isLoggingEnabled=true;            
+%             %set(self.LoggingEnabled,'Enable',ws.onIff(isIdle));
+%             doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
+% 
+%             set(self.BaseNameEdit,'Enable',ws.onIff(isIdle));
+%             set(self.OverwriteCheckbox,'Enable',ws.onIff(isIdle));
+%             %set(self.LocationEdit,'Enable',ws.onIff(isIdle && isLoggingEnabled));
+%             set(self.ShowLocationButton,'Enable',ws.onIff(isIdle));
+%             set(self.ChangeLocationButton,'Enable',ws.onIff(isIdle));
+%             set(self.IncludeDateCheckbox,'Enable',ws.onIff(isIdle));
+%             set(self.SessionIndexCheckbox,'Enable',ws.onIff(isIdle));
+%             set(self.SessionIndexEdit,'Enable',ws.onIff(isIdle&&doIncludeSessionIndex));
+%             set(self.IncrementSessionIndexButton,'Enable',ws.onIff(isIdle&&doIncludeSessionIndex));            
+%             set(self.NextSweepEdit,'Enable',ws.onIff(isIdle));
+%             
+%             
+%         end  % function
+%     end        
     
     methods
         function willSetModelState(self,varargin)

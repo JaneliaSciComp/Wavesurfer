@@ -123,6 +123,31 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             %        self.DegreeOfEnablement_);
             value=(self.DegreeOfEnablement_>0);
         end
+        
+        function update(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.update_(varargin{:}) ;
+        end
+        
+        function updateControlProperties(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateControlProperties_(varargin{:}) ;
+        end
+
+        function updateControlEnablement(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateControlEnablement_(varargin{:}) ;
+        end
+        
+        function updateReadiness(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateReadiness_(varargin{:}) ;
+        end
+        
     end  % public methods block
     
     methods (Access=protected)

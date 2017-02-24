@@ -487,6 +487,15 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % methods
     
     methods
+        function position = getPositionInPixels(self)
+            figureGH = self.FigureGH_ ;
+            % Get our position
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            position = get(figureGH,'position') ;
+            set(figureGH,'units',originalUnits);            
+        end
+        
         function constrainPositionToMonitors(self, monitorPositions)
             % For each monitor, calculate the translation needed to get the
             % figure onto it.

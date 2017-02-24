@@ -123,7 +123,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
 
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-               model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
+               %model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
                
 %                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
 %                  % no longer publicly settable
@@ -820,6 +820,41 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
     end
         
     methods (Access = protected)
+        function closeRequested_(self, source, event)
+            % Frameworks that windows with close boxes or similar decorations should set the
+            % callback to this method when they take control of the window.  For example,
+            % the CloseRequestFcn for HG windows, or the Closing event in WPF.
+            %
+            % It is also likely the right choice for callbacks/actions associated with close
+            % or quit menu items, etc.
+            
+            % This method uses three methods that should be overriden by framework specific
+            % subclasses to perform either the hide or a true close.  A fourth method
+            % (shouldWindowStayPutQ) is a hook for application specific controllers to
+            % intercept the close (or hide) attempt and cancel it.  By default it simply
+            % returns false to continue.
+            
+            shouldStayPut = self.shouldStayPutQ_(source, event);
+            
+            if shouldStayPut ,
+                % Do nothing
+            else
+                self.hide() ;
+            end
+        end
+        
+        function shouldStayPut = shouldStayPutQ_(self, varargin)
+            % This is called after the user indicates she wants to close
+            % the window.  Returns true if the window should _not_ close,
+            % false if it should go ahead and close.
+            model = self.Model_ ;
+            if isempty(model) || ~isvalid(model) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~model.isRootIdleSensuLato() ;
+            end
+        end  % function
+        
         function updateControlPropertiesImplementation_(self) 
             % In subclass, this should make sure the properties of the
             % controls (besides Position and Enable) are in-sync with the

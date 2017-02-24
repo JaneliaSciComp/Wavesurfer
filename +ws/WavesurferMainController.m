@@ -11,7 +11,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         ChannelsController = [];
         TestPulserController = [];
         ElectrodeManagerController= [];        
-    end
+        GeneralSettingsFigure = [] ;
+    end    
     
     properties (Access=protected, Transient)
         % Defines relationships between controller instances/names, window instances,
@@ -61,111 +62,111 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.Model.do('stop') ;
         end
         
-        function SweepBasedRadiobuttonActuated(self, source, event)  %#ok<INUSD>
-            newValue = get(source, 'Value') ;
-            %ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
-            self.Model.do('set', 'AreSweepsFiniteDuration', newValue) ;
-        end
-
-        function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            %ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
-            self.Model.do('set', 'AreSweepsContinuous', newValue);
-        end
-
-        function NSweepsEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('set','NSweepsPerRun',newValue);
-        end
-
-        function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('set','SweepDuration',newValue);
-        end
-
-        function AcquisitionSampleRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            %ws.Controller.setWithBenefits(self.Model.Acquisition,'SampleRate',newValue);
-            self.Model.do('setSubsystemProperty','Acquisition','SampleRate',newValue) ;
-        end
-
-        function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Stimulation','IsEnabled',newValue);
-        end
-        
-        function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Stimulation','SampleRate',newValue);
-        end
-
-        function RepeatsCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Stimulation','DoRepeatSequence',newValue);
-        end
-
-        function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Display','IsEnabled',newValue);
-        end
-        
-        function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Display','UpdateRate',newValue);
-        end
-
-        function SpanEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Display','XSpan',newValue);
-        end
-
-        function AutoSpanCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Display','IsXSpanSlavedToAcquistionDuration',newValue);
-        end
-        
-        function LocationEditActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'String');
-            self.Model.do('setSubsystemProperty','Logging','FileLocation',newValue);
-        end
-
-        function BaseNameEditActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'String');
-            self.Model.do('setSubsystemProperty','Logging','FileBaseName',newValue);
-        end
-
-        function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','DoIncludeDate',newValue);
-        end
-        
-        function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','DoIncludeSessionIndex',newValue);
-        end
-        
-        function SessionIndexEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Logging','SessionIndex',newValue);
-        end
-        
-        function NextSweepEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Logging','NextSweepIndex',newValue);
-        end
-
-        function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','IsOKToOverwrite',newValue);
-        end        
+%         function SweepBasedRadiobuttonActuated(self, source, event)  %#ok<INUSD>
+%             newValue = get(source, 'Value') ;
+%             %ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
+%             self.Model.do('set', 'AreSweepsFiniteDuration', newValue) ;
+%         end
+% 
+%         function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             %ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
+%             self.Model.do('set', 'AreSweepsContinuous', newValue);
+%         end
+% 
+%         function NSweepsEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('set','NSweepsPerRun',newValue);
+%         end
+% 
+%         function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('set','SweepDuration',newValue);
+%         end
+% 
+%         function AcquisitionSampleRateEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             %ws.Controller.setWithBenefits(self.Model.Acquisition,'SampleRate',newValue);
+%             self.Model.do('setSubsystemProperty','Acquisition','SampleRate',newValue) ;
+%         end
+% 
+%         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Stimulation','IsEnabled',newValue);
+%         end
+%         
+%         function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('setSubsystemProperty','Stimulation','SampleRate',newValue);
+%         end
+% 
+%         function RepeatsCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Stimulation','DoRepeatSequence',newValue);
+%         end
+% 
+%         function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Display','IsEnabled',newValue);
+%         end
+%         
+%         function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('setSubsystemProperty','Display','UpdateRate',newValue);
+%         end
+% 
+%         function SpanEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('setSubsystemProperty','Display','XSpan',newValue);
+%         end
+% 
+%         function AutoSpanCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Display','IsXSpanSlavedToAcquistionDuration',newValue);
+%         end
+%         
+%         function LocationEditActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'String');
+%             self.Model.do('setSubsystemProperty','Logging','FileLocation',newValue);
+%         end
+% 
+%         function BaseNameEditActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'String');
+%             self.Model.do('setSubsystemProperty','Logging','FileBaseName',newValue);
+%         end
+% 
+%         function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Logging','DoIncludeDate',newValue);
+%         end
+%         
+%         function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Logging','DoIncludeSessionIndex',newValue);
+%         end
+%         
+%         function SessionIndexEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('setSubsystemProperty','Logging','SessionIndex',newValue);
+%         end
+%         
+%         function NextSweepEditActuated(self,source,event) %#ok<INUSD>
+%             newValueAsString=get(source,'String');
+%             newValue=str2double(newValueAsString);
+%             self.Model.do('setSubsystemProperty','Logging','NextSweepIndex',newValue);
+%         end
+% 
+%         function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
+%             newValue=get(source,'Value');
+%             self.Model.do('setSubsystemProperty','Logging','IsOKToOverwrite',newValue);
+%         end        
         
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             initialFolderForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
@@ -238,6 +239,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.showAndRaiseChildFigure_('ChannelsController');
         end
         
+        function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showAndRaiseChildFigure_('GeneralSettingsFigure');
+        end
+        
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
             self.showAndRaiseChildFigure_('TriggersController');
         end
@@ -287,72 +292,72 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         % Buttons
-        function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
-            if ~isempty(self.Model) ,
-                winopen(self.Model.Logging.FileLocation) ;
-            end
-        end
-        
-        function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
-            folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
-            if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
-                % do nothing
-            else
-                self.Model.do('setSubsystemProperty', 'Logging', 'FileLocation', folderName) ;
-            end
-        end        
-
-        function IncrementSessionIndexButtonActuated(self,source,event) %#ok<INUSD>
-            %self.Model.Logging.incrementSessionIndex();
-            self.Model.do('incrementSessionIndex') ;
-        end        
-        
-        function SourcePopupmenuActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-            if ~isempty(model) ,
-                menuItems=get(source,'String');            
-                nMenuItems=length(menuItems);
-                if nMenuItems==0 ,
-                    doSomething = false ;
-                    outputableIndex = [] ;  % not used
-                else
-                    if nMenuItems==1 ,
-                        menuItem=menuItems{1};
-                        if isequal(menuItem,'(No library)') || isequal(menuItem,'(No outputables)') ,
-                            doSomething = false ;
-                            outputableIndex = [] ;  % not used
-                        elseif isequal(menuItem,'(None selected)') ||  isequal(menuItem,'(No selection)') ,
-                            doSomething = true ;
-                            outputableIndex = [] ;
-                            %model.Stimulation.StimulusLibrary.SelectedOutputable=[];
-                        else
-                            doSomething = true ;
-                            outputableIndex = 1 ;
-                            %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(1);
-                        end
-                    else
-                        % at least 2 menu items
-                        firstMenuItem=menuItems{1};
-                        menuIndex=get(source,'Value');
-                        if isequal(firstMenuItem,'(None selected)') || isequal(firstMenuItem,'(No selection)') ,
-                            doSomething = true ;
-                            outputableIndex=menuIndex-1;
-                        else
-                            doSomething = true ;
-                            outputableIndex=menuIndex;
-                        end
-                        %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(outputableIndex);
-                    end
-                end            
-                if doSomething, 
-                    model.do('setSelectedOutputableByIndex', outputableIndex) ;
-                end
-            end
-        end  % method
-        
-        function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController');
-        end
+%         function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
+%             if ~isempty(self.Model) ,
+%                 winopen(self.Model.Logging.FileLocation) ;
+%             end
+%         end
+%         
+%         function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
+%             folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
+%             if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
+%                 % do nothing
+%             else
+%                 self.Model.do('setSubsystemProperty', 'Logging', 'FileLocation', folderName) ;
+%             end
+%         end        
+% 
+%         function IncrementSessionIndexButtonActuated(self,source,event) %#ok<INUSD>
+%             %self.Model.Logging.incrementSessionIndex();
+%             self.Model.do('incrementSessionIndex') ;
+%         end        
+%         
+%         function SourcePopupmenuActuated(self,source,event) %#ok<INUSD>
+%             model=self.Model;
+%             if ~isempty(model) ,
+%                 menuItems=get(source,'String');            
+%                 nMenuItems=length(menuItems);
+%                 if nMenuItems==0 ,
+%                     doSomething = false ;
+%                     outputableIndex = [] ;  % not used
+%                 else
+%                     if nMenuItems==1 ,
+%                         menuItem=menuItems{1};
+%                         if isequal(menuItem,'(No library)') || isequal(menuItem,'(No outputables)') ,
+%                             doSomething = false ;
+%                             outputableIndex = [] ;  % not used
+%                         elseif isequal(menuItem,'(None selected)') ||  isequal(menuItem,'(No selection)') ,
+%                             doSomething = true ;
+%                             outputableIndex = [] ;
+%                             %model.Stimulation.StimulusLibrary.SelectedOutputable=[];
+%                         else
+%                             doSomething = true ;
+%                             outputableIndex = 1 ;
+%                             %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(1);
+%                         end
+%                     else
+%                         % at least 2 menu items
+%                         firstMenuItem=menuItems{1};
+%                         menuIndex=get(source,'Value');
+%                         if isequal(firstMenuItem,'(None selected)') || isequal(firstMenuItem,'(No selection)') ,
+%                             doSomething = true ;
+%                             outputableIndex=menuIndex-1;
+%                         else
+%                             doSomething = true ;
+%                             outputableIndex=menuIndex;
+%                         end
+%                         %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(outputableIndex);
+%                     end
+%                 end            
+%                 if doSomething, 
+%                     model.do('setSelectedOutputableByIndex', outputableIndex) ;
+%                 end
+%             end
+%         end  % method
+%         
+%         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
+%             self.showAndRaiseChildFigure_('StimulusLibraryController');
+%         end
         
         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
             if ~isempty(self.Model) ,
@@ -386,7 +391,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             for i=1:length(self.ChildControllers_) ,
                 thisChildController = self.ChildControllers_{i} ;
                 if isvalid(thisChildController) ,
-                    thisChildController.quittingWavesurfer();
+                    if isa(thisChildController, 'ws.Controller') ,
+                        thisChildController.quittingWavesurfer();
+                    else
+                        % means it's a MCOSFigureWithSelfControl
+                        delete(thisChildController) ;
+                    end
                 end
             end
 
@@ -668,24 +678,39 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
-            if didCreate ,
-                % no need to update
+            if isa(controller, 'ws.Controller') ,
+                if didCreate ,
+                    % no need to update
+                else
+                    controller.updateFigure();  % figure might be out-of-date
+                end
+                controller.showFigure();
+                controller.raiseFigure();
             else
-                controller.updateFigure();  % figure might be out-of-date
+                if didCreate ,
+                    % no need to update
+                else
+                    controller.update();  % figure might be out-of-date
+                end
+                % is a MCOSFigureWithSelfControl
+                controller.show() ;
+                controller.raise() ;
             end
-            controller.showFigure();
-            controller.raiseFigure();
         end  % function
         
-        function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerName, varargin)
-            if isempty(self.(controllerName)) ,
-                fullControllerClassName=['ws.' controllerName];
-                controller = feval(fullControllerClassName,self,self.Model);
+        function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerClassName, varargin)
+            if isempty(self.(controllerClassName)) ,
+                fullControllerClassName=['ws.' controllerClassName];
+                if isequal(fullControllerClassName, 'ws.GeneralSettingsFigure') ,
+                    controller = feval(fullControllerClassName, self.Model, self.Figure.getPositionInPixels() );
+                else
+                    controller = feval(fullControllerClassName,self,self.Model);
+                end
                 self.ChildControllers_{end+1}=controller;
-                self.(controllerName)=controller;
+                self.(controllerClassName)=controller;
                 didCreate = true ;
             else
-                controller = self.(controllerName);
+                controller = self.(controllerClassName);
                 didCreate = false ;
             end
         end  % function
