@@ -287,7 +287,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         
         function layout_(self)
             % This method should make sure all the controls are sized and placed
-            % appropraitely given the current model state.
+            % appropriately given the current model state.
             
             % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.

@@ -79,7 +79,7 @@ classdef WavesurferModel < ws.Model
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
-       
+        
         AIChannelNames
         DIChannelNames
         AOChannelNames
@@ -106,6 +106,7 @@ classdef WavesurferModel < ws.Model
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
+        MainFigurePosition_ = []  % pels
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
