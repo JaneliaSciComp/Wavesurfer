@@ -16,8 +16,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         QuitMenuItem
         
         ProtocolMenu
-        GeneralSettingsMenuItem
         ChannelsMenuItem
+        GeneralSettingsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
         UserCodeManagerMenuItem
@@ -35,7 +35,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         PlayButton
         RecordButton
         StopButton
-        FastProtocolText
+        %FastProtocolText
         FastProtocolButtons
         
         StatusText
@@ -57,7 +57,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         XData_
         YData_
         
-        % Stuff below are cached resources that we use in all the
+        % Stuff below are cached resources that we use in all the scope plots
+        NormalPlayIcon_
+        NormalRecordIcon_
+        NormalStopIcon_        
         NormalYScrollUpIcon_ 
         NormalYScrollDownIcon_ 
         NormalYTightToDataIcon_ 
@@ -104,7 +107,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.NormalYTightToDataUnlockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
             self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png') ;
+            self.NormalPlayIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png') ;
+            self.NormalRecordIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png') ;
+            self.NormalStopIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            
             % Create the trace color sequence
             self.TraceColorSequence_ = ws.makeColorSequence() ;
             
@@ -324,10 +333,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'TooltipString','Stop', ...
                           'CData',stopIcon);                      
-            self.FastProtocolText = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','');                
+%             self.FastProtocolText = ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
+%                           'Style','text', ...
+%                           'String','');                
             nFastProtocolButtons=6;
             for i=1:nFastProtocolButtons ,
                 self.FastProtocolButtons(i) = ...
@@ -355,11 +364,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                      'Visible','off');
             self.ProgressBarPatch = ...
                 patch('Parent',self.ProgressBarAxes, ...
-                      'FaceColor',[10 36 106]/255, ...
                       'EdgeColor','none', ...
                       'XData',[0 1 1 0 0], ...
                       'YData',[0 0 1 1 0], ...                      
                       'Visible','off');
+%                     'FaceColor',[10 36 106]/255, ...
         end  % function
     end  % methods block
     
@@ -430,8 +439,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             figureWidth = figureSize(1) ;
             figureHeight = figureSize(2) ;
             
+            % Some dimensions
             toolbarAreaHeight=36;
-            statusBarAreaHeight=30;
+            heightOfSpaceBetweenToolbarAndPlotArea = 4 ;
+            statusBarAreaHeight=22;
             
             %
             % Layout the "toolbar"
@@ -445,7 +456,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             fastProtocolButtonWidth=26;
             fastProtocolButtonHeight=26;
             spaceBetweenFastProtocolButtons=5;
-            widthBetweenFastProtocolTextAndButtons=4;
+            %widthBetweenFastProtocolTextAndButtons=4;
             
             % VCR buttons
             vcrButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
@@ -457,24 +468,50 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.StopButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
             
             % Fast Protocol text
-            fastProtocolTextExtent=get(self.FastProtocolText,'Extent');
-            fastProtocolTextWidth=fastProtocolTextExtent(3)+2;
-            fastProtocolTextPosition=get(self.FastProtocolText,'Position');
-            fastProtocolTextHeight=fastProtocolTextPosition(4);
+            %fastProtocolTextExtent=get(self.FastProtocolText,'Extent');
+            %fastProtocolTextWidth=fastProtocolTextExtent(3)+2;
+            %fastProtocolTextPosition=get(self.FastProtocolText,'Position');
+            %fastProtocolTextHeight=fastProtocolTextPosition(4);
             nFastProtocolButtons=length(self.FastProtocolButtons);
             widthOfFastProtocolButtonBar=nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons;            
-            xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
+            %xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
             fastProtocolButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
-            yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
-            set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
+            %yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
+            %set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
             
-            % fast protocol buttons
+            % Fast protocol buttons
             xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
             for i=1:nFastProtocolButtons ,
                 set(self.FastProtocolButtons(i),'Position',[xOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]);
                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
             end
                         
+            %
+            % The plots
+            %            
+            % The height of the area for the x axis label on the bottom plot
+            xAxisLabelAreaHeight = 34 ;
+            
+            plotHeightFromPlotIndex = self.Model.Display.PlotHeightFromPlotIndex ;
+            normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
+            totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
+            
+            doesUserWantToSeeButtons = self.Model.Display.DoShowButtons ;
+            isAnalogFromPlotIndex = self.Model.Display.IsAnalogFromPlotIndex ;
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot=1:nPlots ,
+                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
+                self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
+                                                             toolbarAreaHeight, ...
+                                                             heightOfSpaceBetweenToolbarAndPlotArea, ...
+                                                             statusBarAreaHeight, ...
+                                                             xAxisLabelAreaHeight, ...
+                                                             normalizedPlotHeightFromPlotIndex(iPlot) , ...
+                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...                                                             
+                                                             doesUserWantToSeeButtons, ...
+                                                             isThisPlotAnalog) ;
+            end
+            
             %
             % The status area
             %
@@ -493,32 +530,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             progressBarHeight=12;
             progressBarXOffset = figureWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
             progressBarYOffset = (statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
-            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);
-            
-            %
-            % The plots
-            %            
-            % The height of the area for the x axis label on the bottom plot
-            xAxisLabelAreaHeight = 44 ;
-            
-            plotHeightFromPlotIndex = self.Model.Display.PlotHeightFromPlotIndex ;
-            normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
-            totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
-            
-            doesUserWantToSeeButtons = self.Model.Display.DoShowButtons ;
-            isAnalogFromPlotIndex = self.Model.Display.IsAnalogFromPlotIndex ;
-            nPlots = length(self.ScopePlots_) ;
-            for iPlot=1:nPlots ,
-                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
-                self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
-                                                             toolbarAreaHeight, ...
-                                                             statusBarAreaHeight, ...
-                                                             xAxisLabelAreaHeight, ...
-                                                             normalizedPlotHeightFromPlotIndex(iPlot) , ...
-                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...                                                             
-                                                             doesUserWantToSeeButtons, ...
-                                                             isThisPlotAnalog) ;
-            end
+            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);            
         end  % function
         
     end  % protected methods    
@@ -560,6 +572,25 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 return
             end            
             
+            % Set the button colors and icons
+            areColorsNormal = model.Display.AreColorsNormal ;
+            defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
+            controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
+            if areColorsNormal ,
+                playIcon   = self.NormalPlayIcon_   ;
+                recordIcon = self.NormalRecordIcon_ ;
+                stopIcon = self.NormalStopIcon_ ;
+            else
+                playIcon   = 1-self.NormalPlayIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
+                recordIcon = self.NormalRecordIcon_ ;  % looks OK in either case
+                stopIcon = 1-self.NormalStopIcon_ ;
+            end                
+            set(self.PlayButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',playIcon);
+            set(self.RecordButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',recordIcon);
+            set(self.StopButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',stopIcon);
+            set(self.FastProtocolButtons,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
@@ -582,7 +613,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             else
                 statusString = ws.titleStringFromApplicationState(model.State) ;
             end
-            set(self.StatusText,'String',statusString);
+            set(self.StatusText,'String',statusString,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
             
             % Progress bar
             self.updateProgressBarProperties_();
@@ -847,10 +878,17 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
-            %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
-            %dbstack
             model=self.Model;
             state=model.State;
+            
+            brightGreen = [0 1 0] ;
+            darkBlue = [10 36 106]/255 ;
+            
+            areColorsNormal = model.Display.AreColorsNormal ;
+            axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
+            axesForegroundColor = ws.fif(areColorsNormal,'k','w') ;
+            patchColor = ws.fif(areColorsNormal,darkBlue,brightGreen) ;
+            
             if isequal(state,'running') ,
                 if model.AreSweepsFiniteDuration ,
                     if isfinite(model.NSweepsPerRun) ,
@@ -860,8 +898,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         set(self.ProgressBarPatch, ...
                             'XData',[0 fractionCompleted fractionCompleted 0 0], ...
                             'YData',[0 0 1 1 0], ...
+                            'FaceColor', patchColor, ...
                             'Visible','on');
                         set(self.ProgressBarAxes, ...                
+                            'Color',axesBackgroundColor, ...
+                            'XColor',axesForegroundColor, ...
+                            'YColor',axesForegroundColor, ...
+                            'ZColor',axesForegroundColor, ...;
                             'Visible','on');
                     else
                         % number of sweeps is infinite
@@ -881,8 +924,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         set(self.ProgressBarPatch, ...
                             'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
                             'YData',[0 0 1 1 0], ...
+                            'FaceColor', patchColor, ...
                             'Visible','on');
                         set(self.ProgressBarAxes, ...                
+                            'Color',axesBackgroundColor, ...
+                            'XColor',axesForegroundColor, ...
+                            'YColor',axesForegroundColor, ...
+                            'ZColor',axesForegroundColor, ...;
                             'Visible','on');
                     end
                 else
@@ -896,16 +944,27 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     set(self.ProgressBarPatch, ...
                         'XData',xOffset+[0 barWidth barWidth 0 0], ...
                         'YData',[0 0 1 1 0], ...
+                        'FaceColor', patchColor, ...
                         'Visible','on');
                     set(self.ProgressBarAxes, ...                
+                        'Color',axesBackgroundColor, ...
+                        'XColor',axesForegroundColor, ...
+                        'YColor',axesForegroundColor, ...
+                        'ZColor',axesForegroundColor, ...;
                         'Visible','on');
                 end
             else
+                % If not running
                 set(self.ProgressBarPatch, ...
                     'XData',[0 0 0 0 0], ...
                     'YData',[0 0 1 1 0], ...
+                    'FaceColor', patchColor, ...
                     'Visible','off');
                 set(self.ProgressBarAxes, ...                
+                    'Color',axesBackgroundColor, ...
+                    'XColor',axesForegroundColor, ...
+                    'YColor',axesForegroundColor, ...
+                    'ZColor',axesForegroundColor, ...;
                     'Visible','off');
             end
         end  % function
