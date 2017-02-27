@@ -440,9 +440,16 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             figureHeight = figureSize(2) ;
             
             % Some dimensions
+            minimumLayoutWidth = 500 ;
+            minimumLayoutHeight = 300 ;
             toolbarAreaHeight=36;
             heightOfSpaceBetweenToolbarAndPlotArea = 4 ;
             statusBarAreaHeight=22;
+            
+            % Compute the layout size, and the layout y offset
+            layoutWidth = max(minimumLayoutWidth, figureWidth) ;
+            layoutHeight = max(minimumLayoutHeight, figureHeight) ;
+            layoutYOffset = figureHeight - layoutHeight ;
             
             %
             % Layout the "toolbar"
@@ -459,7 +466,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %widthBetweenFastProtocolTextAndButtons=4;
             
             % VCR buttons
-            vcrButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
+            vcrButtonsYOffset=layoutYOffset+layoutHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
             xOffset=vcrButtonsXOffset;
             set(self.PlayButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
             xOffset=xOffset+vcrButtonWidth+spaceBetweenVCRButtons;
@@ -474,13 +481,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %fastProtocolTextHeight=fastProtocolTextPosition(4);
             nFastProtocolButtons=length(self.FastProtocolButtons);
             widthOfFastProtocolButtonBar=nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons;            
-            %xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
-            fastProtocolButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
+            %xOffset=layoutWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
+            fastProtocolButtonsYOffset=layoutYOffset+layoutHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
             %yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
             %set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
             
             % Fast protocol buttons
-            xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
+            xOffset=layoutWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
             for i=1:nFastProtocolButtons ,
                 set(self.FastProtocolButtons(i),'Position',[xOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]);
                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
@@ -501,7 +508,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             nPlots = length(self.ScopePlots_) ;
             for iPlot=1:nPlots ,
                 isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
-                self.ScopePlots_(iPlot).setPositionAndLayout(figureSize, ...
+                self.ScopePlots_(iPlot).setPositionAndLayout([layoutWidth layoutHeight], ...
+                                                             layoutYOffset, ...
                                                              toolbarAreaHeight, ...
                                                              heightOfSpaceBetweenToolbarAndPlotArea, ...
                                                              statusBarAreaHeight, ...
@@ -519,7 +527,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             statusTextPosition=get(self.StatusText,'Position');
             statusTextHeight=statusTextPosition(4);
             statusTextXOffset=10;
-            statusTextYOffset=(statusBarAreaHeight-statusTextHeight)/2-2;  % shim
+            statusTextYOffset=layoutYOffset+(statusBarAreaHeight-statusTextHeight)/2-2;  % shim
             set(self.StatusText,'Position',[statusTextXOffset statusTextYOffset statusTextWidth statusTextHeight]);
                         
             %
@@ -528,8 +536,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             widthFromProgressBarRightToFigureRight=10;
             progressBarWidth=240;
             progressBarHeight=12;
-            progressBarXOffset = figureWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
-            progressBarYOffset = (statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
+            progressBarXOffset = layoutWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
+            progressBarYOffset = layoutYOffset+(statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
             set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);            
         end  % function
         

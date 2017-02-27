@@ -238,7 +238,8 @@ classdef ScopePlot < handle
 %         end
         
         function setPositionAndLayout(self, ...
-                                      figureSize, ...
+                                      layoutSize, ...
+                                      layoutYOffset, ...
                                       toolbarAreaHeight, ...
                                       heightOfSpaceBetweenToolbarAndPlotArea, ...
                                       statusBarAreaHeight, ...                                      
@@ -290,18 +291,18 @@ classdef ScopePlot < handle
             
             % Get the current figure width, height
             %figureSize = figurePosition(3:4);
-            figureWidth = figureSize(1) ;
-            figureHeight = figureSize(2) ;
+            layoutWidth = layoutSize(1) ;
+            layoutHeight = layoutSize(2) ;
             
             % There's a rectangle within the figure where this scope axes
             % will go.  We'll call this the "panel".  Calculate the
             % position of the panel within the figure rectangle.
-            panelWidth = figureWidth ;
+            panelWidth = layoutWidth ;
             %nScopesVisible = self.Model.Parent.IsScopeVisibleWhenDisplayEnabled ;
-            plotAreaHeight = figureHeight-xAxisLabelAreaHeight-toolbarAreaHeight-heightOfSpaceBetweenToolbarAndPlotArea-statusBarAreaHeight ;
+            plotAreaHeight = layoutHeight-xAxisLabelAreaHeight-toolbarAreaHeight-heightOfSpaceBetweenToolbarAndPlotArea-statusBarAreaHeight ;
             panelXOffset = 0 ;
             panelHeight = plotAreaHeight * normalizedPlotHeight ;
-            panelYOffset = figureHeight - toolbarAreaHeight - heightOfSpaceBetweenToolbarAndPlotArea - totalNormalizedHeightOfPreviousPlots*plotAreaHeight ;
+            panelYOffset = layoutYOffset + layoutHeight - toolbarAreaHeight - heightOfSpaceBetweenToolbarAndPlotArea - totalNormalizedHeightOfPreviousPlots*plotAreaHeight ;
             
             % Calculate the first-pass dimensions
             leftMargin = max(minLeftMargin,min(0.13*panelWidth,maxLeftMargin)) ;
