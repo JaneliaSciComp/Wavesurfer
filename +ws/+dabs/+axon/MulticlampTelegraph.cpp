@@ -69,7 +69,10 @@
 #else
 #include "stdio.h"
 #endif
-#include <MultiClampBroadcastMsg.hpp>
+//#include <MultiClampBroadcastMsg.hpp>
+#include "MultiClampBroadcastMsg.hpp"
+  // Switched to a copy of MultiClampBroadcastMsg.hpp distributed with Multiclamp 700B Commander 2.1.0.16 copied
+  // into the same folder as this source file.
 
 /*********************************
 *      MACRO DEFINITIONS        *
@@ -1206,8 +1209,17 @@ LRESULT CALLBACK MCT_WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         if (((COPYDATASTRUCT*)lParam)->dwData == MCT_MCTGRequestMessage)
         {
             mctgPacket = (MC_TELEGRAPH_DATA *)((COPYDATASTRUCT*)lParam)->lpData;
-            if ((mctgPacket->uVersion != MCTG_API_VERSION_700A) && (mctgPacket->uVersion != MCTG_API_VERSION_700B))
+            if ( (mctgPacket->uVersion != MCTG_API_VERSION_700A) && 
+                 (mctgPacket->uVersion != MCTG_API_VERSION_700B) && 
+                 (mctgPacket->uVersion != MCTG_API_VERSION_700B+1) )  
+            // This last check is b/c we include the MultiClampBroadcastMsg.hpp included 
+            // with the Multiclamp 700B Commander version 2.1, but we want the mex DLL to
+            // work with both 2.1 and 2.2, and the messages from 2.2 have uVersion==14, whereas
+            // the ones from 2.1 have uVersion==13.  But otherwise the messages from 2.2 have the
+            // same structure as the ones from 2.1.
+            {
                 MCT_errorMsg("MulticlampTelegraph Warning - Unrecognized uVersion field found in MC_TELEGRAPH_DATA struct: %u\n", mctgPacket->uVersion);
+            }
 
 #ifdef MCT_DEBUG
             MCT_MCTGPacketToString(mctgPacket, packetStr, 2048);
