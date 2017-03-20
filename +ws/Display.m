@@ -4,7 +4,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     properties (Dependent = true)
         IsGridOn
         AreColorsNormal        
-        DoShowButtons        
+        DoShowZoomButtons        
         DoColorTraces
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
@@ -37,7 +37,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     properties (Access = protected)
         IsGridOn_ = true
         AreColorsNormal_ = true  % if false, colors are inverted, approximately
-        DoShowButtons_ = true % if false, don't show buttons in the figure
+        DoShowZoomButtons_ = true % if false, don't show buttons in the figure
         DoColorTraces_ = true % if false, traces are black/white
         XSpan_ 
         UpdateRate_
@@ -445,8 +445,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.AreColorsNormal = ~(self.AreColorsNormal) ;
         end
 
-        function toggleDoShowButtons(self)
-            self.DoShowButtons = ~(self.DoShowButtons) ;
+        function toggleDoShowZoomButtons(self)
+            self.DoShowZoomButtons = ~(self.DoShowZoomButtons) ;
         end
         
         function toggleDoColorTraces(self)
@@ -487,21 +487,21 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.AreColorsNormal_ ;
         end
             
-        function set.DoShowButtons(self,newValue)
+        function set.DoShowZoomButtons(self,newValue)
             if ws.isASettableValue(newValue) ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.DoShowButtons_ = logical(newValue) ;
+                    self.DoShowZoomButtons_ = logical(newValue) ;
                 else
                     self.broadcast('Update');
                     error('ws:invalidPropertyValue', ...
-                          'DoShowButtons must be a scalar, and must be logical, 0, or 1');
+                          'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
                 end
             end
             self.broadcast('Update');
         end
         
-        function result = get.DoShowButtons(self)
-            result = self.DoShowButtons_ ;
+        function result = get.DoShowZoomButtons(self)
+            result = self.DoShowZoomButtons_ ;
         end                    
         
         function set.DoColorTraces(self,newValue)

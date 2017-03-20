@@ -279,8 +279,6 @@ classdef ScopePlot < handle
             minHeightBetweenButtonBanks = 10 ;
             
             % Show buttons only if user wants them
-            %doesUserWantToSeeButtons = self.Model.DoShowButtons ;            
-
             if doesUserWantToSeeButtons ,
                 minRightMargin = minRightMarginIfButtons ;
                 maxRightMargin = maxRightMarginIfButtons ;

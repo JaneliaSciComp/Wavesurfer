@@ -49,7 +49,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         ViewMenu_
         InvertColorsMenuItem_
         ShowGridMenuItem_
-        DoShowButtonsMenuItem_
+        DoShowZoomButtonsMenuItem_
         DoColorTracesMenuItem_
         PlotArrangementMenuItem_
 
@@ -274,10 +274,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Show Grid', ...
                        'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
-            self.DoShowButtonsMenuItem_ = ...
+            self.DoShowZoomButtonsMenuItem_ = ...
                 uimenu('Parent',self.ViewMenu_, ...
-                       'Label','Show Buttons', ...
-                       'Callback',@(source,event)self.controlActuated('DoShowButtonsMenuItemGH',source,event));            
+                       'Label','Show Zoom Buttons', ...
+                       'Callback',@(source,event)self.controlActuated('DoShowZoomButtonsMenuItemGH',source,event));            
             self.DoColorTracesMenuItem_ = ...
                 uimenu('Parent',self.ViewMenu_, ...
                        'Label','Color Traces', ...
@@ -503,7 +503,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
             totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
             
-            doesUserWantToSeeButtons = self.Model.Display.DoShowButtons ;
+            doesUserWantToSeeZoomButtons = self.Model.Display.DoShowZoomButtons ;
             isAnalogFromPlotIndex = self.Model.Display.IsAnalogFromPlotIndex ;
             nPlots = length(self.ScopePlots_) ;
             for iPlot=1:nPlots ,
@@ -516,7 +516,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                                                              xAxisLabelAreaHeight, ...
                                                              normalizedPlotHeightFromPlotIndex(iPlot) , ...
                                                              totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...                                                             
-                                                             doesUserWantToSeeButtons, ...
+                                                             doesUserWantToSeeZoomButtons, ...
                                                              isThisPlotAnalog) ;
             end
             
@@ -641,25 +641,25 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end
-            model = wsModel.Display ;
-            if isempty(model) || ~isvalid(model) ,
+            displayModel = wsModel.Display ;
+            if isempty(displayModel) || ~isvalid(displayModel) ,
                 return
             end            
             
             % Update the Show Grid togglemenu
-            isGridOn = model.IsGridOn ;
+            isGridOn = displayModel.IsGridOn ;
             set(self.ShowGridMenuItem_,'Checked',ws.onIff(isGridOn));
 
             % Update the Invert Colors togglemenu
-            areColorsNormal = model.AreColorsNormal ;
+            areColorsNormal = displayModel.AreColorsNormal ;
             set(self.InvertColorsMenuItem_,'Checked',ws.onIff(~areColorsNormal));
 
             % Update the Do Show Buttons togglemenu
-            doShowButtons = model.DoShowButtons ;
-            set(self.DoShowButtonsMenuItem_,'Checked',ws.onIff(doShowButtons));
+            doShowZoomButtons = displayModel.DoShowZoomButtons ;
+            set(self.DoShowZoomButtonsMenuItem_,'Checked',ws.onIff(doShowZoomButtons));
 
             % Update the Do Color Traces togglemenu
-            doColorTraces = model.DoColorTraces ;
+            doColorTraces = displayModel.DoColorTraces ;
             set(self.DoColorTracesMenuItem_,'Checked',ws.onIff(doColorTraces));
 
             % Compute the colors
@@ -690,22 +690,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end                
 
             % Determine the common x-axis limits
-            xl = model.XOffset + [0 model.XSpan] ;
+            xl = displayModel.XOffset + [0 displayModel.XSpan] ;
 
             % Get the y-axis limits for all analog channels
-            yLimitsPerAnalogChannel = model.YLimitsPerAnalogChannel ;
+            yLimitsPerAnalogChannel = displayModel.YLimitsPerAnalogChannel ;
 
             % Get the channel names and units for all channels
-            acq = model.Parent.Acquisition ;
+            acq = displayModel.Parent.Acquisition ;
             aiChannelNames = acq.AnalogChannelNames ;            
             diChannelNames = acq.DigitalChannelNames ;
             aiChannelUnits = acq.AnalogChannelUnits ;            
             
             % Update the individual plot colors and icons
-            areYLimitsLockedTightToDataFromAIChannelIndex = model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            channelIndexWithinTypeFromPlotIndex = model.ChannelIndexWithinTypeFromPlotIndex ;
-            isAnalogFromPlotIndex = model.IsAnalogFromPlotIndex ;
-            channelIndexFromPlotIndex = model.ChannelIndexFromPlotIndex ;
+            areYLimitsLockedTightToDataFromAIChannelIndex = displayModel.AreYLimitsLockedTightToDataForAnalogChannel ;
+            channelIndexWithinTypeFromPlotIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+            channelIndexFromPlotIndex = displayModel.ChannelIndexFromPlotIndex ;
             %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
             nPlots = length(self.ScopePlots_) ;
             for plotIndex=1:length(self.ScopePlots_) ,

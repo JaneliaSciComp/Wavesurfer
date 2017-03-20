@@ -393,18 +393,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self.Model.Display.do('toggleIsGridOn') ;
         end  % method        
 
-        function DoShowButtonsMenuItemGHActuated(self, varargin)
-            %self.Model.toggleDoShowButtons();
-            self.Model.Display.do('toggleDoShowButtons') ;
+        function DoShowZoomButtonsMenuItemGHActuated(self, varargin)
+            self.Model.Display.do('toggleDoShowZoomButtons') ;
         end  % method        
 
         function doColorTracesMenuItemActuated(self, varargin)
-            %self.Model.toggleDoColorTraces() ;
             self.Model.Display.do('toggleDoColorTraces') ;
         end  % method        
         
         function InvertColorsMenuItemGHActuated(self, varargin)
-            %self.Model.toggleAreColorsNormal();
             self.Model.Display.do('toggleAreColorsNormal');
         end  % method        
 
