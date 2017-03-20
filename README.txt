@@ -415,4 +415,5 @@ Version History
 0.943    Feb 22, 2017    Fixes to BIAS-WS interface, incorporating our
                          own version of JSONLab.
                       
+0.945    Mar 10, 2017    Bug fix for MultiClamp 700A support.
                          
