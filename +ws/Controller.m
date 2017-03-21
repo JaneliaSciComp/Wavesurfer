@@ -30,10 +30,14 @@ classdef Controller < handle
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
             if ~isempty(self.Figure) && isvalid(self.Figure) ,
-                self.Figure.deleteFigureGH() ;
+                delete(self.Figure) ;
             end
             %self.deleteFigure_();
-            self.Model_ = [] ;
+            self.Model_ = [] ;  
+              % we don't generally delete the model b/c most controllers are
+              % sub-controllers, and their model is a sub-model of the main
+              % model.  So the main controller will handle deleting the
+              % model, if needed.
             self.Parent_=[];            
         end
         
@@ -83,13 +87,13 @@ classdef Controller < handle
             self.Figure.hide();
         end
         
-        function quittingWavesurfer(self)   
-            self.deleteFigureGH();
-        end  % function
+%         function quittingWavesurfer(self)   
+%             self.deleteFigureGH();
+%         end  % function
         
-        function deleteFigureGH(self)   
-            self.tellFigureToDeleteFigureGH_();
-        end  % function
+%         function deleteFigureGH(self)   
+%             self.tellFigureToDeleteFigureGH_();
+%         end  % function
         
         function raiseFigure(self)
             self.Figure.raise();
@@ -115,10 +119,10 @@ classdef Controller < handle
 %             end
 %         end
         
-        function tellFigureToDeleteFigureGH_(self)
-            figure=self.Figure;
+        function deleteFigure_(self)
+            figure = self.Figure ;
             if ~isempty(figure) && isvalid(figure) ,
-                figure.deleteFigureGH();
+                delete(figure) ;
             end
         end            
     end  % methods

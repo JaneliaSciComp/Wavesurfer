@@ -51,7 +51,28 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function delete(self)
-            self.ChildControllers_ = {} ;  % don't think this is needed
+            % This is the final common path for the Quit menu item and the
+            % upper-right close button.
+
+            % Delete the figure GHs for all the child controllers
+            for i=1:length(self.ChildControllers_) ,
+                thisChildController = self.ChildControllers_{i} ;
+                if isvalid(thisChildController) ,
+                    delete(thisChildController) ;
+                    self.ChildControllers_{i} = [] ;  % NB: Not changing the number of elements of self.ChildControllers_
+                end
+            end
+
+            % Delete the main figure
+            self.deleteFigure_() ;
+            
+            % Finally, delete the model explicitly, b/c the model uses a
+            % timer for SI yoking, and don't want the model to stick around
+            % just b/c of that timer.  Sadly, this means that the model may
+            % get deleted in some situations where the user doesn't want it
+            % to, but this seems like the best of a bad set of options.  (I
+            % hate timers...)
+            self.deleteModel_() ;            
         end
     end  % public methods block
     
@@ -234,8 +255,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             assignin('base', 'wsController', self);
         end
         
-        function QuitMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.windowCloseRequested();  % piggyback on the existing method for handling the upper-left window close button
+        function QuitMenuItemActuated(self,source,event)
+            self.windowCloseRequested(source, event);  % piggyback on the existing method for handling the upper-left window close button
         end
         
         % Tools menu
@@ -480,37 +501,18 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        
         
-        function windowCloseRequested(self, source, event)  %#ok<INUSD>
+        function windowCloseRequested(self, source, event)
             % This is target method for pressing the close button in the
             % upper-right of the window.
-            % Need to put in some checks here so that user doesn't quit
+            % TODO: Put in some checks here so that user doesn't quit
             % by being slightly clumsy.
-            % This is also the final common path for the Quit menu item and the
-            % upper-right close button.
-
-            % Delete the figure GHs for all the child controllers
-            for i=1:length(self.ChildControllers_) ,
-                thisChildController = self.ChildControllers_{i} ;
-                if isvalid(thisChildController) ,
-                    if isa(thisChildController, 'ws.Controller') ,
-                        thisChildController.quittingWavesurfer();
-                    else
-                        % means it's a MCOSFigureWithSelfControl
-                        delete(thisChildController) ;
-                    end
-                end
-            end
-
-            % Delete the main figure
-            self.tellFigureToDeleteFigureGH_() ;
+            shouldStayPut = self.shouldWindowStayPutQ(source, event);
             
-            % Finally, delete the model explicitly, b/c the model uses a
-            % timer for SI yoking, and don't want the model to stick around
-            % just b/c of that timer.  Sadly, this means that the model may
-            % get deleted in some situations where the user doesn't want it
-            % to, but this seems like the best of a bad set of options.  (I
-            % hate timers...)
-            self.deleteModel_() ;            
+            if shouldStayPut ,
+                % Do nothing
+            else
+                delete(self) ;
+            end
         end  % function        
     end  % Control actuation methods block
     
@@ -528,7 +530,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function quit(self)
-            self.windowCloseRequested() ;
+            delete(self) ;
         end  % function
     end  % convenience methods block
 

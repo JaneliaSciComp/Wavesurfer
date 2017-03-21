@@ -155,9 +155,9 @@ classdef UserCodeManager < ws.Subsystem
             end            
         end
         
-        function quittingWavesurfer(self)
-            ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
-        end
+%         function quittingWavesurfer(self)
+%             ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
+%         end
         
         % You might thing user methods would get invoked inside the
         % UserCodeManager methods startingRun, startingSweep,

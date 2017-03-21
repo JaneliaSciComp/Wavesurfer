@@ -57,9 +57,8 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
         function delete(self)
-            self.deleteFigureGH();
+            self.deleteFigureGH_() ;
             self.Controller_=[];
-            %self.setModel_([]);
             self.Model_ = [] ;
             %fprintf('here i am doing something\n');
         end
@@ -454,15 +453,16 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     methods
         function closeRequested(self,source,event)            
             if isempty(self.Controller_) ,
-                self.deleteFigureGH();
+                delete(self) ;
+                %self.deleteFigureGH();
             else
                 self.Controller_.windowCloseRequested(source,event);
             end
         end  % function       
     end  % methods    
     
-    methods
-        function deleteFigureGH(self)   
+    methods (Access=protected)
+        function deleteFigureGH_(self)   
             % This causes the figure HG object to be deleted, with no ifs
             % ands or buts
             if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,

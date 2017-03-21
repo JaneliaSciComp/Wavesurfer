@@ -32,15 +32,15 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
 %             end
 %         end  % function       
         
-        function quittingWavesurfer(self)   
-            quittingWavesurfer@ws.Controller(self) ;
-            % Want to make sure any figures "owned" by the user object also
-            % get deleted.  Hopefully user does this in the user class
-            % delete() method, so we notify the model that we're quitting,
-            % which will prompt it to manually delete the user object.
-            %self.Model.quittingWavesurfer() ;         
-            self.Model.do('quittingWavesurfer') ;
-        end  % function
+%         function quittingWavesurfer(self)   
+%             quittingWavesurfer@ws.Controller(self) ;
+%             % Want to make sure any figures "owned" by the user object also
+%             % get deleted.  Hopefully user does this in the user class
+%             % delete() method, so we notify the model that we're quitting,
+%             % which will prompt it to manually delete the user object.
+%             %self.Model.quittingWavesurfer() ;         
+%             self.Model.do('quittingWavesurfer') ;
+%         end  % function
         
     end
 
