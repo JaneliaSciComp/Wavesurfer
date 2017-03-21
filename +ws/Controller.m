@@ -93,10 +93,20 @@ classdef Controller < handle
         
         function raiseFigure(self)
             self.Figure.raise();
-        end            
+        end 
+        
     end  % methods
             
     methods (Access = protected)
+        function deleteModel_(self)
+            % Explictly delete the model.
+            % Usually this is unnecessary and you shouldn't do it, but
+            % sometimes it's needful.  E.g. if there's a timer that points
+            % to the model, then the model can fail to be deleted even
+            % though there are no pointers to it except the timer.
+            delete(self.Model_) ;
+        end
+        
 %         function deleteFigure_(self)
 %             % Destroy the window rather than just hide it.
 %             figure=self.Figure;

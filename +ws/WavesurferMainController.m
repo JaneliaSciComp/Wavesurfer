@@ -501,7 +501,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 end
             end
 
+            % Delete the main figure
             self.tellFigureToDeleteFigureGH_() ;
+            
+            % Finally, delete the model explicitly, b/c the model uses a
+            % timer for SI yoking, and don't want the model to stick around
+            % just b/c of that timer.  Sadly, this means that the model may
+            % get deleted in some situations where the user doesn't want it
+            % to, but this seems like the best of a bad set of options.  (I
+            % hate timers...)
+            self.deleteModel_() ;            
         end  % function        
     end  % Control actuation methods block
     
