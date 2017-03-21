@@ -373,12 +373,15 @@ classdef WavesurferModel < ws.Model
             % correctly.
             self.overrideOrReleaseStimulusMapDurationAsNeeded_();
             
-            % Create the timer for polling ScanImage commands when yoking
-            timerPollingPeriod = 0.5;
-            self.SICommandPollTimer_ = timer('ExecutionMode','fixedSpacing',...
-                'Name','ScanImage Command Polling Timer',...
-                'BusyMode','queue','Period',timerPollingPeriod,...
-                'TimerFcn',@(src,evt)self.checkSICommand_,'ErrorFcn',@(src,evt)self.disableYoking_);
+%             % Create the timer for polling ScanImage commands when yoking
+%             if isITheOneTrueWavesurferModel ,
+%                 self.SICommandPollTimer_ = timer('ExecutionMode','fixedSpacing',...
+%                                                  'Name','ScanImage Command Polling Timer',...
+%                                                  'BusyMode','queue', ...
+%                                                  'Period', 0.5,...
+%                                                  'TimerFcn',@(source,event)(self.checkSICommand_()), ...
+%                                                  'ErrorFcn',@(source,event)(self.disableYoking_()) ) ;
+%             end
         end  % function
         
         function delete(self)
@@ -388,21 +391,22 @@ classdef WavesurferModel < ws.Model
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
                 %pause(10);  % TODO: Take out eventually
 
+                % Delete SICommandPollTimer_
+                if ~isempty(self.SICommandPollTimer_) && isvalid(self.SICommandPollTimer_)
+                    stop(self.SICommandPollTimer_);
+                    delete(self.SICommandPollTimer_);
+                    self.SICommandPollTimer_ = [] ;
+                end
+                
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
                 self.RefillerIPCSubscriber_ = [] ;
                 self.LooperIPCRequester_ = [] ;
                 self.RefillerIPCRequester_ = [] ;
-                self.IPCPublisher_ = [] ;
+                self.IPCPublisher_ = [] ;                
             end
             ws.deleteIfValidHandle(self.UserCodeManager_) ;  % Causes user object to be explicitly deleted, if there is one
-            self.UserCodeManager_ = [] ;
-            
-            % Delete SICommandPollTimer_
-            if ~isempty(self.SICommandPollTimer_) && isvalid(self.SICommandPollTimer_)
-                stop(self.SICommandPollTimer_);
-                delete(self.SICommandPollTimer_);
-            end
+            self.UserCodeManager_ = [] ;            
         end  % function
         
         function debug(self) %#ok<MANU>
@@ -747,20 +751,20 @@ classdef WavesurferModel < ws.Model
             end
         end
         
-        function val = get.WSCommandFilePath_(self)
-            val = fullfile(self.CommunicationFolderName_,self.WSCommandFileName_);
+        function value = get.WSCommandFilePath_(self)
+            value = fullfile(self.CommunicationFolderName_,self.WSCommandFileName_) ;
         end
         
-        function val = get.WSResponseFilePath_(self)
-            val = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_);
+        function value = get.WSResponseFilePath_(self)
+            value = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_) ;
         end
         
-        function val = get.SICommandFilePath_(self)
-            val = fullfile(self.CommunicationFolderName_,self.SICommandFileName_);
+        function value = get.SICommandFilePath_(self)
+            value = fullfile(self.CommunicationFolderName_,self.SICommandFileName_) ;
         end
         
-        function val = get.SIResponseFilePath_(self)
-            val = fullfile(self.CommunicationFolderName_,self.SIResponseFileName_);
+        function value = get.SIResponseFilePath_(self)
+            value = fullfile(self.CommunicationFolderName_,self.SIResponseFileName_) ;
         end
     end
     
@@ -952,15 +956,22 @@ classdef WavesurferModel < ws.Model
                 end
                 
                 self.IsYokedToScanImage_ = newValue;
-            end
+            end            
             
-            if self.IsYokedToScanImage_ 
-                if strcmpi(self.SICommandPollTimer_.Running,'off')
+            if self.IsITheOneTrueWavesurferModel_ ,
+                if self.IsYokedToScanImage_ ,
+                    self.SICommandPollTimer_ = ...
+                        timer('ExecutionMode','fixedSpacing',...
+                              'Name','ScanImage Command Polling Timer',...
+                              'BusyMode','queue', ...
+                              'Period', 0.5,...
+                              'TimerFcn',@(source,event)(self.checkSICommand_()), ...
+                              'ErrorFcn',@(source,event)(self.disableYoking_()) ) ;
                     start(self.SICommandPollTimer_);
-                end
-            elseif ~self.IsYokedToScanImage_
-                if strcmpi(self.SICommandPollTimer_.Running,'on')
-                    stop(self.SICommandPollTimer_);
+                else
+                    stop(self.SICommandPollTimer_) ;
+                    delete(self.SICommandPollTimer_) ;
+                    self.SICommandPollTimer_ = [] ;
                 end
             end            
             
@@ -2020,7 +2031,7 @@ classdef WavesurferModel < ws.Model
             % If a command file is found, the command is parsed,
             % executed, and a response file is written
             
-            if exist(self.WSCommandFilePath_,'file')
+            if exist(self.WSCommandFilePath_,'file') ,
                 str = readAllLines_(self.WSCommandFilePath_);
                 self.ensureYokingFilesAreGone_();
                 
@@ -2035,7 +2046,7 @@ classdef WavesurferModel < ws.Model
             
             %%% Local function
             function str = readAllLines_(fileName)
-                [fid,fopenErrorMessage]=fopen(fileName,'r');
+                [fid,fopenErrorMessage] = fopen(fileName,'r') ;
 
                 assert(fid>=0,'WavesurferModel:UnableToOpenYokingFile', ...
                     'Unable to open ScanImage command file: %s',fopenErrorMessage);
