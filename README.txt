@@ -416,4 +416,7 @@ Version History
                          own version of JSONLab.
                       
 0.945    Mar 10, 2017    Bug fix for MultiClamp 700A support.
-                         
+
+0.946    Apr 3, 2017     Added support for MultiClamp 700B Commander 2.2.
+                         Fixed bug with y auto-scaling.
+                         Enhanced ws.examples.TriggerOnThresholdCrossingClass.
