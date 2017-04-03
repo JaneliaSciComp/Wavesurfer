@@ -1008,16 +1008,22 @@ end  % public methods block
         
         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
             model = self.Model ;
+            isChannelDisplayed = model.IsAnalogChannelDisplayed ;
             areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            nAIChannels = model.Parent.Acquisition.NAnalogChannels ;
-            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
-            for i = 1:nAIChannels ,                
-                if areYLimitsLockedTightToData(i) ,
-                    doesAIChannelNeedYLimitUpdate(i) = true ;
-                    self.setYAxisLimitsInModelTightToData_(i) ;
-                end
-            end
+            doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+            for i = indicesOfAIChannelsNeedingYLimitUpdate ,
+                self.setYAxisLimitsInModelTightToData_(i) ;
+            end                
+%             nAIChannels = model.Parent.Acquisition.NAnalogChannels ;
+%             doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
+%             for i = 1:nAIChannels ,                
+%                 if isChannelDisplayed(i) && areYLimitsLockedTightToData(i) ,
+%                     doesAIChannelNeedYLimitUpdate(i) = true ;
+%                     self.setYAxisLimitsInModelTightToData_(i) ;
+%                 end
+%             end
+%             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
         end  % function
     end
 
