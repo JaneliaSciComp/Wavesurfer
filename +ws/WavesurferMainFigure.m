@@ -1204,16 +1204,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
             wsModel = self.Model ;
             model = wsModel.Display ;
+            isChannelDisplayed = model.IsAnalogChannelDisplayed ;
             areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            nAIChannels = wsModel.Acquisition.NAnalogChannels ;
-            doesAIChannelNeedYLimitUpdate = false(1,nAIChannels) ;
-            for i = 1:nAIChannels ,                
-                if areYLimitsLockedTightToData(i) ,
-                    doesAIChannelNeedYLimitUpdate(i) = true ;
-                    self.setYAxisLimitsInModelTightToData_(i) ;
-                end
-            end
+            doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+            for i = indicesOfAIChannelsNeedingYLimitUpdate ,
+                self.setYAxisLimitsInModelTightToData_(i) ;
+            end                
         end  % function        
         
         function updateAxisLabels_(self, axisForegroundColor)
