@@ -438,8 +438,9 @@ classdef AcquisitionSubsystem < ws.Subsystem
             self.Parent.SweepDuration = value ;
         end  % function
         
-        function out = get.ExpectedScanCount(self)
-            out = round(self.Duration * self.SampleRate);
+        function out = get.ExpectedScanCount(self)            
+            %out = floor(self.Duration * self.SampleRate) +1 ;
+            out = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate, self.Duration) ;
         end  % function
         
         function out = get.SampleRate(self)

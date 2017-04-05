@@ -12,15 +12,16 @@ classdef InputTask < handle
         IsArmed
         % These are not directly settable
         ExpectedScanCount
-        NScansPerDataAvailableCallback
+        %NScansPerDataAvailableCallback
         IsUsingDefaultTermination
     end
     
     properties (Dependent = true)
         %IsChannelActive  % boolean
         SampleRate      % Hz
-        AcquisitionDuration  % Seconds
-        DurationPerDataAvailableCallback  % Seconds
+        DesiredAcquisitionDuration  % Seconds
+        ActualAcquisitionDuration  % Seconds
+        %DurationPerDataAvailableCallback  % Seconds
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
@@ -35,6 +36,7 @@ classdef InputTask < handle
         TimeAtTaskStart_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
+        CachedActualAcquisitionDuration_  % used when self.DabsDaqTask_ is empty
     end
     
     properties (Access = protected)
@@ -45,8 +47,8 @@ classdef InputTask < handle
         %ChannelNames_ = cell(1,0)
         %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
-        AcquisitionDuration_ = 1     % Seconds
-        DurationPerDataAvailableCallback_ = 0.1  % Seconds
+        DesiredAcquisitionDuration_ = 1     % Seconds
+        %DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = 'DAQmx_Val_FiniteSamps'
         TriggerTerminalName_
         TriggerEdge_
@@ -152,11 +154,11 @@ classdef InputTask < handle
             % Store the sample rate and durationPerDataAvailableCallback
             self.SampleRate_ = sampleRate ;
             
-            if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
-                error('ws:invalidPropertyValue', ...
-                      'DurationPerDataAvailableCallback must be a nonnegative scalar');       
-            end            
-            self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
+%             if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
+%                 error('ws:invalidPropertyValue', ...
+%                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
+%             end            
+            %self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
         end  % function
         
         function delete(self)
@@ -169,6 +171,12 @@ classdef InputTask < handle
         function start(self)
             if self.IsArmed ,
                 if isempty(self.DabsDaqTask_) ,
+                    self.CachedActualAcquisitionDuration_ = self.ActualAcquisitionDuration ;
+                      % In a normal input task, a scan is done right at the
+                      % start of the sweep (t==0).  So the the final scan occurs at
+                      % t == (nScans-1)*(1/sampleRate).  We mimic the
+                      % timing of this when there is no task (e.g. when
+                      % there are zero channels.)
                     self.NScansExpectedCache_ = self.ExpectedScanCount ;
                     self.NScansReadSoFar_ = 0 ;                    
                     timeNow = toc(self.TicId_) ;
@@ -204,12 +212,12 @@ classdef InputTask < handle
         function result = isTaskDone(self)
             if isempty(self.DabsDaqTask_) ,
                 %result = true ;  % Well, the task is certainly not running...
-                if isinf(self.AcquisitionDuration_) ,  % don't want to bother with toc() if we already know the answer...
+                if isinf(self.DesiredAcquisitionDuration_) ,  % don't want to bother with toc() if we already know the answer...
                     result = false ;
                 else
                     timeNow = toc(self.TicId_) ;
-                    durationSoFar = timeNow-self.TimeAtTaskStart_ ;
-                    result = durationSoFar>self.AcquisitionDuration_ ;
+                    durationSoFar = timeNow-self.TimeAtTaskStart_ ;                    
+                    result = durationSoFar>self.CachedActualAcquisitionDuration_ ;
                 end
             else
                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
@@ -434,11 +442,11 @@ classdef InputTask < handle
 %         end  % function
         
         function value = get.ExpectedScanCount(self)
-            value = round(self.AcquisitionDuration * self.SampleRate_);
+            value = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;
         end  % function
         
         function value = get.SampleRate(self)
-            value = self.SampleRate_;
+            value = self.SampleRate_ ;
         end  % function
         
 %         function set.SampleRate(self,value)
@@ -468,11 +476,11 @@ classdef InputTask < handle
 %             self.SampleRate_ = value;
 %         end  % function
         
-        function value = get.NScansPerDataAvailableCallback(self)
-            value = round(self.DurationPerDataAvailableCallback * self.SampleRate);
-              % The sample rate is technically a scan rate, so this is
-              % correct.
-        end  % function
+%         function value = get.NScansPerDataAvailableCallback(self)
+%             value = round(self.DurationPerDataAvailableCallback * self.SampleRate);
+%               % The sample rate is technically a scan rate, so this is
+%               % correct.
+%         end  % function
         
 %         function set.DurationPerDataAvailableCallback(self, value)
 %             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
@@ -482,9 +490,9 @@ classdef InputTask < handle
 %             self.DurationPerDataAvailableCallback_ = value;
 %         end  % function
 
-        function value = get.DurationPerDataAvailableCallback(self)
-            value = min(self.AcquisitionDuration_, self.DurationPerDataAvailableCallback_);
-        end  % function
+%         function value = get.DurationPerDataAvailableCallback(self)
+%             value = min(self.AcquisitionDuration_, self.DurationPerDataAvailableCallback_);
+%         end  % function
         
         function out = get.TaskName(self)
             if ~isempty(self.DabsDaqTask_)
@@ -494,12 +502,12 @@ classdef InputTask < handle
             end
         end  % function
         
-        function set.AcquisitionDuration(self, value)
+        function set.DesiredAcquisitionDuration(self, value)
             if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
                 error('ws:invalidPropertyValue', ...
                       'AcquisitionDuration must be a positive scalar');       
             end            
-            self.AcquisitionDuration_ = value;
+            self.DesiredAcquisitionDuration_ = value;
             if isinf(value) ,
                 self.ClockTiming_ = 'DAQmx_Val_ContSamps' ;
             else
@@ -507,9 +515,15 @@ classdef InputTask < handle
             end                
         end  % function
         
-        function value = get.AcquisitionDuration(self)
-            value = self.AcquisitionDuration_ ;
+        function value = get.DesiredAcquisitionDuration(self)
+            value = self.DesiredAcquisitionDuration_ ;
         end  % function
+
+        function value = get.ActualAcquisitionDuration(self)
+            %value = (self.ExpectedScanCount-1)/self.SampleRate_  ;
+            value = ws.actualDurationFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
+        end  % function
+        
         
 %         function set.TriggerDelegate(self, value)
 %             if ~( isequal(value,[]) || (isa(value,'ws.HasPFIIDAndEdge') && isscalar(value)) )  ,
