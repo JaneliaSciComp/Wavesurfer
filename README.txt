@@ -420,3 +420,7 @@ Version History
 0.946    Apr 3, 2017     Added support for MultiClamp 700B Commander 2.2.
                          Fixed bug with y auto-scaling.
                          Enhanced ws.examples.TriggerOnThresholdCrossingClass.
+
+0.947    Apr 6, 2017     Added support for very-low sampling rates, 
+                         down to ~1/(40 s).
+                         
