@@ -71,14 +71,64 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % function
         
+        % We have separate methods for instantiation and reinstantiation
+        % b/c of the following issue.  We used to have a single method, and
+        % a single button that we changed the label of.  But if, starting
+        % from an empty edit (and no user object), the user typed in the
+        % class name, then clicked on "Instantiate", two events would get
+        % generated: An "editbox edited" event when the button click caused
+        % the editbox to lose keyboard focus, then a "button clicked"
+        % event.  The first event would causes the user object to be
+        % instantiated, then the second one would cause it to be
+        % *re*-instantiated.  This was problematic for some user classes,
+        % so we now have two methods, which do nothing if they're called
+        % when a user object exists/doesn't exist.  And now we have two
+        % separate buttons in the same place, only one of which is visible
+        % at a time.
+        %
+        % But this has it's own problems: If you have one class name in the
+        % edit, and the object exists, the Reinstantiate button will be
+        % showing.  But if you then replace the class name with a different
+        % one, the Reinstantiate button stays there until the edit
+        % loses focus.  So after replacing the class name, the user can
+        % press the Reinstantiate button, which generates two events.  The
+        % first causes the new object, of the new class, to be
+        % instantiated.  The second event (the Reinstantiate button press) then 
+        % causes a second instantiation of the new class.        
+        %
+        % Might make sense to just get rid of the button...
+        % Or just leave things as they are...
+        
         function instantiateUserObject(self)
-            err = self.tryToInstantiateObject_() ;
+            % This instantiates the user object if no user object exists.
+            % If the user object already exists, it just does an update.
+            if isempty(self.TheObject) ,
+                err = self.tryToInstantiateObject_() ;
+            else
+                err = [] ;
+            end
             self.broadcast('Update');
             if ~isempty(err) ,
                 error('wavesurfer:errorWhileInstantiatingUserObject', ...
                       'Unable to instantiate user object: %s.',err.message);
             end
         end  % method
+
+        function reinstantiateUserObject(self)
+            % This reinstantiates the user object if a user object exists.
+            % If no user object exists, it just does an update.
+            if ~isempty(self.TheObject) ,
+                err = self.tryToInstantiateObject_() ;
+            else
+                err = [] ;
+            end
+            self.broadcast('Update');
+            if ~isempty(err) ,
+                error('wavesurfer:errorWhileInstantiatingUserObject', ...
+                      'Unable to instantiate user object: %s.',err.message);
+            end
+        end  % method
+        
         
 %         function set.AbortCallsComplete(self, value)
 %             if ws.isASettableValue(value) ,

@@ -79,8 +79,11 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         end
 
         function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
-            %self.Model.instantiateUserObject();
             self.Model.do('instantiateUserObject') ;            
+        end
+        
+        function ReinstantiateButtonActuated(self,source,event) %#ok<INUSD>
+            self.Model.do('reinstantiateUserObject') ;            
         end
         
 %         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
