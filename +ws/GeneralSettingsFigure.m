@@ -867,9 +867,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                 return
             end
             
-%             import ws.onIff
-%             import ws.fif
-            
+            % Get the idle state once
             isIdle = isequal(model.State,'idle');
 
             % Acquisition panel
@@ -890,15 +888,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
             
-%             % Fast config buttons
-%             nFastProtocolButtons=length(self.FastProtocolButtons);
-%             for i=1:nFastProtocolButtons ,
-%                 thisFastProtocol = model.FastProtocols{i};
-%                 thisProtocolFileName = ws.baseFileNameFromPath(thisFastProtocol.ProtocolFileName);
-%                 set(self.FastProtocolButtons(i),...
-%                     'TooltipString', thisProtocolFileName)
-%             end
-            
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
             set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
@@ -906,9 +895,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
             set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
-            %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
             if ~isIdle&&model.Logging.IsEnabled ,
                 set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
@@ -916,39 +903,15 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             
-%             % Status text
-%             if isequal(model.State,'running') ,
-%                 if model.Logging.IsEnabled ,
-%                     statusString = 'Recording' ;
-%                 else
-%                     statusString = 'Playing' ;
-%                 end                    
-%             else
-%                 statusString = ws.titleStringFromApplicationState(model.State) ;
-%             end
-%             set(self.StatusText,'String',statusString);
-%             
-%             % Progress bar
-%             self.updateProgressBarProperties_();
-            
-%             % Update the Stimulation/Source popupmenu
-%             outputableNames = model.stimulusLibraryOutputableNames() ;
-%             %selectedOutputable = stimulusLibrary.SelectedOutputable ;
-%             selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
-%             if isempty(selectedOutputableName) ,
-%                 selectedOutputableNames = {} ;                    
-%             else
-%                 selectedOutputableNames = { selectedOutputableName } ;
-%             end                
-%             ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
-            
-%             % Update whether the "Yoke to ScanImage" menu item is checked,
-%             % based on the model state
-%             set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
-%             
-%             % The save menu items
-%             self.updateSaveProtocolMenuItem_();
-%             self.updateSaveUserSettingsMenuItem_();
+            % Update the Stimulation/Source popupmenu
+            outputableNames = model.stimulusLibraryOutputableNames() ;
+            selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
+            if isempty(selectedOutputableName) ,
+                selectedOutputableNames = {} ;                    
+            else
+                selectedOutputableNames = { selectedOutputableName } ;
+            end                
+            ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                            
         end
     end
     

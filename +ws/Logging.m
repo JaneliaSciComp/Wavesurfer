@@ -60,7 +60,7 @@ classdef Logging < ws.Subsystem
     methods
         function self = Logging(parent)
             self@ws.Subsystem(parent) ;
-            self.FileLocation_ = 'C:\Data';
+            self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
             self.DoIncludeSessionIndex_ = false ;
@@ -651,55 +651,6 @@ classdef Logging < ws.Subsystem
         end  % function        
     end  % static methods block
     
-    methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.Subsystem(self);
-%             self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
-%             self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
-%             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%         end
-        
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Subsystem(self);            
-%             % self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'*'});  
-%             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'});
-%             %self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'usr'});            
-%             self.setPropertyTags('FileLocation', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('FileBaseName', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('NextSweepIndex', 'IncludeInFileTypes', {'cfg'});
-%         end
-        
-%         function zprvFileLocationWillChange(self, ~, ~)
-%             self.CachedLoggingFileNameInfo_{1} = self.FileLocation;
-%         end
-%         
-%         function zprvFileBaseNameWillChange(self, ~, ~)
-%             self.CachedLoggingFileNameInfo_{2} = self.FileBaseName;
-%         end
-%         
-%         function zprvFileLocationOrBaseNameDidChange(self, ~, ~)
-%             % MATLAB loves to fire set events when the value does not actually change.
-%             if ~strcmp(fullfile(self.CachedLoggingFileNameInfo_{1}, self.CachedLoggingFileNameInfo_{2}), fullfile(self.FileLocation, self.FileBaseName))
-%                 self.NextSweepIndex = 1;
-%             end
-%         end
-    end
-    
-%     methods (Access=public)
-%         function resetProtocol(self)  % has to be public so WavesurferModel can call it
-%             % Clears all aspects of the current protocol (i.e. the stuff
-%             % that gets saved/loaded to/from the config file.  Idea here is
-%             % to return the protocol properties stored in the model to a
-%             % blank slate, so that we're sure no aspects of the old
-%             % protocol get carried over when loading a new .cfg file.
-%             
-%             self.IsEnabled=true;
-%             self.FileBaseName='untitled';
-%             self.FileLocation='C:\Data';
-%             self.NextSweepIndex=1;
-%         end  % function
-%     end % methods
-
     methods (Access=protected)        
         function out = getPropertyValue_(self, name)
             out = self.(name);
