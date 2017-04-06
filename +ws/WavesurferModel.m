@@ -1017,7 +1017,7 @@ classdef WavesurferModel < ws.Model
         
         function run_(self)
             %fprintf('WavesurferModel::run_()\n');     
-
+            
             % Can't run unless we are currently idle
             if ~isequal(self.State,'idle') ,
                 return
@@ -1225,7 +1225,8 @@ classdef WavesurferModel < ws.Model
             self.FromRunStartTicId_=tic();
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
-            self.DesiredNScansPerUpdate_ = round(updateDt*self.Acquisition.SampleRate) ;
+            desiredNScansPerUpdate = max(1,round(updateDt*self.Acquisition.SampleRate)) ;  % don't want this to be zero!
+            self.DesiredNScansPerUpdate_ = desiredNScansPerUpdate ;
             self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
             % Set up the samples buffer
@@ -1325,7 +1326,7 @@ classdef WavesurferModel < ws.Model
             if didThrow ,
                 rethrow(exception) ;
             end
-        end  % function
+        end  % run_() function
         
         function openSweep_(self)
             % time between subsequent calls to this, etc
@@ -3524,24 +3525,48 @@ classdef WavesurferModel < ws.Model
         end        
         
         function [sampleFrequency, timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
-            % Coerce to be finite and not nan
-            if isfinite(desiredSampleFrequency) ,
-                protoResult1 = desiredSampleFrequency;
+            % Make sure desiredSampleFrequency is a scalar
+            defaultSampleFrequency  = 20000 ;
+            if isempty(desiredSampleFrequency) ,
+                temp1 = defaultSampleFrequency ;  % the default value
             else
-                protoResult1 = 20000;  % the default
+                temp1 = desiredSampleFrequency(1) ;  % make it a scalar
             end
             
-            % We know it's finite and not nan here
+            % Make sure a double
+            if isnumeric(temp1) ,
+                temp2 = double(temp1) ;
+            else
+                temp2 = defaultSampleFrequency ;  % the default value
+            end
+            
+            % Make sure finite
+            if isfinite(temp2) ,
+                sanitizedDesiredSampleFrequency = temp2 ;
+            else
+                sanitizedDesiredSampleFrequency = defaultSampleFrequency ;  % the default value
+            end
             
             % Limit to the allowed range of sampling frequencies
-            protoResult2 = max(protoResult1,10) ;  % 10 Hz minimum
             timebaseFrequency = self.SampleClockTimebaseFrequency;  % Hz
-            maximumFrequency = timebaseFrequency/100 ;  % maximum, 1 MHz for X-series 
-            protoResult3 = min(protoResult2, maximumFrequency) ;
-            
-            % Limit to an integer multiple of the timebase interval
-            timebaseTicksPerSample = floor(timebaseFrequency/protoResult3) ;  % err on the side of sampling faster
-            sampleFrequency = timebaseFrequency/timebaseTicksPerSample ;
+            desiredTimebaseTicksPerSample = timebaseFrequency/sanitizedDesiredSampleFrequency ;  
+            integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
+            maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
+            minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
+              % See here:
+              % http://digital.ni.com/public.nsf/allkb/4BBE1409700F6CE686256E9200652F6B
+              % Entitled "What Sample Rates Is my DAQ Board Actually
+              % Capable of Achieving?"
+              %
+            actualTimebaseTicksPerSample = ...
+                ws.limit(minimumTimebaseTicksPerSample, integralTimebaseTicksPerSample, maximumTimebaseTicksPerSample) ;  % enforce min, max
+              % Note that if actualTimebaseTicksPerSample is 1, then the
+              % sampleFrequency is equal to the timebaseFrequency.  You can
+              % set it to this in the hardware, and the board will try to
+              % do it, but it will generally fail to keep up once the sweep
+              % starts, because for instance the default timebase for X series cards is
+              % 100 MHz.
+            sampleFrequency = timebaseFrequency/actualTimebaseTicksPerSample ;            
         end
     end  % public methods block
 

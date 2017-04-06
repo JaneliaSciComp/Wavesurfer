@@ -643,7 +643,7 @@ classdef Looper < handle
 
             % Set up the task triggering
             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
-            acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_
+            %acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_ ;
             if isequal(keystoneTask,'ai') ,
                 self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
                 self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
@@ -661,8 +661,8 @@ classdef Looper < handle
             end
             
             % Set for finite-duration vs. continous acquisition
-            self.TimedAnalogInputTask_.AcquisitionDuration = self.SweepDuration_ ;
-            self.TimedDigitalInputTask_.AcquisitionDuration = self.SweepDuration_ ;
+            self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
+            self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
             
             % Dimension the cache that will hold acquired data in main
             % memory
@@ -677,7 +677,8 @@ classdef Looper < handle
             nActiveAIChannels = sum(self.IsAIChannelActive_);
             nActiveDIChannels = sum(self.IsDIChannelActive_);
             if isfinite(self.SweepDuration_)  ,
-                expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+                %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.AcquisitionSampleRate_, self.SweepDuration_) ;
                 self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
                 self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
             else                                
