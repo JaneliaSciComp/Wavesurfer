@@ -2450,6 +2450,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             
             ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
+            set(ax, 'XLim', [0 n*dt]) ;
             legend(ax, channelNames, 'Interpreter', 'None');
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,mapName,'FontSize',10,'Interpreter','none');
@@ -2477,11 +2478,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             y = stimulus.calculateSignal(tOffsetByHalfSample);            
             
             h = line('Parent',ax, ...
-                     'Marker','.', ...
                      'XData',t, ...
                      'YData',y);
             
             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
+            set(ax, 'XLim', [0 n*dt]) ;
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
         end  % method        

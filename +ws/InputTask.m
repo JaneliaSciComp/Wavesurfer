@@ -19,8 +19,8 @@ classdef InputTask < handle
     properties (Dependent = true)
         %IsChannelActive  % boolean
         SampleRate      % Hz
-        DesiredAcquisitionDuration  % Seconds
-        ActualAcquisitionDuration  % Seconds
+        DesiredAcquisitionDuration  % seconds
+        FinalScanTime  % seconds, the time of the final scan, relative to the first scan
         %DurationPerDataAvailableCallback  % Seconds
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
@@ -36,7 +36,7 @@ classdef InputTask < handle
         TimeAtTaskStart_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
-        CachedActualAcquisitionDuration_  % used when self.DabsDaqTask_ is empty
+        CachedFinalScanTime_  % used when self.DabsDaqTask_ is empty
     end
     
     properties (Access = protected)
@@ -171,7 +171,7 @@ classdef InputTask < handle
         function start(self)
             if self.IsArmed ,
                 if isempty(self.DabsDaqTask_) ,
-                    self.CachedActualAcquisitionDuration_ = self.ActualAcquisitionDuration ;
+                    self.CachedFinalScanTime_ = self.FinalScanTime ;
                       % In a normal input task, a scan is done right at the
                       % start of the sweep (t==0).  So the the final scan occurs at
                       % t == (nScans-1)*(1/sampleRate).  We mimic the
@@ -217,7 +217,7 @@ classdef InputTask < handle
                 else
                     timeNow = toc(self.TicId_) ;
                     durationSoFar = timeNow-self.TimeAtTaskStart_ ;                    
-                    result = durationSoFar>self.CachedActualAcquisitionDuration_ ;
+                    result = durationSoFar>self.CachedFinalScanTime_ ;
                 end
             else
                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
@@ -519,10 +519,15 @@ classdef InputTask < handle
             value = self.DesiredAcquisitionDuration_ ;
         end  % function
 
-        function value = get.ActualAcquisitionDuration(self)
+        function value = get.FinalScanTime(self)
             %value = (self.ExpectedScanCount-1)/self.SampleRate_  ;
-            value = ws.actualDurationFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
+            value = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
         end  % function
+        
+%         function value = get.ActualAcquisitionDuration(self)
+%             %value = (self.ExpectedScanCount-1)/self.SampleRate_  ;
+%             value = ws.actualDurationFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
+%         end  % function
         
         
 %         function set.TriggerDelegate(self, value)
