@@ -148,9 +148,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %widthFromEditToChooseButton=5;
             %chooseButtonWidth = 80 ;
 
-            heightFromInstantiateButtonToBottomEdit=6;
+            heightFromInstantiateButtonToBottomEdit=6;            
             instantiateButtonHeight = 24 ;
             instantiateButtonWidth = 80 ;
+            widthBetweenButtons = 8 ;
             
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
@@ -188,10 +189,14 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - instantiateButtonHeight ;
             set(self.InstantiateButton, ...
                 'Position',[instantiateButtonXOffset instantiateButtonYOffset instantiateButtonWidth instantiateButtonHeight]);
-            % The Reinstantiate button goes in the same place, but only one
-            % should be visible at a time.
+
+            % Other button
+            reinstantiateButtonWidth = instantiateButtonWidth ;
+            reinstantiateButtonHeight = instantiateButtonHeight ;
+            reinstantiateButtonXOffset = instantiateButtonXOffset - widthBetweenButtons - reinstantiateButtonWidth ;
+            reinstantiateButtonYOffset = instantiateButtonYOffset ;
             set(self.ReinstantiateButton, ...
-                'Position',[instantiateButtonXOffset instantiateButtonYOffset instantiateButtonWidth instantiateButtonHeight]);
+                'Position',[reinstantiateButtonXOffset reinstantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
                                       
 %             % Checkbox
 %             checkboxFullExtent=get(self.AbortCallsCompleteCheckbox,'Extent');
@@ -244,12 +249,12 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             set(self.InstantiateButton, 'String', ws.fif(isempty(model.TheObject), ...
 %                                                          'Instantiate', ...
 %                                                          'Reinstantiate') ) ;
-            set(self.InstantiateButton, 'Visible', ws.fif(isempty(model.TheObject), ...
-                                                         'on', ...
-                                                         'off') ) ;
-            set(self.ReinstantiateButton, 'Visible', ws.fif(~isempty(model.TheObject), ...
-                                                            'on', ...
-                                                            'off') ) ;
+%             set(self.InstantiateButton, 'Visible', ws.fif(isempty(model.TheObject), ...
+%                                                          'on', ...
+%                                                          'off') ) ;
+%             set(self.ReinstantiateButton, 'Visible', ws.fif(~isempty(model.TheObject), ...
+%                                                             'on', ...
+%                                                             'off') ) ;
         end
     end
     
@@ -268,7 +273,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
             set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
-            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&model.DoesTheObjectMatchClassName) ) ;
         end
     end
     

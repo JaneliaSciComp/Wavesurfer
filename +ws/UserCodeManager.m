@@ -8,6 +8,7 @@ classdef UserCodeManager < ws.Subsystem
     properties (Dependent = true, SetAccess = immutable)
         TheObject  % an instance of ClassName, or []
         IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
+        DoesTheObjectMatchClassName
     end
     
     properties (Access = protected)
@@ -41,9 +42,12 @@ classdef UserCodeManager < ws.Subsystem
         function result = get.IsClassNameValid(self)
             result = ( isempty(self.ClassName_) || ...
                        ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ) ;
-            %result = self.IsClassNameValid_ ;
         end
-                
+
+        function result = get.DoesTheObjectMatchClassName(self)
+            result = ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ;
+        end               
+        
 %         function result = get.AbortCallsComplete(self)
 %             result = self.AbortCallsComplete_;
 %         end
@@ -51,7 +55,7 @@ classdef UserCodeManager < ws.Subsystem
         function result = get.TheObject(self)
             result = self.TheObject_;
         end
-                
+        
         function set.ClassName(self, value)
             if ws.isString(value) ,
                 % If it's a string, we'll keep it, but we have to check if
@@ -86,7 +90,7 @@ classdef UserCodeManager < ws.Subsystem
         % separate buttons in the same place, only one of which is visible
         % at a time.
         %
-        % But this has it's own problems: If you have one class name in the
+        % But this has its own problems: If you have one class name in the
         % edit, and the object exists, the Reinstantiate button will be
         % showing.  But if you then replace the class name with a different
         % one, the Reinstantiate button stays there until the edit
@@ -99,25 +103,26 @@ classdef UserCodeManager < ws.Subsystem
         % Might make sense to just get rid of the button...
         % Or just leave things as they are...
         
-        function instantiateUserObject(self)
-            % This instantiates the user object if no user object exists.
-            % If the user object already exists, it just does an update.
-            if isempty(self.TheObject) ,
-                err = self.tryToInstantiateObject_() ;
-            else
-                err = [] ;
-            end
-            self.broadcast('Update');
-            if ~isempty(err) ,
-                error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                      'Unable to instantiate user object: %s.',err.message);
-            end
-        end  % method
+%         function instantiateUserObject(self)
+%             % This instantiates the user object if no user object exists.
+%             % If the user object already exists, it just does an update.
+%             if ~self.DoesTheObjectMatchClassName ,
+%                 err = self.tryToInstantiateObject_() ;
+%             else
+%                 err = [] ;
+%             end
+%             self.broadcast('Update');
+%             if ~isempty(err) ,
+%                 error('wavesurfer:errorWhileInstantiatingUserObject', ...
+%                       'Unable to instantiate user object: %s.',err.message);
+%             end
+%         end  % method
 
         function reinstantiateUserObject(self)
-            % This reinstantiates the user object if a user object exists.
-            % If no user object exists, it just does an update.
-            if ~isempty(self.TheObject) ,
+            % This reinstantiates the user object.
+            % If the object name doesn't match
+            % the class name, does nothing.  
+            if self.DoesTheObjectMatchClassName ,
                 err = self.tryToInstantiateObject_() ;
             else
                 err = [] ;
@@ -125,10 +130,9 @@ classdef UserCodeManager < ws.Subsystem
             self.broadcast('Update');
             if ~isempty(err) ,
                 error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                      'Unable to instantiate user object: %s.',err.message);
+                      'Unable to reinstantiate user object: %s.',err.message);
             end
         end  % method
-        
         
 %         function set.AbortCallsComplete(self, value)
 %             if ws.isASettableValue(value) ,
