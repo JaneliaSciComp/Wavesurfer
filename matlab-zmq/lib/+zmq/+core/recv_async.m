@@ -1,32 +1,22 @@
-% zmq.core.recv - Receive a message part from a socket.
+% zmq.core.recv_async - Receive messages from a socket on a separate
+%                       thread, calling the callback function when each is
+%                       received.  The callback should take a single
+%                       argument, the buffer, and return no results.
 %
-% Usage: message = zmq.core.recv(socket)
-%        message = zmq.core.recv(socket, bufferLength)
-%        message = zmq.core.recv(socket, bufferLength, option1, option2, ...)
-%        [msg, len] = zmq.core.recv(socket)
+% Usage: zmq.core.recv_async(socket, callback)
+%        zmq.core.recv_async(socket, callback, bufferLength)
 %
 % Input: socket - Instantiated ZMQ socket handle (see zmq.core.socket).
+%        callback - the callback, a matlab function handle taking a single
+%                   argument, the buffer
 %        bufferLength - Size in bytes of buffer pre-allocated to receive message.
 %                       This parameter is optional with default value of 255.
-%        options - List of strings containing the options' names for reception.
 %
-% Output: uint8 array containing binary data received. If a second output is required,
-%         the length of the message will be provided.
 %
-% An application that processes multi-part messages must check the 'ZMQ_RCVMORE'
-% option with `zmq.core.getsockopt` after calling `zmq.core.recv` to determine if there
-% are further parts to receive.
-%
-% The following options are considered valid:
-%
-% * ZMQ_DONTWAIT
-%       Specifies that the operation should be performed in non-blocking mode.
-%       If there are no messages available on the specified socket, the
-%       zmq.core.recv() function shall fail with zmq:core:recv:EAGAIN error code.
 %
 %
 % NOTICE
-%  - The message received should be a uint8 row vector. Please consider using
+%  - The messages received should be uint8 row vectors. Please consider using
 %    `char`, `cast` and `typecast` functions before using it. Make sure to know
 %    what is the transmitter encoding when receiveing strings, so you can use
 %    conversions if they're neeeded, for example:
