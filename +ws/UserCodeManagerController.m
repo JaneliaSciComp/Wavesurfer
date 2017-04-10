@@ -78,9 +78,18 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
             self.Model.do('set', 'ClassName', newString) ;
         end
 
-        function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
-            %self.Model.instantiateUserObject();
-            self.Model.do('instantiateUserObject') ;            
+%         function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
+%             % This doesn't actually do anything.  It's there just to give
+%             % the user something obvious to do after they edit the
+%             % ClassName editbox.  The edit box losing keyboard focus
+%             % triggers the ClassNameEditActuated callback, which
+%             % instantiates a model object.
+%             
+%             %self.Model.do('instantiateUserObject') ;            
+%         end
+        
+        function ReinstantiateButtonActuated(self,source,event) %#ok<INUSD>
+            self.Model.do('reinstantiateUserObject') ;            
         end
         
 %         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
