@@ -2,7 +2,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
     properties
         ClassNameText
         ClassNameEdit        
-        InstantiateButton
+        %InstantiateButton
         ReinstantiateButton
     end  % properties
     
@@ -61,10 +61,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 ws.uiedit('Parent',self.FigureGH, ...
                           'HorizontalAlignment','left');
                       
-            self.InstantiateButton = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','pushbutton', ...
-                          'String','Instantiate');
+%             self.InstantiateButton = ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
+%                              'Style','pushbutton', ...
+%                              'String','Instantiate');
                       
             self.ReinstantiateButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -148,10 +148,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %widthFromEditToChooseButton=5;
             %chooseButtonWidth = 80 ;
 
-            heightFromInstantiateButtonToBottomEdit=6;            
-            instantiateButtonHeight = 24 ;
-            instantiateButtonWidth = 80 ;
-            widthBetweenButtons = 8 ;
+            heightFromButtonRowToBottomEdit=6;            
+            reinstantiateButtonHeight = 24 ;
+            reinstantiateButtonWidth = 80 ;
+            %widthBetweenButtons = 8 ;
             
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
@@ -167,8 +167,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %figureWidth=leftPadWidth+labelWidth+editWidth+ widthFromEditToChooseButton +chooseButtonWidth+rightPadWidth;
             figureHeight= bottomPadHeight + ...
                           editHeight + ...
-                          instantiateButtonHeight + ...
-                          heightFromInstantiateButtonToBottomEdit + ...
+                          reinstantiateButtonHeight + ...
+                          heightFromButtonRowToBottomEdit + ...
                           topPadHeight;
             
             % The edit and its label
@@ -184,17 +184,17 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             set(self.ChooseButton, ...
 %                 'Position',[chooseButtonXOffset chooseButtonYOffset chooseButtonWidth chooseButtonHeight]);
                                       
-            % Button
-            instantiateButtonXOffset = editXOffset + editWidth - instantiateButtonWidth ;
-            instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - instantiateButtonHeight ;
-            set(self.InstantiateButton, ...
-                'Position',[instantiateButtonXOffset instantiateButtonYOffset instantiateButtonWidth instantiateButtonHeight]);
+%             % Button
+%             instantiateButtonXOffset = editXOffset + editWidth - reinstantiateButtonWidth ;
+%             instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - reinstantiateButtonHeight ;
+%             set(self.InstantiateButton, ...
+%                 'Position',[instantiateButtonXOffset instantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
 
             % Other button
-            reinstantiateButtonWidth = instantiateButtonWidth ;
-            reinstantiateButtonHeight = instantiateButtonHeight ;
-            reinstantiateButtonXOffset = instantiateButtonXOffset - widthBetweenButtons - reinstantiateButtonWidth ;
-            reinstantiateButtonYOffset = instantiateButtonYOffset ;
+%             reinstantiateButtonWidth = reinstantiateButtonWidth ;
+%             reinstantiateButtonHeight = reinstantiateButtonHeight ;
+            reinstantiateButtonXOffset = editXOffset + editWidth - reinstantiateButtonWidth ;
+            reinstantiateButtonYOffset = editYOffset - heightFromButtonRowToBottomEdit - reinstantiateButtonHeight ;
             set(self.ReinstantiateButton, ...
                 'Position',[reinstantiateButtonXOffset reinstantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
                                       
@@ -272,7 +272,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             set(self.ClassNameEdit, 'Enable', ws.onIff(isIdle) );
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
-            set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
+            %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
             set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&model.DoesTheObjectMatchClassName) ) ;
         end
     end
