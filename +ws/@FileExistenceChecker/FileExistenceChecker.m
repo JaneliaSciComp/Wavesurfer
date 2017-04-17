@@ -20,6 +20,7 @@ classdef FileExistenceChecker < handle
         end
         
         function delete(self)
+            fprintf('In FileExistenceChecker::delete()\n') ;
             self.stop() ;
             self.callMexProcedure_('finalize') ;
         end

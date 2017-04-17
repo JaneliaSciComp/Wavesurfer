@@ -94,22 +94,22 @@ classdef WavesurferModel < ws.Model
         StimulationTriggerIndex  % this is an index into Schemes
     end
    
-    properties (Access=protected, Constant = true, Transient=true)
-        CommunicationFolderName_ = tempdir()
-        
-        WSCommandFileName_ = 'ws_command.txt'  % Commands *to* WS
-        WSResponseFileName_ = 'ws_response.txt'  % Responses *from* WS
-        
-        SICommandFileName_ = 'si_command.txt'  % Commands *to* SI
-        SIResponseFileName_ = 'si_response.txt'  % Responses *from* SI
-    end
-    
-    properties (Access=protected, Dependent = true)
-        WSCommandFilePath_
-        WSResponseFilePath_
-        SICommandFilePath_
-        SIResponseFilePath_
-    end
+%     properties (Access=protected, Constant = true, Transient=true)
+%         CommunicationFolderName_ = tempdir()
+%         
+%         WSCommandFileName_ = 'ws_command.txt'  % Commands *to* WS
+%         WSResponseFileName_ = 'ws_response.txt'  % Responses *from* WS
+%         
+%         SICommandFileName_ = 'si_command.txt'  % Commands *to* SI
+%         SIResponseFileName_ = 'si_response.txt'  % Responses *from* SI
+%     end
+%     
+%     properties (Access=protected, Dependent = true)
+%         WSCommandFilePath_
+%         WSResponseFilePath_
+%         SICommandFilePath_
+%         SIResponseFilePath_
+%     end
     
     properties (Access=protected)
         % Saved to protocol file
@@ -120,7 +120,7 @@ classdef WavesurferModel < ws.Model
         Ephys_
         UserCodeManager_
         IsYokedToScanImage_ = false
-        ExecutingScanImageCommandNow_ = false;
+        %ExecutingScanImageCommandNow_ = false;
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
@@ -186,7 +186,8 @@ classdef WavesurferModel < ws.Model
         TimeOfLastDrawnow_
         DidLooperCompleteSweep_
         %SICommandPollTimer_
-        SICommandFileExistenceChecker_
+        %SICommandFileExistenceChecker_
+        CommandConnector_
     end
     
     events
@@ -372,7 +373,11 @@ classdef WavesurferModel < ws.Model
             
             % Have to call this at object creation to set the override
             % correctly.
-            self.overrideOrReleaseStimulusMapDurationAsNeeded_();
+            self.overrideOrReleaseStimulusMapDurationAsNeeded_();            
+            
+            % Lastly (I guess...) create a command connector (which will
+            % remain disabled for now)
+            self.CommandConnector_ = ws.CommandConnector(self) ;
         end  % function
         
         function delete(self)
@@ -389,11 +394,12 @@ classdef WavesurferModel < ws.Model
 %                     self.SICommandPollTimer_ = [] ;
 %                 end
 
-                % Delete SICommandExistenceChecker_
-                if ~isempty(self.SICommandExistenceChecker_) && isvalid(self.SICommandExistenceChecker_) ,
-                    self.SICommandExistenceChecker_.stop() ;
-                    delete(self.SICommandExistenceChecker_) ;
-                    self.SICommandExistenceChecker_ = [] ;
+                % Delete CommandConnector_
+                if ~isempty(self.CommandConnector_) ,
+                    if isvalid(self.CommandConnector_) ,
+                        delete(self.CommandConnector_) ;
+                    end
+                    self.CommandConnector_ = [] ;
                 end
                 
                 % Close the sockets
@@ -747,23 +753,7 @@ classdef WavesurferModel < ws.Model
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.AreSweepsFiniteDuration=~logical(newValue);
             end
-        end
-        
-        function value = get.WSCommandFilePath_(self)
-            value = fullfile(self.CommunicationFolderName_,self.WSCommandFileName_) ;
-        end
-        
-        function value = get.WSResponseFilePath_(self)
-            value = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_) ;
-        end
-        
-        function value = get.SICommandFilePath_(self)
-            value = fullfile(self.CommunicationFolderName_,self.SICommandFileName_) ;
-        end
-        
-        function value = get.SIResponseFilePath_(self)
-            value = fullfile(self.CommunicationFolderName_,self.SIResponseFileName_) ;
-        end
+        end        
     end
     
     methods (Access=protected)    
@@ -938,61 +928,25 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
         end
         
-        function set.IsYokedToScanImage(self,newValue)
-            errorMsg = [];
+        function set.IsYokedToScanImage(self, newValue)
+            err = [] ;
             
+            % Set the value by enabling/disabling the command connector
             if islogical(newValue) && isscalar(newValue) ,
-                areFilesGone=self.ensureYokingFilesAreGone_();
-                
-                % If the yoking is being turned on (from being off), and
-                % deleting the command/response files fails, don't go into
-                % yoked mode.
-                if ~areFilesGone && newValue && ~self.IsYokedToScanImage_ ,
-                    errorMsg = {'WavesurferModel:UnableToDeleteExistingYokeFiles', ...
-                          'Unable to delete one or more yoking files'};
-                    newValue = false;
-                end
-                
-                self.IsYokedToScanImage_ = newValue;
+                try
+                    self.CommandConnector_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
+                catch me
+                    err = me ;
+                end                
+                self.IsYokedToScanImage_ = self.CommandConnector_.IsEnabled ;
             end            
-            
-%             % Start a timer to poll for the SI command file
-%             if self.IsITheOneTrueWavesurferModel_ ,
-%                 if self.IsYokedToScanImage_ ,
-%                     self.SICommandPollTimer_ = ...
-%                         timer('ExecutionMode','fixedSpacing',...
-%                               'Name','ScanImage Command Polling Timer',...
-%                               'BusyMode','queue', ...
-%                               'Period', 0.5, ...
-%                               'ObjectVisibility', 'off', ...
-%                               'TimerFcn',@(source,event)(self.checkSICommand_()), ...
-%                               'ErrorFcn',@(source,event)(self.disableYoking_()) ) ;
-%                     start(self.SICommandPollTimer_);
-%                 else
-%                     stop(self.SICommandPollTimer_) ;
-%                     delete(self.SICommandPollTimer_) ;
-%                     self.SICommandPollTimer_ = [] ;
-%                 end
-%             end
-            
-            % Start a thread to poll for the SI command file
-            if self.IsITheOneTrueWavesurferModel_ ,
-                if self.IsYokedToScanImage_ ,
-                    self.SICommandExistenceChecker_ = ...
-                        ws.FileExistenceChecker(self.SICommandFilePath_, ...
-                                                @()(self.didGetCommandFromSI_())) ;
-                    self.SICommandExistenceChecker_.start();
-                else
-                    self.SICommandExistenceChecker_.stop() ;
-                    delete(self.SICommandExistenceChecker_) ;
-                    self.SICommandExistenceChecker_ = [] ;
-                end
-            end                        
-            
+
+            % Do an update
             self.broadcast('UpdateIsYokedToScanImage');
-            
-            if ~isempty(errorMsg)
-                error(errorMsg{:});
+
+            % Throw any error that occured
+            if ~isempty(err) ,
+                throw(err) ;
             end
         end  % function
 
@@ -1130,8 +1084,10 @@ classdef WavesurferModel < ws.Model
                 end
             end
             
-            self.ExecutingScanImageCommandNow_ = false; % awkward workaround because self.play() and self.record() are blocking calls
-			
+            if ~isempty(self.CommandConnector_) ,
+                self.CommandConnector_.clearExecutingIncommingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
+            end
+            
             % Initialize the sweep counter, etc.
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
@@ -2040,31 +1996,6 @@ classdef WavesurferModel < ws.Model
 %             % SICommandPollTimer_ TimerFcn
 %             self.IsYokedToScanImage = false ;            
 %         end
-        
-        function didGetCommandFromSI_(self)
-            % Checks for a command file created by ScanImage
-            % If a command file is found, the command is parsed,
-            % executed, and a response file is written
-            
-            if exist(self.WSCommandFilePath_,'file') ,
-                try
-                    lines = ws.readAllLines(self.WSCommandFilePath_);
-                catch me ,
-                    wrappingException = MException('WavesurferModel:UnableToOpenYokingFile', ...
-                                                   'Unable to open ScanImage command file');
-                    finalException = addCause(wrappingException, me) ;
-                    throw(finalException) ;
-                end
-                self.ensureYokingFilesAreGone_();
-                
-                try
-                    self.executeSICommands_(lines);
-                catch ME
-                    self.acknowledgeSICommand_(false);
-                    fprintf(2,'%s\n',ME.message);
-                end
-            end
-        end
 
 %         function checkSICommand_(self)
 %             % Checks if a command file was created by ScanImage
@@ -2104,291 +2035,58 @@ classdef WavesurferModel < ws.Model
 %                 fclose(fid);
 %             end
 %         end
-        
-        function executeSICommands_(self, command_lines)
-            % Executes a received command received from ScanImage
-            self.ExecutingScanImageCommandNow_ = true;
-            
-            wsStartMode = [];
-            
-            for idx = 1:length(command_lines)
-                command_line = command_lines{idx};
-                if isempty(command_line)
-                    continue
-                end
-                command_line = strsplit(command_line,'\s*\|\s*','DelimiterType','RegularExpression');
-                command = command_line{1};
-                parameters = command_line(2:end);
-                
-                try
-                    switch lower(command)
-                        case 'set index of first acq in set'
-                            self.Logging.NextSweepIndex = str2double(parameters{1});
-                        case 'set number of acqs in set'
-                            self.NSweepsPerRun = str2double(parameters{1});
-                        case 'set file path'
-                            self.Logging.FileLocation = parameters{1};
-                        case 'set file base'
-                            self.Logging.FileBaseName = parameters{1};
-                        case 'record'
-                            % self.record() is a blocking call
-                            wsStartMode = 'record';
-                        case 'play'
-                            % self.play() is a blocking call
-                            wsStartMode = 'play';
-                        case 'stop'
-                            self.stop();
-                        otherwise
-                            error('WavesurferModel:UnknownScanImageCommand', ...
-                                'Received unknown command ''%s'' from ScanImage',command);
-                    end
-                catch ME
-                    self.ExecutingScanImageCommandNow_ = false;
-                    rethrow(ME);
-                end
+    end  % protected methods block
+    
+    methods
+        function executeIncomingCommand(self, command, parameters)
+            % Executes a received command
+            switch lower(command) ,
+                case 'set index of first acq in set'
+                    self.Logging.NextSweepIndex = str2double(parameters{1});
+                case 'set number of acqs in set'
+                    self.NSweepsPerRun = str2double(parameters{1});
+                case 'set file path'
+                    self.Logging.FileLocation = parameters{1};
+                case 'set file base'
+                    self.Logging.FileBaseName = parameters{1};
+                case 'record'
+                    % self.record() is a blocking call, but that's dealt
+                    % with in the CommandConnector
+                    self.record()
+                case 'play'
+                    % self.play() is a blocking call, but that's dealt
+                    % with in the CommandConnector
+                    self.play()
+                case 'stop'
+                    self.stop();
+                otherwise
+                    error('WavesurferModel:UnknownScanImageCommand', ...
+                          'Received unknown command ''%s'' from ScanImage', command) ;
             end
-                        
-            self.ExecutingScanImageCommandNow_ = false;
-            self.acknowledgeSICommand_();
-            
-            try
-                % awkward workaround because self.play() and self.record() is blocking call
-                % acknowledgeSICommand_ needs to be done before play and
-                % record
-                % flag self.ExecutingScanImageCommandNow_ is reset in self.run
-                if ~isempty(wsStartMode)
-                    self.ExecutingScanImageCommandNow_ = true;
-                    switch wsStartMode
-                        case 'record'
-                            self.record();
-                        case 'play'
-                            self.play();
-                        otherwise
-                            %No-op
-                    end
-                end
-            catch ME
-                self.ExecutingScanImageCommandNow_ = false;
-                rethrow(ME);
-            end
-        end % function
-                
-        
-        function acknowledgeSICommand_(self,success)
-            % Sends acknowledgment of received command to ScanImage
-            if nargin<2 || isempty(success)
-                success = true;
-            end            
-            self.ensureYokingFilesAreGone_();
-            
-            [fid,fopenErrorMessage]=fopen(self.WSResponseFilePath_,'wt');
-            assert(fid>=0,'WavesurferModel:UnableToOpenYokingFile', ...
-                    'Unable to open ScanImage response file: %s',fopenErrorMessage);
-                
-            if success
-                fprintf(fid,'OK');
-            else
-                fprintf(fid,'ERROR');
-            end
-            
-            fclose(fid);
-        end % function
-        
-        function [areFilesGone,errorMessage] = ensureYokingFilesAreGone_(self)
-            % This deletes the command and response yoking files from the
-            % temp dir, if they exist.  On exit, areFilesGone will be true
-            % iff all files are gone.  If areFilesGone is false,
-            % errorMessage will indicate what went wrong.            
-            
-            % Ensure the command file is gone
-            if exist(self.SICommandFilePath_,'file') ,
-                ws.deleteFileWithoutWarning(self.SICommandFilePath_);
-                if exist(self.SICommandFilePath_,'file') , 
-                    isSICommandFileGone=false;
-                    errorMessages1={'Unable to delete pre-existing ScanImage command file'};
-                else
-                    isSICommandFileGone=true;
-                    errorMessages1=cell(1,0);
-                end
-            else
-                isSICommandFileGone=true;
-                errorMessages1=cell(1,0);
-            end
-            
-            % Ensure the response file is gone
-            if exist(self.SIResponseFilePath_,'file') ,
-                ws.deleteFileWithoutWarning(self.SIResponseFilePath_);
-                if exist(self.SIResponseFilePath_,'file') , 
-                    isSIResponseFileGone=false;
-                    if isempty(errorMessages1) ,
-                        errorMessages2={'Unable to delete pre-existing ScanImage response file'};
-                    else
-                        errorMessages2=horzcat(errorMessages1,{'Unable to delete either pre-existing ScanImage yoking file'});
-                    end
-                else
-                    isSIResponseFileGone=true;
-                    errorMessages2=errorMessages1;
-                end
-            else
-                isSIResponseFileGone=true;
-                errorMessages2=errorMessages1;
-            end
-            
-            % Ensure the response file is gone
-            if exist(self.WSResponseFilePath_,'file') ,
-                ws.deleteFileWithoutWarning(self.WSResponseFilePath_);
-                if exist(self.WSResponseFilePath_,'file') , 
-                    isWSResponseFileGone=false;
-                    if isempty(errorMessages2) 
-                        errorMessages3={'Unable to delete pre-existing WaveSurferge response file'};
-                    else
-                        errorMessages3=horzcat(errorMessages2, {'Unable to delete pre-existing WaveSurfer yoking files'});
-                    end
-                else
-                    isWSResponseFileGone=true;
-                    errorMessages3=errorMessages2;
-                end
-            else
-                isWSResponseFileGone=true;
-                errorMessages3=errorMessages1;
-            end
-            
-            % Ensure the command file is gone
-            if exist(self.WSCommandFilePath_,'file') ,
-                ws.deleteFileWithoutWarning(self.WSCommandFilePath_);
-                if exist(self.WSCommandFilePath_,'file') , 
-                    isWSCommandFileGone=false;
-                    if isempty(errorMessages3) 
-                        errorMessages4={'Unable to delete pre-existing WaveSurferge response file'};
-                    else
-                        errorMessages4=horzcat(errorMessages3, {'Unable to delete pre-existing WaveSurfer yoking files'}) ;
-                    end
-                else
-                    isWSCommandFileGone=true;
-                    errorMessages4=errorMessages3;
-                end
-            else
-                isWSCommandFileGone=true;
-                errorMessages4=errorMessages3;
-            end
-            
-            % Compute whether both files are gone
-            areFilesGone = isSICommandFileGone && isSIResponseFileGone && isWSResponseFileGone && isWSCommandFileGone ;
-            if isempty(errorMessages4) ,
-                errorMessage = '' ;
-            elseif isscalar(errorMessages4) ,
-                errorMessage = errorMessages4{1} ;
-            else
-                errorMessage = 'Multiple problems deleting pre-existing WS-SI yoking files' ;
-            end                
-        end  % function
-        
+        end % function                
+    end  % public methods block
+    
+    methods (Access=protected)            
         function sendAcqSetParamsToScanImage_(self)
             % Sends acquisition parameters to ScanImage and start
             % acquisition
             
-%             trigger=self.Triggering.AcquisitionTriggerScheme;
-%             if trigger.IsInternal ,
-%                 pfiLineId=nan;  % used by convention
-%                 edgeType=trigger.Edge;
-%             else
-%                 pfiLineId=trigger.PFIID;
-%                 edgeType=trigger.Edge;
-%             end
-%             if isempty(edgeType) ,
-%                 edgeTypeString='';
-%             else
-%                 edgeTypeString=edgeType.toString();  % 'rising' or 'falling'
-%             end
             nAcqsInSet=self.NSweepsPerRun;
             iFirstAcqInSet=self.Logging.NextSweepIndex;
             
             %fprintf(fid,'Internally generated: %d\n',);
             %fprintf(fid,'InputPFI| %d\n',pfiLineId);
             %fprintf(fid,'Edge type| %s\n',edgeTypeString);
-            cmd = sprintf('%s\n%s|%d\n%s|%d\n%s|%d\n%s|%s\n%s|%s',...
-                'Arming',...
-                'Index of first acq in set', iFirstAcqInSet,...
-                'Number of acqs in set',nAcqsInSet,...
-                'Logging enabled',self.Logging.IsEnabled,...
-                'Wavesurfer data file name',self.Logging.NextRunAbsoluteFileName,...
-                'Wavesurfer data file base name',self.Logging.AugmentedBaseName);
+            command = sprintf('%s\n%s|%d\n%s|%d\n%s|%d\n%s|%s\n%s|%s',...
+                              'Arming',...
+                              'Index of first acq in set', iFirstAcqInSet,...
+                              'Number of acqs in set',nAcqsInSet,...
+                              'Logging enabled',self.Logging.IsEnabled,...
+                              'Wavesurfer data file name',self.Logging.NextRunAbsoluteFileName,...
+                              'Wavesurfer data file base name',self.Logging.AugmentedBaseName);
             
-            self.sendCommandToScanImage_(cmd);
-        end  % function
-        
-        function sendCommandToScanImage_(self,cmd)
-            % sends command to ScanImage and waits for ScanImage response
-            % throws if communication fails
-            
-            if ~self.IsYokedToScanImage_
-                return
-            end
-            
-            if self.ExecutingScanImageCommandNow_
-                return
-            end
-            
-            [fid,fopenErrorMessage]=fopen(self.SICommandFilePath_,'wt');
-            if fid<0
-                error('WavesurferModel:UnableToOpenYokingFile', ...
-                      'Unable to open ScanImage command file: %s',fopenErrorMessage);
-            end
-            
-            fprintf(fid,'%s',cmd);
-            fclose(fid);
-            
-            [isScanImageReady,errorMessage]=self.waitForScanImageResponse_();
-            if ~isScanImageReady
-                self.ensureYokingFilesAreGone_();
-                error('WavesurferModel:ProblemCommandingScanImage','Error sending command to ScanImage.\nCmd:\n%s\n\nError:\n%s',...
-                      cmd,errorMessage);
-            end
-        end % function
-
-        function [isScanImageReady,errorMessage]=waitForScanImageResponse_(self)
-            maximumWaitTime=30;  % sec
-            dtBetweenChecks=0.1;  % sec
-            nChecks=round(maximumWaitTime/dtBetweenChecks);
-            
-            for iCheck=1:nChecks ,
-                % pause for dtBetweenChecks without relinquishing control
-                % I assume this means we don't let UI callback run.  But
-                % not clear why that's important here...
-                timerVal=tic();
-                while (toc(timerVal)<dtBetweenChecks)
-                    x=1+1; %#ok<NASGU>
-                end
-                
-                % Check for the response file
-                doesReponseFileExist=exist(self.SIResponseFilePath_,'file');
-                if doesReponseFileExist ,
-                    [fid,fopenErrorMessage]=fopen(self.SIResponseFilePath_,'rt');
-                    if fid>=0 ,                        
-                        response=fscanf(fid,'%s',1);
-                        fclose(fid);
-                        if isequal(response,'OK') ,
-                            ws.deleteFileWithoutWarning(self.SIResponseFilePath_);  % We read it, so delete it now
-                            isScanImageReady=true;
-                            errorMessage='';
-                            return
-                        end
-                    else
-                        isScanImageReady=false;
-                        errorMessage=sprintf('Unable to open response file: %s',fopenErrorMessage);
-                        return
-                    end
-                end
-            end
-            
-            % If get here, must have failed
-            if exist(self.SIResponseFilePath_,'file') ,
-                ws.deleteFileWithoutWarning(self.SIResponseFilePath_);  % If it exists, it's now a response to an old command
-            end
-            isScanImageReady=false;
-            errorMessage='ScanImage did not respond within the alloted time';
-        end  % function
-    
+            self.CommandConnector_.sendCommand(command);
+        end  % function        
     end  % protected methods block
     
 %     methods (Hidden)
@@ -2402,23 +2100,23 @@ classdef WavesurferModel < ws.Model
     
     methods (Access=public)
         function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
-            cmd = sprintf('Saving protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
-            self.sendCommandToScanImage_(cmd);
+            command = sprintf('Saving protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommand(command);
         end  % function
         
         function commandScanImageToOpenProtocolFileIfYoked(self,absoluteProtocolFileName)
-            cmd = sprintf('Opening protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
-            self.sendCommandToScanImage_(cmd);
+            command = sprintf('Opening protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommand(command);
         end  % function
         
         function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            cmd = sprintf('Saving user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
-            self.sendCommandToScanImage_(cmd);
+            command = sprintf('Saving user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommand(command);
         end  % function
 
         function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            sprintf('Opening user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
-            self.sendCommandToScanImage_(cmd);
+            command = sprintf('Opening user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommand(command);
         end  % function
     end % methods
     
@@ -3804,6 +3502,8 @@ classdef WavesurferModel < ws.Model
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            % Need something here for yoking...
+            %self.CommandConnector_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
         end  % method
         
         function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
