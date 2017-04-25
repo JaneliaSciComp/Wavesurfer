@@ -1,18 +1,20 @@
 classdef FileExistenceCheckerManager < handle
     properties (Constant, Access=private)
-        Store_ = Store()
+        Store_ = ws.Store()
     end
     
     properties (Dependent)
         UIDs
     end
     
-    properties (Access=private)      
+    properties (Access=private)
+        IsDLLLoaded_
         FileExistenceCheckers_
         UIDs_
         NextUID_
+        RunningCount_
         HookHandle_
-    end    
+    end
     
     methods (Access=private)
         function self = FileExistenceCheckerManager()
@@ -25,7 +27,9 @@ classdef FileExistenceCheckerManager < handle
                        'EndChildThreadEventHandle', cell(1,0)) ;  % a 1x0 struct with these fields
             self.UIDs_ = zeros(1,0) ;
             self.NextUID_ = uint64(1) ;
-            self.HookHandle_ = FileExistenceCheckerManager.callMexProcedure_('initialize') ;
+            self.RunningCount_ = 0 ;  % the number of file existence checkers that are currently running
+            self.HookHandle_ = [] ;
+            %self.HookHandle_ = ws.FileExistenceCheckerManager.callMexProcedure_('initialize') ;
         end  % function
     end
 
@@ -41,7 +45,7 @@ classdef FileExistenceCheckerManager < handle
                 end
             end
             % Unregister the hook procedure
-            self.callMexProcedure_('finalize', self.HookHandle_) ;
+            %self.callMexProcedure_('finalize', self.HookHandle_) ;
         end  % function
         
         function uid = add(self, filePath, callback)
@@ -57,7 +61,7 @@ classdef FileExistenceCheckerManager < handle
             uid = self.UIDs_(end) ;
         end  % function
         
-        function removeByUID(self, uid)
+        function remove(self, uid)
             uid = uint64(uid) ;
             i = self.indexFromUID_(uid) ;
             self.removeByIndex(i) ;
@@ -100,10 +104,14 @@ classdef FileExistenceCheckerManager < handle
                 uid = self.UIDs_(i) ;
                 fec = self.FileExistenceCheckers_(i) ;  % there can be only one
                 if ~fec.IsRunning ,
+                    if self.RunningCount_==0 ,
+                        self.HookHandle_ = ws.FileExistenceCheckerManager.callMexProcedure_('initialize') ;
+                    end
                     [isRunning, threadHandle, threadID, endChildThreadEventHandle] = ...
-                        FileExistenceCheckerManager.callMexProcedure_('start', uid, fec.FilePath) ;
+                        ws.FileExistenceCheckerManager.callMexProcedure_('start', uid, fec.FilePath) ;
                     self.FileExistenceCheckers_(i).IsRunning = isRunning ;
-                    if isRunning , 
+                    if isRunning ,
+                        self.RunningCount_ = self.RunningCount_ + 1 ;
                         self.FileExistenceCheckers_(i).ThreadHandle = threadHandle ;
                         self.FileExistenceCheckers_(i).ThreadID = threadID ;
                         self.FileExistenceCheckers_(i).EndChildThreadEventHandle = endChildThreadEventHandle ;
@@ -124,12 +132,17 @@ classdef FileExistenceCheckerManager < handle
                 fec = self.FileExistenceCheckers_(i) ;  % there can be only one
                 if fec.IsRunning ,
                     isRunning = ...
-                        FileExistenceCheckerManager.callMexProcedure_('stop', uid, fec.ThreadHandle, fec.ThreadID, fec.EndChildThreadEventHandle) ;
+                        ws.FileExistenceCheckerManager.callMexProcedure_('stop', uid, fec.ThreadHandle, fec.ThreadID, fec.EndChildThreadEventHandle) ;
                     self.FileExistenceCheckers_(i).IsRunning = isRunning ;
                     if ~isRunning, 
                         self.FileExistenceCheckers_(i).ThreadHandle = [] ;
                         self.FileExistenceCheckers_(i).ThreadID = [] ;
                         self.FileExistenceCheckers_(i).EndChildThreadEventHandle = [] ;
+                        self.RunningCount_ = self.RunningCount_ - 1 ;
+                        if self.RunningCount_==0 ,
+                            ws.FileExistenceCheckerManager.callMexProcedure_('finalize') ;
+                            self.HookHandle_ = [] ;
+                        end
                     end
                 end
             end
@@ -156,24 +169,24 @@ classdef FileExistenceCheckerManager < handle
         
     methods (Static)
         function result = doesExist()
-            result = FileExistenceCheckerManager.Store_.isValid() ;
+            result = ws.FileExistenceCheckerManager.Store_.isValid() ;
         end
         
         function result = getShared()
-            if FileExistenceCheckerManager.doesExist() ,
-                result = FileExistenceCheckerManager.Store_.get() ;
+            if ws.FileExistenceCheckerManager.doesExist() ,
+                result = ws.FileExistenceCheckerManager.Store_.get() ;
             else
-                fecm = FileExistenceCheckerManager() ;
-                FileExistenceCheckerManager.Store_.set(fecm) ;
+                fecm = ws.FileExistenceCheckerManager() ;
+                ws.FileExistenceCheckerManager.Store_.set(fecm) ;
                 result = fecm ;
             end
         end
         
         function deleteShared()
-            if FileExistenceCheckerManager.doesExist() ,
-                fecm = FileExistenceCheckerManager.getShared() ;
+            if ws.FileExistenceCheckerManager.doesExist() ,
+                fecm = ws.FileExistenceCheckerManager.getShared() ;
                 fecm.delete() ;
-                FileExistenceCheckerManager.Store_.clear() ;  % just to be tidy
+                ws.FileExistenceCheckerManager.Store_.clear() ;  % just to be tidy
             end            
         end
     end  % static methods block

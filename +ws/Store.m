@@ -14,10 +14,10 @@ classdef Store < handle
             result = ~isempty(self.Content_) && isvalid(self.Content_{1}) ;            
         end
         function result = get(self)
-            if isempty(self.Content_) ,
-                error('Can''t get from an empty Store') ;
-            else
+            if ~self.isValid() ,
                 result = self.Content_{1} ;
+            else
+                error('Can''t get from an empty Store') ;
             end
         end
         function set(self, newValue)
