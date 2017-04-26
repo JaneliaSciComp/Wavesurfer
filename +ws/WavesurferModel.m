@@ -1369,6 +1369,9 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             
+            % Do we need this?  Where should it go, exactly?
+            % If we put it here, stopping a run from WS can get held up b/c
+            % WS is waiting for SI to acknowledge the abort command
             %self.CommandConnector_.sendCommandAsString('abort') ;
         end  % run_() function
         
