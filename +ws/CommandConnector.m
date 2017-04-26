@@ -9,7 +9,7 @@ classdef CommandConnector < handle
         SIResponseFileName_ = 'si_response.txt'  % Responses *from* SI
     end
     
-    properties (Access=protected)
+    properties (Access=protected, Transient=true)
         IncomingCommandFilePath_
         OutgoingResponseFilePath_
         OutgoingCommandFilePath_
@@ -20,17 +20,21 @@ classdef CommandConnector < handle
         Parent
         IsEnabled
     end
-    
+
     properties (Access=protected)
+        IsEnabled_
+    end
+    
+    properties (Access=protected, Transient=true)
         Parent_  % the parent WS/SI model object
         IsParentWavesurferModel_
-        IsEnabled_
         CommandFileExistenceChecker_  
         ExecutingIncomingCommandNow_
     end
     
     methods
         function self = CommandConnector(parent)
+            self.IsEnabled_ = false ;
             self.Parent_ = parent ;
             self.IsParentWavesurferModel_ = isa(parent, 'ws.WavesurferModel') ;         
             if self.IsParentWavesurferModel_ ,
@@ -44,7 +48,6 @@ classdef CommandConnector < handle
                 self.OutgoingCommandFilePath_ = fullfile(self.CommunicationFolderName_,self.WSCommandFileName_) ;
                 self.IncomingResponseFilePath_ = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_) ;                                
             end
-            self.IsEnabled_ = false ;
             self.ExecutingIncomingCommandNow_ = false ;
         end
         
@@ -85,7 +88,7 @@ classdef CommandConnector < handle
                 self.CommandFileExistenceChecker_ = [] ;  % clear the old one
                 self.CommandFileExistenceChecker_ = ...
                     ws.FileExistenceChecker(self.IncomingCommandFilePath_, ...
-                                            @()(self.didReceiveIncomingCommands())) ;  % make a fresh one
+                                            @()(self.didReceiveIncomingCommand())) ;  % make a fresh one
                 self.CommandFileExistenceChecker_.start();  % start it
             else
                 self.CommandFileExistenceChecker_ = [] ;  % this will stop and delete it, if it exists
@@ -94,9 +97,9 @@ classdef CommandConnector < handle
             if ~isempty(err) ,
                 throw(err) ;
             end
-        end                
+        end  % function
         
-        function didReceiveIncomingCommands(self)
+        function didReceiveIncomingCommand(self)
             % Checks for a command file created by ScanImage
             % If a command file is found, the command is parsed,
             % executed, and a response file is written
@@ -113,7 +116,7 @@ classdef CommandConnector < handle
                 self.ensureYokingFilesAreGone_();
                 
                 try
-                    self.executeIncomingCommands_(lines);
+                    self.executeIncomingCommand_(lines);
                 catch ME
                     self.acknowledgeCommand_(false);
                     fprintf(2,'%s\n',ME.message);
@@ -202,31 +205,26 @@ classdef CommandConnector < handle
     end  % public methods block
     
     methods (Access=protected)
-        function executeIncomingCommands_(self, command_lines)
+        function executeIncomingCommand_(self, lines)
             % Executes a received command received from partner
-            self.ExecutingIncomingCommandNow_ = true;
             
-            % If our parent is WS, check to see if the command is a
-            % blocking call, which must be the one and only command.
-            if self.IsParentWavesurferModel_ && isscalar(command_lines) ,
-                command_line = command_lines{1};
-                if isempty(command_line) ,
-                    is_blocking = false ;
-                else
-                    parsed_command_line = strsplit(command_line,'\s*\|\s*','DelimiterType','RegularExpression');
-                    command = parsed_command_line{1};
-                    parameters = parsed_command_line(2:end);                    
-                    lower_command = lower(command) ;                    
-                    if isequal(lower_command, 'record') || isequal(lower_command, 'play') ,
-                        is_blocking = true ;
-                    else
-                        is_blocking = false ;
-                    end
-                end
+            % Handle differently depending on whether our parent is WS or
+            % SI
+            if self.IsParentWavesurferModel_ ,
+                self.executeIncomingCommandToWSFromSI_(lines) ;
             else
-                is_blocking = false ;
+                self.executeIncomingCommandToSIFromWS_(lines) ;
             end
-                        
+        end  % function        
+        
+        function executeIncomingCommandToWSFromSI_(self, lines)
+            % Each "command" from SI is generally a set of mini-commands, 
+            % The get executed in sequence, and then a since
+            % acknowledgement is sent.
+            self.ExecutingIncomingCommandNow_ = true;
+            minicommands = ws.CommandConnector.parseIncomingCommandToWSFromSI(lines) ;
+            is_blocking = isscalar(minicommands) && (isequal(minicommands.command, 'record') || isequal(minicommands.command, 'play')) ;
+
             if is_blocking ,
                 % Have to acknowledge the command before executing, b/c
                 % command will block
@@ -239,7 +237,7 @@ classdef CommandConnector < handle
                     % record
                     % flag self.ExecutingIncomingCommandNow_ is reset in self.run
                     self.ExecutingIncomingCommandNow_ = true;
-                    self.Parent.executeIncomingCommand(command, parameters) ;
+                    self.Parent.executeIncomingMinicommand(minicommands) ;  % we know minicommands is a scalar
                     self.ExecutingIncomingCommandNow_ = false;
                 catch ME
                     self.ExecutingIncomingCommandNow_ = false;
@@ -247,17 +245,10 @@ classdef CommandConnector < handle
                 end
             else
                 % no blocking commands
-                for idx = 1:length(command_lines)
-                    command_line = command_lines{idx};
-                    if isempty(command_line)
-                        continue
-                    end
-                    parsed_command_line = strsplit(command_line,'\s*\|\s*','DelimiterType','RegularExpression');
-                    command = parsed_command_line{1};
-                    parameters = parsed_command_line(2:end);
-
+                for idx = 1:length(minicommands)
+                    minicommand = minicommands(idx) ;
                     try
-                        self.Parent.executeIncomingCommand(command, parameters) ;
+                        self.Parent.executeIncomingMinicommand(minicommand) ;
                     catch ME
                         self.ExecutingIncomingCommandNow_ = false;
                         rethrow(ME);
@@ -266,8 +257,23 @@ classdef CommandConnector < handle
                 self.ExecutingIncomingCommandNow_ = false;
                 self.acknowledgeCommand_();
             end
-        end  % function        
-        
+        end
+            
+        function executeIncomingCommandToSIFromWS_(self, lines)
+            % Each command from WS is a single command, basically, and SI
+            % doesn't block.
+            self.ExecutingIncomingCommandNow_ = true ;
+            [command, parameters] = ws.CommandConnector.parseIncomingCommandToSIFromWS(lines) ;
+            try
+                self.Parent.executeIncomingCommand(command, parameters) ;
+            catch ME
+                self.ExecutingIncomingCommandNow_ = false ;
+                rethrow(ME) ;
+            end
+            self.ExecutingIncomingCommandNow_ = false ;
+            self.acknowledgeCommand_() ;             
+        end
+            
         function acknowledgeCommand_(self,success)
             % Sends acknowledgment of received command to ScanImage
             if nargin<2 || isempty(success)
@@ -317,5 +323,46 @@ classdef CommandConnector < handle
                 errorMessage = 'Multiple problems deleting preexisting WS-SI yoking files' ;
             end                
         end  % function        
-    end
+    end  % protected methods block
+    
+    methods (Static)
+        function [command, parameters] = parseIncomingCommandToSIFromWS(lines)
+            if isempty(lines) ,
+                command = '' ;
+                parameters = cell(1,0) ;                
+            else
+                command = strtrim(lines{1}) ;
+                lineCount = length(lines) ;
+                parameterCount = lineCount-1 ;
+                parameters = cell(1,parameterCount) ;
+                for i = 1:parameterCount ,
+                    parameterLine = lines{i+1} ;
+                    parsedParameterLine = strsplit(parameterLine,'|') ;
+                    if length(parsedParameterLine)>=2 ,
+                        parameterValue = strtrim(parsedParameterLine{2}) ;
+                    else
+                        parameterValue = '' ;
+                    end
+                    parameters{i} = parameterValue ;
+                end
+            end
+        end
+        
+        function minicommands = parseIncomingCommandToWSFromSI(lines)
+            % Each command file from SI contains a set of mini-commands
+            minicommands = struct('command', cell(0,1), ...
+                                  'parameters', cell(0,1)) ;
+            for idx = 1:length(lines)
+                line = lines{idx};
+                if ~isempty(line) ,
+                    parsed_line = strsplit(line,'\s*\|\s*','DelimiterType','RegularExpression');
+                    command = lower(parsed_line{1}) ;
+                    parameters = parsed_line(2:end) ;
+                    minicommand = struct('command', {command},  ...
+                                         'parameters', {parameters}) ;
+                    minicommands = horzcat(minicommands, minicommand) ;  %#ok<AGROW>
+                end
+            end
+        end        
+    end  % static methods
 end

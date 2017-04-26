@@ -48,6 +48,10 @@ classdef FileExistenceCheckerManager < handle
             %self.callMexProcedure_('finalize', self.HookHandle_) ;
         end  % function
         
+        function result = getCount(self) 
+            result = length(self.FileExistenceCheckers_) ;
+        end
+        
         function uid = add(self, filePath, callback)
             fec = struct('FilePath', filePath, ...
                          'Callback', callback, ...
@@ -55,7 +59,8 @@ classdef FileExistenceCheckerManager < handle
                          'ThreadHandle', [], ...
                          'ThreadId', [], ...
                          'EndChildThreadEventHandle', []) ;  % a 1x0 struct with these fields
-            self.FileExistenceCheckers_ = horzcat(self.FileExistenceCheckers_, fec) ;
+            fecs = self.FileExistenceCheckers_ ;
+            self.FileExistenceCheckers_ = horzcat(fecs, fec) ;
             self.UIDs_ = horzcat(self.UIDs_, self.NextUID_) ;            
             self.NextUID_ = self.NextUID_ + 1 ;
             uid = self.UIDs_(end) ;
@@ -107,13 +112,13 @@ classdef FileExistenceCheckerManager < handle
                     if self.RunningCount_==0 ,
                         self.HookHandle_ = ws.FileExistenceCheckerManager.callMexProcedure_('initialize') ;
                     end
-                    [isRunning, threadHandle, threadID, endChildThreadEventHandle] = ...
+                    [isRunning, threadHandle, threadId, endChildThreadEventHandle] = ...
                         ws.FileExistenceCheckerManager.callMexProcedure_('start', uid, fec.FilePath) ;
                     self.FileExistenceCheckers_(i).IsRunning = isRunning ;
                     if isRunning ,
                         self.RunningCount_ = self.RunningCount_ + 1 ;
                         self.FileExistenceCheckers_(i).ThreadHandle = threadHandle ;
-                        self.FileExistenceCheckers_(i).ThreadID = threadID ;
+                        self.FileExistenceCheckers_(i).ThreadId = threadId ;
                         self.FileExistenceCheckers_(i).EndChildThreadEventHandle = endChildThreadEventHandle ;
                     end
                 end
@@ -132,15 +137,15 @@ classdef FileExistenceCheckerManager < handle
                 fec = self.FileExistenceCheckers_(i) ;  % there can be only one
                 if fec.IsRunning ,
                     isRunning = ...
-                        ws.FileExistenceCheckerManager.callMexProcedure_('stop', uid, fec.ThreadHandle, fec.ThreadID, fec.EndChildThreadEventHandle) ;
+                        ws.FileExistenceCheckerManager.callMexProcedure_('stop', uid, fec.ThreadHandle, fec.ThreadId, fec.EndChildThreadEventHandle) ;
                     self.FileExistenceCheckers_(i).IsRunning = isRunning ;
                     if ~isRunning, 
                         self.FileExistenceCheckers_(i).ThreadHandle = [] ;
-                        self.FileExistenceCheckers_(i).ThreadID = [] ;
+                        self.FileExistenceCheckers_(i).ThreadId = [] ;
                         self.FileExistenceCheckers_(i).EndChildThreadEventHandle = [] ;
                         self.RunningCount_ = self.RunningCount_ - 1 ;
                         if self.RunningCount_==0 ,
-                            ws.FileExistenceCheckerManager.callMexProcedure_('finalize') ;
+                            ws.FileExistenceCheckerManager.callMexProcedure_('finalize', self.HookHandle_) ;
                             self.HookHandle_ = [] ;
                         end
                     end
@@ -169,7 +174,8 @@ classdef FileExistenceCheckerManager < handle
         
     methods (Static)
         function result = doesExist()
-            result = ws.FileExistenceCheckerManager.Store_.isValid() ;
+            store = ws.FileExistenceCheckerManager.Store_ ;
+            result = ~isempty(store) && isvalid(store) && store.isValid() ;
         end
         
         function result = getShared()

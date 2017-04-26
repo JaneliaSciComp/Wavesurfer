@@ -254,35 +254,36 @@ LRESULT CALLBACK theHookProcedure(int code, WPARAM wParam, LPARAM lParam)  {
             
             mxArray* fecm ;
 
-            mxArray* exceptionMxArray = mexCallMATLABWithTrap(1, &fecm, 0, (mxArray**)(0), "FileExistenceCheckerManager.getShared") ;
+            mxArray* exceptionMxArray = mexCallMATLABWithTrap(1, &fecm, 0, (mxArray**)(0), "ws.FileExistenceCheckerManager.getShared") ;
 
             if (exceptionMxArray)  {
                 mxArray *messageAsMxArray = mxGetProperty(exceptionMxArray, 0, "message") ;
                 char* message = mxArrayToString(messageAsMxArray) ;  // Space for this string is allocated with mxMalloc()
-                //mexPrintf("mexCallMATLABWithTrap call 1 result error message: %s\n", message ) ;            
-                //mxFree(message) ;
-                //mxDestroyArray(messageAsMxArray) ;  // I think this is what I should be doing...
+                mexPrintf("ws.FileExistenceCheckerManager hook procedure errored when calling ws.FileExistenceCheckerManager.getShared() via mexCallMATLABWithTrap(): %s\n", message ) ;            
+                mxFree(message) ;
+                mxDestroyArray(messageAsMxArray) ;  // I think this is what I should be doing...
             }
+            else  {
+                mxArray* uidAsMxArray = mxCreateUint64Scalar(uid) ;
 
-            mxArray* uidAsMxArray = mxCreateUint64Scalar(uid) ;
+                mxArray* args[2] ;
+                args[0] = fecm ;    
+                args[1] = uidAsMxArray ;
 
-            mxArray* args[2] ;
-            args[0] = fecm ;    
-            args[1] = uidAsMxArray ;
+                mxArray *exceptionMxArray2 = mexCallMATLABWithTrap(0, (mxArray**)(0), 2, args, "callCallback") ;
 
-            mxArray *exceptionMxArray2 = mexCallMATLABWithTrap(0, (mxArray**)(0), 2, args, "callCallback") ;
-
-            if (exceptionMxArray2)  {
-                mxArray *messageAsMxArray = mxGetProperty(exceptionMxArray, 0, "message") ;
-                char* message = mxArrayToString(messageAsMxArray) ;  // Space for this string is allocated with mxMalloc()
-                //mexPrintf("mexCallMATLABWithTrap call 2 result error message: %s\n", message ) ;            
-                //mxFree(message) ;
-                //mxDestroyArray(messageAsMxArray) ;  // I think this is what I should be doing...
-            }    
-            
-            // Need to free stuff here
-            mxDestroyArray(uidAsMxArray) ;
-            mxDestroyArray(fecm) ;  // is this right?  Or is this going to break stuff?
+                if (exceptionMxArray2)  {
+                    mxArray *messageAsMxArray = mxGetProperty(exceptionMxArray, 0, "message") ;
+                    char* message = mxArrayToString(messageAsMxArray) ;  // Space for this string is allocated with mxMalloc()
+                    mexPrintf("ws.FileExistenceCheckerManager hook procedure errored when calling ws.FileExistenceCheckerManager::callCallback() via mexCallMATLABWithTrap(): %s\n", message ) ;            
+                    mxFree(message) ;
+                    mxDestroyArray(messageAsMxArray) ;  // I think this is what I should be doing...
+                }    
+                
+                // Need to free stuff here
+                mxDestroyArray(uidAsMxArray) ;
+                mxDestroyArray(fecm) ;  // is this right?  Or is this going to break stuff?
+            }
         }
     }
     return CallNextHookEx(0, code, wParam, lParam) ; 

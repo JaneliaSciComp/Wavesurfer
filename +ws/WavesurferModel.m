@@ -1085,7 +1085,7 @@ classdef WavesurferModel < ws.Model
             end
             
             if ~isempty(self.CommandConnector_) ,
-                self.CommandConnector_.clearExecutingIncommingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
+                self.CommandConnector_.clearExecutingIncomingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
             end
             
             % Initialize the sweep counter, etc.
@@ -1369,7 +1369,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             
-            self.sendCommandToScanImage_('abort');
+            self.CommandConnector_.sendCommandAsString('abort') ;
         end  % run_() function
         
         function openSweep_(self)
@@ -2038,9 +2038,11 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods
-        function executeIncomingCommand(self, command, parameters)
+        function executeIncomingMinicommand(self, minicommand)
             % Executes a received command
-            switch lower(command) ,
+            command = minicommand.command ;
+            parameters = minicommand.parameters ;
+            switch command ,
                 case 'set index of first acq in set'
                     self.Logging.NextSweepIndex = str2double(parameters{1});
                 case 'set number of acqs in set'
@@ -2085,7 +2087,7 @@ classdef WavesurferModel < ws.Model
                               'Wavesurfer data file name',self.Logging.NextRunAbsoluteFileName,...
                               'Wavesurfer data file base name',self.Logging.AugmentedBaseName);
             
-            self.CommandConnector_.sendCommand(command);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function        
     end  % protected methods block
     
@@ -2101,22 +2103,22 @@ classdef WavesurferModel < ws.Model
     methods (Access=public)
         function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
             command = sprintf('Saving protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommand(command);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
         
         function commandScanImageToOpenProtocolFileIfYoked(self,absoluteProtocolFileName)
             command = sprintf('Opening protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommand(command);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
         
         function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
             command = sprintf('Saving user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommand(command);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
 
         function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
             command = sprintf('Opening user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommand(command);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
     end % methods
     

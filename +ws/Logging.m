@@ -76,12 +76,12 @@ classdef Logging < ws.Subsystem
                 if ws.isString(newValue) ,
                     if exist(newValue,'dir') ,
                         originalValue=self.FileLocation_;
-                        self.FileLocation_ = newValue;
+                        self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
                         % If file name has changed, reset the sweep index
-                        originalFullName=fullfile(originalValue,self.FileBaseName);
-                        newFullName=fullfile(newValue,self.FileBaseName);
-                        if ~isequal(originalFullName,newFullName) ,
-                            self.NextSweepIndex = 1;
+                        originalFullName = fullfile(originalValue, self.FileBaseName) ;
+                        newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
+                        if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
+                            self.NextSweepIndex = 1 ;
                         end
                     end
                 else

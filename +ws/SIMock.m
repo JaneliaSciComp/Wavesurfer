@@ -11,14 +11,23 @@ classdef SIMock < handle
         
         function delete(self)
             fprintf('In ws.SIMock::delete()\n') ;
-            dbstack
-            self.CommandConnector_.IsEnabled = false ;
-            delete(self.CommandConnector_) ;
-            self.CommandConnector_ = [] ;
+            if ~isempty(self.CommandConnector_) ,
+                if isvalid(self.CommandConnector_) ,
+                    self.CommandConnector_.IsEnabled = false ;
+                    delete(self.CommandConnector_) ;
+                end
+                self.CommandConnector_ = [] ;
+            end
         end
         
-        function executeIncomingCommand(self, command, parameters)
+        function executeIncomingCommand(self, command, parameters)  %#ok<INUSL>
             fprintf(1, 'Got command "%s"\n', command) ;
+            parameterCount = length(parameters) ;
+            for i = 1:parameterCount ,
+                fprintf('parameter %d: %s\n', i, parameters{i}) ;
+                %fprintf('\n') ;
+            end
+            fprintf('\n') ;
         end        
         
         function sendSetIndexOfFirstAcqInSet(self, index)
@@ -36,8 +45,8 @@ classdef SIMock < handle
             self.CommandConnector_.sendCommandAsString(commandAsString) ;
         end
         
-        function sendSetFileBase(self, path)
-            commandAsString = sprintf('set file base| %s\n', path) ;
+        function sendSetFileBase(self, base)
+            commandAsString = sprintf('set file base| %s\n', base) ;
             self.CommandConnector_.sendCommandAsString(commandAsString) ;
         end
         
@@ -48,6 +57,11 @@ classdef SIMock < handle
         
         function sendPlay(self)
             commandAsString = sprintf('play\n') ;
+            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+        end        
+        
+        function sendStop(self)
+            commandAsString = sprintf('stop') ;
             self.CommandConnector_.sendCommandAsString(commandAsString) ;
         end        
     end    
