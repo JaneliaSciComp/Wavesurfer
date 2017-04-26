@@ -1,7 +1,7 @@
 classdef FileExistenceCheckerManager < handle
-    properties (Constant, Access=private)
-        Store_ = ws.Store()
-    end
+%     properties (Constant, Access=private)
+%         Store_ = ws.Store()
+%     end
     
     properties (Dependent)
         UIDs
@@ -35,7 +35,8 @@ classdef FileExistenceCheckerManager < handle
 
     methods 
         function delete(self)
-            % Stop all the threads
+            % Stop all the threads (can't use remove all b/c want to be as
+            % robust as possible)
             n = length(self.FileExistenceCheckers_) ;
             for i = n:-1:1 ,
                 try
@@ -47,6 +48,13 @@ classdef FileExistenceCheckerManager < handle
             % Unregister the hook procedure
             %self.callMexProcedure_('finalize', self.HookHandle_) ;
         end  % function
+        
+        function removeAll(self)
+            n = length(self.FileExistenceCheckers_) ;
+            for i = n:-1:1 ,
+                self.removeByIndex(i) ;
+            end
+        end
         
         function result = getCount(self) 
             result = length(self.FileExistenceCheckers_) ;
@@ -173,27 +181,12 @@ classdef FileExistenceCheckerManager < handle
     end  % private methods block
         
     methods (Static)
-        function result = doesExist()
-            store = ws.FileExistenceCheckerManager.Store_ ;
-            result = ~isempty(store) && isvalid(store) && store.isValid() ;
-        end
-        
         function result = getShared()
-            if ws.FileExistenceCheckerManager.doesExist() ,
-                result = ws.FileExistenceCheckerManager.Store_.get() ;
-            else
-                fecm = ws.FileExistenceCheckerManager() ;
-                ws.FileExistenceCheckerManager.Store_.set(fecm) ;
-                result = fecm ;
+            persistent singleton
+            if isempty(singleton) 
+                singleton = ws.FileExistenceCheckerManager() ;
             end
-        end
-        
-        function deleteShared()
-            if ws.FileExistenceCheckerManager.doesExist() ,
-                fecm = ws.FileExistenceCheckerManager.getShared() ;
-                fecm.delete() ;
-                ws.FileExistenceCheckerManager.Store_.clear() ;  % just to be tidy
-            end            
+            result = singleton ;
         end
     end  % static methods block
     

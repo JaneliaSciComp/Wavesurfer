@@ -1369,7 +1369,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             
-            self.CommandConnector_.sendCommandAsString('abort') ;
+            %self.CommandConnector_.sendCommandAsString('abort') ;
         end  % run_() function
         
         function openSweep_(self)
