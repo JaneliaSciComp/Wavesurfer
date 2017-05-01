@@ -116,10 +116,10 @@ classdef CommandConnector < handle
                 self.ensureYokingFilesAreGone_();
                 
                 try
-                    self.executeIncomingCommand_(lines);
-                catch ME
-                    self.acknowledgeCommand_(false);
-                    fprintf(2,'%s\n',ME.message);
+                    self.executeIncomingCommand_(lines) ;
+                catch exception
+                    self.acknowledgeCommand_(exception) ;
+                    %fprintf(2,'%s\n',exception.message);
                 end
             end
         end
@@ -274,10 +274,10 @@ classdef CommandConnector < handle
             self.acknowledgeCommand_() ;             
         end
             
-        function acknowledgeCommand_(self,success)
+        function acknowledgeCommand_(self, exception)
             % Sends acknowledgment of received command to ScanImage
-            if nargin<2 || isempty(success)
-                success = true;
+            if nargin<2 || isempty(exception) ,
+                exception = [] ;
             end            
             self.ensureYokingFilesAreGone_();
             
@@ -287,10 +287,10 @@ classdef CommandConnector < handle
                       'Unable to open outgoing response file: %s',fopenErrorMessage);
             end
             
-            if success
+            if isempty(exception) ,
                 fprintf(fid,'OK');
             else
-                fprintf(fid,'ERROR');
+                fprintf(fid,'ERROR: %s (%s)', exception.message, exception.identifier);
             end
             
             fclose(fid);
