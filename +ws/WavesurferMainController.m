@@ -201,7 +201,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             initialFolderForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'cfg', 'load', initialFolderForFilePicker);            
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFolderForFilePicker);            
             if ~isempty(absoluteFileName)
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
@@ -233,7 +233,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             isFileNameKnown=false;
             userSettingsAbsoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-                        isFileNameKnown, '', 'usr', 'load', initialFilePickerFolder);                
+                        isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
             if ~isempty(userSettingsAbsoluteFileName) ,
                 ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
                 self.Model.do('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
@@ -599,7 +599,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     fileName='';  % not used
                     lastProtocolFileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
                     if isempty(lastProtocolFileName)
-                        fileChooserInitialFileName = fullfile(pwd(),'untitled.cfg');
+                        fileChooserInitialFileName = fullfile(pwd(),'untitled.wsp');
                     else
                         fileChooserInitialFileName = lastProtocolFileName;
                     end
@@ -612,7 +612,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
-                    'cfg', ...
+                    'protocol', ...
                     'save', ...
                     fileChooserInitialFileName);
             
@@ -674,7 +674,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
-                    'usr', ...
+                    'user-settings', ...
                     'save', ...
                     fileChooserInitialFileName);
 
@@ -875,7 +875,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
 %         end  % function
         
-        function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
+        function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, fileTypeString, loadOrSave, fileChooserInitialFileName)
             % A function that tries to obtain a valid absolute file name
             % for the caller. If isFileNameKnown is true, the function
             % will try to use fileName, possibly adding a leading
@@ -890,14 +890,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             % Determine the file descriptor string for use in file choose
             % dialog titles
-            if isequal(cfgOrUsr,'cfg') ,
-                fileTypeString='Protocol';
-            elseif isequal(cfgOrUsr,'usr') ,
-                fileTypeString='User Settings';
+            if isequal(fileTypeString,'protocol') ,
+                fileExtension = 'wsp' ;
+                humanReadableTitleCaseFileTypeString = 'Protocol' ;
+            elseif isequal(fileTypeString,'user-settings') ,
+                fileExtension = 'wsu' ;
+                humanReadableTitleCaseFileTypeString = 'User Settings' ;
             else
                 % this should never happen, but in case it does...
-                cfgOrUsr='cfg';
-                fileTypeString='Protocol';
+                fileExtension = 'wsp' ;
+                humanReadableTitleCaseFileTypeString = 'Protocol' ;
             end
             
             % Obtain an absolute file name
@@ -911,19 +913,21 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     p = pwd();
                 end
                 if isempty(e)
-                    e = cfgOrUsr;
+                    e = fileTypeString;
                 end
                 absoluteFileName = fullfile(p, [f e]);
             else                
                 if isequal(loadOrSave,'load')
                     [f,p] = ...
-                        uigetfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
-                                  sprintf('Open %s...', fileTypeString), ...
+                        uigetfile({sprintf('*.%s', fileExtension), sprintf('WaveSurfer %s Files',humanReadableTitleCaseFileTypeString) ; ...
+                                   '*.*',  'All Files (*.*)'}, ...
+                                  sprintf('Open %s...', humanReadableTitleCaseFileTypeString), ...
                                   fileChooserInitialFileName);
                 elseif isequal(loadOrSave,'save')
                     [f,p] = ...
-                        uiputfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
-                                  sprintf('Save %s As...', fileTypeString), ...
+                        uiputfile({sprintf('*.%s', fileExtension), sprintf('WaveSurfer %s Files',humanReadableTitleCaseFileTypeString)  ; ...
+                                   '*.*',  'All Files (*.*)'}, ...
+                                  sprintf('Save %s As...', humanReadableTitleCaseFileTypeString), ...
                                   fileChooserInitialFileName);
                 else
                     % this should never happen, but if it does...
