@@ -1372,7 +1372,7 @@ classdef WavesurferModel < ws.Model
             % Do we need this?  Where should it go, exactly?
             % If we put it here, stopping a run from WS can get held up b/c
             % WS is waiting for SI to acknowledge the abort command
-            %self.CommandConnector_.sendCommandFileAsString('abort') ;
+            %self.CommandConnector_.sendCommandAsString('abort') ;
         end  % run_() function
         
         function openSweep_(self)
@@ -2041,19 +2041,18 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods
-        function executeIncomingCommand(self, command)
-            % Executes a single received command.  There may be several
-            % commands in a single command file.
-            commandName = command.name ;
-            parameters = command.parameters ;
-            switch commandName ,
-                case 'set-index-of-first-sweep-in-run'
+        function executeIncomingMinicommand(self, minicommand)
+            % Executes a received command
+            command = minicommand.command ;
+            parameters = minicommand.parameters ;
+            switch command ,
+                case 'set index of first acq in set'
                     self.Logging.NextSweepIndex = str2double(parameters{1});
-                case 'set-number-of-sweeps-in-run'
+                case 'set number of acqs in set'
                     self.NSweepsPerRun = str2double(parameters{1});
-                case 'set-data-file-folder-path'
+                case 'set file path'
                     self.Logging.FileLocation = parameters{1};
-                case 'set-data-file-base-name'
+                case 'set file base'
                     self.Logging.FileBaseName = parameters{1};
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
@@ -2067,7 +2066,7 @@ classdef WavesurferModel < ws.Model
                     self.stop();
                 otherwise
                     error('WavesurferModel:UnknownScanImageCommand', ...
-                          'Received unknown command ''%s'' from ScanImage', commandName) ;
+                          'Received unknown command ''%s'' from ScanImage', command) ;
             end
         end % function                
     end  % public methods block
@@ -2083,17 +2082,15 @@ classdef WavesurferModel < ws.Model
             %fprintf(fid,'Internally generated: %d\n',);
             %fprintf(fid,'InputPFI| %d\n',pfiLineId);
             %fprintf(fid,'Edge type| %s\n',edgeTypeString);
-            commandFileAsString = ...
-                sprintf('%s\n%s|%d\n%s|%d\n%s|%d\n%s|%s\n%s|%s\n%s\n', ...
-                        '6', ...
-                        'set-index-of-first-acq-in-set', iFirstAcqInSet, ...
-                        'set-number-of-acqs-in-set', nAcqsInSet, ...
-                        'set-is-logging-enabled', self.Logging.IsEnabled, ...
-                        'set-data-file-folder-path', fileparts(self.Logging.NextRunAbsoluteFileName), ...
-                        'set-data-file-base-name', self.Logging.AugmentedBaseName, ...
-                        'loop') ;
+            command = sprintf('%s\n%s|%d\n%s|%d\n%s|%d\n%s|%s\n%s|%s',...
+                              'Arming',...
+                              'Index of first acq in set', iFirstAcqInSet,...
+                              'Number of acqs in set',nAcqsInSet,...
+                              'Logging enabled',self.Logging.IsEnabled,...
+                              'Wavesurfer data file name',self.Logging.NextRunAbsoluteFileName,...
+                              'Wavesurfer data file base name',self.Logging.AugmentedBaseName);
             
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function        
     end  % protected methods block
     
@@ -2107,24 +2104,24 @@ classdef WavesurferModel < ws.Model
 %     end
     
     methods (Access=public)
-        function commandScanImageToSaveConfigFileIfYoked(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsave-cfg-file| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        function commandScanImageToSaveProtocolFileIfYoked(self,absoluteProtocolFileName)
+            command = sprintf('Saving protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
         
-        function commandScanImageToOpenConfigFileIfYoked(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nload-cfg-file| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        function commandScanImageToOpenProtocolFileIfYoked(self,absoluteProtocolFileName)
+            command = sprintf('Opening protocol file\nProtocol file name| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
         
         function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsave-usr-file| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            command = sprintf('Saving user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
 
         function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nload-usr-file| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            command = sprintf('Opening user settings file\nUser settings file name| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommandAsString(command);
         end  % function
     end % methods
     
@@ -2194,8 +2191,7 @@ classdef WavesurferModel < ws.Model
             %self.setState_('idle');
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToOpenConfigFileIfYoked(siConfigFilePath);
+            self.commandScanImageToOpenProtocolFileIfYoked(absoluteFileName);
             %self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);
             %self.broadcast('Update');
@@ -2203,7 +2199,7 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self, absoluteFileName, layoutForAllWindows)
+        function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self,absoluteFileName,layoutForAllWindows)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
             wavesurferModelSettings=self.encodeForPersistence();
@@ -2218,8 +2214,7 @@ classdef WavesurferModel < ws.Model
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToSaveConfigFileIfYoked(siConfigFilePath) ;
+            self.commandScanImageToSaveProtocolFileIfYoked(absoluteFileName);
             self.changeReadiness(+1);            
             self.broadcast('Update');
         end
@@ -2254,8 +2249,7 @@ classdef WavesurferModel < ws.Model
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             %self.broadcast('DidSetAbsoluteUserSettingsFileName');
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToOpenUserSettingsFileIfYoked(siUserFilePath);
+            self.commandScanImageToOpenUserSettingsFileIfYoked(absoluteFileName);
             
             self.changeReadiness(+1);            
             
@@ -2276,8 +2270,7 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteUserSettingsFileName_ = absoluteFileName;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
-            siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToSaveUserSettingsFileIfYoked(siUserFilePath);                
+            self.commandScanImageToSaveUserSettingsFileIfYoked(absoluteFileName);                
             self.changeReadiness(+1);            
             self.broadcast('Update');            
         end  % function

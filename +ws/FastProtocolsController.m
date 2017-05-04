@@ -38,10 +38,7 @@ classdef FastProtocolsController < ws.Controller
             else
                 filePickerInitialFolder = originalFastProtocolFileName ;
             end
-            [filename, dirName] = uigetfile({'*.wsp', 'WaveSurfer Protocol Files' ; ...
-                                             '*.*',  'All Files (*.*)'} , ...
-                                            'Select a Protocol File' , ...
-                                            filePickerInitialFolder) ;
+            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', filePickerInitialFolder);
 
             % If the user cancels, just exit.
             if filename == 0 ,
