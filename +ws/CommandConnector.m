@@ -49,20 +49,20 @@ classdef CommandConnector < handle
                 self.IncomingResponseFilePath_ = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_) ;                                
             end
             self.ExecutingIncomingCommandNow_ = false ;
-        end
+        end  % function
         
         function delete(self)            
             fprintf('In ws.CommandConnector::delete()\n') ;
             self.IsEnabled = false ;  % this will delete the CommandFileExistenceChecker_, if it is a valid object
-        end
+        end  % function
 
         function result = get.Parent(self)
             result = self.Parent_ ;
-        end
+        end  % function
         
         function result = get.IsEnabled(self)
             result = self.IsEnabled_ ;
-        end
+        end  % function
         
         function set.IsEnabled(self, newValue)
             err = [] ;
@@ -106,7 +106,7 @@ classdef CommandConnector < handle
             
             if exist(self.IncomingCommandFilePath_,'file') ,
                 try
-                    lines = ws.readAllLines(self.IncomingCommandFilePath_);
+                    commandFileText = ws.readFileContents(self.IncomingCommandFilePath_) ;
                 catch me ,
                     wrappingException = MException('CommandConnector:UnableToOpenYokingFile', ...
                                                    'Unable to open ScanImage command file');
@@ -116,15 +116,15 @@ classdef CommandConnector < handle
                 self.ensureYokingFilesAreGone_();
                 
                 try
-                    self.executeIncomingCommand_(lines) ;
+                    self.executeIncomingCommand_(commandFileText) ;
                 catch exception
                     self.acknowledgeCommand_(exception) ;
                     %fprintf(2,'%s\n',exception.message);
                 end
             end
-        end
+        end  % function
         
-        function sendCommandAsString(self, commandAsString)
+        function sendCommandFileAsString(self, commandFileAsString)
             % sends command to ScanImage and waits for ScanImage response
             % throws if communication fails
             
@@ -142,16 +142,16 @@ classdef CommandConnector < handle
                       'Unable to open outgoing command file: %s',fopenErrorMessage);
             end
             
-            fprintf(fid,'%s',commandAsString);
+            fprintf(fid,'%s',commandFileAsString);
             fclose(fid);
             
             [isPartnerReady,errorMessage]=self.waitForResponse_();
             if ~isPartnerReady ,
                 self.ensureYokingFilesAreGone_();
                 error('CommandConnector:ProblemCommandingPartner','Error sending command to partner.\nCmd:\n%s\n\nError:\n%s',...
-                      commandAsString,errorMessage);
+                      commandFileAsString,errorMessage);
             end
-        end % function
+        end  % function
         
         function [isPartnerReady, errorMessage] = waitForResponse_(self)
             maximumWaitTime=30;  % sec
@@ -170,25 +170,36 @@ classdef CommandConnector < handle
                 % Check for the response file
                 doesReponseFileExist=exist(self.IncomingResponseFilePath_,'file');
                 if doesReponseFileExist ,
-                    [fid,fopenErrorMessage]=fopen(self.IncomingResponseFilePath_,'rt');
-                    if fid>=0 ,                        
-                        response=fscanf(fid,'%s',1);
-                        fclose(fid);
-                        if isequal(response,'OK') ,
-                            ws.deleteFileWithoutWarning(self.IncomingResponseFilePath_);  % We read it, so delete it now
-                            isPartnerReady=true;
-                            errorMessage='';
-                            return
-                        end
-                    else
+                    try
+                        responseFileText = ws.readFileContents(self.IncomingResponseFilePath_) ;
+                    catch me
                         isPartnerReady=false;
-                        errorMessage=sprintf('Unable to open incoming response file: %s',fopenErrorMessage);
+                        errorMessage=sprintf('Unable to open incoming response file: %s (%s)', me.message, me.identifier);
+                        return                        
+                    end
+                    lines = ws.splitIntoCompleteLines(responseFileText) ;
+                    lineCount = length(lines) ;
+                    if lineCount>=1 ,
+                        response = lines{1} ;
+                        ws.deleteFileWithoutWarning(self.IncomingResponseFilePath_) ;  % We read it, so delete it now
+                        if isequal(response,'OK') ,
+                            isPartnerReady = true ;
+                            errorMessage = '' ;
+                        else
+                            isPartnerReady = false ;
+                            errorMessage = response ;
+                        end
                         return
+                    else
+                        % looks like response is not yet complete
+                        % do nothing, hopefully will be done next time around
                     end
                 end
             end
             
-            % If get here, must have failed
+            % If get here, must have timed out
+            % Do we want to delete it here?  Why not just delete a pre-existing reponse file
+            % just before giving a command?
             if exist(self.IncomingResponseFilePath_,'file') ,
                 ws.deleteFileWithoutWarning(self.IncomingResponseFilePath_);  % If it exists, it's now a response to an old command
             end
@@ -205,77 +216,75 @@ classdef CommandConnector < handle
     end  % public methods block
     
     methods (Access=protected)
-        function executeIncomingCommand_(self, lines)
+        function executeIncomingCommand_(self, commandFileText)
             % Executes a received command received from partner
             
-            % Handle differently depending on whether our parent is WS or
-            % SI
-            if self.IsParentWavesurferModel_ ,
-                self.executeIncomingCommandToWSFromSI_(lines) ;
-            else
-                self.executeIncomingCommandToSIFromWS_(lines) ;
-            end
-        end  % function        
-        
-        function executeIncomingCommandToWSFromSI_(self, lines)
-            % Each "command" from SI is generally a set of mini-commands, 
+            % Each "command" is generally a set of mini-commands, 
             % The get executed in sequence, and then a since
             % acknowledgement is sent.
             self.ExecutingIncomingCommandNow_ = true;
-            minicommands = ws.CommandConnector.parseIncomingCommandToWSFromSI(lines) ;
-            is_blocking = isscalar(minicommands) && (isequal(minicommands.command, 'record') || isequal(minicommands.command, 'play')) ;
+            [isCompleteCommandFile, commands] = ws.CommandConnector.parseIncomingCommandFile(commandFileText) ;
+            if isCompleteCommandFile ,
+                if self.IsParentWavesurferModel_ && isscalar(commands) ,
+                    command = commands ;  % b/c scalar
+                    isBlocking = ( isequal(command.name, 'record') || isequal(command.name, 'play') ) ;
+                else
+                    isBlocking = false ;
+                end                    
 
-            if is_blocking ,
-                % Have to acknowledge the command before executing, b/c
-                % command will block
-                self.ExecutingIncomingCommandNow_ = false;
-                self.acknowledgeCommand_();
+                if isBlocking ,
+                    % Have to acknowledge the command before executing, b/c
+                    % command will block
+                    self.ExecutingIncomingCommandNow_ = false ;
+                    self.acknowledgeCommand_() ;
 
-                try
-                    % awkward workaround because self.play() and self.record() is blocking call
-                    % acknowledgeSICommand_ needs to be done before play and
-                    % record
-                    % flag self.ExecutingIncomingCommandNow_ is reset in self.run
-                    self.ExecutingIncomingCommandNow_ = true;
-                    self.Parent.executeIncomingMinicommand(minicommands) ;  % we know minicommands is a scalar
-                    self.ExecutingIncomingCommandNow_ = false;
-                catch ME
-                    self.ExecutingIncomingCommandNow_ = false;
-                    rethrow(ME);
-                end
-            else
-                % no blocking commands
-                for idx = 1:length(minicommands)
-                    minicommand = minicommands(idx) ;
                     try
-                        self.Parent.executeIncomingMinicommand(minicommand) ;
+                        % awkward workaround because self.play() and self.record() is blocking call
+                        % acknowledgeSICommand_ needs to be done before play and
+                        % record
+                        % flag self.ExecutingIncomingCommandNow_ is reset in self.run
+                        self.ExecutingIncomingCommandNow_ = true ;
+                        self.Parent.executeIncomingCommand(command) ;  % we know minicommands is a scalar
+                        self.ExecutingIncomingCommandNow_ = false ;
                     catch ME
-                        self.ExecutingIncomingCommandNow_ = false;
-                        rethrow(ME);
+                        self.ExecutingIncomingCommandNow_ = false ;
+                        rethrow(ME) ;
                     end
+                else
+                    % no blocking commands
+                    for idx = 1:length(commands) ,
+                        command = commands(idx) ;
+                        try
+                            self.Parent.executeIncomingCommand(command) ;
+                        catch ME
+                            self.ExecutingIncomingCommandNow_ = false ;
+                            rethrow(ME) ;
+                        end
+                    end
+                    self.ExecutingIncomingCommandNow_ = false ;
+                    self.acknowledgeCommand_() ;
                 end
-                self.ExecutingIncomingCommandNow_ = false;
-                self.acknowledgeCommand_();
             end
-        end
+        end  % function
             
-        function executeIncomingCommandToSIFromWS_(self, lines)
-            % Each command from WS is a single command, basically, and SI
-            % doesn't block.
-            self.ExecutingIncomingCommandNow_ = true ;
-            [command, parameters] = ws.CommandConnector.parseIncomingCommandToSIFromWS(lines) ;
-            try
-                self.Parent.executeIncomingCommand(command, parameters) ;
-            catch ME
-                self.ExecutingIncomingCommandNow_ = false ;
-                rethrow(ME) ;
-            end
-            self.ExecutingIncomingCommandNow_ = false ;
-            self.acknowledgeCommand_() ;             
-        end
+%         function executeIncomingCommandToSIFromWS_(self, lines)
+%             % Each command from WS is a single command, basically, and SI
+%             % doesn't block.
+%             self.ExecutingIncomingCommandNow_ = true ;
+%             [command, parameters] = ws.CommandConnector.parseIncomingCommandToSIFromWS(lines) ;
+%             try
+%                 self.Parent.executeIncomingCommand(command, parameters) ;
+%             catch ME
+%                 self.ExecutingIncomingCommandNow_ = false ;
+%                 rethrow(ME) ;
+%             end
+%             self.ExecutingIncomingCommandNow_ = false ;
+%             self.acknowledgeCommand_() ;             
+%         end
             
         function acknowledgeCommand_(self, exception)
-            % Sends acknowledgment of received command to ScanImage
+            % Sends acknowledgment of received command to ScanImage.  Also deletes the
+            % just-received command file.
             if nargin<2 || isempty(exception) ,
                 exception = [] ;
             end            
@@ -288,13 +297,13 @@ classdef CommandConnector < handle
             end
             
             if isempty(exception) ,
-                fprintf(fid,'OK');
+                fprintf(fid,'OK\n');
             else
-                fprintf(fid,'ERROR: %s (%s)', exception.message, exception.identifier);
+                fprintf(fid,'ERROR: %s (%s)\n', exception.message, exception.identifier);
             end
             
             fclose(fid);
-        end % function
+        end  % function
         
         function [areFilesGone, errorMessage] = ensureYokingFilesAreGone_(self)
             % This deletes the command and response yoking files from the
@@ -326,43 +335,74 @@ classdef CommandConnector < handle
     end  % protected methods block
     
     methods (Static)
-        function [command, parameters] = parseIncomingCommandToSIFromWS(lines)
-            if isempty(lines) ,
-                command = '' ;
-                parameters = cell(1,0) ;                
-            else
-                command = strtrim(lines{1}) ;
-                lineCount = length(lines) ;
-                parameterCount = lineCount-1 ;
-                parameters = cell(1,parameterCount) ;
-                for i = 1:parameterCount ,
-                    parameterLine = lines{i+1} ;
-                    parsedParameterLine = strsplit(parameterLine,'|') ;
-                    if length(parsedParameterLine)>=2 ,
-                        parameterValue = strtrim(parsedParameterLine{2}) ;
-                    else
-                        parameterValue = '' ;
-                    end
-                    parameters{i} = parameterValue ;
-                end
-            end
-        end
+%         function [command, parameters] = parseIncomingCommandToSIFromWS(lines)
+%             if isempty(lines) ,
+%                 command = '' ;
+%                 parameters = cell(1,0) ;                
+%             else
+%                 command = strtrim(lines{1}) ;
+%                 lineCount = length(lines) ;
+%                 parameterCount = lineCount-1 ;
+%                 parameters = cell(1,parameterCount) ;
+%                 for i = 1:parameterCount ,
+%                     parameterLine = lines{i+1} ;
+%                     parsedParameterLine = strsplit(parameterLine,'|') ;
+%                     if length(parsedParameterLine)>=2 ,
+%                         parameterValue = strtrim(parsedParameterLine{2}) ;
+%                     else
+%                         parameterValue = '' ;
+%                     end
+%                     parameters{i} = parameterValue ;
+%                 end
+%             end
+%         end
         
-        function minicommands = parseIncomingCommandToWSFromSI(lines)
-            % Each command file from SI contains a set of mini-commands
-            minicommands = struct('command', cell(0,1), ...
-                                  'parameters', cell(0,1)) ;
-            for idx = 1:length(lines)
-                line = lines{idx};
-                if ~isempty(line) ,
-                    parsed_line = strsplit(line,'\s*\|\s*','DelimiterType','RegularExpression');
-                    command = lower(parsed_line{1}) ;
-                    parameters = parsed_line(2:end) ;
-                    minicommand = struct('command', {command},  ...
-                                         'parameters', {parameters}) ;
-                    minicommands = horzcat(minicommands, minicommand) ;  %#ok<AGROW>
+        function [isComplete, commands] = parseIncomingCommandFile(commandFileText)
+            % Each command file from SI contains a set of mini-commands.
+            % This thing will not throw if the command file text is merely incomplete, only
+            % if it seems to be malformed.
+            lines = ws.splitIntoCompleteLines(commandFileText) ;
+            lineCount = length(lines) ;
+            if lineCount == 0 ,
+                % this is presumably an incomplete file
+                isComplete = false ;
+                commands = [] ;
+            else
+                firstLine = lines{1} ;  % should contain number of mini-commands
+                commandCount = str2double(firstLine) ;
+                if isfinite(commandCount) && commandCount>=0 && round(commandCount)==commandCount ,
+                    if lineCount >= commandCount+1 ,
+                        commands = struct('name', cell(commandCount,1), ...
+                                          'parameters', cell(commandCount,1)) ;
+                        for commandIndex = 1:commandCount ,
+                            line = lines{commandIndex+1} ;
+                            if isempty(line) ,
+                                % This is odd, but we'll allow it, I guess...
+                                name = '' ;
+                                parameters = cell(1,0) ;                            
+                            else
+                                % Parse the line to get the minicommand and the parameters for it
+                                split_line = strsplit(line,'\s*\|\s*','DelimiterType','RegularExpression');
+                                name = lower(split_line{1}) ;
+                                parameters = split_line(2:end) ;
+                            end
+                            command = struct('name', {name},  ...
+                                             'parameters', {parameters}) ;  % a scalar struct
+                            commands(commandIndex) = command ;
+                        end        
+                        isComplete = true ;
+                    else
+                        % There are fewer lines than there should be, so this file is presumably
+                        % incomplete.
+                        isComplete = false ;
+                        commands = [] ;                        
+                    end
+                else
+                    % the first line does not seem to contain a number of minicommands
+                    error('ws:CommandConnector:badCommandFile', ...
+                          'The command file seems to be badly formed') ;
                 end
-            end
-        end        
+            end    
+        end  % function        
     end  % static methods
-end
+end  % classdef
