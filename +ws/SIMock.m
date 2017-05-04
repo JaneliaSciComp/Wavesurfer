@@ -20,49 +20,87 @@ classdef SIMock < handle
             end
         end
         
-        function executeIncomingCommand(self, command, parameters)  %#ok<INUSL>
-            fprintf(1, 'Got command "%s"\n', command) ;
+        function executeIncomingCommand(self, command)  %#ok<INUSL>
+            commandName = command.name ;
+            parameters = command.parameters ;
+            commandDictionary = ...
+                { 'save-cfg-file' ...
+                  'load-cfg-file' ...
+                  'save-usr-file' ...
+                  'load-usr-file' ...
+                  'set-index-of-first-acq-in-set' ...
+                  'set-number-of-acqs-in-set' ...
+                  'set-is-logging-enabled' ...
+                  'set-data-file-folder-path' ...
+                  'set-data-file-base-name' ...
+                  'loop' } ;
+            if ismember(commandName, commandDictionary) ,
+                fprintf('Got recognized command "%s".\n', commandName) ;
+            else
+                fprintf('Got unrecognized command "%s".  Bad!\n', commandName) ;                
+            end
             parameterCount = length(parameters) ;
             for i = 1:parameterCount ,
                 fprintf('parameter %d: %s\n', i, parameters{i}) ;
                 %fprintf('\n') ;
             end
-            fprintf('\n') ;
-        end        
+            fprintf('\n') ;                
+        end
         
-        function sendSetIndexOfFirstAcqInSet(self, index)
-            commandAsString = sprintf('set index of first acq in set| %d\n', index) ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;  % this will error if something goes wrong
+        function sendSetIndexOfFirstSweepInRun(self, index)
+            commandFileAsString = sprintf('1\nset-index-of-first-sweep-in-run| %d\n', index) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;  % this will error if something goes wrong
         end
 
-        function sendSetNumberOfAcqsInSet(self, n)
-            commandAsString = sprintf('set number of acqs in set| %d\n', n) ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+        function sendSetNumberOfSweepsInRun(self, n)
+            commandFileAsString = sprintf('1\nset-number-of-sweeps-in-run| %d\n', n) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end
         
-        function sendSetFilePath(self, path)
-            commandAsString = sprintf('set file path| %s\n', path) ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+        function sendSetDataFileFolderPath(self, path)
+            commandFileAsString = sprintf('1\nset-data-file-folder-path| %s\n', path) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end
         
-        function sendSetFileBase(self, base)
-            commandAsString = sprintf('set file base| %s\n', base) ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+        function sendSetDataFileBaseName(self, baseName)
+            commandFileAsString = sprintf('1\nset-data-file-base-name| %s\n', baseName) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end
         
         function sendRecord(self)
-            commandAsString = sprintf('record\n') ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+            commandFileAsString = sprintf('1\nrecord\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end
         
         function sendPlay(self)
-            commandAsString = sprintf('play\n') ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+            commandFileAsString = sprintf('1\nplay\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end        
         
         function sendStop(self)
-            commandAsString = sprintf('stop') ;
-            self.CommandConnector_.sendCommandAsString(commandAsString) ;
+            commandFileAsString = sprintf('1\nstop\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end        
+        
+        function sendSaveProtocolFile(self,absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nsave-wsp-file| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        end  % function
+        
+        function sendOpenProtocolFile(self,absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nopen-wsp-file| %s\n',absoluteProtocolFileName);
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        end  % function
+        
+        function sendSaveUserSettingsFile(self,absoluteUserSettingsFileName)
+            commandFileAsString = sprintf('1\nsave-wsu-file| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        end  % function
+
+        function sendOpenUserSettingsFile(self,absoluteUserSettingsFileName)
+            commandFileAsString = sprintf('1\nopen-wsu-file| %s\n',absoluteUserSettingsFileName);
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        end  % function
+        
     end    
 end
