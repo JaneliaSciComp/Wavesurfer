@@ -20,8 +20,13 @@ classdef SIMock < handle
             end
         end
         
-        function executeIncomingCommand(self, command, parameters)  %#ok<INUSL>
-            fprintf(1, 'Got command "%s"\n', command) ;
+        function executeIncomingCommand(self, commandName, parameters)  %#ok<INUSL>
+            commandDict = {'Arming' 'Saving protcol file' 'Opening protocol file' 'Saving user settings file' 'Opening user settings file'} ;
+            if ismember(commandName, commandDict) ,
+                fprintf(1, 'Got known command "%s".\n', commandName) ;
+            else
+                fprintf(1, 'Got unknown command "%s".  Bad!\n', commandName) ;
+            end
             parameterCount = length(parameters) ;
             for i = 1:parameterCount ,
                 fprintf('parameter %d: %s\n', i, parameters{i}) ;
@@ -61,7 +66,7 @@ classdef SIMock < handle
         end        
         
         function sendStop(self)
-            commandAsString = sprintf('stop') ;
+            commandAsString = sprintf('stop\n') ;
             self.CommandConnector_.sendCommandAsString(commandAsString) ;
         end        
     end    

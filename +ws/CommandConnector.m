@@ -136,6 +136,9 @@ classdef CommandConnector < handle
                 return
             end
             
+            fprintf('About to send command:\n') ;
+            disp(commandAsString) ;
+            
             [fid,fopenErrorMessage]=fopen(self.OutgoingCommandFilePath_,'wt');
             if fid<0 ,
                 error('CommandConnector:UnableToOpenYokingFile', ...
@@ -237,6 +240,7 @@ classdef CommandConnector < handle
                     % record
                     % flag self.ExecutingIncomingCommandNow_ is reset in self.run
                     self.ExecutingIncomingCommandNow_ = true;
+                    fprintf('About to call on WSM to execute minicommand %s.\n', minicommands.command) ;
                     self.Parent.executeIncomingMinicommand(minicommands) ;  % we know minicommands is a scalar
                     self.ExecutingIncomingCommandNow_ = false;
                 catch ME
@@ -248,6 +252,7 @@ classdef CommandConnector < handle
                 for idx = 1:length(minicommands)
                     minicommand = minicommands(idx) ;
                     try
+                        fprintf('About to call on WSM to execute minicommand %s.\n', minicommand.command) ;
                         self.Parent.executeIncomingMinicommand(minicommand) ;
                     catch ME
                         self.ExecutingIncomingCommandNow_ = false;
