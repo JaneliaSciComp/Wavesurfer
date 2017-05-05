@@ -92,6 +92,7 @@ classdef FiniteOutputTask < handle
                         self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
                 end
+                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', 'OnboardClock') ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');

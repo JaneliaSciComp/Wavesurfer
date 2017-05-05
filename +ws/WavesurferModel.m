@@ -30,7 +30,7 @@ classdef WavesurferModel < ws.Model
     properties (Access=protected, Transient=true)
         AllDeviceNames_ = cell(1,0)  % transient b/c we want to probe the hardware on startup each time to get this        
 
-        SampleClockTimebaseFrequency_ = 100e6 ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
+        SampleClockTimebaseFrequency_ = [] ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
         
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
@@ -3368,13 +3368,15 @@ classdef WavesurferModel < ws.Model
             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-            nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;
+            nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
+            timebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
+            self.SampleClockTimebaseFrequency_ = timebaseRate ;
         end
 
         function syncIsDigitalChannelTerminalOvercommitted_(self)
@@ -3469,7 +3471,7 @@ classdef WavesurferModel < ws.Model
             end
             
             % Limit to the allowed range of sampling frequencies
-            timebaseFrequency = self.SampleClockTimebaseFrequency;  % Hz
+            timebaseFrequency = self.SampleClockTimebaseFrequency ;  % Hz
             desiredTimebaseTicksPerSample = timebaseFrequency/sanitizedDesiredSampleFrequency ;  
             integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
             maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
