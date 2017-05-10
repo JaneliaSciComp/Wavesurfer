@@ -8,6 +8,8 @@ classdef WavesurferModel < ws.Model
     properties (Dependent = true)
         AllDeviceNames
         DeviceName
+        AvailableTimebaseSources
+        TimebaseSource
         SampleClockTimebaseFrequency
         NDIOTerminals
         NPFITerminals
@@ -25,12 +27,15 @@ classdef WavesurferModel < ws.Model
     
     properties (Access=protected)
         DeviceName_ = ''   % an empty string represents "no device specified"
+        TimebaseSource_ = 'OnboardClock' 
     end
 
     properties (Access=protected, Transient=true)
-        AllDeviceNames_ = cell(1,0)  % transient b/c we want to probe the hardware on startup each time to get this        
+        AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
 
-        SampleClockTimebaseFrequency_ = [] ;  % Hz, X series devices use a 100 MHz sample timebase by default, and we don't change that ever
+        AvailableTimebaseSources_ = cell(1,0)
+        
+        SampleClockTimebaseFrequency_ = [] ;  % Hz
         
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
@@ -63,7 +68,8 @@ classdef WavesurferModel < ws.Model
         Ephys
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
-        AreSweepsContinuous  % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
+        AreSweepsContinuous  
+          % boolean scalar, whether the current acquisition mode is continuous.  Invariant: self.AreSweepsContinuous == ~self.AreSweepsFiniteDuration
         NSweepsPerRun
         SweepDurationIfFinite
         NSweepsCompletedInThisRun    % Current number of completed sweeps while the run is running (range of 0 to NSweepsPerRun).
@@ -743,6 +749,20 @@ classdef WavesurferModel < ws.Model
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
             self.broadcast('Update');
+        end
+        
+        function set.TimebaseSource(self, newValue)
+            if ws.isString(newValue) && ismember(newValue, self.AvailableTimebaseSources) ,
+                self.TimebaseSource_ = newValue ;
+                isNewValueValid = true ;
+            else
+                isNewValueValid = false ;
+            end                
+            self.broadcast('Update');
+            if ~isNewValueValid ,
+                error('ws:invalidPropertyValue', ...
+                      'TimebaseSource must be a string, and equal to some element of AvailableTimebaseSources');
+            end
         end
         
         function value = get.AreSweepsContinuous(self)
@@ -2797,8 +2817,9 @@ classdef WavesurferModel < ws.Model
                         self.DeviceName_ = deviceName ;
                         
                         % Probe the device to find out its capabilities
-                        self.syncDeviceResourceCountsFromDeviceName_() ;
-
+                        self.syncDeviceResourceCountsFromDeviceName_() ;                        
+                        self.syncDeviceTimebasePropertiesFromDeviceName_() ;
+                        
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
                         % out-of-range for the device
@@ -3243,6 +3264,14 @@ classdef WavesurferModel < ws.Model
             value = self.DeviceName_ ;
         end  % function
 
+        function value = get.AvailableTimebaseSources(self)
+            value = self.AvailableTimebaseSources_ ;
+        end  % function
+
+        function value = get.TimebaseSource(self)
+            value = self.TimebaseSource_ ;
+        end  % function
+        
         function value = get.SampleClockTimebaseFrequency(self)
             value = self.SampleClockTimebaseFrequency_ ;
         end  % function
@@ -3379,6 +3408,12 @@ classdef WavesurferModel < ws.Model
             self.SampleClockTimebaseFrequency_ = timebaseRate ;
         end
 
+        function syncDeviceTimebasePropertiesFromDeviceName_(self)
+            deviceName = self.DeviceName ;
+            availableTimebaseSources = ws.getAvailableTimebaseSourcesFromDevice(deviceName) ;
+            self.AvailableTimebaseSources_ = availableTimebaseSources ;
+        end
+        
         function syncIsDigitalChannelTerminalOvercommitted_(self)
             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
             nDIOTerminals = self.NDIOTerminals ;
@@ -3506,6 +3541,7 @@ classdef WavesurferModel < ws.Model
             % variables have been set to the encoded values.
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
+            self.syncDeviceTimebasePropertiesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;

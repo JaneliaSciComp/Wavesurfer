@@ -15,8 +15,17 @@ classdef ChannelsController < ws.Controller
             if isempty(deviceName) ,
                 self.Figure.update() ;
             else
-                %self.Model.DeviceName = deviceName ;
                 self.Model.do('set', 'DeviceName', deviceName) ;
+            end
+        end
+        
+        function TimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
+            availableTimebaseSources = self.Model.AvailableTimebaseSources ;
+            timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
+            if isempty(timebaseSource) ,
+                self.Figure.update() ;
+            else
+                self.Model.do('set', 'TimebaseSource', timebaseSource) ;
             end
         end
         

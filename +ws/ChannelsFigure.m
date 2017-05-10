@@ -2,6 +2,8 @@ classdef ChannelsFigure < ws.MCOSFigure
     properties  % protected by gentleman's agreement
         DeviceNamePopupLabelText
         DeviceNamePopup
+        TimebaseSourcePopupLabelText
+        TimebaseSourcePopup
         
         AIsPanel
         AIChannelNameColTitleText
@@ -168,16 +170,29 @@ classdef ChannelsFigure < ws.MCOSFigure
             % Create the device name popup and label
             self.DeviceNamePopupLabelText = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'HorizontalAlignment','right', ...
-                          'String','Device:');
+                             'Style','text', ...
+                             'HorizontalAlignment','right', ...
+                             'String','Device:');
             self.DeviceNamePopup = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','popup', ...
-                          'BackgroundColor','w', ...
-                          'HorizontalAlignment','left', ...
-                          'Callback',@(source,event)(self.controlActuated('DeviceNamePopup',source,event)) );
-            
+                             'Style','popup', ...
+                             'BackgroundColor','w', ...
+                             'HorizontalAlignment','left', ...
+                             'Callback',@(source,event)(self.controlActuated('DeviceNamePopup',source,event)) );
+
+            % Create the timebase source popup and label
+            self.TimebaseSourcePopupLabelText = ...
+                ws.uicontrol('Parent',self.FigureGH, ...
+                             'Style','text', ...
+                             'HorizontalAlignment','right', ...
+                             'String','Timebase Source:');
+            self.TimebaseSourcePopup = ...
+                ws.uicontrol('Parent',self.FigureGH, ...
+                             'Style','popup', ...
+                             'BackgroundColor','w', ...
+                             'HorizontalAlignment','left', ...
+                             'Callback',@(source,event)(self.controlActuated('TimebaseSourcePopup',source,event)) );
+                      
             % Create the panels and the fixed controls in them
             self.createAIPanelFixedControls_() ;
             self.createAOPanelFixedControls_() ;
@@ -384,6 +399,8 @@ classdef ChannelsFigure < ws.MCOSFigure
             deviceNamePopupXOffset = 66 ;
             deviceNamePopupWidth = 100 ;
             %deviceNamePopupHeight = 16 ;
+            timebaseSourcePopupXOffset = 664 ;
+            timebaseSourcePopupWidth = 100 ;
             panelBorderSize=6;  % this is the space between the panel borders and the figure border on the left, right, and bottom
             interPanelSpaceWidth=10;
             interPanelSpaceHeight=10;
@@ -500,12 +517,20 @@ classdef ChannelsFigure < ws.MCOSFigure
             
             % Position the device name popup in the middle (vertically) of
             % the top area, at the given x offset.
-            popupPosition = get(self.DeviceNamePopup, 'Position') ;
-            popupHeight = popupPosition(4) ;
-            deviceNamePopupYOffset = figureHeight - topAreaHeight + (topAreaHeight - popupHeight) /2 ;
+            deviceNamePopupPosition = get(self.DeviceNamePopup, 'Position') ;
+            deviceNamePopupHeight = deviceNamePopupPosition(4) ;
+            deviceNamePopupYOffset = figureHeight - topAreaHeight + (topAreaHeight - deviceNamePopupHeight) /2 ;
             ws.positionPopupmenuAndLabelBang(self.DeviceNamePopupLabelText,self.DeviceNamePopup, ...
-                                                     deviceNamePopupXOffset,deviceNamePopupYOffset,deviceNamePopupWidth) ;
+                                             deviceNamePopupXOffset,deviceNamePopupYOffset,deviceNamePopupWidth) ;
             
+            % Position the timebase source popup in the middle (vertically) of
+            % the top area, at the given x offset.
+            timebaseSourcePopupPosition = get(self.TimebaseSourcePopup, 'Position') ;
+            timebaseSourcePopupHeight = timebaseSourcePopupPosition(4) ;
+            timebaseSourcePopupYOffset = figureHeight - topAreaHeight + (topAreaHeight - timebaseSourcePopupHeight) /2 ;
+            ws.positionPopupmenuAndLabelBang(self.TimebaseSourcePopupLabelText, self.TimebaseSourcePopup, ...
+                                             timebaseSourcePopupXOffset, timebaseSourcePopupYOffset, timebaseSourcePopupWidth) ;                                         
+                                         
             % Position the AIs panel, and layout its contents
             self.layoutAIPanel_(panelBorderSize, ...
                                 aiPanelWidth, ...
@@ -1290,7 +1315,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             isWavesurferIdle=isequal(model.State,'idle');
             set(self.DeviceNamePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;
             
-            % update the panels
+            % Update the timebase source popup
+            ws.setPopupMenuItemsAndSelectionBang(self.TimebaseSourcePopup, model.AvailableTimebaseSources, model.TimebaseSource) ;
+            set(self.TimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
+            
+            % Update the panels
             self.updateAIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateAOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateDIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
