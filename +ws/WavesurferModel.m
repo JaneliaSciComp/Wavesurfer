@@ -754,6 +754,7 @@ classdef WavesurferModel < ws.Model
         function set.TimebaseSource(self, newValue)
             if ws.isString(newValue) && ismember(newValue, self.AvailableTimebaseSources) ,
                 self.TimebaseSource_ = newValue ;
+                self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
                 isNewValueValid = true ;
             else
                 isNewValueValid = false ;
@@ -2818,7 +2819,8 @@ classdef WavesurferModel < ws.Model
                         
                         % Probe the device to find out its capabilities
                         self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                        self.syncDeviceTimebasePropertiesFromDeviceName_() ;
+                        self.syncAvailableTimebaseSourcesFromDeviceName_() ;
+                        self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
                         
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
@@ -3398,20 +3400,40 @@ classdef WavesurferModel < ws.Model
             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            timebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+            %timebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
-            self.SampleClockTimebaseFrequency_ = timebaseRate ;
+            %self.SampleClockTimebaseFrequency_ = timebaseRate ;
         end
 
-        function syncDeviceTimebasePropertiesFromDeviceName_(self)
+        function syncAvailableTimebaseSourcesFromDeviceName_(self)
             deviceName = self.DeviceName ;
             availableTimebaseSources = ws.getAvailableTimebaseSourcesFromDevice(deviceName) ;
             self.AvailableTimebaseSources_ = availableTimebaseSources ;
+        end       
+        
+        function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
+            deviceName = self.DeviceName ;
+            availableTimebaseSources = self.AvailableTimebaseSources ;
+            timebaseSource = self.TimebaseSource ;
+            if ismember(timebaseSource, availableTimebaseSources) ,
+                rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
+            else
+                % Likely a bad timebaseSource for the given deviceName, so we
+                % guess about the clock rate
+                if isequal(timebaseSource, 'OnboardClock') ,
+                    rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
+                elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
+                    rate = 10e6;  % Hz, PXI backplace rate
+                else
+                    rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
+                end
+            end               
+            self.SampleClockTimebaseFrequency_ = rate ;            
         end
         
         function syncIsDigitalChannelTerminalOvercommitted_(self)
@@ -3541,7 +3563,8 @@ classdef WavesurferModel < ws.Model
             % variables have been set to the encoded values.
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
-            self.syncDeviceTimebasePropertiesFromDeviceName_() ;
+            self.syncAvailableTimebaseSourcesFromDeviceName_() ;
+            self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
