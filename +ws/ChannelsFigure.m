@@ -1416,7 +1416,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             set(self.TimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
             
             % Update the timebase rate popup
-            timebaseRate = model.SampleClockTimebaseFrequency ;  % Hz
+            timebaseRate = model.TimebaseRate ;  % Hz
             timebaseRateInMHz = timebaseRate*1e-6 ;
             set(self.TimebaseRateEdit, 'String', sprintf('%.6g', timebaseRateInMHz)) ;
             %set(self.TimebaseRateEdit, 'Enable', ws.onIff(isWavesurferIdle) ) ;                                    

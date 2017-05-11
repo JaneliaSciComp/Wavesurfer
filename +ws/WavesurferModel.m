@@ -9,8 +9,9 @@ classdef WavesurferModel < ws.Model
         AllDeviceNames
         DeviceName
         AvailableTimebaseSources
+        OnboardClockTimebaseRate
         TimebaseSource
-        SampleClockTimebaseFrequency
+        TimebaseRate
         NDIOTerminals
         NPFITerminals
         NCounters
@@ -34,8 +35,9 @@ classdef WavesurferModel < ws.Model
         AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
 
         AvailableTimebaseSources_ = cell(1,0)
+        OnboardClockTimebaseRate_ = []  % Hz
         
-        SampleClockTimebaseFrequency_ = [] ;  % Hz
+        %TimebaseRate_ = []   % Hz
         
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
@@ -346,7 +348,7 @@ classdef WavesurferModel < ws.Model
             end
             self.IndexOfSelectedFastProtocol_ = 1;
             
-            % Create all subsystems.
+            % Create all subsystems
             self.Acquisition_ = ws.Acquisition(self);
             self.Stimulation_ = ws.Stimulation(self);
             self.Display_ = ws.Display(self);
@@ -754,7 +756,7 @@ classdef WavesurferModel < ws.Model
         function set.TimebaseSource(self, newValue)
             if ws.isString(newValue) && ismember(newValue, self.AvailableTimebaseSources) ,
                 self.TimebaseSource_ = newValue ;
-                self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+                %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
                 isNewValueValid = true ;
             else
                 isNewValueValid = false ;
@@ -2820,7 +2822,7 @@ classdef WavesurferModel < ws.Model
                         % Probe the device to find out its capabilities
                         self.syncDeviceResourceCountsFromDeviceName_() ;                        
                         self.syncAvailableTimebaseSourcesFromDeviceName_() ;
-                        self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+                        %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
                         
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
@@ -3194,7 +3196,11 @@ classdef WavesurferModel < ws.Model
     methods (Access=protected)
         function looperProtocol = getLooperProtocol_(self)
             looperProtocol = struct() ;
-            looperProtocol.NSweepsPerRun  = self.NSweepsPerRun_ ;
+            
+            looperProtocol.TimebaseSource = self.TimebaseSource ;
+            looperProtocol.TimebaseRate = self.TimebaseRate ;
+            
+            looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
             looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
 
@@ -3227,6 +3233,8 @@ classdef WavesurferModel < ws.Model
         function refillerProtocol = getRefillerProtocol_(self)
             refillerProtocol = struct() ;
             refillerProtocol.DeviceName = self.DeviceName ;
+            refillerProtocol.TimebaseSource = self.TimebaseSource ;
+            refillerProtocol.TimebaseRate = self.TimebaseRate ;
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
             refillerProtocol.StimulationSampleRate = self.Stimulation.SampleRate ;
@@ -3273,9 +3281,22 @@ classdef WavesurferModel < ws.Model
         function value = get.TimebaseSource(self)
             value = self.TimebaseSource_ ;
         end  % function
+
+        function value = get.OnboardClockTimebaseRate(self)
+            value = self.OnboardClockTimebaseRate_ ;
+        end  % function
         
-        function value = get.SampleClockTimebaseFrequency(self)
-            value = self.SampleClockTimebaseFrequency_ ;
+        function value = get.TimebaseRate(self)
+            timebaseSource = self.TimebaseSource_ ;
+            if isequal(timebaseSource, 'OnboardClock') ,
+                value = self.OnboardClockTimebaseRate_ ;  % Hz
+            elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
+                value = 10e6 ;  % Hz, PXI backplace rate
+            else
+                % don't think should ever get here right now
+                error('Internal error 948509345876905') ;
+                %value = self.TimebaseRate_ ;
+            end            
         end  % function
 
         function set.DeviceName(self, newValue)
@@ -3400,14 +3421,14 @@ classdef WavesurferModel < ws.Model
             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            %timebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+            onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
-            %self.SampleClockTimebaseFrequency_ = timebaseRate ;
+            self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
         end
 
         function syncAvailableTimebaseSourcesFromDeviceName_(self)
@@ -3416,25 +3437,25 @@ classdef WavesurferModel < ws.Model
             self.AvailableTimebaseSources_ = availableTimebaseSources ;
         end       
         
-        function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
-            deviceName = self.DeviceName ;
-            availableTimebaseSources = self.AvailableTimebaseSources ;
-            timebaseSource = self.TimebaseSource ;
-            if ismember(timebaseSource, availableTimebaseSources) ,
-                rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
-            else
-                % Likely a bad timebaseSource for the given deviceName, so we
-                % guess about the clock rate
-                if isequal(timebaseSource, 'OnboardClock') ,
-                    rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
-                elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-                    rate = 10e6;  % Hz, PXI backplace rate
-                else
-                    rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
-                end
-            end               
-            self.SampleClockTimebaseFrequency_ = rate ;            
-        end
+%         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
+%             deviceName = self.DeviceName ;
+%             availableTimebaseSources = self.AvailableTimebaseSources ;
+%             timebaseSource = self.TimebaseSource ;
+%             if ismember(timebaseSource, availableTimebaseSources) ,
+%                 rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
+%             else
+%                 % Likely a bad timebaseSource for the given deviceName, so we
+%                 % guess about the clock rate
+%                 if isequal(timebaseSource, 'OnboardClock') ,
+%                     rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
+%                 elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
+%                     rate = 10e6;  % Hz, PXI backplace rate
+%                 else
+%                     rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
+%                 end
+%             end
+%             self.TimebaseRate_ = rate ;
+%         end
         
         function syncIsDigitalChannelTerminalOvercommitted_(self)
             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
@@ -3504,7 +3525,7 @@ classdef WavesurferModel < ws.Model
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
         
-        function [sampleFrequency, timebaseFrequency] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+        function [sampleFrequency, timebaseRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
             % Make sure desiredSampleFrequency is a scalar
             defaultSampleFrequency  = 20000 ;
             if isempty(desiredSampleFrequency) ,
@@ -3528,8 +3549,8 @@ classdef WavesurferModel < ws.Model
             end
             
             % Limit to the allowed range of sampling frequencies
-            timebaseFrequency = self.SampleClockTimebaseFrequency ;  % Hz
-            desiredTimebaseTicksPerSample = timebaseFrequency/sanitizedDesiredSampleFrequency ;  
+            timebaseRate = self.TimebaseRate ;  % Hz
+            desiredTimebaseTicksPerSample = timebaseRate/sanitizedDesiredSampleFrequency ;  
             integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
             maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
             minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
@@ -3546,7 +3567,7 @@ classdef WavesurferModel < ws.Model
               % do it, but it will generally fail to keep up once the sweep
               % starts, because for instance the default timebase for X series cards is
               % 100 MHz.
-            sampleFrequency = timebaseFrequency/actualTimebaseTicksPerSample ;            
+            sampleFrequency = timebaseRate/actualTimebaseTicksPerSample ;            
         end
     end  % public methods block
 
@@ -3564,7 +3585,7 @@ classdef WavesurferModel < ws.Model
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
             self.syncAvailableTimebaseSourcesFromDeviceName_() ;
-            self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+            %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
