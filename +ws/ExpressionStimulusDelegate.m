@@ -58,6 +58,11 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
                     stringToEval=sprintf('@(t,i)(%s)',expression);
                     expressionAsFunction=eval(stringToEval);
                     y=expressionAsFunction(t,sweepIndexWithinSet);
+                    % Expressions not involving t will generally return a
+                    % scalar, so deal with that.
+                    if isscalar(y) ,
+                        y = repmat(y,size(t)) ;
+                    end
                 catch me %#ok<NASGU>
                     y=zeros(size(t));
                 end

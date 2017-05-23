@@ -87,7 +87,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         
         function set.Amplitude(self, value)
             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
-            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
+            if ~isempty(test) && (isnumeric(test) || islogical(test)) && isscalar(test) && isfinite(test) && isreal(test) ,
                 % if we get here without error, safe to set
                 self.Amplitude_ = value;
             end                
@@ -158,7 +158,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Compute the delay from the expression for it
             delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
             % Screen for illegal values
-            if isempty(delay) || ~isnumeric(delay) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
+            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
                 data=zeros(size(t));
                 return
             end
@@ -174,7 +174,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Compute the amplitude from the expression for it
             amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
             % Screen for illegal values
-            if isempty(amplitude) || ~isnumeric(amplitude) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
+            if isempty(amplitude) || ~(isnumeric(amplitude)||islogical(amplitude)) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
                 data=zeros(size(t));
                 return
             end
@@ -182,7 +182,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Compute the delay from the expression for it
             dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
             % Screen for illegal values
-            if isempty(dcOffset) || ~isnumeric(dcOffset) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
+            if isempty(dcOffset) || ~(isnumeric(dcOffset)||islogical(dcOffset)) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
                 data=zeros(size(t));
                 return
             end
@@ -193,7 +193,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % Compute the duration from the expression for it
             duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
             % Screen for illegal values
-            if isempty(duration) || ~isnumeric(duration) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
+            if isempty(duration) || ~(isnumeric(duration)||islogical(duration)) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
                 data=zeros(size(t));
                 return
             end
@@ -303,8 +303,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                     % try to build a lambda and eval it, to see if it's
                     % valid
                     evalString=sprintf('@(i)(%s)',expression);
-                    lambda=eval(evalString);
-                    output=lambda(sweepIndex);
+                    expressionAsFunction=eval(evalString);
+                    output=expressionAsFunction(sweepIndex);
                 catch me %#ok<NASGU>
                     output=[];
                 end
