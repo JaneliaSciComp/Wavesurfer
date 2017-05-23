@@ -85,7 +85,7 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
             ems=ws.EPCMasterSocket();          
             ems.open();
             detents=ems.VoltageCommandGainDetents;
-            %ems.setMode(electrodeIndex,'vc');  % has to be in VC to set this
+            ems.setMode(electrodeIndex,'vc');  % has to be in VC to set this
             for i=1:length(detents) ,
                 value=detents(i);
                 ems.setVoltageCommandGain(electrodeIndex,value);
