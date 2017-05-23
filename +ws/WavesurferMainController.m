@@ -622,7 +622,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % method        
         
         function saveProtocolFileGivenFileName_(self, fileName)
-            % Actually loads the named config file.  fileName should be an
+            % Actually saves the named protocol file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             if ws.isFileNameAbsolute(fileName) ,

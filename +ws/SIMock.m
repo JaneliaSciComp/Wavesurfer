@@ -83,22 +83,22 @@ classdef SIMock < handle
         end        
         
         function sendSaveProtocolFile(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsave-wsp-file| %s\n',absoluteProtocolFileName);
+            commandFileAsString = sprintf('1\nsave-wsp-file-full-path| %s\n',absoluteProtocolFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function sendOpenProtocolFile(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nopen-wsp-file| %s\n',absoluteProtocolFileName);
+            commandFileAsString = sprintf('1\nopen-wsp-file-full-path| %s\n',absoluteProtocolFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function sendSaveUserSettingsFile(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsave-wsu-file| %s\n',absoluteUserSettingsFileName);
+            commandFileAsString = sprintf('1\nsave-wsu-file-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
         function sendOpenUserSettingsFile(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nopen-wsu-file| %s\n',absoluteUserSettingsFileName);
+            commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
