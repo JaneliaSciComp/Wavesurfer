@@ -392,11 +392,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             if ~isempty(self.Model) ,
                 self.Model.startLoggingWarnings() ;
                 self.Model.openFastProtocolByIndex(fastProtocolIndex) ;
-                % Restore the layout...
-                layoutForAllWindows = self.Model.LayoutForAllWindows ;
-                monitorPositions = ws.Controller.getMonitorPositions() ;
-                self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-                % Done restoring layout
+                % % Restore the layout...
+                % layoutForAllWindows = self.Model.LayoutForAllWindows ;
+                % monitorPositions = ws.Controller.getMonitorPositions() ;
+                % self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+                % % Done restoring layout
                 % Now do an auto-start, if called for by the fast protocol
                 self.Model.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
                 % Now throw if there were any warnings
@@ -545,6 +545,17 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 childControllers{i}.setAreUpdatesEnabledForFigure(newValue) ;
             end
         end
+        
+        function layoutForAllWindowsRequested(self, varargin)
+            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
+            self.Model.setLayoutForAllWindows_(layoutForAllWindows) ;
+        end        
+        
+        function layoutAllWindows(self)
+            layoutForAllWindows = self.Model.LayoutForAllWindows ;
+            monitorPositions = ws.Controller.getMonitorPositions() ;
+            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;            
+        end        
     end  % public methods block             
     
     methods  (Access=protected)
@@ -561,10 +572,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % still want to set the layout afterwards...
             self.Model.startLoggingWarnings() ;
             self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
-            % Restore the layout...
-            layoutForAllWindows = self.Model.LayoutForAllWindows ;
-            monitorPositions = ws.Controller.getMonitorPositions() ;
-            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+%             % Restore the layout...  (This now happens when the model
+%             does a broadcast of LayoutAllWindows in
+%             openProtocolFileGivenFileName(), which results in
+%             self.layoutAllWindows() getting called.
+%             layoutForAllWindows = self.Model.LayoutForAllWindows ;
+%             monitorPositions = ws.Controller.getMonitorPositions() ;
+%             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
             % Now throw if there were any warnings
             warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
@@ -630,8 +644,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
-            self.Model.do('saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout', absoluteFileName, layoutForAllWindows) ;
+            %layoutForAllWindows = self.encodeAllWindowLayouts_() ;
+            self.Model.do('saveProtocolFileGivenAbsoluteFileName', absoluteFileName) ;
         end  % function
         
         function saveOrSaveAsUser_(self, isSaveAs)
@@ -714,8 +728,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                 'UserCodeManagerController' ...
                                 'ChannelsController' ...
                                 'TestPulserController' ...
-                                'DisplayController' ...
-                                'ElectrodeManagerController' } ;
+                                'ElectrodeManagerController' ...
+                                'GeneralSettingsFigure' } ;
             for i=1:length(controllerNames) ,
                 controllerName = controllerNames{i} ;
                 if isprop(self, controllerName) ,  

@@ -132,13 +132,14 @@ classdef WavesurferModel < ws.Model
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
+        LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
+        VersionString_
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
         
         % Not saved to either protocol or .usr file
         Logging_
-        VersionString_
         %DeviceName_
     end
 
@@ -189,7 +190,7 @@ classdef WavesurferModel < ws.Model
         UnmatchedLogWarningStartCount_ = 0  % technically, the number of starts without a corresponding stop
         WarningCount_ = 0
         WarningLog_ = MException.empty(0,1)   % N.B.: a col vector
-        LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
+        %LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
         DrawnowTicId_
         TimeOfLastDrawnow_
         DidLooperCompleteSweep_
@@ -210,6 +211,8 @@ classdef WavesurferModel < ws.Model
         DidCompleteSweep
         UpdateDigitalOutputStateIfUntimed
         DidChangeNumberOfInputChannels
+        RequestLayoutForAllWindows
+        LayoutAllWindows
     end
     
     methods
@@ -2078,6 +2081,8 @@ classdef WavesurferModel < ws.Model
                     self.Logging.FileLocation = parameters{1};
                 case 'set-data-file-base-name'
                     self.Logging.FileBaseName = parameters{1};
+                case 'save-wsp-file-full-path'
+                    self.saveProtocolFileGivenAbsoluteFileName(parameters{1}) ;
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
                     % with in the CommandConnector
@@ -2187,7 +2192,7 @@ classdef WavesurferModel < ws.Model
     
     methods
         function openProtocolFileGivenFileName(self, fileName)
-            % Actually loads the named config file.  fileName should be a
+            % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
             self.changeReadiness(-1);
@@ -2197,44 +2202,49 @@ classdef WavesurferModel < ws.Model
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
             saveStruct = load('-mat',absoluteFileName) ;
-            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
-            %self.decodeProperties(wavesurferModelSettings);
-            %keyboard
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             if isfield(saveStruct, 'layoutForAllWindows') ,
                 self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
-            else
-                self.LayoutForAllWindows_ = [] ;
             end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            %self.broadcast('Update');  
-            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
-                % have to do this before setting state, b/c at this point view could be badly out-of-sync w/ model, and setState_() doesn't do a full Update
-            %self.setState_('idle');
-            %self.broadcast('DidSetAbsoluteProtocolFileName');            
+            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
             self.commandScanImageToOpenConfigFileIfYoked(siConfigFilePath);
-            %self.broadcast('DidLoadProtocolFile');
             self.changeReadiness(+1);
-            %self.broadcast('Update');
         end  % function
     end
     
     methods
-        function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self, absoluteFileName, layoutForAllWindows)
+        function setLayoutForAllWindows_(self, layoutForAllWindows)
+            self.LayoutForAllWindows_ = layoutForAllWindows ;
+        end
+    end
+    
+    methods
+%         function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self, absoluteFileName, layoutForAllWindows)
+%             self.LayoutForAllWindows_ = layoutForAllWindows ;
+%             self.saveProtocolFileGivenAbsoluteFileName(absoluteFileName) ;
+%         end
+        
+        function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
             self.changeReadiness(-1);            
+            self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
+              % If headless, self.LayoutForAllWindows_ will not change
             wavesurferModelSettings=self.encodeForPersistence();
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
+            %layoutForAllWindows = self.LayoutForAllWindows_ ;
+%             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
+%                               'layoutForAllWindows',layoutForAllWindows, ...
+%                               'versionString',versionString);  %#ok<NASGU>
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'layoutForAllWindows',layoutForAllWindows, ...
                               'versionString',versionString);  %#ok<NASGU>
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
@@ -2246,6 +2256,7 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness(+1);            
             self.broadcast('Update');
         end
+        
     end        
     
     methods
@@ -2904,6 +2915,7 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_.broadcast('Update') ;            
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
+            self.broadcast('LayoutAllWindows') ;
         end
     end  % protected methods block
     

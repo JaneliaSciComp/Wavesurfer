@@ -148,26 +148,50 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             self.updateReadiness_(varargin{:}) ;
         end
         
+        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
+            fieldNames = fieldnames(layoutOfWindowsInClass) ;
+            if isscalar(fieldNames) ,
+                % This means it's an older protocol file, with the layout
+                % stored in a single field with a sometimes-weird name.
+                % But the name doesn't really matter.
+                fieldName = fieldNames{1} ;
+                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
+                isVisibleFieldName = 'Visible' ;
+            else
+                % This means it's a newer protocol file, with (hopefully)
+                % two fields, Position and IsVisible.
+                layoutOfThisWindow = layoutOfWindowsInClass ;
+                isVisibleFieldName = 'IsVisible' ;
+            end
+            if isfield(layoutOfThisWindow, 'Position') ,
+                rawPosition = layoutOfThisWindow.Position ;
+                set(self, 'Position', rawPosition);
+                self.constrainPositionToMonitors(monitorPositions) ;
+            end
+            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
+                set(self, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
+            end
+        end        
     end  % public methods block
     
     methods (Access=protected)
-%         function set(self,propName,value)
-%             if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
-%                 % special case to deal with Visible, which seems to
-%                 % sometimes be a boolean
-%                 if value,
-%                     set(self.FigureGH_,'Visible','on');
-%                 else
-%                     set(self.FigureGH_,'Visible','off');
-%                 end
-%             else
-%                 set(self.FigureGH_,propName,value);
-%             end
-%         end
-%         
-%         function value=get(self,propName)
-%             value=get(self.FigureGH_,propName);
-%         end
+        function set(self,propName,value)
+            if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
+                % special case to deal with Visible, which seems to
+                % sometimes be a boolean
+                if value,
+                    set(self.FigureGH_,'Visible','on');
+                else
+                    set(self.FigureGH_,'Visible','off');
+                end
+            else
+                set(self.FigureGH_,propName,value);
+            end
+        end
+        
+        function value=get(self,propName)
+            value=get(self.FigureGH_,propName);
+        end
         
         function update_(self,varargin)
             % Called when the caller wants the figure to fully re-sync with the

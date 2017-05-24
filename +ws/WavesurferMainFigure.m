@@ -137,6 +137,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
                 model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
                 model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
+                model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
+                model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
                 for i = 1:numel(model.FastProtocols) ,
                     thisFastProtocol=model.FastProtocols{i};
                     thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
@@ -979,6 +981,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     end
     
     methods 
+        function layoutForAllWindowsRequested(self, varargin)
+            self.Controller.layoutForAllWindowsRequested(varargin{:}) ;
+        end
+        
+        function layoutAllWindows(self, varargin)
+            self.Controller.layoutAllWindows() ;
+        end
+        
         function updateForNewData(self,varargin)
             % Want this to be as fast as possible, so we just update the
             % bare minimum
