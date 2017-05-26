@@ -8,7 +8,7 @@ classdef FileExistenceCheckerManager < handle
     end
     
     properties (Access=private)
-        IsDLLLoaded_
+        %IsDLLLoaded_
         FileExistenceCheckers_
         UIDs_
         NextUID_

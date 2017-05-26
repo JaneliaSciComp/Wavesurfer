@@ -10,12 +10,14 @@ typedef UINT64 uint64 ;
 // Need to hold our special window id in a static variable, so we can set it in the mex function.
 // And then get it in the hook function.
 //const uint64 N_SLOTS = 32 ;  // this is the maximum number of FileExistenceCheckers that can be created in a single Matlab session
-bool HAVE_GLOBALS_BEEN_INITIALIZED = false ;  // If the DLL gets cleared, this should be false when it is invoked again, so we can set up properly
+//bool HAVE_GLOBALS_BEEN_INITIALIZED = false ;  // If the DLL gets cleared, this should be false when it is invoked again, so we can set up properly
 //bool IS_SLOT_IN_USE[N_SLOTS] ;
 //uint64 N_SLOTS_IN_USE = 0 ;  // the number of random timers currently in existance
 //mxArray* CALLBACKS[N_SLOTS] ; 
   // Each timer's unique ID (UID) is the index of the slot it occupies
-UINT FECM_WINDOW_MESSAGE_ID = 0 ;  // this has to be a C/C++ global, b/c need to access in the 
+UINT FECM_WINDOW_MESSAGE_ID = 0 ;  
+  // this has to be a C/C++ global, b/c need to access in the hook procedure
+  // If the DLL gets cleared, this should be 0 when it is invoked again, so we can set up properly
 //HHOOK HOOK_HANDLE = NULL ;
 
 typedef struct  {
