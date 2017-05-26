@@ -131,7 +131,9 @@ classdef CommandConnector < handle
             if ~self.IsEnabled_ ,
                 return
             end
-            
+
+            % If we're already executing a received command, don't also
+            % send commands back to our partner during execution
             if self.ExecutingIncomingCommandNow_ ,
                 return
             end
@@ -149,7 +151,10 @@ classdef CommandConnector < handle
             fclose(fid);
             
             [isPartnerReady,errorMessage]=self.waitForResponse_();
-            if ~isPartnerReady ,
+            if isPartnerReady ,
+                fprintf('Got OK response.\n') ;
+            else
+                fprintf('There was no response, or an ERROR response, or some other problem.\n') ;
                 self.ensureYokingFilesAreGone_();
                 error('CommandConnector:ProblemCommandingPartner','Error sending command to partner.\nCmd:\n%s\n\nError:\n%s',...
                       commandFileAsString,errorMessage);
@@ -223,7 +228,7 @@ classdef CommandConnector < handle
             % Executes a received command received from partner
             
             % Each "command" is generally a set of mini-commands, 
-            % The get executed in sequence, and then a since
+            % The get executed in sequence, and then an
             % acknowledgement is sent.
             self.ExecutingIncomingCommandNow_ = true;
             [isCompleteCommandFile, commands] = ws.CommandConnector.parseIncomingCommandFile(commandFileText) ;
@@ -233,7 +238,7 @@ classdef CommandConnector < handle
                     isBlocking = ( isequal(command.name, 'record') || isequal(command.name, 'play') ) ;
                 else
                     isBlocking = false ;
-                end                    
+                end
 
                 if isBlocking ,
                     % Have to acknowledge the command before executing, b/c

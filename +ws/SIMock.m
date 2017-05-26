@@ -20,24 +20,31 @@ classdef SIMock < handle
             end
         end
         
-        function executeIncomingCommand(self, command)  %#ok<INUSL>
+        function executeIncomingCommand(self, command)
             commandName = command.name ;
             parameters = command.parameters ;
             commandDictionary = ...
-                { 'save-cfg-file' ...
-                  'load-cfg-file' ...
-                  'save-usr-file' ...
-                  'load-usr-file' ...
-                  'set-index-of-first-acq-in-set' ...
-                  'set-number-of-acqs-in-set' ...
-                  'set-is-logging-enabled' ...
+                { 'save-cfg-file-full-path' ...
+                  'load-cfg-file-full-path' ...
+                  'save-usr-file-full-path' ...
+                  'load-usr-file-full-path' ...
+                  'set-log-file-counter' ...
+                  'set-log-file-folder-path' ...
+                  'set-log-file-base-name' ...
+                  'set-acq-count-in-loop' ...
+                  'set-log-enabled' ...
                   'set-data-file-folder-path' ...
                   'set-data-file-base-name' ...
-                  'loop' } ;
+                  'loop' ...
+                  'grab' ...
+                  'focus' ...
+                  'abort' ...
+                  'ping' ...
+                  'exit' } ;
             if ismember(commandName, commandDictionary) ,
                 fprintf('Got recognized command "%s".\n', commandName) ;
             else
-                fprintf('Got unrecognized command "%s".  Bad!\n', commandName) ;                
+                error('SIMock:badCommand', 'Got unrecognized command "%s".  Bad!\n', commandName) ;                
             end
             parameterCount = length(parameters) ;
             for i = 1:parameterCount ,
@@ -45,43 +52,32 @@ classdef SIMock < handle
                 %fprintf('\n') ;
             end
             fprintf('\n') ;                
-        end
+            if isequal(commandName, 'exit') ,
+                delete(self) ;
+                quit() ;
+            end
+        end  % function
         
         function sendSetIndexOfFirstSweepInRun(self, index)
             commandFileAsString = sprintf('1\nset-index-of-first-sweep-in-run| %d\n', index) ;
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;  % this will error if something goes wrong
-        end
+        end  % function
 
         function sendSetNumberOfSweepsInRun(self, n)
             commandFileAsString = sprintf('1\nset-number-of-sweeps-in-run| %d\n', n) ;
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end
+        end  % function
         
         function sendSetDataFileFolderPath(self, path)
             commandFileAsString = sprintf('1\nset-data-file-folder-path| %s\n', path) ;
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end
+        end  % function
         
         function sendSetDataFileBaseName(self, baseName)
             commandFileAsString = sprintf('1\nset-data-file-base-name| %s\n', baseName) ;
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end
-        
-        function sendRecord(self)
-            commandFileAsString = sprintf('1\nrecord\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end
-        
-        function sendPlay(self)
-            commandFileAsString = sprintf('1\nplay\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end        
-        
-        function sendStop(self)
-            commandFileAsString = sprintf('1\nstop\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
-        end        
-        
+        end  % function
+                
         function sendSaveProtocolFile(self,absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nsave-wsp-file-full-path| %s\n',absoluteProtocolFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
@@ -100,6 +96,31 @@ classdef SIMock < handle
         function sendOpenUserSettingsFile(self,absoluteUserSettingsFileName)
             commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+        end  % function
+        
+        function sendPlay(self)
+            commandFileAsString = sprintf('1\nplay\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function        
+        
+        function sendRecord(self)
+            commandFileAsString = sprintf('1\nrecord\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function
+        
+        function sendStop(self)
+            commandFileAsString = sprintf('1\nstop\n') ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function        
+        
+        function sendLotsOfMessages(self)
+            self.sendSetIndexOfFirstSweepInRun(7) ;
+            self.sendSetNumberOfSweepsInRun(3) ;
+            tempFilePath = tempname() ;
+            [tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
+            self.sendSetDataFileFolderPath(tempFolderPath) ;
+            self.sendSetDataFileBaseName(tempStemName) ;
+            
         end  % function
         
     end    

@@ -2082,7 +2082,7 @@ classdef WavesurferModel < ws.Model
                 case 'set-data-file-base-name'
                     self.Logging.FileBaseName = parameters{1};
                 case 'save-wsp-file-full-path'
-                    self.saveProtocolFileGivenAbsoluteFileName(parameters{1}) ;
+                    self.saveProtocolFileGivenFileName(parameters{1}) ;
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
                     % with in the CommandConnector
@@ -2114,11 +2114,11 @@ classdef WavesurferModel < ws.Model
             commandFileAsString = ...
                 sprintf('%s\n%s|%d\n%s|%d\n%s|%d\n%s|%s\n%s|%s\n%s\n', ...
                         '6', ...
-                        'set-index-of-first-acq-in-set', iFirstAcqInSet, ...
-                        'set-number-of-acqs-in-set', nAcqsInSet, ...
-                        'set-is-logging-enabled', self.Logging.IsEnabled, ...
-                        'set-data-file-folder-path', fileparts(self.Logging.NextRunAbsoluteFileName), ...
-                        'set-data-file-base-name', self.Logging.AugmentedBaseName, ...
+                        'set-log-file-counter', iFirstAcqInSet, ...
+                        'set-acq-count-in-loop', nAcqsInSet, ...
+                        'set-log-enabled', self.Logging.IsEnabled, ...
+                        'set-log-file-folder-path', fileparts(self.Logging.NextRunAbsoluteFileName), ...
+                        'set-log-file-base-name', self.Logging.AugmentedBaseName, ...
                         'loop') ;
             
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
@@ -2136,22 +2136,22 @@ classdef WavesurferModel < ws.Model
     
     methods (Access=public)
         function commandScanImageToSaveConfigFileIfYoked(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsave-cfg-file| %s\n',absoluteProtocolFileName);
+            commandFileAsString = sprintf('1\nsave-cfg-file-full-path| %s\n',absoluteProtocolFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function commandScanImageToOpenConfigFileIfYoked(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nload-cfg-file| %s\n',absoluteProtocolFileName);
+            commandFileAsString = sprintf('1\nload-cfg-file-full-path| %s\n',absoluteProtocolFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsave-usr-file| %s\n',absoluteUserSettingsFileName);
+            commandFileAsString = sprintf('1\nsave-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
         function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nload-usr-file| %s\n',absoluteUserSettingsFileName);
+            commandFileAsString = sprintf('1\nload-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
     end % methods
@@ -2230,10 +2230,15 @@ classdef WavesurferModel < ws.Model
 %             self.LayoutForAllWindows_ = layoutForAllWindows ;
 %             self.saveProtocolFileGivenAbsoluteFileName(absoluteFileName) ;
 %         end
-        
-        function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
+
+        function saveProtocolFileGivenFileName(self, fileName)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
-            self.changeReadiness(-1);            
+            self.changeReadiness(-1);       
+            if ws.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end            
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
             wavesurferModelSettings=self.encodeForPersistence();
@@ -2256,51 +2261,63 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness(+1);            
             self.broadcast('Update');
         end
+
+        function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
+            % This is here for backwards-compatibility
+            self.saveProtocolFileGivenFileName(absoluteFileName) ;
+        end
         
     end        
     
     methods
         function loadUserFileGivenFileName(self, fileName)
-            % Actually loads the named user file.  fileName should be an
+            % Retained for backwards compatibility
+            self.openUserSettingsFileGivenFileName(fileName) ;
+        end
+    end        
+
+    methods
+        function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
+            % Retained for backwards compatibility
+            self.saveUserFileGivenFileName(absoluteFileName) ;
+        end  % function
+    end
+
+    methods
+        function openUserFileGivenFileName(self, fileName)
+            % Actually opens the named user file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-
-            %self.loadProperties(absoluteFileName);
-            
             self.changeReadiness(-1);
-
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
-            
+            end                        
             saveStruct=load('-mat',absoluteFileName);
-            %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
-            
-            %self.decodeProperties(wavesurferModelSettings);
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicUserSettings_(newModel) ;
-            
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            %self.broadcast('DidSetAbsoluteUserSettingsFileName');
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
             siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
             self.commandScanImageToOpenUserSettingsFileIfYoked(siUserFilePath);
-            
             self.changeReadiness(+1);            
-            
             self.broadcast('UpdateFastProtocols');
             self.broadcast('Update');
         end
     end        
 
     methods
-        function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
+        function saveUserFileGivenFileName(self, fileName)
             self.changeReadiness(-1);
+            if ws.isFileNameAbsolute(fileName) ,
+                absoluteFileName = fileName ;
+            else
+                absoluteFileName = fullfile(pwd(),fileName) ;
+            end                        
             userSettings=self.encodeForPersistence();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -4115,5 +4132,10 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('Update') ;
         end  % function        
+        
+        function result = getCommandConnector_(self)
+            % This is intended to be used for testing and debugging only.
+            result = self.CommandConnector_ ;
+        end
     end  % public methods block
 end  % classdef

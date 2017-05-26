@@ -636,16 +636,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % method        
         
         function saveProtocolFileGivenFileName_(self, fileName)
-            % Actually saves the named protocol file.  fileName should be an
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            %layoutForAllWindows = self.encodeAllWindowLayouts_() ;
-            self.Model.do('saveProtocolFileGivenAbsoluteFileName', absoluteFileName) ;
+            % Actually saves the named protocol file.
+            self.Model.do('saveProtocolFileGivenFileName', fileName) ;
         end  % function
         
         function saveOrSaveAsUser_(self, isSaveAs)
