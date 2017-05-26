@@ -1111,7 +1111,7 @@ classdef WavesurferModel < ws.Model
             end
             
             if ~isempty(self.CommandConnector_) ,
-                self.CommandConnector_.clearExecutingIncomingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
+                self.CommandConnector_.clearProcessingIncomingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
             end
             
             % Initialize the sweep counter, etc.
@@ -2083,6 +2083,12 @@ classdef WavesurferModel < ws.Model
                     self.Logging.FileBaseName = parameters{1};
                 case 'save-wsp-file-full-path'
                     self.saveProtocolFileGivenFileName(parameters{1}) ;
+                case 'open-wsp-file-full-path'
+                    self.openProtocolFileGivenFileName(parameters{1}) ;
+                case 'save-wsu-file-full-path'
+                    self.saveUserFileGivenFileName(parameters{1}) ;
+                case 'open-wsu-file-full-path'
+                    self.openUserFileGivenFileName(parameters{1}) ;                    
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
                     % with in the CommandConnector

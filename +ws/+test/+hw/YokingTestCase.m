@@ -73,8 +73,8 @@ classdef YokingTestCase < matlab.unittest.TestCase
         function testMessageReceptionFromSI(self)
             wsModel = wavesurfer('--nogui') ;            
             wsModel.IsYokedToScanImage = true ;            
-            siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;
-            pause(10) ;
+            siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
+            pause(30) ;
             %siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
         end  % function        

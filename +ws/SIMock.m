@@ -88,13 +88,13 @@ classdef SIMock < handle
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function sendSaveUserSettingsFile(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsave-wsu-file-full-path| %s\n',absoluteUserSettingsFileName);
+        function sendSaveUserFile(self,absoluteUserFileName)
+            commandFileAsString = sprintf('1\nsave-wsu-file-full-path| %s\n',absoluteUserFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
-        function sendOpenUserSettingsFile(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserSettingsFileName);
+        function sendOpenUserFile(self,absoluteUserFileName)
+            commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserFileName);
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
@@ -120,6 +120,12 @@ classdef SIMock < handle
             [tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
             self.sendSetDataFileFolderPath(tempFolderPath) ;
             self.sendSetDataFileBaseName(tempStemName) ;
+            protocolFilePath = horzcat(tempFilePath, '.wsp') ;
+            self.sendSaveProtocolFile(protocolFilePath) ;
+            self.sendOpenProtocolFile(protocolFilePath) ;
+            userFilePath = horzcat(tempFilePath, '.wsu') ;
+            self.sendSaveUserFile(userFilePath) ;
+            self.sendOpenUserFile(userFilePath) ;
             
         end  % function
         

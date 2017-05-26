@@ -559,7 +559,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 end
             elseif nChannelsDisplayed<nScopePlots ,
                 for i = nChannelsDisplayed+1:nScopePlots ,
-                    self.ScopePlots_(i).delete() ;  % Have to delete to eliminate UI objects
+                    self.ScopePlots_(i).delete() ;  % Have to delete "manually" to eliminate UI objects
                 end
                 self.ScopePlots_ = self.ScopePlots_(1:nChannelsDisplayed) ;
             else

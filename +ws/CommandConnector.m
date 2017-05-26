@@ -1,6 +1,6 @@
 classdef CommandConnector < handle
     properties (Access=protected, Constant = true, Transient=true)
-        CommunicationFolderName_ = tempdir()
+        CommunicationFolderName_ = fullfile(tempdir(),'si-ws-comm') ;
         
         WSCommandFileName_ = 'ws_command.txt'  % Commands *to* WS
         WSResponseFileName_ = 'ws_response.txt'  % Responses *from* WS
@@ -29,7 +29,7 @@ classdef CommandConnector < handle
         Parent_  % the parent WS/SI model object
         IsParentWavesurferModel_
         CommandFileExistenceChecker_  
-        ExecutingIncomingCommandNow_
+        ProcessingIncomingCommandNow_
     end
     
     methods
@@ -48,7 +48,7 @@ classdef CommandConnector < handle
                 self.OutgoingCommandFilePath_ = fullfile(self.CommunicationFolderName_,self.WSCommandFileName_) ;
                 self.IncomingResponseFilePath_ = fullfile(self.CommunicationFolderName_,self.WSResponseFileName_) ;                                
             end
-            self.ExecutingIncomingCommandNow_ = false ;
+            self.ProcessingIncomingCommandNow_ = false ;
         end  % function
         
         function delete(self)            
@@ -85,13 +85,15 @@ classdef CommandConnector < handle
             % Start a thread to poll for the SI command file, or stop the
             % thread if we are diabled
             if self.IsEnabled_ ,
-                self.CommandFileExistenceChecker_ = [] ;  % clear the old one
+                ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
+                %self.CommandFileExistenceChecker_ = [] ;  % clear the old one
                 self.CommandFileExistenceChecker_ = ...
                     ws.FileExistenceChecker(self.IncomingCommandFilePath_, ...
                                             @()(self.didReceiveIncomingCommand())) ;  % make a fresh one
                 self.CommandFileExistenceChecker_.start();  % start it
             else
-                self.CommandFileExistenceChecker_ = [] ;  % this will stop and delete it, if it exists
+                ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
+                self.CommandFileExistenceChecker_ = [] ;  % don't want a dangling reference hanging around
             end
             
             if ~isempty(err) ,
@@ -104,16 +106,27 @@ classdef CommandConnector < handle
             % If a command file is found, the command is parsed,
             % executed, and a response file is written
             
+            fprintf('At top of didReceiveIncomingCommand\n') ;
+            
+            % If we're in the midst of executing a command already, the
+            % next command will have to wait.
+            if self.ProcessingIncomingCommandNow_ ,
+                return
+            end
+            self.ProcessingIncomingCommandNow_ = true ;
+            
             if exist(self.IncomingCommandFilePath_,'file') ,
                 try
                     commandFileText = ws.readFileContents(self.IncomingCommandFilePath_) ;
                 catch me ,
                     wrappingException = MException('CommandConnector:UnableToOpenYokingFile', ...
-                                                   'Unable to open ScanImage command file');
+                                                   'Unable to open ScanImage command file') ;
                     finalException = addCause(wrappingException, me) ;
+                    self.ProcessingIncomingCommandNow_ = false ;
                     throw(finalException) ;
                 end
-                self.ensureYokingFilesAreGone_();
+                %self.ensureYokingFilesAreGone_() ;  % Can't do yet, b/c
+                                                     % the command file might be incomplete
                 
                 try
                     self.executeIncomingCommand_(commandFileText) ;
@@ -122,6 +135,8 @@ classdef CommandConnector < handle
                     %fprintf(2,'%s\n',exception.message);
                 end
             end
+            
+            self.ProcessingIncomingCommandNow_ = false ;
         end  % function
         
         function sendCommandFileAsString(self, commandFileAsString)
@@ -132,9 +147,9 @@ classdef CommandConnector < handle
                 return
             end
 
-            % If we're already executing a received command, don't also
+            % If we're already processing a received command, don't also
             % send commands back to our partner during execution
-            if self.ExecutingIncomingCommandNow_ ,
+            if self.ProcessingIncomingCommandNow_ ,
                 return
             end
             
@@ -152,11 +167,11 @@ classdef CommandConnector < handle
             
             [isPartnerReady,errorMessage]=self.waitForResponse_();
             if isPartnerReady ,
-                fprintf('Got OK response.\n') ;
+                fprintf('Got OK response.\n\n\n') ;
             else
-                fprintf('There was no response, or an ERROR response, or some other problem.\n') ;
+                %fprintf('There was no response, or an ERROR response, or some other problem.\n') ;
                 self.ensureYokingFilesAreGone_();
-                error('CommandConnector:ProblemCommandingPartner','Error sending command to partner.\nCmd:\n%s\n\nError:\n%s',...
+                error('CommandConnector:ProblemCommandingPartner','Error sending command to partner.\nCommmand:\n%s\n\nError:\n%s',...
                       commandFileAsString,errorMessage);
             end
         end  % function
@@ -215,11 +230,11 @@ classdef CommandConnector < handle
             errorMessage='Partner did not respond within the alloted time';
         end  % function
         
-        function clearExecutingIncomingCommandNow_(self)
+        function clearProcessingIncomingCommandNow_(self)
             % This shouldn't need to exist, but b/c the WS commands play()
             % and run() are blocking, they need to because to clear this
             % so that a stop() command can be received during a run.
-            self.ExecutingIncomingCommandNow_ = false ;
+            self.ProcessingIncomingCommandNow_ = false ;
         end
     end  % public methods block
     
@@ -227,12 +242,13 @@ classdef CommandConnector < handle
         function executeIncomingCommand_(self, commandFileText)
             % Executes a received command received from partner
             
-            % Each "command" is generally a set of mini-commands, 
-            % The get executed in sequence, and then an
+            % Each command file is generally a set of commands, 
+            % They get executed in sequence, and then an
             % acknowledgement is sent.
-            self.ExecutingIncomingCommandNow_ = true;
+            %self.ProcessingIncomingCommandNow_ = true;
             [isCompleteCommandFile, commands] = ws.CommandConnector.parseIncomingCommandFile(commandFileText) ;
             if isCompleteCommandFile ,
+                self.ensureYokingFilesAreGone_() ;
                 if self.IsParentWavesurferModel_ && isscalar(commands) ,
                     command = commands ;  % b/c scalar
                     isBlocking = ( isequal(command.name, 'record') || isequal(command.name, 'play') ) ;
@@ -243,19 +259,19 @@ classdef CommandConnector < handle
                 if isBlocking ,
                     % Have to acknowledge the command before executing, b/c
                     % command will block
-                    self.ExecutingIncomingCommandNow_ = false ;
+                    %self.ProcessingIncomingCommandNow_ = false ;
                     self.acknowledgeCommand_() ;
 
                     try
                         % awkward workaround because self.play() and self.record() is blocking call
                         % acknowledgeSICommand_ needs to be done before play and
                         % record
-                        % flag self.ExecutingIncomingCommandNow_ is reset in self.run
-                        self.ExecutingIncomingCommandNow_ = true ;
-                        self.Parent.executeIncomingCommand(command) ;  % we know minicommands is a scalar
-                        self.ExecutingIncomingCommandNow_ = false ;
+                        % flag self.ProcessingIncomingCommandNow_ is reset in self.run
+                        %self.ProcessingIncomingCommandNow_ = true ;
+                        self.Parent.executeIncomingCommand(command) ;  % we know commands is a scalar
+                        %self.ProcessingIncomingCommandNow_ = false ;
                     catch ME
-                        self.ExecutingIncomingCommandNow_ = false ;
+                        %self.ProcessingIncomingCommandNow_ = false ;
                         rethrow(ME) ;
                     end
                 else
@@ -265,28 +281,28 @@ classdef CommandConnector < handle
                         try
                             self.Parent.executeIncomingCommand(command) ;
                         catch ME
-                            self.ExecutingIncomingCommandNow_ = false ;
+                            %self.ProcessingIncomingCommandNow_ = false ;
                             rethrow(ME) ;
                         end
                     end
-                    self.ExecutingIncomingCommandNow_ = false ;
+                    %self.ProcessingIncomingCommandNow_ = false ;
                     self.acknowledgeCommand_() ;
-                end
+                end                
             end
         end  % function
             
 %         function executeIncomingCommandToSIFromWS_(self, lines)
 %             % Each command from WS is a single command, basically, and SI
 %             % doesn't block.
-%             self.ExecutingIncomingCommandNow_ = true ;
+%             self.ProcessingIncomingCommandNow_ = true ;
 %             [command, parameters] = ws.CommandConnector.parseIncomingCommandToSIFromWS(lines) ;
 %             try
 %                 self.Parent.executeIncomingCommand(command, parameters) ;
 %             catch ME
-%                 self.ExecutingIncomingCommandNow_ = false ;
+%                 self.ProcessingIncomingCommandNow_ = false ;
 %                 rethrow(ME) ;
 %             end
-%             self.ExecutingIncomingCommandNow_ = false ;
+%             self.ProcessingIncomingCommandNow_ = false ;
 %             self.acknowledgeCommand_() ;             
 %         end
             
