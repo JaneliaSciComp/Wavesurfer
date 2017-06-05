@@ -174,6 +174,51 @@ bool doesFileExistQ(char* path)  {
   return result ;
 }
 
+void getFileAttributes(bool* doesFileExistPtr, FILETIME* modTimePtr, uint64* fileSizePtr, char* path)  {
+    // These are the outputs, and their fall-through values
+    bool doesFileExist = false ;
+    FILETIME modTime ;
+    uint64 fileSize ;
+    
+    doesFileExist = doesFileExistQ(path) ;
+    if (doesFileExist)  {        
+        HANDLE fileHandle = CreateFile(path, 
+                                       GENERIC_READ, 
+                                       FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                                       NULL, 
+                                       OPEN_EXISTING,
+                                       FILE_ATTRIBUTE_NORMAL,
+                                       NULL) ;
+        if (fileHandle==INVALID_HANDLE_VALUE)  {
+            doesFileExist = false ;
+        }
+        else {
+            BOOL didSucceed = GetFileTime(fileHandle, NULL, &modTime, NULL) ; 
+            if (didSucceed)  {
+                LARGE_INTEGER fileSizeAsLargeInteger;
+                BOOL didSucceed2 =  GetFileSizeEx(fileHandle, &fileSizeAsLargeInteger) ;
+                if (didSucceed2)  {                
+                    fileSize = fileSizeAsLargeInteger.QuadPart ;
+                }
+                else  {
+                    // If there's a problem getting the file size, pretend the file doesn't exist
+                    doesFileExist = false ;                
+                }
+            }
+            else  {
+                // If there's a problem getting the file time, pretend the file doesn't exist
+                doesFileExist = false ;
+            }
+            CloseHandle(fileHandle) ;
+        }
+    }
+    
+    // Write the output locations
+    *doesFileExistPtr = doesFileExist ;
+    *modTimePtr = modTime ;
+    *fileSizePtr = fileSize ;
+}
+
 bool mallocedStringFromMxArray(char** stringPointer, const mxArray* stringAsMxArrayPointer)  {
     // On exit, string pointer points to a char* that points to a heap-allocated (via mxMalloc) 
     // buffer holding the string from stringAsMxArray.  
@@ -307,8 +352,14 @@ unsigned int childThreadProcedure(void* lpParameter)  {
     //PostThreadMessage(mainThreadId, FECM_WINDOW_MESSAGE_ID, (WPARAM)(0), (LPARAM)(callbackAsMxArrayPointer)) ;
     
     // The rate at which we check for the command file
-    bool didFileExistAtLastCheck = false ;  // Want the callback to fire if the file already exists
     double rate = 10.0 ;  // Hz
+    
+    // Set initial values for file attributes from the "last" check.
+    // We pretend the file did not exist the last time it was checked, b/c we
+    // want the callback to fire if the file already exists.
+    bool didFileExistAtLastCheck = false ;  // Want the callback to fire if the file already exists
+    FILETIME fileModTimeAtLastCheck ;
+    uint64 fileSizeAtLastCheck ;    
     
     // Get the tick frequency
     uint64 tickFrequency = getTickFrequency() ;  // Hz
@@ -331,17 +382,24 @@ unsigned int childThreadProcedure(void* lpParameter)  {
         }
         
         // If enough ticks, check for the file, then start a new interval
-        if (elapsedTicks>=intervalInTicks)  {
+        if ( elapsedTicks >= intervalInTicks )  {
+            // Get the file attributes
+            bool doesFileExist ;
+            FILETIME fileModTime ;
+            uint64 fileSize ;
+            getFileAttributes(&doesFileExist, &fileModTime, &fileSize, filePath) ;
             
-            bool doesFileExist = doesFileExistQ(filePath) ;
-            if (doesFileExist && !didFileExistAtLastCheck)  {                
+            // If something has changed, post a message to the parent thread
+            if (doesFileExist!=didFileExistAtLastCheck || CompareFileTime(&fileModTime, &fileModTimeAtLastCheck)!=0 || fileSize!=fileSizeAtLastCheck)  {
                 // Post the message that will eventually fire the Matlab callback on the main thread
                 // The fourth arg here will end up as the lParam of the message, so we can use it to pass data.
                 PostThreadMessage(mainThreadId, FECM_WINDOW_MESSAGE_ID, (WPARAM)(UID), (LPARAM)(0)) ;
             }
             
-            // Set this to be ready for the next check
+            // Set these to be ready for the next check
             didFileExistAtLastCheck = doesFileExist ;
+            fileModTimeAtLastCheck = fileModTime ;
+            fileSizeAtLastCheck = fileSize ;
             
             // Reset the reference time
             intervalStartTime = getTimeInTicks() ;

@@ -126,7 +126,10 @@ classdef SIMock < handle
             userFilePath = horzcat(tempFilePath, '.wsu') ;
             self.sendSaveUserFile(userFilePath) ;
             self.sendOpenUserFile(userFilePath) ;
-            
+            self.sendPlay() ;
+            pause(5) ;  % wait for that to finish
+            self.sendRecord() ;
+            self.sendStop() ;  % Hopefully arrives during recording...
         end  % function
         
     end    

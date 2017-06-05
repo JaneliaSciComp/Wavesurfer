@@ -4,12 +4,14 @@ classdef FileExistenceCheckerManager < handle
 %     end
     
     properties (Dependent)
+        Count
         UIDs
+        IsRunning
     end
     
     properties (Access=private)
         %IsDLLLoaded_
-        FileExistenceCheckers_
+        FileExistenceCheckersStruct_
         UIDs_
         NextUID_
         RunningCount_
@@ -18,7 +20,7 @@ classdef FileExistenceCheckerManager < handle
     
     methods (Access=private)
         function self = FileExistenceCheckerManager()
-            self.FileExistenceCheckers_ = ...
+            self.FileExistenceCheckersStruct_ = ...
                 struct('FilePath', cell(1,0), ...
                        'Callback', cell(1,0), ...
                        'IsRunning', cell(1,0), ...
@@ -37,7 +39,7 @@ classdef FileExistenceCheckerManager < handle
         function delete(self)
             % Stop all the threads (can't use remove all b/c want to be as
             % robust as possible)
-            n = length(self.FileExistenceCheckers_) ;
+            n = length(self.FileExistenceCheckersStruct_) ;
             for i = n:-1:1 ,
                 try
                     self.removeByIndex(i) ;
@@ -50,14 +52,14 @@ classdef FileExistenceCheckerManager < handle
         end  % function
         
         function removeAll(self)
-            n = length(self.FileExistenceCheckers_) ;
+            n = length(self.FileExistenceCheckersStruct_) ;
             for i = n:-1:1 ,
                 self.removeByIndex(i) ;
             end
         end
         
-        function result = getCount(self) 
-            result = length(self.FileExistenceCheckers_) ;
+        function result = get.Count(self) 
+            result = length(self.FileExistenceCheckersStruct_) ;
         end
         
         function uid = add(self, filePath, callback)
@@ -67,11 +69,14 @@ classdef FileExistenceCheckerManager < handle
                          'ThreadHandle', [], ...
                          'ThreadId', [], ...
                          'EndChildThreadEventHandle', []) ;  % a 1x0 struct with these fields
-            fecs = self.FileExistenceCheckers_ ;
-            self.FileExistenceCheckers_ = horzcat(fecs, fec) ;
-            self.UIDs_ = horzcat(self.UIDs_, self.NextUID_) ;            
+            fecs = self.FileExistenceCheckersStruct_ ;
+            self.FileExistenceCheckersStruct_ = horzcat(fecs, fec) ;
+            thisUID = self.NextUID_ ;
             self.NextUID_ = self.NextUID_ + 1 ;
+            self.UIDs_ = horzcat(self.UIDs_, thisUID) ;            
             uid = self.UIDs_(end) ;
+            fprintf('Just added an FEC with UID %d\n', thisUID) ;
+            dbstack
         end  % function
         
         function remove(self, uid)
@@ -83,12 +88,12 @@ classdef FileExistenceCheckerManager < handle
         function removeByIndex(self, index)
             if ~isempty(index) ,                
                 self.stopByIndex(index) ;
-                fec = self.FileExistenceCheckers_(index) ;  % there can be only one
+                fec = self.FileExistenceCheckersStruct_(index) ;  % there can be only one
                 if fec.IsRunning ,
                     error('FileExistenceCheckerManager:unableToRemoveBecauseUnableToStop', ...
                           'Unable to remove, because unable to stop.')
                 else
-                    self.FileExistenceCheckers_(index) = [] ;
+                    self.FileExistenceCheckersStruct_(index) = [] ;
                     self.UIDs_(index) = [] ;
                 end
             end
@@ -97,13 +102,17 @@ classdef FileExistenceCheckerManager < handle
         function callCallback(self, uid, varargin)
             i = self.indexFromUID_(uid) ;
             if ~isempty(i) ,                
-                fec = self.FileExistenceCheckers_(i) ;
+                fec = self.FileExistenceCheckersStruct_(i) ;
                 feval(fec.Callback, varargin{:}) ;                
             end
         end  % function
         
         function result = get.UIDs(self)
             result = self.UIDs_ ;
+        end  % function
+        
+        function result = get.IsRunning(self)
+            result = [ self.FileExistenceCheckersStruct_.IsRunning ] ;
         end  % function
         
         function start(self, uid) 
@@ -115,19 +124,19 @@ classdef FileExistenceCheckerManager < handle
         function startByIndex(self, i) 
             if ~isempty(i) ,
                 uid = self.UIDs_(i) ;
-                fec = self.FileExistenceCheckers_(i) ;  % there can be only one
+                fec = self.FileExistenceCheckersStruct_(i) ;  % there can be only one
                 if ~fec.IsRunning ,
                     if self.RunningCount_==0 ,
                         self.HookHandle_ = ws.FileExistenceCheckerManager.callMexProcedure_('initialize') ;
                     end
                     [isRunning, threadHandle, threadId, endChildThreadEventHandle] = ...
                         ws.FileExistenceCheckerManager.callMexProcedure_('start', uid, fec.FilePath) ;
-                    self.FileExistenceCheckers_(i).IsRunning = isRunning ;
+                    self.FileExistenceCheckersStruct_(i).IsRunning = isRunning ;
                     if isRunning ,
                         self.RunningCount_ = self.RunningCount_ + 1 ;
-                        self.FileExistenceCheckers_(i).ThreadHandle = threadHandle ;
-                        self.FileExistenceCheckers_(i).ThreadId = threadId ;
-                        self.FileExistenceCheckers_(i).EndChildThreadEventHandle = endChildThreadEventHandle ;
+                        self.FileExistenceCheckersStruct_(i).ThreadHandle = threadHandle ;
+                        self.FileExistenceCheckersStruct_(i).ThreadId = threadId ;
+                        self.FileExistenceCheckersStruct_(i).EndChildThreadEventHandle = endChildThreadEventHandle ;
                     end
                 end
             end
@@ -142,15 +151,15 @@ classdef FileExistenceCheckerManager < handle
         function stopByIndex(self, i) 
             if ~isempty(i) ,                
                 uid = self.UIDs_(i) ;
-                fec = self.FileExistenceCheckers_(i) ;  % there can be only one
+                fec = self.FileExistenceCheckersStruct_(i) ;  % there can be only one
                 if fec.IsRunning ,
                     isRunning = ...
                         ws.FileExistenceCheckerManager.callMexProcedure_('stop', uid, fec.ThreadHandle, fec.ThreadId, fec.EndChildThreadEventHandle) ;
-                    self.FileExistenceCheckers_(i).IsRunning = isRunning ;
+                    self.FileExistenceCheckersStruct_(i).IsRunning = isRunning ;
                     if ~isRunning, 
-                        self.FileExistenceCheckers_(i).ThreadHandle = [] ;
-                        self.FileExistenceCheckers_(i).ThreadId = [] ;
-                        self.FileExistenceCheckers_(i).EndChildThreadEventHandle = [] ;
+                        self.FileExistenceCheckersStruct_(i).ThreadHandle = [] ;
+                        self.FileExistenceCheckersStruct_(i).ThreadId = [] ;
+                        self.FileExistenceCheckersStruct_(i).EndChildThreadEventHandle = [] ;
                         self.RunningCount_ = self.RunningCount_ - 1 ;
                         if self.RunningCount_==0 ,
                             ws.FileExistenceCheckerManager.callMexProcedure_('finalize', self.HookHandle_) ;
@@ -172,7 +181,7 @@ classdef FileExistenceCheckerManager < handle
             uid = uint64(uid) ;
             isMatch = (uid==self.UIDs_) ;
             if any(isMatch) ,
-                fec = self.FileExistenceCheckers_(isMatch) ;  % there can be only one
+                fec = self.FileExistenceCheckersStruct_(isMatch) ;  % there can be only one
                 result = {fec} ;
             else
                 result = cell(1,0) ;
@@ -181,12 +190,17 @@ classdef FileExistenceCheckerManager < handle
     end  % private methods block
         
     methods (Static)
-        function result = getShared()
+        function result = getShared(varargin)
             persistent singleton
-            if isempty(singleton) 
-                singleton = ws.FileExistenceCheckerManager() ;
+            if nargin>0 && isequal(varargin{1},'doesSingletonExist') ,
+                % Intended to be used mainly for debugging
+                result = ~isempty(singleton) ;
+            else
+                if isempty(singleton) 
+                    singleton = ws.FileExistenceCheckerManager() ;
+                end
+                result = singleton ;
             end
-            result = singleton ;
         end
     end  % static methods block
     

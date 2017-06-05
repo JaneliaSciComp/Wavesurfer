@@ -14,10 +14,10 @@ classdef FileExistenceCheckerTestCase < matlab.unittest.TestCase
         function testConstructorAndDestructor(self)
             filePath = tempname(tempdir()) ;
             fecm = ws.FileExistenceCheckerManager.getShared() ;
-            fecCountBefore = fecm.getCount() ;
+            fecCountBefore = fecm.Count ;
             fec = ws.FileExistenceChecker(filePath, @()('File appeared!')) ;
             fec = [] ;  % should call the destructor
-            fecCountAfter = fecm.getCount() ;
+            fecCountAfter = fecm.Count ;
             self.verifyEqual(fecCountBefore, fecCountAfter) ;
         end
         

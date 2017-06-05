@@ -3,7 +3,7 @@ function contents = readFileContents(fileName)
     [fid,fopenErrorMessage] = fopen(fileName,'rt') ;
 
     if fid<0 ,
-        error('readAllLines:unableToOpenFile', ...
+        error('ws:readFileContents:unableToOpenFile', ...
               'Unable to open file: %s',fopenErrorMessage);
     end
 

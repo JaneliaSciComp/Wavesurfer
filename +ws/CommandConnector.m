@@ -85,14 +85,14 @@ classdef CommandConnector < handle
             % Start a thread to poll for the SI command file, or stop the
             % thread if we are diabled
             if self.IsEnabled_ ,
-                ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
-                %self.CommandFileExistenceChecker_ = [] ;  % clear the old one
+                %ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
+                self.CommandFileExistenceChecker_ = [] ;  % clear the old one (this *should* cause it to be delete()'d, I think
                 self.CommandFileExistenceChecker_ = ...
                     ws.FileExistenceChecker(self.IncomingCommandFilePath_, ...
-                                            @()(self.didReceiveIncomingCommand())) ;  % make a fresh one
+                                            @()(self.didDetectIncomingCommandFileChange())) ;  % make a fresh one
                 self.CommandFileExistenceChecker_.start();  % start it
             else
-                ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
+                %ws.deleteIfValidHandle(self.CommandFileExistenceChecker_) ;  % Have to manually delete, b/c referenced by singleton FileExistenceCheckerManager
                 self.CommandFileExistenceChecker_ = [] ;  % don't want a dangling reference hanging around
             end
             
@@ -101,10 +101,17 @@ classdef CommandConnector < handle
             end
         end  % function
         
-        function didReceiveIncomingCommand(self)
-            % Checks for a command file created by ScanImage
-            % If a command file is found, the command is parsed,
-            % executed, and a response file is written
+        function didDetectIncomingCommandFileChange(self)
+            if exist(self.IncomingCommandFilePath_, 'file') ,
+                self.didReceiveIncomingCommandFile() ;
+            end
+        end
+        
+        function didReceiveIncomingCommandFile(self)
+            % Reads an incomming command file created by our partner.
+            % The command file is parsed and checked for completeness.
+            % If complete, the commands are executed, and a response 
+            % file is written.
             
             fprintf('At top of didReceiveIncomingCommand\n') ;
             
