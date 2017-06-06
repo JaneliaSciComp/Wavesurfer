@@ -70,14 +70,55 @@ classdef YokingTestCase < matlab.unittest.TestCase
             self.verifyTrue(true) ;
         end  % function
 
+        function testRecordMessageReceptionFromSI(self)
+            wsModel = wavesurfer('--nogui') ;            
+            wsModel.IsYokedToScanImage = true ;            
+            pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+            process = System.Diagnostics.Process() ;
+            process.StartInfo.FileName = 'matlab.exe' ;
+            argumentsString = sprintf('-nojvm -nosplash -r "addpath(''%s''); sim = ws.SIMock(); sim.sendRecord(); pause(10); quit();', pathToWavesurferRoot) ;
+            process.StartInfo.Arguments = argumentsString ;
+            %process.StartInfo.WindowStyle = ProcessWindowStyle.Maximized;
+            process.Start();
+            %siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
+            pause(20) ;
+            %process.CloseMainWindow() ;
+            self.verifyTrue(true) ;
+        end  % function                
+        
         function testMessageReceptionFromSI(self)
             wsModel = wavesurfer('--nogui') ;            
             wsModel.IsYokedToScanImage = true ;            
-            siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
-            pause(10) ;
+            % Returns a dotnet System.Diagnostics.Process object
+            pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+            siMockProcess = System.Diagnostics.Process() ;
+            siMockProcess.StartInfo.FileName = 'matlab.exe' ;
+            argumentsString = sprintf('-nojvm -nosplash -r "addpath(''%s''); sim = ws.SIMock(); sim.sendLotsOfMessages(); pause(10); quit();', pathToWavesurferRoot) ;
+            siMockProcess.StartInfo.Arguments = argumentsString ;
+            %process.StartInfo.WindowStyle = ProcessWindowStyle.Maximized;
+            siMockProcess.Start();            
+            %siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
+            pause(20) ;
             %siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
-        end  % function        
+        end  % function                
+        
+        function testLightMessageReceptionFromSI(self)
+            wsModel = wavesurfer('--nogui') ;            
+            wsModel.IsYokedToScanImage = true ;            
+            % Returns a dotnet System.Diagnostics.Process object
+            pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+            siMockProcess = System.Diagnostics.Process() ;
+            siMockProcess.StartInfo.FileName = 'matlab.exe' ;
+            argumentsString = sprintf('-nojvm -nosplash -r "addpath(''%s''); sim = ws.SIMock(); sim.sendSomeMessages(); pause(10); quit();', pathToWavesurferRoot) ;
+            siMockProcess.StartInfo.Arguments = argumentsString ;
+            %process.StartInfo.WindowStyle = ProcessWindowStyle.Maximized;
+            siMockProcess.Start();            
+            %siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
+            pause(20) ;
+            %siMockProcess.CloseMainWindow() ;
+            self.verifyTrue(true) ;
+        end  % function                
         
     end  % test methods
 

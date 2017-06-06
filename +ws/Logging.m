@@ -280,6 +280,7 @@ classdef Logging < ws.Subsystem
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
             self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
+            fprintf('In ws.Logging.startingRun(), just set self.CurrentRunAbsoluteFileName_ to "%s"\n', self.CurrentRunAbsoluteFileName_) ;
             %self.CurrentSweepIndex_ = self.NextSweepIndex ;
             
             % Store the first sweep index for the run 
@@ -518,6 +519,8 @@ classdef Logging < ws.Subsystem
         function nullOutTransients_(self)
             % null-out all the transient things that are only used during
             % the run
+            fprintf('At top of ws.Logging.nullOutTransients...\n') ;
+            dbstack
             self.CurrentRunAbsoluteFileName_ = [];
             self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
@@ -584,6 +587,7 @@ classdef Logging < ws.Subsystem
             
             if ~isempty(self.FileBaseName) ,
                 if ~isempty(rawAnalogData) ,
+                    currentRunAbsoluteFileName = self.CurrentRunAbsoluteFileName_
                     h5write(self.CurrentRunAbsoluteFileName_, ...
                             sprintf('/sweep_%04d/analogScans', ...
                                     self.WriteToSweepId_), ...

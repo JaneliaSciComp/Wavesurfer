@@ -391,8 +391,8 @@ classdef WavesurferModel < ws.Model
             self.CommandConnector_ = ws.CommandConnector(self) ;
         end  % function
         
-        function delete(self)
-            %fprintf('WavesurferModel::delete()\n');
+        function delete(self)            
+            fprintf('WavesurferModel::delete()\n');
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;

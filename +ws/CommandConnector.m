@@ -113,7 +113,7 @@ classdef CommandConnector < handle
             % If complete, the commands are executed, and a response 
             % file is written.
             
-            fprintf('At top of didReceiveIncomingCommand\n') ;
+            fprintf('At top of didReceiveIncomingCommandFile\n') ;
             
             % If we're in the midst of executing a command already, the
             % next command will have to wait.
@@ -125,6 +125,7 @@ classdef CommandConnector < handle
             if exist(self.IncomingCommandFilePath_,'file') ,
                 try
                     commandFileText = ws.readFileContents(self.IncomingCommandFilePath_) ;
+                    commandFileText
                 catch me ,
                     wrappingException = MException('CommandConnector:UnableToOpenYokingFile', ...
                                                    'Unable to open ScanImage command file') ;

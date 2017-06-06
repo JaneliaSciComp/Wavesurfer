@@ -127,7 +127,26 @@ classdef SIMock < handle
             self.sendSaveUserFile(userFilePath) ;
             self.sendOpenUserFile(userFilePath) ;
             self.sendPlay() ;
-            pause(5) ;  % wait for that to finish
+            pause(20) ;  % wait for that to finish
+            self.sendRecord() ;
+            self.sendStop() ;  % Hopefully arrives during recording...
+        end  % function
+
+        function sendSomeMessages(self)
+            %self.sendSetIndexOfFirstSweepInRun(7) ;
+            %self.sendSetNumberOfSweepsInRun(3) ;
+            %tempFilePath = tempname() ;
+            %[tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
+            %self.sendSetDataFileFolderPath(tempFolderPath) ;
+            %self.sendSetDataFileBaseName(tempStemName) ;
+            %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
+            %self.sendSaveProtocolFile(protocolFilePath) ;
+            %self.sendOpenProtocolFile(protocolFilePath) ;
+            %userFilePath = horzcat(tempFilePath, '.wsu') ;
+            %self.sendSaveUserFile(userFilePath) ;
+            %self.sendOpenUserFile(userFilePath) ;
+            self.sendPlay() ;
+            pause(20) ;  % wait for that to finish
             self.sendRecord() ;
             self.sendStop() ;  % Hopefully arrives during recording...
         end  % function
