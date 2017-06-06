@@ -2074,13 +2074,19 @@ classdef WavesurferModel < ws.Model
             parameters = command.parameters ;
             switch commandName ,
                 case 'set-index-of-first-sweep-in-run'
-                    self.Logging.NextSweepIndex = str2double(parameters{1});
+                    self.Logging.NextSweepIndex = str2double(parameters{1}) ;
                 case 'set-number-of-sweeps-in-run'
-                    self.NSweepsPerRun = str2double(parameters{1});
+                    self.NSweepsPerRun = str2double(parameters{1}) ;
                 case 'set-data-file-folder-path'
-                    self.Logging.FileLocation = parameters{1};
+                    self.Logging.FileLocation = parameters{1} ;
                 case 'set-data-file-base-name'
-                    self.Logging.FileBaseName = parameters{1};
+                    self.Logging.FileBaseName = parameters{1} ;
+                case 'set-data-file-session-index'
+                    self.Logging.SessionIndex = str2double(parameters{1}) ;
+                case 'set-is-session-number-included-in-data-file-name'
+                    self.Logging.DoIncludeSessionIndex = logical(str2double(parameters{1})) ;
+                case 'set-is-date-included-in-data-file-name'
+                    self.Logging.DoIncludeDate = logical(str2double(parameters{1})) ;                    
                 case 'save-wsp-file-full-path'
                     self.saveProtocolFileGivenFileName(parameters{1}) ;
                 case 'open-wsp-file-full-path'

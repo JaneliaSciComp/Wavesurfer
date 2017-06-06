@@ -113,13 +113,32 @@ classdef SIMock < handle
             self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
+        function sendSetDataFileSessionIndex(self, i)
+            commandFileAsString = sprintf('1\nset-data-file-session-index| %d\n', i) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function
+        
+        function sendSetIsSessionNumberIncludedInDataFileName(self, value)
+            commandFileAsString = sprintf('1\nset-is-session-number-included-in-data-file-name| %d\n', value) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function
+        
+        function sendSetIsDateIncludedInDataFileName(self, value)
+            commandFileAsString = sprintf('1\nset-is-date-included-in-data-file-name| %d\n', value) ;
+            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function
+                
         function sendLotsOfMessages(self)
+            % Mostly used for testing
             self.sendSetIndexOfFirstSweepInRun(7) ;
             self.sendSetNumberOfSweepsInRun(3) ;
             tempFilePath = tempname() ;
             [tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
             self.sendSetDataFileFolderPath(tempFolderPath) ;
             self.sendSetDataFileBaseName(tempStemName) ;
+            self.sendSetIsSessionNumberIncludedInDataFileName(true) ;
+            self.sendSetDataFileSessionIndex(7) ;
+            self.sendSetIsDateIncludedInDataFileName(true) ;
             protocolFilePath = horzcat(tempFilePath, '.wsp') ;
             self.sendSaveProtocolFile(protocolFilePath) ;
             self.sendOpenProtocolFile(protocolFilePath) ;
@@ -132,24 +151,24 @@ classdef SIMock < handle
             self.sendStop() ;  % Hopefully arrives during recording...
         end  % function
 
-        function sendSomeMessages(self)
-            %self.sendSetIndexOfFirstSweepInRun(7) ;
-            %self.sendSetNumberOfSweepsInRun(3) ;
-            %tempFilePath = tempname() ;
-            %[tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
-            %self.sendSetDataFileFolderPath(tempFolderPath) ;
-            %self.sendSetDataFileBaseName(tempStemName) ;
-            %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
-            %self.sendSaveProtocolFile(protocolFilePath) ;
-            %self.sendOpenProtocolFile(protocolFilePath) ;
-            %userFilePath = horzcat(tempFilePath, '.wsu') ;
-            %self.sendSaveUserFile(userFilePath) ;
-            %self.sendOpenUserFile(userFilePath) ;
-            self.sendPlay() ;
-            pause(20) ;  % wait for that to finish
-            self.sendRecord() ;
-            self.sendStop() ;  % Hopefully arrives during recording...
-        end  % function
+%         function sendSomeMessages(self)
+%             %self.sendSetIndexOfFirstSweepInRun(7) ;
+%             %self.sendSetNumberOfSweepsInRun(3) ;
+%             %tempFilePath = tempname() ;
+%             %[tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
+%             %self.sendSetDataFileFolderPath(tempFolderPath) ;
+%             %self.sendSetDataFileBaseName(tempStemName) ;
+%             %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
+%             %self.sendSaveProtocolFile(protocolFilePath) ;
+%             %self.sendOpenProtocolFile(protocolFilePath) ;
+%             %userFilePath = horzcat(tempFilePath, '.wsu') ;
+%             %self.sendSaveUserFile(userFilePath) ;
+%             %self.sendOpenUserFile(userFilePath) ;
+%             self.sendPlay() ;
+%             pause(20) ;  % wait for that to finish
+%             self.sendRecord() ;
+%             self.sendStop() ;  % Hopefully arrives during recording...
+%         end  % function
         
     end    
 end
