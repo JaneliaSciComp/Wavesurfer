@@ -5,15 +5,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 

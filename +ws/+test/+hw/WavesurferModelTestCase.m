@@ -4,15 +4,13 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -280,6 +278,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...
             
@@ -300,8 +299,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
-
+            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; 
+            
             % Check that all settings are as set
             for i=1:nSettings ,
                 propertyName=settings{i,1};
@@ -314,6 +313,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %                 end
                 self.verifyEqual(propertyValue,propertyValueCheck,sprintf('Problem with: %s',propertyName));
             end            
+            wsModelCheck.delete() ;
         end  % function        
         
         function testSavingAndLoadingElectrodeProperties(self)
@@ -365,6 +365,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...            
 
