@@ -38,7 +38,7 @@ classdef FileExistenceCheckerTestCase < matlab.unittest.TestCase
             end
             fec.stop() ;
             fec = [] ;  % should call the destructor
-            self.verifyEqual(self.Counter, n) ;
+            self.verifyEqual(self.Counter, 2*n) ;
         end        
     end  % test methods
     
