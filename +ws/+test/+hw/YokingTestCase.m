@@ -63,7 +63,6 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;            
             siMockProcess = ws.launchSIMockInOtherProcess() ;            
             pause(5) ;  % wait for other process to start            
-            wsModel.IsYokedToScanImage = true ;            
             userSettingsFilePath = horzcat(tempname(), '.wsu') ;
             wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
             wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
@@ -90,7 +89,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         
         function testMessageReceptionFromSI(self)
             wsModel = wavesurfer('--nogui') ;            
-            wsModel.IsYokedToScanImage = true ;            
+            %wsModel.IsYokedToScanImage = true ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
             siMockProcess = System.Diagnostics.Process() ;
@@ -102,12 +101,29 @@ classdef YokingTestCase < matlab.unittest.TestCase
             %siMockProcess = ws.launchSIMockInOtherProcessAndSendMessagesBack() ;  %#ok<NASGU>
             pause(20) ;
             %siMockProcess.CloseMainWindow() ;
+            
+            % Spin-wait to be done
+            didPerformAllSweepsAndReturnToIdleness = false ;
             for i=1:10 ,
                 if isequal(wsModel.State, 'idle') && wsModel.Logging.NextSweepIndex==4 ,
+                    didPerformAllSweepsAndReturnToIdleness = true ;
                     break
                 end
                 pause(2) ;
             end
+            self.verifyTrue(didPerformAllSweepsAndReturnToIdleness) ;            
+            
+            % Spin-wait for disconnect
+            didDisconnect = false ;
+            for i=1:10 ,
+                if ~wsModel.IsYokedToScanImage ,
+                    didDisconnect = true ;
+                    break
+                end
+                pause(2) ;
+            end            
+            self.verifyTrue(didDisconnect) ;            
+            
             % Check that a few things are as we set them
             self.verifyTrue(wsModel.Logging.DoIncludeDate) ;
             self.verifyTrue(wsModel.Logging.DoIncludeSessionIndex) ;

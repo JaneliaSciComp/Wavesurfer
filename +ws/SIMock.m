@@ -1,22 +1,36 @@
 classdef SIMock < handle
+    properties (Dependent = true)
+        IsProcessingIncomingCommand
+    end
+    
     properties (Access=private)
-        CommandConnector_
+        CommandServer_
+        CommandClient_
     end
     
     methods
         function self = SIMock()
-            self.CommandConnector_ = ws.CommandConnector(self) ;
-            self.CommandConnector_.IsEnabled = true ;
+            self.CommandClient_ = ws.CommandClient(self) ;
+            self.CommandClient_.IsEnabled = true ;
+            self.CommandServer_ = ws.CommandServer(self) ;
+            self.CommandServer_.IsEnabled = true ;
         end
         
         function delete(self)
             fprintf('In ws.SIMock::delete()\n') ;
-            if ~isempty(self.CommandConnector_) ,
-                if isvalid(self.CommandConnector_) ,
-                    self.CommandConnector_.IsEnabled = false ;
-                    delete(self.CommandConnector_) ;
-                end
-                self.CommandConnector_ = [] ;
+            
+            % delete the client
+            ws.deleteIfValidHandle(self.CommandClient_) ;
+            
+            % delete the server
+            ws.deleteIfValidHandle(self.CommandServer_) ;
+        end
+        
+        function result = get.IsProcessingIncomingCommand(self)
+            if ~isempty(self.CommandServer_) && isvalid(self.CommandServer_) ,
+                result = self.CommandServer_.IsProcessingIncomingCommand ;
+            else
+                result = false ;
             end
         end
         
@@ -60,76 +74,87 @@ classdef SIMock < handle
         
         function sendSetIndexOfFirstSweepInRun(self, index)
             commandFileAsString = sprintf('1\nset-index-of-first-sweep-in-run| %d\n', index) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;  % this will error if something goes wrong
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;  % this will error if something goes wrong
         end  % function
 
         function sendSetNumberOfSweepsInRun(self, n)
             commandFileAsString = sprintf('1\nset-number-of-sweeps-in-run| %d\n', n) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function sendSetDataFileFolderPath(self, path)
             commandFileAsString = sprintf('1\nset-data-file-folder-path| %s\n', path) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function sendSetDataFileBaseName(self, baseName)
             commandFileAsString = sprintf('1\nset-data-file-base-name| %s\n', baseName) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
                 
         function sendSaveProtocolFile(self,absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nsave-wsp-file-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function sendOpenProtocolFile(self,absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nopen-wsp-file-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function sendSaveUserFile(self,absoluteUserFileName)
             commandFileAsString = sprintf('1\nsave-wsu-file-full-path| %s\n',absoluteUserFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
         function sendOpenUserFile(self,absoluteUserFileName)
             commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
         function sendPlay(self)
             commandFileAsString = sprintf('1\nplay\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
         function sendRecord(self)
             commandFileAsString = sprintf('1\nrecord\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function sendStop(self)
             commandFileAsString = sprintf('1\nstop\n') ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
         function sendSetDataFileSessionIndex(self, i)
             commandFileAsString = sprintf('1\nset-data-file-session-index| %d\n', i) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function sendSetIsSessionNumberIncludedInDataFileName(self, value)
             commandFileAsString = sprintf('1\nset-is-session-number-included-in-data-file-name| %d\n', value) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function sendSetIsDateIncludedInDataFileName(self, value)
             commandFileAsString = sprintf('1\nset-is-date-included-in-data-file-name| %d\n', value) ;
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
                 
+        function sendConnect(self) 
+            commandFileAsString = sprintf('1\nconnect| 2.0.0\n') ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;            
+        end
+            
+        function sendDisconnect(self) 
+            commandFileAsString = sprintf('1\ndisconnect\n') ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;            
+        end
+        
         function sendLotsOfMessages(self)
             % Mostly used for testing
+            self.sendConnect() ;
             self.sendSetIndexOfFirstSweepInRun(7) ;
             self.sendSetNumberOfSweepsInRun(3) ;
             tempFilePath = tempname() ;
@@ -149,6 +174,8 @@ classdef SIMock < handle
             pause(20) ;  % wait for that to finish
             self.sendRecord() ;
             self.sendStop() ;  % Hopefully arrives during recording...
+            pause(4) ;
+            self.sendDisconnect() ;            
         end  % function
 
 %         function sendSomeMessages(self)

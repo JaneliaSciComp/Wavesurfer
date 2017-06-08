@@ -24,6 +24,7 @@ classdef WavesurferModel < ws.Model
         IsAOChannelTerminalOvercommitted
         IsDIChannelTerminalOvercommitted
         IsDOChannelTerminalOvercommitted
+        IsProcessingIncomingCommand
     end
     
     properties (Access=protected)
@@ -196,7 +197,8 @@ classdef WavesurferModel < ws.Model
         DidLooperCompleteSweep_
         %SICommandPollTimer_
         %SICommandFileExistenceChecker_
-        CommandConnector_
+        CommandClient_
+        CommandServer_
     end
     
     events
@@ -388,7 +390,11 @@ classdef WavesurferModel < ws.Model
             
             % Lastly (I guess...) create a command connector (which will
             % remain disabled for now)
-            self.CommandConnector_ = ws.CommandConnector(self) ;
+            self.CommandServer_ = ws.CommandServer(self) ;
+            self.CommandClient_ = ws.CommandClient(self) ;
+            if isITheOneTrueWavesurferModel ,
+                self.CommandServer_.IsEnabled = true ;
+            end            
         end  % function
         
         function delete(self)            
@@ -404,14 +410,6 @@ classdef WavesurferModel < ws.Model
 %                     delete(self.SICommandPollTimer_);
 %                     self.SICommandPollTimer_ = [] ;
 %                 end
-
-                % Delete CommandConnector_
-                if ~isempty(self.CommandConnector_) ,
-                    if isvalid(self.CommandConnector_) ,
-                        delete(self.CommandConnector_) ;
-                    end
-                    self.CommandConnector_ = [] ;
-                end
                 
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
@@ -420,6 +418,9 @@ classdef WavesurferModel < ws.Model
                 self.RefillerIPCRequester_ = [] ;
                 self.IPCPublisher_ = [] ;                
             end
+            % Delete CommandServer_, client
+            ws.deleteIfValidHandle(self.CommandServer_) ;
+            ws.deleteIfValidHandle(self.CommandClient_) ;
             ws.deleteIfValidHandle(self.UserCodeManager_) ;  % Causes user object to be explicitly deleted, if there is one
             self.UserCodeManager_ = [] ;            
         end  % function
@@ -960,11 +961,11 @@ classdef WavesurferModel < ws.Model
             % Set the value by enabling/disabling the command connector
             if islogical(newValue) && isscalar(newValue) ,
                 try
-                    self.CommandConnector_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
+                    self.CommandClient_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
                 catch me
                     err = me ;
                 end                
-                self.IsYokedToScanImage_ = self.CommandConnector_.IsEnabled ;
+                self.IsYokedToScanImage_ = self.CommandClient_.IsEnabled ;
             end            
 
             % Do an update
@@ -975,7 +976,11 @@ classdef WavesurferModel < ws.Model
                 throw(err) ;
             end
         end  % function
-
+        
+%         function setIsYokedToScanImageForTesting_(self, newValue)
+%             self.setIsYokedToScanImage_(newValue) ;
+%         end        
+        
         function value=get.IsYokedToScanImage(self)
             value = self.IsYokedToScanImage_ ;
         end  % function        
@@ -1100,18 +1105,18 @@ classdef WavesurferModel < ws.Model
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
-            if self.AreSweepsFiniteDuration
+            if self.AreSweepsFiniteDuration ,
                 try
-                    self.sendAcqSetParamsToScanImage_();
+                    self.commandScanImageToStartLoopIfYoked_() ;
                 catch excp
-                    self.abortOngoingRun_();
-                    self.changeReadiness(+1);
-                    rethrow(excp);
+                    self.abortOngoingRun_() ;
+                    self.changeReadiness(+1) ;
+                    rethrow(excp) ;
                 end
             end
             
-            if ~isempty(self.CommandConnector_) ,
-                self.CommandConnector_.clearProcessingIncomingCommandNow_() ;  % awkward workaround because self.play() and self.record() are blocking calls
+            if ~isempty(self.CommandServer_) ,
+                self.CommandServer_.clearIsProcessingIncomingCommand_() ;  % awkward workaround because self.play() and self.record() are blocking calls
             end
             
             % Initialize the sweep counter, etc.
@@ -1398,7 +1403,7 @@ classdef WavesurferModel < ws.Model
             % Do we need this?  Where should it go, exactly?
             % If we put it here, stopping a run from WS can get held up b/c
             % WS is waiting for SI to acknowledge the abort command
-            %self.CommandConnector_.sendCommandFileAsString('abort') ;
+            %self.CommandClient_.sendCommandFileAsString('abort') ;
         end  % run_() function
         
         function openSweep_(self)
@@ -2073,6 +2078,10 @@ classdef WavesurferModel < ws.Model
             commandName = command.name ;
             parameters = command.parameters ;
             switch commandName ,
+                case 'connect'
+                    self.IsYokedToScanImage = true ;
+                case 'disconnect'
+                    self.IsYokedToScanImage = false ;
                 case 'set-index-of-first-sweep-in-run'
                     self.Logging.NextSweepIndex = str2double(parameters{1}) ;
                 case 'set-number-of-sweeps-in-run'
@@ -2097,11 +2106,11 @@ classdef WavesurferModel < ws.Model
                     self.openUserFileGivenFileName(parameters{1}) ;                    
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
-                    % with in the CommandConnector
+                    % with in the CommandServer
                     self.record()
                 case 'play'
                     % self.play() is a blocking call, but that's dealt
-                    % with in the CommandConnector
+                    % with in the CommandServer
                     self.play()
                 case 'stop'
                     self.stop();
@@ -2113,7 +2122,7 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods (Access=protected)            
-        function sendAcqSetParamsToScanImage_(self)
+        function commandScanImageToStartLoopIfYoked_(self)
             % Sends acquisition parameters to ScanImage and start
             % acquisition
             
@@ -2133,38 +2142,27 @@ classdef WavesurferModel < ws.Model
                         'set-log-file-base-name', self.Logging.AugmentedBaseName, ...
                         'loop') ;
             
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function        
-    end  % protected methods block
-    
-%     methods (Hidden)
-%         function out = debug_description(self)
-%             out = cell(size(self.Subsystems_));
-%             for idx = 1: numel(self.Subsystems_)
-%                 out{idx} = [out '\n' self.Subsystems_{idx}.debug_description()];
-%             end
-%         end
-%     end
-    
-    methods (Access=public)
-        function commandScanImageToSaveConfigFileIfYoked(self,absoluteProtocolFileName)
+        
+        function commandScanImageToSaveConfigFileIfYoked_(self,absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nsave-cfg-file-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function commandScanImageToOpenConfigFileIfYoked(self,absoluteProtocolFileName)
+        function commandScanImageToOpenConfigFileIfYoked_(self,absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nload-cfg-file-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function commandScanImageToSaveUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
+        function commandScanImageToSaveUserSettingsFileIfYoked_(self,absoluteUserSettingsFileName)
             commandFileAsString = sprintf('1\nsave-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
-        function commandScanImageToOpenUserSettingsFileIfYoked(self,absoluteUserSettingsFileName)
+        function commandScanImageToOpenUserSettingsFileIfYoked_(self,absoluteUserSettingsFileName)
             commandFileAsString = sprintf('1\nload-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandConnector_.sendCommandFileAsString(commandFileAsString);
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
     end % methods
     
@@ -2226,7 +2224,7 @@ classdef WavesurferModel < ws.Model
             self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToOpenConfigFileIfYoked(siConfigFilePath);
+            self.commandScanImageToOpenConfigFileIfYoked_(siConfigFilePath);
             self.changeReadiness(+1);
         end  % function
     end
@@ -2269,7 +2267,7 @@ classdef WavesurferModel < ws.Model
             self.HasUserSpecifiedProtocolFileName_ = true ;
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToSaveConfigFileIfYoked(siConfigFilePath) ;
+            self.commandScanImageToSaveConfigFileIfYoked_(siConfigFilePath) ;
             self.changeReadiness(+1);            
             self.broadcast('Update');
         end
@@ -2300,49 +2298,49 @@ classdef WavesurferModel < ws.Model
             % Actually opens the named user file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1);
+            self.changeReadiness(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            saveStruct=load('-mat',absoluteFileName);
+            saveStruct=load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName);
+            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicUserSettings_(newModel) ;
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToOpenUserSettingsFileIfYoked(siUserFilePath);
-            self.changeReadiness(+1);            
-            self.broadcast('UpdateFastProtocols');
-            self.broadcast('Update');
+            self.commandScanImageToOpenUserSettingsFileIfYoked_(siUserFilePath) ;
+            self.changeReadiness(+1) ;            
+            self.broadcast('UpdateFastProtocols') ;
+            self.broadcast('Update') ;
         end
     end        
 
     methods
         function saveUserFileGivenFileName(self, fileName)
-            self.changeReadiness(-1);
+            self.changeReadiness(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            userSettings=self.encodeForPersistence();
+            userSettings=self.encodeForPersistence() ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
-                              'versionString',versionString);  %#ok<NASGU>
-            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
-            self.AbsoluteUserSettingsFileName_ = absoluteFileName;
+                              'versionString',versionString) ;  %#ok<NASGU>
+            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
+            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName);
+            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToSaveUserSettingsFileIfYoked(siUserFilePath);                
-            self.changeReadiness(+1);            
-            self.broadcast('Update');            
+            self.commandScanImageToSaveUserSettingsFileIfYoked_(siUserFilePath) ;
+            self.changeReadiness(+1) ;            
+            self.broadcast('Update') ;            
         end  % function
     end
     
@@ -3617,6 +3615,14 @@ classdef WavesurferModel < ws.Model
               % 100 MHz.
             sampleFrequency = timebaseRate/actualTimebaseTicksPerSample ;            
         end
+        
+        function result = get.IsProcessingIncomingCommand(self)
+            if ~isempty(self.CommandServer_) && isvalid(self.CommandServer_) ,
+                result = self.CommandServer_.IsProcessingIncomingCommand ;
+            else
+                result = false ;
+            end
+        end                
     end  % public methods block
 
     methods (Access=protected)
@@ -3638,7 +3644,8 @@ classdef WavesurferModel < ws.Model
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             % Need something here for yoking...
-            %self.CommandConnector_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
         end  % method
         
         function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
@@ -4145,9 +4152,14 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update') ;
         end  % function        
         
-        function result = getCommandConnector_(self)
+        function result = getCommandServer_(self)
             % This is intended to be used for testing and debugging only.
-            result = self.CommandConnector_ ;
+            result = self.CommandServer_ ;
         end
+        
+        function result = getCommandClient_(self)
+            % This is intended to be used for testing and debugging only.
+            result = self.CommandClient_ ;
+        end        
     end  % public methods block
 end  % classdef
