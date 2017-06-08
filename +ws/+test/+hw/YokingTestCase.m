@@ -4,17 +4,13 @@ classdef YokingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.FileExistenceCheckerManager.getShared().removeAll() ;
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.FileExistenceCheckerManager.getShared().removeAll() ;
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -28,6 +24,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
+            wsModel.delete() ;
         end  % function
         
         function testRecordFromWS(self)
@@ -44,6 +41,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
+            wsModel.delete() ;
         end  % function
 
         function testSavingAndOpeningOfProtocolFromWS(self)
@@ -57,6 +55,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
+            wsModel.delete() ;
         end  % function
         
         function testSavingAndOpeningOfUserSettingsFromWS(self)
@@ -69,6 +68,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
+            wsModel.delete() ;
         end  % function
 
         function testMessageReceptionFromSI(self)
@@ -112,16 +112,17 @@ classdef YokingTestCase < matlab.unittest.TestCase
             self.verifyTrue(wsModel.Logging.DoIncludeDate) ;
             self.verifyTrue(wsModel.Logging.DoIncludeSessionIndex) ;
             self.verifyEqual(wsModel.Logging.SessionIndex, 7) ;
+            wsModel.delete() ;
         end  % function
         
         function testFECDeleting(self)
-            fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count
+            fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
             wsModel = wavesurfer('--nogui') ;
             wsModel.IsYokedToScanImage = true ;  % should create a FEC
-            fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count
+            fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
-            wsModel = [] ;  %#ok<NASGU>
-            fecCountAfter = ws.FileExistenceCheckerManager.getShared().Count 
+            wsModel.delete() ;
+            fecCountAfter = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore, fecCountAfter) ;
         end  % function
         

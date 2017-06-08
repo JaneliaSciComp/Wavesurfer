@@ -2,6 +2,18 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, as Dev1, with
     % AO0 looped back to AI0.
     
+    methods (TestMethodSetup)
+        function setup(self) %#ok<MANU>
+            ws.reset() ;
+        end
+    end
+
+    methods (TestMethodTeardown)
+        function teardown(self) %#ok<MANU>
+            ws.reset() ;
+        end
+    end
+    
     methods (Test)
         function theTest(self)
             wsModel = wavesurfer('--nogui') ;
@@ -31,6 +43,8 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             x = wsModel.Acquisition.getAnalogDataFromCache() ;
 
+            wsModel.delete() ;  % have to do this now
+            
             measuredAmplitude = max(x) - min(x) ;
 
             predictedAmplitude = amplitudeAsDouble/voltageMonitorScaleInTrode ; 
