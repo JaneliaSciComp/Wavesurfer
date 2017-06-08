@@ -1,5 +1,5 @@
 classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
-    % The controller from the main wavesurfer window.
+    % The controller for the main wavesurfer window.
     
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
