@@ -58,7 +58,13 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            if isfield(dataFileAsStruct.header, 'AIChannelScales') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                allAnalogChannelScales = dataFileAsStruct.header.AIChannelScales ;
+            else
+                % Fallback for older files
+                allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            end
         catch
             error('Unable to read channel scale information from file.');
         end

@@ -791,29 +791,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
             self.Parent.didSetAnalogOutputTerminalID();
         end
-        
-%         function setSingleDigitalTerminalID(self, i, newValue)
-%             self.setSingleDigitalTerminalID_(i, newValue) ;
-%         end
-        
-end  % methods block
-
-%     methods (Access = protected)        
-%         function analogChannelScales=getAnalogChannelScales_(self)
-%             analogChannelScales = self.AnalogChannelScales_;
-%         end  % function
-%     end  % protected methods block        
-%     
-%     methods (Access = protected)        
-%         % Allows access to protected and protected variables from ws.Coding.
-%         function out = getPropertyValue_(self, name)
-%             out = self.(name);
-%         end
-%         
-%         function setPropertyValue_(self, name, value)
-%             self.(name) = value;
-%         end        
-%     end  % protected methods block
+   end  % methods block
     
     methods
         function mimic(self, other)

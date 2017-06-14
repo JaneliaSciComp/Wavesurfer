@@ -1432,9 +1432,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             allAITerminalNames = model.getAllAITerminalNames() ;
             %terminalIDs=model.Acquisition.AnalogTerminalIDs;  % zero-based NI channel index
             channelNames=model.Acquisition.AnalogChannelNames;
-            channelScales=model.Acquisition.AnalogChannelScales;
-            channelUnits=model.Acquisition.AnalogChannelUnits;
-            nElectrodesClaimingChannel=model.Acquisition.getNumberOfElectrodesClaimingAnalogChannel();
+            channelScales = model.AIChannelScales;
+            channelUnits=model.AIChannelUnits;
+            nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingAIChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
             isTerminalOvercommitted = model.IsAIChannelTerminalOvercommitted ;

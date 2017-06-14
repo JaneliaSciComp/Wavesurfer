@@ -8,15 +8,6 @@ classdef Acquisition < ws.Subsystem
           % boolean arrays indicating which analog/digital channels are active
           % Setting these is the prefered way for outsiders to change which
           % channels are active
-        AnalogChannelScales
-          % An array of scale factors to convert each analog channel from volts on the coax to 
-          % whatever native units each signal corresponds to in the world.
-          % This is in units of volts per ChannelUnits (see below)
-        %ChannelScales
-        AnalogChannelUnits
-          % A list of SIUnit instances that describes the real-world units 
-          % for each analog channel.
-        %ChannelUnits
         IsAnalogChannelMarkedForDeletion
         IsDigitalChannelMarkedForDeletion
     end
@@ -49,6 +40,20 @@ classdef Acquisition < ws.Subsystem
         AnalogScalingCoefficients
         DataCacheDurationWhenContinuous
         ActiveChannelIndexFromChannelIndex
+    end
+    
+    properties (Dependent=true, Hidden=true)        
+        AnalogChannelScales
+          % An array of scale factors to convert each analog channel from volts on the coax to 
+          % whatever native units each signal corresponds to in the world.
+          % This is in units of volts per ChannelUnits (see below)        
+          % Hidden b/c the values given by it can be overridden by the
+          % ElectrodeManager.
+        AnalogChannelUnits
+          % A list of SIUnit instances that describes the real-world units 
+          % for each analog channel.
+          % Hidden b/c the values given by it can be overridden by the
+          % ElectrodeManager.
     end
     
     properties (Access = protected) 
@@ -165,37 +170,38 @@ classdef Acquisition < ws.Subsystem
         end
     end  % public methods block
 
-    methods (Access=protected)
-        function value = getAnalogChannelScales_(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                value=self.AnalogChannelScales_;
-            else
-                analogChannelNames=self.AnalogChannelNames;
-                [channelScalesFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getMonitorScalingsByName(analogChannelNames);
-                value=ws.fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
-            end
-        end
-    end  % methods block    
+%     methods (Access=protected)
+%         function value = getAnalogChannelScales_(self)
+%             value = self.AnalogChannelScales_ ;
+% %             wavesurferModel=self.Parent;
+% %             if isempty(wavesurferModel) ,
+% %                 ephys=[];
+% %             else
+% %                 ephys=wavesurferModel.Ephys;
+% %             end
+% %             if isempty(ephys) ,
+% %                 electrodeManager=[];
+% %             else
+% %                 electrodeManager=ephys.ElectrodeManager;
+% %             end
+% %             if isempty(electrodeManager) ,
+% %                 value=self.AnalogChannelScales_;
+% %             else
+% %                 analogChannelNames=self.AnalogChannelNames;
+% %                 [channelScalesFromElectrodes, ...
+% %                  isChannelScaleEnslaved] = ...
+% %                     electrodeManager.getMonitorScalingsByName(analogChannelNames);
+% %                 value=ws.fif(isChannelScaleEnslaved,channelScalesFromElectrodes,self.AnalogChannelScales_);
+% %             end
+%         end
+%     end  % methods block    
     
     methods
-        function addDigitalChannel_(self)
+        function addDigitalChannel_(self, freeTerminalIDs)
             %deviceName = self.Parent.DeviceName ;
             
             %newChannelDeviceName = deviceName ;
-            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
             if isempty(freeTerminalIDs) ,
                 return  % can't add a new one, because no free IDs
             else
@@ -456,28 +462,29 @@ classdef Acquisition < ws.Subsystem
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-        function value = getNumberOfElectrodesClaimingAnalogChannel(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                value=zeros(size(self.AnalogChannelScales));
-            else
-                channelNames=self.AnalogChannelNames;
-                value=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames);
-            end
-        end
+%         function value = getNumberOfElectrodesClaimingAnalogChannel(self)
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 value=zeros(size(self.AnalogChannelScales));
+%             else
+%                 channelNames=self.AnalogChannelNames;
+%                 value=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames);
+%             end
+%         end
         
         function value = get.AnalogChannelScales(self)
-            value = self.getAnalogChannelScales_() ;
+            %value = self.getAnalogChannelScales_() ;
+            value = self.AnalogChannelScales_ ;
         end  % function
         
         function value = get.AnalogChannelUnits(self)            
@@ -507,46 +514,30 @@ classdef Acquisition < ws.Subsystem
             result = self.getAnalogScalingCoefficients_() ;
         end
         
-        function set.AnalogChannelUnits(self,newValue)
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            self.AnalogChannelUnits_=ws.fif(isChangeable,newValue,self.AnalogChannelUnits_);
-            self.Parent.didSetAnalogChannelUnitsOrScales();
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+        function set.AnalogChannelUnits(self, newValue)
+            newValue = cellfun(@strtrim,newValue,'UniformOutput',false) ;
+            self.AnalogChannelUnits_ = newValue ;
         end  % function
         
         function set.AnalogChannelScales(self,newValue)
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            self.AnalogChannelScales_ = ws.fif(isChangeable,newValue,self.AnalogChannelScales_) ;
-            self.Parent.didSetAnalogChannelUnitsOrScales();
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            self.AnalogChannelScales_ = newValue ;
         end  % function
         
-        function setAnalogChannelUnitsAndScales(self,newUnitsRaw,newScales)
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
-            self.AnalogChannelUnits_ = ws.fif(isChangeable,newUnits,self.AnalogChannelUnits_);
-            self.AnalogChannelScales_ = ws.fif(isChangeable,newScales,self.AnalogChannelScales_);
-            self.Parent.didSetAnalogChannelUnitsOrScales();
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+        function setAnalogChannelUnitsAndScales(self, newUnitsRaw, newScales)
+            newUnits = cellfun(@strtrim, newUnitsRaw, 'UniformOutput',false) ;
+            self.AnalogChannelUnits_ = newUnits ;
+            self.AnalogChannelScales_ = newScales ;
         end  % function
         
-        function setSingleAnalogChannelUnits(self,i,newValueRaw)
-            isChangeableFull = (self.getNumberOfElectrodesClaimingAnalogChannel()==1) ;
-            isChangeable = ~isChangeableFull(i) ;
+        function setSingleAnalogChannelUnits(self, i, newValueRaw)
             newValue = strtrim(newValueRaw) ;
-            self.AnalogChannelUnits_{i} = ws.fif(isChangeable,newValue,self.AnalogChannelUnits_{i}) ;
-            self.Parent.didSetAnalogChannelUnitsOrScales();
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+            self.AnalogChannelUnits_{i} = newValue ;
         end  % function
         
-        function setSingleAnalogChannelScale(self,i,newValue)
-            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            isChangeable= ~isChangeableFull(i);
+        function setSingleAnalogChannelScale(self, i, newValue)
             if isfinite(newValue) && newValue>0 ,
-                self.AnalogChannelScales_(i) = ws.fif(isChangeable,newValue,self.AnalogChannelScales_(i)) ;
+                self.AnalogChannelScales_(i) = newValue ;
             end
-            self.Parent.didSetAnalogChannelUnitsOrScales();
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
         
         function setSingleAnalogChannelName(self, i, newValue)

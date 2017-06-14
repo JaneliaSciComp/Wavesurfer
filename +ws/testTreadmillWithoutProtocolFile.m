@@ -90,8 +90,8 @@ wsModel.Display.IsEnabled = true ;
 wsModel.Logging.IsOKToOverwrite=true ;
 
 wsModel.AreSweepsContinuous = true ;
-wsModel.Acquisition.AnalogChannelScales = [0.001 0.01] ;  % electrode, velocity
-wsModel.Acquisition.AnalogChannelUnits = {'mV' 'cm/s'} ;  % electrode, velocity
+wsModel.AIChannelScales = [0.001 0.01] ;  % electrode, velocity
+wsModel.AIChannelUnits = {'mV' 'cm/s'} ;  % electrode, velocity
 wsModel.Stimulation.IsDigitalChannelTimed = [true false] ;
 
 wsModel.clearStimulusLibrary() ;  % clear out pre-defined stimuli

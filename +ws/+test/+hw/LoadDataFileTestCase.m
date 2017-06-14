@@ -89,8 +89,8 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % These should not error, at the least...
             fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
             analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
-            analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
-            analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
+            analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
+            analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>

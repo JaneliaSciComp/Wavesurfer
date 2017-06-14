@@ -89,8 +89,8 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             self.verifyEqual(fs, 20000) ;
             analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;
             self.verifyEqual(length(analogChannelNames),4) ;
-            analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
-            analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
+            analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
+            analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
             digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>

@@ -25,6 +25,8 @@ classdef WavesurferModel < ws.Model
         IsDIChannelTerminalOvercommitted
         IsDOChannelTerminalOvercommitted
         IsProcessingIncomingCommand
+        AIChannelScales
+        AIChannelUnits
     end
     
     properties (Access=protected)
@@ -1878,7 +1880,7 @@ classdef WavesurferModel < ws.Model
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
+                channelScales=self.AIChannelScales(self.Acquisition.IsAnalogChannelActive);
                 scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
                 scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;                
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
@@ -2465,7 +2467,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function addDIChannel(self)
-            self.Acquisition.addDigitalChannel_() ;
+            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+            self.Acquisition.addDigitalChannel_(freeTerminalIDs) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didAddDigitalInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
@@ -3269,7 +3272,7 @@ classdef WavesurferModel < ws.Model
             looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
 
             looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
-            looperProtocol.AIChannelScales = self.Acquisition.AnalogChannelScales ;
+            looperProtocol.AIChannelScales = self.AIChannelScales ;
             looperProtocol.IsAIChannelActive = self.Acquisition.IsAnalogChannelActive ;
             looperProtocol.AITerminalIDs = self.Acquisition.AnalogTerminalIDs ;
             
@@ -4180,4 +4183,59 @@ classdef WavesurferModel < ws.Model
             result = self.CommandClient_ ;
         end        
     end  % public methods block
+    
+    methods
+        function value = get.AIChannelScales(self)
+            ephys = self.Ephys_ ;
+            electrodeManager = ephys.ElectrodeManager ;
+            aiChannelNames = self.Acquisition_.AnalogChannelNames ;
+            [channelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getMonitorScalingsByName(aiChannelNames);
+            value = ws.fif(isChannelScaleEnslaved, channelScalesFromElectrodes, self.Acquisition_.AnalogChannelScales);
+        end
+        
+        function value = getNumberOfElectrodesClaimingAIChannel(self)
+            ephys = self.Ephys ;
+            electrodeManager = ephys.ElectrodeManager ;
+            channelNames = self.Acquisition_.AnalogChannelNames ;
+            value = electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames) ;
+        end                        
+        
+        function set.AIChannelUnits(self,newValue)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            self.Acquisition_.AnalogChannelUnits=ws.fif(isChangeable,newValue,self.Acquisition_.AnalogChannelUnits);
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function set.AIChannelScales(self,newValue)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            self.Acquisition_.AnalogChannelScales = ws.fif(isChangeable,newValue,self.Acquisition_.AnalogChannelScales) ;
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setAIChannelUnitsAndScales(self,newUnitsRaw,newScales)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
+            self.Acquisition_.AnalogChannelUnits = ws.fif(isChangeable,newUnits,self.Acquisition_.AnalogChannelUnits);
+            self.Acquisition_.AnalogChannelScales = ws.fif(isChangeable,newScales,self.Acquisition_.AnalogChannelScales);
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setSingleAIChannelUnits(self,i,newValueRaw)
+            isChangeableFull = (self.getNumberOfElectrodesClaimingAIChannel()==1) ;
+            isChangeable = ~isChangeableFull(i) ;
+            newValue = strtrim(newValueRaw) ;
+            self.Acquisition_.AnalogChannelUnits{i} = ws.fif(isChangeable,newValue,self.Acquisition_.AnalogChannelUnits{i}) ;
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setSingleAIChannelScale(self,i,newValue)
+            isChangeableFull=(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            isChangeable= ~isChangeableFull(i);
+            if isfinite(newValue) && newValue>0 ,
+                self.Acquisition_.AnalogChannelScales(i) = ws.fif(isChangeable,newValue,self.Acquisition_.AnalogChannelScales(i)) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+    end        
 end  % classdef
