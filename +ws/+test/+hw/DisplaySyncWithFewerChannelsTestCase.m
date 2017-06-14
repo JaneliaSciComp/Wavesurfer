@@ -26,7 +26,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
             %wsController.saveProtocolFileGivenFileName(protocolFileName) ;
             wsController.fakeControlActuatedInTest('SaveProtocolGivenFileNameFauxControl', protocolFileName) ;
             
-            wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(3) = true ;
+            wsModel.IsAIChannelMarkedForDeletion(3) = true ;
             wsModel.deleteMarkedAIChannels() ;
 
             wsModel.play() ;  % this blocks

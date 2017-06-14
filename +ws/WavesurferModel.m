@@ -29,6 +29,7 @@ classdef WavesurferModel < ws.Model
         AIChannelScales
         AIChannelUnits
         IsDIChannelActive
+        IsAIChannelMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -4323,6 +4324,19 @@ classdef WavesurferModel < ws.Model
                 end
             end
         end  % function
+        
+        function result=get.IsAIChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available AI channels is
+            % active.
+            result = self.Acquisition_.getIsAnalogChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsAIChannelMarkedForDeletion(self,newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
         
     end        
 end  % classdef

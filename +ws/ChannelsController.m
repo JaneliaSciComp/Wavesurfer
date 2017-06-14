@@ -78,7 +78,7 @@ classdef ChannelsController < ws.Controller
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
-            isAnalogChannelMarkedForDeletion = self.Model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion = self.Model.IsAIChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
             self.Model.Acquisition.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;

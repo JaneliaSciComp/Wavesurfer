@@ -1455,14 +1455,14 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AIScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 set(self.AIIsActiveCheckboxes(i),'Value',self.Model.IsAIChannelActive(i), ...
                                                  'Enable',ws.onIff(isWavesurferIdle));                                     
-                set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsAnalogChannelMarkedForDeletion(i), ...
+                set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsAIChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
             % Deal with enablement of add/delete buttons
             nAITerminals = model.NAITerminals ;   
             areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
-            isAIChannelMarkedForDeletion = model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAIChannelMarkedForDeletion = model.IsAIChannelMarkedForDeletion ;
             isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
             set(self.AddAIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
             set(self.DeleteAIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAIChannelMarkedForDeletion)) ;

@@ -8,7 +8,7 @@ classdef Acquisition < ws.Subsystem
 %           % boolean arrays indicating which analog/digital channels are active
 %           % Setting these is the prefered way for outsiders to change which
 %           % channels are active
-        IsAnalogChannelMarkedForDeletion
+%         IsAnalogChannelMarkedForDeletion
         IsDigitalChannelMarkedForDeletion
     end
     
@@ -380,19 +380,19 @@ classdef Acquisition < ws.Subsystem
             result = resultForAllAIChannels(aiChannelIndex) ;
         end
         
-        function result=get.IsAnalogChannelMarkedForDeletion(self)
+        function result=getIsAnalogChannelMarkedForDeletion_(self)
             % Boolean array indicating which of the available analog channels is
             % active.
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-        function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
+        function setIsAnalogChannelMarkedForDeletion_(self, newValue)
             % Boolean array indicating which of the analog channels is
             % active.
-            if islogical(newIsAnalogChannelMarkedForDeletion) && ...
-                    isequal(size(newIsAnalogChannelMarkedForDeletion),size(self.IsAnalogChannelMarkedForDeletion)) ,
+            if islogical(newValue) && ...
+                    isequal(size(newValue),size(self.IsAnalogChannelMarkedForDeletion_)) ,
                 % Set the setting
-                self.IsAnalogChannelMarkedForDeletion_ = newIsAnalogChannelMarkedForDeletion;
+                self.IsAnalogChannelMarkedForDeletion_ = newValue;
             end
             self.Parent.didSetIsInputChannelMarkedForDeletion() ;
             %self.broadcast('DidSetIsChannelActive');

@@ -6,7 +6,7 @@ ws.clear() ;
 [wsModel,wsController] = wavesurfer() ;
 
 % delete all pre-existing channels
-wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(:) = true ;
+wsModel.IsAIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAIChannels() ;
 wsModel.Acquisition.IsDigitalChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDIChannels() ;
