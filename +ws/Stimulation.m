@@ -645,7 +645,6 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
     
     methods (Access=protected)
         function analogChannelScales=getAnalogChannelScales_(self)
-            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -664,7 +663,7 @@ classdef Stimulation < ws.StimulationSubsystem   % & ws.DependentProperties
                 [analogChannelScalesFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getCommandScalingsByName(channelNames);
-                analogChannelScales=fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
+                analogChannelScales=ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
             end
         end  % function
     end  % protected methods block

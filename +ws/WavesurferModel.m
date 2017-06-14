@@ -1,6 +1,6 @@
 classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
-
+ws.Trigg
     properties (Constant = true, Transient=true)
         NFastProtocols = 6
     end
