@@ -367,9 +367,9 @@ classdef (Abstract) Coding < handle
                             % Usually, the propertyName is the same as the field
                             % name, but we do some ad-hoc translations to support
                             % old files.
-                            if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            if isa(result,'ws.Acquisition') && isequal(fieldName, 'AnalogChannelIDs_') ,
                                 propertyName = 'AnalogTerminalIDs_' ;
-                            elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            elseif isa(result,'ws.Acquisition') && isequal(fieldName, 'DigitalChannelIDs_') ,
                                 propertyName = 'DigitalTerminalIDs_' ;      
                             elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
                                 propertyName = 'AnalogTerminalIDs_' ;
