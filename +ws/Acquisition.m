@@ -97,43 +97,9 @@ classdef Acquisition < ws.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function startingRun(self)
+        function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration)
             %fprintf('Acquisition::startingRun()\n');
-            %errors = [];
-            %abort = false;
             
-%             if isempty(self.TriggerScheme) ,
-%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-%                       'The acquisition trigger scheme can not be empty when the system is enabled.');
-%             end
-%             
-%             if isempty(self.TriggerScheme.Target) ,
-%                 error('wavesurfer:acquisitionsystem:invalidtrigger', ...
-%                       'The acquisition trigger scheme target can not be empty when the system is enabled.');
-%             end
-            
-            wavesurferModel = self.Parent ;
-            
-%             % Make the NI daq task, if don't have it already
-%             self.acquireHardwareResources_();
-
-%             % Set up the task triggering
-%             self.AnalogInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.AnalogInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-%             self.DigitalInputTask_.TriggerPFIID = self.TriggerScheme.Target.PFIID;
-%             self.DigitalInputTask_.TriggerEdge = self.TriggerScheme.Target.Edge;
-%             
-%             % Set for finite vs. continous sampling
-%             if wavesurferModel.AreSweepsContinuous ,
-%                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
-%                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_ContSamps';
-%             else
-%                 self.AnalogInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
-%                 self.AnalogInputTask_.AcquisitionDuration = self.Duration ;
-%                 self.DigitalInputTask_.ClockTiming = 'DAQmx_Val_FiniteSamps';
-%                 self.DigitalInputTask_.AcquisitionDuration = self.Duration ;
-%             end
-
             % Check that there's at least one active input channel
             NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
             NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
@@ -151,11 +117,11 @@ classdef Acquisition < ws.Subsystem
             else %self.NDigitalChannels<=32
                 dataType = 'uint32';
             end
-            if wavesurferModel.AreSweepsContinuous ,
+            if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
-            elseif wavesurferModel.AreSweepsFiniteDuration ,
+            elseif areSweepsFiniteDuration ,
                 self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else
@@ -163,10 +129,6 @@ classdef Acquisition < ws.Subsystem
                 self.RawAnalogDataCache_ = [];                
                 self.RawDigitalDataCache_ = [];                
             end
-            
-%             % Arm the AI task
-%             self.AnalogInputTask_.arm();
-%             self.DigitalInputTask_.arm();
         end  % function
         
 %         function completingRun(self)
@@ -514,12 +476,11 @@ classdef Acquisition < ws.Subsystem
             end
         end
         
-%         function value = get.AnalogChannelScales(self)
-%             value = self.getAnalogChannelScales_() ;
-%         end  % function
+        function value = get.AnalogChannelScales(self)
+            value = self.getAnalogChannelScales_() ;
+        end  % function
         
         function value = get.AnalogChannelUnits(self)            
-            import ws.*
             wavesurferModel=self.Parent;
             if isempty(wavesurferModel) ,
                 ephys=[];
@@ -538,7 +499,7 @@ classdef Acquisition < ws.Subsystem
                 [channelUnitsFromElectrodes, ...
                  isChannelScaleEnslaved] = ...
                     electrodeManager.getMonitorUnitsByName(channelNames);
-                value=fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+                value=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
             end
         end
         
@@ -547,9 +508,8 @@ classdef Acquisition < ws.Subsystem
         end
         
         function set.AnalogChannelUnits(self,newValue)
-            import ws.*
             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            self.AnalogChannelUnits_=fif(isChangeable,newValue,self.AnalogChannelUnits_);
+            self.AnalogChannelUnits_=ws.fif(isChangeable,newValue,self.AnalogChannelUnits_);
             self.Parent.didSetAnalogChannelUnitsOrScales();
             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
         end  % function
@@ -985,9 +945,9 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function value = getAnalogChannelScales_(self)
-            value = self.AnalogChannelScales_ ;
-        end  % function        
+%         function value = getAnalogChannelScales_(self)
+%             value = self.AnalogChannelScales_ ;
+%         end  % function        
     end  % protected methods block
     
 %     methods (Access=protected)

@@ -1,6 +1,6 @@
 classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
-ws.Trigg
+    
     properties (Constant = true, Transient=true)
         NFastProtocols = 6
     end
@@ -1140,12 +1140,30 @@ ws.Trigg
             % The logging subsystem has to wait until we obtain the analog
             % scaling coefficients from the Looper.
             try
-                for idx = 1: numel(self.Subsystems_) ,
-                    thisSubsystem = self.Subsystems_{idx} ;
-                    if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
-                        thisSubsystem.startingRun();
-                    end
+%                 for idx = 1: numel(self.Subsystems_) ,
+%                     thisSubsystem = self.Subsystems_{idx} ;
+%                     if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
+%                         thisSubsystem.startingRun();
+%                     end
+%                 end
+                if self.Ephys_.IsEnabled ,
+                    self.Ephys_.startingRun() ;
                 end
+                if self.Acquisition_.IsEnabled ,
+                    self.Acquisition.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration) ;
+                end
+                if self.Stimulation_.IsEnabled ,
+                    self.Stimulation_.startingRun() ;
+                end
+                if self.Display_.IsEnabled ,
+                    self.Display_.startingRun() ;
+                end
+                if self.Triggering_.IsEnabled ,
+                    self.Triggering_.startingRun() ;
+                end
+                if self.UserCodeManager.IsEnabled ,
+                    self.UserCodeManager_.startingRun() ;
+                end                
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();

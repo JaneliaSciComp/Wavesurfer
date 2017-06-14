@@ -30,8 +30,8 @@ classdef (Abstract) Subsystem < ws.Model
             self.setIsEnabledImplementation_(value);            
         end
         
-        function startingRun(self) %#ok<MANU>
-        end
+%         function startingRun(self) %#ok<MANU>
+%         end
         
         function completingRun(self) %#ok<MANU>
         end
