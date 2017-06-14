@@ -333,7 +333,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
             
             % Get the analog data and number of scans
-            analogData = wsModel.Acquisition.getLatestAnalogData();
+            analogData = wsModel.getLatestAIData();
             nScans = size(analogData,1);
             totalScansInSweepPrevious = self.TotalScansInSweep_;
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;

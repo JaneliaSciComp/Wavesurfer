@@ -263,7 +263,7 @@ classdef Logging < ws.Subsystem
             %fprintf('Just did self.DidCreateCurrentDataFile_ = false\n') ;
             
             % Set the chunk size for writing data to disk
-            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            nActiveAnalogChannels = sum(wavesurferModel.IsAIChannelActive) ;
             
             % For h5create() it is useful to set
             % ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels] since

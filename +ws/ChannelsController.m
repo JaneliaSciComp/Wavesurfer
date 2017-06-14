@@ -65,12 +65,12 @@ classdef ChannelsController < ws.Controller
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             %self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
-            self.Model.Acquisition.do('setSingleAnalogChannelUnits', i, newString) ;
+            self.Model.do('setSingleAIChannelUnits', i, newString) ;
         end
         
         function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
-            isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
+            isAnalogChannelActive=self.Model.IsAIChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
             self.Model.Acquisition.do('set', 'IsAnalogChannelActive', isAnalogChannelActive) ;             
@@ -176,10 +176,9 @@ classdef ChannelsController < ws.Controller
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
-            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive=self.Model.IsDIChannelActive;
             isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
-            %self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
-            self.Model.Acquisition.do('set', 'IsDigitalChannelActive', isDigitalChannelActive);
+            self.Model.do('set', 'IsDIChannelActive', isDigitalChannelActive);
         end
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>

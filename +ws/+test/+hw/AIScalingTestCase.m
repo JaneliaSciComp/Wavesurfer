@@ -41,7 +41,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             wsModel.play() ;
 
-            x = wsModel.Acquisition.getAnalogDataFromCache() ;
+            x = wsModel.getAIDataFromCache() ;
 
             wsModel.delete() ;  % have to do this now
             

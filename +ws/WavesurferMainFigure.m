@@ -701,7 +701,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             acq = displayModel.Parent.Acquisition ;
             aiChannelNames = acq.AnalogChannelNames ;            
             diChannelNames = acq.DigitalChannelNames ;
-            aiChannelUnits = acq.AnalogChannelUnits ;            
+            aiChannelUnits = wsModel.AIChannelUnits ;            
             
             % Update the individual plot colors and icons
             areYLimitsLockedTightToDataFromAIChannelIndex = displayModel.AreYLimitsLockedTightToDataForAnalogChannel ;

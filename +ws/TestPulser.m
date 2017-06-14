@@ -612,7 +612,7 @@ classdef TestPulser < ws.Model
         
         function value=get.MonitorUnits(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.analogChannelUnitsFromName(self.MonitorChannelName);           
+            value=wavesurferModel.aiChannelUnitsFromName(self.MonitorChannelName);           
         end  % function
         
         function result=get.MonitorUnitsPerElectrode(self)        
@@ -625,11 +625,11 @@ classdef TestPulser < ws.Model
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            acquisition=wavesurferModel.Acquisition;
+            %acquisition=wavesurferModel.Acquisition;
             %result=ws.objectArray('ws.SIUnit',[1 n]);
             result = cell(1,n) ;
             for i=1:n ,
-                unit = acquisition.analogChannelUnitsFromName(monitorChannelNames{i}) ;
+                unit = wavesurferModel.aiChannelUnitsFromName(monitorChannelNames{i}) ;
                 result{i} = unit ;
 %                 if ~isempty(unit) ,
 %                     result(i)=unit;
@@ -902,7 +902,7 @@ classdef TestPulser < ws.Model
         
         function value=get.MonitorChannelScale(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Acquisition.analogChannelScaleFromName(self.MonitorChannelName);
+            value=wavesurferModel.aiChannelScaleFromName(self.MonitorChannelName);
         end
         
         function value=get.CommandChannelScale(self)
@@ -937,10 +937,10 @@ classdef TestPulser < ws.Model
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            acquisition=wavesurferModel.Acquisition;
+            %acquisition=wavesurferModel.Acquisition;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=acquisition.analogChannelScaleFromName(monitorChannelNames{i});
+                result(i)=wavesurferModel.aiChannelScaleFromName(monitorChannelNames{i});
             end
         end
         

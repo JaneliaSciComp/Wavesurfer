@@ -3,11 +3,11 @@ classdef Acquisition < ws.Subsystem
     properties (Dependent = true)
         Duration   % s
         SampleRate  % Hz
-        IsAnalogChannelActive
-        IsDigitalChannelActive
-          % boolean arrays indicating which analog/digital channels are active
-          % Setting these is the prefered way for outsiders to change which
-          % channels are active
+%         IsAnalogChannelActive
+%         IsDigitalChannelActive
+%           % boolean arrays indicating which analog/digital channels are active
+%           % Setting these is the prefered way for outsiders to change which
+%           % channels are active
         IsAnalogChannelMarkedForDeletion
         IsDigitalChannelMarkedForDeletion
     end
@@ -42,19 +42,19 @@ classdef Acquisition < ws.Subsystem
         ActiveChannelIndexFromChannelIndex
     end
     
-    properties (Dependent=true, Hidden=true)        
-        AnalogChannelScales
-          % An array of scale factors to convert each analog channel from volts on the coax to 
-          % whatever native units each signal corresponds to in the world.
-          % This is in units of volts per ChannelUnits (see below)        
-          % Hidden b/c the values given by it can be overridden by the
-          % ElectrodeManager.
-        AnalogChannelUnits
-          % A list of SIUnit instances that describes the real-world units 
-          % for each analog channel.
-          % Hidden b/c the values given by it can be overridden by the
-          % ElectrodeManager.
-    end
+%     properties (Dependent=true, Hidden=true)        
+%         AnalogChannelScales
+%           % An array of scale factors to convert each analog channel from volts on the coax to 
+%           % whatever native units each signal corresponds to in the world.
+%           % This is in units of volts per ChannelUnits (see below)        
+%           % Hidden b/c the values given by it can be overridden by the
+%           % ElectrodeManager.
+%         AnalogChannelUnits
+%           % A list of SIUnit instances that describes the real-world units 
+%           % for each analog channel.
+%           % Hidden b/c the values given by it can be overridden by the
+%           % ElectrodeManager.
+%     end
     
     properties (Access = protected) 
         SampleRate_ = 20000  % Hz
@@ -106,8 +106,8 @@ classdef Acquisition < ws.Subsystem
             %fprintf('Acquisition::startingRun()\n');
             
             % Check that there's at least one active input channel
-            NActiveAnalogChannels = sum(self.IsAnalogChannelActive);
-            NActiveDigitalChannels = sum(self.IsDigitalChannelActive);
+            NActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
+            NActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
             NActiveInputChannels = NActiveAnalogChannels + NActiveDigitalChannels ;
             if NActiveInputChannels==0 ,
                 error('wavesurfer:NoActiveInputChannels' , ...
@@ -316,13 +316,14 @@ classdef Acquisition < ws.Subsystem
             result = self.AnalogChannelNames_ ;
         end
     
-        function setAnalogChannelName(self, i, newValue)
-            if ws.isString(newValue) && ~isempty(newValue) && ~self.isAnalogChannelName(newValue) && 1<=i && i<=self.NAnalogChannels ,
-                self.AnalogChannelNames_{i} = newValue ;
-                self.Parent.didChangeAnalogChannelName(i, newValue) ;
-            end
-            self.broadcast('Update') ;
-        end
+        % Doesn't seem to be called anywhere...
+%         function setAnalogChannelName(self, i, newValue)
+%             if ws.isString(newValue) && ~isempty(newValue) && ~self.isAnalogChannelName(newValue) && 1<=i && i<=self.NAnalogChannels ,
+%                 self.AnalogChannelNames_{i} = newValue ;
+%                 self.Parent.didChangeAnalogChannelName(i, newValue) ;
+%             end
+%             self.broadcast('Update') ;
+%         end
                 
         function result = get.DigitalChannelNames(self)
             result = self.DigitalChannelNames_ ;
@@ -350,22 +351,21 @@ classdef Acquisition < ws.Subsystem
             result=[self.IsAnalogChannelActive_ self.IsDigitalChannelActive_];
         end
         
-        function result=get.IsAnalogChannelActive(self)
+        function result = getIsAnalogChannelActive_(self)
             % Boolean array indicating which of the available analog channels is
             % active.
-            result =  self.IsAnalogChannelActive_ ;
+            result = self.IsAnalogChannelActive_ ;
         end
         
-        function set.IsAnalogChannelActive(self,newIsAnalogChannelActive)
+        function setIsAnalogChannelActive_(self, newValue)
             % Boolean array indicating which of the analog channels is
             % active.
-            if islogical(newIsAnalogChannelActive) && isequal(size(newIsAnalogChannelActive),size(self.IsAnalogChannelActive)) ,
+            if islogical(newValue) && isequal(size(newValue),size(self.IsAnalogChannelActive_)) ,
                 % Set the setting
-                self.IsAnalogChannelActive_ = newIsAnalogChannelActive;
+                self.IsAnalogChannelActive_ = newValue;
                 self.updateActiveChannelIndexFromChannelIndex_() ;
             end
-            self.Parent.didSetIsInputChannelActive() ;
-            %self.broadcast('DidSetIsChannelActive');
+            %self.Parent.didSetIsInputChannelActive() ;
         end
         
         function result = get.ActiveChannelIndexFromChannelIndex(self)
@@ -416,21 +416,21 @@ classdef Acquisition < ws.Subsystem
             %self.broadcast('DidSetIsChannelActive');
         end
         
-        function result=get.IsDigitalChannelActive(self)
+        function result=getIsDigitalChannelActive_(self)
             % Boolean array indicating which of the available digital channels is
             % active.
             result = self.IsDigitalChannelActive_ ;
         end
         
-        function set.IsDigitalChannelActive(self,newIsDigitalChannelActive)
+        function setIsDigitalChannelActive_(self, newValue)
             % Boolean array indicating which of the available channels is
             % active.
-            if islogical(newIsDigitalChannelActive) && isequal(size(newIsDigitalChannelActive),size(self.IsDigitalChannelActive)) ,
+            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelActive)) ,
                 % Set the setting
-                self.IsDigitalChannelActive_ = newIsDigitalChannelActive;
+                self.IsDigitalChannelActive_ = newValue;
                 self.updateActiveChannelIndexFromChannelIndex_() ;
             end
-            self.Parent.didSetIsInputChannelActive() ;            
+            %self.Parent.didSetIsInputChannelActive() ;            
         end
         
         function value = get.NActiveChannels(self)
@@ -482,59 +482,60 @@ classdef Acquisition < ws.Subsystem
 %             end
 %         end
         
-        function value = get.AnalogChannelScales(self)
+        function value = getAnalogChannelScales_(self)
             %value = self.getAnalogChannelScales_() ;
             value = self.AnalogChannelScales_ ;
         end  % function
         
-        function value = get.AnalogChannelUnits(self)            
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                value=self.AnalogChannelUnits_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [channelUnitsFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getMonitorUnitsByName(channelNames);
-                value=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
-            end
+        function value = getAnalogChannelUnits_(self)            
+            value=self.AnalogChannelUnits_;
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 value=self.AnalogChannelUnits_;
+%             else
+%                 channelNames=self.AnalogChannelNames;            
+%                 [channelUnitsFromElectrodes, ...
+%                  isChannelScaleEnslaved] = ...
+%                     electrodeManager.getMonitorUnitsByName(channelNames);
+%                 value=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+%             end
         end
         
         function result = get.AnalogScalingCoefficients(self)
             result = self.getAnalogScalingCoefficients_() ;
         end
         
-        function set.AnalogChannelUnits(self, newValue)
+        function setAnalogChannelUnits_(self, newValue)
             newValue = cellfun(@strtrim,newValue,'UniformOutput',false) ;
             self.AnalogChannelUnits_ = newValue ;
         end  % function
         
-        function set.AnalogChannelScales(self,newValue)
+        function setAnalogChannelScales_(self,newValue)
             self.AnalogChannelScales_ = newValue ;
         end  % function
         
-        function setAnalogChannelUnitsAndScales(self, newUnitsRaw, newScales)
+        function setAnalogChannelUnitsAndScales_(self, newUnitsRaw, newScales)
             newUnits = cellfun(@strtrim, newUnitsRaw, 'UniformOutput',false) ;
             self.AnalogChannelUnits_ = newUnits ;
             self.AnalogChannelScales_ = newScales ;
         end  % function
         
-        function setSingleAnalogChannelUnits(self, i, newValueRaw)
+        function setSingleAnalogChannelUnits_(self, i, newValueRaw)
             newValue = strtrim(newValueRaw) ;
             self.AnalogChannelUnits_{i} = newValue ;
         end  % function
         
-        function setSingleAnalogChannelScale(self, i, newValue)
+        function setSingleAnalogChannelScale_(self, i, newValue)
             if isfinite(newValue) && newValue>0 ,
                 self.AnalogChannelScales_(i) = newValue ;
             end
@@ -585,31 +586,31 @@ classdef Acquisition < ws.Subsystem
             value=any(strcmp(putativeName,self.DigitalChannelNames));
         end
                 
-        function result=analogChannelUnitsFromName(self,channelName)
-            if isempty(channelName) ,
-                result='';
-            else
-                iChannel=self.iAnalogChannelFromName(channelName);
-                if isempty(iChannel) || isnan(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelUnits{iChannel};
-                end
-            end
-        end
+%         function result=analogChannelUnitsFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result='';
+%             else
+%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 if isempty(iChannel) || isnan(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelUnits{iChannel};
+%                 end
+%             end
+%         end
         
-        function result=analogChannelScaleFromName(self,channelName)
-            if isempty(channelName) ,
-                result='';
-            else
-                iChannel=self.iAnalogChannelFromName(channelName);
-                if isempty(iChannel) || isnan(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelScales(iChannel);
-                end
-            end
-        end  % function
+%         function result=analogChannelScaleFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result='';
+%             else
+%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 if isempty(iChannel) || isnan(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelScales(iChannel);
+%                 end
+%             end
+%         end  % function
         
         function out = get.Duration(self)
             out = self.Parent.SweepDuration ;
@@ -765,24 +766,14 @@ classdef Acquisition < ws.Subsystem
             keyboard
         end
         
-        function scaledAnalogData = getLatestAnalogData(self)
-            % Get the data from the most-recent data available callback, as
-            % doubles.
-            rawAnalogData = self.LatestRawAnalogData_ ;
-            %data = self.LatestAnalogData_ ;
-            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scalingCoefficients = self.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
-%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-%             % scale the data by the channel scales
-%             if isempty(rawAnalogData) ,
-%                 scaledAnalogData=zeros(size(rawAnalogData));
-%             else
-%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
-%             end            
-        end  % function
+%         function scaledAnalogData = getLatestAnalogData(self)
+%             % Get the data from the most-recent data available callback, as
+%             % doubles.
+%             rawAnalogData = self.LatestRawAnalogData_ ;
+%             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
+%             scalingCoefficients = self.AnalogScalingCoefficients ;
+%             scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%         end  % function
 
         function data = getLatestRawAnalogData(self)
             % Get the data from the most-recent data available callback, as
@@ -844,42 +835,23 @@ classdef Acquisition < ws.Subsystem
             end
         end
 
-        function scaledAnalogData = getAnalogDataFromCache(self)
-            % Get the data from the main-memory cache, as double-precision floats.  This
-            % call unwraps the circular buffer for you.
-            rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scalingCoefficients = self.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
-            %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;
-%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-%             % scale the data by the channel scales
-%             if isempty(rawAnalogData) ,
-%                 scaledAnalogData=zeros(size(rawAnalogData));
-%             else
-%                 data = double(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 scaledAnalogData=bsxfun(@times,data,combinedScaleFactors);
-%             end            
-        end  % function
-
-        function scaledData = getSinglePrecisionDataFromCache(self)
-            % Get the data from the main-memory cache, as single-precision floats.  This
-            % call unwraps the circular buffer for you.
-            rawAnalogData = self.getRawAnalogDataFromCache();
-            channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
-            scalingCoefficients = self.AnalogScalingCoefficients ;
-            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
-%             inverseChannelScales=1./channelScales;  % if some channel scales are zero, this will lead to nans and/or infs            
-%             % scale the data by the channel scales
-%             if isempty(rawAnalogData) ,
-%                 scaledData=zeros(size(rawAnalogData),'single');
-%             else
-%                 data = single(rawAnalogData);  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 combinedScaleFactors = 3.0517578125e-4 * inverseChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                 scaledData=bsxfun(@times,data,combinedScaleFactors);
-%             end            
-        end  % function
+%         function scaledAnalogData = getAnalogDataFromCache(self)
+%             % Get the data from the main-memory cache, as double-precision floats.  This
+%             % call unwraps the circular buffer for you.
+%             rawAnalogData = self.getRawAnalogDataFromCache();
+%             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
+%             scalingCoefficients = self.AnalogScalingCoefficients ;
+%             scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
+%         end  % function
+% 
+%         function scaledData = getSinglePrecisionDataFromCache(self)
+%             % Get the data from the main-memory cache, as single-precision floats.  This
+%             % call unwraps the circular buffer for you.
+%             rawAnalogData = self.getRawAnalogDataFromCache();
+%             channelScales=self.AnalogChannelScales(self.IsAnalogChannelActive);
+%             scalingCoefficients = self.AnalogScalingCoefficients ;
+%             scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%         end  % function
         
         function data = getRawAnalogDataFromCache(self)
             % Get the data from the main-memory cache, as int16's.  This

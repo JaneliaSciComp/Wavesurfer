@@ -69,7 +69,13 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
             error('Unable to read channel scale information from file.');
         end
         try
-            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            if isfield(dataFileAsStruct.header, 'IsAIChannelActive') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                isActive = logical(dataFileAsStruct.header.IsAIChannelActive) ;
+            else
+                % Fallback for older files
+                isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            end
         catch
             error('Unable to read active/inactive channel information from file.');
         end

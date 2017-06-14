@@ -43,7 +43,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
             wsModel.play() ;
 
-            x = wsModel.Acquisition.getAnalogDataFromCache() ;
+            x = wsModel.getAIDataFromCache() ;
 
             wsModel.delete() ;
             

@@ -30,7 +30,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.addAIChannel() ;
                                                       
             wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Acquisition.IsAnalogChannelActive = [true true false true true true true false];
+            wsModel.IsAIChannelActive = [true true false true true true true false];
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;

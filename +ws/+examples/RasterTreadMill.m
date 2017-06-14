@@ -126,7 +126,7 @@ classdef RasterTreadMill < ws.UserClass
         
         function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % get data
-            analogData = wsModel.Acquisition.getLatestAnalogData();
+            analogData = wsModel.getLatestAIData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             
             nScans = size(analogData,1) ;
