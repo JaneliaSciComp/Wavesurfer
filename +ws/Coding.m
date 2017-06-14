@@ -371,9 +371,9 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'AnalogTerminalIDs_' ;
                             elseif isa(result,'ws.Acquisition') && isequal(fieldName, 'DigitalChannelIDs_') ,
                                 propertyName = 'DigitalTerminalIDs_' ;      
-                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'AnalogChannelIDs_') ,
                                 propertyName = 'AnalogTerminalIDs_' ;
-                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'DigitalChannelIDs_') ,
                                 propertyName = 'DigitalTerminalIDs_' ;      
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'Sources_') ,
                                 propertyName = 'CounterTriggers_' ;      
