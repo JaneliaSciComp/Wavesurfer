@@ -944,10 +944,6 @@ classdef Acquisition < ws.Subsystem
                 parent.acquisitionSweepComplete();
             end
         end  % function
-        
-%         function value = getAnalogChannelScales_(self)
-%             value = self.AnalogChannelScales_ ;
-%         end  % function        
     end  % protected methods block
     
 %     methods (Access=protected)
@@ -1064,5 +1060,4 @@ classdef Acquisition < ws.Subsystem
         end  % function
     end  % protected methods block
 
-    
 end  % classdef
