@@ -2,7 +2,7 @@ classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true)
         %Duration   % s
-        SampleRate  % Hz
+%        SampleRate  % Hz
 %         IsAnalogChannelActive
 %         IsDigitalChannelActive
 %           % boolean arrays indicating which analog/digital channels are active
@@ -14,8 +14,8 @@ classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-        AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-        DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+%         AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+%         DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogTerminalNames % the physical channel name for each analog channel
         DigitalTerminalNames  % the physical channel name for each digital channel
         TerminalNames
@@ -90,10 +90,6 @@ classdef Acquisition < ws.Subsystem
     
     properties (Access=protected, Transient=true)
         AnalogScalingCoefficientsCache_  % a cache of the analog input scaling coefficients, populated at the start of a run, set to empty at end of run
-    end
-    
-    events 
-        DidSetSampleRate
     end
     
     methods
@@ -556,15 +552,14 @@ classdef Acquisition < ws.Subsystem
             %self.Parent.didSetDigitalInputChannelName(didSucceed,oldValue,newValue);
         end
         
-        function setSingleAnalogTerminalID(self, i, newValue)
+        function setSingleAnalogTerminalID_(self, i, newValue)
             if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
                 end
             end
-            self.Parent.didSetAnalogInputTerminalID();
+            %self.Parent.didSetAnalogInputTerminalID();
         end
         
         function value=isChannelName(self,putativeName)
@@ -619,39 +614,25 @@ classdef Acquisition < ws.Subsystem
             out = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate, self.Duration) ;
         end  % function
         
-        function out = get.SampleRate(self)
+        function out = getSampleRate_(self)
             out = self.SampleRate_ ;
         end  % function
         
-        function out = get.AnalogDeviceNames(self)
-            %out = self.AnalogDeviceNames_ ;
-            deviceName = self.Parent.DeviceName ;
-            out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
+        function setSampleRate_(self, newValue)
+            self.SampleRate_ = newValue ;
         end  % function
         
-        function out = get.DigitalDeviceNames(self)
-            %out = self.DigitalDeviceNames_ ;
-            deviceName = self.Parent.DeviceName ;
-            out = repmat({deviceName}, size(self.DigitalChannelNames)) ;             
-        end  % function
-        
-        function set.SampleRate(self, newValue)
-            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
-                % Constrain value appropriately
-                isValueValid = true ;
-                newValue = double(newValue) ;
-                sampleRate = self.Parent.coerceSampleFrequencyToAllowedValue(newValue) ;
-                self.SampleRate_ = sampleRate ;
-                self.Parent.didSetAcquisitionSampleRate(sampleRate);
-            else
-                isValueValid = false ;
-            end
-            self.broadcast('DidSetSampleRate');
-            if ~isValueValid ,
-                error('ws:invalidPropertyValue', ...
-                      'SampleRate must be a positive finite numeric scalar');
-            end                
-        end  % function
+%         function out = get.AnalogDeviceNames(self)
+%             %out = self.AnalogDeviceNames_ ;
+%             deviceName = self.Parent.DeviceName ;
+%             out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
+%         end  % function
+%         
+%         function out = get.DigitalDeviceNames(self)
+%             %out = self.DigitalDeviceNames_ ;
+%             deviceName = self.Parent.DeviceName ;
+%             out = repmat({deviceName}, size(self.DigitalChannelNames)) ;             
+%         end  % function        
         
 %         function output = get.TriggerScheme(self)
 %             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
@@ -729,24 +710,24 @@ classdef Acquisition < ws.Subsystem
             terminalID=self.AnalogTerminalIDs(iChannel);
         end  % function
 
-        function electrodesRemoved(self)
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
+%         function electrodesRemoved(self)
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
 
-        function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
-            % Called by the parent WavesurferModel to notify that the electrode
-            % may have changed.
-            
-            % If the changed property is a command property, we can safely
-            % ignore
-            %fprintf('Acquisition.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
-            if any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
-                return
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
+%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
+%             % Called by the parent WavesurferModel to notify that the electrode
+%             % may have changed.
+%             
+%             % If the changed property is a command property, we can safely
+%             % ignore
+%             %fprintf('Acquisition.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
+%             if any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
+%                 return
+%             end
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
         
 %         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
 %             wavesurferModel=self.Parent;
@@ -922,29 +903,22 @@ classdef Acquisition < ws.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function newChannelName = addAnalogChannel(self)
-            %deviceName = self.Parent.DeviceName ;
-            
-            %newChannelDeviceName = deviceName ;
+        function newChannelName = addAnalogChannel_(self)
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
                                           0, ...
                                           max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AI%d',newTerminalID) ;
             newChannelName = newChannelPhysicalName ;
             
-            %self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
-            %self.AnalogTerminalNames_ =  [self.AnalogTerminalNames_ {newChannelPhysicalName}] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             self.updateActiveChannelIndexFromChannelIndex_() ;
             
-            self.Parent.didAddAnalogInputChannel() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
+            %self.Parent.didAddAnalogInputChannel() ;
         end  % function
 
         function wasDeleted = deleteMarkedAnalogChannels_(self)

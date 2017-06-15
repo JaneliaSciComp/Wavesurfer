@@ -99,7 +99,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
                %model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
 
-               model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+               model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
                
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               

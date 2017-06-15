@@ -297,6 +297,13 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager.broadcast('Update');
             %self.broadcast('Update');  % is this necessary?
         end  % function
+        
+        function didSetDeviceName(self, deviceName)
+            %fprintf('ws.Triggering::didSetDevice() called\n') ;
+            %dbstack
+            self.TestPulser_.didSetDeviceName(deviceName) ;
+        end        
+        
     end  % public methods block
 
 end  % classdef

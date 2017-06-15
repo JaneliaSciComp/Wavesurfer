@@ -41,7 +41,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         DoColorTraces_ = true % if false, traces are black/white
         XSpan_ 
         UpdateRate_
-        XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         IsXSpanSlavedToAcquistionDuration_
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
@@ -56,6 +55,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     properties (Access = protected, Transient=true)
+        XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
@@ -352,7 +352,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.XOffset = 0;
             %self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
             %self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
-            self.XAutoScroll_ = (self.XSpan<self.Parent.Acquisition.Duration) ;
+            self.XAutoScroll_ = (self.XSpan<self.Parent.SweepDuration) ;
             self.broadcast('ClearData') ;
         end  % function
         

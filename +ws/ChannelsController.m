@@ -48,7 +48,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model.Acquisition.do('setSingleAnalogTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>

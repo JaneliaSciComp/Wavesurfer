@@ -19,13 +19,13 @@ wsModel.deleteMarkedDOChannels() ;
 wsModel.Acquisition.addAnalogChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'electrode') ;
-wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,0) ;
+wsModel.setSingleAIChannelTerminalID(channelIndex,0) ;
 
 % add velocity AI channel
 wsModel.Acquisition.addAnalogChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'velocity') ;
-wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,1) ;
+wsModel.setSingleAIChannelTerminalID(channelIndex,1) ;
 
 % add photodiode DI channel
 wsModel.addDIChannel() ;

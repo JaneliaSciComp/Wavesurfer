@@ -27,7 +27,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
-            wsModel.Acquisition.Duration = 10 ;  % s
+            wsModel.SweepDuration = 10 ;  % s
             %wsModel.Acquisition.SampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled = true ;
             %wsModel.Stimulation.SampleRate=20000;  % Hz
@@ -74,7 +74,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             
             % Now start and stop a sweep before it is finished; the data
             % file should only contain the collected data rather than
-            % padding with zeros up to wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate
+            % padding with zeros up to wsModel.SweepDuration * wsModel.Acquisition.SampleRate
             
             % Set the trigger back to the Built-in Trigger
             wsModel.AcquisitionTriggerIndex = 1 ;
@@ -93,7 +93,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
                 outputData = ws.loadDataFile( fullfile(dataDirNameAbsolute, filesCreated(1).name) );
                 if isfield(outputData,'sweep_0001') ,
                     numberOfScansCollected = size(outputData.sweep_0001.analogScans,1) ;
-                    if  numberOfScansCollected>0 && numberOfScansCollected < wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate ,
+                    if  numberOfScansCollected>0 && numberOfScansCollected < wsModel.SweepDuration * wsModel.Acquisition.SampleRate ,
                         dataWrittenCorrectly = true ;
                     else
                         dataWrittenCorrectly = false ;

@@ -41,9 +41,9 @@ classdef TestPulser < ws.Model
         %Command
         %CommandInVolts
         NSweepsCompletedThisRun
-        OutputDeviceNames
+        %OutputDeviceNames
         CommandTerminalID
-        InputDeviceNames
+        %InputDeviceNames
         MonitorTerminalID
         MonitorChannelScale
         CommandChannelScale
@@ -123,6 +123,7 @@ classdef TestPulser < ws.Model
         NSweepsCompletedAsOfLastYLimitsUpdate_
         %IsReady_
         GainOrResistanceUnitsPerElectrodeCached_
+        DeviceName_
     end    
     
     events
@@ -849,15 +850,15 @@ classdef TestPulser < ws.Model
             end
         end
         
-        function value=get.InputDeviceNames(self)
-            wavesurferModel=self.Parent.Parent;            
-            value=wavesurferModel.Acquisition.AnalogDeviceNames ;
-        end
-        
-        function value=get.OutputDeviceNames(self)
-            wavesurferModel=self.Parent.Parent;
-            value=wavesurferModel.Stimulation.AnalogDeviceNames ;
-        end
+%         function value=get.InputDeviceNames(self)
+%             wavesurferModel=self.Parent.Parent;            
+%             value=wavesurferModel.Acquisition.AnalogDeviceNames ;
+%         end
+%         
+%         function value=get.OutputDeviceNames(self)
+%             wavesurferModel=self.Parent.Parent;
+%             value=wavesurferModel.Stimulation.AnalogDeviceNames ;
+%         end
         
         function result=get.CommandTerminalIDPerElectrode(self)
             ephys=self.Parent_;
@@ -1126,8 +1127,8 @@ classdef TestPulser < ws.Model
                 % fprintf('About to create the input task...\n');
                 self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
                 monitorTerminalIDs=self.MonitorTerminalIDPerElectrode;
-                for i=1:nElectrodes
-                    self.InputTask_.createAIVoltageChan(self.InputDeviceNames{i},monitorTerminalIDs(i));  % defaults to differential
+                for i=1:nElectrodes ,
+                    self.InputTask_.createAIVoltageChan(self.DeviceName_, monitorTerminalIDs(i));  % defaults to differential
                 end
                 deviceName = self.Parent.Parent.DeviceName ;
                 clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
@@ -1140,9 +1141,8 @@ classdef TestPulser < ws.Model
                 % fprintf('About to create the output task...\n');
                 self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
                 commandTerminalIDs=self.CommandTerminalIDPerElectrode;
-                outputDeviceNames = self.OutputDeviceNames ;
                 for i=1:nElectrodes ,
-                    self.OutputTask_.createAOVoltageChan(outputDeviceNames{i},commandTerminalIDs(i));
+                    self.OutputTask_.createAOVoltageChan(self.DeviceName_, commandTerminalIDs(i));
                 end
                 self.OutputTask_.cfgSampClkTiming(self.SamplingRate,'DAQmx_Val_ContSamps',nScans);
 
@@ -1623,6 +1623,14 @@ classdef TestPulser < ws.Model
             decodeUnwrappedEncodingCore_@ws.Coding(self, encoding) ;
             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
         end  % function
+    end
+    
+    methods
+        function didSetDeviceName(self, deviceName)
+            %fprintf('ws.Triggering::didSetDevice() called\n') ;
+            %dbstack
+            self.DeviceName_ = deviceName ;
+        end        
     end
     
 end  % classdef

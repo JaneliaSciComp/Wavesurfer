@@ -234,10 +234,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % acquisition, used to calculate the gain. Also calculates DeltaTime_,
             % number of scans in first one percent and maximum number of
             % scans per sweep.
-            self.FirstOnePercentEndTime_ = wsModel.Acquisition.Duration/100;
+            self.FirstOnePercentEndTime_ = wsModel.SweepDuration/100;
             self.DeltaTime_ = 1/wsModel.Acquisition.SampleRate ;  % s
             self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.DeltaTime_);
-            self.MaximumNumberOfScansPerSweep_ = wsModel.Acquisition.SampleRate * wsModel.Acquisition.Duration;
+            self.MaximumNumberOfScansPerSweep_ = wsModel.Acquisition.SampleRate * wsModel.SweepDuration;
             
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
@@ -249,7 +249,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % we can just plot the original downsampled data. Plotting the
             % downsampled data in this way is much faster than plotting all
             % the data.
-            self.MaximumDownsamplingRatio_ = ws.ratioSubsampling(self.DeltaTime_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
+            self.MaximumDownsamplingRatio_ = ws.ratioSubsampling(self.DeltaTime_, 0.1*wsModel.SweepDuration, self.ScreenSize_(4));
             if isempty(self.MaximumDownsamplingRatio_ )
                 self.MaximumDownsamplingRatio_ =1;
             end
@@ -648,7 +648,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
                         'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
                     
-                    xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+                    xlabel(self.(whichAxis),'v_r_o_t [?/s]');
                     if strcmp(whichHeatmap{:},'Forward')
                         ylabel(self.(whichAxis),'v_f_w [mm/s]');
                         set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
@@ -780,7 +780,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             dball=8; %ball diameter in mm
             c_factors=[1.1 0.96]; %this many pixel of rear camera correspond to 1 pixel of Cam1/2 (=pix_c/pix_rear)
             mmperpix_c=mmperpix_r.*c_factors; %this many mm ball displacement correspond to 1 pixel of treadmill cameras
-            degrpermmball=360/(pi*dball); %pi*dball=Cball==360°
+            degrpermmball=360/(pi*dball); %pi*dball=Cball==360?
             
             panorama=240; %panorama width in degrees, important for comparing cumulative rotation to arena signal
             

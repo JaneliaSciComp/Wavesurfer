@@ -699,7 +699,7 @@ classdef Triggering < ws.Subsystem
             % self.broadcast('Update');            
         end  % function
         
-        function didSetDevice(self, deviceName, nCounters, nPFITerminals)
+        function didSetDeviceName(self, deviceName, nCounters, nPFITerminals)
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;

@@ -32,7 +32,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             wsModel.IsAIChannelActive(5) = false ;
             nActiveAnalogChannels = nAnalogChannels - nInactiveAnalogChannels ;
             self.verifyEqual(wsModel.Acquisition.NActiveAnalogChannels, nActiveAnalogChannels, 'Number of active analog channels is wrong') ;
-            wsModel.Acquisition.Duration = 0.1 ;  % sec
+            wsModel.SweepDuration = 0.1 ;  % sec
 
             outputFileAbsolutePath = [tempname() '.h5'] ;
             [outputFileDirName, outputFileStem] = fileparts(outputFileAbsolutePath) ;

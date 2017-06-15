@@ -31,6 +31,7 @@ classdef WavesurferModel < ws.Model
         IsDIChannelActive
         IsAIChannelMarkedForDeletion
         IsDIChannelMarkedForDeletion
+        AcquisitionSampleRate  % Hz
     end
     
     properties (Access=protected)
@@ -221,7 +222,9 @@ classdef WavesurferModel < ws.Model
         DidChangeNumberOfInputChannels
         RequestLayoutForAllWindows
         LayoutAllWindows
+        DidSetAcquisitionSampleRate
     end
+    
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
@@ -814,9 +817,10 @@ classdef WavesurferModel < ws.Model
             % Called by the Ephys to notify that one or more electrodes
             % was removed
             % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodesRemoved();
-            end
+            self.didSetAnalogChannelUnitsOrScales() ;      
+%             if ~isempty(self.Acquisition)
+%                 self.Acquisition.electrodesRemoved();
+%             end
             if ~isempty(self.Stimulation)
                 self.Stimulation.electrodesRemoved();
             end
@@ -826,9 +830,12 @@ classdef WavesurferModel < ws.Model
             % Called by the Ephys to notify that the electrode
             % may have changed.
             % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodeMayHaveChanged(electrode,propertyName);
-            end
+%             if ~isempty(self.Acquisition)
+%                 self.Acquisition.electrodeMayHaveChanged(electrode,propertyName);
+%             end
+            if ~any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
+                self.didSetAnalogChannelUnitsOrScales();
+            end            
             if ~isempty(self.Stimulation)
                 self.Stimulation.electrodeMayHaveChanged(electrode,propertyName);
             end
@@ -846,6 +853,11 @@ classdef WavesurferModel < ws.Model
                 ephys.didSetAnalogChannelUnitsOrScales();
             end            
             self.broadcast('UpdateChannels') ;
+        end
+        
+        function setSingleAIChannelTerminalID(self, i, newValue)
+            self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+            self.didSetAnalogInputTerminalID();
         end
         
         function didSetAnalogInputTerminalID(self)
@@ -2458,9 +2470,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function channelName = addAIChannel(self)
-            channelName = self.Acquisition_.addAnalogChannel() ;
-        end
+%         function channelName = addAIChannel(self)
+%             channelName = self.Acquisition_.addAnalogChannel() ;
+%         end
         
         function channelName = addAOChannel(self)
             channelName = self.Stimulation_.addAnalogChannel() ;
@@ -3676,8 +3688,9 @@ classdef WavesurferModel < ws.Model
         function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
             self.Acquisition.didSetDeviceName() ;
             self.Stimulation.didSetDeviceName() ;
-            self.Triggering_.didSetDevice(deviceName, nCounters, nPFITerminals) ;
+            self.Triggering_.didSetDeviceName(deviceName, nCounters, nPFITerminals) ;
             %self.Display.didSetDeviceName() ;
+            self.Ephys_.didSetDeviceName(deviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)
@@ -4363,6 +4376,39 @@ classdef WavesurferModel < ws.Model
             [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName(i, newValue, allChannelNames) ;
             self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
         end
+        
+        function set.AcquisitionSampleRate(self, newValue)
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.Acquisition_.setSampleRate(sampleRate) ;
+                self.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
+            end
+            self.broadcast('DidSetAcquisitionSampleRate');
+            if ~isValueValid ,
+                error('ws:invalidPropertyValue', ...
+                      'AcquisitionSampleRate must be a positive finite numeric scalar');
+            end                
+            
+            
+            
+            self.Acquisition_.setSampleRate_(newValue) ;
+            sampleRate = self.Acquisition.getSampleRate_() ;
+            self.didSetAcquisitionSampleRate(sampleRate) ;
+        end  % function
+        
+        function out = get.AcquisitionSampleRate(self)
+            out = self.Acquisition.getSampleRate_() ;
+        end  % function
+        
+        function newChannelName = addAIChannel(self)
+            newChannelName = self.Acquisition_.addAnalogChannel_() ;            
+            self.didAddAnalogInputChannel() ;
+        end  % function
         
     end        
 end  % classdef

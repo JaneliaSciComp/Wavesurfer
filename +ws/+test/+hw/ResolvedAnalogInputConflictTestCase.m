@@ -18,7 +18,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
 
             wsModel.Acquisition.addAnalogChannel() ;
             wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.setSingleAnalogTerminalID(2,0) ;  % this introduces a conflict
+            wsModel.setSingleAIChannelTerminalID(2,0) ;  % this introduces a conflict
             try
                 wsModel.play() ;
             catch me
@@ -28,7 +28,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
                     rethrow(me) ;
                 end
             end
-            wsModel.Acquisition.setSingleAnalogTerminalID(2,1) ;  % this resolves the conflict
+            wsModel.setSingleAIChannelTerminalID(2,1) ;  % this resolves the conflict
             wsModel.play() ;  % this errors, even though it shouldn't...
             self.verifyTrue(true) ;
         end  % function
