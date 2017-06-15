@@ -27,7 +27,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;

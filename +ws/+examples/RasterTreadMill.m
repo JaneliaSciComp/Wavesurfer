@@ -419,7 +419,7 @@ classdef RasterTreadMill < ws.UserClass
         function synchronizeTransientStateToPersistentState_(self)
             rootModel = self.Parent_.Parent ;
             if isa(rootModel,'ws.WavesurferModel') ,
-                self.SampleRate_ = rootModel.Acquisition.SampleRate ;
+                self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;
                 self.BinCenters_ = self.BinWidth_/2 : self.BinWidth_ : self.TreadMillLength;
                 if rootModel.IsITheOneTrueWavesurferModel ,

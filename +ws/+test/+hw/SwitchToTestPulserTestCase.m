@@ -25,7 +25,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.addDOChannel() ;                                 
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;

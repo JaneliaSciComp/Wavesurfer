@@ -29,7 +29,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
                                                       
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.IsAIChannelActive = [true true false true true true true false];
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
@@ -64,7 +64,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_8_AIs.m'), ...
 %                                               isCommandLineOnly);
 % 
-%             wsModel.Acquisition.SampleRate=20000;  % Hz
+%             wsModel.AcquisitionSampleRate=20000;  % Hz
 %             wsModel.Stimulation.IsEnabled=true;
 %             wsModel.Stimulation.SampleRate=20000;  % Hz
 %             wsModel.Display.IsEnabled=true;

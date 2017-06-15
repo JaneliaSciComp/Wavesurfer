@@ -30,7 +30,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
             wsModel.Stimulation.SampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
@@ -87,7 +87,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
             
             % These should not error, at the least...
-            fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
+            fs = dataAsStruct.header.AcquisitionSampleRate;   %#ok<NASGU> % Hz
             analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
             analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
