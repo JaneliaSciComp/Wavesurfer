@@ -885,8 +885,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             % Display panel
             set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
-            set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
-            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+            set(self.SpanEdit, 'String', sprintf('%.6g',model.XSpan));
+            set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);

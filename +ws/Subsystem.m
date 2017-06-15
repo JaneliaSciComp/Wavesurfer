@@ -27,7 +27,7 @@ classdef (Abstract) Subsystem < ws.Model
         end
         
         function set.IsEnabled(self, value)
-            self.setIsEnabledImplementation_(value);            
+            self.setIsEnabledImplementation_(value);
         end
         
 %         function startingRun(self) %#ok<MANU>

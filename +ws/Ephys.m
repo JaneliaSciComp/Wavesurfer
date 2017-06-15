@@ -1,112 +1,35 @@
 classdef Ephys < ws.Subsystem
-    %Ephys  Wavesurfer subsystem responsible for most Ephys-related behaviors.
-    %
-    %    The Ephys subsystem manages electrode configuration and settings
-    %    communication for Wavesurfer electrophysiology runs.
-    
-    %%
     properties (Access = protected)
         ElectrodeManager_
         TestPulser_
     end
     
-    %%
     properties (Dependent=true, SetAccess=immutable)
         ElectrodeManager  % provides public access to ElectrodeManager_
         TestPulser  % provides public access to TestPulser_
     end    
       
-    %%
-%     events
-%         MayHaveChanged
-%     end
-
-    %%
     methods
-        %%
         function self = Ephys(parent)
-            self@ws.Subsystem(parent);
+            self@ws.Subsystem(parent) ;
             self.IsEnabled=true;            
-            self.ElectrodeManager_=ws.ElectrodeManager(self);
-            self.TestPulser_=ws.TestPulser(self);
+            self.ElectrodeManager_ = ws.ElectrodeManager(self) ;
+            self.TestPulser_ = ws.TestPulser(self) ;
         end
         
-        %%
         function delete(self)
-            %self.Parent=[];  % eliminate reference to host WavesurferModel object
-            %delete(self.TestPulser_);  % do i need this?  No.
-            %delete(self.ElectrodeManager_);  % do i need this?  No.
             self.TestPulser_ = [] ;
             self.ElectrodeManager_ = [] ;
         end
         
-        %%
         function out = get.TestPulser(self)
             out=self.TestPulser_;
         end
         
-        %%
         function out = get.ElectrodeManager(self)
             out=self.ElectrodeManager_;
         end
         
-        %%
-%         function initializeUsingMDF(self, mdfData)
-%             % This method is the public interface to establishing hardware other
-%             % configuration information defined in the machine data file.  It is called from
-%             % WavesurferModel.initializeFromMDF() when it is first loaded with a machine data file.
-%             
-%             self.ElectrodeManager_=ws.ElectrodeManager('Parent',self);            
-%             for idx = 1:1000 ,
-%                 electrodeId = sprintf('electrode%d', idx);
-%                 
-%                 if ~isfield(mdfData, [electrodeId 'Type'])
-%                     break;
-%                 end
-%                 
-%                 if isempty(mdfData.([electrodeId 'Type']))
-%                     continue;
-%                 end
-%                 
-%                 % If you have p-v pairs defined in mdf entries such as 'electrode1Properties',
-%                 % they get applied here in the constructor for the device-specific
-%                 % electrode class.
-%                 electrodeType=mdfData.([electrodeId 'Type']);
-%                 electrodeClassName=[electrodeType 'Electrode'];
-%                 electrodeFullClassName=['ws.ephys.vendor.' electrodeClassName];
-%                 electrode = feval(electrodeFullClassName, self, mdfData.([electrodeId 'Properties']){:});
-%                 
-%                 % Sort out the output and input channel names.
-%                 electrode.VoltageCommandChannelName = mdfData.([electrodeId 'VoltageCommandChannelName']);
-%                 electrode.CurrentCommandChannelName = mdfData.([electrodeId 'CurrentCommandChannelName']);
-%                 electrode.VoltageMonitorChannelName = mdfData.([electrodeId 'VoltageMonitorChannelName']);
-%                 electrode.CurrentMonitorChannelName = mdfData.([electrodeId 'CurrentMonitorChannelName']);
-%                 
-%                 % DAQ channels related to configuration reading/writing, where applicable.
-%                 electrode.setConfigurationChannels(mdfData.([electrodeId 'ConfigChannelNames']));
-%                 
-%                 % If the electrode name was not set from a PV pair in the mdf give it a
-%                 % reasonable default.
-%                 if isempty(electrode.Name)
-%                     electrode.Name = sprintf('Electrode %d', numel(self.Electrodes_) + 1);
-%                 end
-%                 
-%                 self.ElectrodeManager_.addElectrode(electrode)
-%                 %self.Electrodes{end + 1} = electrode;
-%             end
-%             
-%             self.TestPulser_=ws.TestPulser('Parent',self);
-%         end
-        
-%         function acquireHardwareResources(self) %#ok<MANU>
-%             % Nothing to do here, maybe
-%         end  % function
-% 
-%         function releaseHardwareResources(self) %#ok<MANU>
-%             % Nothing to do here, maybe
-%         end
-
-        %%
         function electrodeMayHaveChanged(self,electrode,propertyName)
             % Called by the ElectrodeManager to notify that the electrode
             % may have changed.
@@ -120,7 +43,6 @@ classdef Ephys < ws.Subsystem
             end
         end
 
-        %%
         function electrodeWasAdded(self,electrode)
             % Called by the ElectrodeManager when an electrode is added.
             % Currently, informs the TestPulser of the change.
@@ -129,7 +51,6 @@ classdef Ephys < ws.Subsystem
             end
         end
 
-        %%
         function electrodesRemoved(self)
             % Called by the ElectrodeManager when one or more electrodes
             % are removed.
@@ -142,7 +63,6 @@ classdef Ephys < ws.Subsystem
             end
         end
 
-        %% 
         function self=didSetAnalogChannelUnitsOrScales(self)
             testPulser=self.TestPulser;
             if ~isempty(testPulser) ,
@@ -150,14 +70,12 @@ classdef Ephys < ws.Subsystem
             end            
         end       
         
-        %%
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
             if ~isempty(self.TestPulser_)
                 self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged();
             end
         end
                 
-        %%
         function startingRun(self)
             % Update all the gains and modes that are associated with smart
             % electrodes if checkbox is checked
@@ -166,11 +84,9 @@ classdef Ephys < ws.Subsystem
             end
         end
         
-        %%
         function completingRun(self) %#ok<MANU>
         end
         
-        %%
         function abortingRun(self) %#ok<MANU>
         end
         
@@ -202,14 +118,11 @@ classdef Ephys < ws.Subsystem
 
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             self.ElectrodeManager.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
-            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
         end        
 
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
             self.ElectrodeManager.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue) ;
-            %self.TestPulser.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
         end        
-
     end  % methods block
     
     methods         
@@ -222,25 +135,13 @@ classdef Ephys < ws.Subsystem
         end  % function 
     end  % public methods block    
     
-    %%
     methods (Access = protected)
-%         %%
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.Subsystem(self);
-%         end
-        
-%         %%
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Subsystem(self);                        
-%             self.setPropertyTags('TestPulser', 'ExcludeFromFileTypes', {'header'});
-%         end
-        
-        %% Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        %% Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end

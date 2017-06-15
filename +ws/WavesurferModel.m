@@ -33,6 +33,15 @@ classdef WavesurferModel < ws.Model
         IsDIChannelMarkedForDeletion
         AcquisitionSampleRate  % Hz
         ExpectedSweepScanCount
+        IsXSpanSlavedToAcquistionDuration
+          % if true, the x span for all the scopes is set to the acquisiton
+          % sweep duration
+        IsXSpanSlavedToAcquistionDurationSettable
+          % true iff IsXSpanSlavedToAcquistionDuration is currently
+          % settable
+        XSpan  % s, the span of time showed in the signal display
+        NAIChannels
+        NDIChannels
     end
     
     properties (Access=protected)
@@ -364,13 +373,13 @@ classdef WavesurferModel < ws.Model
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems
-            self.Acquisition_ = ws.Acquisition([]);  % Acq subsystem doesn't need to know its parent, now.
-            self.Stimulation_ = ws.Stimulation(self);
-            self.Display_ = ws.Display(self);
-            self.Triggering_ = ws.Triggering([]);  % Triggering subsystem doesn't need to know its parent, now.
-            self.UserCodeManager_ = ws.UserCodeManager(self);
-            self.Logging_ = ws.Logging(self);
-            self.Ephys_ = ws.Ephys(self);            
+            self.Acquisition_ = ws.Acquisition([]) ;  % Acq subsystem doesn't need to know its parent, now.
+            self.Stimulation_ = ws.Stimulation(self) ;
+            self.Display_ = ws.Display(self) ;
+            self.Triggering_ = ws.Triggering([]) ;  % Triggering subsystem doesn't need to know its parent, now.
+            self.UserCodeManager_ = ws.UserCodeManager(self) ;
+            self.Logging_ = ws.Logging(self) ;
+            self.Ephys_ = ws.Ephys(self) ;
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -1053,7 +1062,7 @@ classdef WavesurferModel < ws.Model
 
         function didSetSweepDurationIfFinite_(self)
             %self.Triggering.didSetSweepDurationIfFinite() ;
-            self.Display.didSetSweepDurationIfFinite() ;
+            self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
         end        
         
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
@@ -1175,7 +1184,7 @@ classdef WavesurferModel < ws.Model
                     self.Stimulation_.startingRun() ;
                 end
                 if self.Display_.IsEnabled ,
-                    self.Display_.startingRun() ;
+                    self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
                 end
                 if self.Triggering_.IsEnabled ,
                     self.Triggering_.startingRun() ;
@@ -1932,7 +1941,8 @@ classdef WavesurferModel < ws.Model
                                                scaledAnalogData, ...
                                                rawAnalogData, ...
                                                rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData);
+                                               timeSinceRunStartAtStartOfData, ...
+                                               self.XSpan);
                 end
                 if self.UserCodeManager.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
@@ -2882,6 +2892,8 @@ classdef WavesurferModel < ws.Model
             
             % Set the override state for the stimulus map durations
             self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
+            
+            self.Display_.sanitizePersistedStateGivenChannelCounts_(self.NAIChannels, self.NDIChannels) ;
         end
     end  % protected methods block
     
@@ -3444,7 +3456,7 @@ classdef WavesurferModel < ws.Model
             nChannelsInHardware = self.NDIOTerminals ;
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
-                
+        
         function result = get.NDigitalChannels(self)
             nDIs = self.Acquisition.NDigitalChannels ;
             nDOs = self.Stimulation.NDigitalChannels ;
@@ -3684,6 +3696,8 @@ classdef WavesurferModel < ws.Model
             % Need something here for yoking...
             %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
             %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            
+            self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method
         
         function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
@@ -4394,12 +4408,6 @@ classdef WavesurferModel < ws.Model
                 error('ws:invalidPropertyValue', ...
                       'AcquisitionSampleRate must be a positive finite numeric scalar');
             end                
-            
-            
-            
-            self.Acquisition_.setSampleRate_(newValue) ;
-            sampleRate = self.Acquisition.getSampleRate_() ;
-            self.didSetAcquisitionSampleRate(sampleRate) ;
         end  % function
         
         function out = get.AcquisitionSampleRate(self)
@@ -4414,6 +4422,53 @@ classdef WavesurferModel < ws.Model
         function out = get.ExpectedSweepScanCount(self)            
             out = ws.nScansFromScanRateAndDesiredDuration(self.AcquisitionSampleRate, self.SweepDuration) ;
         end  % function
+        
+        function value = get.IsXSpanSlavedToAcquistionDuration(self)
+            if self.AreSweepsContinuous ,
+                value = false ;
+            else
+                value = self.Display_.getIsXSpanSlavedToAcquistionDuration_() ;
+            end
+        end  % function
+        
+        function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
+            self.Display_.setIsXSpanSlavedToAcquistionDuration_(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
+        end
+        
+        function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
+            value = self.AreSweepsFiniteDuration ;
+        end  % function             
+        
+        function value = get.XSpan(self)
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                sweepDuration = self.SweepDuration ;
+                value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
+            else
+                value = self.Display_.getXSpan_() ;
+            end
+        end
+        
+        function set.XSpan(self, newValue)            
+            self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
+        end  % function
+        
+        function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
+            nAIChannels = self.NAIChannels ;
+            self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
+        end
+        
+        function toggleIsDIChannelDisplayed(self, diChannelIndex) 
+            nDIChannels = self.NDIChannels ;
+            self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+        end
+        
+        function result = get.NAIChannels(self)
+            result = self.Acquisition_.NAnalogChannels ;
+        end
+
+        function result = get.NDIChannels(self)
+            result = self.Acquisition_.NDigitalChannels ;
+        end
         
     end        
 end  % classdef

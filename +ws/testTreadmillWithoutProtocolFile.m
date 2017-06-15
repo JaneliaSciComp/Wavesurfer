@@ -176,7 +176,7 @@ wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
 %wsModel.Display.setYLimitsForSingleAnalogChannel(3, [-0.1 +1.1]) ;
 %wsModel.Display.setYLimitsForSingleAnalogChannel(4, [-0.1 +1.1]) ;
 
-wsModel.Display.XSpan=10 ;  % s
+wsModel.XSpan=10 ;  % s
 
 
 
