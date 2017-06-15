@@ -16,13 +16,13 @@ wsModel.Stimulation.IsDigitalChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDOChannels() ;
 
 % add electrode AI channel
-wsModel.Acquisition.addAnalogChannel() ;
+wsModel.addAIChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'electrode') ;
 wsModel.setSingleAIChannelTerminalID(channelIndex,0) ;
 
 % add velocity AI channel
-wsModel.Acquisition.addAnalogChannel() ;
+wsModel.addAIChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'velocity') ;
 wsModel.setSingleAIChannelTerminalID(channelIndex,1) ;

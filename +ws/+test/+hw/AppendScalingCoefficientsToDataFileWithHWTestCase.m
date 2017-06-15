@@ -24,7 +24,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             nCoeffs = 4 ;  % this holds for all x-series boards
             nAnalogChannels = 7 ;
             for i=1:(nAnalogChannels-1) ,
-                wsModel.Acquisition.addAnalogChannel() ;
+                wsModel.addAIChannel() ;
             end
             self.verifyEqual(wsModel.Acquisition.NAnalogChannels, nAnalogChannels, 'Number of analog channels is wrong') ;
             nInactiveAnalogChannels = 2 ;

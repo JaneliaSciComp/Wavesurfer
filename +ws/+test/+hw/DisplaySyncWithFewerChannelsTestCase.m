@@ -19,8 +19,8 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
         function theTest(self)
             [wsModel,wsController] = wavesurfer() ;
 
-            wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.addAnalogChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
 
             protocolFileName = fullfile(tempdir(),'three-channels-sdfkjsghdf.cfg') ;
             %wsController.saveProtocolFileGivenFileName(protocolFileName) ;

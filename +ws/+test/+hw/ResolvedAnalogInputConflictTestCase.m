@@ -16,8 +16,8 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
         function theTest(self)
             wsModel=wavesurfer('--nogui') ;
 
-            wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.addAnalogChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
             wsModel.setSingleAIChannelTerminalID(2,0) ;  % this introduces a conflict
             try
                 wsModel.play() ;
