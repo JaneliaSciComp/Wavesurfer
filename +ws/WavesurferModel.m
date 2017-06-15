@@ -364,7 +364,7 @@ classdef WavesurferModel < ws.Model
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems
-            self.Acquisition_ = ws.Acquisition(self);
+            self.Acquisition_ = ws.Acquisition([]);  % Acq subsystem doesn't need to know its parent, now.
             self.Stimulation_ = ws.Stimulation(self);
             self.Display_ = ws.Display(self);
             self.Triggering_ = ws.Triggering([]);  % Triggering subsystem doesn't need to know its parent, now.
