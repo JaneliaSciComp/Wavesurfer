@@ -1536,7 +1536,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
                 set(self.DIIsActiveCheckboxes(i),'Value',self.Model.IsDIChannelActive(i), ...
                                                  'Enable',ws.onIff(isWavesurferIdle));                                     
-                set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Acquisition.IsDigitalChannelMarkedForDeletion(i), ...
+                set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsDIChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
@@ -1545,7 +1545,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             nDigitalChannels = model.NDigitalChannels ;
             areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
-            isDIChannelMarkedForDeletion = model.Acquisition.IsDigitalChannelMarkedForDeletion ;
+            isDIChannelMarkedForDeletion = model.IsDIChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
             set(self.AddDIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
             set(self.DeleteDIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            

@@ -1,7 +1,7 @@
 classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true)
-        Duration   % s
+        %Duration   % s
         SampleRate  % Hz
 %         IsAnalogChannelActive
 %         IsDigitalChannelActive
@@ -9,7 +9,7 @@ classdef Acquisition < ws.Subsystem
 %           % Setting these is the prefered way for outsiders to change which
 %           % channels are active
 %         IsAnalogChannelMarkedForDeletion
-        IsDigitalChannelMarkedForDeletion
+%         IsDigitalChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -391,29 +391,23 @@ classdef Acquisition < ws.Subsystem
             % active.
             if islogical(newValue) && ...
                     isequal(size(newValue),size(self.IsAnalogChannelMarkedForDeletion_)) ,
-                % Set the setting
-                self.IsAnalogChannelMarkedForDeletion_ = newValue;
+                self.IsAnalogChannelMarkedForDeletion_ = newValue ;
             end
-            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
-            %self.broadcast('DidSetIsChannelActive');
         end
         
-        function result=get.IsDigitalChannelMarkedForDeletion(self)
+        function result=getIsDigitalChannelMarkedForDeletion_(self)
             % Boolean array indicating which of the available analog channels is
             % active.
             result = self.IsDigitalChannelMarkedForDeletion_ ;
         end
         
-        function set.IsDigitalChannelMarkedForDeletion(self,newIsChannelMarkedForDeletion)
+        function setIsDigitalChannelMarkedForDeletion_(self, newValue)
             % Boolean array indicating which of the analog channels is
             % active.
-            if islogical(newIsChannelMarkedForDeletion) && ...
-                    isequal(size(newIsChannelMarkedForDeletion),size(self.IsDigitalChannelMarkedForDeletion)) ,
-                % Set the setting
-                self.IsDigitalChannelMarkedForDeletion_ = newIsChannelMarkedForDeletion;
+            if islogical(newValue) && ...
+                    isequal(size(newValue),size(self.IsDigitalChannelMarkedForDeletion_)) ,
+                self.IsDigitalChannelMarkedForDeletion_ = newValue;
             end
-            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
-            %self.broadcast('DidSetIsChannelActive');
         end
         
         function result=getIsDigitalChannelActive_(self)
@@ -425,7 +419,7 @@ classdef Acquisition < ws.Subsystem
         function setIsDigitalChannelActive_(self, newValue)
             % Boolean array indicating which of the available channels is
             % active.
-            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelActive)) ,
+            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelActive_)) ,
                 % Set the setting
                 self.IsDigitalChannelActive_ = newValue;
                 self.updateActiveChannelIndexFromChannelIndex_() ;
@@ -541,26 +535,25 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function setSingleAnalogChannelName(self, i, newValue)
+        function [didSucceed, oldValue] = setSingleAnalogChannelName_(self, i, newValue, allChannelNames)
             oldValue = self.AnalogChannelNames_{i} ;
-            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NAnalogChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,allChannelNames) ,
                 self.AnalogChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else
                 didSucceed = false ;
             end
-            self.Parent.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
         end
         
-        function setSingleDigitalChannelName(self, i, newValue)
+        function [didSucceed, oldValue] = setSingleDigitalChannelName_(self, i, newValue, allChannelNames)
             oldValue = self.DigitalChannelNames_{i} ;
-            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.Parent.AllChannelNames) ,
+            if 1<=i && i<=self.NDigitalChannels && ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,allChannelNames) ,
                 self.DigitalChannelNames_{i} = newValue ;
                 didSucceed = true ;
             else
                 didSucceed = false ;
             end
-            self.Parent.didSetDigitalInputChannelName(didSucceed,oldValue,newValue);
+            %self.Parent.didSetDigitalInputChannelName(didSucceed,oldValue,newValue);
         end
         
         function setSingleAnalogTerminalID(self, i, newValue)
@@ -612,14 +605,14 @@ classdef Acquisition < ws.Subsystem
 %             end
 %         end  % function
         
-        function out = get.Duration(self)
-            out = self.Parent.SweepDuration ;
-        end  % function
-        
-        function set.Duration(self, value)
-            %fprintf('Acquisition::set.Duration()\n');
-            self.Parent.SweepDuration = value ;
-        end  % function
+%         function out = get.Duration(self)
+%             out = self.Parent.SweepDuration ;
+%         end  % function
+%         
+%         function set.Duration(self, value)
+%             %fprintf('Acquisition::set.Duration()\n');
+%             self.Parent.SweepDuration = value ;
+%         end  % function
         
         function out = get.ExpectedScanCount(self)            
             %out = floor(self.Duration * self.SampleRate) +1 ;
@@ -897,17 +890,17 @@ classdef Acquisition < ws.Subsystem
         
     end  % methods block
     
-    methods (Access = protected)
-        function acquisitionSweepComplete_(self)
-            %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
-            %self.IsArmedOrAcquiring_ = false;
-            % TODO If there are multiple acquisition boards, notify only when all are complete.
-            parent=self.Parent;
-            if ~isempty(parent) && isvalid(parent) ,
-                parent.acquisitionSweepComplete();
-            end
-        end  % function
-    end  % protected methods block
+%     methods (Access = protected)
+%         function acquisitionSweepComplete_(self)
+%             %fprintf('Acquisition.zcbkAcquisitionComplete: %0.3f\n',toc(self.Parent.FromRunStartTicId_));
+%             %self.IsArmedOrAcquiring_ = false;
+%             % TODO If there are multiple acquisition boards, notify only when all are complete.
+%             parent=self.Parent;
+%             if ~isempty(parent) && isvalid(parent) ,
+%                 parent.acquisitionSweepComplete();
+%             end
+%         end  % function
+%     end  % protected methods block
     
 %     methods (Access=protected)
 %         function out = getPropertyValue_(self, name)

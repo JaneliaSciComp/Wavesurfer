@@ -30,6 +30,7 @@ classdef WavesurferModel < ws.Model
         AIChannelUnits
         IsDIChannelActive
         IsAIChannelMarkedForDeletion
+        IsDIChannelMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -4336,6 +4337,31 @@ classdef WavesurferModel < ws.Model
             % active.
             self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
             self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function result=get.IsDIChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available AI channels is
+            % active.
+            result = self.Acquisition_.getIsDigitalChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsDIChannelMarkedForDeletion(self,newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function setSingleAIChannelName(self, i, newValue)
+            allChannelNames = self.AllChannelNames ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName(i, newValue, allChannelNames) ;
+            self.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
+        end
+        
+        function setSingleDIChannelName(self, i, newValue)
+            allChannelNames = self.AllChannelNames ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName(i, newValue, allChannelNames) ;
+            self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
         end
         
     end        

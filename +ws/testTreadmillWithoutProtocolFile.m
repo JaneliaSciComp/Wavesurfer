@@ -8,7 +8,7 @@ ws.clear() ;
 % delete all pre-existing channels
 wsModel.IsAIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAIChannels() ;
-wsModel.Acquisition.IsDigitalChannelMarkedForDeletion(:) = true ;
+wsModel.IsDIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDIChannels() ;
 wsModel.Stimulation.IsAnalogChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAOChannels() ;
@@ -18,25 +18,25 @@ wsModel.deleteMarkedDOChannels() ;
 % add electrode AI channel
 wsModel.Acquisition.addAnalogChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
-wsModel.Acquisition.setSingleAnalogChannelName(channelIndex,'electrode') ;
+wsModel.setSingleAIChannelName(channelIndex,'electrode') ;
 wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,0) ;
 
 % add velocity AI channel
 wsModel.Acquisition.addAnalogChannel() ;
 channelIndex = wsModel.Acquisition.NAnalogChannels ;
-wsModel.Acquisition.setSingleAnalogChannelName(channelIndex,'velocity') ;
+wsModel.setSingleAIChannelName(channelIndex,'velocity') ;
 wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,1) ;
 
 % add photodiode DI channel
 wsModel.addDIChannel() ;
 channelIndex = wsModel.Acquisition.NDigitalChannels ;
-wsModel.Acquisition.setSingleDigitalChannelName(channelIndex,'photodiode') ;
+wsModel.setSingleDIChannelName(channelIndex,'photodiode') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,2) ;
 
 % add laser DI channel
 wsModel.addDIChannel() ;
 channelIndex = wsModel.Acquisition.NDigitalChannels ;
-wsModel.Acquisition.setSingleDigitalChannelName(channelIndex,'laser') ;
+wsModel.setSingleDIChannelName(channelIndex,'laser') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,3) ;
 
 % add electrode AO channel

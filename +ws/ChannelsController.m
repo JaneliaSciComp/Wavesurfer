@@ -34,7 +34,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
             %self.Model.Acquisition.setSingleAnalogChannelName(i, newString) ;
-            self.Model.Acquisition.do('setSingleAnalogChannelName', i, newString) ;
+            self.Model.do('setSingleAIChannelName', i, newString) ;
         end
         
         function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -57,7 +57,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AIScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model.Acquisition.setSingleAnalogChannelScale(i,newValue);
-            self.Model.Acquisition.do('setSingleAnalogChannelScale', i, newValue) ;
+            self.Model.do('setSingleAIChannelScale', i, newValue) ;
         end
         
         function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
@@ -73,7 +73,7 @@ classdef ChannelsController < ws.Controller
             isAnalogChannelActive=self.Model.IsAIChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
-            self.Model.Acquisition.do('set', 'IsAnalogChannelActive', isAnalogChannelActive) ;             
+            self.Model.do('set', 'IsAIChannelActive', isAnalogChannelActive) ;             
         end
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
@@ -81,7 +81,7 @@ classdef ChannelsController < ws.Controller
             isAnalogChannelMarkedForDeletion = self.Model.IsAIChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
-            self.Model.Acquisition.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
+            self.Model.do('set', 'IsAIChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
         function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
@@ -157,7 +157,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
             %self.Model.Acquisition.setSingleDigitalChannelName(i, newString) ;
-            self.Model.Acquisition.do('setSingleDigitalChannelName', i, newString) ;
+            self.Model.do('setSingleDIChannelName', i, newString) ;
         end
         
         function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -183,10 +183,9 @@ classdef ChannelsController < ws.Controller
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
-            isChannelMarkedForDeletion = self.Model.Acquisition.IsDigitalChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion = self.Model.IsDIChannelMarkedForDeletion ;
             isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            %self.Model.Acquisition.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
-            self.Model.Acquisition.do('set', 'IsDigitalChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
+            self.Model.do('set', 'IsDIChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
         end
 
         function AddDIChannelButtonActuated(self,source,event)  %#ok<INUSD>
