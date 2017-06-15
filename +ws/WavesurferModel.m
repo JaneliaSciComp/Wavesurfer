@@ -32,6 +32,7 @@ classdef WavesurferModel < ws.Model
         IsAIChannelMarkedForDeletion
         IsDIChannelMarkedForDeletion
         AcquisitionSampleRate  % Hz
+        ExpectedSweepScanCount
     end
     
     properties (Access=protected)
@@ -1168,7 +1169,7 @@ classdef WavesurferModel < ws.Model
                     self.Ephys_.startingRun() ;
                 end
                 if self.Acquisition_.IsEnabled ,
-                    self.Acquisition.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration) ;
+                    self.Acquisition.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration, self.SweepDuration) ;
                 end
                 if self.Stimulation_.IsEnabled ,
                     self.Stimulation_.startingRun() ;
@@ -1334,7 +1335,7 @@ classdef WavesurferModel < ws.Model
             self.FromRunStartTicId_=tic();
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
-            desiredNScansPerUpdate = max(1,round(updateDt*self.Acquisition.SampleRate)) ;  % don't want this to be zero!
+            desiredNScansPerUpdate = max(1,round(updateDt*self.AcquisitionSampleRate)) ;  % don't want this to be zero!
             self.DesiredNScansPerUpdate_ = desiredNScansPerUpdate ;
             self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
@@ -1869,7 +1870,7 @@ classdef WavesurferModel < ws.Model
                 % self.DesiredNScansPerUpdate_, and it's important that the
                 % buffer be larger than the largest possible
                 % nScansPerUpdate)
-                fs = self.Acquisition.SampleRate ;
+                fs = self.AcquisitionSampleRate ;
                 nScansPerUpdateNew = min(10*self.DesiredNScansPerUpdate_ , ...
                                          max(2*round(durationOfDataAvailableCall*fs), ...
                                              self.DesiredNScansPerUpdate_ ) ) ;                                      
@@ -1892,7 +1893,7 @@ classdef WavesurferModel < ws.Model
             % Scale the new data, notify subsystems that we have new data
             if (nScans>0)
                 % update the current time
-                dt=1/self.Acquisition.SampleRate;
+                dt=1/self.AcquisitionSampleRate;
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
@@ -3285,7 +3286,7 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
-            looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
+            looperProtocol.AcquisitionSampleRate = self.AcquisitionSampleRate ;
 
             looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
             looperProtocol.AIChannelScales = self.AIChannelScales ;
@@ -4383,7 +4384,7 @@ classdef WavesurferModel < ws.Model
                 isValueValid = true ;
                 newValue = double(newValue) ;
                 sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
-                self.Acquisition_.setSampleRate(sampleRate) ;
+                self.Acquisition_.setSampleRate_(sampleRate) ;
                 self.didSetAcquisitionSampleRate(sampleRate);
             else
                 isValueValid = false ;
@@ -4408,6 +4409,10 @@ classdef WavesurferModel < ws.Model
         function newChannelName = addAIChannel(self)
             newChannelName = self.Acquisition_.addAnalogChannel_() ;            
             self.didAddAnalogInputChannel() ;
+        end  % function
+        
+        function out = get.ExpectedSweepScanCount(self)            
+            out = ws.nScansFromScanRateAndDesiredDuration(self.AcquisitionSampleRate, self.SweepDuration) ;
         end  % function
         
     end        

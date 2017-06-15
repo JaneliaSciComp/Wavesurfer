@@ -2,7 +2,7 @@ classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true)
         %Duration   % s
-%        SampleRate  % Hz
+        %SampleRate  % Hz
 %         IsAnalogChannelActive
 %         IsDigitalChannelActive
 %           % boolean arrays indicating which analog/digital channels are active
@@ -32,7 +32,7 @@ classdef Acquisition < ws.Subsystem
         AnalogTerminalIDs  % zero-based AI channel IDs for all available channels
         DigitalTerminalIDs  % zero-based DI channel IDs (on P0) for all available channels
         IsChannelActive
-        ExpectedScanCount
+        %ExpectedScanCount
         ActiveChannelNames  % a row cell vector containing the canonical name of each active channel, e.g. 'Dev0/ai0'
        	%TriggerScheme        
         %IsAnalogChannelTerminalOvercommitted
@@ -98,7 +98,7 @@ classdef Acquisition < ws.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration)
+        function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)
             %fprintf('Acquisition::startingRun()\n');
             
             % Check that there's at least one active input channel
@@ -119,12 +119,13 @@ classdef Acquisition < ws.Subsystem
                 dataType = 'uint32';
             end
             if areSweepsContinuous ,
-                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate) ;
+                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
                 self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
                 self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
             elseif areSweepsFiniteDuration ,
-                self.RawAnalogDataCache_ = zeros(self.ExpectedScanCount,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(self.ExpectedScanCount,min(1,NActiveDigitalChannels),dataType);
+                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
+                self.RawAnalogDataCache_ = zeros(expectedScanCount,NActiveAnalogChannels,'int16');
+                self.RawDigitalDataCache_ = zeros(expectedScanCount,min(1,NActiveDigitalChannels),dataType);
             else
                 % Shouldn't ever happen
                 self.RawAnalogDataCache_ = [];                
@@ -609,10 +610,10 @@ classdef Acquisition < ws.Subsystem
 %             self.Parent.SweepDuration = value ;
 %         end  % function
         
-        function out = get.ExpectedScanCount(self)            
-            %out = floor(self.Duration * self.SampleRate) +1 ;
-            out = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate, self.Duration) ;
-        end  % function
+%         function out = get.ExpectedScanCount(self)            
+%             %out = floor(self.Duration * self.SampleRate) +1 ;
+%             out = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.Duration) ;
+%         end  % function
         
         function out = getSampleRate_(self)
             out = self.SampleRate_ ;

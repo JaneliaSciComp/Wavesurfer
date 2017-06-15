@@ -847,7 +847,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 end
 
                 % Add the data
-                fs = self.Parent.Acquisition.SampleRate ;
+                fs = self.Parent.AcquisitionSampleRate ;
                 self.broadcast('AddData', t, scaledAnalogData, rawDigitalData, fs) ;
 %                 indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, fs) ;
 %                 plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;

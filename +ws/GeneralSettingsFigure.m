@@ -873,7 +873,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             % Acquisition panel
             set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
             set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
-            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
+            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.AcquisitionSampleRate));
             set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             

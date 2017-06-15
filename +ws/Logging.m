@@ -272,9 +272,9 @@ classdef Logging < ws.Subsystem
             % wavesurferModel.Acquisition.SampleRate * wavesurferModel.Acquisiton.Duration)
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
-                self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.ExpectedSweepScanCount nActiveAnalogChannels];
             else
-                self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.AcquisitionSampleRate nActiveAnalogChannels];
             end
                 
             % Determine the absolute file names
@@ -608,7 +608,7 @@ classdef Logging < ws.Subsystem
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
             wavesurferModel = self.Parent ;
-            if self.CurrentDatasetOffset_ > wavesurferModel.Acquisition.ExpectedScanCount ,
+            if self.CurrentDatasetOffset_ > wavesurferModel.ExpectedSweepScanCount ,
                 self.CurrentDatasetOffset_ = 1;
                 self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end

@@ -178,11 +178,11 @@ classdef TestPulser < ws.Model
             self.IsAutoYRepeating_=false;
             self.YLimits_=[-10 +10];
             
-            acquisition = ws.getSubproperty(ephys,'Parent','Acquisition');
-            if isempty(acquisition) ,
+            wsModel = ws.getSubproperty(ephys,'Parent');
+            if isempty(wsModel) ,
                 self.SamplingRate_ = 20e3 ;  % Hz
             else
-                self.SamplingRate_ = acquisition.SampleRate ;  % Hz
+                self.SamplingRate_ = wsModel.AcquisitionSampleRate ;  % Hz
             end
             
             self.IsRunning_=false;

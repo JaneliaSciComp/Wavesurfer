@@ -235,9 +235,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % number of scans in first one percent and maximum number of
             % scans per sweep.
             self.FirstOnePercentEndTime_ = wsModel.SweepDuration/100;
-            self.DeltaTime_ = 1/wsModel.Acquisition.SampleRate ;  % s
+            self.DeltaTime_ = 1/wsModel.AcquisitionSampleRate ;  % s
             self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.DeltaTime_);
-            self.MaximumNumberOfScansPerSweep_ = wsModel.Acquisition.SampleRate * wsModel.SweepDuration;
+            self.MaximumNumberOfScansPerSweep_ = wsModel.AcquisitionSampleRate * wsModel.SweepDuration;
             
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
@@ -420,7 +420,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-            self.BarPositionHistogramTotal_ = self.BarPositionHistogramTotal_ + barPositionHistogramCountsRecent/wsModel.Acquisition.SampleRate;
+            self.BarPositionHistogramTotal_ = self.BarPositionHistogramTotal_ + barPositionHistogramCountsRecent/wsModel.AcquisitionSampleRate;
             set(self.BarPositionHistogramPlotHandle_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramTotal_);
             
             % Calculate Vm, and update heatmap data and plots
@@ -836,8 +836,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         function addDataForHeatmaps(self, wsModel)
-            rotationalVelocityRecent =  self.RotationalDisplacementRecent_*wsModel.Acquisition.SampleRate;
-            forwardVelocityRecent =  self.ForwardDisplacementRecent_*wsModel.Acquisition.SampleRate;
+            rotationalVelocityRecent =  self.RotationalDisplacementRecent_*wsModel.AcquisitionSampleRate;
+            forwardVelocityRecent =  self.ForwardDisplacementRecent_*wsModel.AcquisitionSampleRate;
             headingRecent = self.BarPositionWrappedRecent_;
             [~, rotationalVelocityBinIndices] = histc(rotationalVelocityRecent, self.RotationalVelocityBinEdges_);
             [~, forwardVelocityBinIndicesIncreasing] = histc(forwardVelocityRecent, self.ForwardVelocityBinEdges_);
