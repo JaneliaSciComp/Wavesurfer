@@ -102,7 +102,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
                
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
-               model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+               model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
                %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               

@@ -2,7 +2,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
-        SampleRate  % Hz
+        %SampleRate  % Hz
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
         StimulusLibrary
 %         AnalogChannelScales
@@ -12,16 +12,16 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %           % An SIUnit row vector that describes the real-world units 
 %           % for each stimulus channel.
         %IsDigitalChannelTimed
-        DigitalOutputStateIfUntimed
+        %DigitalOutputStateIfUntimed
         AnalogTerminalIDs
         DigitalTerminalIDs
-        IsAnalogChannelMarkedForDeletion
-        IsDigitalChannelMarkedForDeletion
+%         IsAnalogChannelMarkedForDeletion
+%         IsDigitalChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        AnalogDeviceNames
-        DigitalDeviceNames
+        %AnalogDeviceNames
+        %DigitalDeviceNames
         AnalogTerminalNames % the physical channel name for each analog channel, e.g. 'AO0'
         DigitalTerminalNames  % the physical channel name for each digital channel, e.g. 'line0'
         TerminalNames
@@ -52,7 +52,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
     
     events 
-        DidSetSampleRate
         DidSetDoRepeatSequence
     end
     
@@ -83,15 +82,15 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end        
     end  % protected methods block
     
-    methods (Access = protected)
-        function syncTasksToChannelMembership_(self)             %#ok<MANU>
-            % Clear the timed digital output task, will be recreated when acq is
-            % started.  Have to do this b/c the channels used for the timed digital output task has changed.
-            % And have to do it first to avoid a temporary collision.
-            
-            % Subclasses override this as appropriate
-        end  % function        
-    end  % protected methods
+%     methods (Access = protected)
+%         function syncTasksToChannelMembership_(self)             %#ok<MANU>
+%             % Clear the timed digital output task, will be recreated when acq is
+%             % started.  Have to do this b/c the channels used for the timed digital output task has changed.
+%             % And have to do it first to avoid a temporary collision.
+%             
+%             % Subclasses override this as appropriate
+%         end  % function        
+%     end  % protected methods
 
     methods 
         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
@@ -178,10 +177,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
         end  % function
        
-    end
-        
-    methods (Access=protected)
-        function setIsDigitalChannelTimed_(self, newValue)
+        function wasSet = setIsDigitalChannelTimed_(self, newValue)
             nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
             if isequal(size(newValue),[1 nDigitalChannels]) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
                 coercedNewValue = logical(newValue) ;
@@ -192,43 +188,33 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     wasSet = false ;
                 end
             else
-                self.Parent.didSetIsDigitalOutputTimed();
+                %self.Parent.didSetIsDigitalOutputTimed();
                 error('ws:invalidPropertyValue', ...
                       'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
             end
-            self.Parent.didSetIsDigitalOutputTimed();
-            
-            if wasSet ,
-                self.syncTasksToChannelMembership_() ;
-                self.Parent.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
-            end  
-        end  % function
+%             self.Parent.didSetIsDigitalOutputTimed();
+%             
+%             if wasSet ,
+%                 self.Parent.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
+%             end  
+        end  % function        
+    end  % public methods
         
-        function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
-%             wasSet = setDigitalOutputStateIfUntimed_@ws.StimulationSubsystem(self,newValue) ;
-            if ws.isASettableValue(newValue),
-                if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
-                        (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
-                    wasSet = true ;
-                else
-                    %self.broadcast('DidSetDigitalOutputStateIfUntimed');
-                    self.Parent.didSetDigitalOutputStateIfUntimed() ;
-                    error('ws:invalidPropertyValue', ...
-                          'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
-                end
+    methods
+        function setDigitalOutputStateIfUntimed_(self, newValue)
+            if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
+                    (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                coercedNewValue = logical(newValue) ;
+                self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
             else
-                wasSet = false ;
+                %self.Parent.didSetDigitalOutputStateIfUntimed() ;
+                error('ws:invalidPropertyValue', ...
+                      'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
             end
-            self.Parent.didSetDigitalOutputStateIfUntimed() ;
-            %self.broadcast('DidSetDigitalOutputStateIfUntimed');
-            
-            if wasSet ,
-                self.Parent.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
-            end
+            %self.Parent.didSetDigitalOutputStateIfUntimed() ;            
+            %self.Parent.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
         end  % function
-    end
+    end  % protected methods
 
     methods (Access=protected)    
         function disableAllBroadcastsDammit_(self)
@@ -268,33 +254,19 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.broadcast('DidSetStimulusLibrary');
         end
         
-        function out = get.SampleRate(self)
+        function out = getSampleRate_(self)
             out= self.SampleRate_ ;
         end
         
-        function set.SampleRate(self, newValue)
-            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
-                % Constrain value appropriately
-                isValueValid = true ;
-                newValue = double(newValue) ;
-                sampleRate = self.Parent.coerceSampleFrequencyToAllowedValue(newValue) ;
-                self.SampleRate_ = sampleRate ;
-                self.Parent.didSetAcquisitionSampleRate(sampleRate);
-            else
-                isValueValid = false ;
-            end
-            self.broadcast('DidSetSampleRate');
-            if ~isValueValid ,
-                error('ws:invalidPropertyValue', ...
-                    'SampleRate must be a positive finite numeric scalar');
-            end                
+        function setSampleRate_(self, newValue)
+            self.SampleRate_ = newValue ;
         end  % function
                 
-%         function out = get.IsDigitalChannelTimed(self)
-%             out= self.IsDigitalChannelTimed_ ;
-%         end
+        function out = getIsDigitalChannelTimed_(self)
+            out= self.IsDigitalChannelTimed_ ;
+        end
         
-        function out = get.DigitalOutputStateIfUntimed(self)
+        function out = getDigitalOutputStateIfUntimed_(self)
             out= self.DigitalOutputStateIfUntimed_ ;
         end
         
@@ -381,17 +353,17 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             output = [self.AnalogDeviceNames_ self.DigitalDeviceNames_] ;
 %         end
         
-        function out = get.AnalogDeviceNames(self)
-            %out = self.AnalogDeviceNames_ ;
-            deviceName = self.Parent.DeviceName ;
-            out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
-        end  % function
+%         function out = get.AnalogDeviceNames(self)
+%             %out = self.AnalogDeviceNames_ ;
+%             deviceName = self.Parent.DeviceName ;
+%             out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
+%         end  % function
         
-        function digitalDeviceNames = get.DigitalDeviceNames(self)
-            %out = self.DigitalDeviceNames_ ;
-            deviceName = self.Parent.DeviceName ;
-            digitalDeviceNames = repmat({deviceName}, size(self.DigitalChannelNames)) ;
-        end  % function
+%         function digitalDeviceNames = get.DigitalDeviceNames(self)
+%             %out = self.DigitalDeviceNames_ ;
+%             deviceName = self.Parent.DeviceName ;
+%             digitalDeviceNames = repmat({deviceName}, size(self.DigitalChannelNames)) ;
+%         end  % function
 
         function result = get.AnalogTerminalIDs(self)
             result = self.AnalogTerminalIDs_;
@@ -401,112 +373,30 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             result = self.DigitalTerminalIDs_;
         end
         
-        function result=get.IsAnalogChannelMarkedForDeletion(self)
-            % Boolean array indicating which of the available analog channels is
-            % active.
+        function result=getIsAnalogChannelMarkedForDeletion_(self)
             result =  self.IsAnalogChannelMarkedForDeletion_ ;
         end
         
-%         function result=get.IsAnalogChannelTerminalOvercommitted(self)
-%             result =  self.Parent.IsAOChannelTerminalOvercommitted ;
-%         end
-        
-%         function result=get.IsDigitalChannelTerminalOvercommitted(self)
-%             result =  self.Parent.IsDOChannelTerminalOvercommitted ;
-%         end
-        
-        function set.IsAnalogChannelMarkedForDeletion(self,newIsAnalogChannelMarkedForDeletion)
-            % Boolean array indicating which of the analog channels is
-            % active.
-            if islogical(newIsAnalogChannelMarkedForDeletion) && ...
-                    isequal(size(newIsAnalogChannelMarkedForDeletion),size(self.IsAnalogChannelMarkedForDeletion)) ,
-                % Set the setting
-                self.IsAnalogChannelMarkedForDeletion_ = newIsAnalogChannelMarkedForDeletion;
+        function setIsAnalogChannelMarkedForDeletion_(self, newValue)
+            if islogical(newValue) && isequal(size(newValue),size(self.IsAnalogChannelMarkedForDeletion)) ,
+                self.IsAnalogChannelMarkedForDeletion_ = newValue;
             end
-            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
-            %self.broadcast('DidSetIsChannelActive');
+            %self.Parent.didSetIsInputChannelMarkedForDeletion() ;
         end
         
-        function result=get.IsDigitalChannelMarkedForDeletion(self)
-            % Boolean array indicating which of the available analog channels is
-            % active.
+        function result=getIsDigitalChannelMarkedForDeletion_(self)
             result = self.IsDigitalChannelMarkedForDeletion_ ;
         end
         
-        function set.IsDigitalChannelMarkedForDeletion(self,newIsChannelMarkedForDeletion)
-            % Boolean array indicating which of the analog channels is
-            % active.
-            if islogical(newIsChannelMarkedForDeletion) && ...
-                    isequal(size(newIsChannelMarkedForDeletion),size(self.IsDigitalChannelMarkedForDeletion)) ,
-                % Set the setting
-                self.IsDigitalChannelMarkedForDeletion_ = newIsChannelMarkedForDeletion;
+        function setIsDigitalChannelMarkedForDeletion_(self, newValue)
+            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelMarkedForDeletion)) ,
+                self.IsDigitalChannelMarkedForDeletion_ = newValue;
             end
-            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
-            %self.broadcast('DidSetIsChannelActive');
+            %self.Parent.didSetIsInputChannelMarkedForDeletion() ;
         end
-        
-%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
-%             % Called by the parent to notify that the electrode
-%             % may have changed.
-%             
-%             % If the changed property is a monitor property, we can safely
-%             % ignore            
-%             %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
-%             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
-%                 return
-%             end
-%             self.Parent.didSetAnalogChannelUnitsOrScales();                        
-%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-%         end
-        
-%         function electrodesRemoved(self)
-%             self.Parent.didSetAnalogChannelUnitsOrScales();            
-%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-%         end
-        
-%         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
-%             stimulusLibrary=self.StimulusLibrary;
-%             if ~isempty(stimulusLibrary) ,
-%                 stimulusLibrary.stimulusMapDurationPrecursorMayHaveChanged();
-%             end
-%         end        
-        
-%         function didSetSelectedOutputable(self)
-%             % Called by the child StimulusLibrary to notify self that the
-%             % stim library's SelectedOutputable was set.
-%             
-%             % Currently, simply broadcasts an event to that effect
-%             self.broadcast('DidSetSelectedOutputable');
-%         end
-        
-%         function debug(self) %#ok<MANU>
-%             keyboard
-%         end
-        
     end  % methods block
     
     methods
-%         function set.IsDigitalChannelTimed(self,newValue)
-%             if ws.isASettableValue(newValue),
-%                 if isequal(size(newValue),size(self.IsDigitalChannelTimed_)) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-%                     coercedNewValue = logical(newValue) ;
-%                     if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-%                         self.IsDigitalChannelTimed_=coercedNewValue;
-%                         %self.syncTasksToChannelMembership_();
-%                     end
-%                 else
-%                     self.broadcast('DidSetIsDigitalChannelTimed');
-%                     error('ws:invalidPropertyValue', ...
-%                           'IsDigitalChannelTimed must be a logical row vector, or convertable to one, of the proper size');
-%                 end
-%             end
-%             self.broadcast('DidSetIsDigitalChannelTimed');
-%         end  % function
-        
-%         function didSelectStimulusSequence(self, cycle)
-%             self.StimulusLibrary.SelectedOutputable = cycle;
-%         end  % function
-        
         function terminalID=analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is ao2,
@@ -739,9 +629,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             self.setIsDigitalChannelTimed_(newValue) ;
 %         end  % function
         
-        function set.DigitalOutputStateIfUntimed(self,newValue)
-            self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
-        end  % function
+%         function set.DigitalOutputStateIfUntimed(self,newValue)
+%             self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
+%         end  % function
     end
 
     methods (Access=protected)

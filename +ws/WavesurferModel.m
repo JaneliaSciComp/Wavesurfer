@@ -51,6 +51,10 @@ classdef WavesurferModel < ws.Model
         NAOChannels
         NDOChannels
         IsDOChannelTimed
+        DOChannelStateIfUntimed
+        StimulationSampleRate  % Hz
+        IsAOChannelMarkedForDeletion
+        IsDOChannelMarkedForDeletion
     end
     
     properties (Access=protected)
@@ -242,6 +246,7 @@ classdef WavesurferModel < ws.Model
         RequestLayoutForAllWindows
         LayoutAllWindows
         DidSetAcquisitionSampleRate
+        DidSetStimulationSampleRate
     end
     
     
@@ -4536,11 +4541,74 @@ classdef WavesurferModel < ws.Model
         
         function set.IsDOChannelTimed(self, newValue)
             try
-                self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
+                wasSet = self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
             catch exception
                 self.didSetIsDigitalOutputTimed() ;
                 rethrow(exception) ;
+            end            
+            self.didSetIsDigitalOutputTimed() ;            
+            if wasSet ,
+                self.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
             end
         end
+        
+        function result = get.IsDOChannelTimed(self) 
+            result = self.Stimulation_.getIsDigitalChannelTimed() ;
+        end
+        
+        function set.DOChannelStateIfUntimed(self, newValue)
+            try
+                self.Stimulation_.setDigitalOutputStateIfUntimed_(newValue) ;
+            catch exception
+                self.didSetDigitalOutputStateIfUntimed() ;
+                rethrow(exception) ;
+            end
+            self.didSetDigitalOutputStateIfUntimed() ;            
+            self.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
+        end  % function
+        
+        function out = get.DOChannelStateIfUntimed(self)
+            out= self.Stimulation_.getDigitalOutputStateIfUntimed_() ;
+        end
+        
+        function out = get.StimulationSampleRate(self)
+            out= self.Stimulation_.getSampleRate_() ;
+        end
+        
+        function set.StimulationSampleRate(self, newValue)
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.Stimulation_.setSampleRate_(sampleRate) ;
+                self.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
+            end
+            self.broadcast('DidSetStimulationSampleRate');
+            if ~isValueValid ,
+                error('ws:invalidPropertyValue', ...
+                      'StimulationSampleRate must be a positive finite numeric scalar');
+            end                
+        end  % function
+        
+        function result=get.IsAOChannelMarkedForDeletion(self)
+            result =  self.Stimulation_.getIsAnalogChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsAOChannelMarkedForDeletion(self, newValue)
+            self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function result=get.IsDOChannelMarkedForDeletion(self)
+            result = self.Stimulation_.getIsDigitalChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsDOChannelMarkedForDeletion(self, newValue)
+            self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
+            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
+        end        
     end        
 end  % classdef
