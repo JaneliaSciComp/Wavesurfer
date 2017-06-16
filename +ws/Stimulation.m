@@ -5,13 +5,13 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         SampleRate  % Hz
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
         StimulusLibrary
-        AnalogChannelScales
-          % A row vector of scale factors to convert each channel from native units to volts on the coax.
-          % This is implicitly in units of ChannelUnits per volt (see below)
-        AnalogChannelUnits
-          % An SIUnit row vector that describes the real-world units 
-          % for each stimulus channel.
-        IsDigitalChannelTimed
+%         AnalogChannelScales
+%           % A row vector of scale factors to convert each channel from native units to volts on the coax.
+%           % This is implicitly in units of ChannelUnits per volt (see below)
+%         AnalogChannelUnits
+%           % An SIUnit row vector that describes the real-world units 
+%           % for each stimulus channel.
+        %IsDigitalChannelTimed
         DigitalOutputStateIfUntimed
         AnalogTerminalIDs
         DigitalTerminalIDs
@@ -20,7 +20,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogDeviceNames
         DigitalDeviceNames
         AnalogTerminalNames % the physical channel name for each analog channel, e.g. 'AO0'
@@ -34,24 +33,14 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         NTimedDigitalChannels        
         NChannels
         IsChannelAnalog
-        %TriggerScheme
-        %IsAnalogChannelTerminalOvercommitted
-        %IsDigitalChannelTerminalOvercommitted
     end
     
     properties (Access = protected)
         SampleRate_ = 20000  % Hz
-        %AnalogDeviceNames_ = cell(1,0)
-        %DigitalDeviceNames_ = cell(1,0)        
-        %AnalogTerminalNames_ = cell(1,0)  % the physical channel name for each analog channel
-        %DigitalTerminalNames_ = cell(1,0)  % the physical channel name for each digital channel
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
-        %DeviceNamePerAnalogChannel_ = cell(1,0) % the device names of the NI board for each channel, a cell array of strings
-        %AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
         AnalogChannelUnits_ = cell(1,0)  % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
-        %AnalogChannelNames_ = cell(1,0)
         StimulusLibrary_ 
         DoRepeatSequence_ = true  % If true, the stimulus sequence will be repeated ad infinitum
         IsDigitalChannelTimed_ = false(1,0)
@@ -60,8 +49,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         DigitalTerminalIDs_ = zeros(1,0)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        %IsAnalogChannelTerminalOvercommitted_ = false(1,0)        
-        %IsDigitalChannelTerminalOvercommitted_ = false(1,0)        
     end
     
     events 
@@ -71,7 +58,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     
     methods
         function self = Stimulation(parent)
-            %self@ws.StimulationSubsystem(parent);
             self@ws.Subsystem(parent) ;
             self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
         end
@@ -85,31 +71,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         
     end  % methods block
         
-    methods (Access=protected)
-        function analogChannelScales=getAnalogChannelScales_(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                analogChannelScales=self.AnalogChannelScales_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [analogChannelScalesFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getCommandScalingsByName(channelNames);
-                analogChannelScales=ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.AnalogChannelScales_);
-            end
-        end  % function
-    end  % protected methods block
-    
     methods (Access = protected)
         % Allows access to protected and protected variables from ws.Coding.
         function out = getPropertyValue_(self, name)
@@ -154,12 +115,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
         end
         
-        function addDigitalChannel_(self)
+        function addDigitalChannel_(self, freeTerminalIDs)
             %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
             %deviceName = self.Parent.DeviceName ;
             
             %newChannelDeviceName = deviceName ;
-            freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+            %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
             if isempty(freeTerminalIDs) ,
                 return  % can't add a new one, because no free IDs
             else
@@ -220,36 +181,27 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
         
     methods (Access=protected)
-        function setIsDigitalChannelTimed_(self,newValue)
-%             wasSet = setIsDigitalChannelTimed_@ws.StimulationSubsystem(self,newValue) ;
-            if ws.isASettableValue(newValue),
-                nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
-                if isequal(size(newValue),[1 nDigitalChannels]) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                    coercedNewValue = logical(newValue) ;
-                    if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
-                        self.IsDigitalChannelTimed_=coercedNewValue;
-                        %self.syncTasksToChannelMembership_();
-                        wasSet = true ;
-                    else
-                        wasSet = false ;
-                    end
+        function setIsDigitalChannelTimed_(self, newValue)
+            nDigitalChannels = length(self.IsDigitalChannelTimed_) ;
+            if isequal(size(newValue),[1 nDigitalChannels]) && (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
+                coercedNewValue = logical(newValue) ;
+                if any(self.IsDigitalChannelTimed_ ~= coercedNewValue) ,
+                    self.IsDigitalChannelTimed_=coercedNewValue;
+                    wasSet = true ;
                 else
-                    self.Parent.didSetIsDigitalOutputTimed();
-                    %self.broadcast('DidSetIsDigitalChannelTimed');
-                    error('ws:invalidPropertyValue', ...
-                          'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
+                    wasSet = false ;
                 end
             else
-                wasSet = false ;
+                self.Parent.didSetIsDigitalOutputTimed();
+                error('ws:invalidPropertyValue', ...
+                      'IsDigitalChannelTimed must be a logical 1x%d vector, or convertable to one',nDigitalChannels);
             end
             self.Parent.didSetIsDigitalOutputTimed();
-            %self.broadcast('DidSetIsDigitalChannelTimed');
             
             if wasSet ,
                 self.syncTasksToChannelMembership_() ;
                 self.Parent.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
             end  
-            %self.broadcast('DidSetIsDigitalChannelTimed');
         end  % function
         
         function wasSet = setDigitalOutputStateIfUntimed_(self,newValue)
@@ -338,9 +290,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end                
         end  % function
                 
-        function out = get.IsDigitalChannelTimed(self)
-            out= self.IsDigitalChannelTimed_ ;
-        end
+%         function out = get.IsDigitalChannelTimed(self)
+%             out= self.IsDigitalChannelTimed_ ;
+%         end
         
         function out = get.DigitalOutputStateIfUntimed(self)
             out= self.DigitalOutputStateIfUntimed_ ;
@@ -493,24 +445,24 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.broadcast('DidSetIsChannelActive');
         end
         
-        function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
-            % Called by the parent to notify that the electrode
-            % may have changed.
-            
-            % If the changed property is a monitor property, we can safely
-            % ignore            
-            %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
-            if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
-                return
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();                        
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end
+%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSL>
+%             % Called by the parent to notify that the electrode
+%             % may have changed.
+%             
+%             % If the changed property is a monitor property, we can safely
+%             % ignore            
+%             %fprintf('Stimulation.electrodeMayHaveChanged: propertyName= %s\n',propertyName);
+%             if any(strcmp(propertyName,{'VoltageMonitorChannelName' 'CurrentMonitorChannelName' 'VoltageMonitorScaling' 'CurrentMonitorScaling'})) ,
+%                 return
+%             end
+%             self.Parent.didSetAnalogChannelUnitsOrScales();                        
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end
         
-        function electrodesRemoved(self)
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end
+%         function electrodesRemoved(self)
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end
         
 %         function self=stimulusMapDurationPrecursorMayHaveChanged(self)
 %             stimulusLibrary=self.StimulusLibrary;
@@ -600,108 +552,67 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
         end  % function
         
-        function channelUnits=get.AnalogChannelUnits(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                channelUnits=self.AnalogChannelUnits_;
-            else
-                channelNames=self.AnalogChannelNames;            
-                [channelUnitsFromElectrodes, ...
-                 isChannelScaleEnslaved] = ...
-                    electrodeManager.getCommandUnitsByName(channelNames);
-                channelUnits=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
-            end
-        end  % function
+%         function channelUnits=get.AnalogChannelUnits(self)
+%             wavesurferModel=self.Parent;
+%             if isempty(wavesurferModel) ,
+%                 ephys=[];
+%             else
+%                 ephys=wavesurferModel.Ephys;
+%             end
+%             if isempty(ephys) ,
+%                 electrodeManager=[];
+%             else
+%                 electrodeManager=ephys.ElectrodeManager;
+%             end
+%             if isempty(electrodeManager) ,
+%                 channelUnits=self.AnalogChannelUnits_;
+%             else
+%                 channelNames=self.AnalogChannelNames;            
+%                 [channelUnitsFromElectrodes, ...
+%                  isChannelScaleEnslaved] = ...
+%                     electrodeManager.getCommandUnitsByName(channelNames);
+%                 channelUnits=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
+%             end
+%         end  % function
 
-        function analogChannelScales=get.AnalogChannelScales(self)
-            analogChannelScales=self.getAnalogChannelScales_() ;
+        function result = getAnalogChannelScales_(self)
+            result = self.AnalogChannelScales_ ;
         end
 
-        function set.AnalogChannelUnits(self,newValue)
-            import ws.*
-            newValue = cellfun(@strtrim,newValue,'UniformOutput',false);
-            oldValue=self.AnalogChannelUnits_;
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.AnalogChannelUnits_=editedNewValue;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         function set.AnalogChannelUnits(self,newValue)
+%             newValue = cellfun(@strtrim,newValue,'UniformOutput',false);
+%             oldValue=self.AnalogChannelUnits_;
+%             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+%             editedNewValue=ws.fif(isChangeable,newValue,oldValue);
+%             self.AnalogChannelUnits_=editedNewValue;
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
+        
+        function setAnalogChannelScales_(self, newValue)
+            self.AnalogChannelScales_ = newValue ;
         end  % function
         
-        function set.AnalogChannelScales(self,newValue)
-            import ws.*
-            oldValue=self.AnalogChannelScales_;
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            editedNewValue=fif(isChangeable,newValue,oldValue);
-            self.AnalogChannelScales_=editedNewValue;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
+%             newUnits = cellfun(@strtrim,newUnits,'UniformOutput',false);
+%             isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
+%             oldUnits=self.AnalogChannelUnits_;
+%             editedNewUnits=ws.fif(isChangeable,newUnits,oldUnits);
+%             oldScales=self.AnalogChannelScales_;
+%             editedNewScales=fif(isChangeable,newScales,oldScales);
+%             self.AnalogChannelUnits_=editedNewUnits;
+%             self.AnalogChannelScales_=editedNewScales;
+%             self.Parent.didSetAnalogChannelUnitsOrScales();            
+%             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+%         end  % function
+        
+        function setSingleAnalogChannelUnits_(self, i, newValue)
+            self.AnalogChannelUnits_{i} = newValue ;
         end  % function
         
-        function setAnalogChannelUnitsAndScales(self,newUnits,newScales)
-            import ws.*
-            newUnits = cellfun(@strtrim,newUnits,'UniformOutput',false);
-            isChangeable= ~(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            oldUnits=self.AnalogChannelUnits_;
-            editedNewUnits=fif(isChangeable,newUnits,oldUnits);
-            oldScales=self.AnalogChannelScales_;
-            editedNewScales=fif(isChangeable,newScales,oldScales);
-            self.AnalogChannelUnits_=editedNewUnits;
-            self.AnalogChannelScales_=editedNewScales;
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
+        function setSingleAnalogChannelScale_(self, i, newValue)
+            self.AnalogChannelScales_(i) = newValue ;
         end  % function
-        
-        function setSingleAnalogChannelUnits(self,i,newValue)
-            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            isChangeable= ~isChangeableFull(i);
-            if isChangeable ,
-                self.AnalogChannelUnits_{i}=strtrim(newValue);
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function setSingleAnalogChannelScale(self,i,newValue)
-            isChangeableFull=(self.getNumberOfElectrodesClaimingAnalogChannel()==1);
-            isChangeable= ~isChangeableFull(i);
-            if isChangeable && isfinite(newValue) && newValue>0 ,
-                self.AnalogChannelScales_(i)=newValue;
-            end
-            self.Parent.didSetAnalogChannelUnitsOrScales();            
-            %self.broadcast('DidSetAnalogChannelUnitsOrScales');
-        end  % function
-        
-        function result=getNumberOfElectrodesClaimingAnalogChannel(self)
-            wavesurferModel=self.Parent;
-            if isempty(wavesurferModel) ,
-                ephys=[];
-            else
-                ephys=wavesurferModel.Ephys;
-            end
-            if isempty(ephys) ,
-                electrodeManager=[];
-            else
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if isempty(electrodeManager) ,
-                result=zeros(1,self.NAnalogChannels);
-            else
-                channelNames=self.AnalogChannelNames;            
-                result = ...
-                    electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
-            end
-        end  % function       
         
         function newChannelName = addAnalogChannel(self)
             %deviceName = self.Parent.DeviceName ;
@@ -781,17 +692,10 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
-        function setSingleAnalogTerminalID(self, i, newValue)
-            if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                newValueAsDouble = double(newValue) ;
-                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-                end
-            end
-            self.Parent.didSetAnalogOutputTerminalID();
+        function setSingleAnalogTerminalID_(self, i, newValue)
+            self.AnalogTerminalIDs_(i) = newValue ;
         end
-   end  % methods block
+    end  % methods block
     
     methods
         function mimic(self, other)
@@ -831,9 +735,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end  % public methods block
 
     methods
-        function set.IsDigitalChannelTimed(self,newValue)
-            self.setIsDigitalChannelTimed_(newValue) ;
-        end  % function
+%         function set.IsDigitalChannelTimed(self,newValue)
+%             self.setIsDigitalChannelTimed_(newValue) ;
+%         end  % function
         
         function set.DigitalOutputStateIfUntimed(self,newValue)
             self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter

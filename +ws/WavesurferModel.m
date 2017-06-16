@@ -42,6 +42,15 @@ classdef WavesurferModel < ws.Model
         XSpan  % s, the span of time showed in the signal display
         NAIChannels
         NDIChannels
+        AOChannelScales
+          % A row vector of scale factors to convert each channel from native units to volts on the coax.
+          % This is implicitly in units of ChannelUnits per volt (see below)        
+        AOChannelUnits
+          % An cellstring row vector that describes the real-world units 
+          % for each analog stimulus channel.          
+        NAOChannels
+        NDOChannels
+        IsDOChannelTimed
     end
     
     properties (Access=protected)
@@ -828,27 +837,14 @@ classdef WavesurferModel < ws.Model
             % was removed
             % Currently, tells Acquisition and Stimulation about the change.
             self.didSetAnalogChannelUnitsOrScales() ;      
-%             if ~isempty(self.Acquisition)
-%                 self.Acquisition.electrodesRemoved();
-%             end
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodesRemoved();
-            end
         end
         
-        function electrodeMayHaveChanged(self,electrode,propertyName)
+        function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSL>
             % Called by the Ephys to notify that the electrode
             % may have changed.
-            % Currently, tells Acquisition and Stimulation about the change.
-%             if ~isempty(self.Acquisition)
-%                 self.Acquisition.electrodeMayHaveChanged(electrode,propertyName);
-%             end
             if ~any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
                 self.didSetAnalogChannelUnitsOrScales();
             end            
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodeMayHaveChanged(electrode,propertyName);
-            end
         end  % function
 
         function self=didSetAnalogChannelUnitsOrScales(self)
@@ -2591,7 +2587,8 @@ classdef WavesurferModel < ws.Model
 %         end
         
         function addDOChannel(self)
-            self.Stimulation.addDigitalChannel_() ;
+            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+            self.Stimulation.addDigitalChannel_(freeTerminalIDs) ;
             %self.Display.didAddDigitalOutputChannel() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -4470,5 +4467,80 @@ classdef WavesurferModel < ws.Model
             result = self.Acquisition_.NDigitalChannels ;
         end
         
+        function result = get.NAOChannels(self)
+            result = self.Stimulation_.NAnalogChannels ;
+        end
+
+        function result = get.NDOChannels(self)
+            result = self.Stimulation_.NDigitalChannels ;
+        end
+        
+        function result=getNumberOfElectrodesClaimingAOChannel(self)
+            ephys=self.Ephys;
+            electrodeManager=ephys.ElectrodeManager;
+            channelNames=self.Stimulation_.AnalogChannelNames;
+            result = electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
+        end  % function       
+        
+        function result = get.AOChannelScales(self)
+            ephys=self.Ephys;
+            electrodeManager=ephys.ElectrodeManager;
+            channelNames = self.Stimulation_.AnalogChannelNames ;
+            [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandScalingsByName(channelNames) ;
+            result = ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.Display_.getAnalogChannelScales_()) ;
+        end  % function
+        
+%         function set.AOChannelScales(self, newValue)
+%             oldValue = self.Stimulation.getAnalogChannelScales_() ;
+%             isChangeable = ~(self.getNumberOfElectrodesClaimingAOChannel()==1) ;
+%             editedNewValue = ws.fif(isChangeable,newValue,oldValue) ;
+%             self.Stimulation.setAnalogChannelScales_(editedNewValue) ;
+%             self.didSetAnalogChannelUnitsOrScales() ;            
+%         end  % function        
+        
+        function result = get.AOChannelUnits(self)
+            ephys = self.Ephys ;
+            electrodeManager = ephys.ElectrodeManager ;
+            channelNames = self.Stimulation_.AnalogChannelNames ;
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandUnitsByName(channelNames) ;
+            result = ws.fif(isChannelScaleEnslaved, channelUnitsFromElectrodes, self.Stimulation_.getAnalogChannelUnits_()) ;
+        end  % function
+
+        function setSingleAOChannelUnits(self, i, newValue)
+            isChangeableFull=~(self.getNumberOfElectrodesClaimingAOChannel()==1);
+            isChangeable= isChangeableFull(i);
+            if isChangeable ,
+                self.Stimulation.setSingleAnalogChannelUnits_(i, strtrim(newValue)) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales();            
+        end  % function
+        
+        function setSingleAOChannelScale(self, i, newValue)
+            isChangeableFull = ~(self.getNumberOfElectrodesClaimingAOChannel()==1) ;
+            isChangeable = isChangeableFull(i) ;
+            if isChangeable && isfinite(newValue) && newValue>0 ,
+                self.Stimulation_.setSingleAnalogChannelScales_(i, newValue) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales() ;
+        end  % function
+        
+        function setSingleAOTerminalID(self, i, newValue)
+            if 1<=i && i<=self.NAOChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
+                end
+            end
+            self.didSetAnalogOutputTerminalID();
+        end
+        
+        function set.IsDOChannelTimed(self, newValue)
+            try
+                self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
+            catch exception
+                self.didSetIsDigitalOutputTimed() ;
+                rethrow(exception) ;
+            end
+        end
     end        
 end  % classdef

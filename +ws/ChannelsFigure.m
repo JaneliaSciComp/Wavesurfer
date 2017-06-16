@@ -1480,7 +1480,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             channelNames=model.Stimulation.AnalogChannelNames;
             channelScales=model.Stimulation.AnalogChannelScales;
             channelUnits=model.Stimulation.AnalogChannelUnits;
-            nElectrodesClaimingChannel=model.Stimulation.getNumberOfElectrodesClaimingAnalogChannel();
+            nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingAOChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
             isTerminalOvercommitted = model.IsAOChannelTerminalOvercommitted ;

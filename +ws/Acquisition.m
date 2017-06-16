@@ -453,26 +453,6 @@ classdef Acquisition < ws.Subsystem
             value = [true(1,self.NAnalogChannels) false(1,self.NDigitalChannels)];
         end
         
-%         function value = getNumberOfElectrodesClaimingAnalogChannel(self)
-%             wavesurferModel=self.Parent;
-%             if isempty(wavesurferModel) ,
-%                 ephys=[];
-%             else
-%                 ephys=wavesurferModel.Ephys;
-%             end
-%             if isempty(ephys) ,
-%                 electrodeManager=[];
-%             else
-%                 electrodeManager=ephys.ElectrodeManager;
-%             end
-%             if isempty(electrodeManager) ,
-%                 value=zeros(size(self.AnalogChannelScales));
-%             else
-%                 channelNames=self.AnalogChannelNames;
-%                 value=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames);
-%             end
-%         end
-        
         function value = getAnalogChannelScales_(self)
             %value = self.getAnalogChannelScales_() ;
             value = self.AnalogChannelScales_ ;
