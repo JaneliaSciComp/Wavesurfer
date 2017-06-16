@@ -87,6 +87,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                 self.Model.subscribeMe(self,'UpdateTrace','','updateTrace');
                 self.Model.subscribeMe(self,'DidSetIsInputChannelActive','','update');
                 ephys=self.Model.Parent;
+                ephys.subscribeMe(self,'UpdateTestPulser','','update');
                 if ~isempty(ephys) && isvalid(ephys) ,
                     electrodeManager=ephys.ElectrodeManager;
                     if ~isempty(electrodeManager) && isvalid(electrodeManager) ,

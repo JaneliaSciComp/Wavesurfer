@@ -1,4 +1,13 @@
 classdef Ephys < ws.Subsystem
+    properties (Dependent=true)
+        TestPulseElectrodeCommandChannelName
+        TestPulseElectrodeMonitorChannelName
+        TestPulseElectrodeAmplitude
+        TestPulseElectrodes
+        TestPulseElectrodesCount
+        AmplitudePerTestPulseElectrode
+    end
+    
     properties (Access = protected)
         ElectrodeManager_
         TestPulser_
@@ -9,6 +18,10 @@ classdef Ephys < ws.Subsystem
         TestPulser  % provides public access to TestPulser_
     end    
       
+    events
+        UpdateTestPulser
+    end
+    
     methods
         function self = Ephys(parent)
             self@ws.Subsystem(parent) ;
@@ -204,7 +217,85 @@ classdef Ephys < ws.Subsystem
             %dbstack
             self.TestPulser_.didSetDeviceName(deviceName) ;
         end        
+    end
+    
+    methods (Access=protected)
+        function value = getTestPulseElectrodeProperty_(self, propertyName)
+            electrodeName = self.TestPulser_.ElectrodeName ;
+            electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
+            if isempty(electrode) ,
+                value = '' ;
+            else
+                value = electrode.(propertyName) ;
+            end
+        end
         
+        function setTestPulseElectrodeProperty_(self, propertyName, newValue)
+            electrodeName = self.TestPulser_.ElectrodeName ;
+            electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
+            if ~isempty(electrode) ,
+                electrode.(propertyName) = newValue ;
+            end
+        end
+    end
+    
+    methods
+        function result = get.TestPulseElectrodeCommandChannelName(self)
+            result = self.getTestPulseElectrodeProperty_('CommandChannelName') ;
+        end
+        
+        function result = get.TestPulseElectrodeMonitorChannelName(self)
+            result = self.getTestPulseElectrodeProperty_('MonitorChannelName') ;
+        end
+        
+        function result = get.TestPulseElectrodeAmplitude(self)
+            result = self.getTestPulseElectrodeProperty_('TestPulseAmplitude') ;
+        end
+        
+        function result=get.TestPulseElectrodes(self)
+            electrodeManager=self.ElectrodeManager_;
+            result=electrodeManager.TestPulseElectrodes;
+        end
+
+        function result=get.TestPulseElectrodesCount(self)
+            electrodeManager=self.ElectrodeManager_ ;
+            if isempty(electrodeManager) ,
+                result=0;
+            else
+                result=sum(electrodeManager.IsElectrodeMarkedForTestPulse);
+            end
+        end
+        
+        function result=get.AmplitudePerTestPulseElectrode(self)
+            % Get the amplitudes of the test pulse for all the
+            % marked-for-test-pulsing electrodes, as a double array.            
+            electrodeManager=self.ElectrodeManager_;
+            testPulseElectrodes=electrodeManager.TestPulseElectrodes;
+            %resultAsCellArray={testPulseElectrodes.TestPulseAmplitude};
+            result=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
+                           testPulseElectrodes);
+        end
+        
+        function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
+            if ~isempty(self.Electrode_) ,
+                if ws.isString(newValue) ,
+                    newValueAsDouble = str2double(newValue) ;
+                elseif isnumeric(newValue) && isscalar(newValue) ,
+                    newValueAsDouble = double(newValue) ;
+                else
+                    newValueAsDouble = nan ;  % isfinite(nan) is false
+                end
+                if isfinite(newValueAsDouble) ,
+                    self.setTestPulseElectrodeProperty_('TestPulseAmplitude', newValueAsDouble) ;
+                    self.TestPulser_.clearExistingSweepIfPresent_() ;
+                else
+                    self.broadcast('UpdateTestPulser') ;
+                    error('ws:invalidPropertyValue', ...
+                          'TestPulseElectrodeAmplitude must be a finite scalar');
+                end
+            end                
+            self.broadcast('UpdateTestPulser') ;
+        end        
     end  % public methods block
 
 end  % classdef
