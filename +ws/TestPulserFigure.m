@@ -41,7 +41,7 @@ classdef TestPulserFigure < ws.MCOSFigure
 %     end
     
     methods
-        function self=TestPulserFigure(model,controller)
+        function self=TestPulserFigure(model, controller)
             % The model should be an instance of TestPulser, or []
             self = self@ws.MCOSFigure(model,controller);
             
@@ -151,7 +151,6 @@ classdef TestPulserFigure < ws.MCOSFigure
         function updateTrace(self,varargin)
             % If there are issues with either the host or the model, just return
             %fprintf('updateTrace!\n');
-            import ws.*
             if ~self.AreUpdatesEnabled ,
                 return
             end
@@ -183,7 +182,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % Update the graphics objects to match the model and/or host
             % Extra spaces b/c right-align cuts of last char a bit
-            set(self.UpdateRateText,'String',fif(isnan(self.Model.UpdateRate),'? ',sprintf('%0.1f ',self.Model.UpdateRate)));
+            set(self.UpdateRateText,'String',ws.fif(isnan(self.Model.UpdateRate),'? ',sprintf('%0.1f ',self.Model.UpdateRate)));
             %fprintf('here\n');
             %rawGainOrResistance=self.Model.GainOrResistancePerElectrode;
             %rawGainOrResistanceUnits = self.Model.GainOrResistanceUnitsPerElectrode ;
@@ -204,9 +203,10 @@ classdef TestPulserFigure < ws.MCOSFigure
             end
             %fprintf('here 3\n');
             % draw the trace line
-            monitor=self.Model.Monitor;
+            ephys = self.Model.Parent ;
+            monitor = ephys.Monitor ;
             %t=self.Model.Time;  % s            
-            set(self.TraceLine,'YData',monitor);
+            set(self.TraceLine, 'YData', monitor) ;
         end  % method
         
 %         function updateIsReady(self,varargin)            
@@ -253,7 +253,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             % Get some handles we'll need
             ephys=self.Model.Parent;
             electrodeManager=ephys.ElectrodeManager;
-            electrode=self.Model.Electrode;
+            %electrode=self.Model.Electrode;
+            electrode = ephys.TestPulseElectrode ;
             wavesurferModel=ephys.Parent;
             
             % Define some useful booleans
@@ -311,7 +312,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                               'Value',~isempty(electrode)&& ...
                                       (isequal(electrode.Mode,'cc')||isequal(electrode.Mode,'i_equals_zero')));
                         
-            set(self.AmplitudeEdit,'String',sprintf('%g',self.Model.Amplitude), ...
+            set(self.AmplitudeEdit,'String',sprintf('%g',ephys.TestPulseElectrodeAmplitude), ...
                                    'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.AmplitudeEditUnitsText,'String',self.Model.CommandUnits, ...
                                             'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
@@ -321,9 +322,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             nElectrodes=length(self.GainLabelTexts);
             for i=1:nElectrodes ,
                 if self.Model.IsCCPerElectrode(i) || self.Model.IsVCPerElectrode(i) ,
-                    set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',self.Model.Electrodes{i}.Name));
+                    set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',ephys.TestPulseElectrodes{i}.Name));
                 else
-                    set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
+                    set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',ephys.TestPulseElectrodes{i}.Name));
                 end
                 %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
                 set(self.GainUnitsTexts(i),'String','');

@@ -6,6 +6,8 @@ classdef Ephys < ws.Subsystem
         TestPulseElectrodes
         TestPulseElectrodesCount
         AmplitudePerTestPulseElectrode
+        TestPulseElectrode
+        Monitor
     end
     
     properties (Access = protected)
@@ -28,6 +30,7 @@ classdef Ephys < ws.Subsystem
             self.IsEnabled=true;            
             self.ElectrodeManager_ = ws.ElectrodeManager(self) ;
             self.TestPulser_ = ws.TestPulser(self) ;
+            self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
         end
         
         function delete(self)
@@ -60,7 +63,7 @@ classdef Ephys < ws.Subsystem
             % Called by the ElectrodeManager when an electrode is added.
             % Currently, informs the TestPulser of the change.
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeWasAdded(electrode);
+                self.TestPulser_.electrodeWasAdded(electrode, self.ElectrodeManager_.TestPulseElectrodesCount);
             end
         end
 
@@ -69,7 +72,7 @@ classdef Ephys < ws.Subsystem
             % are removed.
             % Currently, informs the TestPulser of the change.
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodesRemoved();
+                self.TestPulser_.electrodesRemoved(self.ElectrodeManager_.TestPulseElectrodesCount);
             end
             if ~isempty(self.Parent)
                 self.Parent.electrodesRemoved();
@@ -85,7 +88,7 @@ classdef Ephys < ws.Subsystem
         
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged();
+                self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(self.ElectrodeManager_.TestPulseElectrodesCount);
             end
         end
                 
@@ -200,6 +203,9 @@ classdef Ephys < ws.Subsystem
                 end
             end
             
+            % Ensure self-consistency of self
+            self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
+            
             % Re-enable broadcasts
             self.TestPulser.enableBroadcastsMaybe();
             self.ElectrodeManager.enableBroadcastsMaybe();
@@ -262,7 +268,7 @@ classdef Ephys < ws.Subsystem
             if isempty(electrodeManager) ,
                 result=0;
             else
-                result=sum(electrodeManager.IsElectrodeMarkedForTestPulse);
+                result=electrodeManager.TestPulseElectrodesCount ;
             end
         end
         
@@ -295,6 +301,24 @@ classdef Ephys < ws.Subsystem
                 end
             end                
             self.broadcast('UpdateTestPulser') ;
+        end        
+        
+        function result=get.TestPulseElectrode(self)
+            electrodeName = self.TestPulser_.ElectrodeName ;            
+            electrodeManager = self.ElectrodeManager_ ;
+            result = electrodeManager.getElectrodeByName(electrodeName) ;
+        end
+        
+        function result = get.Monitor(self)
+            currentElectrodeName = self.TestPulser_.ElectrodeName ;
+            if isempty(currentElectrodeName)
+                result = nan(self.TestPulser_.NScansInSweep,1); 
+            else
+                %electrodes = self.ElectrodeManager_.TestPulseElectrodes ;
+                electrodeNames = self.ElectrodeManager_.TestPulseElectrodeNames ;
+                isElectrode=cellfun(@(testElectrodeName)(isequal(currentElectrodeName, testElectrodeName)), electrodeNames) ;
+                result = self.TestPulser_.MonitorPerElectrode(:,isElectrode) ;
+            end
         end        
     end  % public methods block
 

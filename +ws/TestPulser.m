@@ -37,7 +37,7 @@ classdef TestPulser < ws.Model
         IsCC
         IsVC
         UpdateRate
-        Monitor
+        %Monitor
         %Command
         %CommandInVolts
         NSweepsCompletedThisRun
@@ -68,6 +68,7 @@ classdef TestPulser < ws.Model
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
         %IsReady  % if true, the model is not busy
+        NElectrodes
     end
     
     properties  (Access=protected)  % need to see if some of these things should be transient
@@ -88,7 +89,8 @@ classdef TestPulser < ws.Model
             % If IsAutoY_ is false:
             %     Has no effect.
         DesiredRateOfAutoYing_ = 10  % Hz, for now this never changes
-            % The desired rate of syncing the Y to the data            
+            % The desired rate of syncing the Y to the data
+        NElectrodes_
     end
     
     properties  (Access=protected, Transient=true)
@@ -186,8 +188,14 @@ classdef TestPulser < ws.Model
             self.IsRunning_=false;
             self.UpdateRate_=nan;
             %self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
-            self.MonitorPerElectrode_ = nan(self.NScansInSweep,0) ;
+            self.NElectrodes_ = 0 ;
+            self.MonitorPerElectrode_ = nan(self.NScansInSweep,self.NElectrodes_) ;
         end  % method
+        
+        function setNElectrodes_(self, newValue)
+            self.NElectrodes_ = newValue ;
+            self.clearExistingSweepIfPresent_() ;
+        end
         
         function delete(self)
             self.Parent_=[];  % not necessary, but harmless
@@ -537,8 +545,9 @@ classdef TestPulser < ws.Model
         end
 
         function value=get.CommandUnits(self)
+            ephys = self.Parent_ ;
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.aoChannelUnitsFromName(self.CommandChannelName);            
+            value=wavesurferModel.aoChannelUnitsFromName(ephys.TestPulseElectrodeCommandChannelName);            
         end
         
         function result=get.CommandUnitsPerElectrode(self)
@@ -564,8 +573,9 @@ classdef TestPulser < ws.Model
         end  % function
         
         function value=get.MonitorUnits(self)
+            ephys = self.Parent_ ;
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.aiChannelUnitsFromName(self.MonitorChannelName);           
+            value=wavesurferModel.aiChannelUnitsFromName(ephys.TestPulseElectrodeMonitorChannelName);           
         end  % function
         
         function result=get.MonitorUnitsPerElectrode(self)        
@@ -792,15 +802,15 @@ classdef TestPulser < ws.Model
 %             end
 %         end
         
-        function value=get.Monitor(self)
-            if isempty(self.Electrode_)
-                value=nan(self.NScansInSweep,1); 
-            else
-                % isElectrode=(self.Electrode_==self.Electrodes);
-                isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
-                value=self.MonitorPerElectrode_(:,isElectrode);
-            end
-        end
+%         function value=get.Monitor(self)
+%             if isempty(self.ElectrodeName_)
+%                 value=nan(self.NScansInSweep,1); 
+%             else
+%                 % isElectrode=(self.Electrode_==self.Electrodes);
+%                 isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
+%                 value=self.MonitorPerElectrode_(:,isElectrode);
+%             end
+%         end
         
 %         function value=get.InputDeviceNames(self)
 %             wavesurferModel=self.Parent.Parent;            
@@ -980,24 +990,26 @@ classdef TestPulser < ws.Model
             end
         end  % function        
         
-        function electrodeWasAdded(self,electrode)
+        function electrodeWasAdded(self, electrode, nTestPulseElectrodes)
             % Called by the parent Ephys when an electrode is added.
-            
+
+            self.NElectrodes_ = nTestPulseElectrodes ;
             % Redimension MonitorPerElectrode_ appropriately, etc.
             self.clearExistingSweepIfPresent_()
 
             % If there's no current electrode, set Electrode to point to
             % the newly-created one.            
-            if isempty(self.Electrode) ,
-                self.Electrode=electrode;
+            if isempty(self.ElectrodeName) ,
+                self.ElectrodeName = electrode.Name ; 
             end
         end
 
-        function electrodesRemoved(self)
+        function electrodesRemoved(self, nTestPulseElectrodes)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             
             % Redimension MonitorPerElectrode_ appropriately, etc.
+            self.NElectrodes_ = nTestPulseElectrodes ;
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
@@ -1007,13 +1019,15 @@ classdef TestPulser < ws.Model
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
             % Called by the parent Ephys to notify the TestPulser of a
             % change.
-            if (self.Electrode == electrode) ,  % pointer comparison, essentially
-                self.Electrode=electrode;  % call the setter to change everything that should change
-            end
+%             if (self.Electrode == electrode) ,  % pointer comparison, essentially
+%                 self.Electrode=electrode;  % call the setter to change everything that should change
+%             end
+            self.broadcast('Update') ;
         end  % function
         
-        function isElectrodeMarkedForTestPulseMayHaveChanged(self)
+        function isElectrodeMarkedForTestPulseMayHaveChanged(self, nTestPulseElectrodes)
             % Redimension MonitorPerElectrode_ appropriately, etc.
+            self.NElectrodes_ = nTestPulseElectrodes ;
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
@@ -1470,9 +1484,9 @@ classdef TestPulser < ws.Model
         end
         
         function clearExistingSweepIfPresent_(self)
-            self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
-            self.GainPerElectrode_=nan(1,self.NElectrodes);
-            self.GainOrResistancePerElectrode_=nan(1,self.NElectrodes);
+            self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes_);
+            self.GainPerElectrode_=nan(1,self.NElectrodes_);
+            self.GainOrResistancePerElectrode_=nan(1,self.NElectrodes_);
             self.UpdateRate_=nan;
         end  % function
     end  % methods
@@ -1512,22 +1526,24 @@ classdef TestPulser < ws.Model
             % to the first test pulse electrode.
             electrodes=self.Parent.ElectrodeManager.TestPulseElectrodes;
             if isempty(electrodes)
-                self.Electrode=[];
+                self.ElectrodeName='';
             else
-                if isempty(self.Electrode) ,
-                    self.Electrode=electrodes{1};  % no current electrode, but electrodes is nonempty, so make the first one current.
+                if isempty(self.ElectrodeName) ,
+                    electrode = electrodes{1} ;
+                    self.ElectrodeName = electrode.Name;  % no current electrode, but electrodes is nonempty, so make the first one current.
                 else
                     % If we get here, self.Electrode is a scalar of class
                     % Electrode, and electrode is a nonempty cell array of
                     % scalars of class Electrode
-                    isMatch=cellfun(@(electrode)(self.Electrode==electrode),electrodes);
+                    isMatch=cellfun(@(electrode)(isequal(self.ElectrodeName, electrode.Name)),electrodes);
                     if any(isMatch)
                         % nothing to do here---self.Electrode is a handle
                         % that points to a current test pulse electrode
                     else
                         % It seems the current electrode has been deleted, or is
                         % not marked as being available for test pulsing
-                        self.Electrode=electrodes{1};
+                        electrode = electrodes{1} ;
+                        self.ElectrodeName = electrode.Name ;
                     end
                 end
             end 
@@ -1582,6 +1598,10 @@ classdef TestPulser < ws.Model
             %dbstack
             self.DeviceName_ = deviceName ;
         end        
+        
+        function result = get.NElectrodes(self)
+            result = self.NElectrodes_ ;
+        end
     end
     
 end  % classdef

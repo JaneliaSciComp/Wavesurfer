@@ -13,6 +13,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         NElectrodes
         TestPulseElectrodes  % the electrodes that are marked for test pulsing.
         TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
+        TestPulseElectrodesCount
         Electrodes
         DidLastElectrodeUpdateWork
         IsDoTrodeUpdateBeforeRunSensible
@@ -1203,4 +1204,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function        
     end  % class methods block
       
+    methods
+        function result=get.TestPulseElectrodesCount(self)
+            result=sum(self.IsElectrodeMarkedForTestPulse_) ;
+        end
+    end        
 end  % classdef
