@@ -32,7 +32,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.IsAIChannelActive = [true true false true true true true false];
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
 
@@ -66,7 +66,7 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 % 
 %             wsModel.AcquisitionSampleRate=20000;  % Hz
 %             wsModel.Stimulation.IsEnabled=true;
-%             wsModel.Stimulation.SampleRate=20000;  % Hz
+%             wsModel.StimulationSampleRate=20000;  % Hz
 %             wsModel.Display.IsEnabled=true;
 %             wsModel.Logging.IsEnabled=true;
 % 

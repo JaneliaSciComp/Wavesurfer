@@ -27,7 +27,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
             electrode.CurrentCommandScaling = 10 ;
 
             currentCommandScaleInTrode = electrode.CurrentCommandScaling ;
-            commandScaleInStimulationSubsystem = wsModel.Stimulation.AnalogChannelScales ;
+            commandScaleInStimulationSubsystem = wsModel.AOChannelScales ;
 
             self.verifyEqual(currentCommandScaleInTrode, commandScaleInStimulationSubsystem) ;
 

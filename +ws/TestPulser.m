@@ -586,7 +586,7 @@ classdef TestPulser < ws.Model
 
         function value=get.CommandUnits(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.channelUnitsFromName(self.CommandChannelName);            
+            value=wavesurferModel.aoChannelUnitsFromName(self.CommandChannelName);            
         end
         
         function result=get.CommandUnitsPerElectrode(self)
@@ -599,11 +599,11 @@ classdef TestPulser < ws.Model
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            stimulus=wavesurferModel.Stimulation;
+            %stimulus=wavesurferModel.Stimulation;
             %result=ws.objectArray('ws.SIUnit',[1 n]);
             result = cell(1,n) ;
             for i=1:n ,
-                unit=stimulus.channelUnitsFromName(commandChannelNames{i});
+                unit=wavesurferModel.aoChannelUnitsFromName(commandChannelNames{i});
                 result{i} = unit ;
 %                 if ~isempty(unit) ,
 %                     result(i)=unit;

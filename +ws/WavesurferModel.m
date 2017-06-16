@@ -3335,10 +3335,10 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.TimebaseRate = self.TimebaseRate ;
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
-            refillerProtocol.StimulationSampleRate = self.Stimulation.SampleRate ;
+            refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
 
             refillerProtocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
-            refillerProtocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
+            refillerProtocol.AOChannelScales = self.AOChannelScales ;
             refillerProtocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
             
             refillerProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
@@ -4067,7 +4067,7 @@ classdef WavesurferModel < ws.Model
         end  % function        
         
         function plotSelectedStimulusLibraryItem(self, figureGH)
-            sampleRate = self.Stimulation_.SampleRate ;  % Hz 
+            sampleRate = self.StimulationSampleRate ;  % Hz 
             channelNames = [self.AOChannelNames self.DOChannelNames] ;
             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
             self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
@@ -4609,6 +4609,19 @@ classdef WavesurferModel < ws.Model
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
             self.Parent.didSetIsInputChannelMarkedForDeletion() ;
-        end        
-    end        
+        end
+        
+        function result=aoChannelUnitsFromName(self,channelName)
+            if isempty(channelName) ,
+                result = '' ;
+            else
+                iChannel=self.Stimulation_.indexOfAnalogChannelFromName(channelName);
+                if isnan(iChannel) ,
+                    result='';
+                else
+                    result=self.AOChannelUnits{iChannel} ;
+                end
+            end
+        end  % function
+    end
 end  % classdef

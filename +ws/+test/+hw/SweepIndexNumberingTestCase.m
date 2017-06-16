@@ -30,7 +30,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.SweepDuration = 10 ;  % s
             %wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled = true ;
-            %wsModel.Stimulation.SampleRate=20000;  % Hz
+            %wsModel.StimulationSampleRate=20000;  % Hz
             %wsModel.Display.IsEnabled=true;
             
             % Set to external triggering

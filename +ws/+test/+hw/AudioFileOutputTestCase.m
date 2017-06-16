@@ -26,7 +26,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
 
@@ -104,7 +104,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
 
@@ -182,7 +182,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
 

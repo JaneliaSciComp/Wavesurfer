@@ -879,7 +879,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             % Stimulation panel (most of it)
             set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
-            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
+            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.StimulationSampleRate));
             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
             
             % Display panel

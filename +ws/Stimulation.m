@@ -429,18 +429,18 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
         end  % function
 
-        function result=channelUnitsFromName(self,channelName)
-            if isempty(channelName) ,
-                result = '' ;
-            else
-                iChannel=self.indexOfAnalogChannelFromName(channelName);
-                if isnan(iChannel) ,
-                    result='';
-                else
-                    result=self.AnalogChannelUnits{iChannel};
-                end
-            end
-        end  % function
+%         function result=channelUnitsFromName(self,channelName)
+%             if isempty(channelName) ,
+%                 result = '' ;
+%             else
+%                 iChannel=self.indexOfAnalogChannelFromName(channelName);
+%                 if isnan(iChannel) ,
+%                     result='';
+%                 else
+%                     result=self.AnalogChannelUnits{iChannel};
+%                 end
+%             end
+%         end  % function
         
 %         function channelUnits=get.AnalogChannelUnits(self)
 %             wavesurferModel=self.Parent;
