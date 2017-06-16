@@ -1501,14 +1501,14 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AOScaleUnitsTexts(i),'String',sprintf('%s/V',channelUnits{i})) ;
                 %set(self.AOIsActiveCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelActive(i), ...
                 %                                 'Enable',onIff(isWavesurferIdle));                                     
-                set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelMarkedForDeletion(i), ...
+                set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsAOChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end
             
             % Deal with enablement of add/delete buttons
             nAOTerminals = model.NAOTerminals ;   
             areAnyFreeAOTerminals =  (nAOChannels<nAOTerminals) ;
-            isAOChannelMarkedForDeletion = model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAOChannelMarkedForDeletion = model.IsAOChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
             set(self.AddAOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
             set(self.DeleteAOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
@@ -1573,9 +1573,9 @@ classdef ChannelsFigure < ws.MCOSFigure
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
                                                 'enable',ws.onIff(isWavesurferIdle));
-                set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
+                set(self.DOIsOnRadiobuttons(i),'value',self.Model.DOChannelStateIfUntimed(i),...
                                                'enable',ws.onIff(~isTimed(i)));
-                set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.Stimulation.IsDigitalChannelMarkedForDeletion(i), ...
+                set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsDOChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
@@ -1584,7 +1584,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             nDigitalChannels = model.NDigitalChannels ;
             areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
-            isDOChannelMarkedForDeletion = model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            isDOChannelMarkedForDeletion = model.IsDOChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
             set(self.AddDOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
             set(self.DeleteDOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
@@ -1603,7 +1603,7 @@ classdef ChannelsFigure < ws.MCOSFigure
 %                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
 %                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
 %                                                 'enable',ws.onIff(isWavesurferIdle));
-%                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
+%                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.DOChannelStateIfUntimed(i),...
 %                                                'enable',ws.onIff(~isTimed(i)));
 %             end            
 %         end        

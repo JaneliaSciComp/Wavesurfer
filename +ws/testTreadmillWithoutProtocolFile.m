@@ -10,9 +10,9 @@ wsModel.IsAIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAIChannels() ;
 wsModel.IsDIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDIChannels() ;
-wsModel.Stimulation.IsAnalogChannelMarkedForDeletion(:) = true ;
+wsModel.IsAOChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAOChannels() ;
-wsModel.Stimulation.IsDigitalChannelMarkedForDeletion(:) = true ;
+wsModel.IsDOChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDOChannels() ;
 
 % add electrode AI channel

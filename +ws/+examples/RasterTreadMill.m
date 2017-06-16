@@ -134,9 +134,9 @@ classdef RasterTreadMill < ws.UserClass
 
 %             % output TTL pulse
 %             if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
-%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 1;
+%                 wsModel.DOChannelStateIfUntimed(self.LaserChannel) = 1;
 %             else
-%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 0;
+%                 wsModel.DOChannelStateIfUntimed(self.LaserChannel) = 0;
 %             end
 
             % has a lap been completed in current data?

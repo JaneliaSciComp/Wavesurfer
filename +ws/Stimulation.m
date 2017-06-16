@@ -30,7 +30,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         ChannelNames
         NAnalogChannels
         NDigitalChannels
-        NTimedDigitalChannels        
+        %NTimedDigitalChannels        
         NChannels
         IsChannelAnalog
     end
@@ -141,17 +141,17 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
         end  % function
         
-        function deleteMarkedDigitalChannels_(self)
+        function deleteMarkedDigitalChannels_(self, isToBeDeleted)
             % Should only be called from parent.
             
-            % Do some accounting
-            isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            %indicesOfChannelsToDelete = find(isToBeDeleted) ;
-            isKeeper = ~isToBeDeleted ;
-            
-            % Turn off any untimed DOs that are about to be deleted
-            digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed ;
-            self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
+%             % Do some accounting
+%             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
+%             %indicesOfChannelsToDelete = find(isToBeDeleted) ;
+           isKeeper = ~isToBeDeleted ;
+%             
+%             % Turn off any untimed DOs that are about to be deleted
+%             digitalOutputStateIfUntimed = self.DigitalOutputStateIfUntimed_ ;
+%             self.DigitalOutputStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;
 
             % Now do the real deleting
             if all(isToBeDeleted)
@@ -327,9 +327,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             value = length(self.DigitalChannelNames_);
         end
 
-        function value = get.NTimedDigitalChannels(self)
-            value = sum(self.IsDigitalChannelTimed);
-        end
+%         function value = get.NTimedDigitalChannels(self)
+%             value = sum(self.IsDigitalChannelTimed);
+%         end
 
         function value = get.NChannels(self)
             value = self.NAnalogChannels + self.NDigitalChannels ;
@@ -378,7 +378,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end
         
         function setIsAnalogChannelMarkedForDeletion_(self, newValue)
-            if islogical(newValue) && isequal(size(newValue),size(self.IsAnalogChannelMarkedForDeletion)) ,
+            if islogical(newValue) && isequal(size(newValue),size(self.IsAnalogChannelMarkedForDeletion_)) ,
                 self.IsAnalogChannelMarkedForDeletion_ = newValue;
             end
             %self.Parent.didSetIsInputChannelMarkedForDeletion() ;
@@ -389,7 +389,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end
         
         function setIsDigitalChannelMarkedForDeletion_(self, newValue)
-            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelMarkedForDeletion)) ,
+            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelMarkedForDeletion_)) ,
                 self.IsDigitalChannelMarkedForDeletion_ = newValue;
             end
             %self.Parent.didSetIsInputChannelMarkedForDeletion() ;
@@ -411,14 +411,14 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
         end  % function
 
-        function value = channelScaleFromName(self,channelName)
-            channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
-            if isnan(channelIndex) ,
-                value = nan ;
-            else
-                value = self.AnalogChannelScales(channelIndex) ;
-            end
-        end  % function
+%         function value = channelScaleFromName(self,channelName)
+%             channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
+%             if isnan(channelIndex) ,
+%                 value = nan ;
+%             else
+%                 value = self.AnalogChannelScales(channelIndex) ;
+%             end
+%         end  % function
 
         function result=indexOfAnalogChannelFromName(self,channelName)            
             iChannel=find(strcmp(channelName,self.AnalogChannelNames),1);
@@ -442,28 +442,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
 %         end  % function
         
-%         function channelUnits=get.AnalogChannelUnits(self)
-%             wavesurferModel=self.Parent;
-%             if isempty(wavesurferModel) ,
-%                 ephys=[];
-%             else
-%                 ephys=wavesurferModel.Ephys;
-%             end
-%             if isempty(ephys) ,
-%                 electrodeManager=[];
-%             else
-%                 electrodeManager=ephys.ElectrodeManager;
-%             end
-%             if isempty(electrodeManager) ,
-%                 channelUnits=self.AnalogChannelUnits_;
-%             else
-%                 channelNames=self.AnalogChannelNames;            
-%                 [channelUnitsFromElectrodes, ...
-%                  isChannelScaleEnslaved] = ...
-%                     electrodeManager.getCommandUnitsByName(channelNames);
-%                 channelUnits=ws.fif(isChannelScaleEnslaved,channelUnitsFromElectrodes,self.AnalogChannelUnits_);
-%             end
-%         end  % function
+        function result = getAnalogChannelUnits_(self)
+            result = self.AnalogChannelUnits_ ;
+        end  % function
 
         function result = getAnalogChannelScales_(self)
             result = self.AnalogChannelScales_ ;

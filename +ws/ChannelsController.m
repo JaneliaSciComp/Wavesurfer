@@ -136,9 +136,9 @@ classdef ChannelsController < ws.Controller
         
         function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
-            isAnalogChannelMarkedForDeletion = self.Model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion = self.Model.IsAOChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            %self.Model.Stimulation.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+            %self.Model.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
             self.Model.Stimulation.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
@@ -235,20 +235,20 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.DOIsOnRadiobuttons) ;
             i = find(isTheChannel) ;
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value') ;
-            value = self.Model.Stimulation.DigitalOutputStateIfUntimed ;
+            value = self.Model.DOChannelStateIfUntimed ;
             newValue = ws.replace(value, i, newState) ;
-            % self.Model.Stimulation.DigitalOutputStateIfUntimed = newValue ;
+            % self.Model.DOChannelStateIfUntimed = newValue ;
             self.Model.Stimulation.do('set', 'DigitalOutputStateIfUntimed', newValue) ;            
         end
         
         function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
-            %isChannelMarkedForDeletion = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            %isChannelMarkedForDeletion = self.Model.IsDOChannelMarkedForDeletion ;
             %isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            originalArray = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            originalArray = self.Model.IsDOChannelMarkedForDeletion ;
             newValue = get(source,'Value') ;
             newArray = ws.replace(originalArray, indexOfTheChannel, newValue) ;  %#ok<FNDSB>
-            %self.Model.Stimulation.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+            %self.Model.IsDOChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
             self.Model.Stimulation.do('set', 'IsDigitalChannelMarkedForDeletion', newArray) ;             
         end
 

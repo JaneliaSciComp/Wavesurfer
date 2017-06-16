@@ -33,20 +33,20 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
             % Called just after each set of sweeps (a.k.a. each
             % "run")
             fprintf('Completed a run.\n');
-            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
+            wsModel.DOChannelStateIfUntimed(1) = false ;  % don't want this left high
         end
         
         function stoppingRun(self,wsModel,eventName) %#ok<INUSL,INUSD>
             % Called if a sweep goes wrong
             fprintf('User stopped a run.\n');
-            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
+            wsModel.DOChannelStateIfUntimed(1) = false ;  % don't want this left high
         end        
         
         function abortingRun(self,wsModel,eventName) %#ok<INUSL,INUSD>
             % Called if a run goes wrong, after the call to
             % abortingSweep()
             fprintf('Oh noes!  A run aborted.\n');
-            wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = false ;  % don't want this left high
+            wsModel.DOChannelStateIfUntimed(1) = false ;  % don't want this left high
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
@@ -86,7 +86,7 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
             %digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
             %fprintf('MimicAnalogInputWithDigitalInput::samplesAcquired()\n');
             vSample = analogData(end,1);  % this method only gets called when nScans>=1
-%             wsModel.Stimulation.DigitalOutputStateIfUntimed(1) = ...
+%             wsModel.DOChannelStateIfUntimed(1) = ...
 %                 (vSample>2.5) ;
             newOutput = (vSample>2.5) ;
             looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newOutput) ;

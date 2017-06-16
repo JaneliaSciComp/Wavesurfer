@@ -28,7 +28,7 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         end
         
         function startingSweep(self,wsModel,eventName) %#ok<INUSD,INUSL>
-            wsModel.Stimulation.DigitalOutputStateIfUntimed(1)= ...
+            wsModel.DOChannelStateIfUntimed(1)= ...
                 mod(wsModel.NSweepsCompletedInThisRun,2);
         end
         

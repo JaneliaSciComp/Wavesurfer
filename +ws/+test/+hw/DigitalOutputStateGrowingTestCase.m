@@ -16,17 +16,15 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly = '--nogui' ;             
-            wsModel=wavesurfer(isCommandLineOnly) ;
-
+            wsModel=wavesurfer('--nogui') ;
             wsModel.Stimulation.IsEnabled=true;
-            self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0);
+            self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 0);
             wsModel.addDOChannel() ;
-            self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 1) ;
-            %wsModel.Stimulation.DigitalOutputStateIfUntimed = true ;
-            wsModel.Stimulation.IsDigitalChannelMarkedForDeletion = true ;
+            self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 1) ;
+            %wsModel.DOChannelStateIfUntimed = true ;
+            wsModel.IsDOChannelMarkedForDeletion = true ;
             wsModel.deleteMarkedDOChannels() ;
-            self.verifyEqual(length(wsModel.Stimulation.DigitalOutputStateIfUntimed), 0) ;
+            self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 0) ;
         end  % function
     end  % test methods
 

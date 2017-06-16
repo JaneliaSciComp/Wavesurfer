@@ -2463,7 +2463,7 @@ classdef WavesurferModel < ws.Model
 %         end
 
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
-            value = self.Stimulation.DigitalOutputStateIfUntimed ;
+            value = self.DOChannelStateIfUntimed ;
             self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
         end
         
@@ -2580,7 +2580,7 @@ classdef WavesurferModel < ws.Model
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
 %             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
 %                                     channelNameForEachDOChannel, ...
@@ -2605,7 +2605,7 @@ classdef WavesurferModel < ws.Model
             %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
                                     channelNameForEachDOChannel, ...
@@ -2639,17 +2639,26 @@ classdef WavesurferModel < ws.Model
         end
         
         function deleteMarkedDOChannels(self)
-            self.Stimulation.deleteMarkedDigitalChannels_() ;
+            % Determine which to delete, which to keep
+            isToBeDeleted = self.IsDOChannelMarkedForDeletion ;
+            isKeeper = ~isToBeDeleted ;
+            
+            % Turn off any untimed DOs that are about to be deleted
+            digitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
+            self.DOChannelStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;                        
+            
+            % Make the needed changed to the Stimulation subsystem
+            self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
+            
+            % Do all the things that need doing after that
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
-            %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
-            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
+            channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
                                     channelNameForEachDOChannel, ...
@@ -2667,7 +2676,7 @@ classdef WavesurferModel < ws.Model
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
 %             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
 %                                     channelNameForEachDOChannel, ...
@@ -3314,7 +3323,7 @@ classdef WavesurferModel < ws.Model
             looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
             looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            looperProtocol.DigitalOutputStateIfUntimed = self.Stimulation.DigitalOutputStateIfUntimed ;
+            looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
             
@@ -4492,7 +4501,7 @@ classdef WavesurferModel < ws.Model
             electrodeManager=ephys.ElectrodeManager;
             channelNames = self.Stimulation_.AnalogChannelNames ;
             [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandScalingsByName(channelNames) ;
-            result = ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.Display_.getAnalogChannelScales_()) ;
+            result = ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.Stimulation_.getAnalogChannelScales_()) ;
         end  % function
         
 %         function set.AOChannelScales(self, newValue)
@@ -4553,7 +4562,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function result = get.IsDOChannelTimed(self) 
-            result = self.Stimulation_.getIsDigitalChannelTimed() ;
+            result = self.Stimulation_.getIsDigitalChannelTimed_() ;
         end
         
         function set.DOChannelStateIfUntimed(self, newValue)
@@ -4608,7 +4617,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.Parent.didSetIsInputChannelMarkedForDeletion() ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
         end
         
         function result=aoChannelUnitsFromName(self,channelName)
@@ -4623,5 +4632,15 @@ classdef WavesurferModel < ws.Model
                 end
             end
         end  % function
+        
+        function value = aoChannelScaleFromName(self, channelName)
+            channelIndex = self.Stimulation_.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(channelIndex) ,
+                value = nan ;
+            else
+                value = self.AOChannelScales(channelIndex) ;
+            end
+        end  % function
+        
     end
 end  % classdef

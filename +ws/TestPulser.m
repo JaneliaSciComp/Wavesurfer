@@ -908,7 +908,7 @@ classdef TestPulser < ws.Model
         
         function value=get.CommandChannelScale(self)
             wavesurferModel=self.Parent_.Parent;
-            value=wavesurferModel.Stimulation.channelScaleFromName(self.CommandChannelName);
+            value=wavesurferModel.aoChannelScaleFromName(self.CommandChannelName);
         end
         
         function result=get.CommandChannelScalePerElectrode(self)
@@ -921,10 +921,10 @@ classdef TestPulser < ws.Model
                                         'UniformOutput',false);
             n=length(testPulseElectrodes);           
             wavesurferModel=ephys.Parent;
-            stimulus=wavesurferModel.Stimulation;
+            %stimulus=wavesurferModel.Stimulation;
             result=zeros(1,n);
             for i=1:n ,
-                result(i)=stimulus.channelScaleFromName(commandChannelNames{i});
+                result(i)=wavesurferModel.aoChannelScaleFromName(commandChannelNames{i});
             end
         end
         
