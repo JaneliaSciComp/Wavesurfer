@@ -224,9 +224,9 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
             i = find(isTheChannel) ;            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
-            %self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
-            newArray = ws.replace(self.Model.Stimulation.IsDigitalChannelTimed, i, newState) ;
-            self.Model.Stimulation.do('set','IsDigitalChannelTimed', newArray) ;
+            %self.Model.IsDOChannelTimed(i)=newState;
+            newArray = ws.replace(self.Model.IsDOChannelTimed, i, newState) ;
+            self.Model.do('set','IsDOChannelTimed', newArray) ;
             %self.Figure.update();  % Surely this is not necessary anymore,
                                     % right?  -- ALT, 2016-09-12
         end

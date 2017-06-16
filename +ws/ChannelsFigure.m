@@ -1560,7 +1560,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
             allTerminalNames = model.getAllDigitalTerminalNames() ;
             channelNames=model.Stimulation.DigitalChannelNames;
-            isTimed = model.Stimulation.IsDigitalChannelTimed ;
+            isTimed = model.IsDOChannelTimed ;
             isTerminalOvercommitted = model.IsDOChannelTerminalOvercommitted ;
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
@@ -1571,7 +1571,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.DOTerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
-                set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
+                set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
                                                 'enable',ws.onIff(isWavesurferIdle));
                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
                                                'enable',ws.onIff(~isTimed(i)));
@@ -1597,11 +1597,11 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             
 %             terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
 %             channelNames=model.Stimulation.DigitalChannelNames;
-%             isTimed=model.Stimulation.IsDigitalChannelTimed;
+%             isTimed=model.IsDOChannelTimed;
 %             nDOs = length(self.DOLabelTexts) ;
 %             for i=1:nDOs ,
 %                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
-%                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.Stimulation.IsDigitalChannelTimed(i),...
+%                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
 %                                                 'enable',ws.onIff(isWavesurferIdle));
 %                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.Stimulation.DigitalOutputStateIfUntimed(i),...
 %                                                'enable',ws.onIff(~isTimed(i)));

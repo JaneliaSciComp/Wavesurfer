@@ -2468,7 +2468,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
-            value = self.Stimulation.IsDigitalChannelTimed ;
+            value = self.IsDOChannelTimed ;
             % Notify the refiller first, so that it can release all the DO
             % channels
             self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
@@ -2579,7 +2579,7 @@ classdef WavesurferModel < ws.Model
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
 %             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
@@ -2604,7 +2604,7 @@ classdef WavesurferModel < ws.Model
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
             %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
@@ -2648,7 +2648,7 @@ classdef WavesurferModel < ws.Model
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
             %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
@@ -2666,7 +2666,7 @@ classdef WavesurferModel < ws.Model
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
 %             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
@@ -3313,7 +3313,7 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
             looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
-            looperProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             looperProtocol.DigitalOutputStateIfUntimed = self.Stimulation.DigitalOutputStateIfUntimed ;
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
@@ -3342,7 +3342,7 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
             
             refillerProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
-            refillerProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             refillerProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    

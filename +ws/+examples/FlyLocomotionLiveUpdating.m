@@ -577,7 +577,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             digitalOutputStateIfUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
             desiredDigitalOutputStateIfUntimed = digitalOutputStateIfUntimed ;
             desiredDigitalOutputStateIfUntimed(self.LEDDigitalOutputChannelIndex_) = strcmp(onOrOff,'On'); % If equal, will set LED on. Else will set it to off.
-            isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
+            isDOChannelUntimed = ~looper.IsDOChannelTimed ;
             desiredOutputForEachUntimedDigitalOutputChannel = desiredDigitalOutputStateIfUntimed(isDOChannelUntimed) ;
             looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDigitalOutputChannel) ;
         end

@@ -20,7 +20,7 @@ classdef February4TestCase < matlab.unittest.TestCase
             wsModel.Stimulation.IsEnabled = true ;
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
-            wsModel.Stimulation.IsDigitalChannelTimed(2) = false ;
+            wsModel.IsDOChannelTimed(2) = false ;
             wsModel.play() ;
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
         end  % function
