@@ -388,8 +388,8 @@ classdef WavesurferModel < ws.Model
             
             % Create all subsystems
             self.Acquisition_ = ws.Acquisition([]) ;  % Acq subsystem doesn't need to know its parent, now.
-            self.Stimulation_ = ws.Stimulation(self) ;
-            self.Display_ = ws.Display(self) ;
+            self.Stimulation_ = ws.Stimulation([]) ;  % Stim subsystem doesn't need to know its parent, now.
+            self.Display_ = ws.Display([]) ;  % Stim subsystem doesn't need to know its parent, now.
             self.Triggering_ = ws.Triggering([]) ;  % Triggering subsystem doesn't need to know its parent, now.
             self.UserCodeManager_ = ws.UserCodeManager(self) ;
             self.Logging_ = ws.Logging(self) ;

@@ -698,7 +698,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             yLimitsPerAnalogChannel = displayModel.YLimitsPerAnalogChannel ;
 
             % Get the channel names and units for all channels
-            acq = displayModel.Parent.Acquisition ;
+            acq = wsModel.Acquisition ;
             aiChannelNames = acq.AnalogChannelNames ;            
             diChannelNames = acq.DigitalChannelNames ;
             aiChannelUnits = wsModel.AIChannelUnits ;            

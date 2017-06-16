@@ -58,7 +58,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     methods
         function self = Stimulation(parent)
             self@ws.Subsystem(parent) ;
-            self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
+            self.StimulusLibrary_ = ws.StimulusLibrary([]);  % create a StimulusLibrary, which doesn't need to know its parent
         end
         
         function startingRun(self) %#ok<MANU>
