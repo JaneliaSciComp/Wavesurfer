@@ -243,8 +243,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the index-of-type edit
                 thisIndexWithinType=thisElectrode.IndexWithinType;
                 set(self.IndexWithinTypeEdits(i), ...
-                    'String',fif(isempty(thisIndexWithinType),'',sprintf('%g',thisIndexWithinType)), ...
-                    'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
+                    'String',ws.fif(isempty(thisIndexWithinType),'',sprintf('%g',thisIndexWithinType)), ...
+                    'BackgroundColor',ws.fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
@@ -253,7 +253,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                                                   listOfModesAsStrings, ...
                                                   ws.titleStringFromElectrodeMode(thisElectrode.Mode));
                 %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
-                set(self.ModePopups(i),'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
+                set(self.ModePopups(i),'BackgroundColor',ws.fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
                 
                 % Get whether the current electrode is in a CC mode or a VC
@@ -276,7 +276,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current monitor scale
                     set(self.MonitorScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.CurrentMonitorScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the current monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
@@ -304,7 +304,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.VoltageCommandScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the voltage command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
@@ -325,7 +325,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage monitor scale
                     set(self.MonitorScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.MonitorScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the voltage monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
@@ -353,7 +353,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.CurrentCommandScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the current command scale units
                     set(self.CommandScaleUnitsTexts(i), ...

@@ -1,7 +1,6 @@
 function setYAxisLimitsToAccomodateLinesBang(ax, lines)
     % Changes the YLim of axes ax to accomodate all the lines in lines,
     % with a little bit of extra space above and below.
-    import ws.fif
     
     nLines=length(lines);
     yMins= inf(1,nLines);
@@ -19,7 +18,7 @@ function setYAxisLimitsToAccomodateLinesBang(ax, lines)
     if isfinite(yMin) && isfinite(yMax) ,
         yCenter=(yMin+yMax)/2;
         yRadRaw=yMax-yCenter;
-        yRad=fif(yRadRaw==0,1,yRadRaw);
+        yRad=ws.fif(yRadRaw==0,1,yRadRaw);
         yl=yCenter+1.05*yRad*[-1 +1];
         set(ax,'YLim',yl);
     end

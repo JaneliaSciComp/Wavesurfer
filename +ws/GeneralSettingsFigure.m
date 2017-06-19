@@ -1041,8 +1041,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',ws.onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
+            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~model.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && model.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     

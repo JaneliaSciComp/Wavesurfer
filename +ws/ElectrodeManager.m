@@ -1163,7 +1163,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 else
                     fullHeadPrototype=head;
                 end
-                fullHead=fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorNominal',fullHeadPrototype);
+                fullHead=ws.fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorNominal',fullHeadPrototype);
                 parameterName=[fullHead 'Gain'];                        
             end
         end  % function
@@ -1190,7 +1190,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 else
                     fullHeadPrototype=head;
                 end
-                fullHead=fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorRealized',fullHeadPrototype);
+                fullHead=ws.fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorRealized',fullHeadPrototype);
                 parameterName=[fullHead 'Gain'];                        
             end
         end  % function

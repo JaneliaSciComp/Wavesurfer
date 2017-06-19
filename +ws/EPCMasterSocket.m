@@ -110,14 +110,14 @@ classdef EPCMasterSocket < handle
         
         %%
         function close(self)
-            import ws.*
+            %import ws.*
             self.IsOpen_=false;
             self.HasCommandOnOffSwitch_=[];
             if exist(self.CommandFileName_,'file') ,
-                deleteFileWithoutWarning(self.CommandFileName_)
+                ws.deleteFileWithoutWarning(self.CommandFileName_)
             end            
             if exist(self.ResponseFileName_,'file') ,
-                deleteFileWithoutWarning(self.ResponseFileName_)
+                ws.deleteFileWithoutWarning(self.ResponseFileName_)
             end            
         end  % function        
 
@@ -217,7 +217,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setMode(self,electrodeIndex,newMode)
-            import ws.*
+            %import ws.*
             
             err=[]; %#ok<NASGU>
             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
@@ -241,7 +241,7 @@ classdef EPCMasterSocket < handle
             if ~isempty(err) ,
                 return
             end              
-            newModeIndex=fif(isequal(newMode,'cc'),4,3);
+            newModeIndex=ws.fif(isequal(newMode,'cc'),4,3);
               % 4 == Current clamp
               % 3 == Whole cell
             commandString2=sprintf('Set E Mode %d',newModeIndex);
@@ -608,7 +608,7 @@ classdef EPCMasterSocket < handle
             % For some models, have to explicitly turn on/off the external
             % command
             if self.HasCommandOnOffSwitch_ ,
-                selectionIndex=fif(newWantedValue==0,0,2);
+                selectionIndex=ws.fif(newWantedValue==0,0,2);
                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
                 [responseString2,err]=self.issueCommandAndGetResponse(commandString2);  %#ok<ASGLU>
                 if ~isempty(err) ,
@@ -757,7 +757,7 @@ classdef EPCMasterSocket < handle
             % For some models, have to explicitly turn on/off the external
             % command
             if self.HasCommandOnOffSwitch_ ,
-                selectionIndex=fif(newValue==0,0,2);
+                selectionIndex=ws.fif(newValue==0,0,2);
                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
                 [responseString2,err]=self.issueCommandAndGetResponse(commandString2); %#ok<ASGLU>
                 if ~isempty(err) ,
@@ -806,7 +806,7 @@ classdef EPCMasterSocket < handle
             end
             
             %commandIndex=self.issueCommand('GetEpcParams-1 RealGain');
-            commandString=fif(newValue,'EnableUserActions','DisableUserActions');
+            commandString=ws.fif(newValue,'EnableUserActions','DisableUserActions');
             commandIndex=self.issueCommand(commandString);
             [responseString,err]=self.getResponseString(commandIndex); %#ok<ASGLU>
               % this last is mainly just to throw an exception if it
