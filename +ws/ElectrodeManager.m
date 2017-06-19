@@ -1063,7 +1063,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         function doppelganger=clone(self)
 %             % Make a clone of the ElectrodeManager.  This is another
 %             % ElectrodeManager with the same settings.
-%             import ws.*
+%             %import ws.*
 %             s=self.encodeSettings();
 %             doppelganger=ElectrodeManager();
 %             doppelganger.restoreSettings(s);
@@ -1146,7 +1146,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of setting.
             
-            import ws.*
+            %import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1173,7 +1173,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of getting.
             
-            import ws.*
+            %import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             

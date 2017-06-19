@@ -60,7 +60,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            import ws.*
+            %import ws.*
 
             %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
             %fprintf('  class of self: %s\n',class(self));
@@ -226,7 +226,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.*
+%             %import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return

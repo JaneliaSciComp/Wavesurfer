@@ -573,7 +573,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-            import ws.*
+            %import ws.*
             if ~isscalar(newWantedValue) ,
                 errorId='EPCMasterSocket:InvalidValue';
                 errorMessage='Couldn''t set IsCommandEnabled because given value is not a scalar.';
@@ -647,7 +647,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-            import ws.*
+            %import ws.*
 
             if newWantedValue<=0 ,
                 errorId='EPCMasterSocket:invalidValue';
@@ -729,7 +729,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function err=setVoltageCommandGain(self,electrodeIndex,newValue)
-            import ws.*
+            %import ws.*
             % newValue should be in mV/V
 
             % Unlike the others, can set this to zero, meaning "turn off
@@ -787,7 +787,7 @@ classdef EPCMasterSocket < handle
         %%
         function err=setUIEnablement(self,newValueRaw)
             % Set whether the EPCMaster UI is enabled.  true==enabled.
-            import ws.*
+            %import ws.*
             
             err=[]; %#ok<NASGU>
             
@@ -882,7 +882,7 @@ classdef EPCMasterSocket < handle
     
         %%
         function [responseString,err]=getResponseString(self,commandIndex)
-            import ws.*
+            %import ws.*
             
             % fallback return values
             responseString='';
@@ -934,7 +934,7 @@ classdef EPCMasterSocket < handle
                         break
                     else
                         % wait longer
-                        sleep(dt);
+                        ws.sleep(dt);
 %                     else
 %                         % the response index is somehow greater than the
 %                         % command index we're looking for
@@ -944,7 +944,7 @@ classdef EPCMasterSocket < handle
 %                         error(errorId,errorMessage);
                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             
@@ -968,7 +968,7 @@ classdef EPCMasterSocket < handle
 
         %%
         function [responseStrings,err]=getResponseStrings(self,commandIndex)
-            import ws.*
+            %import ws.*
             
             % Fallback values
             responseStrings={};
@@ -1014,7 +1014,7 @@ classdef EPCMasterSocket < handle
                         break
                     else
                         % wait longer
-                        sleep(dt);
+                        ws.sleep(dt);
                     end
 %                     elseif responseIndex==commandIndex ,
 %                     else
@@ -1026,7 +1026,7 @@ classdef EPCMasterSocket < handle
 %                         error(errorId,errorMessage);
 %                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             % toc(tStart)
@@ -1080,17 +1080,17 @@ classdef EPCMasterSocket < handle
             % command file, but not actually try to read the command from
             % it and respond to it appropriately.
             
-            import ws.*
+            %import ws.*
 
             % Default return value
             err=[];
             
             % try to delete any pre-existing command, response files
             if exist(self.CommandFileName_,'file') ,
-                deleteFileWithoutWarning(self.CommandFileName_)
+                ws.deleteFileWithoutWarning(self.CommandFileName_)
             end            
             if exist(self.ResponseFileName_,'file') ,
-                deleteFileWithoutWarning(self.ResponseFileName_)
+                ws.deleteFileWithoutWarning(self.ResponseFileName_)
             end
             
             % Verify the existance of the directory in which the command, response
@@ -1121,7 +1121,7 @@ classdef EPCMasterSocket < handle
                                'Unable to open connection to EPCMaster because the command file was missing after blanking it');
                 return
             end                
-            commandFileModificationTimeAfterBlanking=fileModificationTime(self.CommandFileName_);
+            commandFileModificationTimeAfterBlanking=ws.fileModificationTime(self.CommandFileName_);
             if isempty(commandFileModificationTimeAfterBlanking) ,
                 err=MException('EPCMasterSocket:UnableToGetModificationTimeOfBlankedCommandFile', ...
                                'Unable to open connection to EPCMaster because unable to get modification time of the command file after blanking it');
@@ -1131,7 +1131,7 @@ classdef EPCMasterSocket < handle
             % Look at the response file
             if exist(self.ResponseFileName_,'file') ,
                 responseFileExistedAfter=true;
-                responseFileModificationTimeAfterBlanking=fileModificationTime(self.ResponseFileName_);
+                responseFileModificationTimeAfterBlanking=ws.fileModificationTime(self.ResponseFileName_);
                 if isempty(responseFileModificationTimeAfterBlanking) ,
                     err=MException('EPCMasterSocket:UnableToGetResponseModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on response file after issuing blank command');
@@ -1160,7 +1160,7 @@ classdef EPCMasterSocket < handle
             
             % Get the modification date on the command file.
             if exist(self.CommandFileName_,'file') ,
-                commandFileModificationTime=fileModificationTime(self.CommandFileName_);
+                commandFileModificationTime=ws.fileModificationTime(self.CommandFileName_);
                 if isempty(commandFileModificationTime),
                     err=MException('EPCMasterSocket:UnableToGetCommandModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on command file after issuing test command');
@@ -1182,15 +1182,15 @@ classdef EPCMasterSocket < handle
                 if exist(self.ResponseFileName_,'file') ,
                     % Check that the response file was changed after the command
                     % file mode date
-                    responseFileModificationTime=fileModificationTime(self.ResponseFileName_);
+                    responseFileModificationTime=ws.fileModificationTime(self.ResponseFileName_);
                     if ~isempty(responseFileModificationTime) && commandFileModificationTime<=responseFileModificationTime ,
                         wasResponseGenerated=true;
                         break
                     else
-                        sleep(dt);
+                        ws.sleep(dt);
                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             

@@ -923,7 +923,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-%             import ws.*
+%             %import ws.*
 
             % If no model, can't really do anything
             model=self.Model_;
