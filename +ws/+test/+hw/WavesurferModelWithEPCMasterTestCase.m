@@ -41,7 +41,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -49,7 +49,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -92,7 +92,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -100,7 +100,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -120,7 +120,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             thisDirName=fileparts(mfilename('fullpath'));
             wsModel.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
             electrodeManager = wsModel.Ephys.ElectrodeManager;
-            testPulser = wsModel.Ephys.TestPulser;
+            %testPulser = wsModel.Ephys.TestPulser;
             electrodeIndex = 1;
             
             % Create another EPCMasterSocket object so we can modify
@@ -139,7 +139,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Next we check that toggling the update checkbox before a Test
             % Pulse or Run works correctly, and that a Test Pulse or run
             % with updates enabled is slower than when updates are off.
-            self.checkTimingAndUpdating_(@testPulser.start, @testPulser.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.startTestPulsing, @wsModel.stopTestPulsing, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(testPulserShouldAllBeTrue));
             
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;

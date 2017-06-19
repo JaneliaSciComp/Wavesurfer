@@ -224,7 +224,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('Update');            
         end
         
-        function addNewElectrode(self)
+        function electrodeIndex = addNewElectrode(self)
             % Figure out an electrode name that is not already an electrode
             % name
             %currentElectrodeNames={self.Electrodes_.Name};
@@ -246,7 +246,10 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 name=putativeName;
             else
                 % Theoretically, should throw exception, I suppose
-                return
+                %return
+                self.broadcast('Update');
+                error('ws:unableToAddElectrode', ...
+                      'Unable to add a new electrode') ;
             end
             
             % At this point, name is a valid electrode name
@@ -255,11 +258,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             electrode = ws.Electrode(self) ;
             electrode.Name = name ;           
             
-            % Add the electrode        
-            self.Electrodes_{end+1}=electrode;  
-            self.IsElectrodeMarkedForTestPulse_(end+1)=true;
-            self.IsElectrodeMarkedForRemoval_(end+1)=false;
-            self.DidLastElectrodeUpdateWork_(end+1)=true;  % true by convention
+            % Add the electrode
+            electrodeIndex = length(self.Electrodes_)+1 ;
+            self.Electrodes_{electrodeIndex}=electrode;  
+            self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=true;
+            self.IsElectrodeMarkedForRemoval_(electrodeIndex)=false;
+            self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;  % true by convention
             
             % Notify the parent Ephys object that an electrode has been added
             ephys=self.Parent_;
@@ -515,6 +519,23 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 electrode=electrodes{1};
             end
         end  % function
+
+        function result = getElectrodeIndexByName(self, electrodeName)
+            electrodeNames=cellfun(@(electrode)(electrode.Name),self.Electrodes_,'UniformOutput',false);
+            isElectrode=strcmp(electrodeName,electrodeNames);
+            result = find(isElectrode, 1) ;
+        end  % function
+
+        function result = getElectrodePropertyByName(self, electrodeName, propertyName)
+            electrode = self.getElectrodeByName(electrodeName) ;
+            if isempty(electrode) ,
+                error('ws:noSuchElectrode' , ...
+                      'No electrode by that name') ;
+            else
+                result = electrode.(propertyName) ;
+            end
+        end  % function
+
         
 %         function result=getIsCommandChannelManagedByName(self,channelName)
 %             if isempty(channelName) ,
@@ -1208,5 +1229,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function result=get.TestPulseElectrodesCount(self)
             result=sum(self.IsElectrodeMarkedForTestPulse_) ;
         end
+        
+        function electrode = getElectrodeByIndex_(self, electrodeIndex)
+            electrode = self.Electrodes_{electrodeIndex} ;
+        end                
     end        
 end  % classdef

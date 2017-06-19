@@ -11,7 +11,6 @@ classdef TestPulser < ws.Model
         YLimits
         YUnits
         IsRunning
-        ElectrodeMode  % mode of the current electrode (VC/CC)
     end
     
     properties (Dependent = true, SetAccess = immutable)  % do we need *so* many public properties?
@@ -62,7 +61,7 @@ classdef TestPulser < ws.Model
         IsVCPerElectrode
         CommandUnitsPerElectrode
         MonitorUnitsPerElectrode
-        ElectrodeIndex
+        %ElectrodeIndex
         %GainUnitsPerElectrode
         %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
@@ -73,9 +72,6 @@ classdef TestPulser < ws.Model
     
     properties  (Access=protected)  % need to see if some of these things should be transient
         ElectrodeName_  
-          % a local place to store the ElectrodeName, which gets persisted, unlike Electrode_
-          % Invariant: isempty(self.Electrode_) ||
-          %            isequal(self.Electrode_.Name,self.ElectrodeName_)
         PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline_
         SamplingRate_  % in Hz
@@ -90,7 +86,10 @@ classdef TestPulser < ws.Model
             %     Has no effect.
         DesiredRateOfAutoYing_ = 10  % Hz, for now this never changes
             % The desired rate of syncing the Y to the data
-        NElectrodes_
+        NElectrodes_  
+          % We need to remember this in order to properly size certain arrays.
+          % Generally, care must be taken to make sure this agrees with the number of
+          % test pulse electrodes in the electrode manager.
     end
     
     properties  (Access=protected, Transient=true)
@@ -757,23 +756,6 @@ classdef TestPulser < ws.Model
             value=self.UpdateRate_;
         end
         
-        function value=get.ElectrodeIndex(self)
-            % the index of the current electrode in Electrodes (which is
-            % just the test pulse electrodes)
-            if isempty(self.Electrode_)
-                value=zeros(1,0); 
-            else
-                isElectrode=cellfun(@(electrode)(self.Electrode_==electrode),self.Electrodes);
-                iMatches=find(isElectrode);
-                if isempty(iMatches) ,
-                    % this should never happen...
-                    value=zeros(1,0);
-                else                    
-                    value=iMatches(1);  
-                end
-            end
-        end
-        
 %         function value=get.Resistance(self)
 %             if isempty(self.Electrode_)
 %                 value=zeros(1,0); 
@@ -949,47 +931,6 @@ classdef TestPulser < ws.Model
             result=self.YLimits_;
         end
 
-        function value=get.ElectrodeMode(self)
-            electrodeIndex=self.ElectrodeIndex;
-            if isempty(electrodeIndex) ,
-                value=[];
-            else
-                if isempty(self.Parent_)
-                    value=[];
-                else
-                    ephys=self.Parent_;
-                    if isempty(ephys) ,
-                        value=[];
-                    else
-                        electrodeManager=ephys.ElectrodeManager;
-                        if isempty(electrodeManager) ,
-                            value=[];
-                        else
-                            value=electrodeManager.Electrodes{electrodeIndex}.Mode;
-                        end
-                    end
-                end
-            end
-        end  % function        
-        
-        function set.ElectrodeMode(self,newValue)
-            electrodeIndex=self.ElectrodeIndex;
-            if isempty(electrodeIndex) ,
-                return
-            end
-            ephys=[];
-            electrodeManager=[];
-            if ~isempty(self.Parent_)
-                ephys=self.Parent_;
-            end
-            if ~isempty(ephys) ,
-                electrodeManager=ephys.ElectrodeManager;
-            end
-            if ~isempty(electrodeManager) ,
-                electrodeManager.setTestPulseElectrodeModeOrScaling(electrodeIndex,'Mode',newValue);
-            end
-        end  % function        
-        
         function electrodeWasAdded(self, electrode, nTestPulseElectrodes)
             % Called by the parent Ephys when an electrode is added.
 
@@ -1034,7 +975,7 @@ classdef TestPulser < ws.Model
             self.changeElectrodeIfCurrentOneIsNotAvailable_();
         end  % function
         
-        function start(self)
+        function start_(self, testPulseElectrodeIndex, electrode)
             % fprintf('Just entered start()...\n');
             if self.IsRunning ,
                 % fprintf('About to exit start() via short-circuit...\n');                                            
@@ -1048,7 +989,7 @@ classdef TestPulser < ws.Model
                 %self.broadcast('UpdateReadiness');
 
                 % Get some handles we'll need
-                electrode=self.Electrode;
+                %electrode=self.Electrode;
                 ephys=self.Parent;
                 electrodeManager=ephys.ElectrodeManager;
                 wavesurferModel=[];
@@ -1130,7 +1071,7 @@ classdef TestPulser < ws.Model
                 self.MonitorChannelInverseScalePerElectrodeCached_=1./self.MonitorChannelScalePerElectrode;
                 %self.CommandChannelScalePerElectrodeCached_=self.CommandChannelScalePerElectrode;
                 self.AmplitudePerElectrodeCached_ = self.AmplitudePerElectrode ;
-                self.ElectrodeIndexCached_=self.ElectrodeIndex;
+                self.ElectrodeIndexCached_ = testPulseElectrodeIndex ;
                 self.NScansInSweepCached_ = self.NScansInSweep;
                 self.NElectrodesCached_ = self.NElectrodes;
                 self.GainOrResistanceUnitsPerElectrodeCached_ = self.GainOrResistanceUnitsPerElectrode ;
@@ -1193,7 +1134,7 @@ classdef TestPulser < ws.Model
                 self.OutputTask_.start();
             catch me
                 %fprintf('probelm with output task start\n');
-                self.abort();
+                self.abort_();
                 self.changeReadiness(+1);
                 rethrow(me);
             end
@@ -1201,7 +1142,7 @@ classdef TestPulser < ws.Model
             % fprintf('About to exit start()...\n');
         end  % function
         
-        function stop(self)
+        function stop_(self)
             % This is what gets called when the user presses the 'Stop' button,
             % for instance.
             %fprintf('Just entered stop()...\n');            
@@ -1273,13 +1214,15 @@ classdef TestPulser < ws.Model
                 %self.IsReady_ = true ;
                 %self.broadcast('Update');
             catch me
-                self.abort();
+                self.abort_();
                 self.changeReadiness(+1);
                 rethrow(me);
             end
         end  % function
+    end  % public methods
         
-        function abort(self)
+    methods (Access=protected)
+        function abort_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
 
@@ -1342,28 +1285,30 @@ classdef TestPulser < ws.Model
             % And now we are once again ready to service method calls...
             self.changeReadiness(+1);
         end  % function
+    end
+    
+    methods
+%         function set.IsRunning(self,newValue)
+%             if islogical(newValue) && isscalar(newValue),
+%                 if self.IsRunning, 
+%                     if ~newValue ,
+%                         self.stop();
+%                     end
+%                 else
+%                     if newValue ,
+%                         self.start();
+%                     end
+%                 end
+%             end
+%         end  % function
         
-        function set.IsRunning(self,newValue)
-            if islogical(newValue) && isscalar(newValue),
-                if self.IsRunning, 
-                    if ~newValue ,
-                        self.stop();
-                    end
-                else
-                    if newValue ,
-                        self.start();
-                    end
-                end
-            end
-        end  % function
-        
-        function toggleIsRunning(self)
-            if self.IsRunning ,
-                self.stop();
-            else
-                self.start();
-            end
-        end  % function
+%         function toggleIsRunning(self)
+%             if self.IsRunning ,
+%                 self.stop();
+%             else
+%                 self.start();
+%             end
+%         end  % function
         
         function completingSweep(self,varargin)
             % compute resistance
@@ -1601,6 +1546,10 @@ classdef TestPulser < ws.Model
         
         function result = get.NElectrodes(self)
             result = self.NElectrodes_ ;
+        end
+        
+        function result = getMonitorPerElectrode_(self)
+            result = self.MonitorPerElectrode_ ;
         end
     end
     

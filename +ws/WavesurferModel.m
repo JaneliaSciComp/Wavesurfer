@@ -4641,6 +4641,18 @@ classdef WavesurferModel < ws.Model
                 value = self.AOChannelScales(channelIndex) ;
             end
         end  % function
+
+        function startTestPulsing(self)
+            self.Ephys_.startTestPulsing_() ;
+        end
+
+        function stopTestPulsing(self)
+            self.Ephys_.stopTestPulsing_() ;
+        end        
+        
+        function toggleIsTestPulsing(self)
+            self.Ephys_.toggleIsTestPulsing() ;
+        end
         
     end
 end  % classdef

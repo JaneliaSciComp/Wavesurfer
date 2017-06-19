@@ -6,25 +6,27 @@ classdef TestPulserController < ws.Controller
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
             % Call the superclass constructor
-            testPulser=wavesurferModel.Ephys.TestPulser;
-            self = self@ws.Controller(wavesurferController,testPulser);  
+            %testPulser=wavesurferModel.Ephys.TestPulser;
+            self = self@ws.Controller(wavesurferController,wavesurferModel);  
 
             % Create the figure, store a pointer to it
-            fig = ws.TestPulserFigure(testPulser,self) ;
+            fig = ws.TestPulserFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;            
         end
         
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             try
+                wsModel = self.Model ;
+                testPulser = wsModel.Ephys.TestPulser;
                 if strcmp(controlName, 'StartStopButton') ,
                     self.StartStopButtonActuated() ;
                     exceptionMaybe = {} ;
                 else
                     % If the model is running, stop it (have to disable broadcast so we don't lose the new setting)
-                    wasRunningOnEntry = self.Model.IsRunning ;
+                    wasRunningOnEntry = testPulser.IsRunning ;
                     if wasRunningOnEntry ,
                         self.Figure.AreUpdatesEnabled = false ;
-                        self.Model.stop() ;
+                        wsModel.stopTestPulsing() ;
                     end
                     
                     % Act on the control
@@ -38,7 +40,7 @@ classdef TestPulserController < ws.Controller
                         self.Figure.AreUpdatesEnabled = true ;
                         self.Figure.updateControlProperties() ;
                         if isempty(exceptionMaybe) ,
-                            self.Model.start() ;
+                            wsModel.startTestPulsing() ;
                         end
                     end
                 end
@@ -49,7 +51,7 @@ classdef TestPulserController < ws.Controller
         end  % function
         
         function StartStopButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('toggleIsRunning');
+            self.Model.do('toggleIsTestPulsing');
         end
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>

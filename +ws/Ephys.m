@@ -3,11 +3,14 @@ classdef Ephys < ws.Subsystem
         TestPulseElectrodeCommandChannelName
         TestPulseElectrodeMonitorChannelName
         TestPulseElectrodeAmplitude
+        TestPulseElectrodeIndex
         TestPulseElectrodes
         TestPulseElectrodesCount
+        TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
         AmplitudePerTestPulseElectrode
         TestPulseElectrode
         Monitor
+        IsTestPulsing
     end
     
     properties (Access = protected)
@@ -280,10 +283,10 @@ classdef Ephys < ws.Subsystem
             %resultAsCellArray={testPulseElectrodes.TestPulseAmplitude};
             result=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
                            testPulseElectrodes);
-        end
+        end  % function 
         
         function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
-            if ~isempty(self.Electrode_) ,
+            if ~isempty(self.TestPulser_.ElectrodeName) ,
                 if ws.isString(newValue) ,
                     newValueAsDouble = str2double(newValue) ;
                 elseif isnumeric(newValue) && isscalar(newValue) ,
@@ -301,13 +304,13 @@ classdef Ephys < ws.Subsystem
                 end
             end                
             self.broadcast('UpdateTestPulser') ;
-        end        
+        end  % function         
         
         function result=get.TestPulseElectrode(self)
             electrodeName = self.TestPulser_.ElectrodeName ;            
             electrodeManager = self.ElectrodeManager_ ;
             result = electrodeManager.getElectrodeByName(electrodeName) ;
-        end
+        end  % function 
         
         function result = get.Monitor(self)
             currentElectrodeName = self.TestPulser_.ElectrodeName ;
@@ -317,9 +320,58 @@ classdef Ephys < ws.Subsystem
                 %electrodes = self.ElectrodeManager_.TestPulseElectrodes ;
                 electrodeNames = self.ElectrodeManager_.TestPulseElectrodeNames ;
                 isElectrode=cellfun(@(testElectrodeName)(isequal(currentElectrodeName, testElectrodeName)), electrodeNames) ;
-                result = self.TestPulser_.MonitorPerElectrode(:,isElectrode) ;
+                monitorPerElectrode = self.TestPulser_.getMonitorPerElectrode_() ;
+                result = monitorPerElectrode(:,isElectrode) ;
             end
-        end        
+        end  % function         
+        
+        function result = get.TestPulseElectrodeIndex(self)
+            % the index of the current electrode in Electrodes (which is
+            % just the test pulse electrodes)
+            name = self.TestPulser_.ElectrodeName ;
+            if isempty(name) ,
+                result = zeros(1,0) ; 
+            else
+                result = self.ElectrodeManager_.getElectrodeIndexByName(name) ;
+            end
+        end  % function         
+        
+        function result = get.TestPulseElectrodeMode(self)
+            electrodeName = self.TestPulser_.ElectrodeName ;
+            if isempty(electrodeName) ,
+                result = [] ;
+            else
+                result = self.ElectrodeManager_.getElectrodePropertyByName(electrodeName, 'Mode') ;
+            end
+        end  % function        
+        
+        function set.TestPulseElectrodeMode(self, newValue)            
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            self.ElectrodeManager_.setTestPulseElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
+        end  % function        
+        
+        function startTestPulsing_(self)
+            testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
+            testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
+            self.TestPulser_.start_(testPulseElectrodeIndex, testPulseElectrode) ;            
+        end
+
+        function stopTestPulsing_(self)
+            self.TestPulser_.stop_() ;            
+        end
+        
+        function result = get.IsTestPulsing(self)
+            result = self.TestPulser_.IsRunning ;
+        end
+        
+        function toggleIsTestPulsing(self)
+            if self.IsTestPulsing , 
+                self.stopTestPulsing_() ;
+            else
+                self.startTestPulsing_() ;
+            end
+        end
+        
     end  % public methods block
 
 end  % classdef
