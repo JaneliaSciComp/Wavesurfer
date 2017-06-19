@@ -211,7 +211,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             %ephys = testPulser.Parent ;
             monitor = ephys.Monitor ;
             %t=testPulser.Time;  % s            
-            set(self.TraceLine, 'YData', monitor) ;
+            if ~isempty(monitor) ,
+                set(self.TraceLine, 'YData', monitor) ;
+            end
         end  % method
         
 %         function updateIsReady(self,varargin)            
@@ -344,7 +346,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.YLimits_ = testPulser.YLimits;
             set(self.TraceAxes,'YLim',self.YLimits_);
             set(self.YAxisLabel,'String',sprintf('Monitor (%s)',testPulser.MonitorUnits));
-            t=testPulser.Time;
+            fs = wsModel.AcquisitionSampleRate ;
+            t = testPulser.getTime(fs) ;
+            %t=testPulser.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
             set(self.ZoomInButton,'Enable',ws.onIff(~testPulser.IsAutoY));
             set(self.ZoomOutButton,'Enable',ws.onIff(~testPulser.IsAutoY));

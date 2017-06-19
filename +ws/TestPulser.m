@@ -1,9 +1,6 @@
 classdef TestPulser < ws.Model 
     properties (Dependent=true)  % do we need *so* many public properties?
-        %Parent
-        %Electrode
         ElectrodeName
-        %Amplitude  % a double, in units of the electrode command channel
         PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline
         IsAutoY
@@ -14,59 +11,38 @@ classdef TestPulser < ws.Model
     end
     
     properties (Dependent = true, SetAccess = immutable)  % do we need *so* many public properties?
-        %CommandChannelName  % For the current electrode
-        %MonitorChannelName  % For the current electrode
-        Dt  % s
+        %Dt  % s
         SweepDuration  % s
-        NScansInSweep
-        Time  % s
+        %NScansInSweep
+        %Time  % s
         ElectrodeNames
         CommandChannelNames
         MonitorChannelNames
         PulseDuration  % s
-        %Gain  % in units given by ResistanceUnits
-        %Resistance  % in units given by ResistanceUnits
-        %GainOrResistance
-        SamplingRate  % in Hz
+        %SamplingRate  % in Hz
         CommandUnits
         MonitorUnits
-        %GainUnits
-        %ResistanceUnits
-        %GainOrResistanceUnits
         IsCC
         IsVC
         UpdateRate
-        %Monitor
-        %Command
-        %CommandInVolts
         NSweepsCompletedThisRun
-        %OutputDeviceNames
         CommandTerminalID
-        %InputDeviceNames
         MonitorTerminalID
         MonitorChannelScale
         CommandChannelScale
-        %AreYLimitsForRunDetermined
-        %AutomaticYLimits
-        %Electrodes
-        %NElectrodes
-        AmplitudePerElectrode
-        CommandPerElectrode
+        %AmplitudePerElectrode
+        %CommandPerElectrode
         CommandChannelScalePerElectrode
         MonitorChannelScalePerElectrode
-        CommandInVoltsPerElectrode
+        %CommandInVoltsPerElectrode
         CommandTerminalIDPerElectrode
         MonitorTerminalIDPerElectrode
         IsCCPerElectrode
         IsVCPerElectrode
         CommandUnitsPerElectrode
         MonitorUnitsPerElectrode
-        %ElectrodeIndex
-        %GainUnitsPerElectrode
-        %ResistanceUnitsPerElectrode
         GainOrResistanceUnitsPerElectrode
         GainOrResistancePerElectrode
-        %IsReady  % if true, the model is not busy
         NElectrodes
     end
     
@@ -74,7 +50,7 @@ classdef TestPulser < ws.Model
         ElectrodeName_  
         PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline_
-        SamplingRate_  % in Hz
+        %SamplingRate_  % in Hz
         YLimits_
         IsAutoY_  % if true, the y limits are synced to the monitor signal currently in view
         IsAutoYRepeating_
@@ -188,7 +164,7 @@ classdef TestPulser < ws.Model
             self.UpdateRate_=nan;
             %self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes);
             self.NElectrodes_ = 0 ;
-            self.MonitorPerElectrode_ = nan(self.NScansInSweep,self.NElectrodes_) ;
+            self.MonitorPerElectrode_ = [] ;
         end  % method
         
         function setNElectrodes_(self, newValue)
@@ -424,14 +400,15 @@ classdef TestPulser < ws.Model
 %             %                                                 'PulseAmplitude', self.Amplitude ));                                                        
 %         end                                                        
 
-        function commands=get.CommandPerElectrode(self)  
+        function commands = getCommandPerElectrode_(self, fs, amplitudePerElectrode)  
             % Command signal for each test pulser electrode, each in units given by the ChannelUnits property 
             % of the Stimulation object
-            t=self.Time;  % col vector
-            delay=self.PulseDuration/2;
-            amplitudes=self.AmplitudePerElectrode;  % row vector
-            unscaledCommand=(delay<=t)&(t<delay+self.PulseDuration);  % col vector
-            commands=bsxfun(@times,amplitudes,unscaledCommand);
+            %t = self.Time ;  % col vector
+            t = self.getTime_(fs) ;  % col vector
+            delay = self.PulseDuration/2 ;
+            %amplitudePerElectrode = self.AmplitudePerElectrode ;  % row vector
+            unscaledCommand = (delay<=t)&(t<delay+self.PulseDuration) ;  % col vector
+            commands = bsxfun(@times, amplitudePerElectrode, unscaledCommand) ;
         end  
         
 %         function commandInVolts=get.CommandInVolts(self)  % the command signal, in volts to be sent out the AO channel
@@ -440,13 +417,14 @@ classdef TestPulser < ws.Model
 %             commandInVolts=command*inverseChannelScale;
 %         end
         
-        function commandsInVolts=get.CommandInVoltsPerElectrode(self)  % the command signals, in volts to be sent out the AO channels
-            import ws.*
-            commands=self.CommandPerElectrode;   % (nScans x nCommandChannels)
+        function commandsInVolts = getCommandInVoltsPerElectrode_(self, fs, amplitudePerElectrode)  
+            % the command signals, in volts to be sent out the AO channels
+            %commands=self.CommandPerElectrode;   % (nScans x nCommandChannels)
+            commands = self.getCommandPerElectrode_(fs, amplitudePerElectrode) ;  % (nScans x nCommandChannels)
             commandChannelScales=self.CommandChannelScalePerElectrode;  % 1 x nCommandChannels
             inverseChannelScales=1./commandChannelScales;
             % zero any channels that have infinite (or nan) scale factor
-            sanitizedInverseChannelScales=fif(isfinite(inverseChannelScales), inverseChannelScales, zeros(size(inverseChannelScales)));
+            sanitizedInverseChannelScales=ws.fif(isfinite(inverseChannelScales), inverseChannelScales, zeros(size(inverseChannelScales)));
             commandsInVolts=bsxfun(@times,commands,sanitizedInverseChannelScales);
         end                                                        
 
@@ -494,25 +472,28 @@ classdef TestPulser < ws.Model
             result = self.MonitorUnits ;
         end
         
-        function value=get.SamplingRate(self)
-            value=self.SamplingRate_;
+%         function value=get.SamplingRate(self)
+%             value=self.SamplingRate_;
+%         end
+        
+%         function value=get.Dt(self)  % s
+%             value=1/self.SamplingRate_;
+%         end
+        
+        function value = getTime(self, fs)  % s
+            dt = 1/fs ;  % s
+            nScansInSweep = self.getNScansInSweep(fs) ;
+            value = dt*(0:(nScansInSweep-1))' ;  % s
         end
         
-        function value=get.Dt(self)  % s
-            value=1/self.SamplingRate_;
+        function value = get.SweepDuration(self)  % s
+            value = 2*self.PulseDuration ;
         end
         
-        function value=get.Time(self)  % s
-            value=self.Dt*(0:(self.NScansInSweep-1))';  % s
-        end
-        
-        function value=get.SweepDuration(self)  % s
-            value=2*self.PulseDuration;
-        end
-        
-        function value=get.NScansInSweep(self)
+        function value = getNScansInSweep(self, fs)
+            dt = 1/fs ;  % s
             sweepDuration=2*self.PulseDuration;
-            value=round(sweepDuration/self.Dt);
+            value=round(sweepDuration/dt);
         end
         
         function value=get.ElectrodeNames(self)
@@ -975,7 +956,7 @@ classdef TestPulser < ws.Model
             self.changeElectrodeIfCurrentOneIsNotAvailable_();
         end  % function
         
-        function start_(self, testPulseElectrodeIndex, electrode)
+        function start_(self, testPulseElectrodeIndex, electrode, amplitudePerTestPulseElectrode, fs)
             % fprintf('Just entered start()...\n');
             if self.IsRunning ,
                 % fprintf('About to exit start() via short-circuit...\n');                                            
@@ -1026,7 +1007,7 @@ classdef TestPulser < ws.Model
                 end
                 
                 % Get the stimulus
-                commandsInVolts=self.CommandInVoltsPerElectrode;
+                commandsInVolts = self.getCommandInVoltsPerElectrode_(amplitudePerTestPulseElectrode, fs) ;
                 nScans=size(commandsInVolts,1);
                 nElectrodes=size(commandsInVolts,2);
 
@@ -1072,7 +1053,7 @@ classdef TestPulser < ws.Model
                 %self.CommandChannelScalePerElectrodeCached_=self.CommandChannelScalePerElectrode;
                 self.AmplitudePerElectrodeCached_ = self.AmplitudePerElectrode ;
                 self.ElectrodeIndexCached_ = testPulseElectrodeIndex ;
-                self.NScansInSweepCached_ = self.NScansInSweep;
+                self.NScansInSweepCached_ = self.getNScansInSweep(fs) ;
                 self.NElectrodesCached_ = self.NElectrodes;
                 self.GainOrResistanceUnitsPerElectrodeCached_ = self.GainOrResistanceUnitsPerElectrode ;
 
@@ -1083,7 +1064,8 @@ classdef TestPulser < ws.Model
                 tfBase=1/8*totalDuration; % s
                 t0Pulse=5/8*totalDuration; % s
                 tfPulse=6/8*totalDuration; % s
-                dt=self.Dt;
+                %dt=self.Dt;
+                dt = 1/fs;  % s
                 self.I0BaseCached_ = floor(t0Base/dt)+1;
                 self.IfBaseCached_ = floor(tfBase/dt);
                 self.I0PulseCached_ = floor(t0Pulse/dt)+1;
@@ -1357,7 +1339,6 @@ classdef TestPulser < ws.Model
                 self.MonitorPerElectrode_=scaledMonitor;
             end
             self.MonitorCached_=self.MonitorPerElectrode_(:,self.ElectrodeIndexCached_);
-            %end
             self.tryToSetYLimitsIfCalledFor_();
             self.NSweepsCompletedThisRun_=self.NSweepsCompletedThisRun_+1;
             
@@ -1429,10 +1410,10 @@ classdef TestPulser < ws.Model
         end
         
         function clearExistingSweepIfPresent_(self)
-            self.MonitorPerElectrode_=nan(self.NScansInSweep,self.NElectrodes_);
-            self.GainPerElectrode_=nan(1,self.NElectrodes_);
-            self.GainOrResistancePerElectrode_=nan(1,self.NElectrodes_);
-            self.UpdateRate_=nan;
+            self.MonitorPerElectrode_ = [] ;
+            self.GainPerElectrode_ = nan(1,self.NElectrodes_) ;
+            self.GainOrResistancePerElectrode_ = nan(1,self.NElectrodes_) ;
+            self.UpdateRate_ = nan ;
         end  % function
     end  % methods
         

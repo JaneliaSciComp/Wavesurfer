@@ -4643,7 +4643,8 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function startTestPulsing(self)
-            self.Ephys_.startTestPulsing_() ;
+            fs = self.AcquisitionSampleRate ;
+            self.Ephys_.startTestPulsing_(fs) ;
         end
 
         function stopTestPulsing(self)

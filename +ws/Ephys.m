@@ -315,13 +315,17 @@ classdef Ephys < ws.Subsystem
         function result = get.Monitor(self)
             currentElectrodeName = self.TestPulser_.ElectrodeName ;
             if isempty(currentElectrodeName)
-                result = nan(self.TestPulser_.NScansInSweep,1); 
+                result = [] ; 
             else
                 %electrodes = self.ElectrodeManager_.TestPulseElectrodes ;
                 electrodeNames = self.ElectrodeManager_.TestPulseElectrodeNames ;
-                isElectrode=cellfun(@(testElectrodeName)(isequal(currentElectrodeName, testElectrodeName)), electrodeNames) ;
+                isCurrentElectrode=cellfun(@(testElectrodeName)(isequal(currentElectrodeName, testElectrodeName)), electrodeNames) ;
                 monitorPerElectrode = self.TestPulser_.getMonitorPerElectrode_() ;
-                result = monitorPerElectrode(:,isElectrode) ;
+                if isempty(monitorPerElectrode) ,
+                    result = [] ;
+                else
+                    result = monitorPerElectrode(:,isCurrentElectrode) ;
+                end
             end
         end  % function         
         
@@ -350,10 +354,13 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.setTestPulseElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
         end  % function        
         
-        function startTestPulsing_(self)
+        function startTestPulsing_(self, fs)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
-            self.TestPulser_.start_(testPulseElectrodeIndex, testPulseElectrode) ;            
+            
+            amplitudePerTestPulseElectrode = self.AmplitudePerTestPulseElectrode ;
+            
+            self.TestPulser_.start_(testPulseElectrodeIndex, testPulseElectrode, amplitudePerTestPulseElectrode, fs) ;            
         end
 
         function stopTestPulsing_(self)
