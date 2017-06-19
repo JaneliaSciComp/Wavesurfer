@@ -73,7 +73,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Create two new electrodes in ElectrodeManager
             model.Ephys.ElectrodeManager.addNewElectrode();
-            model.Ephys.ElectrodeManager.addNewElectrode();
+            tpElectrodeIndex = model.Ephys.ElectrodeManager.addNewElectrode();
             
             % Mark the first one as not being test-pulseable
             model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse=[false true];
@@ -83,8 +83,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %model.Ephys.TestPulser.ElectrodeIndex=1;  % since it's now the 1st test-pulsable trode
             
             % Set the type of new electrode to Heka
-            electrodeIndex=2;
-            model.Ephys.ElectrodeManager.setElectrodeType(electrodeIndex,'Heka EPC');
+            %electrodeIndex=2;
+            model.Ephys.ElectrodeManager.setElectrodeType(tpElectrodeIndex,'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
@@ -95,7 +95,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
+            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
@@ -103,7 +103,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
+            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
 
             % Re-enable the softpanel

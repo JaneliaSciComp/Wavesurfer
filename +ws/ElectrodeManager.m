@@ -361,14 +361,26 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function
 
-        function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
-            % Like setElectrodeModeOrScaling(), but the given electrode
-            % index refers to the index within the test pulse electrodes
-            % only.
-            electrodeIndices=(1:self.NElectrodes);
-            testPulseElectrodeIndices=electrodeIndices(self.IsElectrodeMarkedForTestPulse_);
-            electrodeIndex=testPulseElectrodeIndices(testPulseElectrodeIndex);
-            self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
+%         function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
+%             % Like setElectrodeModeOrScaling(), but the given electrode
+%             % index refers to the index within the test pulse electrodes
+%             % only.
+%             electrodeIndices=(1:self.NElectrodes);
+%             testPulseElectrodeIndices=electrodeIndices(self.IsElectrodeMarkedForTestPulse_);
+%             electrodeIndex=testPulseElectrodeIndices(testPulseElectrodeIndex);
+%             self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
+%         end  % function
+
+        function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
+            electrodeIndices = (1:self.NElectrodes) ;
+            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+            result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
+        end  % function
+        
+        function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
+            electrodeIndices = (1:self.NElectrodes) ;
+            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+            result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
         end  % function
 
         function setElectrodeMonitorScaling(self, electrodeIndex, newValue)

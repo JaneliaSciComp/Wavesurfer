@@ -3,7 +3,7 @@ classdef Ephys < ws.Subsystem
         TestPulseElectrodeCommandChannelName
         TestPulseElectrodeMonitorChannelName
         TestPulseElectrodeAmplitude
-        TestPulseElectrodeIndex
+        TestPulseElectrodeIndex  % index of the currently selected test pulse electrode *within the array of all electrodes*
         TestPulseElectrodes
         TestPulseElectrodesCount
         TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
@@ -33,7 +33,7 @@ classdef Ephys < ws.Subsystem
             self.IsEnabled=true;            
             self.ElectrodeManager_ = ws.ElectrodeManager(self) ;
             self.TestPulser_ = ws.TestPulser(self) ;
-            self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
+            %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
         end
         
         function delete(self)
@@ -66,7 +66,7 @@ classdef Ephys < ws.Subsystem
             % Called by the ElectrodeManager when an electrode is added.
             % Currently, informs the TestPulser of the change.
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeWasAdded(electrode, self.ElectrodeManager_.TestPulseElectrodesCount);
+                self.TestPulser_.electrodeWasAdded(electrode);
             end
         end
 
@@ -75,7 +75,7 @@ classdef Ephys < ws.Subsystem
             % are removed.
             % Currently, informs the TestPulser of the change.
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodesRemoved(self.ElectrodeManager_.TestPulseElectrodesCount);
+                self.TestPulser_.electrodesRemoved();
             end
             if ~isempty(self.Parent)
                 self.Parent.electrodesRemoved();
@@ -91,7 +91,7 @@ classdef Ephys < ws.Subsystem
         
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(self.ElectrodeManager_.TestPulseElectrodesCount);
+                self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged();
             end
         end
                 
@@ -207,7 +207,7 @@ classdef Ephys < ws.Subsystem
             end
             
             % Ensure self-consistency of self
-            self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
+            %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
             
             % Re-enable broadcasts
             self.TestPulser.enableBroadcastsMaybe();
@@ -330,8 +330,6 @@ classdef Ephys < ws.Subsystem
         end  % function         
         
         function result = get.TestPulseElectrodeIndex(self)
-            % the index of the current electrode in Electrodes (which is
-            % just the test pulse electrodes)
             name = self.TestPulser_.ElectrodeName ;
             if isempty(name) ,
                 result = zeros(1,0) ; 
@@ -350,17 +348,26 @@ classdef Ephys < ws.Subsystem
         end  % function        
         
         function set.TestPulseElectrodeMode(self, newValue)            
-            electrodeIndex = self.TestPulseElectrodeIndex ;
-            self.ElectrodeManager_.setTestPulseElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
+            electrodeIndex = self.TestPulseElectrodeIndex ;  % index within all electrodes
+            self.ElectrodeManager_.setElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
         end  % function        
         
         function startTestPulsing_(self, fs)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
+            indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
+                self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
             testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
             
             amplitudePerTestPulseElectrode = self.AmplitudePerTestPulseElectrode ;
             
-            self.TestPulser_.start_(testPulseElectrodeIndex, testPulseElectrode, amplitudePerTestPulseElectrode, fs) ;            
+            nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
+            gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            self.TestPulser_.start_(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
+                                    testPulseElectrode, ...
+                                    amplitudePerTestPulseElectrode, ...
+                                    fs, ...
+                                    nTestPulseElectrodes, ...
+                                    gainOrResistanceUnitsPerTestPulseElectrode) ;            
         end
 
         function stopTestPulsing_(self)
@@ -377,6 +384,28 @@ classdef Ephys < ws.Subsystem
             else
                 self.startTestPulsing_() ;
             end
+        end
+        
+        function result = getGainOrResistancePerTestPulseElectrode(self)
+            rawValue = self.TestPulser_.getGainOrResistancePerElectrode_() ;
+            if isempty(rawValue) ,                
+                nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
+                result = nan(1,nTestPulseElectrodes) ;
+            else
+                result = rawValue ;
+            end
+        end
+
+        function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
+            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
+        end        
+        
+        function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
+            rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
+            rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+            [gainOrResistanceUnits,gainOrResistance] = ...
+                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
         
     end  % public methods block

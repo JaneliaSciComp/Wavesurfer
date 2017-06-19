@@ -192,7 +192,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             %rawGainOrResistance=testPulser.GainOrResistancePerElectrode;
             %rawGainOrResistanceUnits = testPulser.GainOrResistanceUnitsPerElectrode ;
             %[gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;
-            [gainOrResistance,gainOrResistanceUnits] = testPulser.getGainOrResistancePerElectrodeWithNiceUnits() ;
+            [gainOrResistance, gainOrResistanceUnits] = ephys.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
             %fprintf('here 2\n');
             nElectrodes=length(gainOrResistance);
             for j=1:nElectrodes ,
@@ -948,8 +948,9 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 nElectrodes=0;
             else
-                testPulser = self.Model.Ephys.TestPulser ;
-                nElectrodes=testPulser.NElectrodes;
+                %testPulser = self.Model.Ephys.TestPulser ;
+                %nElectrodes=testPulser.NElectrodes;
+                nElectrodes = self.Model.Ephys.TestPulseElectrodesCount ;
             end
             %nElectrodes=4  % FOR DEBUGGING ONLY
             
