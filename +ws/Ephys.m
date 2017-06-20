@@ -10,7 +10,9 @@ classdef Ephys < ws.Subsystem
         AmplitudePerTestPulseElectrode
         TestPulseElectrode
         Monitor
-        IsTestPulsing
+        %IsTestPulsing
+        DoSubtractBaseline
+        TestPulseElectrodeName
     end
     
     properties (Access = protected)
@@ -65,9 +67,7 @@ classdef Ephys < ws.Subsystem
         function electrodeWasAdded(self,electrode)
             % Called by the ElectrodeManager when an electrode is added.
             % Currently, informs the TestPulser of the change.
-            if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeWasAdded(electrode);
-            end
+            self.TestPulser_.electrodeWasAdded(electrode);
         end
 
         function electrodesRemoved(self)
@@ -230,7 +230,7 @@ classdef Ephys < ws.Subsystem
     
     methods (Access=protected)
         function value = getTestPulseElectrodeProperty_(self, propertyName)
-            electrodeName = self.TestPulser_.ElectrodeName ;
+            electrodeName = self.TestPulseElectrodeName ;
             electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
             if isempty(electrode) ,
                 value = '' ;
@@ -240,7 +240,7 @@ classdef Ephys < ws.Subsystem
         end
         
         function setTestPulseElectrodeProperty_(self, propertyName, newValue)
-            electrodeName = self.TestPulser_.ElectrodeName ;
+            electrodeName = self.TestPulseElectrodeName ;
             electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
             if ~isempty(electrode) ,
                 electrode.(propertyName) = newValue ;
@@ -286,7 +286,7 @@ classdef Ephys < ws.Subsystem
         end  % function 
         
         function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
-            if ~isempty(self.TestPulser_.ElectrodeName) ,
+            if ~isempty(self.TestPulseElectrodeName) ,
                 if ws.isString(newValue) ,
                     newValueAsDouble = str2double(newValue) ;
                 elseif isnumeric(newValue) && isscalar(newValue) ,
@@ -307,13 +307,13 @@ classdef Ephys < ws.Subsystem
         end  % function         
         
         function result=get.TestPulseElectrode(self)
-            electrodeName = self.TestPulser_.ElectrodeName ;            
+            electrodeName = self.TestPulseElectrodeName ;            
             electrodeManager = self.ElectrodeManager_ ;
             result = electrodeManager.getElectrodeByName(electrodeName) ;
         end  % function 
         
         function result = get.Monitor(self)
-            currentElectrodeName = self.TestPulser_.ElectrodeName ;
+            currentElectrodeName = self.TestPulseElectrodeName ;
             if isempty(currentElectrodeName)
                 result = [] ; 
             else
@@ -330,7 +330,7 @@ classdef Ephys < ws.Subsystem
         end  % function         
         
         function result = get.TestPulseElectrodeIndex(self)
-            name = self.TestPulser_.ElectrodeName ;
+            name = self.TestPulseElectrodeName ;
             if isempty(name) ,
                 result = zeros(1,0) ; 
             else
@@ -339,7 +339,7 @@ classdef Ephys < ws.Subsystem
         end  % function         
         
         function result = get.TestPulseElectrodeMode(self)
-            electrodeName = self.TestPulser_.ElectrodeName ;
+            electrodeName = self.TestPulseElectrodeName ;
             if isempty(electrodeName) ,
                 result = [] ;
             else
@@ -374,7 +374,7 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.stop_() ;            
         end
         
-        function result = get.IsTestPulsing(self)
+        function result = getIsTestPulsing_(self)
             result = self.TestPulser_.IsRunning ;
         end
         
@@ -406,6 +406,35 @@ classdef Ephys < ws.Subsystem
             % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
             [gainOrResistanceUnits,gainOrResistance] = ...
                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+        end
+        
+        function result = get.DoSubtractBaseline(self)
+            result = self.TestPulser_.DoSubtractBaseline ;
+        end        
+        
+        function set.DoSubtractBaseline(self, newValue)            
+            self.TestPulser_.DoSubtractBaseline = newValue ;
+        end    
+        
+        function value=get.TestPulseElectrodeName(self)
+            value=self.TestPulser_.getElectrodeName_() ;
+        end
+        
+        function set.TestPulseElectrodeName(self,newValue)
+            if isempty(newValue) ,
+                self.TestPulser_.setElectrodeName_('') ;
+            else
+                % Check that the newValue is an available electrode, unless we
+                % can't get a list of electrodes.
+                electrodeManager = self.ElectrodeManager_ ;
+                electrodeNames=electrodeManager.TestPulseElectrodeNames;
+                newValueFiltered=electrodeNames(strcmp(newValue,electrodeNames));
+                if ~isempty(newValueFiltered) ,
+                    electrodeName=newValueFiltered{1};  % if multiple matches, choose the first (hopefully rare)
+                    self.TestPulser_.setElectrodeName_(electrodeName) ;
+                end
+            end
+            self.broadcast('UpdateTestPulser');
         end
         
     end  % public methods block

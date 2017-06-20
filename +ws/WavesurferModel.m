@@ -55,6 +55,8 @@ classdef WavesurferModel < ws.Model
         StimulationSampleRate  % Hz
         IsAOChannelMarkedForDeletion
         IsDOChannelMarkedForDeletion
+        IsTestPulsing
+        DoSubtractBaseline
     end
     
     properties (Access=protected)
@@ -4651,8 +4653,24 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.stopTestPulsing_() ;
         end        
         
+        function result = get.IsTestPulsing(self)
+            result = self.Ephys_.getIsTestPulsing_() ;
+        end
+        
         function toggleIsTestPulsing(self)
-            self.Ephys_.toggleIsTestPulsing() ;
+            if self.Ephys_.getIsTestPulsing_() , 
+                self.stopTestPulsing() ;
+            else
+                self.startTestPulsing() ;
+            end
+        end
+        
+        function result = get.DoSubtractBaseline(self)
+            result = self.Ephys_.DoSubtractBaseline ;
+        end
+        
+        function set.DoSubtractBaseline(self, newValue)            
+            self.Ephys_.DoSubtractBaseline = newValue ;
         end
         
     end

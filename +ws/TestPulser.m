@@ -1,6 +1,6 @@
 classdef TestPulser < ws.Model 
     properties (Dependent=true)  % do we need *so* many public properties?
-        ElectrodeName
+        %ElectrodeName
         PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
         DoSubtractBaseline
         IsAutoY
@@ -229,43 +229,12 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end
         
-        function value=get.ElectrodeName(self)
+        function value=getElectrodeName_(self)
             value=self.ElectrodeName_;
         end
 
-        function set.ElectrodeName(self,newValue)
-            if isempty(newValue) ,
-                self.ElectrodeName_ = '';
-                %self.Electrode_ = [];                
-            else
-                % Check that the newValue is an available electrode, unless we
-                % can't get a list of electrodes.
-                ephys=self.Parent_;
-                if isempty(ephys)
-                    electrodeManager=[];
-                    electrodeNames={newValue};
-                else
-                    electrodeManager=ephys.ElectrodeManager;
-                    if isempty(electrodeManager) ,
-                        electrodeNames={newValue};
-                    else    
-                        electrodeNames=electrodeManager.TestPulseElectrodeNames;
-                    end
-                end
-                newValueFiltered=electrodeNames(strcmp(newValue,electrodeNames));
-                if ~isempty(newValueFiltered) ,
-                    electrodeName=newValueFiltered{1};  % if multiple matches, choose the first (hopefully rare)
-                    if isempty(electrodeManager)
-                        self.ElectrodeName_ = electrodeName;  % this is a fall-back
-                        %self.Electrode_ = [];
-                    else
-                        %electrode=electrodeManager.getElectrodeByName(electrodeName);
-                        self.ElectrodeName_ = electrodeName;
-                        %self.Electrode_ = electrode;
-                    end
-                end
-            end
-            self.broadcast('Update');
+        function setElectrodeName_(self, newValue)
+            self.ElectrodeName_ = newValue;
         end
         
 %         function result=get.Electrodes(self)
@@ -433,9 +402,9 @@ classdef TestPulser < ws.Model
             value=self.DoSubtractBaseline_;
         end
         
-        function set.DoSubtractBaseline(self,newValue)
+        function set.DoSubtractBaseline(self, newValue)
             if islogical(newValue) ,
-                self.DoSubtractBaseline_=newValue;
+                self.DoSubtractBaseline_ = newValue ;
                 self.clearExistingSweepIfPresent_();
             end
             self.broadcast('Update');
@@ -875,28 +844,27 @@ classdef TestPulser < ws.Model
         function yLimits=automaticYLimits(self)
             % Trys to determine the automatic y limits from the monitor
             % signal.  If succful, returns them.  If unsuccessful, returns empty.
-            if self.IsRunning_ ,
-                monitorMax=max(self.MonitorCached_);
-                monitorMin=min(self.MonitorCached_);
+            monitor = self.MonitorCached_ ;
+            if isempty(monitor) ,
+                yLimits = [] ;
             else
-                monitor=self.Monitor;
                 monitorMax=max(monitor);
                 monitorMin=min(monitor);
-            end
-            if ~isempty(monitorMax) && ~isempty(monitorMin) && isfinite(monitorMin) && isfinite(monitorMax) ,
-                monitorCenter=(monitorMin+monitorMax)/2;
-                monitorRadius=(monitorMax-monitorMin)/2;
-                if monitorRadius==0 ,
-                    yLo=monitorCenter-10;
-                    yHi=monitorCenter+10;
+                if ~isempty(monitorMax) && ~isempty(monitorMin) && isfinite(monitorMin) && isfinite(monitorMax) ,
+                    monitorCenter=(monitorMin+monitorMax)/2;
+                    monitorRadius=(monitorMax-monitorMin)/2;
+                    if monitorRadius==0 ,
+                        yLo=monitorCenter-10;
+                        yHi=monitorCenter+10;
+                    else
+                        yLo=monitorCenter-1.2*monitorRadius;
+                        yHi=monitorCenter+1.2*monitorRadius;
+                    end
+                    yLimits=[yLo yHi];
                 else
-                    yLo=monitorCenter-1.2*monitorRadius;
-                    yHi=monitorCenter+1.2*monitorRadius;
-                end
-                yLimits=[yLo yHi];
-            else
-                yLimits=[];
-            end            
+                    yLimits=[];
+                end            
+            end
         end  % function
 
         function set.YLimits(self,newValue)
@@ -912,16 +880,11 @@ classdef TestPulser < ws.Model
 
         function electrodeWasAdded(self, electrode)
             % Called by the parent Ephys when an electrode is added.
-
-            %self.NElectrodes_ = nTestPulseElectrodes ;
-            % Redimension MonitorPerElectrode_ appropriately, etc.
-            self.clearExistingSweepIfPresent_()
-
-            % If there's no current electrode, set Electrode to point to
-            % the newly-created one.            
-            if isempty(self.ElectrodeName) ,
-                self.ElectrodeName = electrode.Name ; 
+            self.clearExistingSweepIfPresent_() ;
+            if isempty(self.ElectrodeName_) ,
+                self.ElectrodeName_ = electrode.Name ;                                
             end
+            self.broadcast('Update') ;
         end
 
         function electrodesRemoved(self)
@@ -934,6 +897,8 @@ classdef TestPulser < ws.Model
             
             % Change the electrode if needed
             self.changeElectrodeIfCurrentOneIsNotAvailable_();
+            
+            self.broadcast('Update') ;
         end  % function
         
         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
@@ -1412,6 +1377,7 @@ classdef TestPulser < ws.Model
         
         function clearExistingSweepIfPresent_(self)
             self.MonitorPerElectrode_ = [] ;
+            self.MonitorCached_ = [] ;
             self.GainPerElectrode_ = [] ;
             self.GainOrResistancePerElectrode_ = [] ;
             self.UpdateRate_ = nan ;
@@ -1453,16 +1419,16 @@ classdef TestPulser < ws.Model
             % to the first test pulse electrode.
             electrodes=self.Parent.ElectrodeManager.TestPulseElectrodes;
             if isempty(electrodes)
-                self.ElectrodeName='';
+                self.ElectrodeName_ = '' ;
             else
-                if isempty(self.ElectrodeName) ,
+                if isempty(self.ElectrodeName_) ,
                     electrode = electrodes{1} ;
-                    self.ElectrodeName = electrode.Name;  % no current electrode, but electrodes is nonempty, so make the first one current.
+                    self.ElectrodeName_ = electrode.Name ;  % no current electrode, but electrodes is nonempty, so make the first one current.
                 else
                     % If we get here, self.Electrode is a scalar of class
                     % Electrode, and electrode is a nonempty cell array of
                     % scalars of class Electrode
-                    isMatch=cellfun(@(electrode)(isequal(self.ElectrodeName, electrode.Name)),electrodes);
+                    isMatch=cellfun(@(electrode)(isequal(self.ElectrodeName_, electrode.Name)),electrodes);
                     if any(isMatch)
                         % nothing to do here---self.Electrode is a handle
                         % that points to a current test pulse electrode
@@ -1470,7 +1436,7 @@ classdef TestPulser < ws.Model
                         % It seems the current electrode has been deleted, or is
                         % not marked as being available for test pulsing
                         electrode = electrodes{1} ;
-                        self.ElectrodeName = electrode.Name ;
+                        self.ElectrodeName_ = electrode.Name ;
                     end
                 end
             end 

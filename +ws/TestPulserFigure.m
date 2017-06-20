@@ -289,7 +289,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                 'Enable',ws.onIff(isStartStopButtonEnabled));
             
             electrodeNames=electrodeManager.TestPulseElectrodeNames;
-            electrodeName=testPulser.ElectrodeName;
+            electrodeName=ephys.TestPulseElectrodeName;
             ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
                                                             electrodeNames, ...
                                                             electrodeName);

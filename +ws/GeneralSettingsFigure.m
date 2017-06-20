@@ -1567,6 +1567,4 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 %             self.tellFigureToDeleteFigureGH_() ;
 %         end  % function        
     end  % Control actuation methods block
-
-    
 end  % classdef
