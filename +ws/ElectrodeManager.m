@@ -471,8 +471,16 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function setElectrodeName(self, electrodeIndex, newValue)
-            electrode = self.Electrodes_{electrodeIndex} ;
-            electrode.Name = newValue ;
+            if ws.isString(newValue) && ~isempty(newValue) ,  
+                electrodeNames = cellfun(@(electrode)(electrode.Name), ...
+                                         self.Electrodes_, ...
+                                         'UniformOutput',false) ;
+                if ~ismember(newValue, electrodeNames) ,  % prevent name collisions
+                    electrode = self.Electrodes_{electrodeIndex} ;
+                    electrode.Name = newValue ;
+                end
+            end
+            self.broadcast('Update') ;
         end
         
         function setElectrodeCommandChannelName(self, electrodeIndex, newValue)
