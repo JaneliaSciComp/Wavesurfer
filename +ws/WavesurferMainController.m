@@ -494,7 +494,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             model = wsModel.Display ;            
             aiChannelIndex = model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
             yLimits = model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
-            yUnits = wsModel.Acquisition.AnalogChannelUnits{aiChannelIndex} ;
+            yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
             callbackFunction = @(newYLimits)(model.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;
             self.MyYLimDialogFigure = ...

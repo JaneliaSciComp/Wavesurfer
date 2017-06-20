@@ -60,7 +60,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            import ws.*
+            %import ws.*
 
             %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
             %fprintf('  class of self: %s\n',class(self));
@@ -82,9 +82,9 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             newValueAsSign=2*double(newValue)-1;  % [0,1] -> [-1,+1]
             newDegreeOfEnablementRaw=self.DegreeOfEnablement_+newValueAsSign;
             self.DegreeOfEnablement_ = ...
-                    fif(newDegreeOfEnablementRaw<=1, ...
-                        newDegreeOfEnablementRaw, ...
-                        1);
+                    ws.fif(newDegreeOfEnablementRaw<=1, ...
+                           newDegreeOfEnablementRaw, ...
+                           1);
                         
 %             if isa(self,'ws.TestPulserFigure') ,
 %                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): After update, self.DegreeOfEnablement_ = %d\n' , ...
@@ -226,7 +226,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.*
+%             %import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return
@@ -648,4 +648,10 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
 %         end
 %     end
     
+    methods
+        function setAreUpdatesEnabledForFigure(self,newValue)
+            self.AreUpdatesEnabled = newValue ;
+        end        
+    end
+
 end  % classdef

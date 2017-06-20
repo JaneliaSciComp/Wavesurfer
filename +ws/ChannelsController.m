@@ -34,7 +34,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
             %self.Model.Acquisition.setSingleAnalogChannelName(i, newString) ;
-            self.Model.Acquisition.do('setSingleAnalogChannelName', i, newString) ;
+            self.Model.do('setSingleAIChannelName', i, newString) ;
         end
         
         function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -48,7 +48,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model.Acquisition.do('setSingleAnalogTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -57,7 +57,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AIScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model.Acquisition.setSingleAnalogChannelScale(i,newValue);
-            self.Model.Acquisition.do('setSingleAnalogChannelScale', i, newValue) ;
+            self.Model.do('setSingleAIChannelScale', i, newValue) ;
         end
         
         function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
@@ -65,23 +65,23 @@ classdef ChannelsController < ws.Controller
             i=find(isTheChannel);
             newString=get(self.Figure.AIUnitsEdits(i),'String');
             %self.Model.Acquisition.setSingleAnalogChannelUnits(i,newString);
-            self.Model.Acquisition.do('setSingleAnalogChannelUnits', i, newString) ;
+            self.Model.do('setSingleAIChannelUnits', i, newString) ;
         end
         
         function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
             isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
-            isAnalogChannelActive=self.Model.Acquisition.IsAnalogChannelActive;
+            isAnalogChannelActive=self.Model.IsAIChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
-            self.Model.Acquisition.do('set', 'IsAnalogChannelActive', isAnalogChannelActive) ;             
+            self.Model.do('set', 'IsAIChannelActive', isAnalogChannelActive) ;             
         end
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
-            isAnalogChannelMarkedForDeletion = self.Model.Acquisition.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion = self.Model.IsAIChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
-            self.Model.Acquisition.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
+            self.Model.do('set', 'IsAIChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
         function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
@@ -136,9 +136,9 @@ classdef ChannelsController < ws.Controller
         
         function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
-            isAnalogChannelMarkedForDeletion = self.Model.Stimulation.IsAnalogChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion = self.Model.IsAOChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            %self.Model.Stimulation.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+            %self.Model.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
             self.Model.Stimulation.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
@@ -157,7 +157,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
             %self.Model.Acquisition.setSingleDigitalChannelName(i, newString) ;
-            self.Model.Acquisition.do('setSingleDigitalChannelName', i, newString) ;
+            self.Model.do('setSingleDIChannelName', i, newString) ;
         end
         
         function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -176,18 +176,16 @@ classdef ChannelsController < ws.Controller
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
             isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
-            isDigitalChannelActive=self.Model.Acquisition.IsDigitalChannelActive;
+            isDigitalChannelActive=self.Model.IsDIChannelActive;
             isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
-            %self.Model.Acquisition.IsDigitalChannelActive=isDigitalChannelActive;        
-            self.Model.Acquisition.do('set', 'IsDigitalChannelActive', isDigitalChannelActive);
+            self.Model.do('set', 'IsDIChannelActive', isDigitalChannelActive);
         end
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
-            isChannelMarkedForDeletion = self.Model.Acquisition.IsDigitalChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion = self.Model.IsDIChannelMarkedForDeletion ;
             isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            %self.Model.Acquisition.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
-            self.Model.Acquisition.do('set', 'IsDigitalChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
+            self.Model.do('set', 'IsDIChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
         end
 
         function AddDIChannelButtonActuated(self,source,event)  %#ok<INUSD>
@@ -226,9 +224,9 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
             i = find(isTheChannel) ;            
             newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
-            %self.Model.Stimulation.IsDigitalChannelTimed(i)=newState;
-            newArray = ws.replace(self.Model.Stimulation.IsDigitalChannelTimed, i, newState) ;
-            self.Model.Stimulation.do('set','IsDigitalChannelTimed', newArray) ;
+            %self.Model.IsDOChannelTimed(i)=newState;
+            newArray = ws.replace(self.Model.IsDOChannelTimed, i, newState) ;
+            self.Model.do('set','IsDOChannelTimed', newArray) ;
             %self.Figure.update();  % Surely this is not necessary anymore,
                                     % right?  -- ALT, 2016-09-12
         end
@@ -237,20 +235,20 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.DOIsOnRadiobuttons) ;
             i = find(isTheChannel) ;
             newState = get(self.Figure.DOIsOnRadiobuttons(i),'value') ;
-            value = self.Model.Stimulation.DigitalOutputStateIfUntimed ;
+            value = self.Model.DOChannelStateIfUntimed ;
             newValue = ws.replace(value, i, newState) ;
-            % self.Model.Stimulation.DigitalOutputStateIfUntimed = newValue ;
+            % self.Model.DOChannelStateIfUntimed = newValue ;
             self.Model.Stimulation.do('set', 'DigitalOutputStateIfUntimed', newValue) ;            
         end
         
         function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
             indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
-            %isChannelMarkedForDeletion = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            %isChannelMarkedForDeletion = self.Model.IsDOChannelMarkedForDeletion ;
             %isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
-            originalArray = self.Model.Stimulation.IsDigitalChannelMarkedForDeletion ;
+            originalArray = self.Model.IsDOChannelMarkedForDeletion ;
             newValue = get(source,'Value') ;
             newArray = ws.replace(originalArray, indexOfTheChannel, newValue) ;  %#ok<FNDSB>
-            %self.Model.Stimulation.IsDigitalChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+            %self.Model.IsDOChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
             self.Model.Stimulation.do('set', 'IsDigitalChannelMarkedForDeletion', newArray) ;             
         end
 

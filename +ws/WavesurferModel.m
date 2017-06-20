@@ -1,6 +1,6 @@
 classdef WavesurferModel < ws.Model
     % The main Wavesurfer model object.
-
+    
     properties (Constant = true, Transient=true)
         NFastProtocols = 6
     end
@@ -25,6 +25,38 @@ classdef WavesurferModel < ws.Model
         IsDIChannelTerminalOvercommitted
         IsDOChannelTerminalOvercommitted
         IsProcessingIncomingCommand
+        IsAIChannelActive
+        AIChannelScales
+        AIChannelUnits
+        IsDIChannelActive
+        IsAIChannelMarkedForDeletion
+        IsDIChannelMarkedForDeletion
+        AcquisitionSampleRate  % Hz
+        ExpectedSweepScanCount
+        IsXSpanSlavedToAcquistionDuration
+          % if true, the x span for all the scopes is set to the acquisiton
+          % sweep duration
+        IsXSpanSlavedToAcquistionDurationSettable
+          % true iff IsXSpanSlavedToAcquistionDuration is currently
+          % settable
+        XSpan  % s, the span of time showed in the signal display
+        NAIChannels
+        NDIChannels
+        AOChannelScales
+          % A row vector of scale factors to convert each channel from native units to volts on the coax.
+          % This is implicitly in units of ChannelUnits per volt (see below)        
+        AOChannelUnits
+          % An cellstring row vector that describes the real-world units 
+          % for each analog stimulus channel.          
+        NAOChannels
+        NDOChannels
+        IsDOChannelTimed
+        DOChannelStateIfUntimed
+        StimulationSampleRate  % Hz
+        IsAOChannelMarkedForDeletion
+        IsDOChannelMarkedForDeletion
+        IsTestPulsing
+        DoSubtractBaseline
     end
     
     properties (Access=protected)
@@ -215,7 +247,10 @@ classdef WavesurferModel < ws.Model
         DidChangeNumberOfInputChannels
         RequestLayoutForAllWindows
         LayoutAllWindows
+        DidSetAcquisitionSampleRate
+        DidSetStimulationSampleRate
     end
+    
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
@@ -354,13 +389,13 @@ classdef WavesurferModel < ws.Model
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems
-            self.Acquisition_ = ws.Acquisition(self);
-            self.Stimulation_ = ws.Stimulation(self);
-            self.Display_ = ws.Display(self);
-            self.Triggering_ = ws.Triggering([]);  % Triggering subsystem doesn't need to know its parent, now.
-            self.UserCodeManager_ = ws.UserCodeManager(self);
-            self.Logging_ = ws.Logging(self);
-            self.Ephys_ = ws.Ephys(self);            
+            self.Acquisition_ = ws.Acquisition([]) ;  % Acq subsystem doesn't need to know its parent, now.
+            self.Stimulation_ = ws.Stimulation([]) ;  % Stim subsystem doesn't need to know its parent, now.
+            self.Display_ = ws.Display([]) ;  % Stim subsystem doesn't need to know its parent, now.
+            self.Triggering_ = ws.Triggering([]) ;  % Triggering subsystem doesn't need to know its parent, now.
+            self.UserCodeManager_ = ws.UserCodeManager(self) ;
+            self.Logging_ = ws.Logging(self) ;
+            self.Ephys_ = ws.Ephys(self) ;
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -808,24 +843,15 @@ classdef WavesurferModel < ws.Model
             % Called by the Ephys to notify that one or more electrodes
             % was removed
             % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodesRemoved();
-            end
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodesRemoved();
-            end
+            self.didSetAnalogChannelUnitsOrScales() ;      
         end
         
-        function electrodeMayHaveChanged(self,electrode,propertyName)
+        function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSL>
             % Called by the Ephys to notify that the electrode
             % may have changed.
-            % Currently, tells Acquisition and Stimulation about the change.
-            if ~isempty(self.Acquisition)
-                self.Acquisition.electrodeMayHaveChanged(electrode,propertyName);
-            end
-            if ~isempty(self.Stimulation)
-                self.Stimulation.electrodeMayHaveChanged(electrode,propertyName);
-            end
+            if ~any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
+                self.didSetAnalogChannelUnitsOrScales();
+            end            
         end  % function
 
         function self=didSetAnalogChannelUnitsOrScales(self)
@@ -840,6 +866,11 @@ classdef WavesurferModel < ws.Model
                 ephys.didSetAnalogChannelUnitsOrScales();
             end            
             self.broadcast('UpdateChannels') ;
+        end
+        
+        function setSingleAIChannelTerminalID(self, i, newValue)
+            self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+            self.didSetAnalogInputTerminalID();
         end
         
         function didSetAnalogInputTerminalID(self)
@@ -1034,7 +1065,7 @@ classdef WavesurferModel < ws.Model
 
         function didSetSweepDurationIfFinite_(self)
             %self.Triggering.didSetSweepDurationIfFinite() ;
-            self.Display.didSetSweepDurationIfFinite() ;
+            self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
         end        
         
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
@@ -1140,12 +1171,30 @@ classdef WavesurferModel < ws.Model
             % The logging subsystem has to wait until we obtain the analog
             % scaling coefficients from the Looper.
             try
-                for idx = 1: numel(self.Subsystems_) ,
-                    thisSubsystem = self.Subsystems_{idx} ;
-                    if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
-                        thisSubsystem.startingRun();
-                    end
+%                 for idx = 1: numel(self.Subsystems_) ,
+%                     thisSubsystem = self.Subsystems_{idx} ;
+%                     if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
+%                         thisSubsystem.startingRun();
+%                     end
+%                 end
+                if self.Ephys_.IsEnabled ,
+                    self.Ephys_.startingRun() ;
                 end
+                if self.Acquisition_.IsEnabled ,
+                    self.Acquisition.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration, self.SweepDuration) ;
+                end
+                if self.Stimulation_.IsEnabled ,
+                    self.Stimulation_.startingRun() ;
+                end
+                if self.Display_.IsEnabled ,
+                    self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
+                end
+                if self.Triggering_.IsEnabled ,
+                    self.Triggering_.startingRun() ;
+                end
+                if self.UserCodeManager.IsEnabled ,
+                    self.UserCodeManager_.startingRun() ;
+                end                
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
@@ -1298,7 +1347,7 @@ classdef WavesurferModel < ws.Model
             self.FromRunStartTicId_=tic();
             rawUpdateDt = 1/self.Display.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
-            desiredNScansPerUpdate = max(1,round(updateDt*self.Acquisition.SampleRate)) ;  % don't want this to be zero!
+            desiredNScansPerUpdate = max(1,round(updateDt*self.AcquisitionSampleRate)) ;  % don't want this to be zero!
             self.DesiredNScansPerUpdate_ = desiredNScansPerUpdate ;
             self.NScansPerUpdate_ = self.DesiredNScansPerUpdate_ ;  % at start, will be modified depending on how long stuff takes
             
@@ -1833,7 +1882,7 @@ classdef WavesurferModel < ws.Model
                 % self.DesiredNScansPerUpdate_, and it's important that the
                 % buffer be larger than the largest possible
                 % nScansPerUpdate)
-                fs = self.Acquisition.SampleRate ;
+                fs = self.AcquisitionSampleRate ;
                 nScansPerUpdateNew = min(10*self.DesiredNScansPerUpdate_ , ...
                                          max(2*round(durationOfDataAvailableCall*fs), ...
                                              self.DesiredNScansPerUpdate_ ) ) ;                                      
@@ -1856,11 +1905,11 @@ classdef WavesurferModel < ws.Model
             % Scale the new data, notify subsystems that we have new data
             if (nScans>0)
                 % update the current time
-                dt=1/self.Acquisition.SampleRate;
+                dt=1/self.AcquisitionSampleRate;
                 self.t_=self.t_+nScans*dt;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % Scale the analog data
-                channelScales=self.Acquisition.AnalogChannelScales(self.Acquisition.IsAnalogChannelActive);
+                channelScales=self.AIChannelScales(self.IsAIChannelActive);
                 scalingCoefficients = self.Acquisition.AnalogScalingCoefficients ;
                 scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;                
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales) ;                
@@ -1895,7 +1944,8 @@ classdef WavesurferModel < ws.Model
                                                scaledAnalogData, ...
                                                rawAnalogData, ...
                                                rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData);
+                                               timeSinceRunStartAtStartOfData, ...
+                                               self.XSpan);
                 end
                 if self.UserCodeManager.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
@@ -2415,12 +2465,12 @@ classdef WavesurferModel < ws.Model
 %         end
 
         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
-            value = self.Stimulation.DigitalOutputStateIfUntimed ;
+            value = self.DOChannelStateIfUntimed ;
             self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
         end
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
-            value = self.Stimulation.IsDigitalChannelTimed ;
+            value = self.IsDOChannelTimed ;
             % Notify the refiller first, so that it can release all the DO
             % channels
             self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
@@ -2434,9 +2484,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-        function channelName = addAIChannel(self)
-            channelName = self.Acquisition_.addAnalogChannel() ;
-        end
+%         function channelName = addAIChannel(self)
+%             channelName = self.Acquisition_.addAnalogChannel() ;
+%         end
         
         function channelName = addAOChannel(self)
             channelName = self.Stimulation_.addAnalogChannel() ;
@@ -2447,7 +2497,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function addDIChannel(self)
-            self.Acquisition.addDigitalChannel_() ;
+            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+            self.Acquisition.addDigitalChannel_(freeTerminalIDs) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didAddDigitalInputChannel() ;
             self.Ephys.didChangeNumberOfInputChannels();
@@ -2530,8 +2581,8 @@ classdef WavesurferModel < ws.Model
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
 %                                     channelNameForEachDOChannel, ...
@@ -2543,7 +2594,8 @@ classdef WavesurferModel < ws.Model
 %         end
         
         function addDOChannel(self)
-            self.Stimulation.addDigitalChannel_() ;
+            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+            self.Stimulation.addDigitalChannel_(freeTerminalIDs) ;
             %self.Display.didAddDigitalOutputChannel() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -2554,8 +2606,8 @@ classdef WavesurferModel < ws.Model
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
             %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
-            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
+            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
                                     channelNameForEachDOChannel, ...
@@ -2589,17 +2641,26 @@ classdef WavesurferModel < ws.Model
         end
         
         function deleteMarkedDOChannels(self)
-            self.Stimulation.deleteMarkedDigitalChannels_() ;
+            % Determine which to delete, which to keep
+            isToBeDeleted = self.IsDOChannelMarkedForDeletion ;
+            isKeeper = ~isToBeDeleted ;
+            
+            % Turn off any untimed DOs that are about to be deleted
+            digitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
+            self.DOChannelStateIfUntimed = digitalOutputStateIfUntimed & isKeeper ;                        
+            
+            % Make the needed changed to the Stimulation subsystem
+            self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
+            
+            % Do all the things that need doing after that
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;                                
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
-            %deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
-            terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
-            onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+            channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
+            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
                                     channelNameForEachDOChannel, ...
@@ -2616,8 +2677,8 @@ classdef WavesurferModel < ws.Model
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
 %             terminalIDForEachDOChannel = self.Stimulation.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.Stimulation.IsDigitalChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.Stimulation.DigitalOutputStateIfUntimed ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
 %             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
 %                                     channelNameForEachDOChannel, ...
@@ -2844,6 +2905,8 @@ classdef WavesurferModel < ws.Model
             
             % Set the override state for the stimulus map durations
             self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
+            
+            self.Display_.sanitizePersistedStateGivenChannelCounts_(self.NAIChannels, self.NDIChannels) ;
         end
     end  % protected methods block
     
@@ -3248,21 +3311,21 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
-            looperProtocol.AcquisitionSampleRate = self.Acquisition.SampleRate ;
+            looperProtocol.AcquisitionSampleRate = self.AcquisitionSampleRate ;
 
             looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
-            looperProtocol.AIChannelScales = self.Acquisition.AnalogChannelScales ;
-            looperProtocol.IsAIChannelActive = self.Acquisition.IsAnalogChannelActive ;
+            looperProtocol.AIChannelScales = self.AIChannelScales ;
+            looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
             looperProtocol.AITerminalIDs = self.Acquisition.AnalogTerminalIDs ;
             
             looperProtocol.DIChannelNames = self.Acquisition.DigitalChannelNames ;
-            looperProtocol.IsDIChannelActive = self.Acquisition.IsDigitalChannelActive ;
+            looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
             looperProtocol.DITerminalIDs = self.Acquisition.DigitalTerminalIDs ;
             
             looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
             looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
-            looperProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
-            looperProtocol.DigitalOutputStateIfUntimed = self.Stimulation.DigitalOutputStateIfUntimed ;
+            looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
+            looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
             
@@ -3283,14 +3346,14 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.TimebaseRate = self.TimebaseRate ;
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
-            refillerProtocol.StimulationSampleRate = self.Stimulation.SampleRate ;
+            refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
 
             refillerProtocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
-            refillerProtocol.AOChannelScales = self.Stimulation.AnalogChannelScales ;
+            refillerProtocol.AOChannelScales = self.AOChannelScales ;
             refillerProtocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
             
             refillerProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
-            refillerProtocol.IsDOChannelTimed = self.Stimulation.IsDigitalChannelTimed ;
+            refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             refillerProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
@@ -3406,7 +3469,7 @@ classdef WavesurferModel < ws.Model
             nChannelsInHardware = self.NDIOTerminals ;
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
-                
+        
         function result = get.NDigitalChannels(self)
             nDIs = self.Acquisition.NDigitalChannels ;
             nDOs = self.Stimulation.NDigitalChannels ;
@@ -3646,13 +3709,16 @@ classdef WavesurferModel < ws.Model
             % Need something here for yoking...
             %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
             %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            
+            self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method
         
         function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
             self.Acquisition.didSetDeviceName() ;
             self.Stimulation.didSetDeviceName() ;
-            self.Triggering_.didSetDevice(deviceName, nCounters, nPFITerminals) ;
+            self.Triggering_.didSetDeviceName(deviceName, nCounters, nPFITerminals) ;
             %self.Display.didSetDeviceName() ;
+            self.Ephys_.didSetDeviceName(deviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)
@@ -4012,7 +4078,7 @@ classdef WavesurferModel < ws.Model
         end  % function        
         
         function plotSelectedStimulusLibraryItem(self, figureGH)
-            sampleRate = self.Stimulation_.SampleRate ;  % Hz 
+            sampleRate = self.StimulationSampleRate ;  % Hz 
             channelNames = [self.AOChannelNames self.DOChannelNames] ;
             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
             self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
@@ -4162,4 +4228,450 @@ classdef WavesurferModel < ws.Model
             result = self.CommandClient_ ;
         end        
     end  % public methods block
+    
+    methods
+        function value = get.AIChannelScales(self)
+            ephys = self.Ephys_ ;
+            electrodeManager = ephys.ElectrodeManager ;
+            aiChannelNames = self.Acquisition_.AnalogChannelNames ;
+            [channelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getMonitorScalingsByName(aiChannelNames);
+            value = ws.fif(isChannelScaleEnslaved, channelScalesFromElectrodes, self.Acquisition_.getAnalogChannelScales_());
+        end
+        
+        function value = getNumberOfElectrodesClaimingAIChannel(self)
+            ephys = self.Ephys ;
+            electrodeManager = ephys.ElectrodeManager ;
+            channelNames = self.Acquisition_.AnalogChannelNames ;
+            value = electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames) ;
+        end                        
+        
+        function value = get.AIChannelUnits(self)            
+            ephys=self.Ephys;
+            electrodeManager=ephys.ElectrodeManager;
+            channelNames=self.Acquisition_.AnalogChannelNames;
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getMonitorUnitsByName(channelNames);
+            value = ws.fif(isChannelScaleEnslaved, channelUnitsFromElectrodes, self.Acquisition_.getAnalogChannelUnits_());
+        end
+        
+        function set.AIChannelUnits(self,newValue)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            self.Acquisition_.setAnalogChannelUnits_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelUnits_())) ;
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function set.AIChannelScales(self,newValue)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            self.Acquisition_.setAnalogChannelScales_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelScales_())) ;
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setAIChannelUnitsAndScales(self,newUnitsRaw,newScales)
+            isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
+            self.Acquisition_.setAnalogChannelUnits_( ws.fif(isChangeable, newUnits, self.Acquisition_.getAnalogChannelUnits_()) ) ;
+            self.Acquisition_.setAnalogChannelScales_( ws.fif(isChangeable, newScales, self.Acquisition_.getAnalogChannelScales_()) ) ;
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setSingleAIChannelUnits(self,i,newValueRaw)
+            isChangeableFull = ~(self.getNumberOfElectrodesClaimingAIChannel()==1) ;
+            isChangeable = isChangeableFull(i) ;
+            if isChangeable , 
+                newValue = strtrim(newValueRaw) ;
+                self.Acquisition_.setSingleAnalogChannelUnits_(i, newValue) ;                
+            end
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function setSingleAIChannelScale(self,i,newValue)
+            isChangeableFull = ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
+            isChangeable = isChangeableFull(i);
+            if isChangeable ,
+                self.Acquisition_.setSingleAnalogChannelScale_(i, newValue) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales();
+        end  % function
+        
+        function result = get.IsAIChannelActive(self)
+            result = self.Acquisition_.getIsAnalogChannelActive_() ;
+        end
+        
+        function set.IsAIChannelActive(self, newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
+            self.didSetIsInputChannelActive() ;
+        end    
+        
+        function scaledAnalogData = getLatestAIData(self)
+            % Get the data from the most-recent data available callback, as
+            % doubles.
+            rawAnalogData = self.Acquisition_.getLatestRawAnalogData() ;
+            channelScales=self.AIChannelScales(self.IsAIChannelActive) ;
+            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+        end  % function
+        
+        function scaledAnalogData = getAIDataFromCache(self)
+            % Get the data from the main-memory cache, as double-precision floats.  This
+            % call unwraps the circular buffer for you.
+            rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
+            channelScales=self.AIChannelScales(self.IsAIChannelActive);
+            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
+        end  % function
+
+        function scaledData = getSinglePrecisionAIDataFromCache(self)
+            % Get the data from the main-memory cache, as single-precision floats.  This
+            % call unwraps the circular buffer for you.
+            rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
+            channelScales=self.AIChannelScales(self.IsAIChannelActive);
+            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+        end  % function
+
+        function result = get.IsDIChannelActive(self)
+            result = self.Acquisition_.getIsDigitalChannelActive_() ;
+        end
+
+        function set.IsDIChannelActive(self, newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
+            self.didSetIsInputChannelActive() ;
+        end    
+        
+        function result=aiChannelUnitsFromName(self,channelName)
+            if isempty(channelName) ,
+                result='';
+            else
+                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName) ;
+                if isempty(iChannel) || isnan(iChannel) ,
+                    result='';
+                else
+                    result=self.AIChannelUnits{iChannel} ;
+                end
+            end
+        end
+        
+        function result=aiChannelScaleFromName(self,channelName)
+            if isempty(channelName) ,
+                result='';
+            else
+                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName);
+                if isempty(iChannel) || isnan(iChannel) ,
+                    result='';
+                else
+                    result=self.AIChannelScales(iChannel);
+                end
+            end
+        end  % function
+        
+        function result=get.IsAIChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available AI channels is
+            % active.
+            result = self.Acquisition_.getIsAnalogChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsAIChannelMarkedForDeletion(self,newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function result=get.IsDIChannelMarkedForDeletion(self)
+            % Boolean array indicating which of the available AI channels is
+            % active.
+            result = self.Acquisition_.getIsDigitalChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsDIChannelMarkedForDeletion(self,newValue)
+            % Boolean array indicating which of the AI channels is
+            % active.
+            self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function setSingleAIChannelName(self, i, newValue)
+            allChannelNames = self.AllChannelNames ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName(i, newValue, allChannelNames) ;
+            self.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
+        end
+        
+        function setSingleDIChannelName(self, i, newValue)
+            allChannelNames = self.AllChannelNames ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName(i, newValue, allChannelNames) ;
+            self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
+        end
+        
+        function set.AcquisitionSampleRate(self, newValue)
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.Acquisition_.setSampleRate_(sampleRate) ;
+                self.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
+            end
+            self.broadcast('DidSetAcquisitionSampleRate');
+            if ~isValueValid ,
+                error('ws:invalidPropertyValue', ...
+                      'AcquisitionSampleRate must be a positive finite numeric scalar');
+            end                
+        end  % function
+        
+        function out = get.AcquisitionSampleRate(self)
+            out = self.Acquisition.getSampleRate_() ;
+        end  % function
+        
+        function newChannelName = addAIChannel(self)
+            newChannelName = self.Acquisition_.addAnalogChannel_() ;            
+            self.didAddAnalogInputChannel() ;
+        end  % function
+        
+        function out = get.ExpectedSweepScanCount(self)            
+            out = ws.nScansFromScanRateAndDesiredDuration(self.AcquisitionSampleRate, self.SweepDuration) ;
+        end  % function
+        
+        function value = get.IsXSpanSlavedToAcquistionDuration(self)
+            if self.AreSweepsContinuous ,
+                value = false ;
+            else
+                value = self.Display_.getIsXSpanSlavedToAcquistionDuration_() ;
+            end
+        end  % function
+        
+        function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
+            self.Display_.setIsXSpanSlavedToAcquistionDuration_(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
+        end
+        
+        function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
+            value = self.AreSweepsFiniteDuration ;
+        end  % function             
+        
+        function value = get.XSpan(self)
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                sweepDuration = self.SweepDuration ;
+                value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
+            else
+                value = self.Display_.getXSpan_() ;
+            end
+        end
+        
+        function set.XSpan(self, newValue)            
+            self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
+        end  % function
+        
+        function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
+            nAIChannels = self.NAIChannels ;
+            self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
+        end
+        
+        function toggleIsDIChannelDisplayed(self, diChannelIndex) 
+            nDIChannels = self.NDIChannels ;
+            self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+        end
+        
+        function result = get.NAIChannels(self)
+            result = self.Acquisition_.NAnalogChannels ;
+        end
+
+        function result = get.NDIChannels(self)
+            result = self.Acquisition_.NDigitalChannels ;
+        end
+        
+        function result = get.NAOChannels(self)
+            result = self.Stimulation_.NAnalogChannels ;
+        end
+
+        function result = get.NDOChannels(self)
+            result = self.Stimulation_.NDigitalChannels ;
+        end
+        
+        function result=getNumberOfElectrodesClaimingAOChannel(self)
+            ephys=self.Ephys;
+            electrodeManager=ephys.ElectrodeManager;
+            channelNames=self.Stimulation_.AnalogChannelNames;
+            result = electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
+        end  % function       
+        
+        function result = get.AOChannelScales(self)
+            ephys=self.Ephys;
+            electrodeManager=ephys.ElectrodeManager;
+            channelNames = self.Stimulation_.AnalogChannelNames ;
+            [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandScalingsByName(channelNames) ;
+            result = ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.Stimulation_.getAnalogChannelScales_()) ;
+        end  % function
+        
+%         function set.AOChannelScales(self, newValue)
+%             oldValue = self.Stimulation.getAnalogChannelScales_() ;
+%             isChangeable = ~(self.getNumberOfElectrodesClaimingAOChannel()==1) ;
+%             editedNewValue = ws.fif(isChangeable,newValue,oldValue) ;
+%             self.Stimulation.setAnalogChannelScales_(editedNewValue) ;
+%             self.didSetAnalogChannelUnitsOrScales() ;            
+%         end  % function        
+        
+        function result = get.AOChannelUnits(self)
+            ephys = self.Ephys ;
+            electrodeManager = ephys.ElectrodeManager ;
+            channelNames = self.Stimulation_.AnalogChannelNames ;
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandUnitsByName(channelNames) ;
+            result = ws.fif(isChannelScaleEnslaved, channelUnitsFromElectrodes, self.Stimulation_.getAnalogChannelUnits_()) ;
+        end  % function
+
+        function setSingleAOChannelUnits(self, i, newValue)
+            isChangeableFull=~(self.getNumberOfElectrodesClaimingAOChannel()==1);
+            isChangeable= isChangeableFull(i);
+            if isChangeable ,
+                self.Stimulation.setSingleAnalogChannelUnits_(i, strtrim(newValue)) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales();            
+        end  % function
+        
+        function setSingleAOChannelScale(self, i, newValue)
+            isChangeableFull = ~(self.getNumberOfElectrodesClaimingAOChannel()==1) ;
+            isChangeable = isChangeableFull(i) ;
+            if isChangeable && isfinite(newValue) && newValue>0 ,
+                self.Stimulation_.setSingleAnalogChannelScales_(i, newValue) ;
+            end
+            self.didSetAnalogChannelUnitsOrScales() ;
+        end  % function
+        
+        function setSingleAOTerminalID(self, i, newValue)
+            if 1<=i && i<=self.NAOChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                newValueAsDouble = double(newValue) ;
+                if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
+                    self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
+                end
+            end
+            self.didSetAnalogOutputTerminalID();
+        end
+        
+        function set.IsDOChannelTimed(self, newValue)
+            try
+                wasSet = self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
+            catch exception
+                self.didSetIsDigitalOutputTimed() ;
+                rethrow(exception) ;
+            end            
+            self.didSetIsDigitalOutputTimed() ;            
+            if wasSet ,
+                self.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
+            end
+        end
+        
+        function result = get.IsDOChannelTimed(self) 
+            result = self.Stimulation_.getIsDigitalChannelTimed_() ;
+        end
+        
+        function set.DOChannelStateIfUntimed(self, newValue)
+            try
+                self.Stimulation_.setDigitalOutputStateIfUntimed_(newValue) ;
+            catch exception
+                self.didSetDigitalOutputStateIfUntimed() ;
+                rethrow(exception) ;
+            end
+            self.didSetDigitalOutputStateIfUntimed() ;            
+            self.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
+        end  % function
+        
+        function out = get.DOChannelStateIfUntimed(self)
+            out= self.Stimulation_.getDigitalOutputStateIfUntimed_() ;
+        end
+        
+        function out = get.StimulationSampleRate(self)
+            out= self.Stimulation_.getSampleRate_() ;
+        end
+        
+        function set.StimulationSampleRate(self, newValue)
+            if isscalar(newValue) && isnumeric(newValue) && isfinite(newValue) && newValue>0 ,                
+                % Constrain value appropriately
+                isValueValid = true ;
+                newValue = double(newValue) ;
+                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                self.Stimulation_.setSampleRate_(sampleRate) ;
+                self.didSetAcquisitionSampleRate(sampleRate);
+            else
+                isValueValid = false ;
+            end
+            self.broadcast('DidSetStimulationSampleRate');
+            if ~isValueValid ,
+                error('ws:invalidPropertyValue', ...
+                      'StimulationSampleRate must be a positive finite numeric scalar');
+            end                
+        end  % function
+        
+        function result=get.IsAOChannelMarkedForDeletion(self)
+            result =  self.Stimulation_.getIsAnalogChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsAOChannelMarkedForDeletion(self, newValue)
+            self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function result=get.IsDOChannelMarkedForDeletion(self)
+            result = self.Stimulation_.getIsDigitalChannelMarkedForDeletion_() ;
+        end
+        
+        function set.IsDOChannelMarkedForDeletion(self, newValue)
+            self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
+            self.didSetIsInputChannelMarkedForDeletion() ;
+        end
+        
+        function result=aoChannelUnitsFromName(self,channelName)
+            if isempty(channelName) ,
+                result = '' ;
+            else
+                iChannel=self.Stimulation_.indexOfAnalogChannelFromName(channelName);
+                if isnan(iChannel) ,
+                    result='';
+                else
+                    result=self.AOChannelUnits{iChannel} ;
+                end
+            end
+        end  % function
+        
+        function value = aoChannelScaleFromName(self, channelName)
+            channelIndex = self.Stimulation_.indexOfAnalogChannelFromName(channelName) ;
+            if isnan(channelIndex) ,
+                value = nan ;
+            else
+                value = self.AOChannelScales(channelIndex) ;
+            end
+        end  % function
+
+        function startTestPulsing(self)
+            fs = self.AcquisitionSampleRate ;
+            self.Ephys_.startTestPulsing_(fs) ;
+        end
+
+        function stopTestPulsing(self)
+            self.Ephys_.stopTestPulsing_() ;
+        end        
+        
+        function result = get.IsTestPulsing(self)
+            result = self.Ephys_.getIsTestPulsing_() ;
+        end
+        
+        function toggleIsTestPulsing(self)
+            if self.Ephys_.getIsTestPulsing_() , 
+                self.stopTestPulsing() ;
+            else
+                self.startTestPulsing() ;
+            end
+        end
+        
+        function result = get.DoSubtractBaseline(self)
+            result = self.Ephys_.DoSubtractBaseline ;
+        end
+        
+        function set.DoSubtractBaseline(self, newValue)            
+            self.Ephys_.DoSubtractBaseline = newValue ;
+        end
+        
+    end
 end  % classdef

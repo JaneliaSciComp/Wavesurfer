@@ -124,9 +124,6 @@ classdef ElectrodeManagerController < ws.Controller
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
             indexOfElectrode = find(isTheElectrode, 1) ;
-            %electrode=self.Model.Electrodes{isTheElectrode};
-            %electrode.CommandChannelName=choice;
-            %self.setElectrodeCommandChannelName(indexOfElectrode, choice) ;
             self.Model.do('setElectrodeCommandChannelName', indexOfElectrode, choice) ;
         end
         

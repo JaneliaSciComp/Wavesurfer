@@ -142,7 +142,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % properties they should have, given the current state of the
             % model.
             
-            import ws.*
+            %import ws.*
             
 %             fprintf('ElectrodeManagerFigure.updateControlPropertiesImplementation_:\n');
 %             dbstack
@@ -178,19 +178,19 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
             % Update bottom row button enablement
             %isAddButtonEnabled= isWavesurferIdle;
-            %set(self.AddButton,'Enable',onIff(isAddButtonEnabled));
+            %set(self.AddButton,'Enable',ws.onIff(isAddButtonEnabled));
             %isRemoveButtonEnabled= isWavesurferIdle && any(model.IsElectrodeMarkedForRemoval);
-            %set(self.RemoveButton,'Enable',onIff(isRemoveButtonEnabled));
+            %set(self.RemoveButton,'Enable',ws.onIff(isRemoveButtonEnabled));
             areAnyElectrodesCommandable=model.areAnyElectrodesCommandable();
             %isSoftpanelButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;
-            %set(self.SoftpanelButton,'Enable',onIff(isSoftpanelButtonEnabled));
+            %set(self.SoftpanelButton,'Enable',ws.onIff(isSoftpanelButtonEnabled));
             %isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart&&areSoftpanelsEnabled;
             %isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
               % still sometimes nice to update even when WS is
               % theoretically "in command"
-            %set(self.UpdateButton,'Enable',onIff(isUpdateButtonEnabled));
+            %set(self.UpdateButton,'Enable',ws.onIff(isUpdateButtonEnabled));
             %isReconnectButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
-            %set(self.ReconnectButton,'Enable',onIff(isReconnectButtonEnabled));
+            %set(self.ReconnectButton,'Enable',ws.onIff(isReconnectButtonEnabled));
             
             % Update toggle state of Softpanel button
             set(self.SoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
@@ -223,7 +223,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the electrode label
                 set(self.LabelEdits(i), ...
                     'String',thisElectrode.Name, ...
-                    'Enable',onIff(isWavesurferIdle));
+                    'Enable',ws.onIff(isWavesurferIdle));
                 
                 % Need this several places
 %                 isThisElectrodeManual=isequal(thisElectrode.Type,'Manual');
@@ -243,8 +243,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 % Update the index-of-type edit
                 thisIndexWithinType=thisElectrode.IndexWithinType;
                 set(self.IndexWithinTypeEdits(i), ...
-                    'String',fif(isempty(thisIndexWithinType),'',sprintf('%g',thisIndexWithinType)), ...
-                    'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
+                    'String',ws.fif(isempty(thisIndexWithinType),'',sprintf('%g',thisIndexWithinType)), ...
+                    'BackgroundColor',ws.fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
                 % Update the mode popup
                 listOfModes=thisElectrode.getAllowedModes();
@@ -252,8 +252,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 ws.setPopupMenuItemsAndSelectionBang(self.ModePopups(i), ...
                                                   listOfModesAsStrings, ...
                                                   ws.titleStringFromElectrodeMode(thisElectrode.Mode));
-                %set(self.ModePopups(i),'Enable',onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
-                set(self.ModePopups(i),'BackgroundColor',fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
+                %set(self.ModePopups(i),'Enable',ws.onIff(isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains)));
+                set(self.ModePopups(i),'BackgroundColor',ws.fif(didLastElectrodeUpdateWork(i),normalBackgroundColor,warningBackgroundColor));
 
                 
                 % Get whether the current electrode is in a CC mode or a VC
@@ -276,7 +276,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current monitor scale
                     set(self.MonitorScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.CurrentMonitorScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the current monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
@@ -304,7 +304,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.VoltageCommandScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the voltage command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
@@ -325,7 +325,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the voltage monitor scale
                     set(self.MonitorScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.MonitorScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the voltage monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
@@ -353,7 +353,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',thisElectrode.CurrentCommandScaling), ...
-                        'BackgroundColor',fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
+                        'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
 
                     % Update the current command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
@@ -387,7 +387,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Makes sure the enablement of all existing controls is correct,
             % given the current state of the model.
             
-            import ws.*
+            %import ws.*
             
             % If the model is empty or broken, just return at this point
             model=self.Model;
@@ -420,22 +420,22 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
             % Update bottom row button enablement
             isAddButtonEnabled= isWavesurferIdle;
-            set(self.AddButton,'Enable',onIff(isAddButtonEnabled));
+            set(self.AddButton,'Enable',ws.onIff(isAddButtonEnabled));
             isRemoveButtonEnabled= isWavesurferIdle && any(model.IsElectrodeMarkedForRemoval);
-            set(self.RemoveButton,'Enable',onIff(isRemoveButtonEnabled));
+            set(self.RemoveButton,'Enable',ws.onIff(isRemoveButtonEnabled));
             areAnyElectrodesCommandable=model.areAnyElectrodesCommandable();
             isSoftpanelButtonEnabled= isWavesurferIdle&&areAnyElectrodesCommandable;
-            set(self.SoftpanelButton,'Enable',onIff(isSoftpanelButtonEnabled));
+            set(self.SoftpanelButton,'Enable',ws.onIff(isSoftpanelButtonEnabled));
             %isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart&&areSoftpanelsEnabled;
             areAnyElectrodesSmart=model.areAnyElectrodesSmart();
             isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
               % still sometimes nice to update even when WS is
               % theoretically "in command"
-            set(self.UpdateButton,'Enable',onIff(isUpdateButtonEnabled));
+            set(self.UpdateButton,'Enable',ws.onIff(isUpdateButtonEnabled));
             isReconnectButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
-            set(self.ReconnectButton,'Enable',onIff(isReconnectButtonEnabled));
+            set(self.ReconnectButton,'Enable',ws.onIff(isReconnectButtonEnabled));
             isUpdateBeforeRunCheckboxEnabled = isWavesurferIdle&&isDoTrodeUpdateBeforeRunSensible;
-            set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',onIff(isUpdateBeforeRunCheckboxEnabled));
+            set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',ws.onIff(isUpdateBeforeRunCheckboxEnabled));
 %             % Update toggle state of Softpanel button
 %             set(self.SoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
             
@@ -461,7 +461,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 
                 % Update the electrode label
                 set(self.LabelEdits(i), ...
-                    'Enable',onIff(isWavesurferIdle));
+                    'Enable',ws.onIff(isWavesurferIdle));
                 
                 % Need this several places
                 isThisElectrodeManual=isequal(thisElectrode.Type,'Manual');
@@ -470,15 +470,15 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 isThisElectrodeSmart=~isThisElectrodeManual;
                 
                 % Update the type popup                
-                setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
-                                                  ws.Electrode.Types, ...
-                                                  thisElectrode.Type);
-                set(self.TypePopups(i),'Enable',onIff(isWavesurferIdle&&areSoftpanelsEnabled));
+                ws.setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
+                                                     ws.Electrode.Types, ...
+                                                     thisElectrode.Type);
+                set(self.TypePopups(i),'Enable',ws.onIff(isWavesurferIdle&&areSoftpanelsEnabled));
 
                 % Update the index-of-type edit
                 %thisIndexWithinType=thisElectrode.IndexWithinType;
                 set(self.IndexWithinTypeEdits(i), ...
-                    'Enable',onIff(isWavesurferIdle&&~isThisElectrodeManual&&areSoftpanelsEnabled));
+                    'Enable',ws.onIff(isWavesurferIdle&&~isThisElectrodeManual&&areSoftpanelsEnabled));
 
                 % Update the mode popup
                 %listOfModes=thisElectrode.getAllowedModes();
@@ -486,7 +486,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 isModePopupEnabled=isWavesurferIdle && ...
                                    (isThisElectrodeManual || ...
                                     (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka)) ;
-                set(self.ModePopups(i),'Enable',onIff(isModePopupEnabled));
+                set(self.ModePopups(i),'Enable',ws.onIff(isModePopupEnabled));
 
                 
                 % Get whether the current electrode is in a CC mode or a VC
@@ -498,18 +498,18 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     % Update the current monitor popup
                     %nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingMonitorChannel(thisElectrode.CurrentMonitorChannelName);
                     %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    set(self.MonitorPopups(i),'Enable',onIff(isWavesurferIdle));
+                    set(self.MonitorPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the current monitor scale
                     isCurrentCommandScaleEnabled = isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
                                                     (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka)) ;
                     set(self.MonitorScaleEdits(i), ...
-                        'Enable',onIff(isCurrentCommandScaleEnabled));
+                        'Enable',ws.onIff(isCurrentCommandScaleEnabled));
 
                     % Update the current monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
-                        'Enable',onIff(isCurrentCommandScaleEnabled));
+                        'Enable',ws.onIff(isCurrentCommandScaleEnabled));
 
 
                     %
@@ -522,7 +522,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                                                   fallbackItem, ...
     %                                                   emptyItem, ...
     %                                                   alwaysShowFallbackItem);
-                    set(self.CommandPopups(i),'Enable',onIff(isWavesurferIdle));
+                    set(self.CommandPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the voltage command scale
                     isVoltageCommandScaleEnabled = isWavesurferIdle && ...
@@ -530,11 +530,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                                                     (isInControlOfSoftpanelModeAndGains && ...
                                                      isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
-                        'Enable',onIff(isVoltageCommandScaleEnabled));
+                        'Enable',ws.onIff(isVoltageCommandScaleEnabled));
 
                     % Update the voltage command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
-                        'Enable',onIff(isVoltageCommandScaleEnabled));
+                        'Enable',ws.onIff(isVoltageCommandScaleEnabled));
                 else                                
                     %
                     % Update the voltage monitor popup
@@ -546,7 +546,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     %                                                   fallbackItem, ...
     %                                                   emptyItem, ...
     %                                                   alwaysShowFallbackItem);
-                    set(self.MonitorPopups(i),'Enable',onIff(isWavesurferIdle));
+                    set(self.MonitorPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the voltage monitor scale
                     isVoltageMonitorScaleEnabled = isWavesurferIdle && ...
@@ -554,29 +554,29 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                                                     (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka )) ;
 
                     set(self.MonitorScaleEdits(i), ...
-                        'Enable',onIff(isVoltageMonitorScaleEnabled));
+                        'Enable',ws.onIff(isVoltageMonitorScaleEnabled));
 
                     % Update the voltage monitor scale units
                     set(self.MonitorScaleUnitsTexts(i), ...
-                        'Enable',onIff(isVoltageMonitorScaleEnabled));
+                        'Enable',ws.onIff(isVoltageMonitorScaleEnabled));
 
 
                     %
                     % Update the current command popup
                     %nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingCommandChannel(thisElectrode.CurrentCommandChannelName);
                     %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-                    set(self.CommandPopups(i),'Enable',onIff(isWavesurferIdle));
+                    set(self.CommandPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the current command scale
                     isCurrentCommandScaleEnabled=isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
                                                     (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
-                        'Enable',onIff(isCurrentCommandScaleEnabled));
+                        'Enable',ws.onIff(isCurrentCommandScaleEnabled));
 
                     % Update the current command scale units
                     set(self.CommandScaleUnitsTexts(i), ...
-                        'Enable',onIff(isCurrentCommandScaleEnabled));
+                        'Enable',ws.onIff(isCurrentCommandScaleEnabled));
                 end  % if isThisElectrodeInAVCMode
                 
                 %
@@ -590,15 +590,15 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 %    isCommandEnabledDisplay=isCommandEnabledRaw;
                 %end
                 set(self.IsCommandEnabledCheckboxes(i), ...
-                    'Enable',onIff(isCommandEnabledCheckboxEnabled));
+                    'Enable',ws.onIff(isCommandEnabledCheckboxEnabled));
 
                 % Update the Remove? checkbox
                 set(self.TestPulseQCheckboxes(i), ...
-                    'Enable',onIff(isWavesurferIdle));
+                    'Enable',ws.onIff(isWavesurferIdle));
 
                 % Update the Remove? checkbox
                 set(self.RemoveQCheckboxes(i), ...
-                    'Enable',onIff(isWavesurferIdle));
+                    'Enable',ws.onIff(isWavesurferIdle));
             end  % for loop
         end  % function
         
@@ -892,7 +892,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 end  % for loop
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects
-                import ws.*
+                %import ws.*
                 deleteIfValidHGHandle(self.LabelEdits(nElectrodes+1:end));
                 deleteIfValidHGHandle(self.TypePopups(nElectrodes+1:end));
                 deleteIfValidHGHandle(self.IndexWithinTypeEdits(nElectrodes+1:end));
@@ -950,7 +950,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Resize the figure and position all the controls in the right
             % place, given the current number of electrodes.
             
-            import ws.*
+            %import ws.*
             
             nElectrodes=length(self.LabelEdits);
             %nElectrodes=4  % FOR DEBUGGING ONLY
@@ -1122,17 +1122,17 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.FigureGH,'Position',figurePosition);
             
             % Position the col titles
-            centerTextBang(self.LabelText,[labelColCenterX centerYForColumnTitles]);
-            centerTextBang(self.TypeText,[typeColCenterX centerYForColumnTitles]);
-            centerTextBang(self.IndexWithinTypeText,[indexWithinTypeColCenterX centerYForColumnTitles]);
-            centerTextBang(self.ModeText,[modeColCenterX centerYForColumnTitles]);
-            centerTextBang(self.MonitorText,[monitorColCenterX centerYForColumnTitles]);
-            centerTextBang(self.MonitorScaleText,[monitorScaleColCenterX centerYForColumnTitles]);
-            centerTextBang(self.CommandText,[commandColCenterX centerYForColumnTitles]);
-            centerTextBang(self.CommandScaleText,[commandScaleColCenterX centerYForColumnTitles]);
-            centerTextBang(self.IsCommandEnabledText,[isCommandEnabledColCenterX centerYForColumnTitles]);
-            centerTextBang(self.TestPulseQText,[testPulseQColCenterX centerYForColumnTitles]);
-            centerTextBang(self.RemoveQText,[removeQColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.LabelText,[labelColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.TypeText,[typeColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.IndexWithinTypeText,[indexWithinTypeColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.ModeText,[modeColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.MonitorText,[monitorColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.MonitorScaleText,[monitorScaleColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.CommandText,[commandColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.CommandScaleText,[commandScaleColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.IsCommandEnabledText,[isCommandEnabledColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.TestPulseQText,[testPulseQColCenterX centerYForColumnTitles]);
+            ws.centerTextBang(self.RemoveQText,[removeQColCenterX centerYForColumnTitles]);
             
             % For each electrode, lay out the row
             for i=1:nElectrodes ,
@@ -1164,9 +1164,9 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                 set(self.CurrentCommandScaleUnitsTexts(i), ...
 %                     'Position',[currentCommandScaleUnitsColLeftX rowBottomY-4 commandScaleUnitsColWidth trodeRowHeight]);  % shims make look nice
 
-                centerCheckboxBang(self.IsCommandEnabledCheckboxes(i),[isCommandEnabledColLeftX+isCommandEnabledColWidth/2 rowBottomY+trodeRowHeight/2]);
-                centerCheckboxBang(self.TestPulseQCheckboxes(i),[testPulseQColLeftX+testPulseQColWidth/2 rowBottomY+trodeRowHeight/2]);
-                centerCheckboxBang(self.RemoveQCheckboxes(i),[removeQColLeftX+removeQColWidth/2 rowBottomY+trodeRowHeight/2]);
+                ws.centerCheckboxBang(self.IsCommandEnabledCheckboxes(i),[isCommandEnabledColLeftX+isCommandEnabledColWidth/2 rowBottomY+trodeRowHeight/2]);
+                ws.centerCheckboxBang(self.TestPulseQCheckboxes(i),[testPulseQColLeftX+testPulseQColWidth/2 rowBottomY+trodeRowHeight/2]);
+                ws.centerCheckboxBang(self.RemoveQCheckboxes(i),[removeQColLeftX+removeQColWidth/2 rowBottomY+trodeRowHeight/2]);
             end  % for
             
             % Lay out the bottom button/checkbox row

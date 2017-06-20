@@ -367,17 +367,17 @@ classdef (Abstract) Coding < handle
                             % Usually, the propertyName is the same as the field
                             % name, but we do some ad-hoc translations to support
                             % old files.
-                            if isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            if isa(result,'ws.Acquisition') && isequal(fieldName, 'AnalogChannelIDs_') ,
                                 propertyName = 'AnalogTerminalIDs_' ;
-                            elseif isa(result,'ws.AcquisitionSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            elseif isa(result,'ws.Acquisition') && isequal(fieldName, 'DigitalChannelIDs_') ,
                                 propertyName = 'DigitalTerminalIDs_' ;      
-                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'AnalogChannelIDs_') ,
+                            elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'AnalogChannelIDs_') ,
                                 propertyName = 'AnalogTerminalIDs_' ;
-                            elseif isa(result,'ws.StimulationSubsystem') && isequal(fieldName, 'DigitalChannelIDs_') ,
+                            elseif isa(result,'ws.Stimulation') && isequal(fieldName, 'DigitalChannelIDs_') ,
                                 propertyName = 'DigitalTerminalIDs_' ;      
-                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') ,
+                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'Sources_') ,
                                 propertyName = 'CounterTriggers_' ;      
-                            elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') ,
+                            elseif isa(result,'ws.Triggering') && isequal(fieldName, 'Destinations_') ,
                                 propertyName = 'ExternalTriggers_' ;      
                             elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'Acquisition') ,
                                 propertyName = 'Acquisition_' ;      
@@ -424,10 +424,10 @@ classdef (Abstract) Coding < handle
                                 subencoding = encoding.(fieldName) ;  % the encoding is a struct, so no worries about access
                                 % Backwards-compatibility hack, convert col
                                 % vectors to row vectors in some cases
-                                if isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Destinations_') && ...
+                                if isa(result,'ws.Triggering') && isequal(fieldName, 'Destinations_') && ...
                                    iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
                                     subencoding.encoding = transpose(subencoding.encoding) ;
-                                elseif isa(result,'ws.TriggeringSubsystem') && isequal(fieldName, 'Sources_') && ...
+                                elseif isa(result,'ws.Triggering') && isequal(fieldName, 'Sources_') && ...
                                    iscolumn(subencoding.encoding) && length(subencoding.encoding)>1 ,
                                     subencoding.encoding = transpose(subencoding.encoding) ;
                                 end

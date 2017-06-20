@@ -8,13 +8,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         DoColorTraces
         UpdateRate  % the rate at which the scopes are updated, in Hz
         XOffset  % the x coord at the left edge of the scope windows
-        XSpan  % the trace duration shown in the scope windows
-        IsXSpanSlavedToAcquistionDuration
-          % if true, the x span for all the scopes is set to the acquisiton
-          % sweep duration
-        IsXSpanSlavedToAcquistionDurationSettable
-          % true iff IsXSpanSlavedToAcquistionDuration is currently
-          % settable
+        %XSpan  % the trace duration shown in the scope windows
         IsAnalogChannelDisplayed  % 1 x nAIChannels
         IsDigitalChannelDisplayed  % 1 x nDIChannels
         AreYLimitsLockedTightToDataForAnalogChannel  % 1 x nAIChannels
@@ -41,7 +35,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         DoColorTraces_ = true % if false, traces are black/white
         XSpan_ 
         UpdateRate_
-        XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         IsXSpanSlavedToAcquistionDuration_
           % if true, the x span for all the scopes is set to the acquisiton
           % sweep duration
@@ -56,6 +49,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     properties (Access = protected, Transient=true)
+        XAutoScroll_   % if true, x limits of all scopes will change to accomodate the data as it is acquired
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
@@ -126,9 +120,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.IsAnalogChannelDisplayed_ ;
         end
         
-        function toggleIsAnalogChannelDisplayed(self, aiChannelIndex) 
-            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex))
-                nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+        function toggleIsAnalogChannelDisplayed_(self, aiChannelIndex, nAIChannels) 
+            if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
+                %nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
                 if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
                     currentValue = self.IsAnalogChannelDisplayed_(aiChannelIndex) ;
                     self.IsAnalogChannelDisplayed_(aiChannelIndex) = ~currentValue ;
@@ -147,9 +141,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end                
         end
         
-        function toggleIsDigitalChannelDisplayed(self, diChannelIndex) 
+        function toggleIsDigitalChannelDisplayed_(self, diChannelIndex, nDIChannels) 
             if isnumeric(diChannelIndex) && isscalar(diChannelIndex) && isreal(diChannelIndex) && (diChannelIndex==round(diChannelIndex))
-                nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+                %nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
                 if 1<=diChannelIndex && diChannelIndex<=nDIChannels ,
                     currentValue = self.IsDigitalChannelDisplayed_(diChannelIndex) ;
                     self.IsDigitalChannelDisplayed_(diChannelIndex) = ~currentValue ;
@@ -231,22 +225,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('DidSetUpdateRate');
         end
         
-        function value = get.XSpan(self)
-            if self.IsXSpanSlavedToAcquistionDuration ,
-                wavesurferModel = self.Parent ;
-                if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
-                    value = 1 ;  % s, fallback value
-                else
-                    sweepDuration = wavesurferModel.SweepDuration ;
-                    value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
-                end
-            else
-                value = self.XSpan_ ;
-            end
+        function value = getXSpan_(self)
+            value = self.XSpan_ ;
         end
         
-        function set.XSpan(self, newValue)            
-            if self.IsXSpanSlavedToAcquistionDuration ,
+        function setXSpan_(self, newValue, isXSpanSlavedToAcquistionDuration)            
+            if isXSpanSlavedToAcquistionDuration ,
                 % don't set anything
                 didSucceed = true ;  % this is by convention
             else
@@ -310,16 +294,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
-        function value = get.IsXSpanSlavedToAcquistionDuration(self)
-            if self.Parent.AreSweepsContinuous ,
-                value = false ;
-            else
-                value = self.IsXSpanSlavedToAcquistionDuration_;
-            end
+        function value = getIsXSpanSlavedToAcquistionDuration_(self)
+            value = self.IsXSpanSlavedToAcquistionDuration_;
         end  % function
         
-        function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
-            if self.IsXSpanSlavedToAcquistionDurationSettable ,
+        function setIsXSpanSlavedToAcquistionDuration_(self, newValue, isXSpanSlavedToAcquistionDurationSettable)
+            if isXSpanSlavedToAcquistionDurationSettable ,
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     isNewValueAllowed = true ;
                     self.IsXSpanSlavedToAcquistionDuration_ = logical(newValue) ;
@@ -338,9 +318,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end                
         end
         
-        function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
-            value = self.Parent.AreSweepsFiniteDuration ;
-        end  % function       
+%         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
+%             value = self.Parent.AreSweepsFiniteDuration ;
+%         end  % function       
         
         function didSetAnalogChannelUnitsOrScales(self)
             %self.clearData_() ;
@@ -348,11 +328,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('Update') ;
         end       
         
-        function startingRun(self)
+        function startingRun(self, xSpan, sweepDuration)
             self.XOffset = 0;
             %self.XSpan = self.XSpan;  % in case user has zoomed in on one or more scopes, want to reset now
             %self.XAutoScroll_ = (self.Parent.AreSweepsContinuous) ;
-            self.XAutoScroll_ = (self.XSpan<self.Parent.Acquisition.Duration) ;
+            self.XAutoScroll_ = (xSpan<sweepDuration) ;
             self.broadcast('ClearData') ;
         end  % function
         
@@ -823,7 +803,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.ClearOnNextData_ = true;
         end
          
-        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)  %#ok<INUSL,INUSD>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, xSpan)  %#ok<INUSL>
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
@@ -837,9 +817,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 
                 % update the x offset
                 if self.XAutoScroll_ ,                
-                    scale=min(1,self.XSpan);
+                    scale=min(1,xSpan);
                     tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
-                    xOffsetNudged=tNudged-self.XSpan;
+                    xOffsetNudged=tNudged-xSpan;
                     if xOffsetNudged>self.XOffset ,
                         self.XOffset_=xOffsetNudged;
                         self.broadcast('UpdateXOffset') ;
@@ -847,8 +827,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 end
 
                 % Add the data
-                fs = self.Parent.Acquisition.SampleRate ;
-                self.broadcast('AddData', t, scaledAnalogData, rawDigitalData, fs) ;
+                %fs = self.Parent.AcquisitionSampleRate ;
+                self.broadcast('AddData', t, scaledAnalogData, rawDigitalData) ;
 %                 indicesOfAIChannelsNeedingYLimitUpdate = self.addData_(t, scaledAnalogData, rawDigitalData, fs) ;
 %                 plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex_(indicesOfAIChannelsNeedingYLimitUpdate) ;
 %                 self.broadcast('UpdateData');       
@@ -894,10 +874,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('UpdateXSpan') ;
         end
         
-        function didSetSweepDurationIfFinite(self)
+        function didSetSweepDurationIfFinite(self, isXSpanSlavedToAcquistionDuration)
             % Called by the parent to notify of a change to the acquisition
             % duration.            
-            if self.IsXSpanSlavedToAcquistionDuration ,
+            if isXSpanSlavedToAcquistionDuration ,
                 self.broadcast('ClearData') ;
             end                
             self.broadcast('UpdateXSpan') ;
@@ -961,13 +941,9 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end  % function        
     end  % protected methods
     
-    methods (Access=protected)
-        function sanitizePersistedState_(self)
-            % This method should perform any sanity-checking that might be
-            % advisable after loading the persistent state from disk.
-            % This is often useful to provide backwards compatibility
-            
-            nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+    methods
+        function sanitizePersistedStateGivenChannelCounts_(self, nAIChannels, nDIChannels)
+            %nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
             self.IsAnalogChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelDisplayed_, nAIChannels, true) ;
             self.AreYLimitsLockedTightToDataForAnalogChannel_ = ...
                 ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
@@ -976,7 +952,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.PlotHeightFromAnalogChannelIndex_  = ...
                 ws.sanitizeRowVectorLength(self.PlotHeightFromAnalogChannelIndex_, nAIChannels, 1) ;
             
-            nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+            %nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
             self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
             self.PlotHeightFromDigitalChannelIndex_  = ...
                 ws.sanitizeRowVectorLength(self.PlotHeightFromDigitalChannelIndex_, nDIChannels, 1) ;
@@ -987,10 +963,43 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
         end
         
-        function synchronizeTransientStateToPersistedState_(self)
+        function synchronizeTransientStateToPersistedStateHelper_(self)
             self.updateMappingsFromPlotIndices_() ;            
             %self.clearData_() ;  % This will ensure that the size of YData is appropriate
             %self.broadcast('ClearData') ;
+        end                
+    end
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            
+%             nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
+%             self.IsAnalogChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelDisplayed_, nAIChannels, true) ;
+%             self.AreYLimitsLockedTightToDataForAnalogChannel_ = ...
+%                 ws.sanitizeRowVectorLength(self.AreYLimitsLockedTightToDataForAnalogChannel_, nAIChannels, false) ;
+%             self.YLimitsPerAnalogChannel_ = ...
+%                 ws.Display.sanitizeYLimitsArrayLength(self.YLimitsPerAnalogChannel_, nAIChannels, [-10 +10]') ;
+%             self.PlotHeightFromAnalogChannelIndex_  = ...
+%                 ws.sanitizeRowVectorLength(self.PlotHeightFromAnalogChannelIndex_, nAIChannels, 1) ;
+%             
+%             nDIChannels = self.Parent.Acquisition.NDigitalChannels ;
+%             self.IsDigitalChannelDisplayed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelDisplayed_, nDIChannels, true) ;            
+%             self.PlotHeightFromDigitalChannelIndex_  = ...
+%                 ws.sanitizeRowVectorLength(self.PlotHeightFromDigitalChannelIndex_, nDIChannels, 1) ;
+% 
+%             % The analog row indices have to be fixed using
+%             % knowledge of the digital row indices, and vice-versa
+%             [self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_] = ...
+%                 ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
+        end
+        
+        function synchronizeTransientStateToPersistedState_(self)
+%             self.updateMappingsFromPlotIndices_() ;            
+%             %self.clearData_() ;  % This will ensure that the size of YData is appropriate
+%             %self.broadcast('ClearData') ;
         end        
         
     end  % protected methods block

@@ -27,7 +27,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
             electrode.CurrentCommandScaling = 1 ;  % "pA"/V, the stimulus amplitude in V will be equal to the nominal amplitude in the stim
 
             voltageMonitorScaleInTrode = electrode.VoltageMonitorScaling ;
-            monitorScaleInAcquisitionSubsystem = wsModel.Acquisition.AnalogChannelScales ;
+            monitorScaleInAcquisitionSubsystem = wsModel.AIChannelScales ;
 
             self.verifyEqual(voltageMonitorScaleInTrode, monitorScaleInAcquisitionSubsystem) ;
 
@@ -41,7 +41,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             wsModel.play() ;
 
-            x = wsModel.Acquisition.getAnalogDataFromCache() ;
+            x = wsModel.getAIDataFromCache() ;
 
             wsModel.delete() ;  % have to do this now
             

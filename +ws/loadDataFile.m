@@ -58,12 +58,24 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % User wants raw data, so nothing to do
     else
         try
-            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            if isfield(dataFileAsStruct.header, 'AIChannelScales') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                allAnalogChannelScales = dataFileAsStruct.header.AIChannelScales ;
+            else
+                % Fallback for older files
+                allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            end
         catch
             error('Unable to read channel scale information from file.');
         end
         try
-            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            if isfield(dataFileAsStruct.header, 'IsAIChannelActive') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                isActive = logical(dataFileAsStruct.header.IsAIChannelActive) ;
+            else
+                % Fallback for older files
+                isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            end
         catch
             error('Unable to read active/inactive channel information from file.');
         end

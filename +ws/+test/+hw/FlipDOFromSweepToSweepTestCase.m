@@ -26,7 +26,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             
             % Add an untimed DO channel
             wsModel.addDOChannel() ;
-            wsModel.Stimulation.IsDigitalChannelTimed = false ;
+            wsModel.IsDOChannelTimed = false ;
             
             % Set the user class
             wsModel.UserCodeManager.ClassName = 'ws.examples.FlipDOFromSweepToSweep' ;

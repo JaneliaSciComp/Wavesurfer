@@ -249,17 +249,17 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
-            settings(end+1,:)={'Acquisition.SampleRate' 100e6/5001};
-            settings(end+1,:)={'Acquisition.Duration' 2.17};
+            settings(end+1,:)={'AcquisitionSampleRate' 100e6/5001};
+            settings(end+1,:)={'SweepDuration' 2.17};
             
             settings(end+1,:)={'Stimulation.IsEnabled' true};
-            settings(end+1,:)={'Stimulation.SampleRate' 100e6/4999};
+            settings(end+1,:)={'StimulationSampleRate' 100e6/4999};
             
             settings(end+1,:)={'Display.IsEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
             settings(end+1,:)={'Display.UpdateRate' 9};
-            settings(end+1,:)={'Display.IsXSpanSlavedToAcquistionDuration' false};
-            settings(end+1,:)={'Display.XSpan' 2.01};
+            settings(end+1,:)={'IsXSpanSlavedToAcquistionDuration' false};
+            settings(end+1,:)={'XSpan' 2.01};
             
             % Set the settings in the wavesurferModel
             nSettings=size(settings,1);

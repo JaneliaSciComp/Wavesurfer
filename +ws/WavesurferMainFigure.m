@@ -692,16 +692,16 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end                
 
             % Determine the common x-axis limits
-            xl = displayModel.XOffset + [0 displayModel.XSpan] ;
+            xl = displayModel.XOffset + [0 wsModel.XSpan] ;
 
             % Get the y-axis limits for all analog channels
             yLimitsPerAnalogChannel = displayModel.YLimitsPerAnalogChannel ;
 
             % Get the channel names and units for all channels
-            acq = displayModel.Parent.Acquisition ;
+            acq = wsModel.Acquisition ;
             aiChannelNames = acq.AnalogChannelNames ;            
             diChannelNames = acq.DigitalChannelNames ;
-            aiChannelUnits = acq.AnalogChannelUnits ;            
+            aiChannelUnits = wsModel.AIChannelUnits ;            
             
             % Update the individual plot colors and icons
             areYLimitsLockedTightToDataFromAIChannelIndex = displayModel.AreYLimitsLockedTightToDataForAnalogChannel ;
@@ -1035,8 +1035,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             t = args{1} ;
             recentScaledAnalogData = args{2} ;
             recentRawDigitalData = args{3} ;
-            sampleRate = args{4} ;
-            self.addData_(t, recentScaledAnalogData, recentRawDigitalData, sampleRate) ;
+            %sampleRate = args{4} ;
+            %sampleRate = self.Model.AcquisitionSampleRate ;
+            self.addData_(t, recentScaledAnalogData, recentRawDigitalData) ;
         end
         
         function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
@@ -1141,7 +1142,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end
         end  % function       
         
-        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData, sampleRate)
+        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData)
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
@@ -1151,7 +1152,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % concat it with the recentScaledAnalogData, storing the result
             % in yRecent.
             wsModel = self.Model ;
-            model = wsModel.Display ;
+            display = wsModel.Display ;
             nActiveDigitalChannels = wsModel.Acquisition.NActiveDigitalChannels ;
             if nActiveDigitalChannels==0 ,
                 yRecent = recentScaledAnalogData ;
@@ -1169,6 +1170,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Compute a timeline for the new data            
             nNewScans = size(yRecent, 1) ;
+            sampleRate = wsModel.AcquisitionSampleRate ;
             dt = 1/sampleRate ;  % s
             t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
             xRecent = t0 + dt*(0:(nNewScans-1))' ;
@@ -1179,7 +1181,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             else
                 xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
             end            
-            xSpan = model.XSpan ;
+            xSpan = wsModel.XSpan ;
             r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
             
             % Downsample the new data
@@ -1194,7 +1196,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
             
             % Trim off scans that would be off the screen anyway
-            doKeepScan = (model.XOffset<=xAllProto) ;
+            doKeepScan = (display.XOffset<=xAllProto) ;
             xNew = xAllProto(doKeepScan) ;
             yNew = yAllProto(doKeepScan,:) ;
 
@@ -1207,7 +1209,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Change the y limits to match the data, if appropriate
             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
-            plotIndicesNeedingYLimitUpdate = model.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            plotIndicesNeedingYLimitUpdate = display.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
             self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
         end  % function        
         
@@ -1258,7 +1260,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             if isempty(displaySubsystem) || ~isvalid(displaySubsystem) ,
                 return
             end            
-            xl = displaySubsystem.XOffset + [0 displaySubsystem.XSpan] ;
+            xl = displaySubsystem.XOffset + [0 wsModel.XSpan] ;
             for i = 1:length(self.ScopePlots_) ,
                 self.ScopePlots_(i).setXAxisLimits(xl) ;
             end

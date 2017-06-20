@@ -99,10 +99,10 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
                %model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
 
-               model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+               model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
                
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
-               model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
+               model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
                %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
@@ -873,20 +873,20 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             % Acquisition panel
             set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
             set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
-            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
+            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.AcquisitionSampleRate));
             set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             
             % Stimulation panel (most of it)
             set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
-            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
+            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.StimulationSampleRate));
             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
             
             % Display panel
             set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
-            set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
-            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+            set(self.SpanEdit, 'String', sprintf('%.6g',model.XSpan));
+            set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
             set(self.LocationEdit, 'String', model.Logging.FileLocation);
@@ -923,7 +923,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-%             import ws.*
+%             %import ws.*
 
             % If no model, can't really do anything
             model=self.Model_;
@@ -1041,8 +1041,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',ws.onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
+            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~model.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && model.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     
@@ -1567,6 +1567,4 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 %             self.tellFigureToDeleteFigureGH_() ;
 %         end  % function        
     end  % Control actuation methods block
-
-    
 end  % classdef

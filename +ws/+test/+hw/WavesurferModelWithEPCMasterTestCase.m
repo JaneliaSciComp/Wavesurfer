@@ -41,7 +41,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -49,7 +49,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -73,7 +73,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Create two new electrodes in ElectrodeManager
             model.Ephys.ElectrodeManager.addNewElectrode();
-            model.Ephys.ElectrodeManager.addNewElectrode();
+            tpElectrodeIndex = model.Ephys.ElectrodeManager.addNewElectrode();
             
             % Mark the first one as not being test-pulseable
             model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse=[false true];
@@ -83,8 +83,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %model.Ephys.TestPulser.ElectrodeIndex=1;  % since it's now the 1st test-pulsable trode
             
             % Set the type of new electrode to Heka
-            electrodeIndex=2;
-            model.Ephys.ElectrodeManager.setElectrodeType(electrodeIndex,'Heka EPC');
+            %electrodeIndex=2;
+            model.Ephys.ElectrodeManager.setElectrodeType(tpElectrodeIndex,'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
@@ -92,18 +92,18 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
+            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulser.ElectrodeMode=electrodeMode;
+            model.Ephys.TestPulseElectrodeMode=electrodeMode;
             
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
+            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
 
             % Re-enable the softpanel
@@ -120,7 +120,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             thisDirName=fileparts(mfilename('fullpath'));
             wsModel.openProtocolFileGivenFileName(fullfile(thisDirName,'UpdateBeforeRunCheckboxConfiguration.cfg'));
             electrodeManager = wsModel.Ephys.ElectrodeManager;
-            testPulser = wsModel.Ephys.TestPulser;
+            %testPulser = wsModel.Ephys.TestPulser;
             electrodeIndex = 1;
             
             % Create another EPCMasterSocket object so we can modify
@@ -139,7 +139,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Next we check that toggling the update checkbox before a Test
             % Pulse or Run works correctly, and that a Test Pulse or run
             % with updates enabled is slower than when updates are off.
-            self.checkTimingAndUpdating_(@testPulser.start, @testPulser.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.startTestPulsing, @wsModel.stopTestPulsing, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(testPulserShouldAllBeTrue));
             
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
