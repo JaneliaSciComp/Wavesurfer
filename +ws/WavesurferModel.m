@@ -4672,6 +4672,21 @@ classdef WavesurferModel < ws.Model
         function set.DoSubtractBaseline(self, newValue)            
             self.Ephys_.DoSubtractBaseline = newValue ;
         end
+       
+        function toggleIsGridOn(self)
+            self.Display_.toggleIsGridOn_() ;
+        end
+
+        function toggleAreColorsNormal(self)
+            self.Display_.toggleAreColorsNormal_() ;
+        end
+
+        function toggleDoShowZoomButtons(self)
+            self.Display_.toggleDoShowZoomButtons_() ;
+        end
         
+        function toggleDoColorTraces(self)
+            self.Display_.toggleDoColorTraces_() ;
+        end        
     end
 end  % classdef

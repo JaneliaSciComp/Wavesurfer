@@ -417,19 +417,19 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.broadcast('Update') ;            
         end
         
-        function toggleIsGridOn(self)
+        function toggleIsGridOn_(self)
             self.IsGridOn = ~(self.IsGridOn) ;
         end
 
-        function toggleAreColorsNormal(self)
+        function toggleAreColorsNormal_(self)
             self.AreColorsNormal = ~(self.AreColorsNormal) ;
         end
 
-        function toggleDoShowZoomButtons(self)
+        function toggleDoShowZoomButtons_(self)
             self.DoShowZoomButtons = ~(self.DoShowZoomButtons) ;
         end
         
-        function toggleDoColorTraces(self)
+        function toggleDoColorTraces_(self)
             self.DoColorTraces = ~(self.DoColorTraces) ;
         end
         
