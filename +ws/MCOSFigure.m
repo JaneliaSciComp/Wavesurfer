@@ -202,7 +202,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.*
+%             %import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return

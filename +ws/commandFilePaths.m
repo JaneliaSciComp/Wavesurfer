@@ -1,5 +1,6 @@
 function [CommandFilePath_, ResponseFilePath_] = commandFilePaths(IsParentWavesurferModel_, isServer)
-    CommunicationFolderName_ = fullfile(tempdir(),'si-ws-comm') ;
+    %CommunicationFolderName_ = fullfile(tempdir(),'si-ws-comm') ;
+    CommunicationFolderName_ = tempdir() ;
 
     WSCommandFileName_  = 'ws_command.txt'  ;  % Commands *to* WS
     WSResponseFileName_ = 'ws_response.txt' ;  % Responses *from* WS

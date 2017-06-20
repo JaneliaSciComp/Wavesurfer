@@ -1500,7 +1500,7 @@ classdef ChannelsFigure < ws.MCOSFigure
                                          'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleUnitsTexts(i),'String',sprintf('%s/V',channelUnits{i})) ;
                 %set(self.AOIsActiveCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelActive(i), ...
-                %                                 'Enable',onIff(isWavesurferIdle));                                     
+                %                                 'Enable',ws.onIff(isWavesurferIdle));                                     
                 set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsAOChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end

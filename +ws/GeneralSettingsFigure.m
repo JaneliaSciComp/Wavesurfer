@@ -923,7 +923,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-%             import ws.*
+%             %import ws.*
 
             % If no model, can't really do anything
             model=self.Model_;
@@ -1041,8 +1041,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',ws.onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
+            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~model.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && model.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     
@@ -1567,6 +1567,4 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 %             self.tellFigureToDeleteFigureGH_() ;
 %         end  % function        
     end  % Control actuation methods block
-
-    
 end  % classdef

@@ -13,6 +13,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         NElectrodes
         TestPulseElectrodes  % the electrodes that are marked for test pulsing.
         TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
+        TestPulseElectrodesCount
         Electrodes
         DidLastElectrodeUpdateWork
         IsDoTrodeUpdateBeforeRunSensible
@@ -223,7 +224,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('Update');            
         end
         
-        function addNewElectrode(self)
+        function electrodeIndex = addNewElectrode(self)
             % Figure out an electrode name that is not already an electrode
             % name
             %currentElectrodeNames={self.Electrodes_.Name};
@@ -245,7 +246,10 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 name=putativeName;
             else
                 % Theoretically, should throw exception, I suppose
-                return
+                %return
+                self.broadcast('Update');
+                error('ws:unableToAddElectrode', ...
+                      'Unable to add a new electrode') ;
             end
             
             % At this point, name is a valid electrode name
@@ -254,11 +258,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             electrode = ws.Electrode(self) ;
             electrode.Name = name ;           
             
-            % Add the electrode        
-            self.Electrodes_{end+1}=electrode;  
-            self.IsElectrodeMarkedForTestPulse_(end+1)=true;
-            self.IsElectrodeMarkedForRemoval_(end+1)=false;
-            self.DidLastElectrodeUpdateWork_(end+1)=true;  % true by convention
+            % Add the electrode
+            electrodeIndex = length(self.Electrodes_)+1 ;
+            self.Electrodes_{electrodeIndex}=electrode;  
+            self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=true;
+            self.IsElectrodeMarkedForRemoval_(electrodeIndex)=false;
+            self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;  % true by convention
             
             % Notify the parent Ephys object that an electrode has been added
             ephys=self.Parent_;
@@ -356,14 +361,26 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function
 
-        function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
-            % Like setElectrodeModeOrScaling(), but the given electrode
-            % index refers to the index within the test pulse electrodes
-            % only.
-            electrodeIndices=(1:self.NElectrodes);
-            testPulseElectrodeIndices=electrodeIndices(self.IsElectrodeMarkedForTestPulse_);
-            electrodeIndex=testPulseElectrodeIndices(testPulseElectrodeIndex);
-            self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
+%         function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
+%             % Like setElectrodeModeOrScaling(), but the given electrode
+%             % index refers to the index within the test pulse electrodes
+%             % only.
+%             electrodeIndices=(1:self.NElectrodes);
+%             testPulseElectrodeIndices=electrodeIndices(self.IsElectrodeMarkedForTestPulse_);
+%             electrodeIndex=testPulseElectrodeIndices(testPulseElectrodeIndex);
+%             self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
+%         end  % function
+
+        function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
+            electrodeIndices = (1:self.NElectrodes) ;
+            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+            result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
+        end  % function
+        
+        function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
+            electrodeIndices = (1:self.NElectrodes) ;
+            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+            result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
         end  % function
 
         function setElectrodeMonitorScaling(self, electrodeIndex, newValue)
@@ -454,8 +471,16 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function setElectrodeName(self, electrodeIndex, newValue)
-            electrode = self.Electrodes_{electrodeIndex} ;
-            electrode.Name = newValue ;
+            if ws.isString(newValue) && ~isempty(newValue) ,  
+                electrodeNames = cellfun(@(electrode)(electrode.Name), ...
+                                         self.Electrodes_, ...
+                                         'UniformOutput',false) ;
+                if ~ismember(newValue, electrodeNames) ,  % prevent name collisions
+                    electrode = self.Electrodes_{electrodeIndex} ;
+                    electrode.Name = newValue ;
+                end
+            end
+            self.broadcast('Update') ;
         end
         
         function setElectrodeCommandChannelName(self, electrodeIndex, newValue)
@@ -514,6 +539,23 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 electrode=electrodes{1};
             end
         end  % function
+
+        function result = getElectrodeIndexByName(self, electrodeName)
+            electrodeNames=cellfun(@(electrode)(electrode.Name),self.Electrodes_,'UniformOutput',false);
+            isElectrode=strcmp(electrodeName,electrodeNames);
+            result = find(isElectrode, 1) ;
+        end  % function
+
+        function result = getElectrodePropertyByName(self, electrodeName, propertyName)
+            electrode = self.getElectrodeByName(electrodeName) ;
+            if isempty(electrode) ,
+                error('ws:noSuchElectrode' , ...
+                      'No electrode by that name') ;
+            else
+                result = electrode.(propertyName) ;
+            end
+        end  % function
+
         
 %         function result=getIsCommandChannelManagedByName(self,channelName)
 %             if isempty(channelName) ,
@@ -1029,7 +1071,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         function doppelganger=clone(self)
 %             % Make a clone of the ElectrodeManager.  This is another
 %             % ElectrodeManager with the same settings.
-%             import ws.*
+%             %import ws.*
 %             s=self.encodeSettings();
 %             doppelganger=ElectrodeManager();
 %             doppelganger.restoreSettings(s);
@@ -1112,7 +1154,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of setting.
             
-            import ws.*
+            %import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1129,7 +1171,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 else
                     fullHeadPrototype=head;
                 end
-                fullHead=fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorNominal',fullHeadPrototype);
+                fullHead=ws.fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorNominal',fullHeadPrototype);
                 parameterName=[fullHead 'Gain'];                        
             end
         end  % function
@@ -1139,7 +1181,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % slightly different from the property names of Electrode
             % properties.  This translates for the purposes of getting.
             
-            import ws.*
+            %import ws.*
 
             electrode=self.Electrodes_{electrodeIndex};
             
@@ -1156,7 +1198,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 else
                     fullHeadPrototype=head;
                 end
-                fullHead=fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorRealized',fullHeadPrototype);
+                fullHead=ws.fif(isequal(fullHeadPrototype,'CurrentMonitor'),'CurrentMonitorRealized',fullHeadPrototype);
                 parameterName=[fullHead 'Gain'];                        
             end
         end  % function
@@ -1203,4 +1245,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function        
     end  % class methods block
       
+    methods
+        function result=get.TestPulseElectrodesCount(self)
+            result=sum(self.IsElectrodeMarkedForTestPulse_) ;
+        end
+        
+        function electrode = getElectrodeByIndex_(self, electrodeIndex)
+            electrode = self.Electrodes_{electrodeIndex} ;
+        end                
+    end        
 end  % classdef

@@ -1,4 +1,20 @@
 classdef Ephys < ws.Subsystem
+    properties (Dependent=true)
+        TestPulseElectrodeCommandChannelName
+        TestPulseElectrodeMonitorChannelName
+        TestPulseElectrodeAmplitude
+        TestPulseElectrodeIndex  % index of the currently selected test pulse electrode *within the array of all electrodes*
+        TestPulseElectrodes
+        TestPulseElectrodesCount
+        TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
+        AmplitudePerTestPulseElectrode
+        TestPulseElectrode
+        Monitor
+        %IsTestPulsing
+        DoSubtractBaseline
+        TestPulseElectrodeName
+    end
+    
     properties (Access = protected)
         ElectrodeManager_
         TestPulser_
@@ -9,12 +25,17 @@ classdef Ephys < ws.Subsystem
         TestPulser  % provides public access to TestPulser_
     end    
       
+    events
+        UpdateTestPulser
+    end
+    
     methods
         function self = Ephys(parent)
             self@ws.Subsystem(parent) ;
             self.IsEnabled=true;            
             self.ElectrodeManager_ = ws.ElectrodeManager(self) ;
             self.TestPulser_ = ws.TestPulser(self) ;
+            %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
         end
         
         function delete(self)
@@ -46,9 +67,7 @@ classdef Ephys < ws.Subsystem
         function electrodeWasAdded(self,electrode)
             % Called by the ElectrodeManager when an electrode is added.
             % Currently, informs the TestPulser of the change.
-            if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeWasAdded(electrode);
-            end
+            self.TestPulser_.electrodeWasAdded(electrode);
         end
 
         function electrodesRemoved(self)
@@ -187,6 +206,9 @@ classdef Ephys < ws.Subsystem
                 end
             end
             
+            % Ensure self-consistency of self
+            %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
+            
             % Re-enable broadcasts
             self.TestPulser.enableBroadcastsMaybe();
             self.ElectrodeManager.enableBroadcastsMaybe();
@@ -204,6 +226,216 @@ classdef Ephys < ws.Subsystem
             %dbstack
             self.TestPulser_.didSetDeviceName(deviceName) ;
         end        
+    end
+    
+    methods (Access=protected)
+        function value = getTestPulseElectrodeProperty_(self, propertyName)
+            electrodeName = self.TestPulseElectrodeName ;
+            electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
+            if isempty(electrode) ,
+                value = '' ;
+            else
+                value = electrode.(propertyName) ;
+            end
+        end
+        
+        function setTestPulseElectrodeProperty_(self, propertyName, newValue)
+            electrodeName = self.TestPulseElectrodeName ;
+            electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
+            if ~isempty(electrode) ,
+                electrode.(propertyName) = newValue ;
+            end
+        end
+    end
+    
+    methods
+        function result = get.TestPulseElectrodeCommandChannelName(self)
+            result = self.getTestPulseElectrodeProperty_('CommandChannelName') ;
+        end
+        
+        function result = get.TestPulseElectrodeMonitorChannelName(self)
+            result = self.getTestPulseElectrodeProperty_('MonitorChannelName') ;
+        end
+        
+        function result = get.TestPulseElectrodeAmplitude(self)
+            result = self.getTestPulseElectrodeProperty_('TestPulseAmplitude') ;
+        end
+        
+        function result=get.TestPulseElectrodes(self)
+            electrodeManager=self.ElectrodeManager_;
+            result=electrodeManager.TestPulseElectrodes;
+        end
+
+        function result=get.TestPulseElectrodesCount(self)
+            electrodeManager=self.ElectrodeManager_ ;
+            if isempty(electrodeManager) ,
+                result=0;
+            else
+                result=electrodeManager.TestPulseElectrodesCount ;
+            end
+        end
+        
+        function result=get.AmplitudePerTestPulseElectrode(self)
+            % Get the amplitudes of the test pulse for all the
+            % marked-for-test-pulsing electrodes, as a double array.            
+            electrodeManager=self.ElectrodeManager_;
+            testPulseElectrodes=electrodeManager.TestPulseElectrodes;
+            %resultAsCellArray={testPulseElectrodes.TestPulseAmplitude};
+            result=cellfun(@(electrode)(electrode.TestPulseAmplitude), ...
+                           testPulseElectrodes);
+        end  % function 
+        
+        function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
+            if ~isempty(self.TestPulseElectrodeName) ,
+                if ws.isString(newValue) ,
+                    newValueAsDouble = str2double(newValue) ;
+                elseif isnumeric(newValue) && isscalar(newValue) ,
+                    newValueAsDouble = double(newValue) ;
+                else
+                    newValueAsDouble = nan ;  % isfinite(nan) is false
+                end
+                if isfinite(newValueAsDouble) ,
+                    self.setTestPulseElectrodeProperty_('TestPulseAmplitude', newValueAsDouble) ;
+                    self.TestPulser_.clearExistingSweepIfPresent_() ;
+                else
+                    self.broadcast('UpdateTestPulser') ;
+                    error('ws:invalidPropertyValue', ...
+                          'TestPulseElectrodeAmplitude must be a finite scalar');
+                end
+            end                
+            self.broadcast('UpdateTestPulser') ;
+        end  % function         
+        
+        function result=get.TestPulseElectrode(self)
+            electrodeName = self.TestPulseElectrodeName ;            
+            electrodeManager = self.ElectrodeManager_ ;
+            result = electrodeManager.getElectrodeByName(electrodeName) ;
+        end  % function 
+        
+        function result = get.Monitor(self)
+            currentElectrodeName = self.TestPulseElectrodeName ;
+            if isempty(currentElectrodeName)
+                result = [] ; 
+            else
+                %electrodes = self.ElectrodeManager_.TestPulseElectrodes ;
+                electrodeNames = self.ElectrodeManager_.TestPulseElectrodeNames ;
+                isCurrentElectrode=cellfun(@(testElectrodeName)(isequal(currentElectrodeName, testElectrodeName)), electrodeNames) ;
+                monitorPerElectrode = self.TestPulser_.getMonitorPerElectrode_() ;
+                if isempty(monitorPerElectrode) ,
+                    result = [] ;
+                else
+                    result = monitorPerElectrode(:,isCurrentElectrode) ;
+                end
+            end
+        end  % function         
+        
+        function result = get.TestPulseElectrodeIndex(self)
+            name = self.TestPulseElectrodeName ;
+            if isempty(name) ,
+                result = zeros(1,0) ; 
+            else
+                result = self.ElectrodeManager_.getElectrodeIndexByName(name) ;
+            end
+        end  % function         
+        
+        function result = get.TestPulseElectrodeMode(self)
+            electrodeName = self.TestPulseElectrodeName ;
+            if isempty(electrodeName) ,
+                result = [] ;
+            else
+                result = self.ElectrodeManager_.getElectrodePropertyByName(electrodeName, 'Mode') ;
+            end
+        end  % function        
+        
+        function set.TestPulseElectrodeMode(self, newValue)            
+            electrodeIndex = self.TestPulseElectrodeIndex ;  % index within all electrodes
+            self.ElectrodeManager_.setElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
+        end  % function        
+        
+        function startTestPulsing_(self, fs)
+            testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
+            indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
+                self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
+            testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
+            
+            amplitudePerTestPulseElectrode = self.AmplitudePerTestPulseElectrode ;
+            
+            nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
+            gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            self.TestPulser_.start_(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
+                                    testPulseElectrode, ...
+                                    amplitudePerTestPulseElectrode, ...
+                                    fs, ...
+                                    nTestPulseElectrodes, ...
+                                    gainOrResistanceUnitsPerTestPulseElectrode) ;            
+        end
+
+        function stopTestPulsing_(self)
+            self.TestPulser_.stop_() ;            
+        end
+        
+        function result = getIsTestPulsing_(self)
+            result = self.TestPulser_.IsRunning ;
+        end
+        
+        function toggleIsTestPulsing(self)
+            if self.IsTestPulsing , 
+                self.stopTestPulsing_() ;
+            else
+                self.startTestPulsing_() ;
+            end
+        end
+        
+        function result = getGainOrResistancePerTestPulseElectrode(self)
+            rawValue = self.TestPulser_.getGainOrResistancePerElectrode_() ;
+            if isempty(rawValue) ,                
+                nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
+                result = nan(1,nTestPulseElectrodes) ;
+            else
+                result = rawValue ;
+            end
+        end
+
+        function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
+            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
+        end        
+        
+        function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
+            rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
+            rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+            [gainOrResistanceUnits,gainOrResistance] = ...
+                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+        end
+        
+        function result = get.DoSubtractBaseline(self)
+            result = self.TestPulser_.DoSubtractBaseline ;
+        end        
+        
+        function set.DoSubtractBaseline(self, newValue)            
+            self.TestPulser_.DoSubtractBaseline = newValue ;
+        end    
+        
+        function value=get.TestPulseElectrodeName(self)
+            value=self.TestPulser_.getElectrodeName_() ;
+        end
+        
+        function set.TestPulseElectrodeName(self,newValue)
+            if isempty(newValue) ,
+                self.TestPulser_.setElectrodeName_('') ;
+            else
+                % Check that the newValue is an available electrode, unless we
+                % can't get a list of electrodes.
+                electrodeManager = self.ElectrodeManager_ ;
+                electrodeNames=electrodeManager.TestPulseElectrodeNames;
+                newValueFiltered=electrodeNames(strcmp(newValue,electrodeNames));
+                if ~isempty(newValueFiltered) ,
+                    electrodeName=newValueFiltered{1};  % if multiple matches, choose the first (hopefully rare)
+                    self.TestPulser_.setElectrodeName_(electrodeName) ;
+                end
+            end
+            self.broadcast('UpdateTestPulser');
+        end
         
     end  % public methods block
 
