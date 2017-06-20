@@ -57,6 +57,7 @@ classdef WavesurferModel < ws.Model
         IsDOChannelMarkedForDeletion
         IsTestPulsing
         DoSubtractBaseline
+        TestPulseYLimits
     end
     
     properties (Access=protected)
@@ -4646,7 +4647,15 @@ classdef WavesurferModel < ws.Model
 
         function startTestPulsing(self)
             fs = self.AcquisitionSampleRate ;
-            self.Ephys_.startTestPulsing_(fs) ;
+            isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
+            isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
+            commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode() ;
+            monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode() ;
+            self.Ephys_.startTestPulsing_(fs, ...
+                                          isVCPerTestPulseElectrode, ...
+                                          isCCPerTestPulseElectrode, ...
+                                          commandTerminalIDPerTestPulseElectrode, ...
+                                          monitorTerminalIDPerTestPulseElectrode) ;
         end
 
         function stopTestPulsing(self)
@@ -4693,5 +4702,117 @@ classdef WavesurferModel < ws.Model
             self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
         end
 
+        function result = getTestPulseElectrodeCommandUnits(self)
+            ephys = self.Ephys_ ;
+            result = self.aoChannelUnitsFromName(ephys.TestPulseElectrodeCommandChannelName);            
+        end
+        
+        function result = getTestPulseElectrodeMonitorUnits(self)
+            ephys = self.Ephys_ ;
+            result = self.aiChannelUnitsFromName(ephys.TestPulseElectrodeMonitorChannelName);           
+        end  % function
+
+        function set.TestPulseYLimits(self, newValue)
+            self.Ephys_.setTestPulseYLimits_(newValue) ;
+        end
+        
+        function result = get.TestPulseYLimits(self)
+            result = self.Ephys.getTestPulseYLimits_() ;
+        end
+        
+        function result = getCommandUnitsPerTestPulseElectrode(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false);
+            result = cellfun(@(channelName)(self.aoChannelUnitsFromName(channelName)), ...
+                             commandChannelNames, ...
+                             'UniformOutput',false);
+        end  % function
+        
+        function result = getMonitorUnitsPerTestPulseElectrode(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false);
+            result = cellfun(@(channelName)(self.aiChannelUnitsFromName(channelName)), ...
+                             monitorChannelNames, ...
+                             'UniformOutput',false);
+        end  % function
+        
+        function result = getIsVCPerTestPulseElectrode(self) 
+            % Returns a logical row array indicated whether each trode is
+            % in VC mode.  Note that to be in VC mode, from the Test
+            % Pulser's point of view, is a different matter from being in
+            % VC mode from the Electrode Manager's point of view.  The EM
+            % mode just determines which channels get used as command and
+            % monitor for the electrode.  The TP only considers an
+            % electrode to be in VC if the command units are commensurable
+            % (summable) with Volts, and the monitor units are
+            % commensurable with Amps.
+            commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
+            monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;
+            result = isVCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
+        end  % function
+
+        function result = getIsCCPerTestPulseElectrode(self) 
+            % Returns a logical row array indicated whether each trode is
+            % in CC mode.  Note that to be in CC mode, from the Test
+            % Pulser's point of view, is a different matter from being in
+            % VC mode from the Electrode Manager's point of view.  The EM
+            % mode just determines which channels get used as command and
+            % monitor for the electrode.  The TP only considers an
+            % electrode to be in CC if the command units are commensurable
+            % (summable) with amps, and the monitor units are
+            % commensurable with volts.
+            commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
+            monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;
+            result = isCCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
+        end  % function
+        
+        function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
+            if self.IsTestPulsing ,
+                result = self.Ephys_.getGainOrResistanceUnitsPerElectrodeCached_() ;
+            else
+                commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
+                monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;                
+                resultIfCC = ws.divideUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
+                resultIfVC = ws.divideUnits(commandUnitsPerElectrode, monitorUnitsPerElectrode) ;
+                isVCPerElectrode = self.getIsVCPerTestPulseElectrode() ;
+                result = ws.fif(isVCPerElectrode, resultIfVC, resultIfCC) ;
+            end
+        end
+        
+        function value = getGainOrResistancePerTestPulseElectrode(self)
+            value=self.Ephys_.getGainOrResistancePerTestPulseElectrode_() ;
+        end
+        
+        function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
+            rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
+            rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+            [gainOrResistanceUnits,gainOrResistance] = ...
+                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+        end
+        
+        function result = getCommandTerminalIDPerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            stimulationSubsystem = self.Stimulation_ ;
+            result = cellfun(@(channelName)(stimulationSubsystem.analogTerminalIDFromName(channelName)), ...
+                             commandChannelNames) ;
+        end  % function       
+
+        function result = getMonitorTerminalIDPerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            acquisition = self.Acquisition_ ;
+            result = cellfun(@(channelName)(acquisition.analogTerminalIDFromName(channelName)), ...
+                             monitorChannelNames) ;
+        end        
     end
 end  % classdef

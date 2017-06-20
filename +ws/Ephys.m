@@ -352,7 +352,7 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.setElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
         end  % function        
         
-        function startTestPulsing_(self, fs)
+        function startTestPulsing_(self, fs, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, commandTerminalIDPerTestPulseElectrode)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
@@ -367,7 +367,11 @@ classdef Ephys < ws.Subsystem
                                     amplitudePerTestPulseElectrode, ...
                                     fs, ...
                                     nTestPulseElectrodes, ...
-                                    gainOrResistanceUnitsPerTestPulseElectrode) ;            
+                                    gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                    isVCPerTestPulseElectrode, ...
+                                    isCCPerTestPulseElectrode, ...
+                                    commandTerminalIDPerTestPulseElectrode, ...
+                                    monitorTerminalIDPerTestPulseElectrode) ;            
         end
 
         function stopTestPulsing_(self)
@@ -378,15 +382,15 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.IsRunning ;
         end
         
-        function toggleIsTestPulsing(self)
-            if self.IsTestPulsing , 
-                self.stopTestPulsing_() ;
-            else
-                self.startTestPulsing_() ;
-            end
-        end
+%         function toggleIsTestPulsing(self)
+%             if self.IsTestPulsing , 
+%                 self.stopTestPulsing_() ;
+%             else
+%                 self.startTestPulsing_() ;
+%             end
+%         end
         
-        function result = getGainOrResistancePerTestPulseElectrode(self)
+        function result = getGainOrResistancePerTestPulseElectrode_(self)
             rawValue = self.TestPulser_.getGainOrResistancePerElectrode_() ;
             if isempty(rawValue) ,                
                 nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
@@ -396,17 +400,17 @@ classdef Ephys < ws.Subsystem
             end
         end
 
-        function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
-            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
-        end        
+%         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
+%             result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
+%         end        
         
-        function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
-            rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
-            rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
-            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
-            [gainOrResistanceUnits,gainOrResistance] = ...
-                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
-        end
+%         function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
+%             rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
+%             rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+%             % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+%             [gainOrResistanceUnits,gainOrResistance] = ...
+%                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+%         end
         
         function result = get.DoSubtractBaseline(self)
             result = self.TestPulser_.DoSubtractBaseline ;
@@ -437,6 +441,21 @@ classdef Ephys < ws.Subsystem
             self.broadcast('UpdateTestPulser');
         end
         
+        function setTestPulseYLimits_(self, newValue)
+            self.TestPulser_.setYLimits_(newValue) ;
+        end
+        
+        function result = getTestPulseYLimits_(self)
+            result = self.TestPulser_.getYLimits_() ;
+        end
+        
+        function result = getTestPulseElectrodes_(self)
+            result = self.ElectrodeManager_.getTestPulseElectrodes_() ;
+        end
+        
+        function result = getGainOrResistanceUnitsPerTestPulseElectrodeCached_(self)
+            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrodeCached_() ;
+        end                
     end  % public methods block
 
 end  % classdef

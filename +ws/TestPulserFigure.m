@@ -172,7 +172,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             % If y range hasn't been set yet, and Y Auto is engaged, set
             % the y range.
             if testPulser.IsRunning && testPulser.IsAutoY ,   %&& testPulser.AreYLimitsForRunDetermined ,
-                yLimitsInModel=testPulser.YLimits;
+                yLimitsInModel = wsModel.TestPulseYLimits ;
                 yLimits=self.YLimits_;
                 %if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
                 if ~isequal(yLimits,yLimitsInModel) ,
@@ -192,7 +192,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             %rawGainOrResistance=testPulser.GainOrResistancePerElectrode;
             %rawGainOrResistanceUnits = testPulser.GainOrResistanceUnitsPerElectrode ;
             %[gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;
-            [gainOrResistance, gainOrResistanceUnits] = ephys.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
+            [gainOrResistance, gainOrResistanceUnits] = wsModel.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
             %fprintf('here 2\n');
             nElectrodes=length(gainOrResistance);
             for j=1:nElectrodes ,
@@ -327,14 +327,14 @@ classdef TestPulserFigure < ws.MCOSFigure
                         
             set(self.AmplitudeEdit,'String',sprintf('%g',ephys.TestPulseElectrodeAmplitude), ...
                                    'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.AmplitudeEditUnitsText,'String',testPulser.CommandUnits, ...
+            set(self.AmplitudeEditUnitsText,'String',wsModel.getTestPulseElectrodeCommandUnits, ...
                                             'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.DurationEdit,'String',testPulser.PulseDurationInMsAsString, ...
                                   'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
             set(self.DurationEditUnitsText,'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
             nElectrodes=length(self.GainLabelTexts);
             for i=1:nElectrodes ,
-                if testPulser.IsCCPerElectrode(i) || testPulser.IsVCPerElectrode(i) ,
+                if wsModel.IsCCPerTestPulseElectrode(i) || wsModel.IsVCPerTestPulseElectrode(i) ,
                     set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',ephys.TestPulseElectrodes{i}.Name));
                 else
                     set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',ephys.TestPulseElectrodes{i}.Name));
@@ -343,9 +343,9 @@ classdef TestPulserFigure < ws.MCOSFigure
                 set(self.GainUnitsTexts(i),'String','');
             end
             set(self.TraceAxes,'XLim',1000*[0 testPulser.SweepDuration]);
-            self.YLimits_ = testPulser.YLimits;
+            self.YLimits_ = wsModel.TestPulseYLimits ;
             set(self.TraceAxes,'YLim',self.YLimits_);
-            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',testPulser.MonitorUnits));
+            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',wsModel.TestPulseElectrodeMonitorUnits));
             fs = wsModel.AcquisitionSampleRate ;
             t = testPulser.getTime(fs) ;
             %t=testPulser.Time;

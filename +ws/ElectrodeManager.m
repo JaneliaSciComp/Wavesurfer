@@ -1252,6 +1252,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function electrode = getElectrodeByIndex_(self, electrodeIndex)
             electrode = self.Electrodes_{electrodeIndex} ;
-        end                
+        end    
+        
+        function result = getTestPulseElectrodes_(self)
+            % Moving forwards, it would be better if (trusted) consumers called this to
+            % get the test pulse electrodes
+            result = self.TestPulseElectrodes ;
+        end        
     end        
 end  % classdef
