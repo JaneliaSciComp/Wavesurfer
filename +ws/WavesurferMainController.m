@@ -431,15 +431,15 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             plotArrangementDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
             wsModel = self.Model ;
-            model = wsModel.Display ;
+            display = wsModel.Display ;
             channelNames = wsModel.Acquisition.ChannelNames ;
-            isDisplayed = horzcat(model.IsAnalogChannelDisplayed, model.IsDigitalChannelDisplayed) ;
-            plotHeights = horzcat(model.PlotHeightFromAnalogChannelIndex, model.PlotHeightFromDigitalChannelIndex) ;
-            rowIndexFromChannelIndex = horzcat(model.RowIndexFromAnalogChannelIndex, model.RowIndexFromDigitalChannelIndex) ;
+            isDisplayed = horzcat(display.IsAnalogChannelDisplayed, display.IsDigitalChannelDisplayed) ;
+            plotHeights = horzcat(display.PlotHeightFromAnalogChannelIndex, display.PlotHeightFromDigitalChannelIndex) ;
+            rowIndexFromChannelIndex = horzcat(display.RowIndexFromAnalogChannelIndex, display.RowIndexFromDigitalChannelIndex) ;
             %callbackFunction = ...
             %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             callbackFunction = ...
-                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(model.do('setPlotHeightsAndOrder',isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
+                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(wsModel.do('setPlotHeightsAndOrder',isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             self.PlotArrangementDialogFigure_ = ...
                 ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
                                                parentFigurePosition, ...
@@ -491,12 +491,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
             wsModel = self.Model ;
-            model = wsModel.Display ;            
-            aiChannelIndex = model.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-            yLimits = model.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
+            display = wsModel.Display ;            
+            aiChannelIndex = display.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            yLimits = display.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
             yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
-            callbackFunction = @(newYLimits)(model.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;
+            callbackFunction = @(newYLimits)(display.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        

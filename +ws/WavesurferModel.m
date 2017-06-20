@@ -4686,7 +4686,12 @@ classdef WavesurferModel < ws.Model
         end
         
         function toggleDoColorTraces(self)
-            self.Display_.toggleDoColorTraces_() ;
+            self.Display_.toggleDoColorTraces_() ;       
         end        
+        
+        function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+            self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+        end
+
     end
 end  % classdef
