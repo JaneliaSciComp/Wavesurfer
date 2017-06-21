@@ -24,7 +24,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         StimulationSampleRateUnitsText
         SourceText
         SourcePopupmenu
-        EditStimulusLibraryButton
+        %EditStimulusLibraryButton
         RepeatsCheckbox
         
         DisplayPanel
@@ -191,10 +191,10 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             self.SourcePopupmenu = ...
                 ws.uipopupmenu('Parent',self.StimulationPanel, ...
                                'String',{'Thing 1';'Thing 2'});
-            self.EditStimulusLibraryButton = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Edit...');
+%             self.EditStimulusLibraryButton = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','Edit...');
             self.RepeatsCheckbox = ...
                 ws.uicontrol('Parent',self.StimulationPanel, ...
                           'Style','checkbox', ...
@@ -559,9 +559,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             editWidth=80;
             editHeight=20;
             popupmenuWidth=154;
-            editButtonWidth=80;
+            %editButtonWidth=80;
             editButtonHeight=22;
-            widthFromEditButtonToRepeatsCheckbox=16;
+            %widthFromEditButtonToRepeatsCheckbox=16;
             heightFromSourcePopupmenuToEditButton=10;
             
             % Enabled checkbox
@@ -588,15 +588,17 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             % Edit... button
             gridRowYOffset=gridRowYOffset-heightFromSourcePopupmenuToEditButton-editButtonHeight;
-            set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
+            %set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
             
             % "Repeats" checkbox
             repeatsCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
             width=repeatsCheckboxPosition(3);
             height=repeatsCheckboxPosition(4);            
-            xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
+            %xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
+            xOffset=editXOffset;
             yOffset=gridRowYOffset+(editButtonHeight-height)/2;
-            set(self.RepeatsCheckbox,'Position',[xOffset yOffset width height]);
+            yShim = 6 ;
+            set(self.RepeatsCheckbox,'Position',[xOffset yOffset+yShim width height]);
         end  % function
     end
     
@@ -975,7 +977,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.StimulationEnabledCheckbox,'Enable',ws.onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',ws.onIff(isIdle && isStimulusEnabled));
             set(self.SourcePopupmenu,'Enable',ws.onIff(isIdle && isStimulusEnabled));
-            set(self.EditStimulusLibraryButton,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+            %set(self.EditStimulusLibraryButton,'Enable',ws.onIff(isIdle && isStimulusEnabled));
             set(self.RepeatsCheckbox,'Enable',ws.onIff(isIdle && isStimulusEnabled));
 
             % Display controls
@@ -1497,9 +1499,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             end
         end  % method
         
-        function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController');
-        end
+%         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
+%             self.showAndRaiseChildFigure_('StimulusLibraryController');
+%         end
         
 %         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
 %             if ~isempty(self.Model_) ,
