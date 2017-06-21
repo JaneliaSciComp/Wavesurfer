@@ -3887,9 +3887,11 @@ classdef WavesurferModel < ws.Model
                 self.Stimulation_.clearStimulusLibrary() ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('Update') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('Update') ;                            
         end  % function
         
         function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)

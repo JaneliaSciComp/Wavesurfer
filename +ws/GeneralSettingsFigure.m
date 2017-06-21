@@ -97,45 +97,18 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'Update','','update');
                model.subscribeMe(self,'WillSetState','','willSetModelState');
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
-               %model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
-
                model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
-               
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
-               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
-               
                model.Display.subscribeMe(self,'Update','','update');
-               %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               
-               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
-               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
-
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-               %model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
-               
-%                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
-%                  % no longer publicly settable
-%                for i = 1:numel(model.FastProtocols) ,
-%                    thisFastProtocol=model.FastProtocols{i};
-%                    %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','updateControlEnablement');
-%                    %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','updateControlEnablement');
-%                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
-%                end               
-               
-               %model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
-               %model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
            end
            
            % Make the figure visible
