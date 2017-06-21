@@ -151,19 +151,19 @@ classdef TestPulser < ws.Model
             % Command signal for each test pulser electrode, each in units given by the ChannelUnits property 
             % of the Stimulation object
             %t = self.Time ;  % col vector
-            t = self.getTime(fs) ;  % col vector
-            delay = self.PulseDuration/2 ;
+            t = self.getTime_(fs) ;  % col vector
+            delay = self.PulseDuration_/2 ;
             %amplitudePerElectrode = self.AmplitudePerElectrode ;  % row vector
-            unscaledCommand = (delay<=t)&(t<delay+self.PulseDuration) ;  % col vector
+            unscaledCommand = (delay<=t)&(t<delay+self.PulseDuration_) ;  % col vector
             commands = bsxfun(@times, amplitudePerElectrode, unscaledCommand) ;
         end  
         
-        function commandsInVolts = getCommandInVoltsPerElectrode(self, fs, amplitudePerElectrode)  
+        function commandsInVolts = getCommandInVoltsPerElectrode(self, fs, amplitudePerElectrode, commandChannelScalePerTestPulseElectrode)  
             % the command signals, in volts to be sent out the AO channels
             %commands=self.CommandPerElectrode;   % (nScans x nCommandChannels)
             commands = self.getCommandPerElectrode(fs, amplitudePerElectrode) ;  % (nScans x nCommandChannels)
-            commandChannelScales=self.CommandChannelScalePerElectrode;  % 1 x nCommandChannels
-            inverseChannelScales=1./commandChannelScales;
+            %commandChannelScales=self.CommandChannelScalePerElectrode;  % 1 x nCommandChannels
+            inverseChannelScales=1./commandChannelScalePerTestPulseElectrode;
             % zero any channels that have infinite (or nan) scale factor
             sanitizedInverseChannelScales=ws.fif(isfinite(inverseChannelScales), inverseChannelScales, zeros(size(inverseChannelScales)));
             commandsInVolts=bsxfun(@times,commands,sanitizedInverseChannelScales);
@@ -209,9 +209,9 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end
               
-        function value = getTime(self, fs)  % s
+        function value = getTime_(self, fs)  % s
             dt = 1/fs ;  % s
-            nScansInSweep = self.getNScansInSweep(fs) ;
+            nScansInSweep = self.getNScansInSweep_(fs) ;
             value = dt*(0:(nScansInSweep-1))' ;  % s
         end
         
@@ -219,7 +219,7 @@ classdef TestPulser < ws.Model
 %             value = 2 * self.PulseDuration_ ;
 %         end
         
-        function value = getNScansInSweep(self, fs)
+        function value = getNScansInSweep_(self, fs)
             dt = 1/fs ;  % s
             sweepDuration = 2*self.PulseDuration_ ;
             value = round(sweepDuration/dt) ;
@@ -485,9 +485,10 @@ classdef TestPulser < ws.Model
         function prepForStart_(self, indexOfTestPulseElectrodeWithinTestPulseElectrodes, amplitudePerTestPulseElectrode, fs, nTestPulseElectrodes, ...
                                gainOrResistanceUnitsPerTestPulseElectrode, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, ...
                                commandTerminalIDPerTestPulseElectrode, monitorTerminalIDPerTestPulseElectrode, ...
+                               commandChannelScalePerTestPulseElectrode, monitorChannelScalePerTestPulseElectrode, ...
                                deviceName)
             % Get the stimulus
-            commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode) ;
+            commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode, commandChannelScalePerTestPulseElectrode) ;
             nScans=size(commandsInVolts,1);
             nElectrodes=size(commandsInVolts,2);
 
@@ -526,10 +527,10 @@ classdef TestPulser < ws.Model
             % Cache some things for speed during sweeps
             self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
             self.IsCCPerElectrodeCached_ = isCCPerTestPulseElectrode;
-            self.MonitorChannelInverseScalePerElectrodeCached_ = 1./self.MonitorChannelScalePerElectrode ;
+            self.MonitorChannelInverseScalePerElectrodeCached_ = 1./monitorChannelScalePerTestPulseElectrode ;
             self.AmplitudePerElectrodeCached_ = amplitudePerTestPulseElectrode ;
             self.IndexOfElectrodeWithinTPElectrodesCached_ = indexOfTestPulseElectrodeWithinTestPulseElectrodes ;
-            self.NScansInSweepCached_ = self.getNScansInSweep(fs) ;
+            self.NScansInSweepCached_ = self.getNScansInSweep_(fs) ;
             self.NElectrodesCached_ = nTestPulseElectrodes ;
             self.GainOrResistanceUnitsPerElectrodeCached_ = gainOrResistanceUnitsPerTestPulseElectrode ;
             self.SamplingRateCached_ = fs ;

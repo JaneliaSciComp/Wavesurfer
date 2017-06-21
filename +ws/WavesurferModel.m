@@ -2980,8 +2980,9 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_.disableBroadcasts() ;
             self.Stimulation_.disableBroadcasts() ;
             self.Display_.disableBroadcasts() ;
-            self.Ephys_.TestPulser.disableBroadcasts() ;
-            self.Ephys_.ElectrodeManager.disableBroadcasts() ;
+            %self.Ephys_.TestPulser.disableBroadcasts() ;
+            %self.Ephys_.ElectrodeManager.disableBroadcasts() ;
+            self.Ephys_.disableAllBroadcastsDammit_() ;
             self.UserCodeManager_.disableBroadcasts() ;
             self.Logging_.disableBroadcasts() ;            
         end
@@ -2989,8 +2990,9 @@ classdef WavesurferModel < ws.Model
         function enableBroadcastsMaybeDammit_(self)
             self.Logging_.enableBroadcastsMaybe() ;                        
             self.UserCodeManager_.enableBroadcastsMaybe() ;
-            self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
-            self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
+            self.Ephys_.enableBroadcastsMaybeDammit_() ;
+%             self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
+%             self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
             self.Display_.enableBroadcastsMaybe() ;
             self.Stimulation_.enableBroadcastsMaybe() ;
             self.Acquisition_.enableBroadcastsMaybe() ;            
@@ -3001,8 +3003,9 @@ classdef WavesurferModel < ws.Model
         function updateEverythingAfterProtocolFileOpen_(self)
             self.Logging_.broadcast('Update') ;                        
             self.UserCodeManager_.broadcast('Update') ;
-            self.Ephys_.ElectrodeManager.broadcast('Update') ;
-            self.Ephys_.TestPulser.broadcast('Update') ;
+            self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
+            %self.Ephys_.ElectrodeManager.broadcast('Update') ;
+            %self.Ephys_.TestPulser.broadcast('Update') ;
             self.Display_.broadcast('ClearData') ;
             self.Display_.broadcast('Update') ;
             self.Stimulation_.broadcast('Update') ;
@@ -4669,6 +4672,7 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Check that we can start, and if not, return
+                electrode = ephys.TestPulseElectrode ;
                 canStart = ...
                     ~isempty(electrode) && ...
                     electrodeManager.areAllElectrodesTestPulsable() && ...
@@ -4685,17 +4689,23 @@ classdef WavesurferModel < ws.Model
                 fs = self.AcquisitionSampleRate ;
                 isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
                 isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
-                commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode() ;
-                monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode() ;
+                commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode_() ;
+                monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
+                commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
+                monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
                 deviceName =self.DeviceName ;
-                                          
+                gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+                
                 % Call the main routine
                 self.Ephys_.prepForTestPulsing_(fs, ...
                                                 isVCPerTestPulseElectrode, ...
                                                 isCCPerTestPulseElectrode, ...
                                                 commandTerminalIDPerTestPulseElectrode, ...
                                                 monitorTerminalIDPerTestPulseElectrode, ...
-                                                deviceName) ;
+                                                commandChannelScalePerTestPulseElectrode, ...
+                                                monitorChannelScalePerTestPulseElectrode, ...                                                
+                                                deviceName, ...
+                                                gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -4706,7 +4716,7 @@ classdef WavesurferModel < ws.Model
                 self.changeTestPulserReadiness_(+1);
 
                 % Actually start the test pulsing
-                self.Ephys_startTestPulsing_() ;                
+                self.Ephys_.startTestPulsing_() ;                
             catch exception
                 self.abortTestPulsing_() ;
                 self.changeTestPulserReadiness_(+1) ;
@@ -4839,7 +4849,7 @@ classdef WavesurferModel < ws.Model
             % commensurable with Amps.
             commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
             monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;
-            result = isVCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
+            result = ws.isVCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
         end  % function
 
         function result = getIsCCPerTestPulseElectrode(self) 
@@ -4854,7 +4864,7 @@ classdef WavesurferModel < ws.Model
             % commensurable with volts.
             commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
             monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;
-            result = isCCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
+            result = ws.isCCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, commandUnitsPerElectrode) ;
         end  % function
         
         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
@@ -4881,7 +4891,9 @@ classdef WavesurferModel < ws.Model
             [gainOrResistanceUnits,gainOrResistance] = ...
                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
-        
+    end
+    
+    methods (Access=protected)
         function result = getCommandTerminalIDPerTestPulseElectrode_(self)
             testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
             commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
@@ -4902,6 +4914,26 @@ classdef WavesurferModel < ws.Model
                              monitorChannelNames) ;
         end        
         
+        function result = getCommandChannelScalePerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            result = cellfun(@(channelName)(self.aoChannelScaleFromName(channelName)), ...
+                             commandChannelNames) ;
+        end
+        
+        function result = getMonitorChannelScalePerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            result = cellfun(@(channelName)(self.aiChannelScaleFromName(channelName)), ...
+                             monitorChannelNames) ;
+        end        
+    end  % protected methods block
+    
+    methods
         function zoomInTestPulseView(self)
             self.Ephys_.zoomInTestPulseView_() ;
         end  % function
@@ -4945,6 +4977,15 @@ classdef WavesurferModel < ws.Model
         function value = getUpdateRateInTestPulseView(self)
             value = self.Ephys_.getUpdateRateInTestPulseView_() ;
         end        
+
+        function result = getTestPulseMonitorTraceTimeline(self)
+            fs = self.AcquisitionSampleRate ;
+            result = self.Ephys_.getTestPulseMonitorTraceTimeline_(fs) ;
+        end  % function         
+        
+        function result = getTestPulseMonitorTrace(self)
+            result = self.Ephys_.getTestPulseMonitorTrace_() ;
+        end  % function         
         
     end
 end  % classdef
