@@ -161,7 +161,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             end
             wsModel = self.Model ;
             ephys = wsModel.Ephys ;
-            testPulser = ephys.TestPulser ;
+            %testPulser = ephys.TestPulser ;
             
             %fprintf('here -1\n');
             % draw the trace line
@@ -171,7 +171,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % If y range hasn't been set yet, and Y Auto is engaged, set
             % the y range.
-            if testPulser.IsRunning && testPulser.IsAutoY ,   %&& testPulser.AreYLimitsForRunDetermined ,
+            if wsModel.IsTestPulsing && wsModel.IsAutoYInTestPulseView ,   %&& testPulser.AreYLimitsForRunDetermined ,
                 yLimitsInModel = wsModel.TestPulseYLimits ;
                 yLimits=self.YLimits_;
                 %if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
@@ -187,7 +187,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % Update the graphics objects to match the model and/or host
             % Extra spaces b/c right-align cuts of last char a bit
-            set(self.UpdateRateText,'String',ws.fif(isnan(testPulser.UpdateRate),'? ',sprintf('%0.1f ',testPulser.UpdateRate)));
+            updateRate = wsModel.getUpdateRateInTestPulseView() ;
+            set(self.UpdateRateText,'String',ws.fif(isnan(updateRate),'? ',sprintf('%0.1f ',updateRate)));
             %fprintf('here\n');
             %rawGainOrResistance=testPulser.GainOrResistancePerElectrode;
             %rawGainOrResistanceUnits = testPulser.GainOrResistanceUnitsPerElectrode ;
@@ -275,8 +276,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
             isWavesurferIdle=isequal(wsModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
-            isWavesurferTestPulsing=testPulser.IsRunning;
-            isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
+            isWavesurferTestPulsing = wsModel.IsTestPulsing ;
+            isWavesurferIdleOrTestPulsing = isWavesurferIdle||isWavesurferTestPulsing ;
             
             % Update the graphics objects to match the model and/or host
             isStartStopButtonEnabled= ...
@@ -296,7 +297,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             set(self.ElectrodePopupMenu, ...
                 'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
                                          
-            set(self.SubtractBaselineCheckbox,'Value',testPulser.DoSubtractBaseline, ...
+            set(self.SubtractBaselineCheckbox,'Value',wsModel.DoSubtractBaselineInTestPulseView, ...
                                               'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
             set(self.AutoYCheckbox,'Value',testPulser.IsAutoY, ...
                                    'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
@@ -329,8 +330,8 @@ classdef TestPulserFigure < ws.MCOSFigure
                                    'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.AmplitudeEditUnitsText,'String',wsModel.getTestPulseElectrodeCommandUnits, ...
                                             'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.DurationEdit,'String',testPulser.PulseDurationInMsAsString, ...
-                                  'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
+            set(self.DurationEdit, 'String', sprintf('%g', 1e3*wsModel.TestPulseDuration), ...
+                                   'Enable', ws.onIff(isWavesurferIdleOrTestPulsing)) ;
             set(self.DurationEditUnitsText,'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
             nElectrodes=length(self.GainLabelTexts);
             for i=1:nElectrodes ,

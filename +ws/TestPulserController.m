@@ -17,13 +17,13 @@ classdef TestPulserController < ws.Controller
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             try
                 wsModel = self.Model ;
-                testPulser = wsModel.Ephys.TestPulser;
+                %testPulser = wsModel.Ephys.TestPulser;
                 if strcmp(controlName, 'StartStopButton') ,
                     self.StartStopButtonActuated() ;
                     exceptionMaybe = {} ;
                 else
                     % If the model is running, stop it (have to disable broadcast so we don't lose the new setting)
-                    wasRunningOnEntry = testPulser.IsRunning ;
+                    wasRunningOnEntry = wsModel.IsTestPulsing ;
                     if wasRunningOnEntry ,
                         self.Figure.AreUpdatesEnabled = false ;
                         wsModel.stopTestPulsing() ;
@@ -70,21 +70,18 @@ classdef TestPulserController < ws.Controller
         end
         
         function SubtractBaselineCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.SubtractBaselineCheckbox,'Value')) ;
-            %testPulser = self.Model.Ephys.TestPulser ;
-            self.Model.do('set', 'DoSubtractBaseline', value) ;
+            newValue = logical(get(self.Figure.SubtractBaselineCheckbox,'Value')) ;
+            self.Model.do('set', 'DoSubtractBaselineInTestPulseView', newValue) ;
         end
         
         function AutoYCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.AutoYCheckbox,'Value')) ;
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('set', 'IsAutoY', value) ;
+            newValue = logical(get(self.Figure.AutoYCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoYInTestPulseView', newValue) ;
         end
         
         function AutoYRepeatingCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.AutoYRepeatingCheckbox,'Value')) ;
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('set', 'IsAutoYRepeating', value) ;
+            newValue = logical(get(self.Figure.AutoYRepeatingCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoYRepeatingInTestPulseView', newValue) ;
         end
         
         function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -94,19 +91,17 @@ classdef TestPulserController < ws.Controller
         end
         
         function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = get(self.Figure.DurationEdit,'String') ;
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('set', 'PulseDurationInMsAsString', value) ;
+            newValueInMsAsString = get(self.Figure.DurationEdit,'String') ;
+            newValue = 1e-3 * str2double(newValueInMsAsString) ;
+            self.Model.do('set', 'TestPulseDuration', newValue) ;
         end
         
         function ZoomInButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('zoomIn') ;
+            self.Model.do('zoomInTestPulseView') ;
         end
         
         function ZoomOutButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('zoomOut') ;
+            self.Model.do('zoomOutTestPulseView') ;
         end
         
         function YLimitsButtonActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -127,13 +122,11 @@ classdef TestPulserController < ws.Controller
         end
         
         function ScrollUpButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('scrollUp') ;
+            self.Model.do('scrollUpTestPulseView') ;
         end
         
         function ScrollDownButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            testPulser = self.Model.Ephys.TestPulser ;
-            testPulser.do('scrollDown') ;
+            self.Model.do('scrollDownTestPulseView') ;
         end
         
         function VCToggleActuated(self, source, event, varargin)  %#ok<INUSD>

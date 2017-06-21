@@ -56,8 +56,11 @@ classdef WavesurferModel < ws.Model
         IsAOChannelMarkedForDeletion
         IsDOChannelMarkedForDeletion
         IsTestPulsing
-        DoSubtractBaseline
+        DoSubtractBaselineInTestPulseView
         TestPulseYLimits
+        TestPulseDuration
+        IsAutoYInTestPulseView
+        IsAutoYRepeatingInTestPulseView
     end
     
     properties (Access=protected)
@@ -1021,35 +1024,35 @@ classdef WavesurferModel < ws.Model
             value = self.IsITheOneTrueWavesurferModel_ ;
         end  % function        
         
-        function willPerformTestPulse(self)
-            % Called by the TestPulserModel to inform the WavesurferModel that
-            % it is about to start test pulsing.
-            
-            % I think the main thing we want to do here is to change the
-            % Wavesurfer mode to TestPulsing.
-            if isequal(self.State,'idle') ,
-                self.setState_('test_pulsing');
-            end
-        end
+%         function willPerformTestPulse(self)
+%             % Called by the TestPulserModel to inform the WavesurferModel that
+%             % it is about to start test pulsing.
+%             
+%             % I think the main thing we want to do here is to change the
+%             % Wavesurfer mode to TestPulsing.
+%             if isequal(self.State,'idle') ,
+%                 self.setState_('test_pulsing');
+%             end
+%         end
         
-        function didPerformTestPulse(self)
-            % Called by the TestPulserModel to inform the WavesurferModel that
-            % it has just finished test pulsing.
-            
-            if isequal(self.State,'test_pulsing') ,
-                self.setState_('idle');
-            end
-        end  % function
+%         function didPerformTestPulse(self)
+%             % Called by the TestPulserModel to inform the WavesurferModel that
+%             % it has just finished test pulsing.
+%             
+%             if isequal(self.State,'test_pulsing') ,
+%                 self.setState_('idle');
+%             end
+%         end  % function
         
-        function didAbortTestPulse(self)
-            % Called by the TestPulserModel when a problem arises during test
-            % pulsing, that (hopefully) the TestPulseModel has been able to
-            % gracefully recover from.
-            
-            if isequal(self.State,'test_pulsing') ,
-                self.setState_('idle');
-            end
-        end  % function
+%         function didAbortTestPulse(self)
+%             % Called by the TestPulserModel when a problem arises during test
+%             % pulsing, that (hopefully) the TestPulseModel has been able to
+%             % gracefully recover from.
+%             
+%             if isequal(self.State,'test_pulsing') ,
+%                 self.setState_('idle');
+%             end
+%         end  % function
         
         function testPulserIsAboutToStartTestPulsing(self)
             self.releaseTimedHardwareResourcesOfAllProcesses_();
@@ -4646,22 +4649,106 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function startTestPulsing(self)
-            fs = self.AcquisitionSampleRate ;
-            isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
-            isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
-            commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode() ;
-            monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode() ;
-            self.Ephys_.startTestPulsing_(fs, ...
-                                          isVCPerTestPulseElectrode, ...
-                                          isCCPerTestPulseElectrode, ...
-                                          commandTerminalIDPerTestPulseElectrode, ...
-                                          monitorTerminalIDPerTestPulseElectrode) ;
+            if self.IsTestPulsing ,
+                return
+            end            
+            
+            try       
+                % Takes some time to start...
+                self.changeTestPulserReadiness_(-1) ;
+
+                % Get some handles we'll need
+                ephys = self.Ephys_ ;
+                electrodeManager=ephys.ElectrodeManager;                
+                wavesurferModel = self ;
+
+                % Update the smart electrode channel scales, if possible and
+                % needed
+                if electrodeManager.DoTrodeUpdateBeforeRun ,
+                    electrodeManager.updateSmartElectrodeGainsAndModes();
+                end
+
+                % Check that we can start, and if not, return
+                canStart = ...
+                    ~isempty(electrode) && ...
+                    electrodeManager.areAllElectrodesTestPulsable() && ...
+                    electrodeManager.areAllMonitorAndCommandChannelNamesDistinct() && ...
+                    isequal(wavesurferModel.State,'idle') ;
+                if ~canStart ,
+                    return
+                end
+
+                % Free up resources we will need for test pulsing
+                wavesurferModel.testPulserIsAboutToStartTestPulsing();
+                
+                % Get things we need for test-pulsing
+                fs = self.AcquisitionSampleRate ;
+                isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
+                isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
+                commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode() ;
+                monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode() ;
+                deviceName =self.DeviceName ;
+                                          
+                % Call the main routine
+                self.Ephys_.prepForTestPulsing_(fs, ...
+                                                isVCPerTestPulseElectrode, ...
+                                                isCCPerTestPulseElectrode, ...
+                                                commandTerminalIDPerTestPulseElectrode, ...
+                                                monitorTerminalIDPerTestPulseElectrode, ...
+                                                deviceName) ;
+
+                % Change our state
+                if isequal(self.State,'idle') ,
+                    self.setState_('test_pulsing');
+                end
+
+                % OK, now we consider the TP no longer busy
+                self.changeTestPulserReadiness_(+1);
+
+                % Actually start the test pulsing
+                self.Ephys_startTestPulsing_() ;                
+            catch exception
+                self.abortTestPulsing_() ;
+                self.changeTestPulserReadiness_(+1) ;
+                rethrow(exception) ;                
+            end
         end
 
         function stopTestPulsing(self)
-            self.Ephys_.stopTestPulsing_() ;
-        end        
+            if ~self.IsTestPulsing ,
+                %fprintf('About to exit stop() via short-circuit...\n');                            
+                return
+            end
+            
+            try             
+                self.Ephys_.stopTestPulsing_() ;
+                if isequal(self.State,'test_pulsing') ,
+                    self.setState_('idle');
+                end
+            catch exception
+                self.abortTestPulsing_() ;
+                self.changeTestPulserReadiness_(+1) ;
+                rethrow(exception) ;                                
+            end            
+        end  % function    
+    end
+    
+    methods (Access=protected)
+        function changeTestPulserReadiness_(self, delta)
+            self.Ephys_.changeTestPulserReadiness_(delta) ;
+        end
         
+        function abortTestPulsing_(self)
+            % This is called when a problem arises during test pulsing, and we
+            % want to try very hard to get back to a known, sane, state.
+            self.Ephys_.abortTestPulsing_() ;
+            if isequal(self.State,'test_pulsing') ,
+                self.setState_('idle') ;
+            end
+        end  % function
+    end
+
+    methods
         function result = get.IsTestPulsing(self)
             result = self.Ephys_.getIsTestPulsing_() ;
         end
@@ -4674,12 +4761,12 @@ classdef WavesurferModel < ws.Model
             end
         end
         
-        function result = get.DoSubtractBaseline(self)
-            result = self.Ephys_.DoSubtractBaseline ;
+        function result = get.DoSubtractBaselineInTestPulseView(self)
+            result = self.Ephys_.getDoSubtractBaselineInTestPulseView_() ;
         end
         
-        function set.DoSubtractBaseline(self, newValue)            
-            self.Ephys_.DoSubtractBaseline = newValue ;
+        function set.DoSubtractBaselineInTestPulseView(self, newValue)            
+            self.Ephys_.setDoSubtractBaselineInTestPulseView_(newValue) ;
         end
        
         function toggleIsGridOn(self)
@@ -4814,5 +4901,50 @@ classdef WavesurferModel < ws.Model
             result = cellfun(@(channelName)(acquisition.analogTerminalIDFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
+        
+        function zoomInTestPulseView(self)
+            self.Ephys_.zoomInTestPulseView_() ;
+        end  % function
+        
+        function zoomOutTestPulseView(self)
+            self.Ephys_.zoomInTestPulseView_() ;
+        end  % function
+        
+        function scrollUpTestPulseView(self)
+            self.Ephys_.zoomInTestPulseView_() ;
+        end  % function
+        
+        function scrollDownTestPulseView(self)
+            self.Ephys_.zoomInTestPulseView_() ;
+        end  % function
+        
+        function result = get.TestPulseDuration(self) 
+            result = self.Ephys_.getTestPulseDuration_() ;
+        end
+        
+        function set.TestPulseDuration(self, newValue) 
+            self.Ephys_.setTestPulseDuration_(newValue) ;
+        end
+        
+        function result = get.IsAutoYInTestPulseView(self) 
+            result = self.Ephys_.getIsAutoYInTestPulseView_() ;
+        end
+        
+        function set.IsAutoYInTestPulseView(self, newValue) 
+            self.Ephys_.setIsAutoYInTestPulseView_(newValue) ;
+        end
+       
+        function result = get.IsAutoYRepeatingInTestPulseView(self) 
+            result = self.Ephys_.getIsAutoYRepeatingInTestPulseView_() ;
+        end
+        
+        function set.IsAutoYRepeatingInTestPulseView(self, newValue) 
+            self.Ephys_.setIsAutoYRepeatingInTestPulseView_(newValue) ;
+        end
+        
+        function value = getUpdateRateInTestPulseView(self)
+            value = self.Ephys_.getUpdateRateInTestPulseView_() ;
+        end        
+        
     end
 end  % classdef

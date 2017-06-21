@@ -1,18 +1,18 @@
 classdef TestPulser < ws.Model 
     properties (Dependent=true) 
-        PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
-        DoSubtractBaseline
-        IsAutoY
-        IsAutoYRepeating
-        IsRunning
-        SweepDuration  % s
-        PulseDuration  % s
-        UpdateRate  % Hz
+        %PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
+        %DoSubtractBaseline
+        %IsAutoY
+        %IsAutoYRepeating
+        %IsRunning
+        %SweepDuration  % s
+        %PulseDuration  % s
+        %UpdateRate  % Hz
     end
     
     properties  (Access=protected)  % need to see if some of these things should be transient
         ElectrodeName_  
-        PulseDurationInMsAsString_  % the duration of the pulse, in ms.  The sweep duration is twice this.
+        PulseDuration_  % the duration of the pulse, in s.  The sweep duration is twice this.
         DoSubtractBaseline_
         YLimits_
         IsAutoY_  % if true, the y limits are synced to the monitor signal currently in view
@@ -65,7 +65,7 @@ classdef TestPulser < ws.Model
     methods
         function self = TestPulser(parent)
             self@ws.Model(parent);
-            self.PulseDurationInMsAsString_='10';  % ms
+            self.PulseDuration_ = 10e-3 ;  % s
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;
             self.IsAutoYRepeating_=false;
@@ -79,35 +79,35 @@ classdef TestPulser < ws.Model
             %self.Parent_=[];  % not necessary, but harmless
         end  % method
         
-        function do(self, methodName, varargin)
-            % This is intended to be the usual way of calling model
-            % methods.  For instance, a call to a ws.Controller
-            % controlActuated() method should generally result in a single
-            % call to .do() on it's model object, and zero direct calls to
-            % model methods.  This gives us a
-            % good way to implement functionality that is common to all
-            % model method calls, when they are called as the main "thing"
-            % the user wanted to accomplish.  For instance, we start
-            % warning logging near the beginning of the .do() method, and turn
-            % it off near the end.  That way we don't have to do it for
-            % each model method, and we only do it once per user command.            
-            root = self.Parent.Parent ;
-            root.startLoggingWarnings() ;
-            try
-                self.(methodName)(varargin{:}) ;
-            catch exception
-                % If there's a real exception, the warnings no longer
-                % matter.  But we want to restore the model to the
-                % non-logging state.
-                root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
-                rethrow(exception) ;
-            end
-            warningExceptionMaybe = root.stopLoggingWarnings() ;
-            if ~isempty(warningExceptionMaybe) ,
-                warningException = warningExceptionMaybe{1} ;
-                throw(warningException) ;
-            end
-        end
+%         function do(self, methodName, varargin)
+%             % This is intended to be the usual way of calling model
+%             % methods.  For instance, a call to a ws.Controller
+%             % controlActuated() method should generally result in a single
+%             % call to .do() on it's model object, and zero direct calls to
+%             % model methods.  This gives us a
+%             % good way to implement functionality that is common to all
+%             % model method calls, when they are called as the main "thing"
+%             % the user wanted to accomplish.  For instance, we start
+%             % warning logging near the beginning of the .do() method, and turn
+%             % it off near the end.  That way we don't have to do it for
+%             % each model method, and we only do it once per user command.            
+%             root = self.Parent.Parent ;
+%             root.startLoggingWarnings() ;
+%             try
+%                 self.(methodName)(varargin{:}) ;
+%             catch exception
+%                 % If there's a real exception, the warnings no longer
+%                 % matter.  But we want to restore the model to the
+%                 % non-logging state.
+%                 root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+%                 rethrow(exception) ;
+%             end
+%             warningExceptionMaybe = root.stopLoggingWarnings() ;
+%             if ~isempty(warningExceptionMaybe) ,
+%                 warningException = warningExceptionMaybe{1} ;
+%                 throw(warningException) ;
+%             end
+%         end
         
         function self=didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent_();
@@ -134,19 +134,15 @@ classdef TestPulser < ws.Model
 %             value=self.NSweepsCompletedThisRun_;
 %         end
         
-        function value=get.PulseDuration(self)  % s
-            value=1e-3*str2double(self.PulseDurationInMsAsString_);  % ms->s
+        function value=getPulseDuration_(self)  % s
+            %value=1e-3*str2double(self.PulseDurationInMsAsString_);  % ms->s
+            value = self.PulseDuration_ ;
         end
         
-        function value=get.PulseDurationInMsAsString(self)
-            value=self.PulseDurationInMsAsString_;
-        end
-        
-        function set.PulseDurationInMsAsString(self,newString)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
-            newValue=str2double(newString);
-            if ~isnan(newValue) && 5<=newValue && newValue<=500,
-                self.PulseDurationInMsAsString_=strtrim(newString);
-                self.clearExistingSweepIfPresent_();
+        function setPulseDuration_(self, newValue)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
+            if isscalar(newValue) && isreal(newValue) && isfinite(newValue) ,
+                self.PulseDuration_ = max(5e-3, min(double(newValue), 500e-3)) ;
+                self.clearExistingSweepIfPresent_() ;
             end
             self.broadcast('Update');
         end
@@ -173,11 +169,11 @@ classdef TestPulser < ws.Model
             commandsInVolts=bsxfun(@times,commands,sanitizedInverseChannelScales);
         end                                                        
 
-        function value=get.DoSubtractBaseline(self)
+        function value=getDoSubtractBaseline_(self)
             value=self.DoSubtractBaseline_;
         end
         
-        function set.DoSubtractBaseline(self, newValue)
+        function setDoSubtractBaseline_(self, newValue)
             if islogical(newValue) ,
                 self.DoSubtractBaseline_ = newValue ;
                 self.clearExistingSweepIfPresent_();
@@ -185,11 +181,11 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end
         
-        function value=get.IsAutoY(self)
+        function value=getIsAutoY_(self)
             value=self.IsAutoY_;
         end
         
-        function set.IsAutoY(self,newValue)
+        function setIsAutoY_(self,newValue)
             if islogical(newValue) ,
                 self.IsAutoY_=newValue;
                 if self.IsAutoY_ ,                
@@ -202,11 +198,11 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end
         
-        function value=get.IsAutoYRepeating(self)
+        function value=getIsAutoYRepeating_(self)
             value=self.IsAutoYRepeating_;
         end
         
-        function set.IsAutoYRepeating(self,newValue)
+        function setIsAutoYRepeating_(self, newValue)
             if islogical(newValue) && isscalar(newValue) ,
                 self.IsAutoYRepeating_=newValue;
             end
@@ -219,17 +215,17 @@ classdef TestPulser < ws.Model
             value = dt*(0:(nScansInSweep-1))' ;  % s
         end
         
-        function value = get.SweepDuration(self)  % s
-            value = 2*self.PulseDuration ;
-        end
+%         function value = get.SweepDuration(self)  % s
+%             value = 2 * self.PulseDuration_ ;
+%         end
         
         function value = getNScansInSweep(self, fs)
             dt = 1/fs ;  % s
-            sweepDuration=2*self.PulseDuration;
-            value=round(sweepDuration/dt);
+            sweepDuration = 2*self.PulseDuration_ ;
+            value = round(sweepDuration/dt) ;
         end
         
-        function value=get.IsRunning(self)
+        function value=getIsRunning_(self)
             value=self.IsRunning_;
         end
 
@@ -340,8 +336,8 @@ classdef TestPulser < ws.Model
             value=self.GainOrResistancePerElectrode_;
         end
         
-        function value=get.UpdateRate(self)
-            value=self.UpdateRate_;
+        function value = getUpdateRate_(self)
+            value = self.UpdateRate_ ;
         end
         
 %         function result=get.CommandTerminalIDPerElectrode(self)
@@ -454,7 +450,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update') ;
         end
 
-        function electrodesRemoved(self)
+        function electrodesRemoved(self, electrodes)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             
@@ -463,7 +459,7 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.changeElectrodeIfCurrentOneIsNotAvailable_();
+            self.changeElectrodeIfCurrentOneIsNotAvailable_(electrodes);
             
             self.broadcast('Update') ;
         end  % function
@@ -477,254 +473,182 @@ classdef TestPulser < ws.Model
             self.broadcast('Update') ;
         end  % function
         
-        function isElectrodeMarkedForTestPulseMayHaveChanged(self)
+        function isElectrodeMarkedForTestPulseMayHaveChanged(self, electrodes)
             % Redimension MonitorPerElectrode_ appropriately, etc.
             %self.NElectrodes_ = nTestPulseElectrodes ;
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.changeElectrodeIfCurrentOneIsNotAvailable_();
+            self.changeElectrodeIfCurrentOneIsNotAvailable_(electrodes);
         end  % function
         
-        function start_(self, indexOfTestPulseElectrodeWithinTestPulseElectrodes, electrode, amplitudePerTestPulseElectrode, fs, nTestPulseElectrodes, ...
-                        gainOrResistanceUnitsPerTestPulseElectrode, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, ...
-                        commandTerminalIDPerTestPulseElectrode, monitorTerminalIDPerTestPulseElectrode)
-            % fprintf('Just entered start()...\n');
-            if self.IsRunning ,
-                % fprintf('About to exit start() via short-circuit...\n');                                            
-                return
+        function prepForStart_(self, indexOfTestPulseElectrodeWithinTestPulseElectrodes, amplitudePerTestPulseElectrode, fs, nTestPulseElectrodes, ...
+                               gainOrResistanceUnitsPerTestPulseElectrode, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, ...
+                               commandTerminalIDPerTestPulseElectrode, monitorTerminalIDPerTestPulseElectrode, ...
+                               deviceName)
+            % Get the stimulus
+            commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode) ;
+            nScans=size(commandsInVolts,1);
+            nElectrodes=size(commandsInVolts,2);
+
+            % Set up the input task
+            % fprintf('About to create the input task...\n');
+            self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
+            for i=1:nElectrodes ,
+                self.InputTask_.createAIVoltageChan(self.DeviceName_, monitorTerminalIDPerTestPulseElectrode(i));  % defaults to differential
             end
+            %deviceName = self.Parent.Parent.DeviceName ;
+            clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
+            self.InputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',[],clockString);
+              % set the sampling rate, and use the AO sample clock to keep
+              % acquisiton synced with analog output
+            self.InputTask_.cfgInputBuffer(10*nScans);
 
-            try
-                % Takes some time to start...
-                self.changeReadiness(-1);
+            % Set up the output task
+            % fprintf('About to create the output task...\n');
+            self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
+            for i=1:nElectrodes ,
+                self.OutputTask_.createAOVoltageChan(self.DeviceName_, commandTerminalIDPerTestPulseElectrode(i));
+            end
+            self.OutputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',nScans);
 
-                % Get some handles we'll need
-                ephys=self.Parent;
-                electrodeManager=ephys.ElectrodeManager;
-                wavesurferModel=[];
-                if ~isempty(ephys) ,
-                    wavesurferModel=ephys.Parent;
-                end                
+            % Limit the stimulus to the allowable range
+            limitedCommandsInVolts=max(-10,min(commandsInVolts,+10));
 
-                % Update the smart electrode channel scales, if possible and
-                % needed
-                if ~isempty(electrodeManager) ,
-                    if electrodeManager.DoTrodeUpdateBeforeRun
-                        electrodeManager.updateSmartElectrodeGainsAndModes();
-                    end
-                end
+            % Write the command to the output task                
+            self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
 
-                % Check that we can start, and if not, return
-                canStart = ...
-                    ~isempty(electrode) && ...
-                    electrodeManager.areAllElectrodesTestPulsable() && ...
-                    electrodeManager.areAllMonitorAndCommandChannelNamesDistinct() && ...
-                    (isempty(wavesurferModel) || isequal(wavesurferModel.State,'idle')) ;
-                if ~canStart,
-                    return
-                end
+            % Set up the input task callback
+            %nSamplesPerSweep=nScans*nElectrodes;
+            self.InputTask_.everyNSamples = nScans ;
+            self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(self.completingSweep()) ;
 
-                % Free up resources we will need for test pulsing
-                if ~isempty(wavesurferModel) ,
-                    wavesurferModel.testPulserIsAboutToStartTestPulsing();
-                end
-                
-                % Get the stimulus
-                commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode) ;
-                nScans=size(commandsInVolts,1);
-                nElectrodes=size(commandsInVolts,2);
+            % Cache some things for speed during sweeps
+            self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
+            self.IsCCPerElectrodeCached_ = isCCPerTestPulseElectrode;
+            self.MonitorChannelInverseScalePerElectrodeCached_ = 1./self.MonitorChannelScalePerElectrode ;
+            self.AmplitudePerElectrodeCached_ = amplitudePerTestPulseElectrode ;
+            self.IndexOfElectrodeWithinTPElectrodesCached_ = indexOfTestPulseElectrodeWithinTestPulseElectrodes ;
+            self.NScansInSweepCached_ = self.getNScansInSweep(fs) ;
+            self.NElectrodesCached_ = nTestPulseElectrodes ;
+            self.GainOrResistanceUnitsPerElectrodeCached_ = gainOrResistanceUnitsPerTestPulseElectrode ;
+            self.SamplingRateCached_ = fs ;
 
-                % Set up the input task
-                % fprintf('About to create the input task...\n');
-                self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
-                for i=1:nElectrodes ,
-                    self.InputTask_.createAIVoltageChan(self.DeviceName_, monitorTerminalIDPerTestPulseElectrode(i));  % defaults to differential
-                end
-                deviceName = self.Parent.Parent.DeviceName ;
-                clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
-                self.InputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',[],clockString);
-                  % set the sampling rate, and use the AO sample clock to keep
-                  % acquisiton synced with analog output
-                self.InputTask_.cfgInputBuffer(10*nScans);
+            % Compute some indices and cache them, again for speed during
+            % sweeps
+            sweepDuration = 2 * self.PulseDuration_ ;  % s
+            t0Base=0; % s
+            tfBase=1/8*sweepDuration; % s
+            t0Pulse=5/8*sweepDuration; % s
+            tfPulse=6/8*sweepDuration; % s
+            %dt=self.Dt;
+            dt = 1/fs;  % s
+            self.I0BaseCached_ = floor(t0Base/dt)+1;
+            self.IfBaseCached_ = floor(tfBase/dt);
+            self.I0PulseCached_ = floor(t0Pulse/dt)+1;
+            self.IfPulseCached_ = floor(tfPulse/dt);            
 
-                % Set up the output task
-                % fprintf('About to create the output task...\n');
-                self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
-                for i=1:nElectrodes ,
-                    self.OutputTask_.createAOVoltageChan(self.DeviceName_, commandTerminalIDPerTestPulseElectrode(i));
-                end
-                self.OutputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',nScans);
-
-                % Limit the stimulus to the allowable range
-                limitedCommandsInVolts=max(-10,min(commandsInVolts,+10));
-
-                % Write the command to the output task                
-                self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
-
-                % Set up the input task callback
-                %nSamplesPerSweep=nScans*nElectrodes;
-                self.InputTask_.everyNSamples = nScans ;
-                self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(self.completingSweep()) ;
-
-                % Cache some things for speed during sweeps
-                self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
-                self.IsCCPerElectrodeCached_ = isCCPerTestPulseElectrode;
-                self.MonitorChannelInverseScalePerElectrodeCached_ = 1./self.MonitorChannelScalePerElectrode ;
-                self.AmplitudePerElectrodeCached_ = amplitudePerTestPulseElectrode ;
-                self.IndexOfElectrodeWithinTPElectrodesCached_ = indexOfTestPulseElectrodeWithinTestPulseElectrodes ;
-                self.NScansInSweepCached_ = self.getNScansInSweep(fs) ;
-                self.NElectrodesCached_ = nTestPulseElectrodes ;
-                self.GainOrResistanceUnitsPerElectrodeCached_ = gainOrResistanceUnitsPerTestPulseElectrode ;
-                self.SamplingRateCached_ = fs ;
-
-                % Compute some indices and cache them, again for speed during
-                % sweeps
-                totalDuration=self.SweepDuration;  % s
-                t0Base=0; % s
-                tfBase=1/8*totalDuration; % s
-                t0Pulse=5/8*totalDuration; % s
-                tfPulse=6/8*totalDuration; % s
-                %dt=self.Dt;
-                dt = 1/fs;  % s
-                self.I0BaseCached_ = floor(t0Base/dt)+1;
-                self.IfBaseCached_ = floor(tfBase/dt);
-                self.I0PulseCached_ = floor(t0Pulse/dt)+1;
-                self.IfPulseCached_ = floor(tfPulse/dt);            
-
-                % Set the where-the-rubber-meets-the-road auto-Y parameters, given the user-supplied parameters
-                if self.IsAutoY_ ,
-                    if self.IsAutoYRepeating_ ,
-                        % repeating auto y
-                        self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
-                        self.NSweepsPerAutoY_ =  min(1,round(1/(self.SweepDuration * self.DesiredRateOfAutoYing_))) ;
-                    else
-                        % Auto Y only at start
-                        self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
-                        self.NSweepsPerAutoY_ = inf ;
-                            % this ends up working b/c inf>=inf in IEEE
-                            % floating-point 
-                    end
+            % Set the where-the-rubber-meets-the-road auto-Y parameters, given the user-supplied parameters
+            if self.IsAutoY_ ,
+                if self.IsAutoYRepeating_ ,
+                    % repeating auto y
+                    self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
+                    self.NSweepsPerAutoY_ =  min(1,round(1/(sweepDuration * self.DesiredRateOfAutoYing_))) ;
                 else
-                    % No auto Y
-                    self.NSweepsCompletedAsOfLastYLimitsUpdate_ = inf ;  % this will make it so that y limits are never updated
-                    self.NSweepsPerAutoY_ = 1 ;  % this doesn't matter, b/c of the line above, so just set to unity
+                    % Auto Y only at start
+                    self.NSweepsCompletedAsOfLastYLimitsUpdate_ = -inf ;
+                    self.NSweepsPerAutoY_ = inf ;
+                        % this ends up working b/c inf>=inf in IEEE
+                        % floating-point 
                 end
-
-                % Finish up the start
-                self.NSweepsCompletedThisRun_=0;
-                self.IsRunning_=true;
-                %self.broadcast('Update');
-
-                % If present, notify the wavesurferModel that we're about to start
-                % This causes essentially all windows to update(), so we don't
-                % need to separately broadcast that TestPulser has changed
-                if ~isempty(wavesurferModel) ,
-                    wavesurferModel.willPerformTestPulse();
-                end
-
-                % Set up timing
-                self.TimerValue_=tic();
-                self.LastToc_=toc(self.TimerValue_);
-
-                % OK, now we consider ourselves no longer busy
-                self.changeReadiness(+1);
-                %self.IsReady_ = true ;
-                %self.broadcast('UpdateReadiness');
-
-                % actually start the data acq tasks
-                self.InputTask_.start();  % won't actually start until output starts b/c see above
-                self.OutputTask_.start();
-            catch me
-                %fprintf('problem with output task start\n');
-                self.abort_();
-                self.changeReadiness(+1);
-                rethrow(me);
+            else
+                % No auto Y
+                self.NSweepsCompletedAsOfLastYLimitsUpdate_ = inf ;  % this will make it so that y limits are never updated
+                self.NSweepsPerAutoY_ = 1 ;  % this doesn't matter, b/c of the line above, so just set to unity
             end
-            
-            % fprintf('About to exit start()...\n');
+
+            % Finish up the prep
+            self.NSweepsCompletedThisRun_=0;
+            self.IsRunning_=true;
         end  % function
+        
+        function start_(self)
+            % Set up timing
+            self.TimerValue_=tic();
+            self.LastToc_=toc(self.TimerValue_);
+            
+            % actually start the data acq tasks
+            self.InputTask_.start();  % won't actually start until output starts b/c see above
+            self.OutputTask_.start();
+        end
         
         function stop_(self)
             % This is what gets called when the user presses the 'Stop' button,
             % for instance.
             %fprintf('Just entered stop()...\n');            
-            if ~self.IsRunning ,
-                %fprintf('About to exit stop() via short-circuit...\n');                            
-                return
-            end
-            
-            try 
-                % Takes some time to stop...
-                self.changeReadiness(-1);
-                %self.IsReady_ = false ;
-                %self.broadcast('UpdateReadiness');
-               
-                %if self.IsStopping_ ,
-                %    fprintf('Stopping while already stopping...\n');
-                %    dbstack
-                %else
-                %    self.IsStopping_=true;
-                %end
-                if ~isempty(self.OutputTask_) ,
-                    self.OutputTask_.stop();
-                end
-                if ~isempty(self.InputTask_) ,            
-                    self.InputTask_.stop();
-                end
+            % Takes some time to stop...
+            self.changeReadiness(-1);
+            %self.IsReady_ = false ;
+            %self.broadcast('UpdateReadiness');
 
-                %
-                % make sure the output is set to the non-pulsed state
-                % (Is there a better way to do this?)
-                %
-                nScans = 2 ;
-                self.OutputTask_.cfgSampClkTiming(self.SamplingRateCached_,'DAQmx_Val_ContSamps',nScans);
-                %commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
-                commandsInVolts=zeros(nScans,self.NElectrodesCached_);
-                self.OutputTask_.writeAnalogData(commandsInVolts);
-                self.OutputTask_.start();
-                % pause for 10 ms without relinquishing control
-    %             timerVal=tic();
-    %             while (toc(timerVal)<0.010)
-    %                 x=1+1; %#ok<NASGU>
-    %             end            
-                ws.restlessSleep(0.010);  % pause for 10 ms
+            %if self.IsStopping_ ,
+            %    fprintf('Stopping while already stopping...\n');
+            %    dbstack
+            %else
+            %    self.IsStopping_=true;
+            %end
+            if ~isempty(self.OutputTask_) ,
                 self.OutputTask_.stop();
-                % % Maybe try this: java.lang.Thread.sleep(10);
-
-                % Continue with stopping stuff
-                % fprintf('About to delete the tasks...\n');
-                %self
-                delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
-                delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
-                self.InputTask_=[];
-                self.OutputTask_=[];
-                % maybe need to do more here...
-                self.IsRunning_=false;
-
-                % Notify the rest of Wavesurfer
-                ephys=self.Parent;
-                wavesurferModel=[];
-                if ~isempty(ephys) ,
-                    wavesurferModel=ephys.Parent;
-                end                
-                if ~isempty(wavesurferModel) ,
-                    wavesurferModel.didPerformTestPulse();
-                end
-
-                % Takes some time to stop...
-                self.changeReadiness(+1);
-                %self.IsReady_ = true ;
-                %self.broadcast('Update');
-            catch me
-                self.abort_();
-                self.changeReadiness(+1);
-                rethrow(me);
             end
+            if ~isempty(self.InputTask_) ,            
+                self.InputTask_.stop();
+            end
+
+            %
+            % make sure the output is set to the non-pulsed state
+            % (Is there a better way to do this?)
+            %
+            nScans = 2 ;
+            self.OutputTask_.cfgSampClkTiming(self.SamplingRateCached_,'DAQmx_Val_ContSamps',nScans);
+            %commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
+            commandsInVolts=zeros(nScans,self.NElectrodesCached_);
+            self.OutputTask_.writeAnalogData(commandsInVolts);
+            self.OutputTask_.start();
+            % pause for 10 ms without relinquishing control
+%             timerVal=tic();
+%             while (toc(timerVal)<0.010)
+%                 x=1+1; %#ok<NASGU>
+%             end            
+            ws.restlessSleep(0.010);  % pause for 10 ms
+            self.OutputTask_.stop();
+            % % Maybe try this: java.lang.Thread.sleep(10);
+
+            % Continue with stopping stuff
+            % fprintf('About to delete the tasks...\n');
+            %self
+            delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
+            delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
+            self.InputTask_=[];
+            self.OutputTask_=[];
+            % maybe need to do more here...
+            self.IsRunning_=false;
+
+%                 % Notify the rest of Wavesurfer
+%                 ephys=self.Parent;
+%                 wavesurferModel=[];
+%                 if ~isempty(ephys) ,
+%                     wavesurferModel=ephys.Parent;
+%                 end                
+%                 if ~isempty(wavesurferModel) ,
+%                     wavesurferModel.didPerformTestPulse();
+%                 end
+
+            % Takes some time to stop...
+            self.changeReadiness(+1);
+            %self.IsReady_ = true ;
+            %self.broadcast('Update');
         end  % function
-    end  % public methods
         
-    methods (Access=protected)
         function abort_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
@@ -775,22 +699,20 @@ classdef TestPulser < ws.Model
             % Set the current run state
             self.IsRunning_=false;
 
-            % Notify the rest of Wavesurfer
-            ephys=self.Parent;
-            wavesurferModel=[];
-            if ~isempty(ephys) ,
-                wavesurferModel=ephys.Parent;
-            end                
-            if ~isempty(wavesurferModel) ,
-                wavesurferModel.didAbortTestPulse();
-            end
+%             % Notify the rest of Wavesurfer
+%             ephys=self.Parent;
+%             wavesurferModel=[];
+%             if ~isempty(ephys) ,
+%                 wavesurferModel=ephys.Parent;
+%             end                
+%             if ~isempty(wavesurferModel) ,
+%                 wavesurferModel.didAbortTestPulse();
+%             end
             
             % And now we are once again ready to service method calls...
             self.changeReadiness(+1);
         end  % function
-    end
-    
-    methods
+        
         function completingSweep(self, varargin)
             % compute resistance
             % compute delta in monitor
@@ -839,7 +761,7 @@ classdef TestPulser < ws.Model
             %fprintf('About to exit TestPulser::completingSweep()\n');            
         end  % function
         
-        function zoomIn(self)
+        function zoomIn_(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             yRadius=0.5*diff(yLimits);
@@ -848,7 +770,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end  % function
         
-        function zoomOut(self)
+        function zoomOut_(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             yRadius=0.5*diff(yLimits);
@@ -857,7 +779,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end  % function
         
-        function scrollUp(self)
+        function scrollUp_(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             ySpan=diff(yLimits);
@@ -867,7 +789,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update');
         end  % function
         
-        function scrollDown(self)
+        function scrollDown_(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             ySpan=diff(yLimits);
@@ -900,7 +822,7 @@ classdef TestPulser < ws.Model
         function tryToSetYLimitsIfCalledFor_(self)
             % If setting the y limits is appropriate right now, try to set them
             % Sets AreYLimitsForRunDetermined_ and YLimits_ if successful.
-            if self.IsRunning ,
+            if self.IsRunning_ ,
                 nSweepsSinceLastUpdate = self.NSweepsCompletedThisRun_ - self.NSweepsCompletedAsOfLastYLimitsUpdate_ ;
                 if nSweepsSinceLastUpdate >= self.NSweepsPerAutoY_ ,
                     yLimits=self.automaticYLimits();
@@ -923,13 +845,13 @@ classdef TestPulser < ws.Model
 %             end
 %         end
 
-        function changeElectrodeIfCurrentOneIsNotAvailable_(self)
+        function changeElectrodeIfCurrentOneIsNotAvailable_(self, electrodes)
             % Checks that the Electrode_ is still a valid choice.  If not,
             % tries to find another one.  If that also fails, sets
             % Electrode_ to empty.  Also, if Electrode_ is empty but there
             % is at least one test pulse electrode, makes Electrode_ point
             % to the first test pulse electrode.
-            electrodes=self.Parent.ElectrodeManager.TestPulseElectrodes;
+            %electrodes=self.Parent.ElectrodeManager.TestPulseElectrodes;
             if isempty(electrodes)
                 self.ElectrodeName_ = '' ;
             else
