@@ -9,9 +9,9 @@ classdef Ephys < ws.Subsystem
         TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
         AmplitudePerTestPulseElectrode
         TestPulseElectrode
-        Monitor
+        %Monitor
         %IsTestPulsing
-        DoSubtractBaseline
+        %DoSubtractBaseline
         TestPulseElectrodeName
     end
     
@@ -22,7 +22,7 @@ classdef Ephys < ws.Subsystem
     
     properties (Dependent=true, SetAccess=immutable)
         ElectrodeManager  % provides public access to ElectrodeManager_
-        TestPulser  % provides public access to TestPulser_
+        %TestPulser  % provides public access to TestPulser_
     end    
       
     events
@@ -34,7 +34,7 @@ classdef Ephys < ws.Subsystem
             self@ws.Subsystem(parent) ;
             self.IsEnabled=true;            
             self.ElectrodeManager_ = ws.ElectrodeManager(self) ;
-            self.TestPulser_ = ws.TestPulser(self) ;
+            self.TestPulser_ = ws.TestPulser([]) ;  % no longer needs parent
             %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
         end
         
@@ -43,9 +43,9 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_ = [] ;
         end
         
-        function out = get.TestPulser(self)
-            out=self.TestPulser_;
-        end
+%         function out = get.TestPulser(self)
+%             out=self.TestPulser_;
+%         end
         
         function out = get.ElectrodeManager(self)
             out=self.ElectrodeManager_;
@@ -74,25 +74,18 @@ classdef Ephys < ws.Subsystem
             % Called by the ElectrodeManager when one or more electrodes
             % are removed.
             % Currently, informs the TestPulser of the change.
-            if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodesRemoved();
-            end
-            if ~isempty(self.Parent)
-                self.Parent.electrodesRemoved();
-            end
+            testPulseElectrodesAfter = self.TestPulseElectrodes ;
+            self.TestPulser_.electrodesRemoved(testPulseElectrodesAfter) ;
+            self.Parent.electrodesRemoved() ;
         end
 
         function self=didSetAnalogChannelUnitsOrScales(self)
-            testPulser=self.TestPulser;
-            if ~isempty(testPulser) ,
-                testPulser.didSetAnalogChannelUnitsOrScales();
-            end            
+            self.TestPulser_.didSetAnalogChannelUnitsOrScales();
         end       
         
         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
-            if ~isempty(self.TestPulser_)
-                self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged();
-            end
+            testPulseElectrodes = self.TestPulseElectrodes ;
+            self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(testPulseElectrodes) ;
         end
                 
         function startingRun(self)
@@ -110,15 +103,12 @@ classdef Ephys < ws.Subsystem
         end
         
         function didSetAcquisitionSampleRate(self,newValue)
-            testPulser = self.TestPulser ;
-            if ~isempty(testPulser) ,
-                testPulser.didSetAcquisitionSampleRate(newValue) ;
-            end
+            self.TestPulser_.didSetAcquisitionSampleRate(newValue) ;
         end        
         
         function didSetIsInputChannelActive(self) 
             self.ElectrodeManager.didSetIsInputChannelActive() ;
-            self.TestPulser.didSetIsInputChannelActive() ;
+            self.TestPulser_.didSetIsInputChannelActive() ;
         end
         
         function didSetIsDigitalOutputTimed(self)
@@ -127,12 +117,12 @@ classdef Ephys < ws.Subsystem
         
         function didChangeNumberOfInputChannels(self)
             self.ElectrodeManager.didChangeNumberOfInputChannels();
-            self.TestPulser.didChangeNumberOfInputChannels();
+            self.TestPulser_.didChangeNumberOfInputChannels();
         end        
         
         function didChangeNumberOfOutputChannels(self)
             self.ElectrodeManager.didChangeNumberOfOutputChannels();
-            self.TestPulser.didChangeNumberOfOutputChannels();
+            self.TestPulser_.didChangeNumberOfOutputChannels();
         end        
 
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
@@ -166,17 +156,24 @@ classdef Ephys < ws.Subsystem
         end
     end  % protected methods block
     
-    methods (Access=protected)    
+    methods
         function disableAllBroadcastsDammit_(self)
+            self.disableBroadcasts() ;
             self.TestPulser_.disableBroadcasts() ;
             self.ElectrodeManager_.disableBroadcasts() ;
         end
         
         function enableBroadcastsMaybeDammit_(self)
-            self.ElectrodeManager_.enableBroadcastsMaybe() ;
             self.TestPulser_.enableBroadcastsMaybe() ;
+            self.ElectrodeManager_.enableBroadcastsMaybe() ;
+            self.enableBroadcastsMaybe() ;
         end
-    end  % protected methods block
+        
+        function updateEverythingAfterProtocolFileOpen_(self)
+            self.ElectrodeManager_.broadcast('Update') ;
+            self.TestPulser_.broadcast('Update') ;
+        end        
+    end  % methods block 
 
     methods
         function mimic(self, other)
@@ -185,7 +182,7 @@ classdef Ephys < ws.Subsystem
             % Disable broadcasts for speed
             %self.disableBroadcasts();
             self.ElectrodeManager.disableBroadcasts();
-            self.TestPulser.disableBroadcasts();
+            self.TestPulser_.disableBroadcasts();
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -210,13 +207,13 @@ classdef Ephys < ws.Subsystem
             %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
             
             % Re-enable broadcasts
-            self.TestPulser.enableBroadcastsMaybe();
+            self.TestPulser_.enableBroadcastsMaybe();
             self.ElectrodeManager.enableBroadcastsMaybe();
             %self.enableBroadcastsMaybe();
             
             % Broadcast updates for sub-models and self, now that
             % everything is in sync, and should be self-consistent
-            self.TestPulser.broadcast('Update');
+            self.TestPulser_.broadcast('Update');
             self.ElectrodeManager.broadcast('Update');
             %self.broadcast('Update');  % is this necessary?
         end  % function
@@ -312,7 +309,7 @@ classdef Ephys < ws.Subsystem
             result = electrodeManager.getElectrodeByName(electrodeName) ;
         end  % function 
         
-        function result = get.Monitor(self)
+        function result = getTestPulseMonitorTrace_(self)
             currentElectrodeName = self.TestPulseElectrodeName ;
             if isempty(currentElectrodeName)
                 result = [] ; 
@@ -328,6 +325,10 @@ classdef Ephys < ws.Subsystem
                 end
             end
         end  % function         
+        
+        function result = getTestPulseMonitorTraceTimeline_(self, fs)
+            result = self.TestPulser_.getTime_(fs) ;
+        end  % function                 
         
         function result = get.TestPulseElectrodeIndex(self)
             name = self.TestPulseElectrodeName ;
@@ -352,41 +353,68 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.setElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
         end  % function        
         
-        function startTestPulsing_(self, fs)
+        function prepForTestPulsing_(self, ...
+                                     fs, ...
+                                     isVCPerTestPulseElectrode, ...
+                                     isCCPerTestPulseElectrode, ...
+                                     commandTerminalIDPerTestPulseElectrode, ...
+                                     monitorTerminalIDPerTestPulseElectrode, ...
+                                     commandChannelScalePerTestPulseElectrode, ...
+                                     monitorChannelScalePerTestPulseElectrode, ...
+                                     deviceName, ...
+                                     gainOrResistanceUnitsPerTestPulseElectrode)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
-            testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
+            %testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
             
             amplitudePerTestPulseElectrode = self.AmplitudePerTestPulseElectrode ;
             
             nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
-            gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
-            self.TestPulser_.start_(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
-                                    testPulseElectrode, ...
-                                    amplitudePerTestPulseElectrode, ...
-                                    fs, ...
-                                    nTestPulseElectrodes, ...
-                                    gainOrResistanceUnitsPerTestPulseElectrode) ;            
+            %gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+            self.TestPulser_.prepForStart_(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
+                                           amplitudePerTestPulseElectrode, ...
+                                           fs, ...
+                                           nTestPulseElectrodes, ...
+                                           gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                           isVCPerTestPulseElectrode, ...
+                                           isCCPerTestPulseElectrode, ...
+                                           commandTerminalIDPerTestPulseElectrode, ...
+                                           monitorTerminalIDPerTestPulseElectrode, ...
+                                           commandChannelScalePerTestPulseElectrode, ...
+                                           monitorChannelScalePerTestPulseElectrode, ...
+                                           deviceName) ;
         end
 
+        function startTestPulsing_(self)
+            self.TestPulser_.start_() ;            
+        end
+        
         function stopTestPulsing_(self)
             self.TestPulser_.stop_() ;            
         end
         
+        function abortTestPulsing_(self)
+            self.TestPulser_.abort_() ;
+        end
+        
         function result = getIsTestPulsing_(self)
-            result = self.TestPulser_.IsRunning ;
+            result = self.TestPulser_.getIsRunning_() ;
         end
         
-        function toggleIsTestPulsing(self)
-            if self.IsTestPulsing , 
-                self.stopTestPulsing_() ;
-            else
-                self.startTestPulsing_() ;
-            end
+        function changeTestPulserReadiness_(self, delta)
+            self.TestPulser_.changeReadiness(delta) ;
         end
         
-        function result = getGainOrResistancePerTestPulseElectrode(self)
+%         function toggleIsTestPulsing(self)
+%             if self.IsTestPulsing , 
+%                 self.stopTestPulsing_() ;
+%             else
+%                 self.startTestPulsing_() ;
+%             end
+%         end
+        
+        function result = getGainOrResistancePerTestPulseElectrode_(self)
             rawValue = self.TestPulser_.getGainOrResistancePerElectrode_() ;
             if isempty(rawValue) ,                
                 nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
@@ -396,24 +424,24 @@ classdef Ephys < ws.Subsystem
             end
         end
 
-        function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
-            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
+%         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
+%             result = self.TestPulser_.getGainOrResistanceUnitsPerElectrode_() ;
+%         end        
+        
+%         function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
+%             rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
+%             rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
+%             % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
+%             [gainOrResistanceUnits,gainOrResistance] = ...
+%                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
+%         end
+        
+        function result = getDoSubtractBaselineInTestPulseView_(self)
+            result = self.TestPulser_.getDoSubtractBaseline_() ;
         end        
         
-        function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
-            rawGainOrResistance = self.getGainOrResistancePerTestPulseElectrode() ;
-            rawGainOrResistanceUnits = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
-            % [gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;  
-            [gainOrResistanceUnits,gainOrResistance] = ...
-                ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
-        end
-        
-        function result = get.DoSubtractBaseline(self)
-            result = self.TestPulser_.DoSubtractBaseline ;
-        end        
-        
-        function set.DoSubtractBaseline(self, newValue)            
-            self.TestPulser_.DoSubtractBaseline = newValue ;
+        function setDoSubtractBaselineInTestPulseView_(self, newValue)            
+            self.TestPulser_.setDoSubtractBaseline_(newValue) ;
         end    
         
         function value=get.TestPulseElectrodeName(self)
@@ -437,6 +465,74 @@ classdef Ephys < ws.Subsystem
             self.broadcast('UpdateTestPulser');
         end
         
+        function setTestPulseYLimits_(self, newValue)
+            self.TestPulser_.setYLimits_(newValue) ;
+        end
+        
+        function result = getTestPulseYLimits_(self)
+            result = self.TestPulser_.getYLimits_() ;
+        end
+        
+        function result = getTestPulseElectrodes_(self)
+            result = self.ElectrodeManager_.getTestPulseElectrodes_() ;
+        end
+        
+        function result = getGainOrResistanceUnitsPerTestPulseElectrodeCached_(self)
+            result = self.TestPulser_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
+        end                
+        
+        function zoomInTestPulseView_(self)
+            self.TestPulser_.zoomIn_() ;
+        end  % function
+        
+        function zoomOutTestPulseView_(self)
+            self.TestPulser_.zoomOut_() ;
+        end  % function
+        
+        function scrollUpTestPulseView_(self)
+            self.TestPulser_.scrollUp_() ;
+        end  % function
+        
+        function scrollDownTestPulseView_(self)
+            self.TestPulser_.scrollDown_() ;
+        end  % function
+        
+        function result = getTestPulseDuration_(self) 
+            result = self.TestPulser_.getPulseDuration_() ;
+        end
+        
+        function setTestPulseDuration_(self, newValue) 
+            self.TestPulser_.setPulseDuration_(newValue) ;
+        end        
+        
+        function result = getIsAutoYInTestPulseView_(self) 
+            result = self.TestPulser_.getIsAutoY_() ;
+        end
+        
+        function setIsAutoYInTestPulseView_(self, newValue) 
+            self.TestPulser_.setIsAutoY_(newValue) ;
+        end
+
+        function result = getIsAutoYRepeatingInTestPulseView_(self) 
+            result = self.TestPulser_.getIsAutoYRepeating_() ;
+        end
+        
+        function setIsAutoYRepeatingInTestPulseView_(self, newValue) 
+            self.TestPulser_.setIsAutoYRepeating_(newValue) ;
+        end
+        
+        function value = getUpdateRateInTestPulseView_(self)
+            value = self.TestPulser_.getUpdateRate_() ;
+        end        
+        
+        function result = getIsTestPulserReady(self)
+            result = self.TestPulser_.IsReady ;
+        end
+        
+        function result = getTestPulserReference_(self) 
+            result = self.TestPulser_ ;
+        end
+            
     end  % public methods block
 
 end  % classdef

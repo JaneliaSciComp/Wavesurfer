@@ -893,30 +893,30 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             elseif nNewElectrodes<0 ,
                 % Delete the excess HG objects
                 %import ws.*
-                deleteIfValidHGHandle(self.LabelEdits(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.TypePopups(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.IndexWithinTypeEdits(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.ModePopups(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.LabelEdits(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.TypePopups(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.IndexWithinTypeEdits(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.ModePopups(nElectrodes+1:end));
 
-                deleteIfValidHGHandle(self.MonitorPopups(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.MonitorScaleEdits(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.MonitorScaleUnitsTexts(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.MonitorPopups(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.MonitorScaleEdits(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.MonitorScaleUnitsTexts(nElectrodes+1:end));
                 
-                deleteIfValidHGHandle(self.CommandPopups(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.CommandScaleEdits(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.CommandScaleUnitsTexts(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.CommandPopups(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.CommandScaleEdits(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.CommandScaleUnitsTexts(nElectrodes+1:end));
                 
-%                 deleteIfValidHGHandle(self.VoltageMonitorPopups(nElectrodes+1:end));
-%                 deleteIfValidHGHandle(self.VoltageMonitorScaleEdits(nElectrodes+1:end));
-%                 deleteIfValidHGHandle(self.VoltageMonitorScaleUnitsTexts(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.VoltageMonitorPopups(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.VoltageMonitorScaleEdits(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.VoltageMonitorScaleUnitsTexts(nElectrodes+1:end));
 %                 
-%                 deleteIfValidHGHandle(self.CurrentCommandPopups(nElectrodes+1:end));
-%                 deleteIfValidHGHandle(self.CurrentCommandScaleEdits(nElectrodes+1:end));
-%                 deleteIfValidHGHandle(self.CurrentCommandScaleUnitsTexts(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.CurrentCommandPopups(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.CurrentCommandScaleEdits(nElectrodes+1:end));
+%                 ws.deleteIfValidHGHandle(self.CurrentCommandScaleUnitsTexts(nElectrodes+1:end));
                 
-                deleteIfValidHGHandle(self.IsCommandEnabledCheckboxes(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.TestPulseQCheckboxes(nElectrodes+1:end));
-                deleteIfValidHGHandle(self.RemoveQCheckboxes(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.IsCommandEnabledCheckboxes(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.TestPulseQCheckboxes(nElectrodes+1:end));
+                ws.deleteIfValidHGHandle(self.RemoveQCheckboxes(nElectrodes+1:end));
 
                 % Delete the excess HG handles
                 self.LabelEdits(nElectrodes+1:end)=[];

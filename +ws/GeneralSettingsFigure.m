@@ -24,7 +24,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         StimulationSampleRateUnitsText
         SourceText
         SourcePopupmenu
-        EditStimulusLibraryButton
+        %EditStimulusLibraryButton
         RepeatsCheckbox
         
         DisplayPanel
@@ -97,45 +97,18 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'Update','','update');
                model.subscribeMe(self,'WillSetState','','willSetModelState');
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
-               %model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
-
                model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
-               
                model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
                model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
-               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
                model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
-               
                model.Display.subscribeMe(self,'Update','','update');
-               %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
                model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
                model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
                model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               
-               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
-               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
                model.Logging.subscribeMe(self,'Update','','updateControlProperties');
                model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
-
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-               %model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
-               
-%                %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
-%                  % no longer publicly settable
-%                for i = 1:numel(model.FastProtocols) ,
-%                    thisFastProtocol=model.FastProtocols{i};
-%                    %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','updateControlEnablement');
-%                    %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','updateControlEnablement');
-%                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
-%                end               
-               
-               %model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
-               %model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
            end
            
            % Make the figure visible
@@ -218,10 +191,10 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             self.SourcePopupmenu = ...
                 ws.uipopupmenu('Parent',self.StimulationPanel, ...
                                'String',{'Thing 1';'Thing 2'});
-            self.EditStimulusLibraryButton = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Edit...');
+%             self.EditStimulusLibraryButton = ...
+%                 ws.uicontrol('Parent',self.StimulationPanel, ...
+%                           'Style','pushbutton', ...
+%                           'String','Edit...');
             self.RepeatsCheckbox = ...
                 ws.uicontrol('Parent',self.StimulationPanel, ...
                           'Style','checkbox', ...
@@ -586,9 +559,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             editWidth=80;
             editHeight=20;
             popupmenuWidth=154;
-            editButtonWidth=80;
+            %editButtonWidth=80;
             editButtonHeight=22;
-            widthFromEditButtonToRepeatsCheckbox=16;
+            %widthFromEditButtonToRepeatsCheckbox=16;
             heightFromSourcePopupmenuToEditButton=10;
             
             % Enabled checkbox
@@ -615,15 +588,17 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             % Edit... button
             gridRowYOffset=gridRowYOffset-heightFromSourcePopupmenuToEditButton-editButtonHeight;
-            set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
+            %set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
             
             % "Repeats" checkbox
             repeatsCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
             width=repeatsCheckboxPosition(3);
             height=repeatsCheckboxPosition(4);            
-            xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
+            %xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
+            xOffset=editXOffset;
             yOffset=gridRowYOffset+(editButtonHeight-height)/2;
-            set(self.RepeatsCheckbox,'Position',[xOffset yOffset width height]);
+            yShim = 6 ;
+            set(self.RepeatsCheckbox,'Position',[xOffset yOffset+yShim width height]);
         end  % function
     end
     
@@ -1002,7 +977,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.StimulationEnabledCheckbox,'Enable',ws.onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',ws.onIff(isIdle && isStimulusEnabled));
             set(self.SourcePopupmenu,'Enable',ws.onIff(isIdle && isStimulusEnabled));
-            set(self.EditStimulusLibraryButton,'Enable',ws.onIff(isIdle && isStimulusEnabled));
+            %set(self.EditStimulusLibraryButton,'Enable',ws.onIff(isIdle && isStimulusEnabled));
             set(self.RepeatsCheckbox,'Enable',ws.onIff(isIdle && isStimulusEnabled));
 
             % Display controls
@@ -1524,9 +1499,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             end
         end  % method
         
-        function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController');
-        end
+%         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
+%             self.showAndRaiseChildFigure_('StimulusLibraryController');
+%         end
         
 %         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
 %             if ~isempty(self.Model_) ,

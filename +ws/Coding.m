@@ -405,6 +405,8 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'ChannelName_' ;      
                             elseif isa(result,'ws.StimulusMap') && isequal(fieldName, 'Multipliers_') ,
                                 propertyName = 'Multiplier_' ;      
+                            elseif isa(result,'ws.TestPulser') && isequal(fieldName, 'PulseDurationInMsAsString_') ,
+                                propertyName = 'PulseDuration_' ;      
                             elseif isequal(fieldName, 'Enabled_') ,
                                 propertyName = 'IsEnabled_' ;
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'AcquisitionUsesASAPTriggering_') ,
@@ -470,12 +472,18 @@ classdef (Abstract) Coding < handle
                                     % BC hack 
                                     doSetPropertyValue = false ;
                                     subresult = [] ;  % not used
+                                elseif isa(result, 'ws.TestPulser') && isequal(fieldName, 'PulseDurationInMsAsString_') && ...
+                                       isequal(propertyName, 'PulseDuration_') ,
+                                    % BC hack 
+                                    doSetPropertyValue = true ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
+                                    subresult = 1e-3 * str2double(rawSubresult) ;  % string to double, ms to s
                                 elseif isa(result, 'ws.ScopeModel') && ...
                                         ( ( isequal(fieldName, 'YUnits_') && isequal(propertyName, 'YUnits_')) || ...
                                           ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
