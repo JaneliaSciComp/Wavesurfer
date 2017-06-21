@@ -4869,7 +4869,7 @@ classdef WavesurferModel < ws.Model
         
         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
             if self.IsTestPulsing ,
-                result = self.Ephys_.getGainOrResistanceUnitsPerElectrodeCached_() ;
+                result = self.Ephys_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
             else
                 commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
                 monitorUnitsPerElectrode = self.getMonitorUnitsPerTestPulseElectrode() ;                
@@ -4939,15 +4939,15 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function zoomOutTestPulseView(self)
-            self.Ephys_.zoomInTestPulseView_() ;
+            self.Ephys_.zoomOutTestPulseView_() ;
         end  % function
         
         function scrollUpTestPulseView(self)
-            self.Ephys_.zoomInTestPulseView_() ;
+            self.Ephys_.scrollUpTestPulseView_() ;
         end  % function
         
         function scrollDownTestPulseView(self)
-            self.Ephys_.zoomInTestPulseView_() ;
+            self.Ephys_.scrollDownTestPulseView_() ;
         end  % function
         
         function result = get.TestPulseDuration(self) 

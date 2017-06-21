@@ -478,7 +478,7 @@ classdef Ephys < ws.Subsystem
         end
         
         function result = getGainOrResistanceUnitsPerTestPulseElectrodeCached_(self)
-            result = self.TestPulser_.getGainOrResistanceUnitsPerElectrodeCached_() ;
+            result = self.TestPulser_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
         end                
         
         function zoomInTestPulseView_(self)
