@@ -2150,14 +2150,22 @@ classdef WavesurferModel < ws.Model
                     self.Logging.DoIncludeSessionIndex = logical(str2double(parameters{1})) ;
                 case 'set-is-date-included-in-data-file-name'
                     self.Logging.DoIncludeDate = logical(str2double(parameters{1})) ;                    
-                case 'save-wsp-file-full-path'
-                    self.saveProtocolFileGivenFileName(parameters{1}) ;
-                case 'open-wsp-file-full-path'
-                    self.openProtocolFileGivenFileName(parameters{1}) ;
-                case 'save-wsu-file-full-path'
-                    self.saveUserFileGivenFileName(parameters{1}) ;
-                case 'open-wsu-file-full-path'
-                    self.openUserFileGivenFileName(parameters{1}) ;                    
+                case 'saving-configuration-file-at-full-path'
+                    configurationFileName = parameters{1} ;
+                    protocolFileName = ws.replaceFileExtension(configurationFileName, '.wsp') ;
+                    self.saveProtocolFileGivenFileName(protocolFileName) ;
+                case 'loading-configuration-file-at-full-path'
+                    configurationFileName = parameters{1} ;
+                    protocolFileName = ws.replaceFileExtension(configurationFileName, '.wsp') ;
+                    self.openProtocolFileGivenFileName(protocolFileName) ;
+                case 'saving-user-file-at-full-path'
+                    siUserFileName = parameters{1} ;
+                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;
+                    self.saveUserFileGivenFileName(wsUserFileName) ;
+                case 'loading-user-file-at-full-path'
+                    siUserFileName = parameters{1} ;
+                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;                    
+                    self.openUserFileGivenFileName(wsUserFileName) ;                    
                 case 'record'
                     % self.record() is a blocking call, but that's dealt
                     % with in the CommandServer
@@ -2199,23 +2207,23 @@ classdef WavesurferModel < ws.Model
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function        
         
-        function commandScanImageToSaveConfigFileIfYoked_(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsave-cfg-file-full-path| %s\n',absoluteProtocolFileName);
+        function notifyScanImageThatSavingProtocolFileIfYoked_(self, absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function commandScanImageToOpenConfigFileIfYoked_(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nload-cfg-file-full-path| %s\n',absoluteProtocolFileName);
+        function notifyScanImageThatOpeningProtocolFileIfYoked_(self, absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nopening-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function commandScanImageToSaveUserSettingsFileIfYoked_(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsave-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
+        function notifyScanImageThatSavingUserFileIfYoked_(self, absoluteUserSettingsFileName)
+            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
-        function commandScanImageToOpenUserSettingsFileIfYoked_(self,absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nload-usr-file-full-path| %s\n',absoluteUserSettingsFileName);
+        function notifyScanImageThatOpeningUserFileIfYoked_(self, absoluteUserSettingsFileName)
+            commandFileAsString = sprintf('1\nopening-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
     end % methods
@@ -2277,8 +2285,8 @@ classdef WavesurferModel < ws.Model
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToOpenConfigFileIfYoked_(siConfigFilePath);
+            %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
+            self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
             self.changeReadiness(+1);
         end  % function
     end
@@ -2320,8 +2328,8 @@ classdef WavesurferModel < ws.Model
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            siConfigFilePath = ws.setFileExtension(absoluteFileName, '.cfg') ;
-            self.commandScanImageToSaveConfigFileIfYoked_(siConfigFilePath) ;
+            %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
+            self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
             self.changeReadiness(+1);            
             self.broadcast('Update');
         end
@@ -2366,8 +2374,8 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
-            siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToOpenUserSettingsFileIfYoked_(siUserFilePath) ;
+            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
+            self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness(+1) ;            
             self.broadcast('UpdateFastProtocols') ;
             self.broadcast('Update') ;
@@ -2391,8 +2399,8 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
-            siUserFilePath = ws.setFileExtension(absoluteFileName, '.usr') ;
-            self.commandScanImageToSaveUserSettingsFileIfYoked_(siUserFilePath) ;
+            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
+            self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness(+1) ;            
             self.broadcast('Update') ;            
         end  % function

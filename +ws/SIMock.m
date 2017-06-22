@@ -38,10 +38,10 @@ classdef SIMock < handle
             commandName = command.name ;
             parameters = command.parameters ;
             commandDictionary = ...
-                { 'save-cfg-file-full-path' ...
-                  'load-cfg-file-full-path' ...
-                  'save-usr-file-full-path' ...
-                  'load-usr-file-full-path' ...
+                { 'saving-protocol-file-at-full-path' ...
+                  'opening-protocol-file-at-full-path' ...
+                  'saving-user-file-at-full-path' ...
+                  'opening-user-file-at-full-path' ...
                   'set-log-file-counter' ...
                   'set-log-file-folder-path' ...
                   'set-log-file-base-name' ...
@@ -92,23 +92,23 @@ classdef SIMock < handle
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
                 
-        function sendSaveProtocolFile(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsave-wsp-file-full-path| %s\n',absoluteProtocolFileName);
+        function sendSavingConfigurationFile(self,absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nsaving-configuration-file-at-full-path| %s\n',absoluteProtocolFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function sendOpenProtocolFile(self,absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nopen-wsp-file-full-path| %s\n',absoluteProtocolFileName);
+        function sendLoadingConfigurationFile(self,absoluteProtocolFileName)
+            commandFileAsString = sprintf('1\nloading-configuration-file-at-full-path| %s\n',absoluteProtocolFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
-        function sendSaveUserFile(self,absoluteUserFileName)
-            commandFileAsString = sprintf('1\nsave-wsu-file-full-path| %s\n',absoluteUserFileName);
+        function sendSavingUserFile(self,absoluteUserFileName)
+            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n',absoluteUserFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
 
-        function sendOpenUserFile(self,absoluteUserFileName)
-            commandFileAsString = sprintf('1\nopen-wsu-file-full-path| %s\n',absoluteUserFileName);
+        function sendOpeningUserFile(self,absoluteUserFileName)
+            commandFileAsString = sprintf('1\nloading-user-file-at-full-path| %s\n',absoluteUserFileName);
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function
         
@@ -164,12 +164,12 @@ classdef SIMock < handle
             self.sendSetIsSessionNumberIncludedInDataFileName(true) ;
             self.sendSetDataFileSessionIndex(7) ;
             self.sendSetIsDateIncludedInDataFileName(true) ;
-            protocolFilePath = horzcat(tempFilePath, '.wsp') ;
-            self.sendSaveProtocolFile(protocolFilePath) ;
-            self.sendOpenProtocolFile(protocolFilePath) ;
-            userFilePath = horzcat(tempFilePath, '.wsu') ;
-            self.sendSaveUserFile(userFilePath) ;
-            self.sendOpenUserFile(userFilePath) ;
+            configurationFilePath = horzcat(tempFilePath, '.cfg') ;
+            self.sendSavingConfigurationFile(configurationFilePath) ;
+            self.sendLoadingConfigurationFile(configurationFilePath) ;
+            siUserFilePath = horzcat(tempFilePath, '.usr') ;
+            self.sendSavingUserFile(siUserFilePath) ;
+            self.sendOpeningUserFile(siUserFilePath) ;
             self.sendPlay() ;
             pause(20) ;  % wait for that to finish
             self.sendRecord() ;
@@ -186,11 +186,11 @@ classdef SIMock < handle
 %             %self.sendSetDataFileFolderPath(tempFolderPath) ;
 %             %self.sendSetDataFileBaseName(tempStemName) ;
 %             %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
-%             %self.sendSaveProtocolFile(protocolFilePath) ;
-%             %self.sendOpenProtocolFile(protocolFilePath) ;
+%             %self.sendSavingConfigurationFile(protocolFilePath) ;
+%             %self.sendLoadingConfigurationFile(protocolFilePath) ;
 %             %userFilePath = horzcat(tempFilePath, '.wsu') ;
-%             %self.sendSaveUserFile(userFilePath) ;
-%             %self.sendOpenUserFile(userFilePath) ;
+%             %self.sendSavingUserFile(userFilePath) ;
+%             %self.sendOpeningUserFile(userFilePath) ;
 %             self.sendPlay() ;
 %             pause(20) ;  % wait for that to finish
 %             self.sendRecord() ;
