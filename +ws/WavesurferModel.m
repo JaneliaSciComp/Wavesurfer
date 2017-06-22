@@ -917,12 +917,12 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end
         
-        function setAOChannelName(self, channelIndex, newValue)
+        function setSingleAOChannelName(self, channelIndex, newValue)
             nAOChannels = self.Stimulation_.NAnalogChannels ;
             if ws.isIndex(channelIndex) && 1<=channelIndex && channelIndex<=nAOChannels ,
-                oldValue = self.Stimuluation_.AnalogChannelNames{channelIndex} ;
+                oldValue = self.Stimulation_.AnalogChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
-                     self.Stimuluation_.setSingleAnalogChannelName(channelIndex, newValue) ;
+                     self.Stimulation_.setSingleAnalogChannelName(channelIndex, newValue) ;
                      didSucceed = true ;
                 else
                     didSucceed = false;
@@ -955,7 +955,7 @@ classdef WavesurferModel < ws.Model
             if ws.isIndex(channelIndex) && 1<=channelIndex && channelIndex<=nDOChannels ,
                 %oldValue = self.Stimuluation_.DigitalChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
-                     self.Stimuluation_.setSingleDigitalChannelName(channelIndex, newValue) ;
+                     self.Stimulation_.setSingleDigitalChannelName(channelIndex, newValue) ;
                      %didSucceed = true ;
                 else
                     %didSucceed = false;
@@ -4410,7 +4410,7 @@ classdef WavesurferModel < ws.Model
         
         function setSingleDIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
-            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName(i, newValue, allChannelNames) ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
             self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
         end
         
@@ -4544,7 +4544,7 @@ classdef WavesurferModel < ws.Model
             isChangeableFull = ~(self.getNumberOfElectrodesClaimingAOChannel()==1) ;
             isChangeable = isChangeableFull(i) ;
             if isChangeable && isfinite(newValue) && newValue>0 ,
-                self.Stimulation_.setSingleAnalogChannelScales_(i, newValue) ;
+                self.Stimulation_.setSingleAnalogChannelScale_(i, newValue) ;
             end
             self.didSetAnalogChannelUnitsOrScales() ;
         end  % function

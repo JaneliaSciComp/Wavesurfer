@@ -99,7 +99,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
             %self.Model.Stimulation.setSingleAnalogChannelName(i, newString) ;
-            self.Model.Stimulation.do('setSingleAnalogChannelName', i, newString) ;
+            self.Model.do('setSingleAOChannelName', i, newString) ;
         end
         
         function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -113,7 +113,7 @@ classdef ChannelsController < ws.Controller
             isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model.Stimulation.do('setSingleAnalogTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model.do('setSingleAOTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -122,7 +122,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AOScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model.Stimulation.setSingleAnalogChannelScale(i,newValue);
-            self.Model.Stimulation.do('setSingleAnalogChannelScale', i, newValue);            
+            self.Model.do('setSingleAOChannelScale', i, newValue);            
         end
         
         function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
@@ -131,7 +131,7 @@ classdef ChannelsController < ws.Controller
             newString=get(self.Figure.AOUnitsEdits(i),'String');
             newValue=strtrim(newString);
             %self.Model.Stimulation.setSingleAnalogChannelUnits(i,newValue);
-            self.Model.Stimulation.do('setSingleAnalogChannelUnits', i, newValue) ;
+            self.Model.do('setSingleAOChannelUnits', i, newValue) ;
         end
         
         function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
@@ -139,7 +139,7 @@ classdef ChannelsController < ws.Controller
             isAnalogChannelMarkedForDeletion = self.Model.IsAOChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
-            self.Model.Stimulation.do('set', 'IsAnalogChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
+            self.Model.do('set', 'IsAOChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
         end
 
         function AddAOChannelButtonActuated(self,source,event)  %#ok<INUSD>
@@ -203,7 +203,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
             %self.Model.Stimulation.setSingleDigitalChannelName(i, newString) ;
-            self.Model.Stimulation.do('setSingleDigitalChannelName', i, newString) ;
+            self.Model.do('setDOChannelName', i, newString) ;
         end
         
         function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -238,7 +238,7 @@ classdef ChannelsController < ws.Controller
             value = self.Model.DOChannelStateIfUntimed ;
             newValue = ws.replace(value, i, newState) ;
             % self.Model.DOChannelStateIfUntimed = newValue ;
-            self.Model.Stimulation.do('set', 'DigitalOutputStateIfUntimed', newValue) ;            
+            self.Model.do('set', 'DOChannelStateIfUntimed', newValue) ;            
         end
         
         function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
@@ -249,7 +249,7 @@ classdef ChannelsController < ws.Controller
             newValue = get(source,'Value') ;
             newArray = ws.replace(originalArray, indexOfTheChannel, newValue) ;  %#ok<FNDSB>
             %self.Model.IsDOChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
-            self.Model.Stimulation.do('set', 'IsDigitalChannelMarkedForDeletion', newArray) ;             
+            self.Model.do('set', 'IsDOChannelMarkedForDeletion', newArray) ;             
         end
 
         function AddDOChannelButtonActuated(self,source,event)  %#ok<INUSD>

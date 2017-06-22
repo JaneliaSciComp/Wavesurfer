@@ -1236,7 +1236,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
             %ws.Controller.setWithBenefits(self.Model_.Acquisition,'SampleRate',newValue);
-            self.doWithModel_('setSubsystemProperty','Acquisition','SampleRate',newValue) ;
+            self.doWithModel_('set','AcquisitionSampleRate',newValue) ;
         end
 
         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -1247,7 +1247,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            self.doWithModel_('setSubsystemProperty','Stimulation','SampleRate',newValue);
+            self.doWithModel_('set','StimulationSampleRate',newValue);
         end
 
         function RepeatsCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -1269,12 +1269,12 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         function SpanEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            self.doWithModel_('setSubsystemProperty','Display','XSpan',newValue);
+            self.doWithModel_('set','XSpan',newValue);
         end
 
         function AutoSpanCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Display','IsXSpanSlavedToAcquistionDuration',newValue);
+            self.doWithModel_('set','IsXSpanSlavedToAcquistionDuration',newValue);
         end
         
         function LocationEditActuated(self,source,event) %#ok<INUSD>
