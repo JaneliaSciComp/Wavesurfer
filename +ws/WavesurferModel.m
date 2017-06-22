@@ -2336,7 +2336,7 @@ classdef WavesurferModel < ws.Model
     methods
         function loadUserFileGivenFileName(self, fileName)
             % Retained for backwards compatibility
-            self.openUserSettingsFileGivenFileName(fileName) ;
+            self.openUserFileGivenFileName(fileName) ;
         end
     end        
 
