@@ -3,10 +3,10 @@ classdef Ephys < ws.Subsystem
         TestPulseElectrodeCommandChannelName
         TestPulseElectrodeMonitorChannelName
         TestPulseElectrodeAmplitude
-        TestPulseElectrodeIndex  % index of the currently selected test pulse electrode *within the array of all electrodes*
+        %TestPulseElectrodeIndex  % index of the currently selected test pulse electrode *within the array of all electrodes*
         TestPulseElectrodes
         TestPulseElectrodesCount
-        TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
+        %TestPulseElectrodeMode  % mode of the current TP electrode (VC/CC)        
         AmplitudePerTestPulseElectrode
         TestPulseElectrode
         %Monitor
@@ -56,12 +56,9 @@ classdef Ephys < ws.Subsystem
             % may have changed.
             % Currently, tells TestPulser about the change, and the parent
             % WavesurferModel.
-            if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeMayHaveChanged(electrodeIndex,propertyName);
-            end
-            if ~isempty(self.Parent)
-                self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
-            end
+            self.ElectrodeManager_.electrodeMayHaveChanged(electrodeIndex,propertyName) ;
+            self.TestPulser_.electrodeMayHaveChanged(electrodeIndex,propertyName) ;
+            %self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
         end
 
         function electrodeWasAdded(self,electrode)
@@ -70,14 +67,14 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.electrodeWasAdded(electrode);
         end
 
-        function electrodesRemoved(self)
-            % Called by the ElectrodeManager when one or more electrodes
-            % are removed.
-            % Currently, informs the TestPulser of the change.
-            testPulseElectrodesAfter = self.TestPulseElectrodes ;
-            self.TestPulser_.electrodesRemoved(testPulseElectrodesAfter) ;
-            self.Parent.electrodesRemoved() ;
-        end
+%         function electrodesRemoved(self)
+%             % Called by the ElectrodeManager when one or more electrodes
+%             % are removed.
+%             % Currently, informs the TestPulser of the change.
+%             testPulseElectrodesAfter = self.TestPulseElectrodes ;
+%             self.TestPulser_.electrodesRemoved(testPulseElectrodesAfter) ;
+%             self.Parent.electrodesRemoved() ;
+%         end
 
         function self=didSetAnalogChannelUnitsOrScales(self)
             self.TestPulser_.didSetAnalogChannelUnitsOrScales();
@@ -92,7 +89,7 @@ classdef Ephys < ws.Subsystem
             % Update all the gains and modes that are associated with smart
             % electrodes if checkbox is checked
             if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
-                self.ElectrodeManager_.updateSmartElectrodeGainsAndModes();
+                self.ElectrodeManager_.updateSmartElectrodeGainsAndModes() ;
             end
         end
         
@@ -330,7 +327,7 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.getTime_(fs) ;
         end  % function                 
         
-        function result = get.TestPulseElectrodeIndex(self)
+        function result = getTestPulseElectrodeIndex_(self)
             name = self.TestPulseElectrodeName ;
             if isempty(name) ,
                 result = zeros(1,0) ; 
@@ -339,19 +336,19 @@ classdef Ephys < ws.Subsystem
             end
         end  % function         
         
-        function result = get.TestPulseElectrodeMode(self)
-            electrodeName = self.TestPulseElectrodeName ;
-            if isempty(electrodeName) ,
-                result = [] ;
-            else
-                result = self.ElectrodeManager_.getElectrodePropertyByName(electrodeName, 'Mode') ;
-            end
-        end  % function        
+%         function result = get.TestPulseElectrodeMode(self)
+%             electrodeName = self.TestPulseElectrodeName ;
+%             if isempty(electrodeName) ,
+%                 result = [] ;
+%             else
+%                 result = self.ElectrodeManager_.getElectrodePropertyByName(electrodeName, 'Mode') ;
+%             end
+%         end  % function        
         
-        function set.TestPulseElectrodeMode(self, newValue)            
-            electrodeIndex = self.TestPulseElectrodeIndex ;  % index within all electrodes
-            self.ElectrodeManager_.setElectrodeModeOrScaling(electrodeIndex, 'Mode', newValue) ;
-        end  % function        
+%         function set.TestPulseElectrodeMode(self, newValue)            
+%             electrodeIndex = self.TestPulseElectrodeIndex ;  % index within all electrodes
+%             self.ElectrodeManager_.setElectrodeModeOrScaling_(electrodeIndex, 'Mode', newValue) ;
+%         end  % function        
         
         function prepForTestPulsing_(self, ...
                                      fs, ...
@@ -363,7 +360,7 @@ classdef Ephys < ws.Subsystem
                                      monitorChannelScalePerTestPulseElectrode, ...
                                      deviceName, ...
                                      gainOrResistanceUnitsPerTestPulseElectrode)
-            testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
+            testPulseElectrodeIndex = self.getTestPulseElectrodeIndex_() ;
             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
             %testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;
@@ -604,6 +601,46 @@ classdef Ephys < ws.Subsystem
             doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.toggleSoftpanelEnablement_() ;
         end
         
+        function electrodeIndex = addNewElectrode_(self)
+            electrodeIndex = self.ElectrodeManager_.addNewElectrode_() ;
+            self.electrodeWasAdded(electrode);
+        end
+        
+        function removeMarkedElectrodes_(self)
+            self.ElectrodeManager_.removeMarkedElectrodes_() ;
+            testPulseElectrodesAfter = self.TestPulseElectrodes ;
+            self.TestPulser_.electrodesRemoved_(testPulseElectrodesAfter) ;
+        end
+
+        function setDoTrodeUpdateBeforeRun_(self, newValue)
+            self.ElectrodeManager_.setDoTrodeUpdateBeforeRun_(newValue) ;
+        end        
+
+        function result = getDoTrodeUpdateBeforeRun_(self)
+            result = self.ElectrodeManager_.getDoTrodeUpdateBeforeRun_() ;
+        end 
+        
+%         function setElectrodeModeOrScaling_(self, electrodeIndex, propertyName, newValue)
+%             self.ElectrodeManager_.setElectrodeModeOrScaling_(electrodeIndex, propertyName, newValue) ;
+%         end
+        
+        function result = getIsElectrodeMarkedForTestPulse_(self)
+            result = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_();
+        end
+        
+        function setIsElectrodeMarkedForTestPulse_(self, newValue)
+            self.ElectrodeManager_.setIsElectrodeMarkedForTestPulse_(newValue);
+            self.isElectrodeMarkedForTestPulseMayHaveChanged() ; 
+        end
+
+        function result = getIsElectrodeMarkedForRemoval_(self)
+            result = self.ElectrodeManager_.getIsElectrodeMarkedForRemoval_();
+        end
+        
+        function setIsElectrodeMarkedForRemoval_(self, newValue)
+            self.ElectrodeManager_.setIsElectrodeMarkedForRemoval_(newValue);
+        end
+
     end  % public methods block
 
 end  % classdef

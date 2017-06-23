@@ -18,7 +18,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
         function theTest(self)
             wsModel = wavesurfer('--nogui') ;
 
-            wsModel.Ephys.ElectrodeManager.addNewElectrode() ;
+            wsModel.addNewElectrode() ;
             electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1} ;
             electrode.Mode = 'cc' ;
             electrode.VoltageMonitorChannelName = 'AI0' ;

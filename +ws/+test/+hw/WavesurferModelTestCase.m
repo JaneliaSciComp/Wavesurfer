@@ -327,7 +327,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
             
-            wsModel.Ephys.ElectrodeManager.addNewElectrode();
+            wsModel.addNewElectrode();
             
             % A list of settings
             settings=cell(0,2);

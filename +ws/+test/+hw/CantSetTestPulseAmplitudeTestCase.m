@@ -34,7 +34,7 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
             %
             
             % Set up a single electrode
-            wsModel.Ephys.ElectrodeManager.addNewElectrode();
+            wsModel.addNewElectrode();
                         
             % Try to set the TP amplitude
             currentAmplitude = wsModel.Ephys.TestPulseElectrodeAmplitude ;

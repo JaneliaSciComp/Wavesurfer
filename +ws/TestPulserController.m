@@ -136,7 +136,7 @@ classdef TestPulserController < ws.Controller
 
             % Change the setting
             ephys = self.Model.Ephys ;
-            ephys.do('set', 'TestPulseElectrodeMode', 'vc') ;
+            ephys.do('setTestPulseElectrodeProperty', 'Mode', 'vc') ;
         end  % function
         
         function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -146,7 +146,7 @@ classdef TestPulserController < ws.Controller
             
             % Change the setting    
             ephys = self.Model.Ephys ;
-            ephys.do('set', 'TestPulseElectrodeMode', 'cc') ;
+            ephys.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
         end  % function
     end  % methods
     

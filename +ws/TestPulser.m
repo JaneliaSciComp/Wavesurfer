@@ -450,7 +450,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update') ;
         end
 
-        function electrodesRemoved(self, electrodes)
+        function electrodesRemoved_(self, electrodes)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             

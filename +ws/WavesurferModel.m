@@ -61,6 +61,10 @@ classdef WavesurferModel < ws.Model
         TestPulseDuration
         IsAutoYInTestPulseView
         IsAutoYRepeatingInTestPulseView
+        DoTrodeUpdateBeforeRun
+        IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
+        IsElectrodeMarkedForRemoval  % logical, nElectrodes x 1
+        TestPulseElectrodeIndex  % either a scalar or [] if no electrode is currently selected in the test pulser
     end
     
     properties (Access=protected)
@@ -844,16 +848,17 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods
-        function electrodesRemoved(self)
-            % Called by the Ephys to notify that one or more electrodes
-            % was removed
-            % Currently, tells Acquisition and Stimulation about the change.
-            self.didSetAnalogChannelUnitsOrScales() ;      
-        end
+%         function electrodesRemoved(self)
+%             % Called by the Ephys to notify that one or more electrodes
+%             % was removed
+%             % Currently, tells Acquisition and Stimulation about the change.
+%             self.didSetAnalogChannelUnitsOrScales() ;      
+%         end
         
         function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSL>
             % Called by the Ephys to notify that the electrode
             % may have changed.
+            self.Ephys_.electrodeMayHaveChanged() ;
             isModeOrChannelNameOrScale = ...
                 isempty(propertyName) || ...
                 ismember(propertyName, ...
@@ -4682,7 +4687,7 @@ classdef WavesurferModel < ws.Model
 
                 % Update the smart electrode channel scales, if possible and
                 % needed
-                if electrodeManager.DoTrodeUpdateBeforeRun ,
+                if self.DoTrodeUpdateBeforeRun ,
                     electrodeManager.updateSmartElectrodeGainsAndModes();
                 end
 
@@ -5003,7 +5008,23 @@ classdef WavesurferModel < ws.Model
         end  % function         
         
         function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
-            self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+            try
+                self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+            catch exception
+                % deal with EPCMasterSocket exceptions,
+                % otherwise rethrow
+                indicesThatMatch=strfind(exception.identifier,'EPCMasterSocket:');                
+                if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
+                    % The error was an EPCMasterSocket error,
+                    % so we just neglect to set the mode in the
+                    % electrode, and make sure the view gets
+                    % resynced (happens below now)
+                    %self.electrodeMayHaveChanged(electrodeIndex, propertyName);
+                else
+                    % There was some other kind of problem
+                    rethrow(exception);
+                end
+            end                                        
             self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
         end
         
@@ -5105,5 +5126,68 @@ classdef WavesurferModel < ws.Model
             end
         end
         
-    end
+        function electrodeIndex = addNewElectrode(self)
+            electrodeIndex = self.Ephys_.addNewElectrode_() ;
+        end
+       
+        function removeMarkedElectrodes(self)
+            self.Ephys_.removeMarkedElectrodes_() ;
+            self.didSetAnalogChannelUnitsOrScales() ;     
+        end
+        
+        function set.DoTrodeUpdateBeforeRun(self, newValue)
+            self.Ephys_.setDoTrodeUpdateBeforeRun_(newValue) ;
+        end        
+       
+        function result = get.DoTrodeUpdateBeforeRun(self)
+            result = self.Ephys_.getDoTrodeUpdateBeforeRun_() ;
+        end 
+
+%         function setElectrodeModeOrScaling(self, electrodeIndex, propertyName, newValue)
+%             try
+%                 self.Ephys_.setElectrodeModeOrScaling_(electrodeIndex, propertyName, newValue) ;
+%             catch exception
+%                 % deal with EPCMasterSocket exceptions,
+%                 % otherwise rethrow
+%                 indicesThatMatch=strfind(exception.identifier,'EPCMasterSocket:');                
+%                 if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
+%                     % The error was an EPCMasterSocket error,
+%                     % so we just neglect to set the mode in the
+%                     % electrode, and make sure the view gets
+%                     % resynced
+%                     self.electrodeMayHaveChanged(electrodeIndex, propertyName);
+%                 else
+%                     % There was some other kind of problem
+%                     rethrow(exception);
+%                 end
+%             end                                        
+%         end
+        
+        function result = get.IsElectrodeMarkedForTestPulse(self)
+            result = self.Ephys_.getIsElectrodeMarkedForTestPulse_() ;
+        end
+        
+        function set.IsElectrodeMarkedForTestPulse(self, newValue)
+            self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
+        end        
+        
+        function result = get.IsElectrodeMarkedForRemoval(self)
+            result = self.Ephys_.getIsElectrodeMarkedForRemoval_() ;
+        end
+        
+        function set.IsElectrodeMarkedForRemoval(self, newValue)
+            self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
+        end        
+        
+        function result = get.TestPulseElectrodeIndex(self)
+            result = self.Ephys_.getTestPulseElectrodeIndex_() ;
+        end
+
+        function setTestPulseElectrodeProperty(self, propertyName, newValue)
+            testPulseElectrodeIndex = self.Model.TestPulseElectrodeIndex ;
+            if ~isempty(testPulseElectrodeIndex) ,
+                self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
+            end
+        end
+    end  % public methods
 end  % classdef

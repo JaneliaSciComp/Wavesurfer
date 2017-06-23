@@ -28,9 +28,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.addAIChannel() ;
             model.addAOChannel() ;
             
-            % Create two new electrodes in ElectrodeManager
-            model.Ephys.ElectrodeManager.addNewElectrode();
-            electrodeIndex=1;
+            % Create a new electrode 
+            electrodeIndex = model.addNewElectrode();
             
             % Set the type of new electrode to Heka
             model.setElectrodeType(electrodeIndex,'Heka EPC');
@@ -41,7 +40,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulseElectrodeMode=electrodeMode;
+            testPulseElectrodeIndex = model.TestPulseElectrodeIndex ;
+            model.setElectrodeProperty(testPulseElectrodeIndex, 'Mode', electrodeMode) ;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -49,7 +49,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulseElectrodeMode=electrodeMode;
+            %testPulseElectrodeIndex = model.TestPulseElectrodeIndex ;
+            model.setElectrodeProperty(testPulseElectrodeIndex, 'Mode', electrodeMode) ;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{electrodeIndex}.Mode;
@@ -72,8 +73,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             model.addAOChannel() ;
             
             % Create two new electrodes in ElectrodeManager
-            model.Ephys.ElectrodeManager.addNewElectrode();
-            tpElectrodeIndex = model.Ephys.ElectrodeManager.addNewElectrode();
+            model.addNewElectrode();
+            tpElectrodeIndex = model.addNewElectrode();
             
             % Mark the first one as not being test-pulseable
             model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse=[false true];
@@ -92,15 +93,17 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
-            model.Ephys.TestPulseElectrodeMode=electrodeMode;
-            
+            %model.Ephys.TestPulseElectrodeMode=electrodeMode;
+            model.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
+
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
-            model.Ephys.TestPulseElectrodeMode=electrodeMode;
+            %model.Ephys.TestPulseElectrodeMode=electrodeMode;
+            model.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
             
             % Check the electrode Mode
             electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
@@ -139,23 +142,23 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Next we check that toggling the update checkbox before a Test
             % Pulse or Run works correctly, and that a Test Pulse or run
             % with updates enabled is slower than when updates are off.
-            self.checkTimingAndUpdating_(@wsModel.startTestPulsing, @wsModel.stopTestPulsing, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.startTestPulsing, @wsModel.stopTestPulsing, wsModel, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(testPulserShouldAllBeTrue));
             
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
-            self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, electrodeManager, electrodeIndex, newEPCMasterSocket);
+            self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, wsModel, electrodeManager, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(runShouldAllBeTrue));        
         end  % function
     end
 
     methods (Access=protected)
-        function checkTimingAndUpdating_(self, runOrTPstart, runOrTPstop, electrodeManager, electrodeIndex, newEPCMasterSocket)
+        function checkTimingAndUpdating_(self, runOrTPstart, runOrTPstop, wsModel, electrodeManager, electrodeIndex, newEPCMasterSocket)
             % Output array, should be all ones if everything worked
             % properly. Initialize to zero.
             %verificationArrayShouldAllBeTrue = zeros(0,1);
             
             % Make sure updating is off
-            electrodeManager.DoTrodeUpdateBeforeRun = 0;
+            wsModel.DoTrodeUpdateBeforeRun = 0;
             electrode = electrodeManager.Electrodes{electrodeIndex};
 
             % First time starting a Run or Test Pulse is always slow, so do
@@ -177,7 +180,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             self.verifyNotEqual(EPCCommandGain, electrode.CommandScaling);
             
             % Turn updating on, and time how long it takes with updating
-            electrodeManager.DoTrodeUpdateBeforeRun = 1;
+            wsModel.DoTrodeUpdateBeforeRun = 1;
             %tic();
             runOrTPstart();
             %timeWithUpdating = toc() ;
@@ -195,7 +198,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %verificationArrayShouldAllBeTrue(5) = (timeWithoutUpdating<timeWithUpdating+0.2);
             
             % Turn updating back off
-            electrodeManager.DoTrodeUpdateBeforeRun = 0;
+            wsModel.DoTrodeUpdateBeforeRun = 0;
         end
     end  % protected methods block
         
