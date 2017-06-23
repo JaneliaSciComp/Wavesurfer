@@ -589,6 +589,20 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.reconnectWithSmartElectrodes_() ;
         end  % function
         
+        function doNeedToUpdateGainsAndModes = setElectrodeType_(self, electrodeIndex, newValue)
+            % can only change the electrode type if softpanels are
+            % enabled.  I.e. only when WS is _not_ in command of the
+            % gain settings
+            doNeedToUpdateGainsAndModes = self.ElectrodeManager_.setElectrodeType_(electrodeIndex, newValue) ;
+        end  % function
+        
+        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
+            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+        end
+        
+        function doUpdateSmartElectrodeGainsAndModes = toggleSoftpanelEnablement_(self)
+            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.toggleSoftpanelEnablement_() ;
+        end
         
     end  % public methods block
 

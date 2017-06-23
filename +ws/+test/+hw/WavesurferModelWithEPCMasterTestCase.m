@@ -33,7 +33,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             electrodeIndex=1;
             
             % Set the type of new electrode to Heka
-            model.Ephys.ElectrodeManager.setElectrodeType(electrodeIndex,'Heka EPC');
+            model.setElectrodeType(electrodeIndex,'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
@@ -84,7 +84,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Set the type of new electrode to Heka
             %electrodeIndex=2;
-            model.Ephys.ElectrodeManager.setElectrodeType(tpElectrodeIndex,'Heka EPC');
+            model.setElectrodeType(tpElectrodeIndex,'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
@@ -130,7 +130,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Enable the soft panel, make sure the electrode is in VC mode and sync to it
             electrodeManager.IsInControlOfSoftpanelModeAndGains=false;
             newEPCMasterSocket.setElectrodeParameter(electrodeIndex,'Mode', 'vc');
-            electrodeManager.updateSmartElectrodeGainsAndModes();
+            wsModel.updateSmartElectrodeGainsAndModes();
 
             % Now we make EPCMaster and wavesurfer out of sync by changing
             % EPCMaster and not updating wavesurfer

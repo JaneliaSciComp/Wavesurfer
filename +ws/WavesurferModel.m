@@ -5081,5 +5081,29 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateElectrodeManager');
         end  % function
         
+        function setElectrodeType(self, electrodeIndex, newValue)
+            % can only change the electrode type if softpanels are
+            % enabled.  I.e. only when WS is _not_ in command of the
+            % gain settings
+            doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
+            if doNeedToUpdateGainsAndModes, 
+                self.updateSmartElectrodeGainsAndModes() ;
+            end
+        end  % function
+       
+        function setElectrodeIndexWithinType(self, electrodeIndex, newValue)
+            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+            if doUpdateSmartElectrodeGainsAndModes ,
+                self.updateSmartElectrodeGainsAndModes() ;
+            end
+        end
+        
+        function toggleSoftpanelEnablement(self)
+            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.toggleSoftpanelEnablement_() ;
+            if doUpdateSmartElectrodeGainsAndModes ,
+                self.updateSmartElectrodeGainsAndModes() ;
+            end
+        end
+        
     end
 end  % classdef

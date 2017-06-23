@@ -314,10 +314,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end            
 %         end        
         
-        function setElectrodeType(self,electrodeIndex,newValue)
+        function doNeedToUpdateGainsAndModes = setElectrodeType_(self, electrodeIndex, newValue)
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
+            doNeedToUpdateGainsAndModes = false ;  % fallback return value
             self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             if self.AreSoftpanelsEnabled_ ,
                 electrode=self.Electrodes_{electrodeIndex};
@@ -331,7 +332,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                             self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;
                         else
                             % need to do an update if smart electrode
-                            self.updateSmartElectrodeGainsAndModes();
+                            %self.updateSmartElectrodeGainsAndModes();
+                            doNeedToUpdateGainsAndModes = true ;
                         end
                     end                    
                 end
@@ -339,10 +341,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.changeReadiness(+1);
         end  % function
         
-        function setElectrodeIndexWithinType(self,electrodeIndex,newValue)
-            % can only change the electrode type if softpanels are
+        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
+            % Can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
+            doUpdateSmartElectrodeGainsAndModes = false ;  % default return
             if self.AreSoftpanelsEnabled_ ,
                 electrode=self.Electrodes_{electrodeIndex};
                 originalValue=electrode.IndexWithinType;
@@ -354,7 +357,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                         isManualElectrode=isequal(type,'Manual');
                         isSmartElectrode=~isManualElectrode;
                         if isSmartElectrode ,
-                            self.updateSmartElectrodeGainsAndModes();
+                            doUpdateSmartElectrodeGainsAndModes = true ;
                         end
                     end                    
                 end
@@ -797,12 +800,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result=(length(channelNames)==length(uniqueChannelNames));
         end  % function
         
-        function result=areAllMonitorAndCommandChannelNamesDistinct(self)
+        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
             result=self.areAllCommandChannelNamesDistinct() && ...
                    self.areAllMonitorChannelNamesDistinct() ;
         end  % function
         
-        function result=areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
+        function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
             nElectrodes=self.NElectrodes;
             for i=1:nElectrodes
                 if ~self.IsElectrodeMarkedForTestPulse_(i) ,
@@ -817,18 +820,18 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result=true;
         end  % function
         
-        function result=areAnyElectrodesSmart(self)
+        function result = areAnyElectrodesSmart(self)
             isElectrodeManual=self.isElectrodeOfType('Manual');
             isElectrodeSmart=~isElectrodeManual;
             result=any(isElectrodeSmart);
         end  % function
         
-        function result=areAnyElectrodesCommandable(self)
+        function result = areAnyElectrodesCommandable(self)
             isElectrodeCommandable=self.isElectrodeOfType('Heka EPC');
             result=any(isElectrodeCommandable);
         end  % function
         
-        function result=areAnyElectrodesAxon(self)
+        function result = areAnyElectrodesAxon(self)
             isElectrodeAxon=self.isElectrodeOfType('Axon Multiclamp');
             result=any(isElectrodeAxon);
         end
@@ -840,7 +843,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result=strcmp(queryType,typePerElectrode);
         end  % function
         
-        function result=doesElectrodeHaveCommandOnOffSwitch(self)
+        function result = doesElectrodeHaveCommandOnOffSwitch(self)
             isElectrodeHeka=self.isElectrodeOfType('Heka EPC');
             if any(isElectrodeHeka) ,            
                 if self.EPCMasterSocket_.HasCommandOnOffSwitch ,
@@ -853,7 +856,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end            
         end
         
-        function toggleSoftpanelEnablement(self)
+        function doUpdateSmartElectrodeGainsAndModes = toggleSoftpanelEnablement_(self)
             originalValue=self.AreSoftpanelsEnabled_;
             putativeNewValue=~originalValue;
             try
@@ -870,11 +873,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
             newValue=putativeNewValue;
             self.AreSoftpanelsEnabled_=newValue;
-            if ~newValue ,
-                % If softpanels were just disabled, make sure that the
-                % gains and modes are up-to-date
-                self.updateSmartElectrodeGainsAndModes();                
-            end
+%             if ~newValue ,
+%                 % If softpanels were just disabled, make sure that the
+%                 % gains and modes are up-to-date
+%                 self.updateSmartElectrodeGainsAndModes();      
+%             end
+            % If softpanels were just disabled, make sure that the
+            % gains and modes are up-to-date
+            doUpdateSmartElectrodeGainsAndModes = ~newValue ;
             self.broadcast('Update');
         end  % function
         
@@ -946,7 +952,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             %self.broadcast('Update');
         end  % function
         
-        function result=isElectrodeConnectionOpen(self)
+        function result = isElectrodeConnectionOpen(self)
             result=true(1,self.NElectrodes);  % dumb electrodes always have an open connection, by convention            
             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
             for k=1:length(smartElectrodeTypes), 
@@ -959,7 +965,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function
 
-        function result=isElectrodeIndexWithinTypeValid(self)
+        function result = isElectrodeIndexWithinTypeValid(self)
             % Heka doesn't provide an easy way to determine the number of
             % electrodes, so we just always say that a Heka index is valid.
             % Similarly for dumb electrodes.
