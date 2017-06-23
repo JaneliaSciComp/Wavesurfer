@@ -203,7 +203,7 @@ classdef ChannelsController < ws.Controller
             i = find(isTheChannel) ;
             newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
             %self.Model.Stimulation.setSingleDigitalChannelName(i, newString) ;
-            self.Model.do('setDOChannelName', i, newString) ;
+            self.Model.do('setSingleDOChannelName', i, newString) ;
         end
         
         function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>

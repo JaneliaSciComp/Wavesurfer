@@ -853,7 +853,14 @@ classdef WavesurferModel < ws.Model
         function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSL>
             % Called by the Ephys to notify that the electrode
             % may have changed.
-            if ~any(strcmp(propertyName,{'VoltageCommandChannelName' 'CurrentCommandChannelName' 'VoltageCommandScaling' 'CurrentCommandScaling'})) ,
+            isModeOrChannelNameOrScale = ...
+                ismember(propertyName, ...
+                         {'Mode' ...
+                          'VoltageCommandChannelName' 'VoltageCommandScaling' ...
+                          'CurrentCommandChannelName' 'CurrentCommandScaling' ...
+                          'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
+                          'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
+            if isModeOrChannelNameOrScale ,
                 self.didSetAnalogChannelUnitsOrScales();
             end            
         end  % function
@@ -950,7 +957,7 @@ classdef WavesurferModel < ws.Model
 %             self.broadcast('UpdateChannels') ;
 %         end
 
-        function setDOChannelName(self, channelIndex, newValue)
+        function setSingleDOChannelName(self, channelIndex, newValue)
             nDOChannels = self.Stimulation_.NDigitalChannels ;
             if ws.isIndex(channelIndex) && 1<=channelIndex && channelIndex<=nDOChannels ,
                 %oldValue = self.Stimuluation_.DigitalChannelNames{channelIndex} ;
@@ -4412,7 +4419,7 @@ classdef WavesurferModel < ws.Model
         
         function setSingleAIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
-            [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName(i, newValue, allChannelNames) ;
+            [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName_(i, newValue, allChannelNames) ;
             self.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
         end
         

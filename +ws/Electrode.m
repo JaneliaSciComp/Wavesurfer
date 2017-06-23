@@ -134,14 +134,14 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         end  % function
         
         function set.Name(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.Name_=newValue;
             end
             self.mayHaveChanged('Name');
         end  % function
         
-        function set.VoltageMonitorChannelName(self,newValue)
-            if ~ischar(newValue)
+        function set.VoltageMonitorChannelName(self, newValue)
+            if ~ws.isString(newValue)
                 return
             end
             self.VoltageMonitorChannelName_=newValue;
@@ -149,21 +149,21 @@ classdef Electrode < ws.Model % & ws.Mimic
         end  % function
         
         function set.VoltageCommandChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.VoltageCommandChannelName_=newValue;
             end
             self.mayHaveChanged('VoltageCommandChannelName');
         end  % function
 
         function set.CurrentMonitorChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.CurrentMonitorChannelName_=newValue;
             end
             self.mayHaveChanged('CurrentMonitorChannelName');
         end  % function
         
         function set.CurrentCommandChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.CurrentCommandChannelName_=newValue;
             end
             self.mayHaveChanged('CurrentCommandChannelName');

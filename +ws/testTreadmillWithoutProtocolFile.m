@@ -17,50 +17,50 @@ wsModel.deleteMarkedDOChannels() ;
 
 % add electrode AI channel
 wsModel.addAIChannel() ;
-channelIndex = wsModel.Acquisition.NAnalogChannels ;
+channelIndex = wsModel.NAIChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'electrode') ;
 wsModel.setSingleAIChannelTerminalID(channelIndex,0) ;
 
 % add velocity AI channel
 wsModel.addAIChannel() ;
-channelIndex = wsModel.Acquisition.NAnalogChannels ;
+channelIndex = wsModel.NAIChannels ;
 wsModel.setSingleAIChannelName(channelIndex,'velocity') ;
 wsModel.setSingleAIChannelTerminalID(channelIndex,1) ;
 
 % add photodiode DI channel
 wsModel.addDIChannel() ;
-channelIndex = wsModel.Acquisition.NDigitalChannels ;
+channelIndex = wsModel.NDIChannels ;
 wsModel.setSingleDIChannelName(channelIndex,'photodiode') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,2) ;
 
 % add laser DI channel
 wsModel.addDIChannel() ;
-channelIndex = wsModel.Acquisition.NDigitalChannels ;
+channelIndex = wsModel.NDIChannels ;
 wsModel.setSingleDIChannelName(channelIndex,'laser') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,3) ;
 
 % add electrode AO channel
 wsModel.Stimulation.addAnalogChannel() ;
-channelIndex = wsModel.Stimulation.NAnalogChannels ;
-wsModel.Stimulation.setSingleAnalogChannelName(channelIndex,'electrodeOut') ;
-wsModel.Stimulation.setSingleAnalogTerminalID(channelIndex,0) ;
+channelIndex = wsModel.NAOChannels ;
+wsModel.setSingleAOChannelName(channelIndex,'electrodeOut') ;
+wsModel.setSingleAOTerminalID(channelIndex,0) ;
 
 % add velocity AO channel
 wsModel.Stimulation.addAnalogChannel() ;
-channelIndex = wsModel.Stimulation.NAnalogChannels ;
-wsModel.Stimulation.setSingleAnalogChannelName(channelIndex,'velocityOut') ;
-wsModel.Stimulation.setSingleAnalogTerminalID(channelIndex,1) ;
+channelIndex = wsModel.NAOChannels ;
+wsModel.setSingleAOChannelName(channelIndex,'velocityOut') ;
+wsModel.setSingleAOTerminalID(channelIndex,1) ;
 
 % add photodiode DO channel
 wsModel.addDOChannel() ;
-channelIndex = wsModel.Stimulation.NDigitalChannels ;
-wsModel.Stimulation.setSingleDigitalChannelName(channelIndex,'photodiodeOut') ;
+channelIndex = wsModel.NDOChannels ;
+wsModel.setSingleDOChannelName(channelIndex,'photodiodeOut') ;
 wsModel.setSingleDOChannelTerminalID(channelIndex,0) ;
 
 % add laser DO channel
 wsModel.addDOChannel() ;
-channelIndex = wsModel.Stimulation.NDigitalChannels ;
-wsModel.Stimulation.setSingleDigitalChannelName(channelIndex,'laserOut') ;
+channelIndex = wsModel.NDOChannels ;
+wsModel.setSingleDOChannelName(channelIndex,'laserOut') ;
 wsModel.setSingleDOChannelTerminalID(channelIndex,1) ;
 
 
@@ -173,8 +173,6 @@ wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
 %scope.YLim = [-55 +25] ;
 wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-75 +25]) ;
 wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
-%wsModel.Display.setYLimitsForSingleAnalogChannel(3, [-0.1 +1.1]) ;
-%wsModel.Display.setYLimitsForSingleAnalogChannel(4, [-0.1 +1.1]) ;
 
 wsModel.XSpan=10 ;  % s
 
