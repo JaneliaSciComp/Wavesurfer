@@ -499,9 +499,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % parent Ephys object.
             
             % propagate the notifications up the chain of command
-            if ~isempty(self.Parent_) ,
-                self.Parent_.electrodeMayHaveChanged(electrode,propertyName);
-            end
+            self.Parent_.electrodeMayHaveChanged(electrode,propertyName);
             
             % notify the view(s)
             self.broadcast('Update');
@@ -804,14 +802,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                    self.areAllMonitorChannelNamesDistinct() ;
         end  % function
         
-        function result=areAllElectrodesTestPulsable(self)
+        function result=areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
             nElectrodes=self.NElectrodes;
             for i=1:nElectrodes
                 if ~self.IsElectrodeMarkedForTestPulse_(i) ,
                     continue
                 end
                 electrode=self.Electrodes_{i};
-                if ~electrode.isTestPulsable() ,
+                if ~electrode.isTestPulsable(aiChannelNames, aoChannelNames) ,
                     result=false;
                     return
                 end
@@ -835,7 +833,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result=any(isElectrodeAxon);
         end
         
-        function result=isElectrodeOfType(self,queryType)
+        function result = isElectrodeOfType(self, queryType)
             typePerElectrode=cellfun(@(electrode)(electrode.Type), ...
                                      self.Electrodes, ...
                                      'UniformOutput',false);
@@ -890,7 +888,43 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function updateSmartElectrodeGainsAndModes(self)
             self.changeReadiness(-1);
-            self.updateSmartElectrodeGainsAndModes_() ;
+            % Get the current mode and scaling from any smart electrodes
+            smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
+            for k=1:length(smartElectrodeTypes), 
+                smartElectrodeType=smartElectrodeTypes{k};
+                isThisType=self.isElectrodeOfType(smartElectrodeType);
+                if any(isThisType) ,
+                    indicesOfThisTypeOfElectrodes=find(isThisType);
+                    thisTypeOfElectrodes=self.Electrodes(indicesOfThisTypeOfElectrodes);
+                    indexWithinTypeOfTheseElectrodes=cellfun(@(electrode)(electrode.IndexWithinType) , ...
+                                                           thisTypeOfElectrodes);
+                    socketPropertyName=ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType);                                         
+                    %self.(socketPropertyName).open();
+                    [overallError,perElectrodeErrors,modes,currentMonitorScalings,voltageMonitorScalings,currentCommandScalings,voltageCommandScalings, ...
+                     isCommandEnabled]= ...
+                        self.(socketPropertyName).getModeAndGainsAndIsCommandEnabled(indexWithinTypeOfTheseElectrodes);
+                    if isempty(overallError) ,
+                        nElectrodesOfThisType=length(indicesOfThisTypeOfElectrodes);
+                        for j=1:nElectrodesOfThisType ,
+                            i=indicesOfThisTypeOfElectrodes(j);
+                            electrode=self.Electrodes{i};
+                            % Even if there's was an error on the electrode
+                            % and no new info could be gathered, those ones
+                            % should just be nan's or empty's, which
+                            % setModeAndScalings() knows to ignore.
+                            electrode.setModeAndScalings(modes{j}, ...
+                                                         currentMonitorScalings(j), ...
+                                                         voltageMonitorScalings(j), ...
+                                                         currentCommandScalings(j), ...
+                                                         voltageCommandScalings(j), ...
+                                                         isCommandEnabled{j});
+                            self.DidLastElectrodeUpdateWork_(i) = isempty(perElectrodeErrors{j});
+                        end
+                    else
+                        self.DidLastElectrodeUpdateWork_(indicesOfThisTypeOfElectrodes) = false;
+                    end
+                end
+            end
             self.changeReadiness(+1);
             self.broadcast('Update');            
         end  % function
@@ -907,7 +941,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     self.(socketPropertyName).reopen();
                 end
             end
-            self.updateSmartElectrodeGainsAndModes_() ;
+            self.updateSmartElectrodeGainsAndModes() ;
             self.changeReadiness(+1);
             self.broadcast('Update');
         end  % function
@@ -1011,49 +1045,49 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end
     end  % methods block
     
-    methods (Access = protected)
-        function updateSmartElectrodeGainsAndModes_(self)
-            self.changeReadiness(-1);
-            % Get the current mode and scaling from any smart electrodes
-            smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
-            for k=1:length(smartElectrodeTypes), 
-                smartElectrodeType=smartElectrodeTypes{k};
-                isThisType=self.isElectrodeOfType(smartElectrodeType);
-                if any(isThisType) ,
-                    indicesOfThisTypeOfElectrodes=find(isThisType);
-                    thisTypeOfElectrodes=self.Electrodes(indicesOfThisTypeOfElectrodes);
-                    indexWithinTypeOfTheseElectrodes=cellfun(@(electrode)(electrode.IndexWithinType) , ...
-                                                           thisTypeOfElectrodes);
-                    socketPropertyName=ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType);                                         
-                    %self.(socketPropertyName).open();
-                    [overallError,perElectrodeErrors,modes,currentMonitorScalings,voltageMonitorScalings,currentCommandScalings,voltageCommandScalings,isCommandEnabled]= ...
-                        self.(socketPropertyName).getModeAndGainsAndIsCommandEnabled(indexWithinTypeOfTheseElectrodes);
-                    if isempty(overallError) ,
-                        nElectrodesOfThisType=length(indicesOfThisTypeOfElectrodes);
-                        for j=1:nElectrodesOfThisType ,
-                            i=indicesOfThisTypeOfElectrodes(j);
-                            electrode=self.Electrodes{i};
-                            % Even if there's was an error on the electrode
-                            % and no new info could be gathered, those ones
-                            % should just be nan's or empty's, which
-                            % setModeAndScalings() knows to ignore.
-                            electrode.setModeAndScalings(modes{j}, ...
-                                                         currentMonitorScalings(j), ...
-                                                         voltageMonitorScalings(j), ...
-                                                         currentCommandScalings(j), ...
-                                                         voltageCommandScalings(j), ...
-                                                         isCommandEnabled{j});
-                            self.DidLastElectrodeUpdateWork_(i) = isempty(perElectrodeErrors{j});
-                        end
-                    else
-                        self.DidLastElectrodeUpdateWork_(indicesOfThisTypeOfElectrodes) = false;
-                    end
-                end
-            end
-            self.changeReadiness(+1);
-            self.broadcast('Update');            
-        end  % function
-    end  % protected methods block
+%     methods (Access = protected)
+%         function updateSmartElectrodeGainsAndModes_(self)
+%             self.changeReadiness(-1);
+%             % Get the current mode and scaling from any smart electrodes
+%             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
+%             for k=1:length(smartElectrodeTypes), 
+%                 smartElectrodeType=smartElectrodeTypes{k};
+%                 isThisType=self.isElectrodeOfType(smartElectrodeType);
+%                 if any(isThisType) ,
+%                     indicesOfThisTypeOfElectrodes=find(isThisType);
+%                     thisTypeOfElectrodes=self.Electrodes(indicesOfThisTypeOfElectrodes);
+%                     indexWithinTypeOfTheseElectrodes=cellfun(@(electrode)(electrode.IndexWithinType) , ...
+%                                                            thisTypeOfElectrodes);
+%                     socketPropertyName=ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType);                                         
+%                     %self.(socketPropertyName).open();
+%                     [overallError,perElectrodeErrors,modes,currentMonitorScalings,voltageMonitorScalings,currentCommandScalings,voltageCommandScalings,isCommandEnabled]= ...
+%                         self.(socketPropertyName).getModeAndGainsAndIsCommandEnabled(indexWithinTypeOfTheseElectrodes);
+%                     if isempty(overallError) ,
+%                         nElectrodesOfThisType=length(indicesOfThisTypeOfElectrodes);
+%                         for j=1:nElectrodesOfThisType ,
+%                             i=indicesOfThisTypeOfElectrodes(j);
+%                             electrode=self.Electrodes{i};
+%                             % Even if there's was an error on the electrode
+%                             % and no new info could be gathered, those ones
+%                             % should just be nan's or empty's, which
+%                             % setModeAndScalings() knows to ignore.
+%                             electrode.setModeAndScalings(modes{j}, ...
+%                                                          currentMonitorScalings(j), ...
+%                                                          voltageMonitorScalings(j), ...
+%                                                          currentCommandScalings(j), ...
+%                                                          voltageCommandScalings(j), ...
+%                                                          isCommandEnabled{j});
+%                             self.DidLastElectrodeUpdateWork_(i) = isempty(perElectrodeErrors{j});
+%                         end
+%                     else
+%                         self.DidLastElectrodeUpdateWork_(indicesOfThisTypeOfElectrodes) = false;
+%                     end
+%                 end
+%             end
+%             self.changeReadiness(+1);
+%             self.broadcast('Update');            
+%         end  % function
+%     end  % protected methods block
     
     methods (Access = protected)
         % Allows access to protected and protected variables from ws.Coding.
@@ -1158,14 +1192,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 
             electrode=self.Electrodes_{electrodeIndex};
             
-            if isempty(strfind(propertyName,'Scaling')) ,
+            if ~contains(propertyName,'Scaling') ,
                 parameterName=propertyName;
             else
                 % "Scaling" should be the last thing
                 head=propertyName(1:end-7);
                 % The head can be "Command" or "Monitor",
                 % optionally preceded by "Voltage" or "Current"
-                if isempty(strfind(head,'Voltage')) && isempty(strfind(head,'Current')) ,
+                if ~contains(head,'Voltage') && ~contains(head,'Current') ,
                     % If here, head is either 'Command' or 'Monitor'
                     fullHeadPrototype=electrode.whichCommandOrMonitor(head);
                 else
@@ -1185,14 +1219,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 
             electrode=self.Electrodes_{electrodeIndex};
             
-            if isempty(strfind(propertyName,'Scaling')) ,
+            if ~contains(propertyName,'Scaling') ,
                 parameterName=propertyName;
             else
                 % "Scaling" should be the last thing
                 head=propertyName(1:end-7);
                 % The head can be "Command" or "Monitor",
                 % optionally preceded by "Voltage" or "Current"
-                if isempty(strfind(head,'Voltage')) && isempty(strfind(head,'Current')) ,
+                if ~contains(head,'Voltage') && ~contains(head,'Current') ,
                     % If here, head is either 'Command' or 'Monitor'
                     fullHeadPrototype=electrode.whichCommandOrMonitor(head);
                 else
@@ -1258,6 +1292,74 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Moving forwards, it would be better if (trusted) consumers called this to
             % get the test pulse electrodes
             result = self.TestPulseElectrodes ;
+        end    
+        
+        function setElectrodeProperty_(self, electrodeIndex, propertyName, newValue)            
+            electrode = self.Electrodes{electrodeIndex} ;
+            electrode.setProperty_(propertyName, newValue) ;
+            self.broadcast('Update');
         end        
+        
+        function setElectrodeModeAndScalings_(self,...
+                                              electrodeIndex, ...
+                                              newMode, ...
+                                              newCurrentMonitorScaling, ...
+                                              newVoltageMonitorScaling, ...
+                                              newCurrentCommandScaling, ...
+                                              newVoltageCommandScaling,...
+                                              newIsCommandEnabled)
+            electrode = self.Electrodes{electrodeIndex} ;
+            electrode.setModeAndScalings_(newMode, ...
+                                          newCurrentMonitorScaling, ...
+                                          newVoltageMonitorScaling, ...
+                                          newCurrentCommandScaling, ...
+                                          newVoltageCommandScaling,...
+                                          newIsCommandEnabled) ;
+            self.broadcast('Update');
+        end  % function
+
+        function [areAnyOfThisType, ...
+                  indicesOfThisTypeOfElectrodes, ...
+                  overallError, ...
+                  modes, ...
+                  currentMonitorScalings, voltageMonitorScalings, currentCommandScalings, voltageCommandScalings, ...
+                  isCommandEnabled] = ...
+                 probeHardwareForSmartElectrodeModesAndScalings_(self, smartElectrodeType)
+            isThisType = self.isElectrodeOfType(smartElectrodeType) ;
+            areAnyOfThisType = any(isThisType) ;
+            if areAnyOfThisType ,
+                indicesOfThisTypeOfElectrodes = find(isThisType) ;
+                thisTypeOfElectrodes = self.Electrodes_(isThisType) ;
+                indexWithinTypeOfTheseElectrodes = cellfun(@(electrode)(electrode.IndexWithinType) , ...
+                                                           thisTypeOfElectrodes) ;
+                socketPropertyName = ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType) ; 
+                [overallError,perElectrodeErrors,modes,currentMonitorScalings,voltageMonitorScalings,currentCommandScalings,voltageCommandScalings,...
+                 isCommandEnabled] = ...
+                    self.(socketPropertyName).getModeAndGainsAndIsCommandEnabled(indexWithinTypeOfTheseElectrodes) ;
+
+                % Update self.DidLastElectrodeUpdateWork_
+                if isempty(overallError) ,
+                    nElectrodesOfThisType = length(indicesOfThisTypeOfElectrodes) ;
+                    for j = 1:nElectrodesOfThisType ,
+                        electrodeIndex = indicesOfThisTypeOfElectrodes(j) ;
+                        self.DidLastElectrodeUpdateWork_(electrodeIndex) = isempty(perElectrodeErrors{j}) ;
+                    end
+                else
+                    self.DidLastElectrodeUpdateWork_(indicesOfThisTypeOfElectrodes) = false ;
+                end
+            else
+                % These are not relevant if areAnyOfThisType is false
+                indicesOfThisTypeOfElectrodes = [] ;
+                overallError = [] ;
+                %perElectrodeErrors = [] ;
+                modes = [] ;
+                currentMonitorScalings = [] ;
+                voltageMonitorScalings = [] ;
+                currentCommandScalings = [] ;                
+                voltageCommandScalings = [] ;                
+                isCommandEnabled = [] ;                
+            end
+        end  % function
+        
     end        
 end  % classdef

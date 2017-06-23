@@ -51,16 +51,16 @@ classdef Ephys < ws.Subsystem
             out=self.ElectrodeManager_;
         end
         
-        function electrodeMayHaveChanged(self,electrode,propertyName)
+        function electrodeMayHaveChanged(self,electrodeIndex,propertyName)
             % Called by the ElectrodeManager to notify that the electrode
             % may have changed.
             % Currently, tells TestPulser about the change, and the parent
             % WavesurferModel.
             if ~isempty(self.TestPulser_)
-                self.TestPulser_.electrodeMayHaveChanged(electrode,propertyName);
+                self.TestPulser_.electrodeMayHaveChanged(electrodeIndex,propertyName);
             end
             if ~isempty(self.Parent)
-                self.Parent.electrodeMayHaveChanged(electrode,propertyName);
+                self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
             end
         end
 
@@ -405,6 +405,10 @@ classdef Ephys < ws.Subsystem
         function changeTestPulserReadiness_(self, delta)
             self.TestPulser_.changeReadiness(delta) ;
         end
+
+        function changeElectrodeManagerReadiness_(self, delta)
+            self.ElectrodeManager_.changeReadiness(delta) ;
+        end
         
 %         function toggleIsTestPulsing(self)
 %             if self.IsTestPulsing , 
@@ -533,6 +537,53 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_ ;
         end
             
+        function setElectrodeProperty_(self, electrodeIndex, propertyName, newValue)
+            self.ElectrodeManager_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+            self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+        end
+        
+        function setElectrodeModeAndScalings_(self,...
+                                              electrodeIndex, ...
+                                              newMode, ...
+                                              newCurrentMonitorScaling, ...
+                                              newVoltageMonitorScaling, ...
+                                              newCurrentCommandScaling, ...
+                                              newVoltageCommandScaling,...
+                                              newIsCommandEnabled)
+            self.ElectrodeManager_.setElectrodeModeAndScalings_(electrodeIndex, ...
+                                                                newMode, ...
+                                                                newCurrentMonitorScaling, ...
+                                                                newVoltageMonitorScaling, ...
+                                                                newCurrentCommandScaling, ...
+                                                                newVoltageCommandScaling,...
+                                                                newIsCommandEnabled) ;
+            self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+        end  % function
+        
+        function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
+            result = self.ElectrodeManager_.areAllElectrodesTestPulsable(aiChannelNames, aoChannelNames) ;
+        end  % function
+        
+        function result = isElectrodeOfType(self, queryType)
+            result = self.ElectrodeManager_.isElectrodeOfType(queryType) ;
+        end  % function
+        
+        function [areAnyOfThisType, ...
+                  indicesOfThisTypeOfElectrodes, ...
+                  overallError, ...
+                  modes, ...
+                  currentMonitorScalings, voltageMonitorScalings, currentCommandScalings, voltageCommandScalings, ...
+                  isCommandEnabled] = ...
+                 probeHardwareForSmartElectrodeModesAndScalings_(self, smartElectrodeType)
+            [areAnyOfThisType, ...
+             indicesOfThisTypeOfElectrodes, ...
+             overallError, ...
+             modes, ...
+             currentMonitorScalings, voltageMonitorScalings, currentCommandScalings, voltageCommandScalings, ...
+             isCommandEnabled] = ...
+                self.Ephys_.probeHardwareForSmartElectrodeModesAndScalings_(smartElectrodeType) ;
+        end  % function
+        
     end  % public methods block
 
 end  % classdef
