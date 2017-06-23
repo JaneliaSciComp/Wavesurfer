@@ -1192,12 +1192,12 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 if isequal(s.aOrB,'A') ,
                     % 700A
                     electrodeID(i)=bitor(bitshift(uint32(s.terminalID),16), ...
-                                         bitshift(uint32(s.axoBusID),8), ...
-                                         uint32(s.comPortID));
+                                         bitor(bitshift(uint32(s.axoBusID),8), ...
+                                               uint32(s.comPortID))) ;
                 else
                     % 700B
                     electrodeID(i)=bitor(s.serialNumber, ...
-                                         bitshift(uint32(s.terminalID),28));
+                                         bitshift(uint32(s.terminalID),28)) ;
                 end
             end
         end  % function

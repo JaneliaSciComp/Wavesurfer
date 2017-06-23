@@ -122,6 +122,15 @@ WaveSurfer is currently developed by Adam L. Taylor, Ben J. Arthur,
 and David Ackerman.
 
 
+Contributions
+-------------
+
+WaveSurfer includes code from the JSONlab project, by 
+Qianqian Fang (https://github.com/fangq/jsonlab).  This code is covered 
+by its own copyright and licensing.  We thank Dr. Fang for making it 
+publicly available.
+
+
 Support
 -------
 
@@ -402,3 +411,16 @@ Version History
                          Updated and streamlined Bias user code.
                          Also fixed bug with map durations loaded
                          from protocol files.
+
+0.943    Feb 22, 2017    Fixes to BIAS-WS interface, incorporating our
+                         own version of JSONLab.
+                      
+0.945    Mar 10, 2017    Bug fix for MultiClamp 700A support.
+
+0.946    Apr 3, 2017     Added support for MultiClamp 700B Commander 2.2.
+                         Fixed bug with y auto-scaling.
+                         Enhanced ws.examples.TriggerOnThresholdCrossingClass.
+
+0.947    Apr 6, 2017     Added support for very-low sampling rates, 
+                         down to ~1/(40 s).
+                         

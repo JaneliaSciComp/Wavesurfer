@@ -1,6 +1,6 @@
 To compile MultiClampTelegraph.cpp to a mex file in R2013b, I do:
 
-   mex -I"C:\Program Files (x86)\Molecular Devices\MultiClamp 700B Commander\3rd Party Support\Telegraph_SDK" MulticlampTelegraph.cpp
+    mex -I"C:\Program Files (x86)\Molecular Devices\MultiClamp 700B Commander\3rd Party Support\Telegraph_SDK" MulticlampTelegraph.cpp
 
 This works with version 13 of that SDK, which apparently dates from
 Nov 2004.
@@ -32,3 +32,15 @@ one (there's a table on the wiki page about MS Visual C++).
 Adam L. Taylor
 April 19, 2015
 
+-----
+
+Copied the MultiClampBroadcastMsg.hpp file distributed with Multiclamp 700B Commander 2.1 from
+C:\Program Files (x86)\Molecular Devices\MultiClamp 700B Commander\3rd Party Support\Telegraph_SDK
+to this folder.  So now we compile with:
+
+    mex MulticlampTelegraph.cpp
+    
+in Matlab 2013b, using the VS2008 compiler.
+
+Adam L. Taylor
+March 20, 2016

@@ -1536,10 +1536,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             
             % Create a timeline
             duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any            
-            sampleCount = round(duration * sampleRate);
+            %sampleCount = round(duration * sampleRate);
+            sampleCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, duration) ;
             dt=1/sampleRate;
-            t0=0;  % initial sample time
-            t=(t0+dt/2)+dt*(0:(sampleCount-1))';            
+            t = dt*(0:(sampleCount-1))' ;  % s
+            tOffsetByHalfSample = t + dt/2 ;            
               % + dt/2 is somewhat controversial, but in the common case
               % that pulse durations are integer multiples of dt, it
               % ensures that each pulse is exactly (pulseDuration/dt)
@@ -1569,7 +1570,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                         % Calc the signal, scale it, overwrite the appropriate col of
                         % data
                         nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
-                        rawSignal = thisStimulus.calculateSignal(t, sweepIndexWithinSet);
+                        rawSignal = thisStimulus.calculateSignal(tOffsetByHalfSample, sweepIndexWithinSet);
                         multiplier = map.Multiplier(bindingIndex) ;
                         if isChannelAnalog(iChannel) ,
                             data(:, iChannel) = multiplier*rawSignal ;
@@ -2449,6 +2450,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
             
             ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
+            set(ax, 'XLim', [0 n*dt]) ;
             legend(ax, channelNames, 'Interpreter', 'None');
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,mapName,'FontSize',10,'Interpreter','none');
@@ -2463,38 +2465,30 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             dt=1/sampleRate;  % s
             stimulus = self.Stimuli_{stimulusIndex} ;
             T=stimulus.EndTime;  % s
-            n=round(T/dt);
+            %n=round(T/dt);
+            n = ws.nScansFromScanRateAndDesiredDuration(sampleRate, T) ;
             t = dt*(0:(n-1))';  % s
+            tOffsetByHalfSample = t + dt/2 ;  % s         
+              % + dt/2 is somewhat controversial, but in the common case
+              % that pulse durations are integer multiples of dt, it
+              % ensures that each pulse is exactly (pulseDuration/dt)
+              % samples long, and avoids other unpleasant pseudorandomness
+              % when stimulus discontinuities occur right at sample times
 
-            y = stimulus.calculateSignal(t);            
+            y = stimulus.calculateSignal(tOffsetByHalfSample);            
             
             h = line('Parent',ax, ...
                      'XData',t, ...
                      'YData',y);
             
             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
+            set(ax, 'XLim', [0 n*dt]) ;
             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
             ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
         end  % method        
     end  % protected
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+ 
+
     
     
     methods (Static)        
