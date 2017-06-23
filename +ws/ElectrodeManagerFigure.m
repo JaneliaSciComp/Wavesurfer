@@ -115,6 +115,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 %ephys.subscribeMe(self,'Update','','update');
                 wavesurferModel=ephys.Parent;
                 wavesurferModel.subscribeMe(self,'DidSetState','','update');
+                wavesurferModel.subscribeMe(self,'UpdateElectrodeManager','','update');
             end
             
             % make the figure visible

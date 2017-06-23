@@ -584,6 +584,12 @@ classdef Ephys < ws.Subsystem
                 self.Ephys_.probeHardwareForSmartElectrodeModesAndScalings_(smartElectrodeType) ;
         end  % function
         
+        function reconnectWithSmartElectrodes_(self)
+            % Close and repoen the connection to any smart electrodes
+            self.ElectrodeManager_.reconnectWithSmartElectrodes_() ;
+        end  % function
+        
+        
     end  % public methods block
 
 end  % classdef

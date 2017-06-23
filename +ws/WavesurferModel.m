@@ -253,6 +253,7 @@ classdef WavesurferModel < ws.Model
         LayoutAllWindows
         DidSetAcquisitionSampleRate
         DidSetStimulationSampleRate
+        UpdateElectrodeManager
     end
     
     
@@ -5069,6 +5070,15 @@ classdef WavesurferModel < ws.Model
         
         function result = isElectrodeOfType(self, queryType)
             result = self.Ephys_.isElectrodeOfType(queryType) ;
+        end  % function
+        
+        function reconnectWithSmartElectrodes(self)
+            % Close and repoen the connection to any smart electrodes
+            self.Ephys_.changeElectrodeManagerReadiness_(-1) ;
+            self.Ephys_.reconnectWithSmartElectrodes_() ;
+            self.updateSmartElectrodeGainsAndModes() ;
+            self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
+            self.broadcast('UpdateElectrodeManager');
         end  % function
         
     end
