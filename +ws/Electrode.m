@@ -134,14 +134,14 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         end  % function
         
         function set.Name(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.Name_=newValue;
             end
             self.mayHaveChanged('Name');
         end  % function
         
-        function set.VoltageMonitorChannelName(self,newValue)
-            if ~ischar(newValue)
+        function set.VoltageMonitorChannelName(self, newValue)
+            if ~ws.isString(newValue)
                 return
             end
             self.VoltageMonitorChannelName_=newValue;
@@ -149,21 +149,21 @@ classdef Electrode < ws.Model % & ws.Mimic
         end  % function
         
         function set.VoltageCommandChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.VoltageCommandChannelName_=newValue;
             end
             self.mayHaveChanged('VoltageCommandChannelName');
         end  % function
 
         function set.CurrentMonitorChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.CurrentMonitorChannelName_=newValue;
             end
             self.mayHaveChanged('CurrentMonitorChannelName');
         end  % function
         
         function set.CurrentCommandChannelName(self,newValue)
-            if ischar(newValue)
+            if ws.isString(newValue)
                 self.CurrentCommandChannelName_=newValue;
             end
             self.mayHaveChanged('CurrentCommandChannelName');
@@ -356,17 +356,27 @@ classdef Electrode < ws.Model % & ws.Mimic
             result=self.TestPulseAmplitudeInCC_;
         end
         
-        function set.TestPulseAmplitudeInVC(self,newThang)
-            if isnumeric(newThang) && isscalar(newThang) ,
-                self.TestPulseAmplitudeInVC_= double(newThang);
-            end
+        function set.TestPulseAmplitudeInVC(self, newValue)
+            if ws.isString(newValue) ,
+                newValueAsDouble = str2double(newValue) ;
+            elseif isnumeric(newValue) && isscalar(newValue) ,
+                newValueAsDouble = double(newValue) ;
+            else
+                newValueAsDouble = nan ;  % isfinite(nan) is false
+            end            
+            self.TestPulseAmplitudeInVC_= newValueAsDouble;
             self.mayHaveChanged('TestPulseAmplitudeInVC');
         end
         
-        function set.TestPulseAmplitudeInCC(self,newThang)
-            if isnumeric(newThang) && isscalar(newThang) ,
-                self.TestPulseAmplitudeInCC_= double(newThang);
-            end
+        function set.TestPulseAmplitudeInCC(self, newValue)
+            if ws.isString(newValue) ,
+                newValueAsDouble = str2double(newValue) ;
+            elseif isnumeric(newValue) && isscalar(newValue) ,
+                newValueAsDouble = double(newValue) ;
+            else
+                newValueAsDouble = nan ;  % isfinite(nan) is false
+            end            
+            self.TestPulseAmplitudeInCC_= double(newValueAsDouble);
             self.mayHaveChanged('TestPulseAmplitudeInCC');
         end  % function
         

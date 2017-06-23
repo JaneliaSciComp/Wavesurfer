@@ -6,61 +6,61 @@ ws.clear() ;
 [wsModel,wsController] = wavesurfer() ;
 
 % delete all pre-existing channels
-wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(:) = true ;
+wsModel.IsAIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAIChannels() ;
-wsModel.Acquisition.IsDigitalChannelMarkedForDeletion(:) = true ;
+wsModel.IsDIChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDIChannels() ;
-wsModel.Stimulation.IsAnalogChannelMarkedForDeletion(:) = true ;
+wsModel.IsAOChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedAOChannels() ;
-wsModel.Stimulation.IsDigitalChannelMarkedForDeletion(:) = true ;
+wsModel.IsDOChannelMarkedForDeletion(:) = true ;
 wsModel.deleteMarkedDOChannels() ;
 
 % add electrode AI channel
-wsModel.Acquisition.addAnalogChannel() ;
-channelIndex = wsModel.Acquisition.NAnalogChannels ;
-wsModel.Acquisition.setSingleAnalogChannelName(channelIndex,'electrode') ;
-wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,0) ;
+wsModel.addAIChannel() ;
+channelIndex = wsModel.NAIChannels ;
+wsModel.setSingleAIChannelName(channelIndex,'electrode') ;
+wsModel.setSingleAIChannelTerminalID(channelIndex,0) ;
 
 % add velocity AI channel
-wsModel.Acquisition.addAnalogChannel() ;
-channelIndex = wsModel.Acquisition.NAnalogChannels ;
-wsModel.Acquisition.setSingleAnalogChannelName(channelIndex,'velocity') ;
-wsModel.Acquisition.setSingleAnalogTerminalID(channelIndex,1) ;
+wsModel.addAIChannel() ;
+channelIndex = wsModel.NAIChannels ;
+wsModel.setSingleAIChannelName(channelIndex,'velocity') ;
+wsModel.setSingleAIChannelTerminalID(channelIndex,1) ;
 
 % add photodiode DI channel
 wsModel.addDIChannel() ;
-channelIndex = wsModel.Acquisition.NDigitalChannels ;
-wsModel.Acquisition.setSingleDigitalChannelName(channelIndex,'photodiode') ;
+channelIndex = wsModel.NDIChannels ;
+wsModel.setSingleDIChannelName(channelIndex,'photodiode') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,2) ;
 
 % add laser DI channel
 wsModel.addDIChannel() ;
-channelIndex = wsModel.Acquisition.NDigitalChannels ;
-wsModel.Acquisition.setSingleDigitalChannelName(channelIndex,'laser') ;
+channelIndex = wsModel.NDIChannels ;
+wsModel.setSingleDIChannelName(channelIndex,'laser') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,3) ;
 
 % add electrode AO channel
 wsModel.Stimulation.addAnalogChannel() ;
-channelIndex = wsModel.Stimulation.NAnalogChannels ;
-wsModel.Stimulation.setSingleAnalogChannelName(channelIndex,'electrodeOut') ;
-wsModel.Stimulation.setSingleAnalogTerminalID(channelIndex,0) ;
+channelIndex = wsModel.NAOChannels ;
+wsModel.setSingleAOChannelName(channelIndex,'electrodeOut') ;
+wsModel.setSingleAOTerminalID(channelIndex,0) ;
 
 % add velocity AO channel
 wsModel.Stimulation.addAnalogChannel() ;
-channelIndex = wsModel.Stimulation.NAnalogChannels ;
-wsModel.Stimulation.setSingleAnalogChannelName(channelIndex,'velocityOut') ;
-wsModel.Stimulation.setSingleAnalogTerminalID(channelIndex,1) ;
+channelIndex = wsModel.NAOChannels ;
+wsModel.setSingleAOChannelName(channelIndex,'velocityOut') ;
+wsModel.setSingleAOTerminalID(channelIndex,1) ;
 
 % add photodiode DO channel
 wsModel.addDOChannel() ;
-channelIndex = wsModel.Stimulation.NDigitalChannels ;
-wsModel.Stimulation.setSingleDigitalChannelName(channelIndex,'photodiodeOut') ;
+channelIndex = wsModel.NDOChannels ;
+wsModel.setSingleDOChannelName(channelIndex,'photodiodeOut') ;
 wsModel.setSingleDOChannelTerminalID(channelIndex,0) ;
 
 % add laser DO channel
 wsModel.addDOChannel() ;
-channelIndex = wsModel.Stimulation.NDigitalChannels ;
-wsModel.Stimulation.setSingleDigitalChannelName(channelIndex,'laserOut') ;
+channelIndex = wsModel.NDOChannels ;
+wsModel.setSingleDOChannelName(channelIndex,'laserOut') ;
 wsModel.setSingleDOChannelTerminalID(channelIndex,1) ;
 
 
@@ -90,9 +90,9 @@ wsModel.Display.IsEnabled = true ;
 wsModel.Logging.IsOKToOverwrite=true ;
 
 wsModel.AreSweepsContinuous = true ;
-wsModel.Acquisition.AnalogChannelScales = [0.001 0.01] ;  % electrode, velocity
-wsModel.Acquisition.AnalogChannelUnits = {'mV' 'cm/s'} ;  % electrode, velocity
-wsModel.Stimulation.IsDigitalChannelTimed = [true false] ;
+wsModel.AIChannelScales = [0.001 0.01] ;  % electrode, velocity
+wsModel.AIChannelUnits = {'mV' 'cm/s'} ;  % electrode, velocity
+wsModel.IsDOChannelTimed = [true false] ;
 
 wsModel.clearStimulusLibrary() ;  % clear out pre-defined stimuli
 
@@ -173,10 +173,8 @@ wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
 %scope.YLim = [-55 +25] ;
 wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-75 +25]) ;
 wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
-%wsModel.Display.setYLimitsForSingleAnalogChannel(3, [-0.1 +1.1]) ;
-%wsModel.Display.setYLimitsForSingleAnalogChannel(4, [-0.1 +1.1]) ;
 
-wsModel.Display.XSpan=10 ;  % s
+wsModel.XSpan=10 ;  % s
 
 
 

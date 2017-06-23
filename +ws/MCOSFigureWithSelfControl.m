@@ -60,7 +60,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            import ws.*
+            %import ws.*
 
             %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
             %fprintf('  class of self: %s\n',class(self));
@@ -82,9 +82,9 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             newValueAsSign=2*double(newValue)-1;  % [0,1] -> [-1,+1]
             newDegreeOfEnablementRaw=self.DegreeOfEnablement_+newValueAsSign;
             self.DegreeOfEnablement_ = ...
-                    fif(newDegreeOfEnablementRaw<=1, ...
-                        newDegreeOfEnablementRaw, ...
-                        1);
+                    ws.fif(newDegreeOfEnablementRaw<=1, ...
+                           newDegreeOfEnablementRaw, ...
+                           1);
                         
 %             if isa(self,'ws.TestPulserFigure') ,
 %                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): After update, self.DegreeOfEnablement_ = %d\n' , ...
@@ -123,26 +123,75 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             %        self.DegreeOfEnablement_);
             value=(self.DegreeOfEnablement_>0);
         end
+        
+        function update(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.update_(varargin{:}) ;
+        end
+        
+        function updateControlProperties(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateControlProperties_(varargin{:}) ;
+        end
+
+        function updateControlEnablement(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateControlEnablement_(varargin{:}) ;
+        end
+        
+        function updateReadiness(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % MCOSFigureWithSelfControl should generally call update_() directly.
+            self.updateReadiness_(varargin{:}) ;
+        end
+        
+        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
+            fieldNames = fieldnames(layoutOfWindowsInClass) ;
+            if isscalar(fieldNames) ,
+                % This means it's an older protocol file, with the layout
+                % stored in a single field with a sometimes-weird name.
+                % But the name doesn't really matter.
+                fieldName = fieldNames{1} ;
+                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
+                isVisibleFieldName = 'Visible' ;
+            else
+                % This means it's a newer protocol file, with (hopefully)
+                % two fields, Position and IsVisible.
+                layoutOfThisWindow = layoutOfWindowsInClass ;
+                isVisibleFieldName = 'IsVisible' ;
+            end
+            if isfield(layoutOfThisWindow, 'Position') ,
+                rawPosition = layoutOfThisWindow.Position ;
+                set(self, 'Position', rawPosition);
+                self.constrainPositionToMonitors(monitorPositions) ;
+            end
+            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
+                set(self, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
+            end
+        end        
     end  % public methods block
     
     methods (Access=protected)
-%         function set(self,propName,value)
-%             if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
-%                 % special case to deal with Visible, which seems to
-%                 % sometimes be a boolean
-%                 if value,
-%                     set(self.FigureGH_,'Visible','on');
-%                 else
-%                     set(self.FigureGH_,'Visible','off');
-%                 end
-%             else
-%                 set(self.FigureGH_,propName,value);
-%             end
-%         end
-%         
-%         function value=get(self,propName)
-%             value=get(self.FigureGH_,propName);
-%         end
+        function set(self,propName,value)
+            if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
+                % special case to deal with Visible, which seems to
+                % sometimes be a boolean
+                if value,
+                    set(self.FigureGH_,'Visible','on');
+                else
+                    set(self.FigureGH_,'Visible','off');
+                end
+            else
+                set(self.FigureGH_,propName,value);
+            end
+        end
+        
+        function value=get(self,propName)
+            value=get(self.FigureGH_,propName);
+        end
         
         function update_(self,varargin)
             % Called when the caller wants the figure to fully re-sync with the
@@ -177,7 +226,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.*
+%             %import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return
@@ -212,13 +261,47 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             self.updateReadinessImplementation_();
         end
 
-        function positionUpperLeftRelativeToOtherUpperRight_(self, other, offset)
+        function doWithModel_(self, varargin)
+            if ~isempty(self.Model_) ,
+                self.Model_.do(varargin{:}) ;
+            end
+        end
+        
+        function positionUpperLeftRelativeToOtherUpperRight_(self, referenceFigurePosition, offset)
             % Positions the upper left corner of the figure relative to the upper
             % *right* corner of the other figure.  offset is 2x1, with the 1st
             % element the number of pixels from the right side of the other figure,
             % the 2nd the number of pixels from the top of the other figure.
 
-            ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
+            %ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
+            
+            % Get our position
+            figureGH = self.FigureGH_ ;
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            position=get(figureGH,'position');
+            set(figureGH,'units',originalUnits);
+            figureSize=position(3:4);
+
+            % Get the reference figure position
+            %originalUnits=get(referenceFigureGH,'units');
+            %set(referenceFigureGH,'units','pixels');
+            %referenceFigurePosition=get(referenceFigureGH,'position');
+            %set(referenceFigureGH,'units',originalUnits);
+            referenceFigureOffset=referenceFigurePosition(1:2);
+            referenceFigureSize=referenceFigurePosition(3:4);
+
+            % Calculate a new offset that will position us as wanted
+            origin = referenceFigureOffset + referenceFigureSize ;
+            figureHeight=figureSize(2);
+            newOffset = [ origin(1) + offset(1) ...
+                          origin(2) + offset(2) - figureHeight ] ;
+
+            % Set figure position, using the new offset but the same size as before
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            set(figureGH,'position',[newOffset figureSize]);
+            set(figureGH,'units',originalUnits);            
         end
         
         createFixedControls_(self)
@@ -398,7 +481,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
     
     methods (Access=protected)
         function raiseDialogOnException_(self, exception)
-            model = self.Model ;
+            model = self.Model_ ;
             if ~isempty(model) ,
                 model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
             end
@@ -495,6 +578,34 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         end  % function        
     end  % public methods block
     
+    methods (Sealed = true)
+        function layoutForAllWindows = addThisWindowLayoutToLayout(self, layoutForAllWindows)
+            % Add layout info for this window (just this one window) to
+            % a struct representing the layout of all windows in the app
+            % session.
+           
+            % Framework specific transformation.
+            thisWindowLayout = self.encodeWindowLayout_();
+            
+            layoutVarNameForClass = ws.Controller.layoutVariableNameFromControllerClassName(class(self));
+            layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
+        end
+    end
+    
+    methods (Access = protected)
+        function layout = encodeWindowLayout_(self)
+            fig = self.FigureGH_ ;
+            position = get(fig, 'Position') ;
+            visible = get(fig, 'Visible') ;
+            if ischar(visible) ,
+                isVisible = strcmpi(visible,'on') ;
+            else
+                isVisible = visible ;
+            end
+            layout = struct('Position', {position}, 'IsVisible', {isVisible}) ;
+        end
+    end
+    
 %     methods (Static)
 %         function result = methodNameStemFromControlName(controlName)
 %             % We want to translate typical control names like
@@ -537,4 +648,10 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
 %         end
 %     end
     
+    methods
+        function setAreUpdatesEnabledForFigure(self,newValue)
+            self.AreUpdatesEnabled = newValue ;
+        end        
+    end
+
 end  % classdef

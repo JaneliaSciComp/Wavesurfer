@@ -6,7 +6,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     properties
         FileMenu
-        %LoadMachineDataFileMenuItem
         OpenProtocolMenuItem
         SaveProtocolMenuItem
         SaveProtocolAsMenuItem
@@ -17,8 +16,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         QuitMenuItem
         
         ProtocolMenu
-        %ScopesMenuItem
         ChannelsMenuItem
+        GeneralSettingsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
         UserCodeManagerMenuItem
@@ -33,71 +32,43 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         HelpMenu
         AboutMenuItem
 
-        % Stuff under Tools > Scopes
-        %RemoveMenuItem
-        %ShowHideChannelMenuItems
-        %RemoveSubsubmenuItems
-        
         PlayButton
         RecordButton
         StopButton
-        FastProtocolText
+        %FastProtocolText
         FastProtocolButtons
-        
-        AcquisitionPanel
-        SweepBasedRadiobutton
-        ContinuousRadiobutton
-        AcquisitionSampleRateText
-        AcquisitionSampleRateEdit
-        AcquisitionSampleRateUnitsText
-        NSweepsText
-        NSweepsEdit
-        SweepDurationText
-        SweepDurationEdit
-        SweepDurationUnitsText        
-        
-        StimulationPanel
-        StimulationEnabledCheckbox
-        StimulationSampleRateText
-        StimulationSampleRateEdit
-        StimulationSampleRateUnitsText
-        SourceText
-        SourcePopupmenu
-        EditStimulusLibraryButton
-        RepeatsCheckbox
-        
-        DisplayPanel
-        DisplayEnabledCheckbox
-        UpdateRateText
-        UpdateRateEdit
-        UpdateRateUnitsText
-        SpanText
-        SpanEdit
-        SpanUnitsText
-        AutoSpanCheckbox
-        
-        LoggingPanel
-        BaseNameText
-        BaseNameEdit
-        OverwriteCheckbox
-        LocationText
-        LocationEdit
-        ShowLocationButton
-        ChangeLocationButton
-        IncludeDateCheckbox
-        SessionIndexCheckbox        
-        SessionIndexText
-        SessionIndexEdit
-        IncrementSessionIndexButton
-        NextSweepText
-        NextSweepEdit
-        FileNameText
-        FileNameEdit
         
         StatusText
         ProgressBarAxes
         ProgressBarPatch
     end  % properties
+
+    properties (Access = protected)
+        ScopePlots_ = ws.ScopePlot.empty(1,0)  % an array of type ws.ScopePlot
+        
+        ViewMenu_
+        InvertColorsMenuItem_
+        ShowGridMenuItem_
+        DoShowZoomButtonsMenuItem_
+        DoColorTracesMenuItem_
+        PlotArrangementMenuItem_
+
+        % The (downsampled for display) data currently being shown.
+        XData_
+        YData_
+        
+        % Stuff below are cached resources that we use in all the scope plots
+        NormalPlayIcon_
+        NormalRecordIcon_
+        NormalStopIcon_        
+        NormalYScrollUpIcon_ 
+        NormalYScrollDownIcon_ 
+        NormalYTightToDataIcon_ 
+        NormalYTightToDataLockedIcon_ 
+        NormalYTightToDataUnlockedIcon_ 
+        NormalYCaretIcon_         
+        TraceColorSequence_
+    end    
     
     properties (Access=protected, Transient=true)
         OriginalModelState_  % used to store the previous model state when model state is being set
@@ -105,89 +76,137 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods
         function self=WavesurferMainFigure(model,controller)
+            % Call the superclass constructor
             self = self@ws.MCOSFigure(model,controller);            
-%             self.Model=model;
-%             self.Controller=controller;
+            
+            % Set up XData_ and YData_
+            self.clearXDataAndYData_() ;
+           
+            % Set properties of the figure
             set(self.FigureGH, ...
-                'Tag','wavesurferMainFigureWrapper', ...
                 'Units','Pixels', ...
-                'Resize','off', ...
                 'Name',sprintf('WaveSurfer %s',ws.versionString()), ...
                 'MenuBar','none', ...
                 'DockControls','off', ...
                 'NumberTitle','off', ...
                 'Visible','off', ...
-                'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
-               % CloseRequestFcn will get overwritten by the ws.most.Controller constructor, but
-               % we re-set it in the ws.WavesurferMainController
-               % constructor.
+                'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)), ...
+                'ResizeFcn', @(source,event)(self.resize()) );
            
-           % Create the fixed controls (which for this figure is all of them)
-           self.createFixedControls_();          
+            % Load in the needed icons from disk
+            wavesurferDirName=fileparts(which('wavesurfer'));
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            self.NormalYScrollUpIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            self.NormalYScrollDownIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+            self.NormalYTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+            self.NormalYTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_unlocked.png');
+            self.NormalYTightToDataUnlockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png') ;
+            self.NormalPlayIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png') ;
+            self.NormalRecordIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png') ;
+            self.NormalStopIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
+            
+            % Create the trace color sequence
+            self.TraceColorSequence_ = ws.makeColorSequence() ;
+            
+            % Create the fixed controls (which for this figure is all of them)
+            self.createFixedControls_();
 
-           % Set up the tags of the HG objects to match the property names
-           self.setNonidiomaticProperties_();
+            % Set up the tags of the HG objects to match the property names
+            self.setNonidiomaticProperties_();            
+            
+            % Set the initial figure position
+            self.setInitialFigurePosition_() ;
+            
+            % Do an update to sync with model  (this will do layout)
+            self.update();
            
-           % Layout the figure and set the size
-           self.layout_();
-           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
-           
-           % Initialize the guidata
-           self.initializeGuidata_();
-           
-           % Do an update to sync with model
-           self.update();
-           
-           % Subscribe to stuff
-           if ~isempty(model) ,
-               model.subscribeMe(self,'Update','','update');
-               model.subscribeMe(self,'WillSetState','','willSetModelState');
-               model.subscribeMe(self,'DidSetState','','didSetModelState');           
-               model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
-
-               model.Acquisition.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               
-               model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
-               model.Stimulation.subscribeMe(self,'DidSetSampleRate','','updateControlProperties');               
-               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','updateControlProperties');
-               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
-               model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
-               
-               model.Display.subscribeMe(self,'Update','','update');
-               %model.Display.subscribeMe(self,'NScopesMayHaveChanged','','update');
-               model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
-               model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               %model.Display.subscribeMe(self,'DidSetScopeIsVisibleWhenDisplayEnabled','','update');
-               model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               
-               %model.Logging.subscribeMe(self,'DidSetIsEnabled','','updateControlEnablement');
-               %model.Logging.subscribeMe(self,'DidSetFileLocation','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetFileBaseName','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetIsOKToOverwrite','','updateControlProperties');
-               %model.Logging.subscribeMe(self,'DidSetNextSweepIndex','','updateControlProperties');
-               model.Logging.subscribeMe(self,'Update','','updateControlProperties');
-               model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
-
-               model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-               model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
-               
-               %model.subscribeMe(self,'PostSet','FastProtocols','updateControlEnablement');
-                 % no longer publicly settable
-               for i = 1:numel(model.FastProtocols) ,
-                   thisFastProtocol=model.FastProtocols{i};
-                   %thisFastProtocol.subscribeMe(self,'PostSet','ProtocolFileName','updateControlEnablement');
-                   %thisFastProtocol.subscribeMe(self,'PostSet','AutoStartType','updateControlEnablement');
-                   thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
-               end               
-               
-               %model.subscribeMe(self,'DidSetAbsoluteProtocolFileName','','updateControlProperties');
-               %model.subscribeMe(self,'DidSetAbsoluteUserSettingsFileName','','updateControlProperties');
-           end
-           
-           % Make the figure visible
-           set(self.FigureGH,'Visible','on');
+            % Subscribe to stuff
+            if ~isempty(model) ,
+                model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self,'WillSetState','','willSetModelState');
+                model.subscribeMe(self,'DidSetState','','didSetModelState');
+                model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
+                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+                model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
+                model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
+                model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
+                for i = 1:numel(model.FastProtocols) ,
+                    thisFastProtocol=model.FastProtocols{i};
+                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
+                end
+                
+               % Subscribe to events from the Display subsystem 
+               model.Display.subscribeMe(self,'Update','','update') ;
+               model.Display.subscribeMe(self,'DidSetIsEnabled','','update') ;
+               model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
+               model.Display.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
+               model.Display.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits') ;
+               model.Display.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+               model.Display.subscribeMe(self,'ClearData','','clearData') ;
+               model.Display.subscribeMe(self, 'AddData', '', 'addData') ;
+            end
+            
+            % Make the figure visible
+            set(self.FigureGH,'Visible','on');
         end  % constructor
+        
+        function delete(self)
+            self.ScopePlots_ = [] ;  % not really necessary
+        end  % function
+        
+        function resize(self)
+            self.clearXDataAndYData_() ;
+            self.clearTraceData_() ;
+            self.layout_() ;            
+        end        
     end
+    
+    methods (Access=protected)
+        function setInitialFigurePosition_(self)
+            % Set the initial figure size
+
+            % Get the offset, which will stay the same
+            %position = get(self.FigureGH,'Position') ;
+            %offset = position(1:2) ;            
+            
+            % Don't want the fig to be larger than the screen
+            originalScreenUnits=get(0,'Units');
+            set(0,'Units','pixels');
+            screenPosition=get(0,'ScreenSize');
+            set(0,'Units',originalScreenUnits);            
+            screenSize=screenPosition(3:4);
+            screenHeight = screenSize(2) ;
+            maxInitialHeight = screenHeight - 50 ;  % pels
+
+            % Some info shared with the layout methods
+            figureWidth=750;            
+            toolbarAreaHeight=36;
+            statusBarAreaHeight=30;
+            
+            % Make this figure a good size for the number of plots
+            nPlots = self.Model.Display.NPlots ;
+            idealPlotAreaHeight = 250 * max(1,nPlots) ;
+            idealFigureHeight = toolbarAreaHeight + idealPlotAreaHeight + statusBarAreaHeight ;            
+            initialHeight = min(idealFigureHeight, maxInitialHeight) ;
+            initialSize=[figureWidth initialHeight];
+            
+            % Compute the offset
+            initialOffset = ws.figureOffsetToPositionOnRootRelativeToUpperLeft(initialSize,[30 30+40]) ;
+            
+            % Set the state
+            figurePosition=[initialOffset initialSize];
+            set(self.FigureGH, 'Position', figurePosition) ;
+        end  % function        
+    end  % protected methods block    
     
     methods (Access = protected)
         function createFixedControls_(self)
@@ -197,9 +216,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % File menu
             self.FileMenu=uimenu('Parent',self.FigureGH, ...
                                  'Label','File');
-%             self.LoadMachineDataFileMenuItem = ...
-%                 uimenu('Parent',self.FileMenu, ...
-%                        'Label','Load Machine Data File...');
             self.OpenProtocolMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Open Protocol...');
@@ -215,25 +231,25 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.QuitMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Quit');
-            
-            % Tools menu
+
+            % Protocol menu
             self.ProtocolMenu=uimenu('Parent',self.FigureGH, ...
-                                  'Label','Protocol');
+                                     'Label','Protocol');
+            self.GeneralSettingsMenuItem = ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Label','General...');
             self.ChannelsMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Device & Channels...');
             self.StimulusLibraryMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Stimulus Library...');
-%             self.ScopesMenuItem = ...
-%                 uimenu('Parent',self.ProtocolMenu, ...
-%                        'Label','Scopes');
             self.TriggersMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Label','Triggers...');
-            self.DisplayMenuItem = ...
-                uimenu('Parent',self.ProtocolMenu, ...
-                       'Label','Display...');
+%             self.DisplayMenuItem = ...
+%                 uimenu('Parent',self.ProtocolMenu, ...
+%                        'Label','Display...');
             self.UserCodeManagerMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Label','User Code...');
@@ -246,8 +262,34 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.YokeToScanimageMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Separator','on', ...
-                       'Label','Yoke to Scanimage');
+                       'Label','Yoked to ScanImage');
 
+            % View menu
+            self.ViewMenu_ = ...
+                uimenu('Parent',self.FigureGH, ...
+                       'Label','View');
+            self.InvertColorsMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Green On Black', ...
+                       'Callback',@(source,event)self.controlActuated('InvertColorsMenuItemGH',source,event));            
+            self.ShowGridMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Show Grid', ...
+                       'Callback',@(source,event)self.controlActuated('ShowGridMenuItemGH',source,event));            
+            self.DoShowZoomButtonsMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Show Zoom Buttons', ...
+                       'Callback',@(source,event)self.controlActuated('DoShowZoomButtonsMenuItemGH',source,event));            
+            self.DoColorTracesMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Label','Color Traces', ...
+                       'Callback',@(source,event)self.controlActuated('doColorTracesMenuItem',source,event));            
+            self.PlotArrangementMenuItem_ = ...
+                uimenu('Parent',self.ViewMenu_, ...
+                       'Separator', 'on', ...
+                       'Label','Plot Arrangement...', ...
+                       'Callback',@(source,event)self.controlActuated('arrangementMenuItem',source,event));                                                  
+                   
             % User menu
             self.UserMenu = ...
                 uimenu('Parent',self.FigureGH, ...
@@ -265,12 +307,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.SaveUserSettingsAsMenuItem = ...
                 uimenu('Parent',self.UserMenu, ...
                        'Label','Save User Settings As...');
-
-                   
-%             % Scopes submenu
-%             self.RemoveMenuItem = ...
-%                 uimenu('Parent',self.ScopesMenuItem, ...
-%                        'Label','Remove');
                    
             % Help menu       
             self.HelpMenu=uimenu('Parent',self.FigureGH, ...
@@ -299,199 +335,17 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                           'Style','pushbutton', ...
                           'TooltipString','Stop', ...
                           'CData',stopIcon);                      
-            self.FastProtocolText = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'String','');                
+%             self.FastProtocolText = ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
+%                           'Style','text', ...
+%                           'String','');                
             nFastProtocolButtons=6;
             for i=1:nFastProtocolButtons ,
                 self.FastProtocolButtons(i) = ...
                     ws.uicontrol('Parent',self.FigureGH, ...
                               'Style','pushbutton', ...
                               'String',sprintf('%d',i));                
-            end
-            
-            % Acquisition Panel
-            self.AcquisitionPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Acquisition');
-            self.SweepBasedRadiobutton = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','radiobutton', ...
-                          'String','Sweep-based');
-            self.ContinuousRadiobutton = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','radiobutton', ...
-                          'String','Continuous');
-            self.AcquisitionSampleRateText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Sample Rate:');
-            self.AcquisitionSampleRateEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.AcquisitionSampleRateUnitsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.NSweepsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','# of Sweeps:');
-            self.NSweepsEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.SweepDurationText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','Sweep Duration:');
-            self.SweepDurationEdit = ...
-                ws.uiedit('Parent',self.AcquisitionPanel, ...
-                          'HorizontalAlignment','right');
-            self.SweepDurationUnitsText = ...
-                ws.uicontrol('Parent',self.AcquisitionPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            
-            % Stimulation Panel
-            self.StimulationPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Stimulation');
-            self.StimulationEnabledCheckbox = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','checkbox', ...
-                          'String','Enabled');
-            self.StimulationSampleRateText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Sample Rate:');
-            self.StimulationSampleRateEdit = ...
-                ws.uiedit('Parent',self.StimulationPanel, ...
-                          'HorizontalAlignment','right');
-            self.StimulationSampleRateUnitsText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.SourceText = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','text', ...
-                          'String','Source:');
-            self.SourcePopupmenu = ...
-                ws.uipopupmenu('Parent',self.StimulationPanel, ...
-                               'String',{'Thing 1';'Thing 2'});
-            self.EditStimulusLibraryButton = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Edit...');
-            self.RepeatsCheckbox = ...
-                ws.uicontrol('Parent',self.StimulationPanel, ...
-                          'Style','checkbox', ...
-                          'String','Repeats');
-            
-            % Display Panel
-            self.DisplayPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Display');
-            self.DisplayEnabledCheckbox = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','checkbox', ...
-                          'String','Enabled');
-            self.UpdateRateText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Update Rate:');
-            self.UpdateRateEdit = ...
-                ws.uiedit('Parent',self.DisplayPanel, ...
-                          'HorizontalAlignment','right');
-            self.UpdateRateUnitsText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Hz');
-            self.SpanText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','Span:');
-            self.SpanEdit = ...
-                ws.uiedit('Parent',self.DisplayPanel, ...
-                          'HorizontalAlignment','right');
-            self.SpanUnitsText = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            self.AutoSpanCheckbox = ...
-                ws.uicontrol('Parent',self.DisplayPanel, ...
-                          'Style','checkbox', ...
-                          'String','Auto');
-                    
-            % Logging Panel
-            self.LoggingPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
-                        'Units','pixels',...
-                        'Title','Logging');
-            self.BaseNameText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Base Name:');
-            self.BaseNameEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left');
-            self.OverwriteCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','Overwrite without asking');
-            self.LocationText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Folder:');
-            self.LocationEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left', ...
-                          'Enable','off');
-            self.ShowLocationButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Show');
-            self.ChangeLocationButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','Change...');
-            self.IncludeDateCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','Include date');
-            self.SessionIndexCheckbox = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','checkbox', ...
-                          'String','');
-            self.SessionIndexText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Session:');
-            self.SessionIndexEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','right');
-            self.IncrementSessionIndexButton = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','pushbutton', ...
-                          'String','+');
-            self.NextSweepText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','Current Sweep:');  % text is 'Next Sweep:' most of the time, but this is for sizing
-            self.NextSweepEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','right');
-            self.FileNameText = ...
-                ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','File Name:');
-            self.FileNameEdit = ...
-                ws.uiedit('Parent',self.LoggingPanel, ...
-                          'HorizontalAlignment','left', ...
-                          'Enable','off');
+            end            
                       
             % Stuff at the bottom of the window
             self.StatusText = ...
@@ -512,11 +366,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                      'Visible','off');
             self.ProgressBarPatch = ...
                 patch('Parent',self.ProgressBarAxes, ...
-                      'FaceColor',[10 36 106]/255, ...
                       'EdgeColor','none', ...
                       'XData',[0 1 1 0 0], ...
                       'YData',[0 0 1 1 0], ...                      
                       'Visible','off');
+%                     'FaceColor',[10 36 106]/255, ...
         end  % function
     end  % methods block
     
@@ -529,7 +383,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             for i=1:length(propertyNames) ,
                 propertyName=propertyNames{i};
                 propertyThing=self.(propertyName);
-                if ~isempty(propertyThing) && all(ishghandle(propertyThing)) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
+                if ~isempty(propertyThing) && all(ishghandle(propertyThing(:))) && ~(isscalar(propertyThing) && isequal(get(propertyThing,'Type'),'figure')) ,
                     % Sometimes propertyThing is a vector, but if so
                     % they're all the same kind of control, so use the
                     % first one to check what kind of things they are
@@ -540,8 +394,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     
                     % Set Callback
                     if isequal(get(examplePropertyThing,'Type'),'uimenu') ,
-                        if get(examplePropertyThing,'Parent')==self.FigureGH ,
-                            % do nothing for top-level menus
+                        if get(examplePropertyThing,'Parent')==self.FigureGH || get(examplePropertyThing,'Parent')==self.ViewMenu_ ,
+                            % do nothing for top-level menus, or for menu items of the view menu
                         else
                             if isscalar(propertyThing)
                                 set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
@@ -577,20 +431,28 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     end  % protected methods block
 
     methods (Access = protected)
-        function figureSize=layoutFixedControls_(self)
-            % We return the figure size so that the figure can be properly
-            % resized after the initial layout, and we can keep all the
-            % layout info in one place.
+        function layout_(self)
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.
             
-            figureWidth=750;
+            % Get the figure dimensions
+            figurePosition = get(self.FigureGH, 'Position') ;
+            figureSize = figurePosition(3:4) ;
+            figureWidth = figureSize(1) ;
+            figureHeight = figureSize(2) ;
             
+            % Some dimensions
+            minimumLayoutWidth = 500 ;
+            minimumLayoutHeight = 300 ;
             toolbarAreaHeight=36;
-            topRowAreaHeight=136;
-            loggingAreaHeight=112+26;
-            statusBarAreaHeight=30;
+            heightOfSpaceBetweenToolbarAndPlotArea = 4 ;
+            statusBarAreaHeight=22;
             
-            figureHeight=toolbarAreaHeight+topRowAreaHeight+loggingAreaHeight+statusBarAreaHeight;
-
+            % Compute the layout size, and the layout y offset
+            layoutWidth = max(minimumLayoutWidth, figureWidth) ;
+            layoutHeight = max(minimumLayoutHeight, figureHeight) ;
+            layoutYOffset = figureHeight - layoutHeight ;
+            
             %
             % Layout the "toolbar"
             %
@@ -603,10 +465,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             fastProtocolButtonWidth=26;
             fastProtocolButtonHeight=26;
             spaceBetweenFastProtocolButtons=5;
-            widthBetweenFastProtocolTextAndButtons=4;
+            %widthBetweenFastProtocolTextAndButtons=4;
             
             % VCR buttons
-            vcrButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
+            vcrButtonsYOffset=layoutYOffset+layoutHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
             xOffset=vcrButtonsXOffset;
             set(self.PlayButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
             xOffset=xOffset+vcrButtonWidth+spaceBetweenVCRButtons;
@@ -615,423 +477,98 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.StopButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
             
             % Fast Protocol text
-            fastProtocolTextExtent=get(self.FastProtocolText,'Extent');
-            fastProtocolTextWidth=fastProtocolTextExtent(3)+2;
-            fastProtocolTextPosition=get(self.FastProtocolText,'Position');
-            fastProtocolTextHeight=fastProtocolTextPosition(4);
+            %fastProtocolTextExtent=get(self.FastProtocolText,'Extent');
+            %fastProtocolTextWidth=fastProtocolTextExtent(3)+2;
+            %fastProtocolTextPosition=get(self.FastProtocolText,'Position');
+            %fastProtocolTextHeight=fastProtocolTextPosition(4);
             nFastProtocolButtons=length(self.FastProtocolButtons);
             widthOfFastProtocolButtonBar=nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons;            
-            xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
-            fastProtocolButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
-            yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
-            set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
+            %xOffset=layoutWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
+            fastProtocolButtonsYOffset=layoutYOffset+layoutHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
+            %yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
+            %set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
             
-            % fast protocol buttons
-            xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
+            % Fast protocol buttons
+            xOffset=layoutWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
             for i=1:nFastProtocolButtons ,
                 set(self.FastProtocolButtons(i),'Position',[xOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]);
                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
             end
-            
+                        
             %
-            % The "top row" containing the acq, stim, and display panels
-            %
-            panelInset=2;  % panel dimensions are defined by the panel area, then inset by this amount on all sides
-            topRowAreaXOffset=4;
-            topRowPanelAreaWidth=(figureWidth-topRowAreaXOffset)/3;
-            topRowAreaYOffset=statusBarAreaHeight+loggingAreaHeight;
-            
-            % The Acquisition panel
-            acquisitionPanelXOffset=topRowAreaXOffset+panelInset;
-            acquisitionPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            acquisitionPanelYOffset=topRowAreaYOffset+panelInset;
-            acquisitionPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.AcquisitionPanel,'Position',[acquisitionPanelXOffset acquisitionPanelYOffset acquisitionPanelWidth acquisitionPanelHeight]);
-            %set(self.AcquisitionPanel,'BackgroundColor',[1 1 1]);
-
-            % The Stimulation panel
-            stimulationPanelXOffset=topRowAreaXOffset+topRowPanelAreaWidth+panelInset;
-            stimulationPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            stimulationPanelYOffset=topRowAreaYOffset+panelInset;
-            stimulationPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.StimulationPanel,'Position',[stimulationPanelXOffset stimulationPanelYOffset stimulationPanelWidth stimulationPanelHeight]);
-            %set(self.StimulationPanel,'BackgroundColor',[1 1 1]);
-
-            % The Display panel
-            displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
-            displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            displayPanelYOffset=topRowAreaYOffset+panelInset;
-            displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
-
-            % The Display panel
-            displayPanelXOffset=topRowAreaXOffset+2*topRowPanelAreaWidth+panelInset;
-            displayPanelWidth=topRowPanelAreaWidth-panelInset-panelInset;
-            displayPanelYOffset=topRowAreaYOffset+panelInset;
-            displayPanelHeight=topRowAreaHeight-panelInset-panelInset;
-            set(self.DisplayPanel,'Position',[displayPanelXOffset displayPanelYOffset displayPanelWidth displayPanelHeight]);
-
-            
-            %
-            % The Logging panel
+            % The plots
             %            
-            bottomRowAreaXOffset=4;
-            loggingPanelXOffset=bottomRowAreaXOffset+panelInset;
-            loggingPanelWidth=figureWidth-bottomRowAreaXOffset-panelInset-panelInset;
-            loggingPanelYOffset=statusBarAreaHeight+panelInset;
-            loggingPanelHeight=loggingAreaHeight-panelInset-panelInset;
-            set(self.LoggingPanel,'Position',[loggingPanelXOffset loggingPanelYOffset loggingPanelWidth loggingPanelHeight]);            
+            % The height of the area for the x axis label on the bottom plot
+            xAxisLabelAreaHeight = 34 ;
             
-            % Contents of panels
-            self.layoutAcquisitionPanel_(acquisitionPanelWidth,acquisitionPanelHeight);
-            self.layoutStimulationPanel_(stimulationPanelWidth,stimulationPanelHeight);
-            self.layoutDisplayPanel_(displayPanelWidth,displayPanelHeight);
-            self.layoutLoggingPanel_(loggingPanelWidth,loggingPanelHeight);
+            plotHeightFromPlotIndex = self.Model.Display.PlotHeightFromPlotIndex ;
+            normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
+            totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
             
+            doesUserWantToSeeZoomButtons = self.Model.Display.DoShowZoomButtons ;
+            isAnalogFromPlotIndex = self.Model.Display.IsAnalogFromPlotIndex ;
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot=1:nPlots ,
+                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
+                self.ScopePlots_(iPlot).setPositionAndLayout([layoutWidth layoutHeight], ...
+                                                             layoutYOffset, ...
+                                                             toolbarAreaHeight, ...
+                                                             heightOfSpaceBetweenToolbarAndPlotArea, ...
+                                                             statusBarAreaHeight, ...
+                                                             xAxisLabelAreaHeight, ...
+                                                             normalizedPlotHeightFromPlotIndex(iPlot) , ...
+                                                             totalNormalizedHeightOfPreviousPlotsFromPlotIndex(iPlot) , ...                                                             
+                                                             doesUserWantToSeeZoomButtons, ...
+                                                             isThisPlotAnalog) ;
+            end
+            
+            %
             % The status area
+            %
             statusTextWidth=160;
             statusTextPosition=get(self.StatusText,'Position');
             statusTextHeight=statusTextPosition(4);
             statusTextXOffset=10;
-            statusTextYOffset=(statusBarAreaHeight-statusTextHeight)/2-2;  % shim
+            statusTextYOffset=layoutYOffset+(statusBarAreaHeight-statusTextHeight)/2-2;  % shim
             set(self.StatusText,'Position',[statusTextXOffset statusTextYOffset statusTextWidth statusTextHeight]);
                         
+            %
             % The progress bar
+            %
             widthFromProgressBarRightToFigureRight=10;
             progressBarWidth=240;
             progressBarHeight=12;
-            progressBarXOffset = figureWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
-            progressBarYOffset = (statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
-            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);
-            
-            % We return the figure size
-            figureSize=[figureWidth figureHeight];
+            progressBarXOffset = layoutWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
+            progressBarYOffset = layoutYOffset+(statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
+            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);            
         end  % function
-    end  % protected methods
-    
-    methods (Access = protected)
-        function layoutAcquisitionPanel_(self,acquisitionPanelWidth,acquisitionPanelHeight)
-            %
-            % Contents of acquisition panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToRadiobuttonBar=6;
-            heightFromRadiobuttonBarToGrid=8;
-            gridRowHeight=20;
-            interRowHeight=6;
-            editXOffset=100;
-            editWidth=80;
-            widthBetweenRadiobuttons=20;
-            
-            % Row of two radiobuttons
-            sweepBasedRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
-            sweepBasedRadiobuttonExtent=sweepBasedRadiobuttonExtent(3:4);  % no info in 1:2
-            sweepBasedRadiobuttonWidth=sweepBasedRadiobuttonExtent(1)+16;  % 16 is the size of the radiobutton itself
-
-            continuousRadiobuttonExtent=get(self.SweepBasedRadiobutton,'Extent');
-            continuousRadiobuttonExtent=continuousRadiobuttonExtent(3:4);  % no info in 1:2
-            continuousRadiobuttonWidth=continuousRadiobuttonExtent(1)+16;
-            
-            sweepBasedRadiobuttonPosition=get(self.SweepBasedRadiobutton,'Position');
-            sweepBasedRadiobuttonHeight=sweepBasedRadiobuttonPosition(4);
-            radiobuttonBarHeight=sweepBasedRadiobuttonHeight;
-            radiobuttonBarWidth=sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons+continuousRadiobuttonWidth;
-            
-            radiobuttonBarXOffset=(acquisitionPanelWidth-radiobuttonBarWidth)/2;
-            radiobuttonBarYOffset=acquisitionPanelHeight-heightOfPanelTitle-heightFromTopToRadiobuttonBar-radiobuttonBarHeight;
-
-            set(self.SweepBasedRadiobutton,'Position',[radiobuttonBarXOffset radiobuttonBarYOffset sweepBasedRadiobuttonWidth radiobuttonBarHeight]);
-            xOffset=radiobuttonBarXOffset+sweepBasedRadiobuttonWidth+widthBetweenRadiobuttons;
-            set(self.ContinuousRadiobutton,'Position',[xOffset radiobuttonBarYOffset continuousRadiobuttonWidth radiobuttonBarHeight]);
-
-            % Sample rate row
-            gridRowYOffset=radiobuttonBarYOffset-heightFromRadiobuttonBarToGrid-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.AcquisitionSampleRateText,self.AcquisitionSampleRateEdit,self.AcquisitionSampleRateUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)
-                                      
-            % # of sweeps row
-            gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.NSweepsText,self.NSweepsEdit,[], ....
-                                          editXOffset,gridRowYOffset,editWidth)
-            
-            % Sweep duration row
-            gridRowYOffset=gridRowYOffset-interRowHeight-gridRowHeight;
-            ws.positionEditLabelAndUnitsBang(self.SweepDurationText,self.SweepDurationEdit,self.SweepDurationUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)            
-        end  % function
-    end
+        
+    end  % protected methods    
 
     methods (Access = protected)
-        function layoutStimulationPanel_(self,stimulationPanelWidth,stimulationPanelHeight) %#ok<INUSL>
-            %
-            % Contents of stimulation panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToEnabledCheckbox=4;
-            heightFromCheckboxToRest=4;
-            heightFromSampleRateEditToSourcePopupmenu=6;
-            editXOffset=80;
-            editWidth=80;
-            editHeight=20;
-            popupmenuWidth=154;
-            editButtonWidth=80;
-            editButtonHeight=22;
-            widthFromEditButtonToRepeatsCheckbox=16;
-            heightFromSourcePopupmenuToEditButton=10;
-            
-            % Enabled checkbox
-            stimulationEnabledCheckboxXOffset=editXOffset;
-            stimulationEnabledCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
-            stimulationEnabledCheckboxWidth=stimulationEnabledCheckboxPosition(3);
-            stimulationEnabledCheckboxHeight=stimulationEnabledCheckboxPosition(4);
-            stimulationEnabledCheckboxYOffset=stimulationPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-stimulationEnabledCheckboxHeight;            
-            set(self.StimulationEnabledCheckbox, ...
-                'Position',[stimulationEnabledCheckboxXOffset stimulationEnabledCheckboxYOffset ...
-                            stimulationEnabledCheckboxWidth stimulationEnabledCheckboxHeight]);
-            
-            % Sample rate row
-            gridRowYOffset=stimulationEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.StimulationSampleRateText,self.StimulationSampleRateEdit,self.StimulationSampleRateUnitsText, ....
-                                          editXOffset,gridRowYOffset,editWidth)
-                                      
-            % Source popupmenu
-            position=get(self.SourcePopupmenu,'Position');
-            height=position(4);
-            gridRowYOffset=gridRowYOffset-heightFromSampleRateEditToSourcePopupmenu-height;
-            ws.positionPopupmenuAndLabelBang(self.SourceText,self.SourcePopupmenu, ...
-                                          editXOffset,gridRowYOffset,popupmenuWidth)
-            
-            % Edit... button
-            gridRowYOffset=gridRowYOffset-heightFromSourcePopupmenuToEditButton-editButtonHeight;
-            set(self.EditStimulusLibraryButton,'Position',[editXOffset gridRowYOffset editButtonWidth editButtonHeight]);
-            
-            % "Repeats" checkbox
-            repeatsCheckboxPosition=get(self.StimulationEnabledCheckbox,'Position');
-            width=repeatsCheckboxPosition(3);
-            height=repeatsCheckboxPosition(4);            
-            xOffset=editXOffset+editButtonWidth+widthFromEditButtonToRepeatsCheckbox;
-            yOffset=gridRowYOffset+(editButtonHeight-height)/2;
-            set(self.RepeatsCheckbox,'Position',[xOffset yOffset width height]);
-        end  % function
-    end
-    
-    methods (Access = protected)
-        function layoutDisplayPanel_(self,displayPanelWidth,displayPanelHeight) %#ok<INUSL>
-            %
-            % Contents of display panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToEnabledCheckbox=4;
-            heightFromCheckboxToRest=4;
-            heightBetweenEdits=6;
-            editXOffset=80;
-            editWidth=80;
-            editHeight=20;
-            autoSpanXOffset=190;
-            
-            % Enabled checkbox
-            displayEnabledCheckboxXOffset=editXOffset;
-            displayEnabledCheckboxPosition=get(self.DisplayEnabledCheckbox,'Position');
-            displayEnabledCheckboxWidth=displayEnabledCheckboxPosition(3);
-            displayEnabledCheckboxHeight=displayEnabledCheckboxPosition(4);
-            displayEnabledCheckboxYOffset=displayPanelHeight-heightOfPanelTitle-heightFromTopToEnabledCheckbox-displayEnabledCheckboxHeight;            
-            set(self.DisplayEnabledCheckbox, ...
-                'Position',[displayEnabledCheckboxXOffset displayEnabledCheckboxYOffset ...
-                            displayEnabledCheckboxWidth displayEnabledCheckboxHeight]);
-            
-            % Update rate row
-            yOffset=displayEnabledCheckboxYOffset-heightFromCheckboxToRest-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.UpdateRateText,self.UpdateRateEdit,self.UpdateRateUnitsText, ....
-                                          editXOffset,yOffset,editWidth)
-                                      
-            % Span row
-            yOffset=yOffset-heightBetweenEdits-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.SpanText,self.SpanEdit,self.SpanUnitsText, ....
-                                          editXOffset,yOffset,editWidth)
-                                                  
-            % Auto span checkbox
-            autoSpanCheckboxExtent=get(self.AutoSpanCheckbox,'Extent');
-            width=autoSpanCheckboxExtent(3)+16;  % size of the checkbox itself
-            autoSpanCheckboxPosition=get(self.AutoSpanCheckbox,'Position');
-            height=autoSpanCheckboxPosition(4);            
-            xOffset=autoSpanXOffset;
-            yOffset=yOffset+(editHeight-height)/2;
-            set(self.AutoSpanCheckbox,'Position',[xOffset yOffset width height]);
-        end  % function
-    end
-    
-    methods (Access = protected)
-        function layoutLoggingPanel_(self,loggingPanelWidth,loggingPanelHeight)
-            %
-            % Contents of logging panel
-            %
-            heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
-            heightFromTopToTopRow=10;
-            heightBetweenEdits=6;
-            xOffsetOfEdits=80;
-            editHeight=20;
-            rightMarginWidth=10;
-            widthOfStuffToRightOfEditTexts=loggingPanelWidth-xOffsetOfEdits-rightMarginWidth;
-            widthLeftOfBaseNameEdit=6;
-            showButtonWidth=70;
-            changeLocationButtonWidth=90;
-            widthBetweenLocationWidgets=6;
-            nextSweepEditWidth=50;
-            nextSweepLabelFixedWidth=80;  % We fix this, because the label text changes
-            fileNameLabelFixedWidth=70;  % We fix this, because the label text changes
-            widthFromIncludeDateCheckboxToSessionIndexCheckbox = 80 ;
-            
-            % Compute some things shared by several rows
-            widthOfBaseNameAndLocationEdits = ...
-                widthOfStuffToRightOfEditTexts-changeLocationButtonWidth-widthBetweenLocationWidgets-showButtonWidth-widthBetweenLocationWidgets;
-
-            %
-            % Location row
-            %
-            
-            % Location edit and label
-            locationEditYOffset=loggingPanelHeight-heightOfPanelTitle-heightFromTopToTopRow-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.LocationText,self.LocationEdit,[], ....
-                                          xOffsetOfEdits,locationEditYOffset,widthOfBaseNameAndLocationEdits);
-
-            % Show button
-            showButtonXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthBetweenLocationWidgets;
-            set(self.ShowLocationButton,'Position',[showButtonXOffset locationEditYOffset showButtonWidth editHeight]);
-            
-            % Change location button
-            changeLocationButtonXOffset=showButtonXOffset+showButtonWidth+widthBetweenLocationWidgets;
-            set(self.ChangeLocationButton,'Position',[changeLocationButtonXOffset locationEditYOffset changeLocationButtonWidth editHeight]);
-
-            %
-            % Base name row
-            %
-            
-            % BaseName Edit and label
-            baseNameEditYOffset=locationEditYOffset-heightBetweenEdits-editHeight;
-            ws.positionEditLabelAndUnitsBang(self.BaseNameText,self.BaseNameEdit,[], ....
-                                          xOffsetOfEdits,baseNameEditYOffset,widthOfBaseNameAndLocationEdits)
-
-            
-                                      
-            %
-            % Date, session, sweep row
-            %
-            
-            dataSessionAndSweepRowYOffset = baseNameEditYOffset - heightBetweenEdits - editHeight ;
-            
-            % Include date checkbox
-            includeDateCheckboxExtent=get(self.IncludeDateCheckbox,'Extent');
-            includeDateCheckboxWidth=includeDateCheckboxExtent(3)+16;  % size of the checkbox itself
-            includeDateCheckboxPosition=get(self.IncludeDateCheckbox,'Position');
-            includeDateCheckboxHeight=includeDateCheckboxPosition(4);            
-            includeDateCheckboxXOffset=xOffsetOfEdits;
-            includeDateCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-includeDateCheckboxHeight)/2;
-            set(self.IncludeDateCheckbox,'Position',[includeDateCheckboxXOffset includeDateCheckboxYOffset ...
-                                                     includeDateCheckboxWidth includeDateCheckboxHeight]);
-            
-            % Session index checkbox
-            sessionIndexCheckboxExtent=get(self.SessionIndexCheckbox,'Extent');
-            sessionIndexCheckboxWidth=sessionIndexCheckboxExtent(3)+16;  % size of the checkbox itself
-            sessionIndexCheckboxPosition=get(self.SessionIndexCheckbox,'Position');
-            sessionIndexCheckboxHeight=sessionIndexCheckboxPosition(4);            
-            sessionIndexCheckboxXOffset = includeDateCheckboxXOffset + includeDateCheckboxWidth + widthFromIncludeDateCheckboxToSessionIndexCheckbox;
-            sessionIndexCheckboxYOffset=dataSessionAndSweepRowYOffset+(editHeight-sessionIndexCheckboxHeight)/2;
-            set(self.SessionIndexCheckbox,'Position',[sessionIndexCheckboxXOffset sessionIndexCheckboxYOffset ...
-                                                      sessionIndexCheckboxWidth sessionIndexCheckboxHeight]);
-            
-            % Session index edit and label
-            xOffsetOfSessionIndexEditFromCheckbox = 66 ;  % this is brittle, have to change if change session index label text, or font, etc.
-            sessionIndexEditWidth = 50 ;
-            sessionIndexEditXOffset =  ...
-                sessionIndexCheckboxXOffset + xOffsetOfSessionIndexEditFromCheckbox ;
-            sessionIndexEditYOffset = dataSessionAndSweepRowYOffset ;
-            ws.positionEditLabelAndUnitsBang(self.SessionIndexText, self.SessionIndexEdit, [], ....
-                                          sessionIndexEditXOffset, sessionIndexEditYOffset, sessionIndexEditWidth);
-                                      
-            % Increment session index button
-            incrementSessionIndexButtonWidth = 20 ;
-            incrementSessionIndexButtonHeight = 20 ;            
-            widthFromIncrementSessionIndexToButton = 5 ;
-            incrementSessionIndexButtonXOffset = sessionIndexEditXOffset + sessionIndexEditWidth + widthFromIncrementSessionIndexToButton ;
-            incrementSessionIndexButtonYOffset = dataSessionAndSweepRowYOffset + (editHeight-incrementSessionIndexButtonHeight)/2 ;
-            set(self.IncrementSessionIndexButton,'Position',[incrementSessionIndexButtonXOffset incrementSessionIndexButtonYOffset ...
-                                                             incrementSessionIndexButtonWidth incrementSessionIndexButtonHeight]);            
-                                      
-            % Next Sweep edit and label
-            nextSweepEditXOffset = xOffsetOfEdits + widthOfBaseNameAndLocationEdits - nextSweepEditWidth ;
-            nextSweepEditYOffset = dataSessionAndSweepRowYOffset ;
-            ws.positionEditLabelAndUnitsBang(self.NextSweepText,self.NextSweepEdit,[], ....
-                                          nextSweepEditXOffset,nextSweepEditYOffset,nextSweepEditWidth, ...
-                                          nextSweepLabelFixedWidth);
-            
-
-            %
-            % File Name Row
-            %
-            fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
-            fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
-            ws.positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
-                                          xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
-                                          fileNameLabelFixedWidth) ;
-                                      
-            % Overwrite without asking checkbox
-            overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
-            overwriteCheckboxWidth=overwriteCheckboxExtent(3)+16;  % size of the checkbox itself
-            overwriteCheckboxPosition=get(self.OverwriteCheckbox,'Position');
-            overwriteCheckboxHeight=overwriteCheckboxPosition(4);            
-            overwriteCheckboxXOffset=xOffsetOfEdits+widthOfBaseNameAndLocationEdits+widthLeftOfBaseNameEdit;
-            overwriteCheckboxYOffset=fileNameEditYOffset+(editHeight-overwriteCheckboxHeight)/2;
-            set(self.OverwriteCheckbox,'Position',[overwriteCheckboxXOffset overwriteCheckboxYOffset overwriteCheckboxWidth overwriteCheckboxHeight]);
-                                      
-        end  % function
-    end
-    
-    methods (Access = protected)
-        function initializeGuidata_(self)
-            % Set up the figure guidata the way it would be if this were a
-            % GUIDE UI, or close enough to fool a ws.most.Controller.
-            handles=ws.WavesurferMainFigure.initializeGuidataHelper_(struct(),self.FigureGH);
-            % Add a pointer to self to the figure guidata
-            handles.FigureObject=self;
-            % commit to the guidata
-            guidata(self.FigureGH,handles);
-        end  % function        
-    end  % protected methods block
-    
-    methods (Static=true)
-        function handles=initializeGuidataHelper_(handles,containerGH)
-            % For a figure or uipanel graphics handle, containerGH, adds
-            % fields to the scalar structure handle, one per control in
-            % containerGH.  The field name is equal to the Tag of the child
-            % control.  If the child control is a uipanel, recursively adds
-            % fields for the controls within the panel.  The resulting
-            % struct is returned in handles.
-            childControlGHs=get(containerGH,'Children');
-            nChildren=length(childControlGHs);
-            for i=1:nChildren ,
-                childControlGH=childControlGHs(i);
-                tag=get(childControlGH,'Tag');
-                handles.(tag)=childControlGH;
-                % If a uipanel, recurse
-                if isequal(get(childControlGH,'Type'),'uipanel') ,
-                    handles=ws.WavesurferMainFigure.initializeGuidataHelper_(handles,childControlGH);
+        function updateControlsInExistance_(self)
+            % Make it so we have the same number of scopes as displayed channels,
+            % adding/deleting them as needed.
+            isChannelDisplayed = horzcat(self.Model.Display.IsAnalogChannelDisplayed, self.Model.Display.IsDigitalChannelDisplayed) ;
+            nChannelsDisplayed = sum(isChannelDisplayed) ;
+            nScopePlots = length(self.ScopePlots_) ;
+            if nChannelsDisplayed>nScopePlots ,
+                for i = nScopePlots+1:nChannelsDisplayed ,
+                    newScopePlot = ws.ScopePlot(self, i) ;
+                    self.ScopePlots_ = horzcat(self.ScopePlots_, newScopePlot);
                 end
+            elseif nChannelsDisplayed<nScopePlots ,
+                for i = nChannelsDisplayed+1:nScopePlots ,
+                    self.ScopePlots_(i).delete() ;  % Have to delete "manually" to eliminate UI objects
+                end
+                self.ScopePlots_ = self.ScopePlots_(1:nChannelsDisplayed) ;
+            else
+                % do nothing --- we already have the right number of
+                % ScopePlots
             end
-            % Add the container itself
-            tag=get(containerGH,'Tag');
-            handles.(tag)=containerGH;
-        end  % function        
-    end  % protected methods block
-
-    methods (Access = protected)
-        function updateControlsInExistance_(self) %#ok<MANU>
-            % In subclass, this should make sure the non-fixed controls in
-            % existance are synced with the model state, deleting
-            % inappropriate ones and creating appropriate ones as needed.            
-            %self.updateScopeMenu_();
         end
     end
-        
+    
     methods (Access = protected)
         function updateControlPropertiesImplementation_(self) 
             % In subclass, this should make sure the properties of the
@@ -1043,51 +580,26 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             model=self.Model;
             if isempty(model) ,
                 return
-            end
+            end            
             
-            import ws.onIff
-            import ws.fif
-            
-            isIdle = isequal(model.State,'idle');
-
-%             s.AreSweepsFiniteDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepBasedRadiobutton'}});
-%             s.AreSweepsContinuous = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'ContinuousRadiobutton'}});
-%             s.NSweepsPerRun = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NSweepsEdit'}});
-%             s.Acquisition.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AcquisitionSampleRateEdit'}});
-%             s.SweepDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SweepDurationEdit'}});
-%             
-%             % Need to handle stim.CanEnable
-%             s.Stimulation.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationEnabledCheckbox'}});
-%             s.Stimulation.SampleRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'StimulationSampleRateEdit'}});
-%             s.Stimulation.DoRepeatSequence = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'RepeatsCheckbox'}});
-%             
-%             s.Display.IsEnabled = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'DisplayEnabledCheckbox'}});
-%             s.Display.UpdateRate = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'UpdateRateEdit'}});
-%             s.Display.XSpan = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'SpanEdit'}});
-%             s.Display.IsXSpanSlavedToAcquistionDuration = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'AutoSpanCheckbox'}});
-%             
-%             s.Logging.FileBaseName = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'BaseNameEdit'}});
-%             s.Logging.FileLocation = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'LocationEdit'}});
-%             s.Logging.NextSweepIndex = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'NextSweepEdit'}});
-%             s.Logging.IsOKToOverwrite = struct('GuiIDs',{{'wavesurferMainFigureWrapper' 'OverwriteCheckbox'}});
-            
-            % Acquisition panel
-            set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
-            set(self.ContinuousRadiobutton,'Value',model.AreSweepsContinuous);
-            set(self.AcquisitionSampleRateEdit,'String',sprintf('%.6g',model.Acquisition.SampleRate));
-            set(self.NSweepsEdit,'String',sprintf('%d',model.NSweepsPerRun));
-            set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
-            
-            % Stimulation panel (most of it)
-            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
-            set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.Stimulation.SampleRate));
-            set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
-            
-            % Display panel
-            set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
-            set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
-            set(self.SpanEdit, 'String', sprintf('%.6g',model.Display.XSpan));
-            set(self.AutoSpanCheckbox, 'Value', model.Display.IsXSpanSlavedToAcquistionDuration);
+            % Set the button colors and icons
+            areColorsNormal = model.Display.AreColorsNormal ;
+            defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
+            controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
+            if areColorsNormal ,
+                playIcon   = self.NormalPlayIcon_   ;
+                recordIcon = self.NormalRecordIcon_ ;
+                stopIcon = self.NormalStopIcon_ ;
+            else
+                playIcon   = 1-self.NormalPlayIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
+                recordIcon = self.NormalRecordIcon_ ;  % looks OK in either case
+                stopIcon = 1-self.NormalStopIcon_ ;
+            end                
+            set(self.PlayButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',playIcon);
+            set(self.RecordButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',recordIcon);
+            set(self.StopButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',stopIcon);
+            set(self.FastProtocolButtons,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
             
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
@@ -1098,22 +610,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     'TooltipString', thisProtocolFileName)
             end
             
-            % Logging panel
-            set(self.LocationEdit, 'String', model.Logging.FileLocation);
-            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
-            set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
-            set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
-            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
-            set(self.NextSweepText, 'String', fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
-            %set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            %set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
-            if ~isIdle&&model.Logging.IsEnabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
-            else
-                set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
-            end            
-            set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
+            % Plots and such
+            self.updateDisplayControlPropertiesImplementation_() ;
             
             % Status text
             if isequal(model.State,'running') ,
@@ -1125,39 +623,153 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             else
                 statusString = ws.titleStringFromApplicationState(model.State) ;
             end
-            set(self.StatusText,'String',statusString);
+            set(self.StatusText,'String',statusString,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
             
             % Progress bar
             self.updateProgressBarProperties_();
             
-            % Update the Stimulation/Source popupmenu
-%             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
-%             stimulusLibrary=ws.getSubproperty(model,'Stimulation','StimulusLibrary');
-%             if isempty(stimulusLibrary) ,
-%                 set(self.SourcePopupmenu, ...
-%                     'String', {'(No library)'}, ...
-%                     'Value', 1, ...
-%                     'BackgroundColor', warningBackgroundColor);
-%             else
-                outputableNames = model.stimulusLibraryOutputableNames() ;
-                %selectedOutputable = stimulusLibrary.SelectedOutputable ;
-                selectedOutputableName = model.stimulusLibrarySelectedOutputableProperty('Name') ;
-                if isempty(selectedOutputableName) ,
-                    selectedOutputableNames = {} ;                    
-                else
-                    selectedOutputableNames = { selectedOutputableName } ;
-                end                
-                ws.setPopupMenuItemsAndSelectionBang(self.SourcePopupmenu, outputableNames, selectedOutputableNames, [], '(No outputables)')                
-%             end
-            
             % Update whether the "Yoke to ScanImage" menu item is checked,
             % based on the model state
-            set(self.YokeToScanimageMenuItem,'Checked',onIff(model.IsYokedToScanImage));
+            set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
             
             % The save menu items
             self.updateSaveProtocolMenuItem_();
             self.updateSaveUserSettingsMenuItem_();
         end
+        
+        function updateDisplayControlPropertiesImplementation_(self)
+            % If there are issues with the model, just return
+            wsModel=self.Model;
+            if isempty(wsModel) || ~isvalid(wsModel) ,
+                return
+            end
+            displayModel = wsModel.Display ;
+            if isempty(displayModel) || ~isvalid(displayModel) ,
+                return
+            end            
+            
+            % Update the Show Grid togglemenu
+            isGridOn = displayModel.IsGridOn ;
+            set(self.ShowGridMenuItem_,'Checked',ws.onIff(isGridOn));
+
+            % Update the Invert Colors togglemenu
+            areColorsNormal = displayModel.AreColorsNormal ;
+            set(self.InvertColorsMenuItem_,'Checked',ws.onIff(~areColorsNormal));
+
+            % Update the Do Show Buttons togglemenu
+            doShowZoomButtons = displayModel.DoShowZoomButtons ;
+            set(self.DoShowZoomButtonsMenuItem_,'Checked',ws.onIff(doShowZoomButtons));
+
+            % Update the Do Color Traces togglemenu
+            doColorTraces = displayModel.DoColorTraces ;
+            set(self.DoColorTracesMenuItem_,'Checked',ws.onIff(doColorTraces));
+
+            % Compute the colors
+            defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
+            controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
+            figureBackground = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
+            set(self.FigureGH,'Color',figureBackground);
+            axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
+            axesForegroundColor = ws.fif(areColorsNormal,'k','g') ;
+            %traceLineColor = ws.fif(areColorsNormal,'k','w') ;
+
+            % Compute the icons
+            if areColorsNormal ,
+                yScrollUpIcon   = self.NormalYScrollUpIcon_   ;
+                yScrollDownIcon = self.NormalYScrollDownIcon_ ;
+                yTightToDataIcon = self.NormalYTightToDataIcon_ ;
+                yTightToDataLockedIcon = self.NormalYTightToDataLockedIcon_ ;
+                yTightToDataUnlockedIcon = self.NormalYTightToDataUnlockedIcon_ ;
+                yCaretIcon = self.NormalYCaretIcon_ ;
+            else
+                yScrollUpIcon   = 1-self.NormalYScrollUpIcon_   ;  % RGB images, so this inverts them, leaving nan's alone
+                yScrollDownIcon = 1-self.NormalYScrollDownIcon_ ;                
+                yTightToDataIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataIcon_) ;  
+                yTightToDataLockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataLockedIcon_) ;
+                yTightToDataUnlockedIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYTightToDataUnlockedIcon_) ;
+                yCaretIcon = ws.whiteFromGreenGrayFromBlack(self.NormalYCaretIcon_) ;
+            end                
+
+            % Determine the common x-axis limits
+            xl = displayModel.XOffset + [0 wsModel.XSpan] ;
+
+            % Get the y-axis limits for all analog channels
+            yLimitsPerAnalogChannel = displayModel.YLimitsPerAnalogChannel ;
+
+            % Get the channel names and units for all channels
+            acq = wsModel.Acquisition ;
+            aiChannelNames = acq.AnalogChannelNames ;            
+            diChannelNames = acq.DigitalChannelNames ;
+            aiChannelUnits = wsModel.AIChannelUnits ;            
+            
+            % Update the individual plot colors and icons
+            areYLimitsLockedTightToDataFromAIChannelIndex = displayModel.AreYLimitsLockedTightToDataForAnalogChannel ;
+            channelIndexWithinTypeFromPlotIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+            channelIndexFromPlotIndex = displayModel.ChannelIndexFromPlotIndex ;
+            %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
+            nPlots = length(self.ScopePlots_) ;
+            for plotIndex=1:length(self.ScopePlots_) ,
+                thisPlot = self.ScopePlots_(plotIndex) ;
+                isThisChannelAnalog = isAnalogFromPlotIndex(plotIndex) ;
+                indexOfThisChannelWithinType =  channelIndexWithinTypeFromPlotIndex(plotIndex) ;  % where "type" means analog or digital
+                indexOfThisChannel = channelIndexFromPlotIndex(plotIndex) ;
+
+                % Determine trace color for this plot
+                if doColorTraces ,
+                    normalTraceLineColor = self.TraceColorSequence_(indexOfThisChannel,:) ;
+                else
+                    normalTraceLineColor = [0 0 0] ;  % black
+                end
+                if areColorsNormal ,
+                    traceLineColor = normalTraceLineColor ;
+                else
+                    traceLineColor = 1 - normalTraceLineColor ;
+                end
+                    
+                if isThisChannelAnalog ,
+                    areYLimitsLockedTightToDataForThisChannel = areYLimitsLockedTightToDataFromAIChannelIndex(indexOfThisChannelWithinType) ;
+                    thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                               axesForegroundColor, axesBackgroundColor, ...
+                                               traceLineColor, ...
+                                               yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yTightToDataUnlockedIcon, yCaretIcon, ...
+                                               areYLimitsLockedTightToDataForThisChannel) ;
+                    thisPlot.IsGridOn = isGridOn ;                       
+                    thisPlot.setXAxisLimits(xl) ;
+                    thisPlot.setYAxisLimits(yLimitsPerAnalogChannel(:,indexOfThisChannelWithinType)') ;
+                    thisPlot.setYAxisLabel(aiChannelNames{indexOfThisChannelWithinType}, ...
+                                           true, ...
+                                           aiChannelUnits{indexOfThisChannelWithinType}, ...
+                                           axesForegroundColor) ;
+                    if plotIndex==nPlots ,
+                        thisPlot.setXAxisLabel(axesForegroundColor) ;
+                    else
+                        thisPlot.clearXAxisLabel() ;
+                    end
+                else
+                    % this channel is digital
+                    thisPlot.setColorsAndIcons(controlForegroundColor, controlBackgroundColor, ...
+                                               axesForegroundColor, axesBackgroundColor, ...
+                                               traceLineColor, ...
+                                               yScrollUpIcon, yScrollDownIcon, yTightToDataIcon, yTightToDataLockedIcon, yTightToDataUnlockedIcon, yCaretIcon, ...
+                                               true) ;
+                    thisPlot.IsGridOn = isGridOn ;                       
+                    thisPlot.setXAxisLimits(xl) ;
+                    thisPlot.setYAxisLimits([-0.05 1.05]) ;
+                    thisPlot.setYAxisLabel(diChannelNames{indexOfThisChannelWithinType}, false, [], axesForegroundColor) ;
+                    if plotIndex==nPlots ,
+                        thisPlot.setXAxisLabel(axesForegroundColor) ;
+                    else
+                        thisPlot.clearXAxisLabel() ;
+                    end
+                end
+            end
+
+            % Do this separately, although we could do it at same time if
+            % speed is an issue...
+            self.syncLineXDataAndYData_();
+        end  % function        
     end
     
     methods (Access = protected)
@@ -1168,7 +780,6 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-            import ws.*
 
             % If no model, can't really do anything
             model=self.Model;
@@ -1177,247 +788,77 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 return
             end
             
-            % Get the figureObject, and figureGH
-            %figureObject=self.Figure; 
-            %window=self.hGUIData.WavesurferWindow;
-            
             isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
-            isSweepBased=model.AreSweepsFiniteDuration;
-            %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-            %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
             isAcquiring = isequal(model.State,'running') ;
             
             % File menu items
-            %set(self.LoadMachineDataFileMenuItem,'Enable',onIff(isNoDevice));
-            % set(self.OpenProtocolMenuItem,'Enable',onIff(isIdle));            
-            set(self.OpenProtocolMenuItem,'Enable',onIff(isNoDevice||isIdle));            
-            set(self.SaveProtocolMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveProtocolAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.LoadUserSettingsMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveUserSettingsMenuItem,'Enable',onIff(isIdle));            
-            set(self.SaveUserSettingsAsMenuItem,'Enable',onIff(isIdle));            
-            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',onIff(isIdle||isNoDevice));
-            %set(self.QuitMenuItem,'Enable',onIff(true));  % always available          
-            
-            %% Run Menu
-            %window.StartMenu.IsEnabled=isIdle;
-            %%window.PreviewMenu.IsEnabled=isIdle;
-            %window.StopMenu.IsEnabled= isAcquiring;
-            
+            set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isNoDevice||isIdle));            
+            set(self.SaveProtocolMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveProtocolAsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.LoadUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.SaveUserSettingsAsMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
+            %set(self.QuitMenuItem,'Enable',ws.onIff(true));  % always available          
+                        
             % Tools Menu
-            set(self.FastProtocolsMenuItem,'Enable',onIff(isIdle));
-            set(self.DisplayMenuItem,'Enable',onIff(isIdle));
-            %set(self.ScopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-            set(self.ChannelsMenuItem,'Enable',onIff(true));  
+            set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.GeneralSettingsMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
+            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
               % if desired.
-            set(self.TriggersMenuItem,'Enable',onIff(isIdle));
-            set(self.StimulusLibraryMenuItem,'Enable',onIff(isIdle));
-            set(self.UserCodeManagerMenuItem,'Enable',onIff(isIdle));            
-            set(self.ElectrodesMenuItem,'Enable',onIff(isIdle));
-            set(self.TestPulseMenuItem,'Enable',onIff(isIdle));
-            set(self.YokeToScanimageMenuItem,'Enable',onIff(isIdle));
+            set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.StimulusLibraryMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
+            set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
             
             % Help menu
-            set(self.AboutMenuItem,'Enable',onIff(isIdle||isNoDevice));
+            set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
             
             % Toolbar buttons
-            set(self.PlayButton,'Enable',onIff(isIdle));
-            set(self.RecordButton,'Enable',onIff(isIdle));
-            set(self.StopButton,'Enable',onIff(isAcquiring));
+            set(self.PlayButton,'Enable',ws.onIff(isIdle));
+            set(self.RecordButton,'Enable',ws.onIff(isIdle));
+            set(self.StopButton,'Enable',ws.onIff(isAcquiring));
             
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',onIff( isIdle && model.FastProtocols{i}.IsNonempty));
+                set(self.FastProtocolButtons(i),'Enable',ws.onIff( isIdle && model.FastProtocols{i}.IsNonempty));
             end
 
-            % Acquisition controls
-            set(self.SweepBasedRadiobutton,'Enable',onIff(isIdle));
-            set(self.ContinuousRadiobutton,'Enable',onIff(isIdle));            
-            set(self.AcquisitionSampleRateEdit,'Enable',onIff(isIdle));
-            set(self.NSweepsEdit,'Enable',onIff(isIdle&&isSweepBased));
-            set(self.SweepDurationEdit,'Enable',onIff(isIdle&&isSweepBased));
+            % Plots and such
+            self.updateDisplayControlEnablementImplementation_(model) ;
             
-            % Stimulation controls
-            %isStimulationEnableable = model.Stimulation.CanEnable ;
-            isStimulationEnableable = true ;
-            isStimulusEnabled=model.Stimulation.IsEnabled;
-            %stimulusLibrary=model.Stimulation.StimulusLibrary;            
-            %isAtLeastOneOutputable=( ~isempty(stimulusLibrary) && length(stimulusLibrary.getOutputables())>=1 );
-            set(self.StimulationEnabledCheckbox,'Enable',onIff(isIdle && isStimulationEnableable));
-            set(self.StimulationSampleRateEdit,'Enable',onIff(isIdle && isStimulusEnabled));
-            %set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled && isAtLeastOneOutputable));
-            set(self.SourcePopupmenu,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.EditStimulusLibraryButton,'Enable',onIff(isIdle && isStimulusEnabled));
-            set(self.RepeatsCheckbox,'Enable',onIff(isIdle && isStimulusEnabled));
-
-            % Display controls
-            self.updateEnablementAndVisibilityOfDisplayControls_();
-            
-            % Logging controls
-            self.updateEnablementAndVisibilityOfLoggingControls_();
-
             % Status bar controls
             if ~isAcquiring , 
                 set(self.ProgressBarAxes,'Visible','off') ;
             end
         end
-    end
-    
-%     methods (Access = protected)
-%         function updateScopeMenu_(self,broadcaster,eventName,propertyName,source,event)  %#ok<INUSD>            
-%             % Update the scope menu match the model state
-%             import ws.onIff
-%             
-%             % A typical structure of the menus under the Scopes menu item:
-%             % 
-%             %   Scopes > Remove > Remove "Channel V1"
-%             %                     Remove "Channel V2"
-%             %                     Remove "Channel I1"
-%             %                     Remove "Channel I2"
-%             %            (separator)
-%             %            Channel V1 (checkable)
-%             %            Channel V2 (checkable)
-%             %            Channel I1 (checkable)
-%             %            Channel I2 (checkable)
-%             %
-%             % I.e. if the Remove item is unexpanded, it looks like:
-%             %
-%             %   Scopes > Remove >
-%             %            (separator)
-%             %            Channel V1 (checkable)
-%             %            Channel V2 (checkable)
-%             %            Channel I1 (checkable)
-%             %            Channel I2 (checkable)
-%             
-%             % Delete all the menu items in the Scopes submenu except the
-%             % first item, which is the "Remove" item.
-%             ws.deleteIfValidHGHandle(self.ShowHideChannelMenuItems);
-%             self.ShowHideChannelMenuItems=[];
-%             
-%             % Delete all the items in the "Remove" subsubmenu
-%             ws.deleteIfValidHGHandle(self.RemoveSubsubmenuItems);
-%             self.RemoveSubsubmenuItems=[];
-%             
-%             % 
-%             % At this point, the Scopes submenu has been reduced to a blank
-%             % slate, with only the single "Remove" item
-%             %
-%             
-%             % If no model, can't really do much, so return
-%             model=self.Model;
-%             if isempty(model) ,
-%                 return
-%             end
-%             
-%             % Get the HG object representing the "Scopes" item in the
-%             % "Tools" menu.  Also the "Remove" item in the Scopes submenu.
-%             scopesMenuItem = self.ScopesMenuItem;
-%             removeItem=self.RemoveMenuItem;
-%             
-%             % Set the enablement of the Scopes menu item
-%             isIdle=isequal(model.State,'idle');
-%             set(scopesMenuItem,'Enable',onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
-%             
-%             % Set the Visibility of the Remove item in the Scope submenu
-%             set(removeItem,'Visible',onIff(model.Display.NScopes>0));
-%             
-%             % For each ScopeModel, create a menu item to remove the
-%             % scope, with an appropriate command binding, and add it to
-%             % the Remove subsubmenu.
-%             for i = 1:model.Display.NScopes ,
-%                 menuItem = uimenu('Parent',removeItem, ...
-%                                   'Label',sprintf('Remove %s',model.Display.Scopes{i}.Title), ...
-%                                   'Tag',sprintf('RemoveSubsubmenuItems(%02d)',i), ...
-%                                   'Callback',@(source,event)(self.controlActuated('RemoveSubsubmenuItems',source,event)));
-%                 %if i==1 ,
-%                 %    set(menuItem,'Separator','on');
-%                 %end
-%                 self.RemoveSubsubmenuItems(end+1)=menuItem;
-%             end
-%             
-%             % For each ScopeModel, create a checkable menu item to
-%             % show/hide the scope, with an appropriate command binding, and add it to
-%             % the Scopes submenu.
-%             for i = 1:model.Display.NScopes ,
-%                 menuItem = uimenu('Parent',scopesMenuItem, ...
-%                                   'Label',model.Display.Scopes{i}.Title, ...
-%                                   'Tag',sprintf('ShowHideChannelMenuItems(%02d)',i), ...
-%                                   'Checked',onIff(model.Display.Scopes{i}.IsVisibleWhenDisplayEnabled), ...
-%                                   'Callback',@(source,event)(self.controlActuated('ShowHideChannelMenuItems',source,event)));
-%                 self.ShowHideChannelMenuItems(end+1)=menuItem;                       
-%             end
-%         end  % function
-%     end
-    
-    methods (Access = protected)
-        function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
-            import ws.*
-            
-            % Get the figureObject
-            %figureGH=self.hGUIsArray;  % should be a scalar
-            %handles=guidata(figureGH);
-            %figureObject=handles.FigureObject;            
-            %figureObject=self.Figure;            
-            %window=self.hGUIData.WavesurferWindow;
-            
-            model=self.Model;
-            if isempty(model) ,
-                return
+        
+        function updateDisplayControlEnablementImplementation_(self, wsModel)
+            % Update the enablement of buttons in the panels
+            model = wsModel.Display ;
+            areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
+            channelIndexWithinTypeFromPlotIndex = model.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = model.IsAnalogFromPlotIndex ;
+            for iPlot=1:length(self.ScopePlots_) ,
+                isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
+                thisChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
+                if isThisPlotAnalog ,
+                    self.ScopePlots_(iPlot).setControlEnablement(true, areYLimitsLockedTightToData(thisChannelIndex)) ;
+                else
+                    % this channel/plot is digital
+                    self.ScopePlots_(iPlot).setControlEnablement(false) ;  % digital channels are always locked tight to data
+                end
             end
-            
-            isIdle=isequal(model.State,'idle');            
-
-            displaySubsystem = model.Display ;
-            isDisplayEnabled=displaySubsystem.IsEnabled;
-            set(self.DisplayEnabledCheckbox,'Enable',onIff(isIdle));
-            set(self.UpdateRateEdit,'Enable',onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
-            %set(self.AutomaticRate,'Enable',onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',onIff(isIdle && isDisplayEnabled && ~displaySubsystem.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',onIff(isIdle && isDisplayEnabled && displaySubsystem.IsXSpanSlavedToAcquistionDurationSettable));            
-        end  % function
+        end  % function        
     end
-    
-    methods (Access = protected)
-        function updateEnablementAndVisibilityOfLoggingControls_(self,varargin)
-            import ws.*
-
-            % Get the figureObject
-            %figureGH=self.hGUIsArray;  % should be a scalar
-            %handles=guidata(figureGH);
-            %figureObject=handles.FigureObject;            
-            %window=self.hGUIData.WavesurferWindow;
-            %figureObject=self.Figure;
-            
-            model=self.Model;
-            if isempty(model) ,
-                return
-            end
-            
-            isIdle=isequal(model.State,'idle');
-
-            %isLoggingEnabled=model.Logging.IsEnabled;
-            %isLoggingEnabled=true;            
-            %set(self.LoggingEnabled,'Enable',onIff(isIdle));
-            doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
-
-            set(self.BaseNameEdit,'Enable',onIff(isIdle));
-            set(self.OverwriteCheckbox,'Enable',onIff(isIdle));
-            %set(self.LocationEdit,'Enable',onIff(isIdle && isLoggingEnabled));
-            set(self.ShowLocationButton,'Enable',onIff(isIdle));
-            set(self.ChangeLocationButton,'Enable',onIff(isIdle));
-            set(self.IncludeDateCheckbox,'Enable',onIff(isIdle));
-            set(self.SessionIndexCheckbox,'Enable',onIff(isIdle));
-            set(self.SessionIndexEdit,'Enable',onIff(isIdle&&doIncludeSessionIndex));
-            set(self.IncrementSessionIndexButton,'Enable',onIff(isIdle&&doIncludeSessionIndex));            
-            set(self.NextSweepEdit,'Enable',onIff(isIdle));
-            
-            
-        end  % function
-    end        
     
     methods
         function willSetModelState(self,varargin)
@@ -1447,10 +888,17 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
-            %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
-            %dbstack
             model=self.Model;
             state=model.State;
+            
+            brightGreen = [0 1 0] ;
+            darkBlue = [10 36 106]/255 ;
+            
+            areColorsNormal = model.Display.AreColorsNormal ;
+            axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
+            axesForegroundColor = ws.fif(areColorsNormal,'k','w') ;
+            patchColor = ws.fif(areColorsNormal,darkBlue,brightGreen) ;
+            
             if isequal(state,'running') ,
                 if model.AreSweepsFiniteDuration ,
                     if isfinite(model.NSweepsPerRun) ,
@@ -1460,8 +908,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         set(self.ProgressBarPatch, ...
                             'XData',[0 fractionCompleted fractionCompleted 0 0], ...
                             'YData',[0 0 1 1 0], ...
+                            'FaceColor', patchColor, ...
                             'Visible','on');
                         set(self.ProgressBarAxes, ...                
+                            'Color',axesBackgroundColor, ...
+                            'XColor',axesForegroundColor, ...
+                            'YColor',axesForegroundColor, ...
+                            'ZColor',axesForegroundColor, ...;
                             'Visible','on');
                     else
                         % number of sweeps is infinite
@@ -1481,8 +934,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                         set(self.ProgressBarPatch, ...
                             'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
                             'YData',[0 0 1 1 0], ...
+                            'FaceColor', patchColor, ...
                             'Visible','on');
                         set(self.ProgressBarAxes, ...                
+                            'Color',axesBackgroundColor, ...
+                            'XColor',axesForegroundColor, ...
+                            'YColor',axesForegroundColor, ...
+                            'ZColor',axesForegroundColor, ...;
                             'Visible','on');
                     end
                 else
@@ -1496,22 +954,41 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     set(self.ProgressBarPatch, ...
                         'XData',xOffset+[0 barWidth barWidth 0 0], ...
                         'YData',[0 0 1 1 0], ...
+                        'FaceColor', patchColor, ...
                         'Visible','on');
                     set(self.ProgressBarAxes, ...                
+                        'Color',axesBackgroundColor, ...
+                        'XColor',axesForegroundColor, ...
+                        'YColor',axesForegroundColor, ...
+                        'ZColor',axesForegroundColor, ...;
                         'Visible','on');
                 end
             else
+                % If not running
                 set(self.ProgressBarPatch, ...
                     'XData',[0 0 0 0 0], ...
                     'YData',[0 0 1 1 0], ...
+                    'FaceColor', patchColor, ...
                     'Visible','off');
                 set(self.ProgressBarAxes, ...                
+                    'Color',axesBackgroundColor, ...
+                    'XColor',axesForegroundColor, ...
+                    'YColor',axesForegroundColor, ...
+                    'ZColor',axesForegroundColor, ...;
                     'Visible','off');
             end
         end  % function
     end
     
     methods 
+        function layoutForAllWindowsRequested(self, varargin)
+            self.Controller.layoutForAllWindowsRequested(varargin{:}) ;
+        end
+        
+        function layoutAllWindows(self, varargin)
+            self.Controller.layoutAllWindows() ;
+        end
+        
         function updateForNewData(self,varargin)
             % Want this to be as fast as possible, so we just update the
             % bare minimum
@@ -1549,7 +1026,287 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 menuItemHG=self.SaveUserSettingsMenuItem;
                 set(menuItemHG,'Label','Save User Settings');
             end
-        end
+        end        
     end    
+    
+    methods
+        function addData(self, broadcaster, eventName, propertyName, source, event) %#ok<INUSL>
+            args = event.Args ;
+            t = args{1} ;
+            recentScaledAnalogData = args{2} ;
+            recentRawDigitalData = args{3} ;
+            %sampleRate = args{4} ;
+            %sampleRate = self.Model.AcquisitionSampleRate ;
+            self.addData_(t, recentScaledAnalogData, recentRawDigitalData) ;
+        end
+        
+        function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+            self.clearXDataAndYData_() ;
+            self.clearTraceData_() ;
+        end        
+        
+        function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            self.updateXAxisLimits_();
+        end  % function
+        
+        function updateYAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSL>
+            args = event.Args ;
+            plotIndex = args{1} ;
+            aiChannelIndex = args{2} ;
+            self.updateYAxisLimits_(plotIndex, aiChannelIndex) ;
+        end  % function
+        
+        function updateAreYLimitsLockedTightToData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            %self.updateAreYLimitsLockedTightToData_();
+            %self.updateControlEnablement_();
+            self.update() ;
+        end  % function
+        
+        function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+            self.syncLineXDataAndYData_();
+        end  % function        
+        
+        function setYAxisLimitsTightToData(self, plotIndex)            
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,                
+                displayModel = self.Model.Display ;
+                isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    self.setYAxisLimitsInModelTightToData_(channelIndex) ;
+                end
+            end
+            self.updateYAxisLimits_(plotIndex, channelIndex) ;
+        end  % function        
+        
+        function toggleAreYLimitsLockedTightToData(self, plotIndex)
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                displayModel = self.Model.Display ;
+                isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    currentValue = displayModel.AreYLimitsLockedTightToDataForAnalogChannel(channelIndex) ;
+                    newValue = ~currentValue ;
+                    displayModel.setAreAreYLimitsLockedTightToDataForSingleChannel_(channelIndex, newValue) ;
+                    if newValue ,
+                        self.setYAxisLimitsInModelTightToData_(channelIndex) ;
+                    end
+                end
+            end
+            self.update() ;  % update the button
+        end                
+        
+    end    
+    
+    methods (Access=protected)
+        function clearXDataAndYData_(self)
+            self.XData_ = zeros(0,1) ;
+            acquisition = self.Model.Acquisition ;
+            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            self.YData_ = zeros(0,nActiveChannels) ;
+        end
+        
+        function clearTraceData_(self)
+            % Also clear the lines in the plots
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot = 1:nPlots ,
+                thisPlot = self.ScopePlots_(iPlot) ;
+                thisPlot.setLineXDataAndYData([],[]) ;
+            end            
+        end
+
+        function [channelIndexFromPlotIndex, activeChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
+            if isempty(self.YData_) ,
+                % Make sure it's the right kind of empty
+                self.clearXDataAndYData_() ;
+            end
+            xData = self.XData_ ;
+            yData = self.YData_ ;
+            acq = self.Model.Acquisition ;
+            activeChannelIndexFromChannelIndex = acq.ActiveChannelIndexFromChannelIndex ;            
+            channelIndexFromPlotIndex = self.Model.Display.ChannelIndexFromPlotIndex ;
+            nPlots = length(self.ScopePlots_) ;
+            for iPlot = 1:nPlots ,
+                thisPlot = self.ScopePlots_(iPlot) ;
+                channelIndex = channelIndexFromPlotIndex(iPlot) ;
+                activeChannelIndex = activeChannelIndexFromChannelIndex(channelIndex) ;
+                if isnan(activeChannelIndex) ,
+                    % channel is not active
+                    thisPlot.setLineXDataAndYData([],[]) ;
+                else
+                    % channel is active
+                    yDataForThisChannel = yData(:,activeChannelIndex) ;
+                    thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;
+                end
+            end
+        end  % function       
+        
+        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            wsModel = self.Model ;
+            display = wsModel.Display ;
+            nActiveDigitalChannels = wsModel.Acquisition.NActiveDigitalChannels ;
+            if nActiveDigitalChannels==0 ,
+                yRecent = recentScaledAnalogData ;
+            else
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(recentRawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
+                for j = 1:nActiveDigitalChannels ,
+                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
+                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
+            nNewScans = size(yRecent, 1) ;
+            sampleRate = wsModel.AcquisitionSampleRate ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % Figure out the downsampling ratio
+            if isempty(self.ScopePlots_) ,
+                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+            else
+                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
+            end            
+            xSpan = wsModel.XSpan ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+            
+            % deal with XData
+            xAllOriginal = self.XData_ ;  % these are already downsampled
+            yAllOriginal = self.YData_ ;            
+            
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (display.XOffset<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the line graphics objects to reflect XData_, YData_
+            self.syncLineXDataAndYData_();
+            
+            % Change the y limits to match the data, if appropriate
+            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+            plotIndicesNeedingYLimitUpdate = display.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
+        end  % function        
+        
+        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
+            wsModel = self.Model ;
+            model = wsModel.Display ;
+            isChannelDisplayed = model.IsAnalogChannelDisplayed ;
+            areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
+            doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
+            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+            for i = indicesOfAIChannelsNeedingYLimitUpdate ,
+                self.setYAxisLimitsInModelTightToData_(i) ;
+            end                
+        end  % function        
+        
+        function updateAxisLabels_(self, axisForegroundColor)
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).updateAxisLabels_(axisForegroundColor) ;
+            end            
+        end  % function
+        
+        function updateYAxisLabel_(self, color)
+            % Updates the y axis label handle graphics to match the model state
+            % and that of the Acquisition subsystem.
+            %set(self.Axes_,'YLim',self.YOffset+[0 self.YRange]);
+            model = self.Model.Display ;
+            if model.NChannels==0 ,
+                ylabel(self.Axes_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
+            else
+                firstChannelName=model.ChannelNames{1};
+                units=model.YUnits;
+                if isempty(units) ,
+                    unitsString = 'pure' ;
+                else
+                    unitsString = units ;
+                end
+                ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+            end
+        end  % function
+        
+        function updateXAxisLimits_(self)
+            % Update the axes limits to match those in the model
+            wsModel = self.Model ;
+            if isempty(wsModel) || ~isvalid(wsModel) ,
+                return
+            end
+            displaySubsystem = wsModel.Display ;
+            if isempty(displaySubsystem) || ~isvalid(displaySubsystem) ,
+                return
+            end            
+            xl = displaySubsystem.XOffset + [0 wsModel.XSpan] ;
+            for i = 1:length(self.ScopePlots_) ,
+                self.ScopePlots_(i).setXAxisLimits(xl) ;
+            end
+        end  % function        
+
+        function updateYAxisLimits_(self, plotIndices, aiChannelIndices)
+            % Update the axes limits to match those in the model
+            model = self.Model.Display ;
+            yLimitsFromAIChannelIndex = model.YLimitsPerAnalogChannel ;
+            for i = 1:length(plotIndices) ,
+                plotIndex = plotIndices(i) ;
+                aiChannelIndex = aiChannelIndices(i) ;
+                yl = yLimitsFromAIChannelIndex(:,aiChannelIndex)' ;
+                self.ScopePlots_(plotIndex).setYAxisLimits(yl) ;
+            end
+        end  % function        
+        
+        function setYAxisLimitsInModelTightToData_(self, aiChannelIndex)            
+            % this core function does no arg checking and doesn't call
+            % .broadcast.  It just mutates the state.
+            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
+            if any(~isfinite(yMinAndMax)) ,
+                return
+            end
+            yCenter=mean(yMinAndMax);
+            yRadius=0.5*diff(yMinAndMax);
+            if yRadius==0 ,
+                yRadius=0.001;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+            self.Model.Display.setYLimitsForSingleAnalogChannel_(aiChannelIndex, newYLimits)
+        end
+        
+        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+            % Min and max of the data, across all plotted channels.
+            % Returns a 1x2 array.
+            % If all channels are empty, returns [+inf -inf].
+            activeChannelIndexFromChannelIndex = self.Model.Acquisition.ActiveChannelIndexFromChannelIndex ;
+            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
+            y = self.YData_(:,indexWithinData) ;
+            yMinRaw=min(y);
+            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
+            yMaxRaw=max(y);
+            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
+            yMinAndMax=double([yMin yMax]);
+        end                
+    end  % protected methods block    
     
 end  % classdef

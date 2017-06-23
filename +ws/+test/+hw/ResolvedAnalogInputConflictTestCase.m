@@ -2,15 +2,13 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -18,9 +16,9 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
         function theTest(self)
             wsModel=wavesurfer('--nogui') ;
 
-            wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.setSingleAnalogTerminalID(2,0) ;  % this introduces a conflict
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.setSingleAIChannelTerminalID(2,0) ;  % this introduces a conflict
             try
                 wsModel.play() ;
             catch me
@@ -30,7 +28,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
                     rethrow(me) ;
                 end
             end
-            wsModel.Acquisition.setSingleAnalogTerminalID(2,1) ;  % this resolves the conflict
+            wsModel.setSingleAIChannelTerminalID(2,1) ;  % this resolves the conflict
             wsModel.play() ;  % this errors, even though it shouldn't...
             self.verifyTrue(true) ;
         end  % function

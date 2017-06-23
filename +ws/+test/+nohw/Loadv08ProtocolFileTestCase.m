@@ -13,16 +13,14 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Type','Figure')) ;
-            daqSystem = ws.dabs.ni.daqmx.System() ;
-            ws.deleteIfValidHandle(daqSystem.tasks) ;
+            ws.reset() ;
         end
     end
 
@@ -38,7 +36,7 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
             [~,warningID] = lastwarn() ;
             self.verifyNotEqual(warningID, 'MATLAB:hg:uicontrol:ValueMustBeScalar') ;
             self.verifyTrue( wsModel.Stimulation.StimulusLibrary.isSelfConsistent() ) ;
-            wsController.windowCloseRequested() ;
+            wsController.quit() ;
         end  % function    
     end  % test methods
 

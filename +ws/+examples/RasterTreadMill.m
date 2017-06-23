@@ -126,7 +126,7 @@ classdef RasterTreadMill < ws.UserClass
         
         function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % get data
-            analogData = wsModel.Acquisition.getLatestAnalogData();
+            analogData = wsModel.getLatestAIData();
             digitalData = wsModel.Acquisition.getLatestRawDigitalData();
             
             nScans = size(analogData,1) ;
@@ -134,9 +134,9 @@ classdef RasterTreadMill < ws.UserClass
 
 %             % output TTL pulse
 %             if median(analogData(:,self.ElectrodeChannel))>self.LaserOnThreshold
-%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 1;
+%                 wsModel.DOChannelStateIfUntimed(self.LaserChannel) = 1;
 %             else
-%                 wsModel.Stimulation.DigitalOutputStateIfUntimed(self.LaserChannel) = 0;
+%                 wsModel.DOChannelStateIfUntimed(self.LaserChannel) = 0;
 %             end
 
             % has a lap been completed in current data?
@@ -419,7 +419,7 @@ classdef RasterTreadMill < ws.UserClass
         function synchronizeTransientStateToPersistentState_(self)
             rootModel = self.Parent_.Parent ;
             if isa(rootModel,'ws.WavesurferModel') ,
-                self.SampleRate_ = rootModel.Acquisition.SampleRate ;
+                self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;
                 self.BinCenters_ = self.BinWidth_/2 : self.BinWidth_ : self.TreadMillLength;
                 if rootModel.IsITheOneTrueWavesurferModel ,

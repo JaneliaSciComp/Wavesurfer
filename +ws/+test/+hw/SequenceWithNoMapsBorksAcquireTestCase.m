@@ -4,15 +4,13 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -26,9 +24,9 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.addDOChannel() ;                                 
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
+            wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=true;
 

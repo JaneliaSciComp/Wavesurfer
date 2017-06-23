@@ -2,6 +2,18 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
     % To run these tests, need to have an NI daq attached, as Dev1, with
     % AO0 looped back to AI0.
     
+    methods (TestMethodSetup)
+        function setup(self) %#ok<MANU>
+            ws.reset() ;
+        end
+    end
+
+    methods (TestMethodTeardown)
+        function teardown(self) %#ok<MANU>
+            ws.reset() ;
+        end
+    end
+
     methods (Test)
         function theTest(self)
             wsModel = wavesurfer('--nogui') ;
@@ -15,7 +27,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
             electrode.CurrentCommandScaling = 10 ;
 
             currentCommandScaleInTrode = electrode.CurrentCommandScaling ;
-            commandScaleInStimulationSubsystem = wsModel.Stimulation.AnalogChannelScales ;
+            commandScaleInStimulationSubsystem = wsModel.AOChannelScales ;
 
             self.verifyEqual(currentCommandScaleInTrode, commandScaleInStimulationSubsystem) ;
 
@@ -31,8 +43,10 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
             wsModel.play() ;
 
-            x = wsModel.Acquisition.getAnalogDataFromCache() ;
+            x = wsModel.getAIDataFromCache() ;
 
+            wsModel.delete() ;
+            
             measuredAmplitude = max(x) - min(x) ;
 
             predictedAmplitude = amplitudeAsDouble/currentCommandScaleInTrode ;

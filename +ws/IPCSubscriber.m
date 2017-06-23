@@ -1,4 +1,4 @@
-classdef IPCSubscriber < ws.ZMQConnecter
+classdef IPCSubscriber < ws.ZMQClient
     
     properties
         Delegate
@@ -6,7 +6,7 @@ classdef IPCSubscriber < ws.ZMQConnecter
     
     methods
         function self = IPCSubscriber()
-            self@ws.ZMQConnecter('ZMQ_SUB');
+            self@ws.ZMQClient('ZMQ_SUB');
         end  % function
 
         function delete(self)            
@@ -15,14 +15,14 @@ classdef IPCSubscriber < ws.ZMQConnecter
         
         function setDelegate(self, newValue)
             self.Delegate = newValue ;
-        end
+        end  % function
         
         function processMessagesIfAvailable(self)
             wasMessageAvailable=true;
             while wasMessageAvailable ,
                 wasMessageAvailable=self.processMessageIfAvailable();  % discard method results, if any
             end
-        end
+        end  % function
         
         function [isMessageAvailable, methodName, methodError, methodResult] = processMessageIfAvailable(self)
             try
@@ -82,44 +82,11 @@ classdef IPCSubscriber < ws.ZMQConnecter
             end
         end  % function
         
-%         function [err, methodResult] = waitForMessage(self, expectedMessageName, timeout)
-%             % timeout is in sec
-%             ticId = tic() ;
-%             timeAtStart = toc(ticId) ;
-%             timeSpentWaitingSoFar = 0 ;
-%             didGetMessage = false ;
-%             while ~didGetMessage && timeSpentWaitingSoFar<timeout ,
-%                 timeSpentWaitingSoFar = toc(ticId) - timeAtStart ;
-%                 [didGetMessage,messageName,methodError,methodResult] = self.processMessageIfAvailable() ;
-%                 pause(0.010) ;
-%             end
-%             if didGetMessage ,
-%                 if isequal(messageName,expectedMessageName) ,
-%                     if isempty(methodError) ,
-%                         err = [] ;
-%                     else
-%                         err = methodError ;
-%                     end
-%                 else
-%                     err = MException('ws:unexpectedMessageName', ...
-%                                      'Expected message name %s, got message name %s', ...
-%                                      expectedMessageName, ...
-%                                      messageName) ;
-%                 end
-%             else
-%                 err = MException('ws:timeout', ...
-%                                  'No message received within the timeout period of %g seconds', ...
-%                                  timeout) ;
-%             end
-%         end
-        
         function connect(self,portNumber)
-            self.connect@ws.ZMQConnecter(portNumber);
-            %fprintf('IPCSubscriber::connect(): About to call zmq.core.setsockopt()\n') ;
-            %zmq.core.setsockopt(self.Socket, 'ZMQ_SUBSCRIBE', '');  % accept all messages
+            self.connect@ws.ZMQClient(portNumber);
             self.Socket.set('ZMQ_SUBSCRIBE', '');  % accept all messages
         end  % function
 
     end  % methods
     
-end
+end  % classdef

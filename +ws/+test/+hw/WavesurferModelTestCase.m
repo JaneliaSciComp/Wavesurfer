@@ -4,15 +4,13 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -251,17 +249,17 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
-            settings(end+1,:)={'Acquisition.SampleRate' 100e6/5001};
-            settings(end+1,:)={'Acquisition.Duration' 2.17};
+            settings(end+1,:)={'AcquisitionSampleRate' 100e6/5001};
+            settings(end+1,:)={'SweepDuration' 2.17};
             
             settings(end+1,:)={'Stimulation.IsEnabled' true};
-            settings(end+1,:)={'Stimulation.SampleRate' 100e6/4999};
+            settings(end+1,:)={'StimulationSampleRate' 100e6/4999};
             
             settings(end+1,:)={'Display.IsEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
             settings(end+1,:)={'Display.UpdateRate' 9};
-            settings(end+1,:)={'Display.IsXSpanSlavedToAcquistionDuration' false};
-            settings(end+1,:)={'Display.XSpan' 2.01};
+            settings(end+1,:)={'IsXSpanSlavedToAcquistionDuration' false};
+            settings(end+1,:)={'XSpan' 2.01};
             
             % Set the settings in the wavesurferModel
             nSettings=size(settings,1);
@@ -280,6 +278,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...
             
@@ -300,8 +299,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
-
+            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; 
+            
             % Check that all settings are as set
             for i=1:nSettings ,
                 propertyName=settings{i,1};
@@ -314,6 +313,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %                 end
                 self.verifyEqual(propertyValue,propertyValueCheck,sprintf('Problem with: %s',propertyName));
             end            
+            wsModelCheck.delete() ;
         end  % function        
         
         function testSavingAndLoadingElectrodeProperties(self)
@@ -365,6 +365,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...            
 

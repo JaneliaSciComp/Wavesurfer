@@ -1,15 +1,13 @@
 classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase    
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -28,7 +26,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             
             % Add an untimed DO channel
             wsModel.addDOChannel() ;
-            wsModel.Stimulation.IsDigitalChannelTimed = false ;
+            wsModel.IsDOChannelTimed = false ;
             
             % Set the user class
             wsModel.UserCodeManager.ClassName = 'ws.examples.FlipDOFromSweepToSweep' ;

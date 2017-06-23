@@ -33,24 +33,6 @@ function varargout = wavesurfer(varargin)
     % Process arguments
     [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(varargin) ;
     
-%     % Deal with arguments
-%     if ~exist('isCommandLineOnly','var') || isempty(isCommandLineOnly) ,
-%         isCommandLineOnly=false;
-%     end
-%     if ~exist('protocolOrMDFFileName','var') || isempty(protocolOrMDFFileName) ,
-%         wasProtocolOrMDFFileNameGivenAtCommandLine=false;
-%         protocolOrMDFFileName='';
-%     else
-%         wasProtocolOrMDFFileNameGivenAtCommandLine=true;
-%     end
-%     if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
-%         doRunInDebugMode = false ;
-%     end
-    
-%     if ~exist('mode','var') || isempty(mode) ,
-%         mode = 'release' ;
-%     end
-
     % Create the application (model) object.
     isITheOneTrueWavesurferModel = true ;
     model = ws.WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode);

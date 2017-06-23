@@ -22,12 +22,16 @@ function result = test(varargin)
         testSuite = horzcat(withHardwareTestSuite, noHardwareTestSuite) ;
     end
 
-    % Make sure we don't have duplicate tests, which happens sometimes, for
-    % some reason
-    if length(unique({testSuite.Name})) ~= length(testSuite) ,
-        error('There seem to be duplicated tests!') ;
+    % Deal with duplicate tests, which happens sometimes, for unknown
+    % reasons
+    test_names = {testSuite.Name} ;
+    [unique_test_names, indices_of_unique_tests] = unique(test_names) ; %#ok<ASGLU>
+    testSuiteWithAllUnique = testSuite(indices_of_unique_tests) ;
+    if length(testSuiteWithAllUnique) ~= length(testSuite) ,
+        warning('Sigh.  There seem to be duplicated tests...') ;
     end
     
-    % Run the tests
-    result = testSuite.run() ;
+    % Run the (unique) tests
+    fprintf('About to perform %d tests...\n', length(testSuiteWithAllUnique)) ;
+    result = testSuiteWithAllUnique.run() ;
 end

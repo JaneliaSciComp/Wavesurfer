@@ -5,15 +5,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -31,10 +29,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
                                                       
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Acquisition.IsAnalogChannelActive = [true true false true true true true false];
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsAIChannelActive = [true true false true true true true false];
             wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
+            wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.Display.IsEnabled=true;
             %wsModel.Logging.IsEnabled=false;
 
@@ -66,9 +64,9 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             [wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_8_AIs.m'), ...
 %                                               isCommandLineOnly);
 % 
-%             wsModel.Acquisition.SampleRate=20000;  % Hz
+%             wsModel.AcquisitionSampleRate=20000;  % Hz
 %             wsModel.Stimulation.IsEnabled=true;
-%             wsModel.Stimulation.SampleRate=20000;  % Hz
+%             wsModel.StimulationSampleRate=20000;  % Hz
 %             wsModel.Display.IsEnabled=true;
 %             wsModel.Logging.IsEnabled=true;
 % 

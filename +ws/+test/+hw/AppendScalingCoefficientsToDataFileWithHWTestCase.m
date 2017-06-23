@@ -4,15 +4,13 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -26,15 +24,15 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             nCoeffs = 4 ;  % this holds for all x-series boards
             nAnalogChannels = 7 ;
             for i=1:(nAnalogChannels-1) ,
-                wsModel.Acquisition.addAnalogChannel() ;
+                wsModel.addAIChannel() ;
             end
             self.verifyEqual(wsModel.Acquisition.NAnalogChannels, nAnalogChannels, 'Number of analog channels is wrong') ;
             nInactiveAnalogChannels = 2 ;
-            wsModel.Acquisition.IsAnalogChannelActive(3) = false ;  % shouldn't matter
-            wsModel.Acquisition.IsAnalogChannelActive(5) = false ;
+            wsModel.IsAIChannelActive(3) = false ;  % shouldn't matter
+            wsModel.IsAIChannelActive(5) = false ;
             nActiveAnalogChannels = nAnalogChannels - nInactiveAnalogChannels ;
             self.verifyEqual(wsModel.Acquisition.NActiveAnalogChannels, nActiveAnalogChannels, 'Number of active analog channels is wrong') ;
-            wsModel.Acquisition.Duration = 0.1 ;  % sec
+            wsModel.SweepDuration = 0.1 ;  % sec
 
             outputFileAbsolutePath = [tempname() '.h5'] ;
             [outputFileDirName, outputFileStem] = fileparts(outputFileAbsolutePath) ;

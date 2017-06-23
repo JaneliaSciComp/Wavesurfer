@@ -6,25 +6,27 @@ classdef TestPulserController < ws.Controller
     methods            
         function self=TestPulserController(wavesurferController,wavesurferModel)
             % Call the superclass constructor
-            testPulser=wavesurferModel.Ephys.TestPulser;
-            self = self@ws.Controller(wavesurferController,testPulser);  
+            %testPulser=wavesurferModel.Ephys.TestPulser;
+            self = self@ws.Controller(wavesurferController,wavesurferModel);  
 
             % Create the figure, store a pointer to it
-            fig = ws.TestPulserFigure(testPulser,self) ;
+            fig = ws.TestPulserFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;            
         end
         
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             try
+                wsModel = self.Model ;
+                %testPulser = wsModel.Ephys.TestPulser;
                 if strcmp(controlName, 'StartStopButton') ,
                     self.StartStopButtonActuated() ;
                     exceptionMaybe = {} ;
                 else
                     % If the model is running, stop it (have to disable broadcast so we don't lose the new setting)
-                    wasRunningOnEntry = self.Model.IsRunning ;
+                    wasRunningOnEntry = wsModel.IsTestPulsing ;
                     if wasRunningOnEntry ,
                         self.Figure.AreUpdatesEnabled = false ;
-                        self.Model.stop() ;
+                        wsModel.stopTestPulsing() ;
                     end
                     
                     % Act on the control
@@ -38,7 +40,7 @@ classdef TestPulserController < ws.Controller
                         self.Figure.AreUpdatesEnabled = true ;
                         self.Figure.updateControlProperties() ;
                         if isempty(exceptionMaybe) ,
-                            self.Model.start() ;
+                            wsModel.startTestPulsing() ;
                         end
                     end
                 end
@@ -49,75 +51,82 @@ classdef TestPulserController < ws.Controller
         end  % function
         
         function StartStopButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('toggleIsRunning');
+            self.Model.do('toggleIsTestPulsing');
         end
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
-            electrodeNames = self.Model.ElectrodeNames ;
+            wsModel = self.Model ;
+            ephys = wsModel.Ephys ;
+            electrodeManager = ephys.ElectrodeManager ;
+            electrodeNames = electrodeManager.TestPulseElectrodeNames ;
             menuItem = ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
                                                 electrodeNames);
             if isempty(menuItem) ,  % indicates invalid selection
                 self.Figure.update();                
             else
                 electrodeName=menuItem;
-                self.Model.do('set','ElectrodeName',electrodeName) ;
+                ephys.do('set','TestPulseElectrodeName',electrodeName) ;
             end
         end
         
         function SubtractBaselineCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.SubtractBaselineCheckbox,'Value')) ;
-            self.Model.do('set', 'DoSubtractBaseline', value) ;
+            newValue = logical(get(self.Figure.SubtractBaselineCheckbox,'Value')) ;
+            self.Model.do('set', 'DoSubtractBaselineInTestPulseView', newValue) ;
         end
         
         function AutoYCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.AutoYCheckbox,'Value')) ;
-            self.Model.do('set', 'IsAutoY', value) ;
+            newValue = logical(get(self.Figure.AutoYCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoYInTestPulseView', newValue) ;
         end
         
         function AutoYRepeatingCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = logical(get(self.Figure.AutoYRepeatingCheckbox,'Value')) ;
-            self.Model.do('set', 'IsAutoYRepeating', value) ;
+            newValue = logical(get(self.Figure.AutoYRepeatingCheckbox,'Value')) ;
+            self.Model.do('set', 'IsAutoYRepeatingInTestPulseView', newValue) ;
         end
         
         function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             value = get(self.Figure.AmplitudeEdit,'String') ;
-            self.Model.do('set', 'Amplitude', value) ;
+            ephys = self.Model.Ephys ;
+            ephys.do('set', 'TestPulseElectrodeAmplitude', value) ;
         end
         
         function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
-            value = get(self.Figure.DurationEdit,'String') ;
-            self.Model.do('set', 'PulseDurationInMsAsString', value) ;
+            newValueInMsAsString = get(self.Figure.DurationEdit,'String') ;
+            newValue = 1e-3 * str2double(newValueInMsAsString) ;
+            self.Model.do('set', 'TestPulseDuration', newValue) ;
         end
         
         function ZoomInButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('zoomIn') ;
+            self.Model.do('zoomInTestPulseView') ;
         end
         
         function ZoomOutButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('zoomOut') ;
+            self.Model.do('zoomOutTestPulseView') ;
         end
         
         function YLimitsButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             self.MyYLimDialogFigure = [] ;  % if not first call, this should cause the old controller to be garbage collectable
             
+            wsModel = self.Model ;
+            
             function setModelYLimits(newYLimits)
-                self.Model.do('set', 'YLimits', newYLimits) ;
+                wsModel.do('set', 'TestPulseYLimits', newYLimits) ;
             end
             
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure([], ...
                                     get(self.Figure,'Position'), ...
-                                    self.Model.YLimits, ...
-                                    self.Model.YUnits, ...
+                                    wsModel.TestPulseYLimits, ...
+                                    wsModel.getTestPulseElectrodeMonitorUnits(), ...
                                     @setModelYLimits) ;
         end
         
         function ScrollUpButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('scrollUp') ;
+            self.Model.do('scrollUpTestPulseView') ;
         end
         
         function ScrollDownButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.Model.do('scrollDown') ;
+            self.Model.do('scrollDownTestPulseView') ;
         end
         
         function VCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -126,7 +135,8 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
 
             % Change the setting
-            self.Model.do('set', 'ElectrodeMode', 'vc') ;
+            ephys = self.Model.Ephys ;
+            ephys.do('set', 'TestPulseElectrodeMode', 'vc') ;
         end  % function
         
         function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -134,8 +144,9 @@ classdef TestPulserController < ws.Controller
             set(self.Figure.VCToggle, 'Value', 0) ;  % Want this to be fast
             drawnow('update');
             
-            % Change the setting           
-            self.Model.do('set', 'ElectrodeMode', 'cc') ;
+            % Change the setting    
+            ephys = self.Model.Ephys ;
+            ephys.do('set', 'TestPulseElectrodeMode', 'cc') ;
         end  % function
     end  % methods
     
@@ -148,7 +159,7 @@ classdef TestPulserController < ws.Controller
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isRootIdleSensuLato() || model.IsRunning;
+                shouldStayPut = ~model.isRootIdleSensuLato() || model.IsTestPulsing ;
             end
         end
     end % protected methods block    

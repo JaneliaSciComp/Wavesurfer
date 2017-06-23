@@ -26,6 +26,7 @@ classdef InputTask < handle
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
         ScalingCoefficients
+        %TimebaseRate  % Hz
     end
     
     properties (Transient = true, Access = protected)
@@ -55,6 +56,7 @@ classdef InputTask < handle
         IsArmed_ = false
         ScalingCoefficients_
         IsUsingDefaultTermination_ = false
+        %TimebaseRate_
     end
     
 %     events
@@ -63,7 +65,7 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, deviceNames, terminalIDs, sampleRate, durationPerDataAvailableCallback, doUseDefaultTermination)
+        function self = InputTask(parent, taskType, taskName, timebaseSource, timebaseRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
             % Deal with optional erg
             if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
                 doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
@@ -117,6 +119,8 @@ classdef InputTask < handle
                         self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
                     end
                 end
+                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', timebaseSource) ;                
+                set(self.DabsDaqTask_, 'sampClkTimebaseRate', timebaseRate) ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
@@ -448,6 +452,10 @@ classdef InputTask < handle
         function value = get.SampleRate(self)
             value = self.SampleRate_ ;
         end  % function
+
+%         function value = get.TimebaseRate(self)
+%             value = self.TimebaseRate_ ;
+%         end  % function        
         
 %         function set.SampleRate(self,value)
 %             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,

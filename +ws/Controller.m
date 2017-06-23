@@ -10,19 +10,6 @@ classdef Controller < handle
         Parent_
         Model_
         Figure_
-        HideFigureOnClose_ = true  % By default do not destroy the window when closed, just hide
-%         IsSuiGeneris_ = true  
-%             % Whether or not multiple instances of the controller class can
-%             % exist at a time. If true, only one instance of the controller
-%             % class can exist at a time.  If false, multiple instances of
-%             % the controller class can exist at a time. Currently, Most of
-%             % our controllers are sui generis, so true is a good default.
-%             % (Making this abstract creates headaches.  Ditto making
-%             % SetAccess=immutable, or Constant=true, all of which would
-%             % arguably make sense.)  You should only set this in the
-%             % constructor, and not change it for the lifetime of the
-%             % object.  Also, it should have the same value for all
-%             % instances of the class.
     end
         
     methods
@@ -43,10 +30,14 @@ classdef Controller < handle
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
             if ~isempty(self.Figure) && isvalid(self.Figure) ,
-                self.Figure.deleteFigureGH() ;
+                delete(self.Figure) ;
             end
             %self.deleteFigure_();
-            self.Model_ = [] ;
+            self.Model_ = [] ;  
+              % we don't generally delete the model b/c most controllers are
+              % sub-controllers, and their model is a sub-model of the main
+              % model.  So the main controller will handle deleting the
+              % model, if needed.
             self.Parent_=[];            
         end
         
@@ -74,7 +65,7 @@ classdef Controller < handle
             output = self.Model_ ;
         end
         
-        function self=setAreUpdatesEnabledForFigure(self,newValue)
+        function setAreUpdatesEnabledForFigure(self,newValue)
             self.Figure.AreUpdatesEnabled = newValue ;
         end        
     end
@@ -96,20 +87,30 @@ classdef Controller < handle
             self.Figure.hide();
         end
         
-        function quittingWavesurfer(self)   
-            self.deleteFigureGH();
-        end  % function
+%         function quittingWavesurfer(self)   
+%             self.deleteFigureGH();
+%         end  % function
         
-        function deleteFigureGH(self)   
-            self.tellFigureToDeleteFigureGH_();
-        end  % function
+%         function deleteFigureGH(self)   
+%             self.tellFigureToDeleteFigureGH_();
+%         end  % function
         
         function raiseFigure(self)
             self.Figure.raise();
-        end            
+        end 
+        
     end  % methods
             
     methods (Access = protected)
+        function deleteModel_(self)
+            % Explictly delete the model.
+            % Usually this is unnecessary and you shouldn't do it, but
+            % sometimes it's needful.  E.g. if there's a timer that points
+            % to the model, then the model can fail to be deleted even
+            % though there are no pointers to it except the timer.
+            delete(self.Model_) ;
+        end
+        
 %         function deleteFigure_(self)
 %             % Destroy the window rather than just hide it.
 %             figure=self.Figure;
@@ -118,10 +119,10 @@ classdef Controller < handle
 %             end
 %         end
         
-        function tellFigureToDeleteFigureGH_(self)
-            figure=self.Figure;
+        function deleteFigure_(self)
+            figure = self.Figure ;
             if ~isempty(figure) && isvalid(figure) ,
-                figure.deleteFigureGH();
+                delete(figure) ;
             end
         end            
     end  % methods
@@ -214,17 +215,7 @@ classdef Controller < handle
             if shouldStayPut ,
                 % Do nothing
             else
-                if self.HideFigureOnClose_ ,
-                    % This is not simply a call to hide() because some frameworks will require
-                    % modification to the evt object, other actions to actually cancel an
-                    % in-progress close event.
-                    self.hideFigure();
-                else
-                    % Actually release the window.  This may actual result in
-                    % active deletion of the controller so care should be taken in adding any code
-                    % to this method after this call.
-                    self.deleteFigureGH();
-                end
+                self.hideFigure();
             end
         end
     end

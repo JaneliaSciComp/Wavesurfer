@@ -60,7 +60,7 @@ classdef Logging < ws.Subsystem
     methods
         function self = Logging(parent)
             self@ws.Subsystem(parent) ;
-            self.FileLocation_ = 'C:\Data';
+            self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
             self.DoIncludeSessionIndex_ = false ;
@@ -76,12 +76,12 @@ classdef Logging < ws.Subsystem
                 if ws.isString(newValue) ,
                     if exist(newValue,'dir') ,
                         originalValue=self.FileLocation_;
-                        self.FileLocation_ = newValue;
+                        self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
                         % If file name has changed, reset the sweep index
-                        originalFullName=fullfile(originalValue,self.FileBaseName);
-                        newFullName=fullfile(newValue,self.FileBaseName);
-                        if ~isequal(originalFullName,newFullName) ,
-                            self.NextSweepIndex = 1;
+                        originalFullName = fullfile(originalValue, self.FileBaseName) ;
+                        newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
+                        if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
+                            self.NextSweepIndex = 1 ;
                         end
                     end
                 else
@@ -263,7 +263,7 @@ classdef Logging < ws.Subsystem
             %fprintf('Just did self.DidCreateCurrentDataFile_ = false\n') ;
             
             % Set the chunk size for writing data to disk
-            nActiveAnalogChannels = sum(wavesurferModel.Acquisition.IsAnalogChannelActive) ;
+            nActiveAnalogChannels = sum(wavesurferModel.IsAIChannelActive) ;
             
             % For h5create() it is useful to set
             % ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels] since
@@ -272,14 +272,15 @@ classdef Logging < ws.Subsystem
             % wavesurferModel.Acquisition.SampleRate * wavesurferModel.Acquisiton.Duration)
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
             if wavesurferModel.AreSweepsFiniteDuration ,
-                self.ChunkSize_ = [wavesurferModel.Acquisition.ExpectedScanCount nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.ExpectedSweepScanCount nActiveAnalogChannels];
             else
-                self.ChunkSize_ = [wavesurferModel.Acquisition.SampleRate nActiveAnalogChannels];
+                self.ChunkSize_ = [wavesurferModel.AcquisitionSampleRate nActiveAnalogChannels];
             end
                 
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
             self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
+            fprintf('In ws.Logging.startingRun(), just set self.CurrentRunAbsoluteFileName_ to "%s"\n', self.CurrentRunAbsoluteFileName_) ;
             %self.CurrentSweepIndex_ = self.NextSweepIndex ;
             
             % Store the first sweep index for the run 
@@ -518,6 +519,8 @@ classdef Logging < ws.Subsystem
         function nullOutTransients_(self)
             % null-out all the transient things that are only used during
             % the run
+            fprintf('At top of ws.Logging.nullOutTransients...\n') ;
+            dbstack
             self.CurrentRunAbsoluteFileName_ = [];
             self.FirstSweepIndex_ = [] ;
             self.CurrentDatasetOffset_ = [];
@@ -584,6 +587,7 @@ classdef Logging < ws.Subsystem
             
             if ~isempty(self.FileBaseName) ,
                 if ~isempty(rawAnalogData) ,
+                    currentRunAbsoluteFileName = self.CurrentRunAbsoluteFileName_ ;
                     h5write(self.CurrentRunAbsoluteFileName_, ...
                             sprintf('/sweep_%04d/analogScans', ...
                                     self.WriteToSweepId_), ...
@@ -604,7 +608,7 @@ classdef Logging < ws.Subsystem
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
             wavesurferModel = self.Parent ;
-            if self.CurrentDatasetOffset_ > wavesurferModel.Acquisition.ExpectedScanCount ,
+            if self.CurrentDatasetOffset_ > wavesurferModel.ExpectedSweepScanCount ,
                 self.CurrentDatasetOffset_ = 1;
                 self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end
@@ -651,55 +655,6 @@ classdef Logging < ws.Subsystem
         end  % function        
     end  % static methods block
     
-    methods (Access = protected)
-%         function defineDefaultPropertyAttributes(self)
-%             defineDefaultPropertyAttributes@ws.Subsystem(self);
-%             self.setPropertyAttributeFeatures('FileLocation', 'Classes', 'char', 'Attributes', {'vector'});
-%             self.setPropertyAttributeFeatures('FileBaseName', 'Classes', 'char', 'Attributes', {'vector'});
-%             self.setPropertyAttributeFeatures('NextSweepIndex', 'Attributes', {'scalar', 'finite', 'integer', '>=', 1});
-%         end
-        
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.Subsystem(self);            
-%             % self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'*'});  
-%             %self.setPropertyTags('Enabled', 'IncludeInFileTypes', {'cfg'});
-%             %self.setPropertyTags('Enabled', 'ExcludeFromFileTypes', {'usr'});            
-%             self.setPropertyTags('FileLocation', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('FileBaseName', 'IncludeInFileTypes', {'cfg'});
-%             self.setPropertyTags('NextSweepIndex', 'IncludeInFileTypes', {'cfg'});
-%         end
-        
-%         function zprvFileLocationWillChange(self, ~, ~)
-%             self.CachedLoggingFileNameInfo_{1} = self.FileLocation;
-%         end
-%         
-%         function zprvFileBaseNameWillChange(self, ~, ~)
-%             self.CachedLoggingFileNameInfo_{2} = self.FileBaseName;
-%         end
-%         
-%         function zprvFileLocationOrBaseNameDidChange(self, ~, ~)
-%             % MATLAB loves to fire set events when the value does not actually change.
-%             if ~strcmp(fullfile(self.CachedLoggingFileNameInfo_{1}, self.CachedLoggingFileNameInfo_{2}), fullfile(self.FileLocation, self.FileBaseName))
-%                 self.NextSweepIndex = 1;
-%             end
-%         end
-    end
-    
-%     methods (Access=public)
-%         function resetProtocol(self)  % has to be public so WavesurferModel can call it
-%             % Clears all aspects of the current protocol (i.e. the stuff
-%             % that gets saved/loaded to/from the config file.  Idea here is
-%             % to return the protocol properties stored in the model to a
-%             % blank slate, so that we're sure no aspects of the old
-%             % protocol get carried over when loading a new .cfg file.
-%             
-%             self.IsEnabled=true;
-%             self.FileBaseName='untitled';
-%             self.FileLocation='C:\Data';
-%             self.NextSweepIndex=1;
-%         end  % function
-%     end % methods
-
     methods (Access=protected)        
         function out = getPropertyValue_(self, name)
             out = self.(name);
