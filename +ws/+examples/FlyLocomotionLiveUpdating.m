@@ -134,11 +134,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end
     
     methods
-        function self = FlyLocomotionLiveUpdating(userCodeManager)
+        function self = FlyLocomotionLiveUpdating(wsModel)
             % Figure out which is the one true Wavesurfer model so that we
             % only create figures in the true Wavesurfer model:
-            if isa(userCodeManager.Parent, 'ws.WavesurferModel')
-                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = userCodeManager.Parent.IsITheOneTrueWavesurferModel;
+            if isa(wsModel, 'ws.WavesurferModel')
+                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = wsModel.IsITheOneTrueWavesurferModel;
             else
                 self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
             end

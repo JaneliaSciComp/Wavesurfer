@@ -1,14 +1,14 @@
 classdef UserCodeManager < ws.Subsystem
     
     properties (Dependent = true)
-        ClassName
+        %ClassName
         %AbortCallsComplete
     end
     
     properties (Dependent = true, SetAccess = immutable)
-        TheObject  % an instance of ClassName, or []
-        IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
-        DoesTheObjectMatchClassName
+        %TheObject  % an instance of ClassName, or []
+        %IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
+        %DoesTheObjectMatchClassName
     end
     
     properties (Access = protected)
@@ -35,16 +35,16 @@ classdef UserCodeManager < ws.Subsystem
             self.TheObject_ = [] ;
         end
         
-        function result = get.ClassName(self)
+        function result = getClassName_(self)
             result = self.ClassName_;
         end
                 
-        function result = get.IsClassNameValid(self)
+        function result = getIsClassNameValid_(self)
             result = ( isempty(self.ClassName_) || ...
                        ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ) ;
         end
 
-        function result = get.DoesTheObjectMatchClassName(self)
+        function result = getDoesTheObjectMatchClassName_(self)
             result = ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ;
         end               
         
@@ -52,17 +52,17 @@ classdef UserCodeManager < ws.Subsystem
 %             result = self.AbortCallsComplete_;
 %         end
                 
-        function result = get.TheObject(self)
+        function result = getTheObject_(self)
             result = self.TheObject_;
         end
         
-        function set.ClassName(self, value)
+        function setClassName_(self, value, wsModel)
             if ws.isString(value) ,
                 % If it's a string, we'll keep it, but we have to check if
                 % it's a valid class name
                 trimmedValue = strtrim(value) ;
                 self.ClassName_ = trimmedValue ;
-                err = self.tryToInstantiateObject_() ;
+                err = self.tryToInstantiateObject_(wsModel) ;
                 self.broadcast('Update');
                 if ~isempty(err) ,
                   error('wavesurfer:errorWhileInstantiatingUserObject', ...
@@ -118,12 +118,12 @@ classdef UserCodeManager < ws.Subsystem
 %             end
 %         end  % method
 
-        function reinstantiateUserObject(self)
+        function reinstantiateUserObject_(self, wsModel)
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
             if self.DoesTheObjectMatchClassName ,
-                err = self.tryToInstantiateObject_() ;
+                err = self.tryToInstantiateObject_(wsModel) ;
             else
                 err = [] ;
             end
@@ -266,7 +266,7 @@ classdef UserCodeManager < ws.Subsystem
     end  % public methods block
        
     methods (Access=protected)
-        function exception = tryToInstantiateObject_(self)
+        function exception = tryToInstantiateObject_(self, wsModel)
             % This method syncs self.TheObject_ given the value of
             % self.ClassName_ . If object creation is attempted and fails,
             % exception will be nonempty, and will be an MException.  But
@@ -286,7 +286,7 @@ classdef UserCodeManager < ws.Subsystem
             else
                 % className is non-empty
                 try 
-                    newObject = feval(className,self) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className, wsModel) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;

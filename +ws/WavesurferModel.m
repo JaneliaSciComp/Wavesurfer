@@ -66,6 +66,10 @@ classdef WavesurferModel < ws.Model
         IsElectrodeMarkedForRemoval  % logical, nElectrodes x 1
         TestPulseElectrodeIndex  % either a scalar or [] if no electrode is currently selected in the test pulser
         NextRunAbsoluteFileName
+        UserClassName
+        IsUserClassNameValid
+        DoesTheUserObjectMatchTheUserClassName
+        TheUserObject
     end
     
     properties (Access=protected)
@@ -5219,5 +5223,29 @@ classdef WavesurferModel < ws.Model
             value = fullfile(logging.FileLocation, fileName);
         end  % function
         
+        function set.UserClassName(self, newValue)
+            self.UserCodeManager_.setClassName_(newValue, self) ;
+        end
+        
+        function result = get.UserClassName(self) 
+            result = self.UserCodeManager_.getClassName_() ;
+        end
+        
+        function reinstantiateUserObject(self)
+            self.UserCodeManager_.reinstantiateUserObject_(self) ;
+        end        
+        
+        function result = get.IsUserClassNameValid(self)
+            result = self.UserCodeManager_.getIsClassNameValid_() ;
+        end
+        
+        function result = get.DoesTheUserObjectMatchTheUserClassName(self)
+            result = self.UserCodeManager_.getDoesTheObjectMatchClassName_() ;
+        end               
+
+        function result = get.TheUserObject(self)
+            result = self.UserCodeManager_.getTheObject_() ;
+        end               
+
     end  % public methods
 end  % classdef
