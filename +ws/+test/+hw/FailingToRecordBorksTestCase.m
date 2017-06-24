@@ -37,7 +37,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             wsModel.Logging.FileBaseName=dataFileBaseName;
 
             % Want to make sure there's a pre-existing file by that name
-            nextRunAbsoluteFileName=wsModel.Logging.NextRunAbsoluteFileName;
+            nextRunAbsoluteFileName=wsModel.NextRunAbsoluteFileName;
             if ~exist(nextRunAbsoluteFileName,'file');
                 fid=fopen(nextRunAbsoluteFileName,'w');
                 fclose(fid);

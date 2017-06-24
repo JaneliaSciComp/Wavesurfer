@@ -72,7 +72,7 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
+            absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
             wsModel.record();  % blocking, now

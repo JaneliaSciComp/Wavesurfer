@@ -874,7 +874,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             if ~isIdle&&model.Logging.IsEnabled ,
                 set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
-                set(self.FileNameEdit, 'String', model.Logging.NextRunAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
             end            
             set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
             

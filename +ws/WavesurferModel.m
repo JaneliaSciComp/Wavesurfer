@@ -65,6 +65,7 @@ classdef WavesurferModel < ws.Model
         IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
         IsElectrodeMarkedForRemoval  % logical, nElectrodes x 1
         TestPulseElectrodeIndex  % either a scalar or [] if no electrode is currently selected in the test pulser
+        NextRunAbsoluteFileName
     end
     
     properties (Access=protected)
@@ -1339,9 +1340,11 @@ classdef WavesurferModel < ws.Model
             % Now tell the logging subsystem that a run is about to start,
             % since the analog scaling coeffs have been set
             try
-                thisSubsystem = self.Logging ;
-                if thisSubsystem.IsEnabled ,
-                    thisSubsystem.startingRun();
+                logging = self.Logging ;
+                if logging.IsEnabled ,
+                    headerStruct = self.encodeForHeader() ;
+                    logging.startingRun(self.NextRunAbsoluteFileName, self.IsAIChannelActive, self.ExpectedSweepScanCount, ...
+                                        self.AcquisitionSampleRate, self.AreSweepsFiniteDuration, headerStruct);
                 end
             catch me
                 % Something went wrong
@@ -1945,12 +1948,18 @@ classdef WavesurferModel < ws.Model
                 isSweepBased = self.AreSweepsFiniteDuration_ ;
                 t = self.t_;
                 if self.Logging.IsEnabled ,
+                    nActiveAnalogChannels = self.Acquisition_.NActiveAnalogChannels ;
+                    nActiveDigitalChannels = self.Acquisition_.NActiveDigitalChannels ;                    
+                    expectedSweepScanCount = self.ExpectedSweepScanCount ;
                     self.Logging.dataAvailable(isSweepBased, ...
                                                t, ...
                                                scaledAnalogData, ...
                                                rawAnalogData, ...
                                                rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData);
+                                               timeSinceRunStartAtStartOfData, ...
+                                               nActiveAnalogChannels, ...
+                                               nActiveDigitalChannels, ...
+                                               expectedSweepScanCount);
                 end
                 if self.Display.IsEnabled ,
                     self.Display.dataAvailable(isSweepBased, ...
@@ -2210,7 +2219,7 @@ classdef WavesurferModel < ws.Model
                         'set-log-file-counter', iFirstAcqInSet, ...
                         'set-acq-count-in-loop', nAcqsInSet, ...
                         'set-log-enabled', self.Logging.IsEnabled, ...
-                        'set-log-file-folder-path', fileparts(self.Logging.NextRunAbsoluteFileName), ...
+                        'set-log-file-folder-path', fileparts(self.NextRunAbsoluteFileName), ...
                         'set-log-file-base-name', self.Logging.AugmentedBaseName, ...
                         'loop') ;
             
@@ -5201,5 +5210,14 @@ classdef WavesurferModel < ws.Model
                 self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
             end
         end
+        
+        function value=get.NextRunAbsoluteFileName(self)
+            logging = self.Logging_ ;            
+            firstSweepIndex = logging.NextSweepIndex ;
+            numberOfSweeps = self.NSweepsPerRun ;
+            fileName = logging.sweepSetFileNameFromNumbers(firstSweepIndex, numberOfSweeps) ;
+            value = fullfile(logging.FileLocation, fileName);
+        end  % function
+        
     end  % public methods
 end  % classdef
