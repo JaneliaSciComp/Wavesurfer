@@ -32,7 +32,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             electrodeIndex = model.addNewElectrode();
             
             % Set the type of new electrode to Heka
-            model.setElectrodeType(electrodeIndex,'Heka EPC');
+            model.setElectrodeProperty(electrodeIndex,'Type', 'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
@@ -74,10 +74,10 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Create two new electrodes in ElectrodeManager
             model.addNewElectrode();
-            tpElectrodeIndex = model.addNewElectrode();
+            tpElectrodeIndex = model.addNewElectrode() ;
             
             % Mark the first one as not being test-pulseable
-            model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse=[false true];
+            model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse = [false true] ;
             
             % Make the 2nd trode current in TP (should be automatic since
             % it's the only test-pulsable one)
@@ -85,7 +85,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Set the type of new electrode to Heka
             %electrodeIndex=2;
-            model.setElectrodeType(tpElectrodeIndex,'Heka EPC');
+            model.setElectrode(tpElectrodeIndex, 'Type', 'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command

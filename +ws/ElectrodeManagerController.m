@@ -223,7 +223,7 @@ classdef ElectrodeManagerController < ws.Controller
             isTheElectrode=(source==self.Figure.TypePopups);
             electrodeIndex=find(isTheElectrode);
             %self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
-            self.Model.do('setElectrodeType', electrodeIndex, choice) ; %#ok<FNDSB>            
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'Type', choice) ; %#ok<FNDSB>            
         end  % function
         
         function IndexWithinTypeEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -232,7 +232,7 @@ classdef ElectrodeManagerController < ws.Controller
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
             %self.Model.setElectrodeIndexWithinType(electrodeIndex,newValue); %#ok<FNDSB>
-            self.Model.do('setElectrodeIndexWithinType', electrodeIndex, newValue) ; %#ok<FNDSB>
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'IndexWithinType', newValue) ; %#ok<FNDSB>
         end  % function
 
     end  % methods

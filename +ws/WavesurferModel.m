@@ -5008,24 +5008,32 @@ classdef WavesurferModel < ws.Model
         end  % function         
         
         function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
-            try
-                self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
-            catch exception
-                % deal with EPCMasterSocket exceptions,
-                % otherwise rethrow
-                indicesThatMatch=strfind(exception.identifier,'EPCMasterSocket:');                
-                if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
-                    % The error was an EPCMasterSocket error,
-                    % so we just neglect to set the mode in the
-                    % electrode, and make sure the view gets
-                    % resynced (happens below now)
-                    %self.electrodeMayHaveChanged(electrodeIndex, propertyName);
-                else
-                    % There was some other kind of problem
-                    rethrow(exception);
-                end
-            end                                        
-            self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+            switch propertyName ,
+                case 'Type' ,
+                    self.setElectrodeType_(electrodeIndex, newValue) ;
+                case 'IndexWithinType' ,
+                    self.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+                otherwise ,
+                    % the common case
+                    try
+                        self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+                    catch exception
+                        % deal with EPCMasterSocket exceptions,
+                        % otherwise rethrow
+                        indicesThatMatch=strfind(exception.identifier,'EPCMasterSocket:');                
+                        if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
+                            % The error was an EPCMasterSocket error,
+                            % so we just neglect to set the mode in the
+                            % electrode, and make sure the view gets
+                            % resynced (happens below now)
+                            %self.electrodeMayHaveChanged(electrodeIndex, propertyName);
+                        else
+                            % There was some other kind of problem
+                            rethrow(exception);
+                        end
+                    end                                        
+                    self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+            end
         end
         
         function setElectrodeModeAndScalings(self,...
@@ -5101,8 +5109,10 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
             self.broadcast('UpdateElectrodeManager');
         end  % function
-        
-        function setElectrodeType(self, electrodeIndex, newValue)
+    end
+    
+    methods (Access=protected)
+        function setElectrodeType_(self, electrodeIndex, newValue)
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
@@ -5112,13 +5122,15 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
        
-        function setElectrodeIndexWithinType(self, electrodeIndex, newValue)
+        function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
             doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
             if doUpdateSmartElectrodeGainsAndModes ,
                 self.updateSmartElectrodeGainsAndModes() ;
             end
         end
-        
+    end  % protected methods block
+    
+    methods
         function toggleSoftpanelEnablement(self)
             doUpdateSmartElectrodeGainsAndModes = self.Ephys_.toggleSoftpanelEnablement_() ;
             if doUpdateSmartElectrodeGainsAndModes ,
