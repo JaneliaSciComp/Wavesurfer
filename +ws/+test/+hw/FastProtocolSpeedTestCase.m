@@ -28,7 +28,7 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             ticId = tic() ;             
             %wsController.FastProtocolButtonsActuated(pressedButtonHandle) ;  % Load it again to check the speed
             wsController.fakeControlActuatedInTest('FastProtocolButtons', 1) ;  % 1 means the first button among the FP buttons
-            timeToComplete = toc(ticId) ;
+            timeToComplete = toc(ticId)
             
             % Should take less than four seconds if in correct version, and more than 20 seconds if older version
             self.verifyTrue(timeToComplete<4) ;

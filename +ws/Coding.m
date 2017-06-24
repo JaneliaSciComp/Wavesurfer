@@ -123,12 +123,12 @@ classdef (Abstract) Coding < handle
             % override this method.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = self.listPropertiesForPersistence() ;
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if isprop(other,thisPropertyName)
+                thisPropertyName = propertyNames{i} ;
+                if isprop(other, thisPropertyName) ,
                     source = other.getPropertyValue_(thisPropertyName) ;
                     self.setPropertyValue_(thisPropertyName, source) ;
                 end
@@ -146,10 +146,10 @@ classdef (Abstract) Coding < handle
             other = self.copyGivenParent([]) ;
         end  % function                
         
-        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
-            className=class(self);
-            other=feval(className,parent);
-            other.mimic(self);
+        function other=copyGivenParent(self, parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
+            className = class(self) ;
+            other = feval(className, parent) ;
+            other.mimic(self) ;
         end  % function                
     end  % public methods block
 

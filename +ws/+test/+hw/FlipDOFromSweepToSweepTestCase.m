@@ -29,7 +29,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             wsModel.IsDOChannelTimed = false ;
             
             % Set the user class
-            wsModel.UserCodeManager.ClassName = 'ws.examples.FlipDOFromSweepToSweep' ;
+            wsModel.UserClassName = 'ws.examples.FlipDOFromSweepToSweep' ;
 
             % Play, logging warnings
             wsModel.startLoggingWarnings() ;

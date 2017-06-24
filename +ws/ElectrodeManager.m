@@ -10,7 +10,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end
 
     properties (Dependent=true, SetAccess=immutable)
-        NElectrodes
+        %NElectrodes
         TestPulseElectrodes  % the electrodes that are marked for test pulsing.
         TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
         TestPulseElectrodesCount
@@ -35,7 +35,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         LargestElectrodeIndexUsed_ = -inf
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
-        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application
+        MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application (non-transient b/c electrode IDs are persisted)
         DoTrodeUpdateBeforeRunWhenSensible_
     end
 
@@ -120,8 +120,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end
 %         end
         
-        function out = get.NElectrodes(self)
-            out=length(self.Electrodes_);
+        function result = getElectrodeCount_(self)
+            result = length(self.Electrodes_) ;
         end
         
         function out = get.Electrodes(self)
@@ -375,13 +375,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end  % function
 
         function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
-            electrodeIndices = (1:self.NElectrodes) ;
+            electrodeIndices = (1:self.getElectrodeCount_()) ;
             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
             result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
         end  % function
         
         function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
-            electrodeIndices = (1:self.NElectrodes) ;
+            electrodeIndices = (1:self.getElectrodeCount_()) ;
             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
             result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
         end  % function
@@ -605,7 +605,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             else
                 queryChannelNames=queryChannelNamesRaw;
             end
-            nElectrodes=self.NElectrodes;
+            nElectrodes=self.getElectrodeCount_();
             nQueryChannels=length(queryChannelNames);
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
@@ -682,7 +682,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             else
                 queryChannelNames=queryChannelNamesRaw;                
             end
-            nElectrodes=self.NElectrodes;
+            nElectrodes=self.getElectrodeCount_();
             nQueryChannels=length(queryChannelNames);
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
@@ -782,7 +782,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
-            nElectrodes=self.NElectrodes;
+            nElectrodes=self.getElectrodeCount_();
             for i=1:nElectrodes
                 if ~self.IsElectrodeMarkedForTestPulse_(i) ,
                     continue
@@ -929,7 +929,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function result = isElectrodeConnectionOpen(self)
-            result=true(1,self.NElectrodes);  % dumb electrodes always have an open connection, by convention            
+            result=true(1,self.getElectrodeCount_());  % dumb electrodes always have an open connection, by convention            
             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
             for k=1:length(smartElectrodeTypes), 
                 smartElectrodeType=smartElectrodeTypes{k};
@@ -947,7 +947,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Similarly for dumb electrodes.
             
             % populate array of number of electrodes of each type
-            nElectrodesOfType=inf(1,self.NElectrodes);            
+            nElectrodesOfType=inf(1,self.getElectrodeCount_());            
             electrodeTypesThatReportNumber=setdiff(ws.Electrode.Types,{'Manual' 'Heka EPC'});
             for k=1:length(electrodeTypesThatReportNumber), 
                 electrodeType=electrodeTypesThatReportNumber{k};
@@ -960,8 +960,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
 
             % Check that index of each is within range
-            indexOfElectrodeWithinType=ones(1,self.NElectrodes);
-            for i=1:self.NElectrodes ,                
+            indexOfElectrodeWithinType=ones(1,self.getElectrodeCount_());
+            for i=1:self.getElectrodeCount_() ,                
                 electrode=self.Electrodes{i};
                 indexOfThisElectrodeWithinType=electrode.IndexWithinType;
                 if ~isempty(indexOfThisElectrodeWithinType) ,
@@ -1004,7 +1004,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
-                for i=1:self.NElectrodes ,                
+                for i=1:self.getElectrodeCount_() ,                
                     electrode=self.Electrodes{i};
                     electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
                 end            
@@ -1014,7 +1014,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
-                for i=1:self.NElectrodes ,                
+                for i=1:self.getElectrodeCount_() ,                
                     electrode=self.Electrodes{i};
                     electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
                 end            
@@ -1104,22 +1104,33 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Disable broadcasts for speed
             self.disableBroadcasts() ;
 
-            nOldElectrodes = self.NElectrodes ;
-            self.IsElectrodeMarkedForRemoval = true(1,nOldElectrodes) ;
-            self.removeMarkedElectrodes_() ;
-            nNewElectrodes=length(other.Electrodes) ;
+%             nOldElectrodes = self.getElectrodeCount_() ;
+%             self.IsElectrodeMarkedForRemoval = true(1,nOldElectrodes) ;
+%             self.removeMarkedElectrodes_() ;
+%             nNewElectrodes=length(other.Electrodes) ;
+%             for i=1:nNewElectrodes ,
+%                 self.addNewElectrode_() ;
+%                 self.Electrodes{i}.mimic(other.Electrodes{i}) ;
+%             end
+            nNewElectrodes=length(other.Electrodes_) ;
+            self.Electrodes_ = cell(1, nNewElectrodes) ;
             for i=1:nNewElectrodes ,
-                self.addNewElectrode_() ;
-                self.Electrodes{i}.mimic(other.Electrodes{i}) ;
+                self.Electrodes_{i} = ws.Electrode(self) ;
+                self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
             end
-            self.IsElectrodeMarkedForTestPulse_ = other.IsElectrodeMarkedForTestPulse ;
-            self.IsElectrodeMarkedForRemoval = other.IsElectrodeMarkedForRemoval ;
-            self.AreSoftpanelsEnabled = other.AreSoftpanelsEnabled ;
-            self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork ;
+            
+            self.IsElectrodeMarkedForTestPulse_ = other.IsElectrodeMarkedForTestPulse_ ;
+            self.IsElectrodeMarkedForRemoval_ = other.IsElectrodeMarkedForRemoval_ ;
+            % LargestElectrodeIndexUsed_ ??
+            self.AreSoftpanelsEnabled_ = other.AreSoftpanelsEnabled_ ;
+            self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork_ ;
             
             % mimic the softpanel sockets
-            self.EPCMasterSocket_.mimic(other.EPCMasterSocket_) ;
             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_) ;
+%             self.EPCMasterSocket_.mimic(other.EPCMasterSocket_) ;  
+%               % Doesn't actually do anything, and self.EPCMasterSocket_ is
+%               % transient
+            self.DoTrodeUpdateBeforeRunWhenSensible_ = other.DoTrodeUpdateBeforeRunWhenSensible_ ;
 
             % Re-enable broadcasts
             self.enableBroadcastsMaybe() ;
@@ -1231,9 +1242,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result=sum(self.IsElectrodeMarkedForTestPulse_) ;
         end
         
-        function electrode = getElectrodeByIndex_(self, electrodeIndex)
-            electrode = self.Electrodes_{electrodeIndex} ;
-        end    
+%         function electrode = getElectrodeByIndex_(self, electrodeIndex)
+%             electrode = self.Electrodes_{electrodeIndex} ;
+%         end    
         
         function result = getTestPulseElectrodes_(self)
             % Moving forwards, it would be better if (trusted) consumers called this to
@@ -1247,7 +1258,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     self.setElectrodeName_(electrodeIndex, newValue) ,
                 case 'MonitorScaling' ,
                     electrode = self.Electrodes_{electrodeIndex} ;
-                    if electrode.getIsInAVCMode() ,
+                    if electrode.IsInAVCMode ,
                         propertyName = 'CurrentMonitorScaling' ;
                     else
                         propertyName = 'VoltageMonitorScaling' ;
@@ -1255,7 +1266,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     self.setElectrodeModeOrScaling_(electrodeIndex, propertyName, newValue) ;                
                 case 'CommandScaling' ,
                     electrode = self.Electrodes_{electrodeIndex} ;
-                    if electrode.getIsInAVCMode() ,
+                    if electrode.IsInAVCMode ,
                         propertyName = 'VoltageCommandScaling' ;
                     else
                         propertyName = 'CurrentCommandScaling' ;

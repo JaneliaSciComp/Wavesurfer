@@ -154,15 +154,15 @@ classdef ElectrodeManagerController < ws.Controller
 %         end
         
         function ModePopupActuated(self, source, event, varargin)  %#ok<INUSD>
-            isTheElectrode=(source==self.Figure.ModePopups);
-            electrodeIndex=find(isTheElectrode,1);
-            electrode=self.Model.Electrodes{electrodeIndex};
-            allowedModes=electrode.getAllowedModes();
-            allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
-            modeAsString=ws.getPopupMenuSelection(source,allowedModesAsStrings);
-            modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
+            isTheElectrode = (source==self.Figure.ModePopups) ;
+            electrodeIndex = find(isTheElectrode,1) ;
+            electrode = self.Model.Electrodes{electrodeIndex} ;
+            allowedModes = electrode.AllowedModes ;
+            allowedModesAsStrings = cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false) ;
+            modeAsString = ws.getPopupMenuSelection(source,allowedModesAsStrings) ;
+            modeIndex = find(strcmp(modeAsString,allowedModesAsStrings),1) ;
             if ~isempty(modeIndex) ,
-                mode=allowedModes{modeIndex};
+                mode = allowedModes{modeIndex} ;
                 %self.Model.setElectrodeModeOrScaling(electrodeIndex,'Mode',mode);
                 self.Model.do('setElectrodeProperty', electrodeIndex, 'Mode', mode) ;
             end

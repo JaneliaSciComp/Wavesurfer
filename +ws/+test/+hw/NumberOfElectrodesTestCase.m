@@ -61,7 +61,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 
                 electrodeManagerController = wsController.ElectrodeManagerController ;
                 storeNumberOfElectrodesInFigure(i) = length(electrodeManagerController.Figure.LabelEdits);
-                storeNumberOfElectrodesInModel(i) = wsModel.Ephys.ElectrodeManager.NElectrodes;
+                storeNumberOfElectrodesInModel(i) = wsModel.ElectrodeCount ;
             end
             
             % Compare number of electrodes in figure and model

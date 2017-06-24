@@ -2,11 +2,9 @@ classdef Electrode < ws.Model % & ws.Mimic
     
     properties (Constant=true)
         Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
-        %Modes = {'vc' 'cc'};
     end
 
     properties (Dependent=true)
-        %Parent
         Name
         VoltageMonitorChannelName
         CurrentMonitorChannelName
@@ -21,14 +19,18 @@ classdef Electrode < ws.Model % & ws.Mimic
         VoltageMonitorScaling  % scalar, typically in V/mV
         VoltageUnits
         CurrentUnits
+        Type
+        IndexWithinType
+        IsCommandEnabled       
+        
         TestPulseAmplitude  % for whichever is the current mode
         CommandChannelName
         MonitorChannelName
         CommandScaling
         MonitorScaling
-        Type
-        IndexWithinType
-        IsCommandEnabled
+        AllowedModes
+        IsInACCMode
+        IsInAVCMode
     end
     
     properties (Dependent=true, SetAccess=immutable)  % Hidden so not calc'ed on call to disp()
@@ -37,7 +39,6 @@ classdef Electrode < ws.Model % & ws.Mimic
     end
     
     properties (Access=protected)
-        %Parent_   % the parent ElectrodeManager object, or empty
         Name_
         VoltageMonitorChannelName_
         CurrentMonitorChannelName_
@@ -646,21 +647,21 @@ classdef Electrode < ws.Model % & ws.Mimic
             keyboard
         end
         
-        function modes = getAllowedModes(self)
-            modes=ws.Electrode.allowedModesForType(self.Type);
+        function modes = get.AllowedModes(self)
+            modes = ws.Electrode.allowedModesForType(self.Type) ;
         end
         
-        function result = getIsInACCMode(self)
+        function result = get.IsInACCMode(self)
             result = isequal(self.Mode_,'cc') || isequal(self.Mode_,'i_equals_zero') ;
         end
 
-        function result = getIsInAVCMode(self)
+        function result = get.IsInAVCMode(self)
             result = isequal(self.Mode_,'vc') ;
         end
         
         function setMode_(self, newValue)
             if ~isempty(newValue) ,  % empty sometimes used to signal that mode is unknown
-                allowedModes=self.getAllowedModes();
+                allowedModes = self.AllowedModes ;
                 isMatch=cellfun(@(mode)(isequal(mode,newValue)),allowedModes);            
                 if any(isMatch) ,
                     self.Mode_ = newValue;
@@ -817,6 +818,8 @@ classdef Electrode < ws.Model % & ws.Mimic
     
     methods
         function setProperty_(self, propertyName, newValue)            
+            % This one is deisigned to be used for most setting needs.
+            % setPropertyValue_() is mostly just for use by ws.Coding.
             methodName = horzcat('set', propertyName, '_') ;
             feval(methodName, self, newValue) ;
         end

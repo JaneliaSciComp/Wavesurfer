@@ -273,7 +273,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
-            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&model.DoesTheUserObjectMatchTheUserClassName) ) ;
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&wavesurferModel.DoesTheUserObjectMatchTheUserClassName) ) ;
         end
     end
     

@@ -70,6 +70,7 @@ classdef WavesurferModel < ws.Model
         IsUserClassNameValid
         DoesTheUserObjectMatchTheUserClassName
         TheUserObject
+        ElectrodeCount
     end
     
     properties (Access=protected)
@@ -5253,6 +5254,14 @@ classdef WavesurferModel < ws.Model
         function result = getElectrodeProperty(self, electrodeIndex, propertyName)
             result = self.Ephys_.getElectrodeProperty(electrodeIndex, propertyName) ;
         end  % function
+
+        function result = get.ElectrodeCount(self)
+            result = self.Ephys.getElectrodeCount_() ;
+        end               
+        
+%         function electrode = getElectrodeByIndex(self, electrodeIndex)
+%             electrode = self.Ephys_.getElectrodeByIndex_(electrodeIndex) ;
+%         end    
         
     end  % public methods
 end  % classdef

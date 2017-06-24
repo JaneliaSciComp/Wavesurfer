@@ -85,7 +85,7 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(testPulseElectrodes) ;
         end
                 
-        function startingRun(self)
+        function startingRun(self)  %#ok<MANU>
             % Update all the gains and modes that are associated with smart
             % electrodes if checkbox is checked
 %             if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
@@ -237,7 +237,7 @@ classdef Ephys < ws.Subsystem
             electrodeName = self.TestPulseElectrodeName ;
             electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
             if ~isempty(electrode) ,
-                electrode.(propertyName) = newValue ;
+                electrode.setProperty_(propertyName, newValue) ;
             end
         end
     end
@@ -646,6 +646,14 @@ classdef Ephys < ws.Subsystem
         function result = getElectrodeProperty(self, electrodeIndex, propertyName)
             result = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, propertyName) ;
         end  % function
+
+        function result = getElectrodeCount_(self)
+            result = self.ElectrodeManager_.getElectrodeCount_();
+        end
+        
+%         function electrode = getElectrodeByIndex_(self, electrodeIndex)
+%             electrode = self.ElectrodeManager_.getElectrodeByIndex_(electrodeIndex) ;
+%         end    
         
     end  % public methods block
 
