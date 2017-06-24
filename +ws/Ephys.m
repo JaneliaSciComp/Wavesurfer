@@ -51,21 +51,21 @@ classdef Ephys < ws.Subsystem
             out=self.ElectrodeManager_;
         end
         
-        function electrodeMayHaveChanged(self,electrodeIndex,propertyName)
+        function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
             % Called by the ElectrodeManager to notify that the electrode
             % may have changed.
             % Currently, tells TestPulser about the change, and the parent
             % WavesurferModel.
-            self.ElectrodeManager_.electrodeMayHaveChanged(electrodeIndex,propertyName) ;
-            self.TestPulser_.electrodeMayHaveChanged(electrodeIndex,propertyName) ;
+            self.ElectrodeManager_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+            self.TestPulser_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
             %self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
         end
 
-        function electrodeWasAdded(self,electrode)
-            % Called by the ElectrodeManager when an electrode is added.
-            % Currently, informs the TestPulser of the change.
-            self.TestPulser_.electrodeWasAdded(electrode);
-        end
+%         function electrodeWasAdded(self,electrode)
+%             % Called by the ElectrodeManager when an electrode is added.
+%             % Currently, informs the TestPulser of the change.
+%             self.TestPulser_.electrodeWasAdded(electrode);
+%         end
 
 %         function electrodesRemoved(self)
 %             % Called by the ElectrodeManager when one or more electrodes
@@ -88,9 +88,9 @@ classdef Ephys < ws.Subsystem
         function startingRun(self)
             % Update all the gains and modes that are associated with smart
             % electrodes if checkbox is checked
-            if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
-                self.ElectrodeManager_.updateSmartElectrodeGainsAndModes() ;
-            end
+%             if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
+%                 self.ElectrodeManager_.updateSmartElectrodeGainsAndModes() ;
+%             end
         end
         
         function completingRun(self) %#ok<MANU>
@@ -603,7 +603,9 @@ classdef Ephys < ws.Subsystem
         
         function electrodeIndex = addNewElectrode_(self)
             electrodeIndex = self.ElectrodeManager_.addNewElectrode_() ;
-            self.electrodeWasAdded(electrode);
+            electrodeName = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, 'Name') ;
+            self.TestPulser_.electrodeWasAdded_(electrodeName) ;
+            %self.electrodeWasAdded(electrodeIndex);
         end
         
         function removeMarkedElectrodes_(self)
@@ -641,6 +643,10 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.setIsElectrodeMarkedForRemoval_(newValue);
         end
 
+        function result = getElectrodeProperty(self, electrodeIndex, propertyName)
+            result = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, propertyName) ;
+        end  % function
+        
     end  % public methods block
 
 end  % classdef

@@ -860,10 +860,10 @@ classdef WavesurferModel < ws.Model
 %             self.didSetAnalogChannelUnitsOrScales() ;      
 %         end
         
-        function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSL>
+        function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
             % Called by the Ephys to notify that the electrode
             % may have changed.
-            self.Ephys_.electrodeMayHaveChanged() ;
+            self.Ephys_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
             isModeOrChannelNameOrScale = ...
                 isempty(propertyName) || ...
                 ismember(propertyName, ...
@@ -1197,6 +1197,9 @@ classdef WavesurferModel < ws.Model
 %                     end
 %                 end
                 if self.Ephys_.IsEnabled ,
+                    if self.DoTrodeUpdateBeforeRun
+                        self.updateSmartElectrodeGainsAndModes() ;
+                    end
                     self.Ephys_.startingRun() ;
                 end
                 if self.Acquisition_.IsEnabled ,
@@ -3371,7 +3374,7 @@ classdef WavesurferModel < ws.Model
             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.AcquisitionTriggerScheme.Edge ;
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
-            looperProtocol.TheUserObject = self.UserCodeManager.TheObject ;
+            looperProtocol.TheUserObject = self.TheUserObject ;
             
             %s = whos('looperProtocol') ;
             %looperProtocolSizeInBytes = s.bytes
@@ -3405,7 +3408,7 @@ classdef WavesurferModel < ws.Model
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
             refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
-            refillerProtocol.TheUserObject = self.UserCodeManager.TheObject ;
+            refillerProtocol.TheUserObject = self.TheUserObject ;
             
             %s = whos('refillerProtocol') ;
             %refillerProtocolSizeInBytes = s.bytes
@@ -5247,5 +5250,9 @@ classdef WavesurferModel < ws.Model
             result = self.UserCodeManager_.getTheObject_() ;
         end               
 
+        function result = getElectrodeProperty(self, electrodeIndex, propertyName)
+            result = self.Ephys_.getElectrodeProperty(electrodeIndex, propertyName) ;
+        end  % function
+        
     end  % public methods
 end  % classdef

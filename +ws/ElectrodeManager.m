@@ -256,7 +256,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             
             % Make an electrode
             electrode = ws.Electrode(self) ;
-            electrode.Name = name ;           
+            electrode.setName_(name) ;
             
             % Add the electrode
             electrodeIndex = length(self.Electrodes_)+1 ;
@@ -412,7 +412,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             isManualElectrode=isequal(type,'Manual');
             if isManualElectrode ,
                 % just set it
-                electrode.(propertyName)=newValue;
+                electrode.setProperty_(propertyName, newValue) ;
             else
                 % is smart electrode
                 if self.AreSoftpanelsEnabled_ ,
@@ -432,7 +432,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                         % if we get here, no exception happened within
                         % EPCMasterSocket
                         newValueCheck=self.EPCMasterSocket_.getElectrodeParameter(indexWithinType,parameterNameForGetting);
-                        electrode.(propertyName)=newValueCheck;  % set the value in the electrode proper
+                        electrode.setProperty_(propertyName, newValueCheck) ;  % set the value in the electrode proper
                         % For a Heka amp, setting the voltage command
                         % scaling can affect the external command
                         % enablement and vice-versa.  So update the
@@ -442,12 +442,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                                 otherPropertyName='IsCommandEnabled';
                                 otherParameterNameForGetting=self.parameterNameForGettingFromPropertyName(electrodeIndex,otherPropertyName);
                                 otherValue=self.EPCMasterSocket_.getElectrodeParameter(indexWithinType,otherParameterNameForGetting);
-                                electrode.(otherPropertyName)=otherValue;  % set the value in the electrode proper
+                                electrode.setProperty_(otherPropertyName, otherValue) ;  % set the value in the electrode proper
                             elseif isequal(parameterNameForSetting,'IsCommandEnabled') || isequal(parameterNameForSetting,'Mode') ,
                                 otherPropertyName='VoltageCommandScaling';
                                 otherParameterNameForGetting=self.parameterNameForGettingFromPropertyName(electrodeIndex,otherPropertyName);
                                 otherValue=self.EPCMasterSocket_.getElectrodeParameter(indexWithinType,otherParameterNameForGetting);
-                                electrode.(otherPropertyName)=otherValue;  % set the value in the electrode proper
+                                electrode.setProperty_(otherPropertyName, otherValue) ;  % set the value in the electrode proper
                             end
                         end
                     else
@@ -528,6 +528,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function
 
+        function result = getElectrodeProperty(self, electrodeIndex, propertyName)
+            electrode = self.Electrodes_{electrodeIndex} ;
+            result = electrode.(propertyName) ;
+        end  % function
+        
         
 %         function result=getIsCommandChannelManagedByName(self,channelName)
 %             if isempty(channelName) ,

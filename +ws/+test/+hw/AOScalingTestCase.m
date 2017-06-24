@@ -18,15 +18,23 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
         function theTest(self)
             wsModel = wavesurfer('--nogui') ;
 
-            wsModel.addNewElectrode() ;
-            electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1} ;
-            electrode.Mode = 'cc' ;
-            electrode.VoltageMonitorChannelName = 'AI0' ;
-            electrode.CurrentCommandChannelName = 'AO0' ;
-            electrode.VoltageMonitorScaling = 1 ;
-            electrode.CurrentCommandScaling = 10 ;
+            electrodeIndex = wsModel.addNewElectrode() ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'Mode', 'cc') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'VoltageMonitorChannelName', 'AI0') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'CurrentCommandChannelName', 'AO0') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'VoltageMonitorScaling', 1) ;  
+            wsModel.setElectrodeProperty(electrodeIndex, 'CurrentCommandScaling', 10) ;  
+            
+%             wsModel.addNewElectrode() ;
+%             electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1} ;
+%             electrode.Mode = 'cc' ;
+%             electrode.VoltageMonitorChannelName = 'AI0' ;
+%             electrode.CurrentCommandChannelName = 'AO0' ;
+%             electrode.VoltageMonitorScaling = 1 ;
+%             electrode.CurrentCommandScaling = 10 ;
 
-            currentCommandScaleInTrode = electrode.CurrentCommandScaling ;
+            %currentCommandScaleInTrode = electrode.CurrentCommandScaling ;
+            currentCommandScaleInTrode = wsModel.getElectrodeProperty(electrodeIndex, 'CurrentCommandScaling') ;
             commandScaleInStimulationSubsystem = wsModel.AOChannelScales ;
 
             self.verifyEqual(currentCommandScaleInTrode, commandScaleInStimulationSubsystem) ;

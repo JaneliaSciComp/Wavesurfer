@@ -441,11 +441,11 @@ classdef TestPulser < ws.Model
             result = self.YLimits_ ;
         end
 
-        function electrodeWasAdded(self, electrode)
+        function electrodeWasAdded_(self, electrodeName)
             % Called by the parent Ephys when an electrode is added.
             self.clearExistingSweepIfPresent_() ;
             if isempty(self.ElectrodeName_) ,
-                self.ElectrodeName_ = electrode.Name ;                                
+                self.ElectrodeName_ = electrodeName ;                                
             end
             self.broadcast('Update') ;
         end

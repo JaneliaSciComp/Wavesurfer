@@ -126,9 +126,9 @@ classdef Electrode < ws.Model % & ws.Mimic
             result=self.Mode_;
         end  % function
 
-        function setName_(self,newValue)
-            if ws.isString(newValue)
-                self.Name_=newValue;
+        function setName_(self, newValue)
+            if ws.isString(newValue) ,
+                self.Name_ = newValue ;
             end
             %self.mayHaveChanged('Name');
         end  % function
@@ -658,7 +658,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             result = isequal(self.Mode_,'vc') ;
         end
         
-        function setMode_(self,newValue)
+        function setMode_(self, newValue)
             if ~isempty(newValue) ,  % empty sometimes used to signal that mode is unknown
                 allowedModes=self.getAllowedModes();
                 isMatch=cellfun(@(mode)(isequal(mode,newValue)),allowedModes);            
