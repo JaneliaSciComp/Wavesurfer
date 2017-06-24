@@ -167,7 +167,7 @@ wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindin
 %Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
 wsModel.setSelectedOutputableByIndex(1) ;  % should be the only one
 
-wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
+wsModel.UserClassName = 'ws.examples.RasterTreadMill' ;
 
 %scope = wsModel.Display.Scopes{1} ;
 %scope.YLim = [-55 +25] ;

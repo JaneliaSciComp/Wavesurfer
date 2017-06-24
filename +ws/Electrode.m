@@ -730,7 +730,7 @@ classdef Electrode < ws.Model % & ws.Mimic
                 mode=self.Mode;
                 if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
                     newMode = ws.Electrode.findClosestAllowedModeForType(mode,newType) ;
-                    self.Mode = newMode;
+                    self.Mode_ = newMode;
                 end                
                 % Actually change the type index
                 self.TypeIndex_=newTypeIndex;

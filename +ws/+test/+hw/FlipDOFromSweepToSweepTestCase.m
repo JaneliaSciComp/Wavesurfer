@@ -50,6 +50,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             end
             
             % Release the WavesurferModel, even though it's a little stilly
+            wsModel.delete() ;
             wsModel = [] ;  %#ok<NASGU>    
             
             self.verifyEmpty(exceptionMaybe, 'wsModel.play() threw one or more warnings') ;

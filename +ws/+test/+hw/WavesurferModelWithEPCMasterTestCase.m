@@ -64,20 +64,20 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Create an WavesurferModel
             %thisDirName=fileparts(mfilename('fullpath'));
             isITheOneTrueWavesurferModel = true ;
-            model=ws.WavesurferModel(isITheOneTrueWavesurferModel);
+            wsModel=ws.WavesurferModel(isITheOneTrueWavesurferModel);
             %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
-            model.addAIChannel() ;
-            model.addAIChannel() ;
-            model.addAIChannel() ;
-            model.addAOChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
             
             % Create two new electrodes in ElectrodeManager
-            model.addNewElectrode();
-            tpElectrodeIndex = model.addNewElectrode() ;
+            wsModel.addNewElectrode();
+            tpElectrodeIndex = wsModel.addNewElectrode() ;
             
             % Mark the first one as not being test-pulseable
-            model.Ephys.ElectrodeManager.IsElectrodeMarkedForTestPulse = [false true] ;
+            wsModel.IsElectrodeMarkedForTestPulse = [false true] ;
             
             % Make the 2nd trode current in TP (should be automatic since
             % it's the only test-pulsable one)
@@ -85,32 +85,33 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Set the type of new electrode to Heka
             %electrodeIndex=2;
-            model.setElectrode(tpElectrodeIndex, 'Type', 'Heka EPC');
+            wsModel.setElectrodeProperty(tpElectrodeIndex, 'Type', 'Heka EPC');
             
             % Disable the softpanel, i.e. enable the electrode manager to
             % command
-            model.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=true;
+            wsModel.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=true;
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='cc';
             %model.Ephys.TestPulseElectrodeMode=electrodeMode;
-            model.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
+            wsModel.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
 
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
+            electrodeModeCheck = wsModel.getElectrodeProperty(tpElectrodeIndex, 'Mode') ;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
             
             % Using the Test Pulser, set the electrode mode
             electrodeMode='vc';
             %model.Ephys.TestPulseElectrodeMode=electrodeMode;
-            model.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
+            wsModel.setElectrodeProperty(tpElectrodeIndex, 'Mode', electrodeMode) ;
             
             % Check the electrode Mode
-            electrodeModeCheck=model.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
+            %electrodeModeCheck=wsModel.Ephys.ElectrodeManager.Electrodes{tpElectrodeIndex}.Mode;
+            electrodeModeCheck = wsModel.getElectrodeProperty(tpElectrodeIndex, 'Mode') ;
             self.verifyEqual(electrodeModeCheck,electrodeMode);
 
             % Re-enable the softpanel
-            model.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=false;
+            wsModel.Ephys.ElectrodeManager.IsInControlOfSoftpanelModeAndGains=false;
         end
         
         function testUpdateBeforeRunCheckbox(self)

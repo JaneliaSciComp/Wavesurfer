@@ -327,7 +327,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
             
-            wsModel.addNewElectrode();
+            electrodeIndex = wsModel.addNewElectrode() ;
             
             % A list of settings
             settings=cell(0,2);
@@ -347,15 +347,16 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             settings(end+1,:)={'CurrentUnits' ws.SIUnit('kA')};
             
             % Set the settings
-            electrode=wsModel.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
+            %electrode=wsModel.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
             nSettings=size(settings,1);
             for i=1:nSettings ,
                 propertyName=settings{i,1};
-                propertyValue=settings{i,2}; %#ok<NASGU>
-                evalString=sprintf('electrode.%s = propertyValue ;',propertyName);
-                eval(evalString);
+                propertyValue=settings{i,2};
+                %evalString=sprintf('electrode.%s = propertyValue ;',propertyName);
+                %eval(evalString);
+                wsModel.setElectrodeProperty(electrodeIndex, propertyName, propertyValue) ;
             end
-            clear electrode  % don't want ref hanging around
+            %clear electrode  % don't want ref hanging around
             
             % Save the protocol to disk, very similar to how
             % WavesurferController does it

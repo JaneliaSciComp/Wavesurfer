@@ -324,8 +324,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 electrode=self.Electrodes_{electrodeIndex};
                 originalType=electrode.Type;
                 if ~isequal(newValue,originalType) ,
-                    electrode.Type=newValue;
-                    newType=electrode.Type;  % if newValue was invalid, newType will be same as originalType
+                    electrode.setProperty_('Type', newValue) ;
+                    newType = electrode.Type ;  % if newValue was invalid, newType will be same as originalType
                     if ~isequal(newType,originalType) ,
                         isManualElectrode=isequal(newType,'Manual');
                         if isManualElectrode ,
@@ -350,8 +350,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 electrode=self.Electrodes_{electrodeIndex};
                 originalValue=electrode.IndexWithinType;
                 if ~isequal(newValue,originalValue) ,
-                    electrode.IndexWithinType=newValue;
-                    checkValue=electrode.IndexWithinType;  % if newValue was invalid, checkValue will be same as originalType
+                    electrode.setProperty_('IndexWithinType', newValue) ;
+                    checkValue = electrode.IndexWithinType ;  % if newValue was invalid, checkValue will be same as originalType
                     if ~isequal(checkValue,originalValue) ,
                         type=electrode.Type;
                         isManualElectrode=isequal(type,'Manual');
@@ -1089,7 +1089,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                                          'UniformOutput',false) ;
                 if ~ismember(newValue, electrodeNames) ,  % prevent name collisions
                     electrode = self.Electrodes_{electrodeIndex} ;
-                    electrode.Name = newValue ;
+                    electrode.setProperty_('Name', newValue) ;
                 end
             end
             %self.broadcast('Update') ;

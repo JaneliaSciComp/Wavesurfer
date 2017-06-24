@@ -1215,7 +1215,7 @@ classdef WavesurferModel < ws.Model
                 if self.Triggering_.IsEnabled ,
                     self.Triggering_.startingRun() ;
                 end
-                if self.UserCodeManager.IsEnabled ,
+                if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
                 end                
             catch me
@@ -1978,7 +1978,7 @@ classdef WavesurferModel < ws.Model
                                                timeSinceRunStartAtStartOfData, ...
                                                self.XSpan);
                 end
-                if self.UserCodeManager.IsEnabled ,
+                if self.UserCodeManager_.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
                 end
 
@@ -2100,7 +2100,7 @@ classdef WavesurferModel < ws.Model
             % directly removes at 
             % least one layer of function calls and allows for user functions for 'events'
             % that are not formally events on the model.
-            self.UserCodeManager.invoke(self, eventName, varargin{:});
+            self.UserCodeManager_.invoke(self, eventName, varargin{:});
             
             % Handle as standard event if applicable.
             %self.broadcast(eventName);
@@ -3374,7 +3374,7 @@ classdef WavesurferModel < ws.Model
             looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.AcquisitionTriggerScheme.PFIID ;
             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.AcquisitionTriggerScheme.Edge ;
             
-            looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             looperProtocol.TheUserObject = self.TheUserObject ;
             
             %s = whos('looperProtocol') ;
@@ -3408,7 +3408,7 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
-            refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager.IsEnabled ;                        
+            refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             refillerProtocol.TheUserObject = self.TheUserObject ;
             
             %s = whos('refillerProtocol') ;
@@ -4698,14 +4698,14 @@ classdef WavesurferModel < ws.Model
                 self.changeTestPulserReadiness_(-1) ;
 
                 % Get some handles we'll need
-                ephys = self.Ephys_ ;
-                electrodeManager=ephys.ElectrodeManager;                
                 wavesurferModel = self ;
+                ephys = wavesurferModel.Ephys_ ;
+                electrodeManager = ephys.ElectrodeManager ;                
 
                 % Update the smart electrode channel scales, if possible and
                 % needed
                 if self.DoTrodeUpdateBeforeRun ,
-                    electrodeManager.updateSmartElectrodeGainsAndModes();
+                    self.updateSmartElectrodeGainsAndModes();
                 end
 
                 % Check that we can start, and if not, return

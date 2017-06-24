@@ -554,7 +554,7 @@ classdef Ephys < ws.Subsystem
                                                                 newCurrentCommandScaling, ...
                                                                 newVoltageCommandScaling,...
                                                                 newIsCommandEnabled) ;
-            self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+            self.electrodeMayHaveChanged(electrodeIndex, '') ;
         end  % function
         
         function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
@@ -578,7 +578,7 @@ classdef Ephys < ws.Subsystem
              modes, ...
              currentMonitorScalings, voltageMonitorScalings, currentCommandScalings, voltageCommandScalings, ...
              isCommandEnabled] = ...
-                self.Ephys_.probeHardwareForSmartElectrodeModesAndScalings_(smartElectrodeType) ;
+                self.ElectrodeManager_.probeHardwareForSmartElectrodeModesAndScalings_(smartElectrodeType) ;
         end  % function
         
         function reconnectWithSmartElectrodes_(self)

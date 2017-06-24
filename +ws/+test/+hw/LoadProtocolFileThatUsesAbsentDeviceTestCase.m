@@ -22,6 +22,7 @@ classdef LoadProtocolFileThatUsesAbsentDeviceTestCase < matlab.unittest.TestCase
             wsModel.startLoggingWarnings() ;  % we just want to ignore warnings
             wsModel.openProtocolFileGivenFileName(protocolFileName) ;
             wsModel.stopLoggingWarnings() ;
+            wsModel.delete() ;
             wsModel = [] ;   %#ok<NASGU>
             pause(5) ;
             

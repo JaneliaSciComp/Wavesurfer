@@ -48,6 +48,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
             
             wsController.quit() ;
             wsController = [] ; %#ok<NASGU>
+            wsModel.delete() ;
             wsModel = [] ; %#ok<NASGU>
            
             delete(protocolFileName) ;           

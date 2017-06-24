@@ -34,8 +34,8 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
             wsModel.Stimulation.IsEnabled = true ;
             %wsModel.AreSweepsContinuous = true ;
 
-            wsModel.UserCodeManager.ClassName = 'ws.examples.UserClassWithFigs' ;
-            wsModel.UserCodeManager.TheObject.Greeting = 'This is a test.  This is only a test.' ;
+            wsModel.UserClassName = 'ws.examples.UserClassWithFigs' ;
+            wsModel.TheUserObject.Greeting = 'This is a test.  This is only a test.' ;
             
 %             aTimer = timer('ExecutionMode', 'singleShot', ...
 %                            'StartDelay', 20, ...
