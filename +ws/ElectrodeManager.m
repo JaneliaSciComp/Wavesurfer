@@ -51,11 +51,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end
     
     methods
-        function self = ElectrodeManager(parent,varargin)
+        function self = ElectrodeManager()
             % General initialization
-            self@ws.Model(parent);
+            self@ws.Model();
             self.EPCMasterSocket_=ws.EPCMasterSocket();
-            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket(self);
+            self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket();
             self.AreSoftpanelsEnabled_=true;
 
             % Create the heartbeat timer
@@ -65,22 +65,22 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                                            'TimerFcn',@(object,event,varargin)(self.heartbeat(object,event)), ...
 %                                            'ErrorFcn',@(object,event,varargin)(self.heartbeatError(object,event)));            
             
-            % Process args
-            validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
-            mandatoryPropNames=cell(1,0);
-            pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
-            propNamesRaw = pvArgs(1:2:end);
-            propValsRaw = pvArgs(2:2:end);
-            nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
-            propNames=propNamesRaw(1:nPVs);
-            propVals=propValsRaw(1:nPVs);            
+%             % Process args
+%             validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
+%             mandatoryPropNames=cell(1,0);
+%             pvArgs = ws.filterPVArgs(varargin,validPropNames,mandatoryPropNames);
+%             propNamesRaw = pvArgs(1:2:end);
+%             propValsRaw = pvArgs(2:2:end);
+%             nPVs=length(propValsRaw);  % Use the number of vals in case length(varargin) is odd
+%             propNames=propNamesRaw(1:nPVs);
+%             propVals=propValsRaw(1:nPVs);            
             
             self.DoTrodeUpdateBeforeRunWhenSensible_ = true;
             
-            % Set the properties
-            for idx = 1:nPVs
-                self.(propNames{idx}) = propVals{idx};
-            end
+%             % Set the properties
+%             for idx = 1:nPVs
+%                 self.(propNames{idx}) = propVals{idx};
+%             end
         end
         
         function delete(self)  %#ok<INUSD>
@@ -255,7 +255,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % At this point, name is a valid electrode name
             
             % Make an electrode
-            electrode = ws.Electrode([]) ;
+            electrode = ws.Electrode() ;
             electrode.setName_(name) ;
             
             % Add the electrode
@@ -1115,7 +1115,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             nNewElectrodes=length(other.Electrodes_) ;
             self.Electrodes_ = cell(1, nNewElectrodes) ;
             for i=1:nNewElectrodes ,
-                self.Electrodes_{i} = ws.Electrode([]) ;
+                self.Electrodes_{i} = ws.Electrode() ;
                 self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
             end
             

@@ -29,8 +29,8 @@ classdef CounterTrigger < ws.Model
     end
 
     methods
-        function self = CounterTrigger(parent)  %#ok<INUSD>
-            self = self@ws.Model([]) ;  % ignore parent arg
+        function self = CounterTrigger() 
+            self = self@ws.Model() ;  % ignore parent arg
             self.Name_ = 'Counter Trigger' ;
             self.IsInternalRepeatCountOverridden_ = false ;
             self.InternalRepeatCount_ = 1 ;

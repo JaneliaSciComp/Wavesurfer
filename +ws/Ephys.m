@@ -30,11 +30,11 @@ classdef Ephys < ws.Subsystem
     end
     
     methods
-        function self = Ephys(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Ephys()
+            self@ws.Subsystem() ;
             self.IsEnabled=true;            
-            self.ElectrodeManager_ = ws.ElectrodeManager([]) ;    % no longer needs parent
-            self.TestPulser_ = ws.TestPulser([]) ;  % no longer needs parent
+            self.ElectrodeManager_ = ws.ElectrodeManager() ;    % no longer needs parent
+            self.TestPulser_ = ws.TestPulser() ;  % no longer needs parent
             %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
         end
         

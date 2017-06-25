@@ -24,8 +24,8 @@ classdef UserCodeManager < ws.Subsystem
     end
     
     methods
-        function self = UserCodeManager(parent)
-            self@ws.Subsystem(parent) ;
+        function self = UserCodeManager()
+            self@ws.Subsystem() ;
             self.IsEnabled=true;            
         end  % function
 
@@ -246,7 +246,7 @@ classdef UserCodeManager < ws.Subsystem
                     if isempty(source) ,
                         newUserObject = [] ;
                     else
-                        newUserObject = source.copyGivenParent(self) ;
+                        newUserObject = source.copy() ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
                 else

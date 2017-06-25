@@ -74,8 +74,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
 
     methods
-        function self = Display(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Display()
+            self@ws.Subsystem() ;
             self.XOffset_ = 0 ;  % s
             self.XSpan_ = 1 ;  % s
             self.UpdateRate_ = 10 ;  % Hz

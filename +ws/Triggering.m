@@ -38,8 +38,8 @@ classdef Triggering < ws.Subsystem
     end
         
     methods
-        function self = Triggering(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Triggering()
+            self@ws.Subsystem() ;
             self.IsEnabled = true ;
             self.BuiltinTrigger_ = ws.BuiltinTrigger() ;  % triggers are now parentless
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
@@ -675,7 +675,7 @@ classdef Triggering < ws.Subsystem
                     target.mimic(source) ;
                 elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    target = ws.Coding.copyCellArrayOfHandles(source) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,

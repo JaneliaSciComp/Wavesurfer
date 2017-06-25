@@ -49,9 +49,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     end
     
     methods
-        function self = Stimulus(parent)  %#ok<INUSD>
-            self@ws.Model([]) ;
-            self.Delegate_ = ws.SquarePulseStimulusDelegate([]);  
+        function self = Stimulus()
+            self@ws.Model() ;
+            self.Delegate_ = ws.SquarePulseStimulusDelegate();  
 %             pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
 %             prop = pvArgs(1:2:end);
 %             vals = pvArgs(2:2:end);
@@ -264,9 +264,9 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                         % you can do that...)
                         
                         % Make a new delegate of the right kind
-                        delegateClassName=sprintf('ws.%sStimulusDelegate',other.TypeString);
-                        delegate=feval(delegateClassName,self);
-                        self.Delegate_ = delegate;
+                        delegateClassName = sprintf('ws.%sStimulusDelegate',other.TypeString) ;
+                        delegate=feval(delegateClassName) ;
+                        self.Delegate_ = delegate ;
                         self.Delegate_.mimic(other.Delegate_) ;
                     else
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -362,7 +362,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             if ismember(newValue,self.AllowedTypeStrings) ,
                 if ~isequal(newValue,self.TypeString) ,
                     delegateClassName=sprintf('ws.%sStimulusDelegate',newValue);
-                    delegate=feval(delegateClassName,self);
+                    delegate=feval(delegateClassName) ;
                     self.Delegate_ = delegate;
                 end
             end

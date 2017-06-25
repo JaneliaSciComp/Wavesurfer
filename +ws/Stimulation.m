@@ -56,9 +56,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
     
     methods
-        function self = Stimulation(parent)
-            self@ws.Subsystem(parent) ;
-            self.StimulusLibrary_ = ws.StimulusLibrary([]);  % create a StimulusLibrary, which doesn't need to know its parent
+        function self = Stimulation()
+            self@ws.Subsystem() ;
+            self.StimulusLibrary_ = ws.StimulusLibrary();  % create a StimulusLibrary, which doesn't need to know its parent
         end
         
         function startingRun(self) %#ok<MANU>
@@ -247,7 +247,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                 end
             elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
-                    self.StimulusLibrary_ = newValue.copyGivenParent(self) ;
+                    self.StimulusLibrary_ = newValue.copy() ;
                     %self.StimulusLibrary_.Parent = self ;
                 end
             end
@@ -585,7 +585,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
                     target = self.(thisPropertyName) ;
                     if isempty(target) ,
-                        self.setPropertyValue_(thisPropertyName, source.copyGivenParent(self)) ;
+                        self.setPropertyValue_(thisPropertyName, source.copy()) ;
                     else
                         target.mimic(source);
                     end

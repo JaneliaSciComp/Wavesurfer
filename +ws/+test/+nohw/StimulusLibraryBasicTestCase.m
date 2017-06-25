@@ -106,7 +106,7 @@ classdef StimulusLibraryBasicTestCase < ws.test.StimulusLibraryTestCase
         end  % function
         
         function testRemovalOfSelectedOutputable(self)
-            library = ws.StimulusLibrary([]) ;
+            library = ws.StimulusLibrary() ;
             outputChannelNames = {'ao0' 'ao1'} ;
             library.setToSimpleLibraryWithUnitPulse(outputChannelNames) ;
             self.verifyTrue(library.isSelfConsistent()) ;

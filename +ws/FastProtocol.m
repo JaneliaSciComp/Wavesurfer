@@ -16,14 +16,14 @@ classdef FastProtocol < ws.Model
     end
     
     methods
-        function self=FastProtocol(parent,protocolFileName,autoStartType)
-            self@ws.Model(parent) ;
-            if exist('protocolFileName','var') ,
-                self.ProtocolFileName=protocolFileName;
-            end
-            if exist('autoStartType','var') ,
-                self.AutoStartType=autoStartType;
-            end            
+        function self=FastProtocol()
+            self@ws.Model() ;
+%             if exist('protocolFileName','var') ,
+%                 self.ProtocolFileName=protocolFileName;
+%             end
+%             if exist('autoStartType','var') ,
+%                 self.AutoStartType=autoStartType;
+%             end            
         end
         
         function set.ProtocolFileName(self, value)
@@ -31,12 +31,12 @@ classdef FastProtocol < ws.Model
                 if ws.isString(value) ,
                     self.ProtocolFileName_ = value;
                 else
-                    self.Parent.updateFastProtocol();
+                    %self.Parent.updateFastProtocol();
                     error('ws:invalidPropertyValue', ...
                           'ProtocolFileName must be a string');
                 end                    
             end
-            self.Parent.updateFastProtocol();
+            %self.Parent.updateFastProtocol();
         end
         
         function value=get.ProtocolFileName(self)
@@ -48,12 +48,12 @@ classdef FastProtocol < ws.Model
                 if ws.isAStartType(value) ,
                     self.AutoStartType_ = value;
                 else
-                    self.Parent.updateFastProtocol();
+                    %self.Parent.updateFastProtocol();
                     error('ws:invalidPropertyValue', ...
                           'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
                 end
             end
-            self.Parent.updateFastProtocol();
+            %self.Parent.updateFastProtocol();
         end
 
         function value=get.AutoStartType(self)

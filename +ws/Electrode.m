@@ -59,9 +59,9 @@ classdef Electrode < ws.Model % & ws.Mimic
     end
     
     methods        
-        function self=Electrode(parent)
+        function self=Electrode()
             % Set the defaults
-            self@ws.Model(parent);
+            self@ws.Model();
             self.Name_ = '' ;
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';

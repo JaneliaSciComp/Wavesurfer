@@ -58,8 +58,8 @@ classdef Logging < ws.Subsystem
     end
     
     methods
-        function self = Logging(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Logging()
+            self@ws.Subsystem() ;
             self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;

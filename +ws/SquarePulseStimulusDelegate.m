@@ -7,8 +7,8 @@ classdef SquarePulseStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = SquarePulseStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
+        function self = SquarePulseStimulusDelegate()
+            self=self@ws.StimulusDelegate() ;
         end                
     end
     

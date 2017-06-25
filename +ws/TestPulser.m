@@ -63,8 +63,8 @@ classdef TestPulser < ws.Model
     end
     
     methods
-        function self = TestPulser(parent)
-            self@ws.Model(parent);
+        function self = TestPulser()
+            self@ws.Model() ;
             self.PulseDuration_ = 10e-3 ;  % s
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;

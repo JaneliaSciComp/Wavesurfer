@@ -15,14 +15,14 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = ExpressionStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.filterPVArgs(varargin, {'Expression'}, {});
-            propNames = pvArgs(1:2:end);
-            propValues = pvArgs(2:2:end);               
-            for i = 1:length(propValues)
-                self.(propNames{i}) = propValues{i};
-            end            
+        function self = ExpressionStimulusDelegate()
+            self=self@ws.StimulusDelegate();
+%             pvArgs = ws.filterPVArgs(varargin, {'Expression'}, {});
+%             propNames = pvArgs(1:2:end);
+%             propValues = pvArgs(2:2:end);               
+%             for i = 1:length(propValues)
+%                 self.(propNames{i}) = propValues{i};
+%             end            
         end  % function
         
         function set.Expression(self, value)

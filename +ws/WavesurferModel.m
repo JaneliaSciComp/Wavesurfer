@@ -269,7 +269,7 @@ classdef WavesurferModel < ws.Model
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
-            self@ws.Model([]);  % we have no parent
+            self@ws.Model();
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
@@ -399,18 +399,18 @@ classdef WavesurferModel < ws.Model
             % Initialize the fast protocols
             self.FastProtocols_ = cell(1,self.NFastProtocols) ;
             for i=1:self.NFastProtocols ,
-                self.FastProtocols_{i} = ws.FastProtocol(self);
+                self.FastProtocols_{i} = ws.FastProtocol();
             end
             self.IndexOfSelectedFastProtocol_ = 1;
             
             % Create all subsystems
-            self.Acquisition_ = ws.Acquisition([]) ;  % Acq subsystem doesn't need to know its parent, now.
-            self.Stimulation_ = ws.Stimulation([]) ;  % Stim subsystem doesn't need to know its parent, now.
-            self.Display_ = ws.Display([]) ;  % Stim subsystem doesn't need to know its parent, now.
-            self.Triggering_ = ws.Triggering([]) ;  % Triggering subsystem doesn't need to know its parent, now.
-            self.UserCodeManager_ = ws.UserCodeManager([]) ;
-            self.Logging_ = ws.Logging([]) ;
-            self.Ephys_ = ws.Ephys([]) ;
+            self.Acquisition_ = ws.Acquisition() ;  % Acq subsystem doesn't need to know its parent, now.
+            self.Stimulation_ = ws.Stimulation() ;  % Stim subsystem doesn't need to know its parent, now.
+            self.Display_ = ws.Display() ;  % Stim subsystem doesn't need to know its parent, now.
+            self.Triggering_ = ws.Triggering() ;  % Triggering subsystem doesn't need to know its parent, now.
+            self.UserCodeManager_ = ws.UserCodeManager() ;
+            self.Logging_ = ws.Logging() ;
+            self.Ephys_ = ws.Ephys() ;
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
@@ -2953,7 +2953,7 @@ classdef WavesurferModel < ws.Model
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandles(source) ;
         end  % function
         
         function setDeviceName_(self, newValue)
@@ -3246,6 +3246,7 @@ classdef WavesurferModel < ws.Model
             fastProtocol = self.FastProtocols_{selectedIndex} ;
             fastProtocol.ProtocolFileName = '' ;
             fastProtocol.AutoStartType = 'do_nothing' ;
+            self.updateFastProtocol() ;
         end  % method
         
         function result = selectedFastProtocolFileName(self)
@@ -3253,7 +3254,7 @@ classdef WavesurferModel < ws.Model
             % cell array of length zero or one)
             selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
             fastProtocol = self.FastProtocols{selectedIndex} ;
-            result = fastProtocol.ProtocolFileName ;
+            result = fastProtocol.ProtocolFileName ;            
         end  % method
         
         function setSelectedFastProtocolFileName(self, newFileName)
@@ -3269,13 +3270,16 @@ classdef WavesurferModel < ws.Model
                     fastProtocol = self.FastProtocols{index} ;
                     fastProtocol.ProtocolFileName = newFileName ;
                 else
+                    self.updateFastProtocol() ;
                     error('ws:invalidPropertyValue', ...
                           'Fast protocol file name must be an absolute path');              
                 end
             else
+                self.updateFastProtocol() ;
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
+            self.updateFastProtocol() ;
         end  % method
         
         function setFastProtocolAutoStartType(self, index, newValue)
@@ -3285,13 +3289,16 @@ classdef WavesurferModel < ws.Model
                     fastProtocol = self.FastProtocols{index} ;
                     fastProtocol.AutoStartType = newValue ;
                 else
+                    self.updateFastProtocol() ;                    
                     error('ws:invalidPropertyValue', ...
                           'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
                 end
             else
+                self.updateFastProtocol() ;
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
+            self.updateFastProtocol() ;
         end  % method        
         
         function setSubsystemProperty(self, subsystemName, propertyName, newValue)

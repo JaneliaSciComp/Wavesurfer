@@ -66,7 +66,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.populateStimulusLibraryForTesting() ;
             
             % Make a copy of it in the populated state
-            stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copyGivenParent([]) ;
+            stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copy() ;
             
             % Save the protocol to disk
             protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>

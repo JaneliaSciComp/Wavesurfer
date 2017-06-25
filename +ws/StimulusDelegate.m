@@ -10,8 +10,8 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
 %     end
     
     methods
-        function self=StimulusDelegate(parent)
-            self@ws.Model(parent);
+        function self=StimulusDelegate()
+            self@ws.Model() ;
         end
 
 %         function parent=get.Parent(self)

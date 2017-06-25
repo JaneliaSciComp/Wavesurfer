@@ -1,7 +1,7 @@
 classdef StimulusLibraryTestCase < matlab.unittest.TestCase    
     methods (Static)
         function stimulusLibrary = createPopulatedStimulusLibrary()
-            stimulusLibrary = ws.StimulusLibrary([]) ;  % no parent
+            stimulusLibrary = ws.StimulusLibrary() ;  % no parent
             stimulusLibrary.populateForTesting() ;
             %ws.test.StimulusLibraryTestCase.populateStimulusLibraryBang(stimulusLibrary) ;
         end  % function        
