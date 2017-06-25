@@ -255,7 +255,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % At this point, name is a valid electrode name
             
             % Make an electrode
-            electrode = ws.Electrode(self) ;
+            electrode = ws.Electrode([]) ;
             electrode.setName_(name) ;
             
             % Add the electrode
@@ -1115,7 +1115,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             nNewElectrodes=length(other.Electrodes_) ;
             self.Electrodes_ = cell(1, nNewElectrodes) ;
             for i=1:nNewElectrodes ,
-                self.Electrodes_{i} = ws.Electrode(self) ;
+                self.Electrodes_{i} = ws.Electrode([]) ;
                 self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
             end
             

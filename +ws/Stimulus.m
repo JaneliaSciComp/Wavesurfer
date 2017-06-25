@@ -49,15 +49,15 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     end
     
     methods
-        function self = Stimulus(parent, varargin)  %#ok<INUSL>
+        function self = Stimulus(parent)  %#ok<INUSD>
             self@ws.Model([]) ;
             self.Delegate_ = ws.SquarePulseStimulusDelegate([]);  
-            pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
-            prop = pvArgs(1:2:end);
-            vals = pvArgs(2:2:end);
-            for idx = 1:length(vals)
-                self.(prop{idx}) = vals{idx};
-            end            
+%             pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
+%             prop = pvArgs(1:2:end);
+%             vals = pvArgs(2:2:end);
+%             for idx = 1:length(vals)
+%                 self.(prop{idx}) = vals{idx};
+%             end            
         end
         
         function set.Name(self, newValue)

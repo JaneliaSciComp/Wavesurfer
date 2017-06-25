@@ -408,9 +408,9 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_ = ws.Stimulation([]) ;  % Stim subsystem doesn't need to know its parent, now.
             self.Display_ = ws.Display([]) ;  % Stim subsystem doesn't need to know its parent, now.
             self.Triggering_ = ws.Triggering([]) ;  % Triggering subsystem doesn't need to know its parent, now.
-            self.UserCodeManager_ = ws.UserCodeManager(self) ;
-            self.Logging_ = ws.Logging(self) ;
-            self.Ephys_ = ws.Ephys(self) ;
+            self.UserCodeManager_ = ws.UserCodeManager([]) ;
+            self.Logging_ = ws.Logging([]) ;
+            self.Ephys_ = ws.Ephys([]) ;
             
             % Create a list for methods to iterate when excercising the
             % subsystem API without needing to know all of the property
