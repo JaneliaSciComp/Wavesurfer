@@ -2315,7 +2315,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function [sequence, sequenceIndex] = addNewSequence_(self)
             %self.disableBroadcasts();
-            sequence=ws.StimulusSequence(self);
+            sequence=ws.StimulusSequence([]);
             sequence.Name = self.generateUntitledSequenceName_();
             self.Sequences_{end + 1} = sequence;
             sequenceIndex = length(self.Sequences_) ;
@@ -2327,7 +2327,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function [map, mapIndex] = addNewMap_(self)
             %self.disableBroadcasts();
-            map=ws.StimulusMap(self);
+            map=ws.StimulusMap([]);
             map.Name = self.generateUntitledMapName_();
             self.Maps_{end + 1} = map;
             mapIndex = length(self.Maps_) ;
@@ -2338,8 +2338,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
                  
         function [stimulus, stimulusIndex] = addNewStimulus_(self)
-            typeString = 'SquarePulse' ;
-            stimulus=ws.Stimulus(self,'TypeString',typeString);
+            %typeString = 'SquarePulse' ;
+            %stimulus=ws.Stimulus([],'TypeString',typeString);
+            stimulus=ws.Stimulus([]);  % defaults to square pulse stimulus
             stimulus.Name = self.generateUntitledStimulusName_();
             self.Stimuli_{end + 1} = stimulus;
             stimulusIndex = length(self.Stimuli_) ;
