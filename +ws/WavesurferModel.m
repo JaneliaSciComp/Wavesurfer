@@ -76,6 +76,9 @@ classdef WavesurferModel < ws.Model
         AreSoftpanelsEnabled
         IsDoTrodeUpdateBeforeRunSensible
         TestPulseElectrodeNames
+        TestPulseElectrodesCount
+        TestPulseElectrodeAmplitude
+        TestPulseElectrodeName
     end
     
     properties (Access=protected)
@@ -993,7 +996,7 @@ classdef WavesurferModel < ws.Model
         end  % function 
         
         function didSetIsInputChannelActive(self) 
-            self.Ephys.didSetIsInputChannelActive() ;
+            self.Ephys_.didSetIsInputChannelActive() ;
             self.Display.didSetIsInputChannelActive() ;
             self.broadcast('UpdateChannels') ;
         end
@@ -1003,7 +1006,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function didSetIsDigitalOutputTimed(self)
-            self.Ephys.didSetIsDigitalOutputTimed() ;
+            self.Ephys_.didSetIsDigitalOutputTimed() ;
             self.broadcast('UpdateChannels') ;            
         end
         
@@ -1085,7 +1088,7 @@ classdef WavesurferModel < ws.Model
             %self.Acquisition.releaseHardwareResources();
             %self.Stimulation.releaseHardwareResources();
             self.Triggering_.releaseTimedHardwareResources();
-            %self.Ephys.releaseTimedHardwareResources();
+            %self.Ephys_.releaseTimedHardwareResources();
         end
 
         function didSetSweepDurationIfFinite_(self)
@@ -2523,7 +2526,7 @@ classdef WavesurferModel < ws.Model
         function didAddAnalogInputChannel(self)
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.Display.didAddAnalogInputChannel() ;
-            self.Ephys.didChangeNumberOfInputChannels();
+            self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2535,7 +2538,7 @@ classdef WavesurferModel < ws.Model
         function channelName = addAOChannel(self)
             channelName = self.Stimulation_.addAnalogChannel() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
-            self.Ephys.didChangeNumberOfOutputChannels() ;
+            self.Ephys_.didChangeNumberOfOutputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('UpdateStimulusLibrary') ;
         end
@@ -2545,7 +2548,7 @@ classdef WavesurferModel < ws.Model
             self.Acquisition.addDigitalChannel_(freeTerminalIDs) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didAddDigitalInputChannel() ;
-            self.Ephys.didChangeNumberOfInputChannels();
+            self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
             self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
@@ -2555,7 +2558,7 @@ classdef WavesurferModel < ws.Model
 %         function didAddDigitalInputChannel(self)
 %             self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Display.didAddDigitalInputChannel() ;
-%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.Ephys_.didChangeNumberOfInputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
@@ -2563,7 +2566,7 @@ classdef WavesurferModel < ws.Model
 %         function didDeleteAnalogInputChannels(self, wasDeleted)
 %             self.syncIsAIChannelTerminalOvercommitted_() ;            
 %             self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
-%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.Ephys_.didChangeNumberOfInputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
@@ -2572,7 +2575,7 @@ classdef WavesurferModel < ws.Model
             wasDeleted = self.Acquisition.deleteMarkedAnalogChannels_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.Ephys.didChangeNumberOfInputChannels();
+            self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2581,7 +2584,7 @@ classdef WavesurferModel < ws.Model
             wasDeleted = self.Acquisition.deleteMarkedDigitalChannels_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.Ephys.didChangeNumberOfInputChannels() ;
+            self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
             self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
@@ -2591,27 +2594,27 @@ classdef WavesurferModel < ws.Model
 %         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
 %             self.syncIsDigitalChannelTerminalOvercommitted_() ;
 %             self.Display.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
-%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.Ephys_.didChangeNumberOfInputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
         
 %         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
 %             self.Display.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
-%             self.Ephys.didChangeNumberOfInputChannels();
+%             self.Ephys_.didChangeNumberOfInputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
 %         end
         
 %         function didChangeNumberOfOutputChannels(self)
-%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.broadcast('UpdateChannels');
 %         end
         
 %         function didAddAnalogOutputChannel(self)
 %             self.syncIsAOChannelTerminalOvercommitted_() ;            
 %             %self.Display.didAddAnalogOutputChannel() ;
-%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
 %         end
@@ -2619,7 +2622,7 @@ classdef WavesurferModel < ws.Model
 %         function didAddDigitalOutputChannel(self)
 %             %self.Display.didAddDigitalOutputChannel() ;
 %             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
@@ -2644,7 +2647,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             %self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             self.broadcast('UpdateStimulusLibrary');
-            self.Ephys.didChangeNumberOfOutputChannels();
+            self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
@@ -2664,7 +2667,7 @@ classdef WavesurferModel < ws.Model
 %         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
 %             self.syncIsAOChannelTerminalOvercommitted_() ;            
 %             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
-%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
 %         end
@@ -2673,7 +2676,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation.deleteMarkedAnalogChannels_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
-            self.Ephys.didChangeNumberOfOutputChannels();
+            self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.Stimulation.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
 %               % we might be able to call this from within
 %               % self.Stimulation.deleteMarkedAnalogChannels, and that would
@@ -2699,7 +2702,7 @@ classdef WavesurferModel < ws.Model
             % Do all the things that need doing after that
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
-            self.Ephys.didChangeNumberOfOutputChannels();
+            self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
@@ -2716,7 +2719,7 @@ classdef WavesurferModel < ws.Model
         
 %         function didDeleteDigitalOutputChannels(self)
 %             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Ephys.didChangeNumberOfOutputChannels();
+%             self.Ephys_.didChangeNumberOfOutputChannels();
 %             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             channelNameForEachDOChannel = self.Stimulation.DigitalChannelNames ;
 %             deviceNameForEachDOChannel = self.Stimulation.DigitalDeviceNames ;
@@ -3367,21 +3370,21 @@ classdef WavesurferModel < ws.Model
             looperProtocol.SweepDuration = self.SweepDuration ;
             looperProtocol.AcquisitionSampleRate = self.AcquisitionSampleRate ;
 
-            looperProtocol.AIChannelNames = self.Acquisition.AnalogChannelNames ;
+            looperProtocol.AIChannelNames = self.AIChannelNames ;
             looperProtocol.AIChannelScales = self.AIChannelScales ;
             looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
-            looperProtocol.AITerminalIDs = self.Acquisition.AnalogTerminalIDs ;
+            looperProtocol.AITerminalIDs = self.Acquisition_.AnalogTerminalIDs ;
             
-            looperProtocol.DIChannelNames = self.Acquisition.DigitalChannelNames ;
+            looperProtocol.DIChannelNames = self.DIChannelNames ;
             looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-            looperProtocol.DITerminalIDs = self.Acquisition.DigitalTerminalIDs ;
+            looperProtocol.DITerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
             
-            looperProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
-            looperProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            looperProtocol.DOChannelNames = self.DOChannelNames ;
+            looperProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
             
-            looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition.DataCacheDurationWhenContinuous ;
+            looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
             
             looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.AcquisitionTriggerScheme.PFIID ;
             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.AcquisitionTriggerScheme.Edge ;
@@ -3402,21 +3405,21 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.SweepDuration = self.SweepDuration ;
             refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
 
-            refillerProtocol.AOChannelNames = self.Stimulation.AnalogChannelNames ;
+            refillerProtocol.AOChannelNames = self.Stimulation_.AnalogChannelNames ;
             refillerProtocol.AOChannelScales = self.AOChannelScales ;
-            refillerProtocol.AOTerminalIDs = self.Stimulation.AnalogTerminalIDs ;
+            refillerProtocol.AOTerminalIDs = self.Stimulation_.AnalogTerminalIDs ;
             
-            refillerProtocol.DOChannelNames = self.Stimulation.DigitalChannelNames ;
+            refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
             refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            refillerProtocol.DOTerminalIDs = self.Stimulation.DigitalTerminalIDs ;
+            refillerProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
             
-            refillerProtocol.IsStimulationEnabled = self.Stimulation.IsEnabled ;                                    
+            refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
             refillerProtocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
-            refillerProtocol.StimulusLibrary = self.Stimulation.StimulusLibrary.copy() ;  
+            refillerProtocol.StimulusLibrary = self.Stimulation_.StimulusLibrary.copy() ;  
               % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
               % don't want to preserve the stim lib parent pointer, b/c
               % that leads back to the entire WSM.
-            refillerProtocol.DoRepeatSequence = self.Stimulation.DoRepeatSequence ;
+            refillerProtocol.DoRepeatSequence = self.Stimulation_.DoRepeatSequence ;
             refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
@@ -4849,13 +4852,13 @@ classdef WavesurferModel < ws.Model
         end
 
         function result = getTestPulseElectrodeCommandUnits(self)
-            ephys = self.Ephys_ ;
-            result = self.aoChannelUnitsFromName(ephys.TestPulseElectrodeCommandChannelName);            
+            channelName = self.getTestPulseElectrodeProperty('CommandChannelName') ;
+            result = self.Ephys_.aoChannelUnitsFromName(channelName) ;            
         end
         
         function result = getTestPulseElectrodeMonitorUnits(self)
-            ephys = self.Ephys_ ;
-            result = self.aiChannelUnitsFromName(ephys.TestPulseElectrodeMonitorChannelName);           
+            channelName = self.getTestPulseElectrodeProperty('MonitorChannelName') ;
+            result = self.Ephys_.aiChannelUnitsFromName(channelName);           
         end  % function
 
         function set.TestPulseYLimits(self, newValue)
@@ -4863,7 +4866,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function result = get.TestPulseYLimits(self)
-            result = self.Ephys.getTestPulseYLimits_() ;
+            result = self.Ephys_.getTestPulseYLimits_() ;
         end
         
         function result = getCommandUnitsPerTestPulseElectrode(self)
@@ -5221,7 +5224,7 @@ classdef WavesurferModel < ws.Model
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
-            result = self.Ephys_.getTestPulseElectrodeIndex_() ;
+            result = self.Ephys_.TestPulseElectrodeIndex ;
         end
 
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
@@ -5268,7 +5271,7 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function result = get.ElectrodeCount(self)
-            result = self.Ephys.getElectrodeCount_() ;
+            result = self.Ephys_.getElectrodeCount_() ;
         end               
         
 %         function electrode = getElectrodeByIndex(self, electrodeIndex)
@@ -5337,6 +5340,26 @@ classdef WavesurferModel < ws.Model
         
         function subscribeMeToTestPulserEvent_(self,subscriber,eventName,propertyName,methodName)
             self.Ephys_.subscribeMeToTestPulserEvent_(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function result = get.TestPulseElectrodesCount(self)
+            result = self.Ephys_.TestPulseElectrodesCount ;
+        end
+        
+        function result = get.TestPulseElectrodeAmplitude(self)
+            result = self.Ephys_.TestPulseElectrodeAmplitude ;
+        end
+        
+        function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
+            self.Ephys_.TestPulseElectrodeAmplitude = newValue ;
+        end  % function         
+        
+        function set.TestPulseElectrodeName(self, newValue)
+            self.Ephys_.TestPulseElectrodeName = newValue ;
+        end        
+        
+        function result = getIsTestPulserReady(self)
+            result = self.Ephys_.getIsTestPulserReady() ;
         end
         
     end  % public methods

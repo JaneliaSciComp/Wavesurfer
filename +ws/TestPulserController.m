@@ -56,7 +56,7 @@ classdef TestPulserController < ws.Controller
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
             wsModel = self.Model ;
-            ephys = wsModel.Ephys ;
+            %ephys = wsModel.Ephys ;
             %electrodeManager = ephys.ElectrodeManager ;
             electrodeNames = wsModel.TestPulseElectrodeNames ;
             menuItem = ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
@@ -65,7 +65,7 @@ classdef TestPulserController < ws.Controller
                 self.Figure.update();                
             else
                 electrodeName=menuItem;
-                ephys.do('set','TestPulseElectrodeName',electrodeName) ;
+                wsModel.do('set','TestPulseElectrodeName',electrodeName) ;
             end
         end
         
@@ -86,8 +86,8 @@ classdef TestPulserController < ws.Controller
         
         function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             value = get(self.Figure.AmplitudeEdit,'String') ;
-            ephys = self.Model.Ephys ;
-            ephys.do('set', 'TestPulseElectrodeAmplitude', value) ;
+            %ephys = self.Model.Ephys ;
+            wsModel.do('setTestPulseElectrodeProperty', 'TestPulseAmplitude', value) ;
         end
         
         function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -135,8 +135,8 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
 
             % Change the setting
-            ephys = self.Model.Ephys ;
-            ephys.do('setTestPulseElectrodeProperty', 'Mode', 'vc') ;
+            %ephys = self.Model.Ephys ;
+            wsModel.do('setTestPulseElectrodeProperty', 'Mode', 'vc') ;
         end  % function
         
         function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -145,8 +145,8 @@ classdef TestPulserController < ws.Controller
             drawnow('update');
             
             % Change the setting    
-            ephys = self.Model.Ephys ;
-            ephys.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
+            %ephys = self.Model.Ephys ;
+            wsModel.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
         end  % function
     end  % methods
     

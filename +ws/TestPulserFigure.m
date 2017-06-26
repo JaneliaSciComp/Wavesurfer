@@ -224,8 +224,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             if isempty(wsModel) ,
                 set(self.FigureGH,'pointer','arrow');
             else                
-                ephys = wsModel.Ephys ;
-                if ephys.getIsTestPulserReady() ,
+                %ephys = wsModel.Ephys ;
+                if wsModel.getIsTestPulserReady() ,
                     set(self.FigureGH,'pointer','arrow');
                 else
                     % Change cursor to hourglass
@@ -273,8 +273,8 @@ classdef TestPulserFigure < ws.MCOSFigure
                 'String',ws.fif(isWavesurferTestPulsing,'Stop','Start'), ...
                 'Enable',ws.onIff(isStartStopButtonEnabled));
             
-            electrodeNames=wsModel.TestPulseElectrodeNames;
-            electrodeName=ephys.TestPulseElectrodeName;
+            electrodeNames = wsModel.TestPulseElectrodeNames ;
+            electrodeName = wsModel.TestPulseElectrodeName ;
             ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
                                                             electrodeNames, ...
                                                             electrodeName);
@@ -310,7 +310,8 @@ classdef TestPulserFigure < ws.MCOSFigure
                               'Value',~isempty(electrode)&& ...
                                       (isequal(electrode.Mode,'cc')||isequal(electrode.Mode,'i_equals_zero')));
                         
-            set(self.AmplitudeEdit,'String',sprintf('%g',ephys.TestPulseElectrodeAmplitude), ...
+            amplitude = wsModel.getTestPulseElectrodeProperty('TestPulseAmplitude') ;                      
+            set(self.AmplitudeEdit,'String',sprintf('%g',amplitude), ...
                                    'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
             set(self.AmplitudeEditUnitsText,'String',wsModel.getTestPulseElectrodeCommandUnits, ...
                                             'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
@@ -937,7 +938,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             else
                 %testPulser = self.Model.Ephys.TestPulser ;
                 %nElectrodes=testPulser.NElectrodes;
-                nElectrodes = self.Model.Ephys.TestPulseElectrodesCount ;
+                nElectrodes = self.TestPulseElectrodesCount ;
             end
             %nElectrodes=4  % FOR DEBUGGING ONLY
             

@@ -450,7 +450,7 @@ classdef TestPulser < ws.Model
             self.broadcast('Update') ;
         end
 
-        function electrodesRemoved_(self, electrodes)
+        function electrodesRemoved_(self, testPulseElectrodesAfter)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             
@@ -459,7 +459,7 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.changeElectrodeIfCurrentOneIsNotAvailable_(electrodes);
+            self.changeElectrodeIfCurrentOneIsNotAvailable_(testPulseElectrodesAfter);
             
             self.broadcast('Update') ;
         end  % function
@@ -846,31 +846,31 @@ classdef TestPulser < ws.Model
 %             end
 %         end
 
-        function changeElectrodeIfCurrentOneIsNotAvailable_(self, electrodes)
+        function changeElectrodeIfCurrentOneIsNotAvailable_(self, testPulseElectrodesAfter)
             % Checks that the Electrode_ is still a valid choice.  If not,
             % tries to find another one.  If that also fails, sets
             % Electrode_ to empty.  Also, if Electrode_ is empty but there
             % is at least one test pulse electrode, makes Electrode_ point
             % to the first test pulse electrode.
             %electrodes=self.Parent.ElectrodeManager.TestPulseElectrodes;
-            if isempty(electrodes)
+            if isempty(testPulseElectrodesAfter)
                 self.ElectrodeName_ = '' ;
             else
                 if isempty(self.ElectrodeName_) ,
-                    electrode = electrodes{1} ;
+                    electrode = testPulseElectrodesAfter{1} ;
                     self.ElectrodeName_ = electrode.Name ;  % no current electrode, but electrodes is nonempty, so make the first one current.
                 else
                     % If we get here, self.Electrode is a scalar of class
                     % Electrode, and electrode is a nonempty cell array of
                     % scalars of class Electrode
-                    isMatch=cellfun(@(electrode)(isequal(self.ElectrodeName_, electrode.Name)),electrodes);
+                    isMatch=cellfun(@(electrode)(isequal(self.ElectrodeName_, electrode.Name)),testPulseElectrodesAfter);
                     if any(isMatch)
                         % nothing to do here---self.Electrode is a handle
                         % that points to a current test pulse electrode
                     else
                         % It seems the current electrode has been deleted, or is
                         % not marked as being available for test pulsing
-                        electrode = electrodes{1} ;
+                        electrode = testPulseElectrodesAfter{1} ;
                         self.ElectrodeName_ = electrode.Name ;
                     end
                 end

@@ -219,11 +219,11 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     methods (Access=protected)    
         function disableAllBroadcastsDammit_(self)
             self.disableBroadcasts() ;
-            self.StimulusLibrary.disableBroadcasts() ;
+            self.StimulusLibrary_.disableBroadcasts() ;
         end
         
         function enableBroadcastsMaybeDammit_(self)
-            self.StimulusLibrary.enableBroadcastsMaybe() ;            
+            self.StimulusLibrary_.enableBroadcastsMaybe() ;            
             self.enableBroadcastsMaybe() ;
         end
     end  % protected methods block

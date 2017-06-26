@@ -1,7 +1,7 @@
 classdef Ephys < ws.Subsystem
     properties (Dependent=true)
-        TestPulseElectrodeCommandChannelName
-        TestPulseElectrodeMonitorChannelName
+        %TestPulseElectrodeCommandChannelName
+        %TestPulseElectrodeMonitorChannelName
         TestPulseElectrodeAmplitude
         %TestPulseElectrodeIndex  % index of the currently selected test pulse electrode *within the array of all electrodes*
         TestPulseElectrodes
@@ -17,6 +17,7 @@ classdef Ephys < ws.Subsystem
         AreSoftpanelsEnabled
         IsDoTrodeUpdateBeforeRunSensible
         TestPulseElectrodeNames
+        TestPulseElectrodeIndex
     end
     
     properties (Access = protected)
@@ -227,14 +228,20 @@ classdef Ephys < ws.Subsystem
     end
     
     methods (Access=protected)
-        function value = getTestPulseElectrodeProperty_(self, propertyName)
-            electrodeName = self.TestPulseElectrodeName ;
-            electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
-            if isempty(electrode) ,
-                value = '' ;
+        function result = getTestPulseElectrodeProperty(self, propertyName)
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            if isempty(electrodeIndex) ,
+                result = [] ;
             else
-                value = electrode.(propertyName) ;
+                self.getElectrodeProperty(electrodeIndex, propertyName) ;
             end
+%             electrodeName = self.TestPulseElectrodeName ;
+%             electrode = self.ElectrodeManager_.getElectrodeByName(electrodeName) ;
+%             if isempty(electrode) ,
+%                 value = '' ;
+%             else
+%                 value = electrode.(propertyName) ;
+%             end
         end
         
         function setTestPulseElectrodeProperty_(self, propertyName, newValue)
@@ -247,16 +254,16 @@ classdef Ephys < ws.Subsystem
     end
     
     methods
-        function result = get.TestPulseElectrodeCommandChannelName(self)
-            result = self.getTestPulseElectrodeProperty_('CommandChannelName') ;
-        end
+%         function result = get.TestPulseElectrodeCommandChannelName(self)
+%             result = self.getTestPulseElectrodeProperty('CommandChannelName') ;
+%         end
         
-        function result = get.TestPulseElectrodeMonitorChannelName(self)
-            result = self.getTestPulseElectrodeProperty_('MonitorChannelName') ;
-        end
+%         function result = get.TestPulseElectrodeMonitorChannelName(self)
+%             result = self.getTestPulseElectrodeProperty('MonitorChannelName') ;
+%         end
         
         function result = get.TestPulseElectrodeAmplitude(self)
-            result = self.getTestPulseElectrodeProperty_('TestPulseAmplitude') ;
+            result = self.getTestPulseElectrodeProperty('TestPulseAmplitude') ;
         end
         
         function result=get.TestPulseElectrodes(self)
@@ -266,11 +273,7 @@ classdef Ephys < ws.Subsystem
 
         function result=get.TestPulseElectrodesCount(self)
             electrodeManager=self.ElectrodeManager_ ;
-            if isempty(electrodeManager) ,
-                result=0;
-            else
-                result=electrodeManager.TestPulseElectrodesCount ;
-            end
+            result=electrodeManager.TestPulseElectrodesCount ;
         end
         
         function result=get.AmplitudePerTestPulseElectrode(self)
@@ -331,7 +334,7 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.getTime_(fs) ;
         end  % function                 
         
-        function result = getTestPulseElectrodeIndex_(self)
+        function result = get.TestPulseElectrodeIndex(self)
             name = self.TestPulseElectrodeName ;
             if isempty(name) ,
                 result = zeros(1,0) ; 
@@ -364,7 +367,7 @@ classdef Ephys < ws.Subsystem
                                      monitorChannelScalePerTestPulseElectrode, ...
                                      deviceName, ...
                                      gainOrResistanceUnitsPerTestPulseElectrode)
-            testPulseElectrodeIndex = self.getTestPulseElectrodeIndex_() ;
+            testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
             %testPulseElectrode = self.ElectrodeManager_.getElectrodeByIndex_(testPulseElectrodeIndex) ;

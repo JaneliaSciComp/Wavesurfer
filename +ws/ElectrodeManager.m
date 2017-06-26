@@ -273,16 +273,16 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('Update');
         end
         
-        function removeMarkedElectrodes_(self)
+        function wasRemoved = removeMarkedElectrodes_(self)
             isToBeRemoved= self.IsElectrodeMarkedForRemoval_;
             % The constructions below (=[]) are better than the alternative
             % (where you define isToBeKept and do x=x(isToBeKept) b/c it
             % keeps row vectors row vectors, even when they are reduced to
             % zero length.
-            self.Electrodes_(isToBeRemoved)=[];
-            self.IsElectrodeMarkedForTestPulse_(isToBeRemoved)=[];
-            self.IsElectrodeMarkedForRemoval_(isToBeRemoved)=[];  % should be all false afterwards
-            self.DidLastElectrodeUpdateWork_(isToBeRemoved)=[];
+            self.Electrodes_(isToBeRemoved) = [] ;
+            self.IsElectrodeMarkedForTestPulse_(isToBeRemoved) = [] ;
+            self.IsElectrodeMarkedForRemoval_(isToBeRemoved) = [] ;  % should be all false afterwards
+            self.DidLastElectrodeUpdateWork_(isToBeRemoved) = [] ;
             
             % If the number of electrodes is down to zero, reset the
             % default electrode numbering
@@ -297,7 +297,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end
 
             % Notify subscribers
-            self.broadcast('Update');            
+            self.broadcast('Update');
+            
+            wasRemoved = isToBeRemoved ;
         end
 
 %         function updateSmartElectrodeGainsAndModes(self)
