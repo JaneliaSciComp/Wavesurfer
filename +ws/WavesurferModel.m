@@ -79,6 +79,12 @@ classdef WavesurferModel < ws.Model
         TestPulseElectrodesCount
         %TestPulseElectrodeAmplitude
         %TestPulseElectrodeName
+        IsStimulationEnabled
+        IsLoggingEnabled
+        IsDisplayEnabled
+        LoggingFileLocation
+        LoggingFileBaseName
+        IsOKToOverwriteLoggingFile
     end
     
     properties (Access=protected)
@@ -1354,7 +1360,7 @@ classdef WavesurferModel < ws.Model
             % Now tell the logging subsystem that a run is about to start,
             % since the analog scaling coeffs have been set
             try
-                logging = self.Logging ;
+                logging = self.Logging_ ;
                 if logging.IsEnabled ,
                     headerStruct = self.encodeForHeader() ;
                     logging.startingRun(self.NextRunAbsoluteFileName, self.IsAIChannelActive, self.ExpectedSweepScanCount, ...
@@ -3384,8 +3390,8 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
             
-            looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.AcquisitionTriggerScheme.PFIID ;
-            looperProtocol.AcquisitionTriggerEdge = self.Triggering_.AcquisitionTriggerScheme.Edge ;
+            looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.getAcquisitionTriggerProperty('PFIID') ;
+            looperProtocol.AcquisitionTriggerEdge = self.Triggering_.getAcquisitionTriggerProperty('Edge') ;
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             looperProtocol.TheUserObject = self.TheUserObject ;
@@ -3412,8 +3418,8 @@ classdef WavesurferModel < ws.Model
             refillerProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
-            refillerProtocol.StimulationTrigger = self.Triggering_.StimulationTriggerScheme ;            
-            refillerProtocol.StimulusLibrary = self.Stimulation_.StimulusLibrary.copy() ;  
+            refillerProtocol.StimulationTrigger = self.Triggering_.getStimulationTriggerCopy() ;            
+            refillerProtocol.StimulusLibrary = self.Stimulation_.getStimulusLibraryCopy() ;  
               % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
               % don't want to preserve the stim lib parent pointer, b/c
               % that leads back to the entire WSM.
@@ -5362,5 +5368,50 @@ classdef WavesurferModel < ws.Model
         function result = getTestPulseElectrodeProperty(self, propertyName)
             result = self.Ephys_.getTestPulseElectrodeProperty(propertyName) ;
         end        
+        
+        function result = get.IsStimulationEnabled(self)
+            result = self.Stimulation_.IsEnabled ;
+        end
+
+        function set.IsStimulationEnabled(self, newValue)
+            self.Stimulation_.IsEnabled = newValue ;
+        end
+
+        function result = get.IsLoggingEnabled(self)
+            result = self.Logging_.IsEnabled ;
+        end
+
+        function set.IsLoggingEnabled(self, newValue)
+            self.Logging_.IsEnabled = newValue ;
+        end
+        
+        function result = get.IsDisplayEnabled(self)
+            result = self.Display_.IsEnabled ;
+        end
+
+        function set.IsDisplayEnabled(self, newValue)
+            self.Display_.IsEnabled = newValue ;
+        end
+
+        function result = getNActiveAIChannels(self)
+            result = self.Acquisition_.NActiveAnalogChannels ;
+        end
+
+        function result = getNActiveDIChannels(self)
+            result = self.Acquisition_.NActiveDigitalChannels ;
+        end
+        
+        function result = get.LoggingFileLocation(self)
+            result = self.Logging_.FileLocation ;
+        end
+
+        function result = get.LoggingFileBaseName(self)
+            result = self.Logging_.FileBaseName ;
+        end
+        
+        function result = get.IsOKToOverwriteLoggingFile(self)
+            result = self.Logging_.IsOKToOverwrite ;
+        end
+        
     end  % public methods
 end  % classdef

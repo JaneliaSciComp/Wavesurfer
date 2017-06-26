@@ -34,7 +34,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
             amplitudeAsDouble = str2double(amplitudeAsString) ;
             wsModel.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', amplitudeAsString) ;
 
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
 
             wsModel.play() ;
 

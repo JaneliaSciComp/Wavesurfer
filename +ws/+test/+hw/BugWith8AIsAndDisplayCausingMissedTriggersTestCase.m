@@ -29,10 +29,10 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.addAIChannel() ;
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=10;
             wsModel.NSweepsPerRun=nSweeps;

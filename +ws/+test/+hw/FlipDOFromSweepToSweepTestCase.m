@@ -19,10 +19,10 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun = 4 ;
             
             % Turn on stimulation 
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
 
             % Turn on display, just to test more stuff
-            wsModel.Display.IsEnabled = true ;            
+            wsModel.IsDisplayEnabled = true ;            
             
             % Add an untimed DO channel
             wsModel.addDOChannel() ;

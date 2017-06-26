@@ -25,10 +25,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -103,10 +103,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -181,10 +181,10 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;

@@ -29,9 +29,9 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.SweepDuration = 10 ;  % s
             %wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             %wsModel.StimulationSampleRate=20000;  % Hz
-            %wsModel.Display.IsEnabled=true;
+            %wsModel.IsDisplayEnabled=true;
             
             % Set to external triggering
             wsModel.addExternalTrigger() ;

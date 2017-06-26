@@ -31,10 +31,10 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;

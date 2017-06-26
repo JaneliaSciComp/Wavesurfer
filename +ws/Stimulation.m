@@ -253,7 +253,11 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
 %             %self.broadcast('DidSetStimulusLibrary');
 %         end
-        
+
+        function result = getStimulusLibraryCopy(self)
+            result = self.StimulusLibrary_.copy() ;
+        end
+
         function out = getSampleRate_(self)
             out= self.SampleRate_ ;
         end

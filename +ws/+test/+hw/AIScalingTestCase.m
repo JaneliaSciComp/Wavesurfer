@@ -38,7 +38,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
             %pulse = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
             %pulse.Amplitude = '3.1415' ;
 
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
 
             wsModel.play() ;
 

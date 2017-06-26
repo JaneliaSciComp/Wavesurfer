@@ -853,12 +853,12 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.SweepDurationEdit,'String',sprintf('%.6g',model.SweepDuration));
             
             % Stimulation panel (most of it)
-            set(self.StimulationEnabledCheckbox,'Value',model.Stimulation.IsEnabled);
+            set(self.StimulationEnabledCheckbox,'Value',model.IsStimulationEnabled);
             set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.StimulationSampleRate));
             set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
             
             % Display panel
-            set(self.DisplayEnabledCheckbox, 'Value', model.Display.IsEnabled);
+            set(self.DisplayEnabledCheckbox, 'Value', model.IsDisplayEnabled);
             set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
@@ -869,9 +869,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
-            set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.Logging.IsEnabled,'Current Sweep:','Next Sweep:'));
+            set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.IsLoggingEnabled,'Current Sweep:','Next Sweep:'));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
-            if ~isIdle&&model.Logging.IsEnabled ,
+            if ~isIdle&&model.IsLoggingEnabled ,
                 set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
             else
                 set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
@@ -938,7 +938,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 %             % Tools Menu
 %             set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
 %             set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
-%             %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+%             %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.IsDisplayEnabled));
 %             set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
 %               % Device & Channels menu is always available so that
 %               % user can get at radiobutton for untimed DO channels,
@@ -973,7 +973,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             % Stimulation controls
             isStimulationEnableable = true ;
-            isStimulusEnabled=model.Stimulation.IsEnabled;
+            isStimulusEnabled=model.IsStimulationEnabled;
             set(self.StimulationEnabledCheckbox,'Enable',ws.onIff(isIdle && isStimulationEnableable));
             set(self.StimulationSampleRateEdit,'Enable',ws.onIff(isIdle && isStimulusEnabled));
             set(self.SourcePopupmenu,'Enable',ws.onIff(isIdle && isStimulusEnabled));
@@ -1039,7 +1039,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             isIdle=isequal(model.State,'idle');
 
-            %isLoggingEnabled=model.Logging.IsEnabled;
+            %isLoggingEnabled=model.IsLoggingEnabled;
             %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',ws.onIff(isIdle));
             doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;

@@ -33,7 +33,7 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
             
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             wsModel.AreSweepsContinuous = true ;
 
             wsModel.UserClassName = 'ws.examples.ExampleUserClass' ;

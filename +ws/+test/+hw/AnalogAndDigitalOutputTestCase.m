@@ -25,10 +25,10 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             
             wsModel.AcquisitionSampleRate=20000;  % Hz            
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -46,7 +46,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -83,10 +83,10 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -120,7 +120,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first DO') ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstDOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -134,7 +134,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.LoggingFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
             dataDirNameAbsolute=wsModel.Logging.FileLocation;
@@ -170,10 +170,10 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -191,8 +191,8 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;

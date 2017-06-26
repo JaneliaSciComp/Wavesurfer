@@ -29,10 +29,10 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             
             wsModel.AcquisitionSampleRate=20000;  % Hz            
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -107,8 +107,8 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             % Check that some of the triggering info is there
             self.verifyTrue(isfield(header, 'Triggering')) ;
             triggering = header.Triggering ;
-            self.verifyTrue(isfield(triggering, 'AcquisitionTriggerScheme')) ;
-            self.verifyTrue(isfield(triggering, 'StimulationTriggerScheme')) ;
+            self.verifyTrue(isfield(triggering, 'AcquisitionTriggerSchemeIndex')) ;
+            self.verifyTrue(isfield(triggering, 'StimulationTriggerSchemeIndex')) ;
             
             % Delete the data file
             delete(dataFilePatternAbsolute);

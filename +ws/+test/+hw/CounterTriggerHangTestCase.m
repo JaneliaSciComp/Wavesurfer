@@ -18,7 +18,7 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
         function theTest(self)            
             wsModel = wavesurfer('--nogui') ;
             wsModel.NSweepsPerRun = 3 ;
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             wsModel.addCounterTrigger() ;
             wsModel.setTriggerProperty('counter', 1, 'RepeatCount', 2) ;
             wsModel.setTriggerProperty('counter', 1, 'Interval', 1.5) ;            

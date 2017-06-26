@@ -615,7 +615,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Status text
             if isequal(model.State,'running') ,
-                if model.Logging.IsEnabled ,
+                if model.IsLoggingEnabled ,
                     statusString = 'Recording' ;
                 else
                     statusString = 'Playing' ;
@@ -806,7 +806,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
             set(self.GeneralSettingsMenuItem,'Enable',ws.onIff(isIdle));
             set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
-            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.IsDisplayEnabled));
             set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
@@ -1102,8 +1102,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     methods (Access=protected)
         function clearXDataAndYData_(self)
             self.XData_ = zeros(0,1) ;
-            acquisition = self.Model.Acquisition ;
-            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            %acquisition = self.Model.Acquisition ;
+            nActiveChannels = self.Model.getNActiveAIChannels() + self.Model.getNActiveDIChannels() ;
             self.YData_ = zeros(0,nActiveChannels) ;
         end
         

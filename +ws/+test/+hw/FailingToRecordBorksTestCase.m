@@ -26,10 +26,10 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
                            
             % Turn on stimulation (there's a single pulse output by
             % default)
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
 
             % Turn on logging
-            %wsModel.Logging.IsEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             % set the data file name
             thisFileName=mfilename();

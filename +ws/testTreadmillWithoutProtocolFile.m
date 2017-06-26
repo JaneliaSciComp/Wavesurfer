@@ -85,8 +85,8 @@ wsModel.setSingleDOChannelTerminalID(channelIndex,1) ;
 % laserDOChannel.TerminalID = 1 ;
 
 % configure the rest of the stuff
-wsModel.Stimulation.IsEnabled = true ;
-wsModel.Display.IsEnabled = true ;
+wsModel.IsStimulationEnabled = true ;
+wsModel.IsDisplayEnabled = true ;
 wsModel.Logging.IsOKToOverwrite=true ;
 
 wsModel.AreSweepsContinuous = true ;

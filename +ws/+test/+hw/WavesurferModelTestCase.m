@@ -25,7 +25,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.addAIChannel() ;
             
             % Enable stimulation subsystem
-            model.Stimulation.IsEnabled=true;
+            model.IsStimulationEnabled=true;
 
             % Make a too-large pulse stimulus, add to the stimulus library
             model.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
@@ -113,7 +113,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             
             % Set the Stimulation source
             %wsModel.Stimulation.StimulusLibrary.SelectedOutputable = wsModel.Stimulation.StimulusLibrary.Sequences{2} ;
@@ -150,7 +150,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             
             % Set the Stimulation source
             %wsModel.Stimulation.StimulusLibrary.SelectedOutputable=wsModel.Stimulation.StimulusLibrary.Sequences{2};
@@ -252,10 +252,10 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AcquisitionSampleRate' 100e6/5001};
             settings(end+1,:)={'SweepDuration' 2.17};
             
-            settings(end+1,:)={'Stimulation.IsEnabled' true};
+            settings(end+1,:)={'IsStimulationEnabled' true};
             settings(end+1,:)={'StimulationSampleRate' 100e6/4999};
             
-            settings(end+1,:)={'Display.IsEnabled' true};
+            settings(end+1,:)={'IsDisplayEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
             settings(end+1,:)={'Display.UpdateRate' 9};
             settings(end+1,:)={'IsXSpanSlavedToAcquistionDuration' false};
