@@ -1,16 +1,14 @@
 classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was before Mimic)
     
     properties (Dependent=true)
-        %Parent  % public access to parent property
         %IsElectrodeMarkedForTestPulse  % provides public access to IsElectrodeMarkedForTestPulse_; settable as long as you don't change its shape
         %IsElectrodeMarkedForRemoval  % provides public access to IsElectrodeMarkedForRemoval_; settable as long as you don't change its shape
         AreSoftpanelsEnabled
-        IsInControlOfSoftpanelModeAndGains
+        %IsInControlOfSoftpanelModeAndGains
         %DoTrodeUpdateBeforeRun
     end
 
     properties (Dependent=true, SetAccess=immutable)
-        %NElectrodes
         TestPulseElectrodes  % the electrodes that are marked for test pulsing.
         TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
         TestPulseElectrodesCount
@@ -133,14 +131,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             out=electrodes(self.IsElectrodeMarkedForTestPulse_);
         end
         
-        function out = get.TestPulseElectrodeNames(self)
-            out=cellfun(@(electrode)(electrode.Name), ...
-                        self.TestPulseElectrodes, ...
-                        'UniformOutput',false);
+        function result = get.TestPulseElectrodeNames(self)
+            result = cellfun(@(electrode)(electrode.Name), ...
+                             self.TestPulseElectrodes, ...
+                             'UniformOutput',false) ;
         end
         
-        function out = get.DidLastElectrodeUpdateWork(self)
-            out=self.DidLastElectrodeUpdateWork_;
+        function result = get.DidLastElectrodeUpdateWork(self)
+            result = self.DidLastElectrodeUpdateWork_ ;
         end
         
         function out=getIsElectrodeMarkedForRemoval_(self)
@@ -187,9 +185,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('Update');
         end        
         
-        function out = get.IsDoTrodeUpdateBeforeRunSensible(self)
-           out = self.areAnyElectrodesAxon || ...
-                 (self.areAnyElectrodesCommandable && ~self.IsInControlOfSoftpanelModeAndGains);
+        function result = get.IsDoTrodeUpdateBeforeRunSensible(self)
+           result = self.areAnyElectrodesAxon || ...
+                    (self.areAnyElectrodesCommandable && ~self.getIsInControlOfSoftpanelModeAndGains_()) ;
         end
         
 %         function out=get.Parent(self)
@@ -202,8 +200,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end
 %         end
         
-        function out=get.AreSoftpanelsEnabled(self)
-            out=self.AreSoftpanelsEnabled_;
+        function result = get.AreSoftpanelsEnabled(self)
+            result = self.AreSoftpanelsEnabled_ ;
         end
 
         function set.AreSoftpanelsEnabled(self, newValue)
@@ -213,13 +211,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.broadcast('Update');            
         end
         
-        function out=get.IsInControlOfSoftpanelModeAndGains(self)
-            out=~self.AreSoftpanelsEnabled_;
+        function result = getIsInControlOfSoftpanelModeAndGains_(self)
+            result = ~self.AreSoftpanelsEnabled_ ;
         end
 
-        function set.IsInControlOfSoftpanelModeAndGains(self,newValue)
+        function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
             if islogical(newValue) && isscalar(newValue) ,
-                self.AreSoftpanelsEnabled_=(~newValue);
+                self.AreSoftpanelsEnabled_ = (~newValue) ;
             end
             self.broadcast('Update');            
         end
@@ -755,8 +753,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     end                    
                 end                    
             end
-        end  % function
-        
+        end  % function        
         
         function result=areAllCommandChannelNamesDistinct(self)
             channelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...

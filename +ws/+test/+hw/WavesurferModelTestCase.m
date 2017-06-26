@@ -380,22 +380,22 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             emCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
             % Load the settings, very like WavesurferController does
-            s=load(fileName);
-            protocolSettingsCheck=s.protocolSettings;
+            s = load(fileName) ;
+            protocolSettingsCheck = s.protocolSettings ;
             %emCheck.decodeProperties(protocolSettingsCheck);
             emCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
             
             % Check that all settings are as set
-            electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>
+            %electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>
             for i=1:nSettings ,
                 propertyName=settings{i,1};
                 propertyValue=settings{i,2};
-                %propertyValueCheck=emCheck.(propertyName);
-                evalString=sprintf('propertyValueCheck = electrode.%s ;',propertyName);
-                eval(evalString);
-                if ~isequal(propertyValue,propertyValueCheck) ,
-                    keyboard
-                end
+                %evalString=sprintf('propertyValueCheck = electrode.%s ;',propertyName);
+                %eval(evalString);
+                propertyValueCheck = emCheck.getElectrodeProperty(electrodeIndex, propertyName) ;
+                %if ~isequal(propertyValue,propertyValueCheck) ,
+                %    keyboard
+                %end
                 self.verifyEqual(propertyValue,propertyValueCheck);
             end            
         end  % function

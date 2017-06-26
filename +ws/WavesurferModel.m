@@ -71,6 +71,11 @@ classdef WavesurferModel < ws.Model
         DoesTheUserObjectMatchTheUserClassName
         TheUserObject
         ElectrodeCount
+        IsInControlOfSoftpanelModeAndGains        
+        DidLastElectrodeUpdateWork
+        AreSoftpanelsEnabled
+        IsDoTrodeUpdateBeforeRunSensible
+        TestPulseElectrodeNames
     end
     
     properties (Access=protected)
@@ -4283,24 +4288,24 @@ classdef WavesurferModel < ws.Model
     methods
         function value = get.AIChannelScales(self)
             ephys = self.Ephys_ ;
-            electrodeManager = ephys.ElectrodeManager ;
+            %electrodeManager = ephys.ElectrodeManager ;
             aiChannelNames = self.Acquisition_.AnalogChannelNames ;
-            [channelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getMonitorScalingsByName(aiChannelNames);
+            [channelScalesFromElectrodes, isChannelScaleEnslaved] = ephys.getMonitorScalingsByName(aiChannelNames);
             value = ws.fif(isChannelScaleEnslaved, channelScalesFromElectrodes, self.Acquisition_.getAnalogChannelScales_());
         end
         
         function value = getNumberOfElectrodesClaimingAIChannel(self)
             ephys = self.Ephys ;
-            electrodeManager = ephys.ElectrodeManager ;
+            %electrodeManager = ephys.ElectrodeManager ;
             channelNames = self.Acquisition_.AnalogChannelNames ;
-            value = electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(channelNames) ;
-        end                        
+            value = ephys.getNumberOfElectrodesClaimingMonitorChannel(channelNames) ;
+        end
         
         function value = get.AIChannelUnits(self)            
             ephys=self.Ephys;
-            electrodeManager=ephys.ElectrodeManager;
+            %electrodeManager=ephys.ElectrodeManager;
             channelNames=self.Acquisition_.AnalogChannelNames;
-            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getMonitorUnitsByName(channelNames);
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = ephys.getMonitorUnitsByName(channelNames);
             value = ws.fif(isChannelScaleEnslaved, channelUnitsFromElectrodes, self.Acquisition_.getAnalogChannelUnits_());
         end
         
@@ -4543,17 +4548,17 @@ classdef WavesurferModel < ws.Model
         end
         
         function result=getNumberOfElectrodesClaimingAOChannel(self)
-            ephys=self.Ephys;
-            electrodeManager=ephys.ElectrodeManager;
+            ephys=self.Ephys_;
+            %electrodeManager=ephys.ElectrodeManager;
             channelNames=self.Stimulation_.AnalogChannelNames;
-            result = electrodeManager.getNumberOfElectrodesClaimingCommandChannel(channelNames);
+            result = ephys.getNumberOfElectrodesClaimingCommandChannel(channelNames);
         end  % function       
         
         function result = get.AOChannelScales(self)
             ephys=self.Ephys;
-            electrodeManager=ephys.ElectrodeManager;
+            %electrodeManager=ephys.ElectrodeManager;
             channelNames = self.Stimulation_.AnalogChannelNames ;
-            [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandScalingsByName(channelNames) ;
+            [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = ephys.getCommandScalingsByName(channelNames) ;
             result = ws.fif(isChannelScaleEnslaved,analogChannelScalesFromElectrodes,self.Stimulation_.getAnalogChannelScales_()) ;
         end  % function
         
@@ -4567,9 +4572,9 @@ classdef WavesurferModel < ws.Model
         
         function result = get.AOChannelUnits(self)
             ephys = self.Ephys ;
-            electrodeManager = ephys.ElectrodeManager ;
+            %electrodeManager = ephys.ElectrodeManager ;
             channelNames = self.Stimulation_.AnalogChannelNames ;
-            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = electrodeManager.getCommandUnitsByName(channelNames) ;
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = ephys.getCommandUnitsByName(channelNames) ;
             result = ws.fif(isChannelScaleEnslaved, channelUnitsFromElectrodes, self.Stimulation_.getAnalogChannelUnits_()) ;
         end  % function
 
@@ -4707,7 +4712,7 @@ classdef WavesurferModel < ws.Model
                 % Get some handles we'll need
                 wavesurferModel = self ;
                 ephys = wavesurferModel.Ephys_ ;
-                electrodeManager = ephys.ElectrodeManager ;                
+                %electrodeManager = ephys.ElectrodeManager ;                
 
                 % Update the smart electrode channel scales, if possible and
                 % needed
@@ -4720,7 +4725,7 @@ classdef WavesurferModel < ws.Model
                 canStart = ...
                     ~isempty(electrode) && ...
                     self.areAllElectrodesTestPulsable() && ...
-                    electrodeManager.areAllMonitorAndCommandChannelNamesDistinct() && ...
+                    ephys.areAllMonitorAndCommandChannelNamesDistinct() && ...
                     isequal(wavesurferModel.State,'idle') ;
                 if ~canStart ,
                     return
@@ -5269,6 +5274,70 @@ classdef WavesurferModel < ws.Model
 %         function electrode = getElectrodeByIndex(self, electrodeIndex)
 %             electrode = self.Ephys_.getElectrodeByIndex_(electrodeIndex) ;
 %         end    
+        
+        function result = get.IsInControlOfSoftpanelModeAndGains(self)
+            result = self.Ephys_.getIsInControlOfSoftpanelModeAndGains_() ;
+        end
+
+        function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
+            self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+        end
+
+        function result = areAnyElectrodesCommandable(self)
+            result = self.Ephys_.areAnyElectrodesCommandable() ;
+        end  % function
+        
+        function result = get.DidLastElectrodeUpdateWork(self)
+            result = self.Ephys_.DidLastElectrodeUpdateWork ;
+        end
+        
+        function result = getNumberOfElectrodesClaimingMonitorChannel(self, queryChannelNames)
+            result = self.Ephys_.getNumberOfElectrodesClaimingMonitorChannel(queryChannelNames) ;
+        end
+        
+        function result = getNumberOfElectrodesClaimingCommandChannel(self, queryChannelNames)
+            result = self.Ephys_.getNumberOfElectrodesClaimingCommandChannel(queryChannelNames) ;
+        end
+        
+        function result = get.AreSoftpanelsEnabled(self)
+            result = self.Ephys_.AreSoftpanelsEnabled ;
+        end
+
+        function set.AreSoftpanelsEnabled(self, newValue)
+            self.Ephys_.AreSoftpanelsEnabled = newValue ;
+        end
+        
+        function result = doesElectrodeHaveCommandOnOffSwitch(self)
+            result = self.Ephys_.doesElectrodeHaveCommandOnOffSwitch() ;
+        end        
+        
+        function result = get.IsDoTrodeUpdateBeforeRunSensible(self)
+            result = self.Ephys_.IsDoTrodeUpdateBeforeRunSensible() ;
+        end        
+        
+        function result = areAnyElectrodesSmart(self)
+            result = self.Ephys_.areAnyElectrodesSmart() ;
+        end        
+        
+        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
+            result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
+        end  % function
+        
+        function result = get.TestPulseElectrodeNames(self)
+            result = self.Ephys_.TestPulseElectrodeNames ;
+        end
+        
+        function subscribeMeToEphysEvent_(self,subscriber,eventName,propertyName,methodName)
+            self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function subscribeMeToElectrodeManagerEvent_(self,subscriber,eventName,propertyName,methodName)
+            self.Ephys_.subscribeMeToElectrodeManagerEvent_(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function subscribeMeToTestPulserEvent_(self,subscriber,eventName,propertyName,methodName)
+            self.Ephys_.subscribeMeToTestPulserEvent_(subscriber,eventName,propertyName,methodName) ;
+        end
         
     end  % public methods
 end  % classdef

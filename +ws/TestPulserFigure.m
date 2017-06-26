@@ -81,30 +81,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             %    self.Host.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %    self.Host.Stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %end
-            if ~isempty(self.Model) ,
-                ephys = self.Model.Ephys ;
-                testPulser = ephys.getTestPulserReference_() ;
-                testPulser.subscribeMe(self,'Update','','update');
-                %testPulser.subscribeMe(self,'UpdateIsReady','','updateIsReady');
-                testPulser.subscribeMe(self,'UpdateTrace','','updateTrace');
-                testPulser.subscribeMe(self,'DidSetIsInputChannelActive','','update');
-                %ephys=testPulser.Parent;
-                ephys.subscribeMe(self,'UpdateTestPulser','','update');
-                if ~isempty(ephys) && isvalid(ephys) ,
-                    electrodeManager=ephys.ElectrodeManager;
-                    if ~isempty(electrodeManager) && isvalid(electrodeManager) ,
-                        electrodeManager.subscribeMe(self,'Update','','update');
-                    end
-                    wavesurferModel=self.Model;
-                    if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
-                        wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
-%                         acquisition=wavesurferModel.Acquisition;
-%                         if ~isempty(acquisition) && isvalid(acquisition) ,
-%                             acquisition.subscribeMe(self,'DidSetIsChannelActive','','update');
-%                         end                        
-                    end
-                end                
+            if ~isempty(wsModel) ,
+                wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
+                wsModel.subscribeMeToEphysEvent_(self,'UpdateTestPulser','','update') ;
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent_(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent_(self,'UpdateTrace','','updateTrace') ;
+                wsModel.subscribeMeToTestPulserEvent_(self,'DidSetIsInputChannelActive','','update') ;
             end
         end  % constructor
         
@@ -267,12 +250,12 @@ classdef TestPulserFigure < ws.MCOSFigure
             wsModel = self.Model ;
             ephys = wsModel.Ephys ;
             %testPulser = ephys.TestPulser ;
-            electrodeManager=ephys.ElectrodeManager;
+            %electrodeManager=ephys.ElectrodeManager;
             electrode = ephys.TestPulseElectrode ;
             
             % Define some useful booleans
             isElectrodeManual=isempty(electrode)||isequal(electrode.Type,'Manual');
-            isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
+            isElectrodeManagerInControlOfSoftpanelModeAndGains=wsModel.IsInControlOfSoftpanelModeAndGains;
             isWavesurferIdle=isequal(wsModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
             isWavesurferTestPulsing = wsModel.IsTestPulsing ;
@@ -285,12 +268,12 @@ classdef TestPulserFigure < ws.MCOSFigure
                 isWavesurferIdleOrTestPulsing && ...
                 ~isempty(electrode) && ...
                 wsModel.areAllElectrodesTestPulsable() && ...
-                electrodeManager.areAllMonitorAndCommandChannelNamesDistinct();
+                wsModel.areAllMonitorAndCommandChannelNamesDistinct();
             set(self.StartStopButton, ...
                 'String',ws.fif(isWavesurferTestPulsing,'Stop','Start'), ...
                 'Enable',ws.onIff(isStartStopButtonEnabled));
             
-            electrodeNames=electrodeManager.TestPulseElectrodeNames;
+            electrodeNames=wsModel.TestPulseElectrodeNames;
             electrodeName=ephys.TestPulseElectrodeName;
             ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
                                                             electrodeNames, ...

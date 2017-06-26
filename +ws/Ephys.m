@@ -13,6 +13,10 @@ classdef Ephys < ws.Subsystem
         %IsTestPulsing
         %DoSubtractBaseline
         TestPulseElectrodeName
+        DidLastElectrodeUpdateWork
+        AreSoftpanelsEnabled
+        IsDoTrodeUpdateBeforeRunSensible
+        TestPulseElectrodeNames
     end
     
     properties (Access = protected)
@@ -21,7 +25,7 @@ classdef Ephys < ws.Subsystem
     end
     
     properties (Dependent=true, SetAccess=immutable)
-        ElectrodeManager  % provides public access to ElectrodeManager_
+        %ElectrodeManager  % provides public access to ElectrodeManager_
         %TestPulser  % provides public access to TestPulser_
     end    
       
@@ -47,9 +51,9 @@ classdef Ephys < ws.Subsystem
 %             out=self.TestPulser_;
 %         end
         
-        function out = get.ElectrodeManager(self)
-            out=self.ElectrodeManager_;
-        end
+%         function out = get.ElectrodeManager(self)
+%             out=self.ElectrodeManager_;
+%         end
         
         function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
             % Called by the ElectrodeManager to notify that the electrode
@@ -104,30 +108,30 @@ classdef Ephys < ws.Subsystem
         end        
         
         function didSetIsInputChannelActive(self) 
-            self.ElectrodeManager.didSetIsInputChannelActive() ;
+            self.ElectrodeManager_.didSetIsInputChannelActive() ;
             self.TestPulser_.didSetIsInputChannelActive() ;
         end
         
         function didSetIsDigitalOutputTimed(self)
-            self.ElectrodeManager.didSetIsDigitalOutputTimed() ;
+            self.ElectrodeManager_.didSetIsDigitalOutputTimed() ;
         end
         
         function didChangeNumberOfInputChannels(self)
-            self.ElectrodeManager.didChangeNumberOfInputChannels();
+            self.ElectrodeManager_.didChangeNumberOfInputChannels();
             self.TestPulser_.didChangeNumberOfInputChannels();
         end        
         
         function didChangeNumberOfOutputChannels(self)
-            self.ElectrodeManager.didChangeNumberOfOutputChannels();
+            self.ElectrodeManager_.didChangeNumberOfOutputChannels();
             self.TestPulser_.didChangeNumberOfOutputChannels();
         end        
 
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            self.ElectrodeManager.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
+            self.ElectrodeManager_.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
         end        
 
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
-            self.ElectrodeManager.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue) ;
+            self.ElectrodeManager_.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue) ;
         end        
     end  % methods block
     
@@ -178,7 +182,7 @@ classdef Ephys < ws.Subsystem
             
             % Disable broadcasts for speed
             %self.disableBroadcasts();
-            self.ElectrodeManager.disableBroadcasts();
+            self.ElectrodeManager_.disableBroadcasts();
             self.TestPulser_.disableBroadcasts();
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -205,13 +209,13 @@ classdef Ephys < ws.Subsystem
             
             % Re-enable broadcasts
             self.TestPulser_.enableBroadcastsMaybe();
-            self.ElectrodeManager.enableBroadcastsMaybe();
+            self.ElectrodeManager_.enableBroadcastsMaybe();
             %self.enableBroadcastsMaybe();
             
             % Broadcast updates for sub-models and self, now that
             % everything is in sync, and should be self-consistent
             self.TestPulser_.broadcast('Update');
-            self.ElectrodeManager.broadcast('Update');
+            self.ElectrodeManager_.broadcast('Update');
             %self.broadcast('Update');  % is this necessary?
         end  % function
         
@@ -654,6 +658,88 @@ classdef Ephys < ws.Subsystem
 %         function electrode = getElectrodeByIndex_(self, electrodeIndex)
 %             electrode = self.ElectrodeManager_.getElectrodeByIndex_(electrodeIndex) ;
 %         end    
+        
+        function result = getIsInControlOfSoftpanelModeAndGains_(self)
+            result = self.ElectrodeManager_.getIsInControlOfSoftpanelModeAndGains_() ;
+        end
+
+        function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
+            self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+        end
+
+        function [channelScalesFromElectrodes, isChannelScaleEnslaved] = getMonitorScalingsByName(self, aiChannelNames)
+            [channelScalesFromElectrodes, isChannelScaleEnslaved] = self.ElectrodeManager_.getMonitorScalingsByName(aiChannelNames) ;
+        end
+        
+        function [channelScalesFromElectrodes, isChannelScaleEnslaved] = getCommandScalingsByName(self, aoChannelNames)
+            [channelScalesFromElectrodes, isChannelScaleEnslaved] = self.ElectrodeManager_.getCommandScalingsByName(aoChannelNames) ;
+        end
+        
+        function [queryChannelUnits,isQueryChannelScaleManaged] = getMonitorUnitsByName(self,queryChannelNamesRaw)
+            [queryChannelUnits,isQueryChannelScaleManaged] = self.ElectrodeManager_.getMonitorUnitsByName(queryChannelNamesRaw) ;
+        end
+
+        function [channelUnitsFromElectrodes, isChannelScaleEnslaved] = getCommandUnitsByName(self, channelNames)
+            [channelUnitsFromElectrodes, isChannelScaleEnslaved] = self.ElectrodeManager_.getCommandUnitsByName(channelNames) ;
+        end            
+        
+        function result = getNumberOfElectrodesClaimingMonitorChannel(self, queryChannelNames)
+            result = self.ElectrodeManager_.getNumberOfElectrodesClaimingMonitorChannel(queryChannelNames) ;
+        end
+        
+        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
+            result = self.ElectrodeManager_.areAllMonitorAndCommandChannelNamesDistinct() ;
+        end  % function
+        
+        function value = getNumberOfElectrodesClaimingCommandChannel(self,queryChannelNames)
+            value = self.ElectrodeManager_.getNumberOfElectrodesClaimingCommandChannel(queryChannelNames) ;
+        end
+
+        function result = areAnyElectrodesCommandable(self)
+            result = self.ElectrodeManager_.areAnyElectrodesCommandable() ;
+        end  % function
+        
+        function result = get.DidLastElectrodeUpdateWork(self)
+            result = self.ElectrodeManager_.DidLastElectrodeUpdateWork ;
+        end
+        
+        function result = get.AreSoftpanelsEnabled(self)
+            result = self.ElectrodeManager_.AreSoftpanelsEnabled ;
+        end
+
+        function set.AreSoftpanelsEnabled(self, newValue)
+            self.ElectrodeManager_.AreSoftpanelsEnabled = newValue ;
+        end
+        
+        function result = doesElectrodeHaveCommandOnOffSwitch(self)
+            result = self.ElectrodeManager_.doesElectrodeHaveCommandOnOffSwitch() ;
+        end        
+        
+        function result = get.IsDoTrodeUpdateBeforeRunSensible(self)
+            result = self.ElectrodeManager_.IsDoTrodeUpdateBeforeRunSensible() ;
+        end        
+        
+        function result = areAnyElectrodesSmart(self)
+            result = self.ElectrodeManager_.areAnyElectrodesSmart() ;
+        end        
+        
+        function result = get.TestPulseElectrodeNames(self)
+            result = self.ElectrodeManager_.TestPulseElectrodeNames ;
+        end
+        
+%         function result = getElectrodeManagerReference_(self)
+%             % Should be used as little as possible, and never by consumer code.
+%             % And eventually should be removed.
+%             result = self.ElectrodeManager_ ;
+%         end
+           
+        function subscribeMeToElectrodeManagerEvent_(self,subscriber,eventName,propertyName,methodName)
+            self.ElectrodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function subscribeMeToTestPulserEvent_(self,subscriber,eventName,propertyName,methodName)
+            self.TestPulser_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
         
     end  % public methods block
 

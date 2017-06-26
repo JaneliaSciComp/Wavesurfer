@@ -75,9 +75,9 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     end
     
     methods
-        function self=ElectrodeManagerFigure(model,controller)
+        function self=ElectrodeManagerFigure(wsModel, controller)
             % The model should be an instance of ws.WavesurferModel, or []
-            self = self@ws.MCOSFigure(model,controller);
+            self = self@ws.MCOSFigure(wsModel,controller);
             
             % Set the relevant properties of the figure itself
             set(self.FigureGH, ...
@@ -102,16 +102,15 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             self.update();
             
             % Subscribe to model events
-            if ~isempty(model) ,
-                electrodeManager = model.Ephys.ElectrodeManager ;
-                electrodeManager.subscribeMe(self,'Update','','update');
-                electrodeManager.subscribeMe(self,'DidSetIsInputChannelActive','','updateControlProperties');
-                electrodeManager.subscribeMe(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
-                electrodeManager.subscribeMe(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
-                electrodeManager.subscribeMe(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
-                wavesurferModel=model;
-                wavesurferModel.subscribeMe(self,'DidSetState','','update');
-                wavesurferModel.subscribeMe(self,'UpdateElectrodeManager','','update');
+            if ~isempty(wsModel) ,
+                %electrodeManager = wsModel.Ephys.getElectrodeManagerReference_() ;
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'Update','','update');
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidSetIsInputChannelActive','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
+                wsModel.subscribeMe(self,'DidSetState','','update');
+                wsModel.subscribeMe(self,'UpdateElectrodeManager','','update');
             end
             
             % make the figure visible
@@ -141,8 +140,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             
             % If the model is empty or broken, just return at this point
             wsModel = self.Model ;
-            ephys = wsModel.Ephys ;
-            electrodeManager = ephys.ElectrodeManager ;
+            %ephys = wsModel.Ephys ;
+            %electrodeManager = ephys.ElectrodeManager ;
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end
@@ -154,10 +153,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             end            
 
             % These are generally useful
-            isInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
+            isInControlOfSoftpanelModeAndGains=wsModel.IsInControlOfSoftpanelModeAndGains;
 
             % Update bottom row button enablement
-            areAnyElectrodesCommandable=electrodeManager.areAnyElectrodesCommandable();
+            areAnyElectrodesCommandable=wsModel.areAnyElectrodesCommandable();
             
             % Update toggle state of Softpanel button
             set(self.SoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
@@ -173,7 +172,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
             
             % Get the connection status for all electrodes
-            didLastElectrodeUpdateWork = electrodeManager.DidLastElectrodeUpdateWork;
+            didLastElectrodeUpdateWork = wsModel.DidLastElectrodeUpdateWork;
             
             nElectrodes = min(length(self.LabelEdits), wsModel.ElectrodeCount) ;  % Don't want to error if there's a mismatch
             for i = 1:nElectrodes ,
@@ -217,7 +216,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 if isThisElectrodeInAVCMode ,
                     %
                     % Update the current monitor popup
-                    nElectrodesClaimingChannel=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
+                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wsModel.Acquisition.AnalogChannelNames, ...
@@ -239,7 +238,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     %
                     % Update the voltage command popup
-                    nElectrodesClaimingChannel=electrodeManager.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'VoltageCommandChannelName'));
+                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'VoltageCommandChannelName'));
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                          wsModel.AOChannelNames, ...
@@ -266,7 +265,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 else                                
                     %
                     % Update the voltage monitor popup
-                    nElectrodesClaimingChannel=electrodeManager.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'));
+                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'));
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wsModel.Acquisition.AnalogChannelNames, ...
@@ -288,7 +287,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 
                     %
                     % Update the current command popup
-                    nElectrodesClaimingChannel=electrodeManager.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'));
+                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'));
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                       wsModel.Stimulation.AnalogChannelNames, ...
@@ -342,32 +341,32 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % given the current state of the model.
             
             % If the model is empty or broken, just return at this point
-            wsModel=self.Model;
+            wsModel = self.Model ;
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end
             
             % Need to figure out the wsModel State
-            ephys= wsModel.Ephys ;
-            electrodeManager = ephys.ElectrodeManager ;
+            %ephys= wsModel.Ephys ;
+            %electrodeManager = ephys.ElectrodeManager ;
             isWavesurferIdle = isequal(wsModel.State,'idle') ;
 
             % These are generally useful
-            areSoftpanelsEnabled = electrodeManager.AreSoftpanelsEnabled ;
-            isInControlOfSoftpanelModeAndGains = electrodeManager.IsInControlOfSoftpanelModeAndGains ;
-            doesElectrodeHaveCommandOnOffSwitch = electrodeManager.doesElectrodeHaveCommandOnOffSwitch() ;
-            isDoTrodeUpdateBeforeRunSensible = electrodeManager.IsDoTrodeUpdateBeforeRunSensible ;
+            areSoftpanelsEnabled = wsModel.AreSoftpanelsEnabled ;
+            isInControlOfSoftpanelModeAndGains = wsModel.IsInControlOfSoftpanelModeAndGains ;
+            doesElectrodeHaveCommandOnOffSwitch = wsModel.doesElectrodeHaveCommandOnOffSwitch() ;
+            isDoTrodeUpdateBeforeRunSensible = wsModel.IsDoTrodeUpdateBeforeRunSensible ;
 
             % Update bottom row button enablement
             isAddButtonEnabled= isWavesurferIdle;
             set(self.AddButton,'Enable',ws.onIff(isAddButtonEnabled));
             isRemoveButtonEnabled= isWavesurferIdle && any(wsModel.IsElectrodeMarkedForRemoval);
             set(self.RemoveButton,'Enable',ws.onIff(isRemoveButtonEnabled));
-            areAnyElectrodesCommandable = electrodeManager.areAnyElectrodesCommandable() ;
+            areAnyElectrodesCommandable = wsModel.areAnyElectrodesCommandable() ;
             isSoftpanelButtonEnabled= isWavesurferIdle&&areAnyElectrodesCommandable;
             set(self.SoftpanelButton,'Enable',ws.onIff(isSoftpanelButtonEnabled));
             %isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart&&areSoftpanelsEnabled;
-            areAnyElectrodesSmart = electrodeManager.areAnyElectrodesSmart() ;
+            areAnyElectrodesSmart = wsModel.areAnyElectrodesSmart() ;
             isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
               % still sometimes nice to update even when WS is
               % theoretically "in command"
@@ -397,22 +396,23 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             nElectrodes=min(length(self.LabelEdits),wsModel.ElectrodeCount);  % Don't want to error if there's a mismatch
             for i=1:nElectrodes ,
                 % Get the current trode
-                thisElectrode = electrodeManager.Electrodes{i} ;
+                %thisElectrode = electrodeManager.Electrodes{i} ;
                 
                 % Update the electrode label
                 set(self.LabelEdits(i), ...
                     'Enable',ws.onIff(isWavesurferIdle));
                 
                 % Need this several places
-                isThisElectrodeManual=isequal(thisElectrode.Type,'Manual');
-                isThisElectrodeHeka=isequal(thisElectrode.Type,'Heka EPC');
+                thisElectrodeType = wsModel.getElectrodeProperty(i, 'Type') ;
+                isThisElectrodeManual=isequal(thisElectrodeType,'Manual');
+                isThisElectrodeHeka=isequal(thisElectrodeType,'Heka EPC');
                 %isThisElectrodeAxon=isequal(thisElectrode.Type,'Axon Multiclamp');
                 isThisElectrodeSmart=~isThisElectrodeManual;
                 
                 % Update the type popup                
                 ws.setPopupMenuItemsAndSelectionBang(self.TypePopups(i), ...
                                                      ws.Electrode.Types, ...
-                                                     thisElectrode.Type);
+                                                     thisElectrodeType);
                 set(self.TypePopups(i),'Enable',ws.onIff(isWavesurferIdle&&areSoftpanelsEnabled));
 
                 % Update the index-of-type edit
@@ -431,7 +431,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 
                 % Get whether the current electrode is in a CC mode or a VC
                 % mode
-                isThisElectrodeInAVCMode = thisElectrode.IsInAVCMode ;
+                isThisElectrodeInAVCMode = wsModel.getElectrodeProperty(i, 'IsInAVCMode') ;
                 
                 if isThisElectrodeInAVCMode ,
                     %
@@ -465,10 +465,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     set(self.CommandPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the voltage command scale
+                    thisElectrodeMode = wsModel.getElectrodeProperty(i, 'Mode') ;
                     isVoltageCommandScaleEnabled = isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
                                                     (isInControlOfSoftpanelModeAndGains && ...
-                                                     isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
+                                                     isThisElectrodeHeka && ~isequal(thisElectrodeMode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
                         'Enable',ws.onIff(isVoltageCommandScaleEnabled));
 
@@ -508,9 +509,10 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     set(self.CommandPopups(i),'Enable',ws.onIff(isWavesurferIdle));
 
                     % Update the current command scale
+                    thisElectrodeMode = wsModel.getElectrodeProperty(i, 'Mode') ;
                     isCurrentCommandScaleEnabled=isWavesurferIdle && ...
                                                    (isThisElectrodeManual || ...
-                                                    (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka && ~isequal(thisElectrode.Mode,'cc'))) ;
+                                                    (isInControlOfSoftpanelModeAndGains && isThisElectrodeHeka && ~isequal(thisElectrodeMode,'cc'))) ;
                     set(self.CommandScaleEdits(i), ...
                         'Enable',ws.onIff(isCurrentCommandScaleEnabled));
 
