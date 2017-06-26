@@ -4,7 +4,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     properties (Dependent = true)
         %SampleRate  % Hz
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
-        StimulusLibrary
+        %StimulusLibrary
 %         AnalogChannelScales
 %           % A row vector of scale factors to convert each channel from native units to volts on the coax.
 %           % This is implicitly in units of ChannelUnits per volt (see below)
@@ -234,25 +234,25 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
 %         end
         
-        function value=get.StimulusLibrary(self)
-            value=self.StimulusLibrary_;
-        end
-        
-        function set.StimulusLibrary(self,newValue)
-            if isempty(newValue) ,
-                if isempty(self.StimulusLibrary_) ,
-                    % do nothing
-                else
-                    self.StimulusLibrary_ = [] ;
-                end
-            elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
-                if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
-                    self.StimulusLibrary_ = newValue.copy() ;
-                    %self.StimulusLibrary_.Parent = self ;
-                end
-            end
-            %self.broadcast('DidSetStimulusLibrary');
-        end
+%         function value=get.StimulusLibrary(self)
+%             value=self.StimulusLibrary_;
+%         end
+%         
+%         function set.StimulusLibrary(self,newValue)
+%             if isempty(newValue) ,
+%                 if isempty(self.StimulusLibrary_) ,
+%                     % do nothing
+%                 else
+%                     self.StimulusLibrary_ = [] ;
+%                 end
+%             elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
+%                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
+%                     self.StimulusLibrary_ = newValue.copy() ;
+%                     %self.StimulusLibrary_.Parent = self ;
+%                 end
+%             end
+%             %self.broadcast('DidSetStimulusLibrary');
+%         end
         
         function out = getSampleRate_(self)
             out= self.SampleRate_ ;

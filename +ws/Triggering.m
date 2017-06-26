@@ -1,17 +1,17 @@
 classdef Triggering < ws.Subsystem 
     
     properties (Dependent = true)
-        BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
-        CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
-        ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
+        %BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
+        %CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
+        %ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         TriggerCount
         CounterTriggerCount
         ExternalTriggerCount
         Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-        AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
-        StimulationTriggerScheme
+        %AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
+        %StimulationTriggerScheme
         AcquisitionTriggerSchemeIndex  % this is an index into Schemes
         StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
           % if StimulationUsesAcquisitionTriggerScheme is true, this
@@ -239,17 +239,17 @@ classdef Triggering < ws.Subsystem
     end  % protected methods block   
     
     methods
-        function out = get.BuiltinTrigger(self)
-            out = self.BuiltinTrigger_;
-        end  % function
-        
-        function out = get.ExternalTriggers(self)
-            out = self.ExternalTriggers_;
-        end  % function
-        
-        function out = get.CounterTriggers(self)
-            out = self.CounterTriggers_;
-        end  % function
+%         function out = get.BuiltinTrigger(self)
+%             out = self.BuiltinTrigger_;
+%         end  % function
+%         
+%         function out = get.ExternalTriggers(self)
+%             out = self.ExternalTriggers_;
+%         end  % function
+%         
+%         function out = get.CounterTriggers(self)
+%             out = self.CounterTriggers_;
+%         end  % function
         
 %         function out = get.AcquisitionSchemes(self)
 %             %out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
@@ -272,14 +272,14 @@ classdef Triggering < ws.Subsystem
             result = length(self.ExternalTriggers_) ;
         end
         
-        function out = get.AcquisitionTriggerScheme(self)
-            index = self.NewAcquisitionTriggerSchemeIndex_ ;
-            if isempty(index) ,
-                out = [] ;
-            else
-                out = self.Schemes{index} ;
-            end
-        end  % function
+%         function out = get.AcquisitionTriggerScheme(self)
+%             index = self.NewAcquisitionTriggerSchemeIndex_ ;
+%             if isempty(index) ,
+%                 out = [] ;
+%             else
+%                 out = self.Schemes{index} ;
+%             end
+%         end  % function
         
         function result = get.AcquisitionTriggerSchemeIndex(self)            
             result = self.NewAcquisitionTriggerSchemeIndex_ ;
@@ -337,18 +337,18 @@ classdef Triggering < ws.Subsystem
             % self.broadcast('Update');                        
         end
         
-        function out = get.StimulationTriggerScheme(self)
-            if self.StimulationUsesAcquisitionTriggerScheme ,
-                out = self.AcquisitionTriggerScheme ;
-            else                
-                index = self.StimulationTriggerSchemeIndex_ ;
-                if isempty(index) ,
-                    out = [] ;
-                else
-                    out = self.Schemes{index} ;
-                end
-            end
-        end  % function        
+%         function out = get.StimulationTriggerScheme(self)
+%             if self.StimulationUsesAcquisitionTriggerScheme ,
+%                 out = self.AcquisitionTriggerScheme ;
+%             else                
+%                 index = self.StimulationTriggerSchemeIndex_ ;
+%                 if isempty(index) ,
+%                     out = [] ;
+%                 else
+%                     out = self.Schemes{index} ;
+%                 end
+%             end
+%         end  % function        
     end  % methods block
     
     methods
