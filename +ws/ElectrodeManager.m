@@ -127,7 +127,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end
         
         function out = get.TestPulseElectrodes(self)
-            electrodes=self.Electrodes_;
+            electrodes = self.Electrodes_ ;
             out=electrodes(self.IsElectrodeMarkedForTestPulse_);
         end
         

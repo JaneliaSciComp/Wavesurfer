@@ -65,7 +65,7 @@ classdef TestPulserController < ws.Controller
                 self.Figure.update();                
             else
                 electrodeName=menuItem;
-                wsModel.do('set','TestPulseElectrodeName',electrodeName) ;
+                wsModel.do('setTestPulseElectrodeByName', electrodeName) ;
             end
         end
         

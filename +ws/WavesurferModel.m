@@ -77,8 +77,8 @@ classdef WavesurferModel < ws.Model
         IsDoTrodeUpdateBeforeRunSensible
         TestPulseElectrodeNames
         TestPulseElectrodesCount
-        TestPulseElectrodeAmplitude
-        TestPulseElectrodeName
+        %TestPulseElectrodeAmplitude
+        %TestPulseElectrodeName
     end
     
     properties (Access=protected)
@@ -115,14 +115,14 @@ classdef WavesurferModel < ws.Model
         HasUserSpecifiedUserSettingsFileName
         AbsoluteUserSettingsFileName
         FastProtocols
-        IndexOfSelectedFastProtocol  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
+        IndexOfSelectedFastProtocol   % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         Acquisition
         Stimulation
         Triggering
         Display
         Logging
         UserCodeManager
-        Ephys
+        %Ephys
         SweepDuration  % the sweep duration, in s
         AreSweepsFiniteDuration  % boolean scalar, whether the current acquisition mode is sweep-based.
         AreSweepsContinuous  
@@ -426,7 +426,7 @@ classdef WavesurferModel < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys, self.Acquisition, self.Stimulation, self.Display, self.Triggering_, self.Logging, self.UserCodeManager};
+            self.Subsystems_ = {self.Ephys_, self.Acquisition_, self.Stimulation_, self.Display_, self.Triggering_, self.Logging_, self.UserCodeManager_};
             
             % The object is now initialized, but not very useful until a
             % device is specified.
@@ -668,9 +668,9 @@ classdef WavesurferModel < ws.Model
             out = self.Logging_ ;
         end
         
-        function out = get.Ephys(self)
-            out = self.Ephys_ ;
-        end
+%         function out = get.Ephys(self)
+%             out = self.Ephys_ ;
+%         end
         
         function out = get.NSweepsCompletedInThisRun(self)
             out = self.NSweepsCompletedInThisRun_ ;
@@ -920,11 +920,11 @@ classdef WavesurferModel < ws.Model
         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            display=self.Display;
+            display=self.Display_;
             if ~isempty(display)
                 display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
             end            
-            ephys=self.Ephys;
+            ephys=self.Ephys_;
             if ~isempty(ephys)
                 ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
             end            
@@ -954,7 +954,7 @@ classdef WavesurferModel < ws.Model
             else
                 didSucceed = false ;
             end
-            ephys = self.Ephys ;
+            ephys = self.Ephys_ ;
             if ~isempty(ephys) ,
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
             end            
@@ -1133,10 +1133,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys ;
-            if ~isempty(ephys) ,
-                ephys.didSetAcquisitionSampleRate(newValue) ;
-            end
+            ephys = self.Ephys_ ;
+            ephys.didSetAcquisitionSampleRate(newValue) ;
         end
     end  % methods
     
@@ -4298,14 +4296,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function value = getNumberOfElectrodesClaimingAIChannel(self)
-            ephys = self.Ephys ;
+            ephys = self.Ephys_ ;
             %electrodeManager = ephys.ElectrodeManager ;
             channelNames = self.Acquisition_.AnalogChannelNames ;
             value = ephys.getNumberOfElectrodesClaimingMonitorChannel(channelNames) ;
         end
         
         function value = get.AIChannelUnits(self)            
-            ephys=self.Ephys;
+            ephys=self.Ephys_;
             %electrodeManager=ephys.ElectrodeManager;
             channelNames=self.Acquisition_.AnalogChannelNames;
             [channelUnitsFromElectrodes, isChannelScaleEnslaved] = ephys.getMonitorUnitsByName(channelNames);
@@ -4558,7 +4556,7 @@ classdef WavesurferModel < ws.Model
         end  % function       
         
         function result = get.AOChannelScales(self)
-            ephys=self.Ephys;
+            ephys=self.Ephys_;
             %electrodeManager=ephys.ElectrodeManager;
             channelNames = self.Stimulation_.AnalogChannelNames ;
             [analogChannelScalesFromElectrodes, isChannelScaleEnslaved] = ephys.getCommandScalingsByName(channelNames) ;
@@ -4574,7 +4572,7 @@ classdef WavesurferModel < ws.Model
 %         end  % function        
         
         function result = get.AOChannelUnits(self)
-            ephys = self.Ephys ;
+            ephys = self.Ephys_ ;
             %electrodeManager = ephys.ElectrodeManager ;
             channelNames = self.Stimulation_.AnalogChannelNames ;
             [channelUnitsFromElectrodes, isChannelScaleEnslaved] = ephys.getCommandUnitsByName(channelNames) ;
@@ -4712,11 +4710,6 @@ classdef WavesurferModel < ws.Model
                 % Takes some time to start...
                 self.changeTestPulserReadiness_(-1) ;
 
-                % Get some handles we'll need
-                wavesurferModel = self ;
-                ephys = wavesurferModel.Ephys_ ;
-                %electrodeManager = ephys.ElectrodeManager ;                
-
                 % Update the smart electrode channel scales, if possible and
                 % needed
                 if self.DoTrodeUpdateBeforeRun ,
@@ -4724,18 +4717,18 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Check that we can start, and if not, return
-                electrode = ephys.TestPulseElectrode ;
+                electrodeIndex = self.TestPulseElectrodeIndex ;
                 canStart = ...
-                    ~isempty(electrode) && ...
+                    ~isempty(electrodeIndex) && ...
                     self.areAllElectrodesTestPulsable() && ...
-                    ephys.areAllMonitorAndCommandChannelNamesDistinct() && ...
-                    isequal(wavesurferModel.State,'idle') ;
+                    self.areAllMonitorAndCommandChannelNamesDistinct() && ...
+                    isequal(self.State, 'idle') ;
                 if ~canStart ,
                     return
                 end
 
                 % Free up resources we will need for test pulsing
-                wavesurferModel.testPulserIsAboutToStartTestPulsing();
+                self.testPulserIsAboutToStartTestPulsing();
                 
                 % Get things we need for test-pulsing
                 fs = self.AcquisitionSampleRate ;
@@ -4853,12 +4846,12 @@ classdef WavesurferModel < ws.Model
 
         function result = getTestPulseElectrodeCommandUnits(self)
             channelName = self.getTestPulseElectrodeProperty('CommandChannelName') ;
-            result = self.Ephys_.aoChannelUnitsFromName(channelName) ;            
+            result = self.aoChannelUnitsFromName(channelName) ;            
         end
         
         function result = getTestPulseElectrodeMonitorUnits(self)
             channelName = self.getTestPulseElectrodeProperty('MonitorChannelName') ;
-            result = self.Ephys_.aiChannelUnitsFromName(channelName);           
+            result = self.aiChannelUnitsFromName(channelName) ;           
         end  % function
 
         function set.TestPulseYLimits(self, newValue)
@@ -5228,7 +5221,7 @@ classdef WavesurferModel < ws.Model
         end
 
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
-            testPulseElectrodeIndex = self.Model.TestPulseElectrodeIndex ;
+            testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             if ~isempty(testPulseElectrodeIndex) ,
                 self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
             end
@@ -5346,21 +5339,28 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.TestPulseElectrodesCount ;
         end
         
-        function result = get.TestPulseElectrodeAmplitude(self)
-            result = self.Ephys_.TestPulseElectrodeAmplitude ;
-        end
+%         function result = get.TestPulseElectrodeAmplitude(self)
+%             result = self.Ephys_.TestPulseElectrodeAmplitude ;
+%         end
+%         
+%         function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
+%             self.Ephys_.TestPulseElectrodeAmplitude = newValue ;
+%         end  % function         
         
-        function set.TestPulseElectrodeAmplitude(self, newValue)  % in units of the electrode command channel
-            self.Ephys_.TestPulseElectrodeAmplitude = newValue ;
-        end  % function         
-        
-        function set.TestPulseElectrodeName(self, newValue)
-            self.Ephys_.TestPulseElectrodeName = newValue ;
-        end        
+%         function set.TestPulseElectrodeName(self, newValue)
+%             self.Ephys_.TestPulseElectrodeName = newValue ;
+%         end        
         
         function result = getIsTestPulserReady(self)
             result = self.Ephys_.getIsTestPulserReady() ;
         end
         
+        function setTestPulseElectrodeByName(self, newValue)
+            self.Ephys_.setTestPulseElectrodeByName(newValue) ;
+        end
+        
+        function result = getTestPulseElectrodeProperty(self, propertyName)
+            result = self.Ephys_.getTestPulseElectrodeProperty(propertyName) ;
+        end        
     end  % public methods
 end  % classdef
