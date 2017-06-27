@@ -237,7 +237,8 @@ classdef Controller < handle
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isRootIdleSensuLato() ;
+                %shouldStayPut = ~model.isRootIdleSensuLato() ;
+                shouldStayPut = ~isequal(model.State, 'idle') ;
             end
         end  % function
         
@@ -343,11 +344,14 @@ classdef Controller < handle
             % source.Type to determine the method name.  That's becuase
             % there's generally no real source for fake actuations.
             try
-                methodName=[controlName 'Actuated'] ;
+                methodName = [controlName 'Actuated'] ;
                 if ismethod(self,methodName) ,
                     source = [] ;
                     event = [] ;
                     self.(methodName)(source,event,varargin{:}) ;
+                else
+                    error('ws:noSuchMethod' , ...
+                          'There is no method named %s', methodName) ;                    
                 end
             catch exception
                 indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;

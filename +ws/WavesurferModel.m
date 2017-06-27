@@ -112,6 +112,8 @@ classdef WavesurferModel < ws.Model
         DoIncludeDateInDataFileName
         DoIncludeSessionIndexInDataFileName
         SessionIndex
+        StimulusLibrary
+        CurrentRunAbsoluteFileName
     end
     
     properties (Access=protected)
@@ -5678,5 +5680,19 @@ classdef WavesurferModel < ws.Model
         function result = get.SessionIndex(self)
             result = self.Logging_.SessionIndex ;
         end        
+        
+        function set.SessionIndex(self, newValue)
+            self.Logging_.SessionIndex = newValue ;
+        end
+
+        function result = get.StimulusLibrary(self)
+            % Note that this returns a *copy* of the internal stimulus library
+            result = self.Stimulation_.getStimulusLibraryCopy() ;
+        end
+        
+        function result = get.CurrentRunAbsoluteFileName(self)
+            result = self.Logging_.CurrentRunAbsoluteFileName ;
+        end                
+        
     end  % public methods
 end  % classdef

@@ -575,7 +575,8 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             
             % Set it
             set(self.FigureGH_, 'Position', newFigurePosition) ;
-        end  % function        
+        end  % function               
+        
     end  % public methods block
     
     methods (Sealed = true)

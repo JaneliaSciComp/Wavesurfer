@@ -107,12 +107,12 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             
             % Check some of the stim library parts of the header
             header = dataAsStruct.header ;
-%             stimulusLibraryHeader = header.Stimulation.StimulusLibrary ;
-%             self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
-%             self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
-%             self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;
-%             self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableClassName')) ;
-%             self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableIndex')) ;
+            stimulusLibraryHeader = header.StimulusLibrary ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Stimuli')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Maps')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'Sequences')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableClassName')) ;
+            self.verifyTrue(isfield(stimulusLibraryHeader, 'SelectedOutputableIndex')) ;
             
             % Check that some of the triggering info is there
             %self.verifyTrue(isfield(header, 'Triggering')) ;

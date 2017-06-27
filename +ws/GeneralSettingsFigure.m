@@ -870,9 +870,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.SessionIndexCheckbox, 'Value', model.DoIncludeSessionIndexInDataFileName);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.SessionIndex));
             set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.IsLoggingEnabled,'Current Sweep:','Next Sweep:'));
-            set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
+            set(self.NextSweepEdit, 'String', sprintf('%d',model.NextSweepIndex));
             if ~isIdle&&model.IsLoggingEnabled ,
-                set(self.FileNameEdit, 'String', model.Logging.CurrentRunAbsoluteFileName);
+                set(self.FileNameEdit, 'String', model.CurrentRunAbsoluteFileName);
             else
                 set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
             end            
@@ -1004,20 +1004,20 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             %figureObject=self.Figure;            
             %window=self.hGUIData.WavesurferWindow;
             
-            model=self.Model_;
-            if isempty(model) ,
+            wsModel=self.Model_;
+            if isempty(wsModel) ,
                 return
             end
             
-            isIdle=isequal(model.State,'idle');            
+            isIdle=isequal(wsModel.State,'idle');            
 
-            displaySubsystem = model.Display ;
-            isDisplayEnabled=displaySubsystem.IsEnabled;
+            %displaySubsystem = wsModel.Display ;
+            isDisplayEnabled=wsModel.IsDisplayEnabled;
             set(self.DisplayEnabledCheckbox,'Enable',ws.onIff(isIdle));
             set(self.UpdateRateEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled));   % && ~displaySubsystem.IsAutoRate));
             %set(self.AutomaticRate,'Enable',ws.onIff(isIdle && isDisplayEnabled));
-            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~model.IsXSpanSlavedToAcquistionDuration));
-            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && model.IsXSpanSlavedToAcquistionDurationSettable));            
+            set(self.SpanEdit,'Enable',ws.onIff(isIdle && isDisplayEnabled && ~wsModel.IsXSpanSlavedToAcquistionDuration));
+            set(self.AutoSpanCheckbox,'Enable',ws.onIff(isIdle && isDisplayEnabled && wsModel.IsXSpanSlavedToAcquistionDurationSettable));            
         end  % function
     end
     
@@ -1241,7 +1241,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
         function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Stimulation','IsEnabled',newValue);
+            self.doWithModel_('set','IsStimulationEnabled',newValue);
         end
         
         function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
@@ -1257,13 +1257,13 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
         function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Display','IsEnabled',newValue);
+            self.doWithModel_('set','IsDisplayEnabled',newValue);
         end
         
         function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            self.doWithModel_('setSubsystemProperty','Display','UpdateRate',newValue);
+            self.doWithModel_('set','DisplayUpdateRate',newValue);
         end
 
         function SpanEditActuated(self,source,event) %#ok<INUSD>
@@ -1279,12 +1279,12 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         
         function LocationEditActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'String');
-            self.doWithModel_('setSubsystemProperty','Logging','FileLocation',newValue);
+            self.doWithModel_('set','DataFileLocation',newValue);
         end
 
         function BaseNameEditActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'String');
-            self.doWithModel_('setSubsystemProperty','Logging','FileBaseName',newValue);
+            self.doWithModel_('set','DataFileBaseName',newValue);
         end
 
         function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -1294,24 +1294,24 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         
         function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Logging','DoIncludeSessionIndex',newValue);
+            self.doWithModel_('set', 'DoIncludeSessionIndexInDataFileName',newValue);
         end
         
         function SessionIndexEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            self.doWithModel_('setSubsystemProperty','Logging','SessionIndex',newValue);
+            self.doWithModel_('set','SessionIndex',newValue);
         end
         
         function NextSweepEditActuated(self,source,event) %#ok<INUSD>
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
-            self.doWithModel_('setSubsystemProperty','Logging','NextSweepIndex',newValue);
+            self.doWithModel_('set','NextSweepIndex',newValue);
         end
 
-        function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Logging','IsOKToOverwrite',newValue);
+        function OverwriteCheckboxActuated(self, source, event)   %#ok<INUSD>
+            newValue = get(source, 'Value') ;
+            self.doWithModel_('set', 'IsOKToOverwriteDataFile', newValue) ;
         end        
         
 %         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -1446,7 +1446,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                 if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
                     % do nothing
                 else
-                    self.Model_.do('setSubsystemProperty', 'Logging', 'FileLocation', folderName) ;
+                    self.Model_.do('set', 'DataFileLocation', folderName) ;
                 end
             end
         end        

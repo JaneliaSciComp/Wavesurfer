@@ -1,6 +1,6 @@
 classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)
+    % To run these tests, need to have an NI daq attached.  
+    % (Can be a simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -19,7 +19,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
         function testCorrectNumberOfElectrodes(self)
             thisDirName=fileparts(mfilename('fullpath'));
             %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
-            [wsModel,wsController]=wavesurfer() ;
+            [wsModel,wsController] = wavesurfer() ;
 
 %             % Add the channels
 %             wsModel.addAIChannel() ;
