@@ -76,10 +76,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             % set the data file name
 %             thisFileName=mfilename();
 %             [~,dataFileBaseName]=fileparts(thisFileName);
-%             wsModel.LoggingFileBaseName=dataFileBaseName;
+%             wsModel.DataFileBaseName=dataFileBaseName;
 % 
 %             % delete any preexisting data files
-%             dataDirNameAbsolute=wsModel.LoggingFileLocation;
+%             dataDirNameAbsolute=wsModel.DataFileLocation;
 %             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
 %             delete(dataFilePatternAbsolute);
 % 

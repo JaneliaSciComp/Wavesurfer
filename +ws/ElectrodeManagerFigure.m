@@ -216,7 +216,8 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 if isThisElectrodeInAVCMode ,
                     %
                     % Update the current monitor popup
-                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
+                    nElectrodesClaimingChannel = ...
+                        wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wsModel.AIChannelNames, ...

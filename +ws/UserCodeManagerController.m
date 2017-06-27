@@ -93,9 +93,9 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         end
         
 %         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
-%             mAbsoluteFileName = uigetdir(self.Model.LoggingFileLocation, 'Choose User Class M-file...');
+%             mAbsoluteFileName = uigetdir(self.Model.DataFileLocation, 'Choose User Class M-file...');
 %             if ~isempty(mAbsoluteFileName) ,
-%                 self.Model.LoggingFileLocation = mAbsoluteFileName;
+%                 self.Model.DataFileLocation = mAbsoluteFileName;
 %             end            
 %         end
     end

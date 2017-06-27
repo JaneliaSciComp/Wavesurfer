@@ -864,11 +864,11 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
-            set(self.LocationEdit, 'String', model.LoggingFileLocation);
-            set(self.BaseNameEdit, 'String', model.LoggingFileBaseName);
-            set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
-            set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
-            set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
+            set(self.LocationEdit, 'String', model.DataFileLocation);
+            set(self.BaseNameEdit, 'String', model.DataFileBaseName);
+            set(self.IncludeDateCheckbox, 'Value', model.DoIncludeDateInDataFileName);
+            set(self.SessionIndexCheckbox, 'Value', model.DoIncludeSessionIndexInDataFileName);
+            set(self.SessionIndexEdit, 'String', sprintf('%d',model.SessionIndex));
             set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.IsLoggingEnabled,'Current Sweep:','Next Sweep:'));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.Logging.NextSweepIndex));
             if ~isIdle&&model.IsLoggingEnabled ,
@@ -876,7 +876,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             else
                 set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
             end            
-            set(self.OverwriteCheckbox, 'Value', model.IsOKToOverwriteLoggingFile);
+            set(self.OverwriteCheckbox, 'Value', model.IsOKToOverwriteDataFile);
             
             % Update the Stimulation/Source popupmenu
             outputableNames = model.stimulusLibraryOutputableNames() ;
@@ -1042,7 +1042,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             %isLoggingEnabled=model.IsLoggingEnabled;
             %isLoggingEnabled=true;            
             %set(self.LoggingEnabled,'Enable',ws.onIff(isIdle));
-            doIncludeSessionIndex = model.Logging.DoIncludeSessionIndex ;
+            doIncludeSessionIndex = model.DoIncludeSessionIndexInDataFileName ;
 
             set(self.BaseNameEdit,'Enable',ws.onIff(isIdle));
             set(self.OverwriteCheckbox,'Enable',ws.onIff(isIdle));
@@ -1289,7 +1289,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
         function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Logging','DoIncludeDate',newValue);
+            self.doWithModel_('set', 'DoIncludeDateInDataFileName', newValue) ;
         end
         
         function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
@@ -1436,13 +1436,13 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         % Buttons
         function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
             if ~isempty(self.Model_) ,
-                winopen(self.Model_.LoggingFileLocation) ;
+                winopen(self.Model_.DataFileLocation) ;
             end
         end
         
         function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
             if ~isempty(self.Model_) ,
-                folderName = uigetdir(self.Model_.LoggingFileLocation, 'Change Data Folder...');
+                folderName = uigetdir(self.Model_.DataFileLocation, 'Change Data Folder...');
                 if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
                     % do nothing
                 else

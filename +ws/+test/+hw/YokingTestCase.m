@@ -34,9 +34,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = true ;
             tempFilePath = tempname() ;
             [tempFolderPath, tempStem] = fileparts(tempFilePath) ;
-            wsModel.LoggingFileLocation = tempFolderPath ;
-            wsModel.LoggingFileBaseName = tempStem ;
-            wsModel.IsOKToOverwriteLoggingFile = true ;
+            wsModel.DataFileLocation = tempFolderPath ;
+            wsModel.DataFileBaseName = tempStem ;
+            wsModel.IsOKToOverwriteDataFile = true ;
             wsModel.record() ;
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
@@ -109,9 +109,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
             self.verifyTrue(didDisconnect) ;            
             
             % Check that a few things are as we set them
-            self.verifyTrue(wsModel.Logging.DoIncludeDate) ;
-            self.verifyTrue(wsModel.Logging.DoIncludeSessionIndex) ;
-            self.verifyEqual(wsModel.Logging.SessionIndex, 7) ;
+            self.verifyTrue(wsModel.DoIncludeDateInDataFileName) ;
+            self.verifyTrue(wsModel.DoIncludeSessionIndexInDataFileName) ;
+            self.verifyEqual(wsModel.SessionIndex, 7) ;
             wsModel.delete() ;
         end  % function
         

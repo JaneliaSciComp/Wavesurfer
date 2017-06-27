@@ -859,7 +859,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end
         
         function result = isStimulusLibrarySelfConsistent(self)
-            result = self.StimulusLibrary_.isLibrarySelfConsistent() ;
+            result = self.StimulusLibrary_.isSelfConsistent() ;
         end
         
     end  % public methods block    

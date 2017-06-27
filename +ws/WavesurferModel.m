@@ -82,9 +82,9 @@ classdef WavesurferModel < ws.Model
         IsStimulationEnabled
         IsLoggingEnabled
         IsDisplayEnabled
-        LoggingFileLocation
-        LoggingFileBaseName
-        IsOKToOverwriteLoggingFile
+        DataFileLocation
+        DataFileBaseName
+        IsOKToOverwriteDataFile
         NPlots
         NextSweepIndex
         DisplayUpdateRate
@@ -109,6 +109,9 @@ classdef WavesurferModel < ws.Model
         AOChannelTerminalNames
         DOChannelTerminalNames
         DoRepeatStimulusSequence
+        DoIncludeDateInDataFileName
+        DoIncludeSessionIndexInDataFileName
+        SessionIndex
     end
     
     properties (Access=protected)
@@ -5490,27 +5493,27 @@ classdef WavesurferModel < ws.Model
             result = self.Acquisition_.NActiveDigitalChannels ;
         end
         
-        function result = get.LoggingFileLocation(self)
+        function result = get.DataFileLocation(self)
             result = self.Logging_.FileLocation ;
         end
 
-        function set.LoggingFileLocation(self, newValue)
+        function set.DataFileLocation(self, newValue)
             self.Logging_.FileLocation = newValue ;
         end
         
-        function result = get.LoggingFileBaseName(self)
+        function result = get.DataFileBaseName(self)
             result = self.Logging_.FileBaseName ;
         end
         
-        function set.LoggingFileBaseName(self, newValue)
+        function set.DataFileBaseName(self, newValue)
             self.Logging_.FileBaseName = newValue ;
         end
                 
-        function result = get.IsOKToOverwriteLoggingFile(self)
+        function result = get.IsOKToOverwriteDataFile(self)
             result = self.Logging_.IsOKToOverwrite ;
         end
         
-        function set.IsOKToOverwriteLoggingFile(self, newValue)
+        function set.IsOKToOverwriteDataFile(self, newValue)
             self.Logging_.IsOKToOverwrite = newValue ;
         end
         
@@ -5654,6 +5657,26 @@ classdef WavesurferModel < ws.Model
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
             self.Display_.zoomOut(plotIndex) ;
+        end        
+        
+        function result = get.DoIncludeDateInDataFileName(self)
+            result = self.Logging_.DoIncludeDate ;
+        end
+        
+        function set.DoIncludeDateInDataFileName(self, newValue)
+            self.Logging_.DoIncludeDate = newValue ;
+        end
+
+        function result = get.DoIncludeSessionIndexInDataFileName(self)
+            result = self.Logging_.DoIncludeSessionIndex ;
+        end
+        
+        function set.DoIncludeSessionIndexInDataFileName(self, newValue)
+            self.Logging_.DoIncludeSessionIndex = newValue ;
+        end
+        
+        function result = get.SessionIndex(self)
+            result = self.Logging_.SessionIndex ;
         end        
     end  % public methods
 end  % classdef

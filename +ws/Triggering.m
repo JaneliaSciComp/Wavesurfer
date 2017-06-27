@@ -526,7 +526,7 @@ classdef Triggering < ws.Subsystem
         
         function result = pfiIDsInUse(self)
             %counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
-            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers) ;
+            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers_) ;
             
             % We consider all the default counter PFIs to be "in use",
             % regardless of whether any of the counters are in use.

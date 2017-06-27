@@ -34,7 +34,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.LoggingFileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % Want to make sure there's a pre-existing file by that name
             nextRunAbsoluteFileName=wsModel.NextRunAbsoluteFileName;
@@ -58,7 +58,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             end
 
             % Now check the "OK to overwrite" box.
-            wsModel.IsOKToOverwriteLoggingFile=true;
+            wsModel.IsOKToOverwriteDataFile=true;
             
             % wait a spell
             pause(0.1);
@@ -78,7 +78,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
 %             end                   
 
             % Delete the data file
-            dataDirNameAbsolute=wsModel.LoggingFileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
             

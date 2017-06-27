@@ -323,12 +323,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % Buttons
 %         function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
 %             if ~isempty(self.Model) ,
-%                 winopen(self.Model.LoggingFileLocation) ;
+%                 winopen(self.Model.DataFileLocation) ;
 %             end
 %         end
 %         
 %         function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
-%             folderName = uigetdir(self.Model.LoggingFileLocation, 'Change Data Folder...');
+%             folderName = uigetdir(self.Model.DataFileLocation, 'Change Data Folder...');
 %             if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
 %                 % do nothing
 %             else
