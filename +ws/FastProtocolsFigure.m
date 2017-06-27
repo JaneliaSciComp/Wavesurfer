@@ -176,17 +176,18 @@ classdef FastProtocolsFigure < ws.MCOSFigure
         
     methods (Access=protected)
         function updateTable_(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+            wsModel=self.Model;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.FastProtocols);
+            nRows = wsModel.NFastProtocols ;
             nColumns=2;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                fastProtocol=model.FastProtocols{i};
-                data{i,1}=fastProtocol.ProtocolFileName;
-                data{i,2}=ws.titleStringFromStartType(fastProtocol.AutoStartType);
+                protocolFileName = wsModel.getFastProtocolProperty(i, 'ProtocolFileName') ;
+                autoStartType = wsModel.getFastProtocolProperty(i, 'AutoStartType') ;
+                data{i,1}=protocolFileName;
+                data{i,2}=ws.titleStringFromStartType(autoStartType);
             end
             set(self.Table,'Data',data);
         end  % function

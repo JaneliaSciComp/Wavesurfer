@@ -49,7 +49,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Godzilla out first AO';
-%             firstDoChannelName=wsModel.Stimulation.DigitalChannelNames{1};
+%             firstDoChannelName=wsModel.DOChannelNames{1};
 %             map.addBinding(firstDoChannelName,godzilla);
 % 
 %             % make the new map the current sequence/map

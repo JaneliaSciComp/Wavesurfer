@@ -1424,20 +1424,20 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateAIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
             % update the AIs
-            model=self.Model;
-            isWavesurferIdle=isequal(model.State,'idle');
+            wsModel=self.Model;
+            isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Acquisition.AnalogTerminalNames ;
-            allAITerminalNames = model.getAllAITerminalNames() ;
+            terminalNameForEachChannel = wsModel.AIChannelTerminalNames ;
+            allAITerminalNames = wsModel.getAllAITerminalNames() ;
             %terminalIDs=model.Acquisition.AnalogTerminalIDs;  % zero-based NI channel index
-            channelNames=model.Acquisition.AnalogChannelNames;
-            channelScales = model.AIChannelScales;
-            channelUnits=model.AIChannelUnits;
-            nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingAIChannel();
+            channelNames=wsModel.AIChannelNames;
+            channelScales = wsModel.AIChannelScales;
+            channelUnits=wsModel.AIChannelUnits;
+            nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingAIChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-            isTerminalOvercommitted = model.IsAIChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = wsModel.IsAIChannelTerminalOvercommitted ;
             nAIs=length(self.AIScaleEdits);            
             for i=1:nAIs ,
                 set(self.AIChannelNameEdits(i), 'String', channelNames{i} , ...
@@ -1460,9 +1460,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            nAITerminals = model.NAITerminals ;   
+            nAITerminals = wsModel.NAITerminals ;   
             areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
-            isAIChannelMarkedForDeletion = model.IsAIChannelMarkedForDeletion ;
+            isAIChannelMarkedForDeletion = wsModel.IsAIChannelMarkedForDeletion ;
             isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
             set(self.AddAIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
             set(self.DeleteAIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAIChannelMarkedForDeletion)) ;
@@ -1470,20 +1470,20 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateAOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
             % update the AOs
-            model=self.Model;
-            isWavesurferIdle=isequal(model.State,'idle');
+            wsModel=self.Model;
+            isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Stimulation.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Stimulation.AnalogTerminalNames ;
-            allAOTerminalNames = model.getAllAOTerminalNames() ;
+            terminalNameForEachChannel = wsModel.AOChannelTerminalNames ;
+            allAOTerminalNames = wsModel.getAllAOTerminalNames() ;
             %terminalIDs=model.Stimulation.AnalogTerminalIDs;  % zero-based NI channel index
-            channelNames=model.Stimulation.AnalogChannelNames;
-            channelScales=model.AOChannelScales;
-            channelUnits=model.AOChannelUnits;
-            nElectrodesClaimingChannel=model.getNumberOfElectrodesClaimingAOChannel();
+            channelNames=wsModel.AOChannelNames;
+            channelScales=wsModel.AOChannelScales;
+            channelUnits=wsModel.AOChannelUnits;
+            nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingAOChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
-            isTerminalOvercommitted = model.IsAOChannelTerminalOvercommitted ;
+            isTerminalOvercommitted = wsModel.IsAOChannelTerminalOvercommitted ;
             nAOChannels=length(self.AOChannelNameEdits);            
             for i=1:nAOChannels ,
                 set(self.AOChannelNameEdits(i), 'String', channelNames{i}, ...
@@ -1506,9 +1506,9 @@ classdef ChannelsFigure < ws.MCOSFigure
             end
             
             % Deal with enablement of add/delete buttons
-            nAOTerminals = model.NAOTerminals ;   
+            nAOTerminals = wsModel.NAOTerminals ;   
             areAnyFreeAOTerminals =  (nAOChannels<nAOTerminals) ;
-            isAOChannelMarkedForDeletion = model.IsAOChannelMarkedForDeletion ;
+            isAOChannelMarkedForDeletion = wsModel.IsAOChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
             set(self.AddAOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAOTerminals)) ;
             set(self.DeleteAOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyAOChannelMarkedForDeletion)) ;
@@ -1516,14 +1516,14 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
-            model=self.Model;
-            isWavesurferIdle=isequal(model.State,'idle');
+            wsModel=self.Model;
+            isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Acquisition.DigitalTerminalNames ;
-            allTerminalNames = model.getAllDigitalTerminalNames() ;
-            channelNames=model.Acquisition.DigitalChannelNames;
-            isTerminalOvercommitted = model.IsDIChannelTerminalOvercommitted ;
+            terminalNameForEachChannel = wsModel.DIChannelTerminalNames ;
+            allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
+            channelNames=wsModel.DIChannelNames;
+            isTerminalOvercommitted = wsModel.IsDIChannelTerminalOvercommitted ;
             nDIChannels=length(self.DIChannelNameEdits);            
             for i=1:nDIChannels ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i}, ...
@@ -1541,11 +1541,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = model.NDIOTerminals ;   
-            nDigitalChannels = model.NDigitalChannels ;
+            nDIOTerminals = wsModel.NDIOTerminals ;   
+            nDigitalChannels = wsModel.NDigitalChannels ;
             areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
-            isDIChannelMarkedForDeletion = model.IsDIChannelMarkedForDeletion ;
+            isDIChannelMarkedForDeletion = wsModel.IsDIChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
             set(self.AddDIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
             set(self.DeleteDIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
@@ -1553,15 +1553,15 @@ classdef ChannelsFigure < ws.MCOSFigure
        
         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
-            model=self.Model;
-            isWavesurferIdle=isequal(model.State,'idle');
+            wsModel=self.Model;
+            isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
-            terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
-            allTerminalNames = model.getAllDigitalTerminalNames() ;
-            channelNames=model.Stimulation.DigitalChannelNames;
-            isTimed = model.IsDOChannelTimed ;
-            isTerminalOvercommitted = model.IsDOChannelTerminalOvercommitted ;
+            terminalNameForEachChannel = wsModel.DOChannelTerminalNames ;
+            allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
+            channelNames=wsModel.DOChannelNames;
+            isTimed = wsModel.IsDOChannelTimed ;
+            isTerminalOvercommitted = wsModel.IsDOChannelTerminalOvercommitted ;
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
                 set(self.DOChannelNameEdits(i), 'String', channelNames{i}, 'Enable', ws.onIff(isWavesurferIdle) );
@@ -1580,11 +1580,11 @@ classdef ChannelsFigure < ws.MCOSFigure
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = model.NDIOTerminals ;   
-            nDigitalChannels = model.NDigitalChannels ;
+            nDIOTerminals = wsModel.NDIOTerminals ;   
+            nDigitalChannels = wsModel.NDigitalChannels ;
             areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
-            isDOChannelMarkedForDeletion = model.IsDOChannelMarkedForDeletion ;
+            isDOChannelMarkedForDeletion = wsModel.IsDOChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
             set(self.AddDOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
             set(self.DeleteDOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
@@ -1596,7 +1596,7 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             isWavesurferIdle=isequal(model.State,'idle');
 %             
 %             terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
-%             channelNames=model.Stimulation.DigitalChannelNames;
+%             channelNames=model.DOChannelNames;
 %             isTimed=model.IsDOChannelTimed;
 %             nDOs = length(self.DOLabelTexts) ;
 %             for i=1:nDOs ,
@@ -1623,11 +1623,11 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateAIPanelControlsInExistance_(self)
-            model = self.Model ;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 nAIs = 0 ;
             else
-                nAIs = model.Acquisition.NAnalogChannels ;
+                nAIs = wsModel.NAIChannels ;
             end
             
             % Redimension AI arrays as needed
@@ -1709,11 +1709,11 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateAOPanelControlsInExistance_(self)
-            model = self.Model ;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 nAOs = 0 ;
             else
-                nAOs = model.Stimulation.NAnalogChannels ;
+                nAOs = wsModel.NAOChannels ;
             end
             
             % Redimension AO arrays as needed
@@ -1799,7 +1799,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             if isempty(model) ,
                 nDIs = 0 ;
             else
-                nDIs = model.Acquisition.NDigitalChannels ;
+                nDIs = model.NDIChannels ;
             end
             
             % Redimension DI arrays as needed
@@ -1860,7 +1860,7 @@ classdef ChannelsFigure < ws.MCOSFigure
             if isempty(model) ,
                 nDOs = 0 ;
             else
-                nDOs = model.Stimulation.NDigitalChannels ;
+                nDOs = model.NDOChannels ;
             end
             
             % Redimension DO arrays as needed

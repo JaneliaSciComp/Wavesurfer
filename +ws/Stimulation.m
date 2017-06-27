@@ -858,6 +858,10 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.StimulusLibrary_.mimic(newValue) ;
         end
         
+        function result = isStimulusLibrarySelfConsistent(self)
+            result = self.StimulusLibrary_.isLibrarySelfConsistent() ;
+        end
+        
     end  % public methods block    
     
 end  % classdef

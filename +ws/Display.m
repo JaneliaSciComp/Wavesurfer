@@ -288,9 +288,10 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             end
         end
         
-        function setYLimitsForSingleAnalogChannel_(self, i, newValue)
+        function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
+            % This has an underscore b/c it doesn't do an update
             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
-                self.YLimitsPerAnalogChannel_(:,i) = double(newValue') ;
+                self.YLimitsPerAnalogChannel_(:,aiChannelIndex) = double(newValue') ;
             end
         end
         
@@ -624,7 +625,8 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             end                
 %         end  % function
 
-        function setAreAreYLimitsLockedTightToDataForSingleChannel_(self, channelIndex, newValue)            
+        function setAreYLimitsLockedTightToDataForSingleChannel_(self, channelIndex, newValue)            
+            % this has an underscore b/c it doesn't do an update
             self.AreYLimitsLockedTightToDataForAnalogChannel_(channelIndex) = newValue ;
         end        
         
@@ -971,7 +973,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     methods (Access=protected)
-        function sanitizePersistedState_(self)
+        function sanitizePersistedState_(self) %#ok<MANU>
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
@@ -996,7 +998,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %                 ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
         end
         
-        function synchronizeTransientStateToPersistedState_(self)
+        function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
 %             self.updateMappingsFromPlotIndices_() ;            
 %             %self.clearData_() ;  % This will ensure that the size of YData is appropriate
 %             %self.broadcast('ClearData') ;
@@ -1115,7 +1117,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             for i = 1:n ,
                 if x(1,i)<x(2,i) ,
                     y(:,i) = x(:,i) ;
-                elseif x(1,i)>x(2,i) ;
+                elseif x(1,i)>x(2,i) ,
                     y(:,i) = flipud(x(:,i)) ;
                 else
                     % both els equal, so just add/subtract one to make a range

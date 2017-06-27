@@ -18,42 +18,29 @@ classdef FastProtocol < ws.Model
     methods
         function self=FastProtocol()
             self@ws.Model() ;
-%             if exist('protocolFileName','var') ,
-%                 self.ProtocolFileName=protocolFileName;
-%             end
-%             if exist('autoStartType','var') ,
-%                 self.AutoStartType=autoStartType;
-%             end            
         end
         
-        function set.ProtocolFileName(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) ,
-                    self.ProtocolFileName_ = value;
-                else
-                    %self.Parent.updateFastProtocol();
-                    error('ws:invalidPropertyValue', ...
-                          'ProtocolFileName must be a string');
-                end                    
+        function set.ProtocolFileName(self, newValue)
+            if ws.isString(newValue) && ~isempty(newValue) && ws.isFileNameAbsolute(newValue) && exist(newValue,'file') ,
+                self.ProtocolFileName_ = newValue ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Fast protocol file name must be an absolute path to an existing file');
             end
-            %self.Parent.updateFastProtocol();
         end
         
-        function value=get.ProtocolFileName(self)
-            value=self.ProtocolFileName_;
+        function value = get.ProtocolFileName(self)
+            value = self.ProtocolFileName_ ;
         end
         
-        function set.AutoStartType(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isAStartType(value) ,
-                    self.AutoStartType_ = value;
-                else
-                    %self.Parent.updateFastProtocol();
-                    error('ws:invalidPropertyValue', ...
-                          'AutoStartType must be ''do_nothing'', ''play'', or ''record''.');
-                end
+        function set.AutoStartType(self, newValue)
+            if ws.isAStartType(newValue) ,
+                self.AutoStartType_ = newValue ;
+            else
+                self.updateFastProtocol() ;
+                error('ws:invalidPropertyValue', ...
+                      'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');
             end
-            %self.Parent.updateFastProtocol();
         end
 
         function value=get.AutoStartType(self)
@@ -63,52 +50,16 @@ classdef FastProtocol < ws.Model
         function value=get.IsNonempty(self)
             value=~isempty(self.ProtocolFileName);
         end
+    end  % public methods
         
-%         function disp(self)
-%             if numel(self) == 1 && isvalid(self)
-%                 % Customize so that the AutoStartType displays as the enumeration name, rather
-%                 % than as [1x1 ws.fastprotocol.StartType].
-%                 fprintf('  ws.fastprotocol.FastProtocol with properties:\n\n');
-%                 fprintf('     ProtocolFileName: ''%s''\n', self.ProtocolFileName);
-%                 fprintf('        AutoStartType: %s\n', char(self.AutoStartType));
-%                 fprintf('\n');
-%             else
-%                 disp@handle(self);
-%             end
-%         end
-    end
-        
-%     methods (Static = true)
-%         function thing=loadobj(pickledThing)
-%             thing=pickledThing;
-%             % Fix the IsNonempty field
-%             for i=1:numel(thing) ,
-%                 thing(i).IsNonempty=~isempty(thing(i).ProtocolFileName);
-%             end
-%         end
-%     end    
-    
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-%             s.ProtocolFileName = struct('Classes', 'char', 'Attributes', {{'vector', 'row'}}, 'AllowEmpty', true);
-%             %s.AutoStartType = struct('Classes','ws.fastprotocol.StartType', 'Attributes', {{'scalar'}});
-%         end  % function
-%     end  % class methods block
-    
     methods (Access=protected)
-        function out = getPropertyValue_(self, name)
-            out = self.(name);
+        function result = getPropertyValue_(self, propertyName)
+            result = self.(propertyName) ;
         end  % function
         
         % Allows access to protected and protected variables from ws.Coding.
-        function setPropertyValue_(self, name, value)
-            self.(name) = value;
+        function setPropertyValue_(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
         end  % function
     end
     

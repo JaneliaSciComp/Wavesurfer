@@ -98,16 +98,16 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                model.subscribeMe(self,'WillSetState','','willSetModelState');
                model.subscribeMe(self,'DidSetState','','didSetModelState');           
                model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
-               model.Stimulation.subscribeMe(self,'DidSetIsEnabled','','update');               
+               model.subscribeMeToStimulationEvent(self,'DidSetIsEnabled','','update');               
                model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
-               model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
-               model.Stimulation.subscribeMe(self,'DidSetDoRepeatSequence','','update');               
-               model.Display.subscribeMe(self,'Update','','update');
-               model.Display.subscribeMe(self,'DidSetIsEnabled','','update');
-               model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
-               model.Display.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
-               model.Logging.subscribeMe(self,'Update','','updateControlProperties');
-               model.Logging.subscribeMe(self,'UpdateDoIncludeSessionIndex','','update');
+               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
+               model.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');               
+               model.subscribeMeToDisplayEvent(self,'Update','','update');
+               model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
+               model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
+               model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
+               model.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
+               model.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
            end
            
@@ -855,11 +855,11 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             % Stimulation panel (most of it)
             set(self.StimulationEnabledCheckbox,'Value',model.IsStimulationEnabled);
             set(self.StimulationSampleRateEdit,'String',sprintf('%.6g',model.StimulationSampleRate));
-            set(self.RepeatsCheckbox,'Value',model.Stimulation.DoRepeatSequence);
+            set(self.RepeatsCheckbox,'Value',model.DoRepeatStimulusSequence);
             
             % Display panel
             set(self.DisplayEnabledCheckbox, 'Value', model.IsDisplayEnabled);
-            set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.Display.UpdateRate));
+            set(self.UpdateRateEdit, 'String', sprintf('%.6g',model.DisplayUpdateRate));
             set(self.SpanEdit, 'String', sprintf('%.6g',model.XSpan));
             set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
             
@@ -1252,7 +1252,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
         function RepeatsCheckboxActuated(self,source,event) %#ok<INUSD>
             newValue=get(source,'Value');
-            self.doWithModel_('setSubsystemProperty','Stimulation','DoRepeatSequence',newValue);
+            self.doWithModel_('set','DoRepeatStimulusSequence',newValue);
         end
 
         function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>

@@ -89,6 +89,26 @@ classdef WavesurferModel < ws.Model
         NextSweepIndex
         DisplayUpdateRate
         AIScalingCoefficients
+        IsAIChannelDisplayed
+        IsDIChannelDisplayed
+        AreColorsNormal
+        XOffset
+        YLimitsPerAIChannel
+        IsGridOn
+        DoShowZoomButtons
+        DoColorTraces
+        AreYLimitsLockedTightToDataForAIChannel
+        ChannelIndexWithinTypeFromPlotIndex
+        IsAnalogFromPlotIndex
+        ChannelIndexFromPlotIndex
+        ActiveInputChannelIndexFromInputChannelIndex
+        PlotHeightFromPlotIndex
+        PlotIndexFromChannelIndex  % 1 x nChannels
+        AIChannelTerminalNames
+        DIChannelTerminalNames
+        AOChannelTerminalNames
+        DOChannelTerminalNames
+        DoRepeatStimulusSequence
     end
     
     properties (Access=protected)
@@ -3265,49 +3285,67 @@ classdef WavesurferModel < ws.Model
             self.updateFastProtocol() ;
         end  % method
         
-        function result = selectedFastProtocolFileName(self)
-            % Returns a maybe of strings (i.e. a cell array of string, the
-            % cell array of length zero or one)
-            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
-            fastProtocol = self.FastProtocols{selectedIndex} ;
-            result = fastProtocol.ProtocolFileName ;            
-        end  % method
+%         function result = selectedFastProtocolFileName(self)
+%             % Returns a maybe of strings (i.e. a cell array of string, the
+%             % cell array of length zero or one)
+%             selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+%             fastProtocol = self.FastProtocols{selectedIndex} ;
+%             result = fastProtocol.ProtocolFileName ;            
+%         end  % method
         
-        function setSelectedFastProtocolFileName(self, newFileName)
-            % newFileName should be an absolute file path
-            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
-            self.setFastProtocolFileName(selectedIndex, newFileName) ;
-        end  % method
+%         function setSelectedFastProtocolFileName(self, newFileName)
+%             % newFileName should be an absolute file path
+%             selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+%             self.setFastProtocolFileName(selectedIndex, newFileName) ;
+%         end  % method
         
-        function setFastProtocolFileName(self, index, newFileName)
-            % newFileName should be an absolute file path
-            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
-                if ws.isString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) && exist(newFileName,'file') ,
-                    fastProtocol = self.FastProtocols{index} ;
-                    fastProtocol.ProtocolFileName = newFileName ;
-                else
-                    self.updateFastProtocol() ;
-                    error('ws:invalidPropertyValue', ...
-                          'Fast protocol file name must be an absolute path');              
-                end
+%         function setFastProtocolFileName(self, index, newFileName)
+%             % newFileName should be an absolute file path
+%             if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
+%                 if ws.isString(newFileName) && ~isempty(newFileName) && ws.isFileNameAbsolute(newFileName) && exist(newFileName,'file') ,
+%                     fastProtocol = self.FastProtocols_{index} ;
+%                     fastProtocol.ProtocolFileName = newFileName ;
+%                 else
+%                     self.updateFastProtocol() ;
+%                     error('ws:invalidPropertyValue', ...
+%                           'Fast protocol file name must be an absolute path');              
+%                 end
+%             else
+%                 self.updateFastProtocol() ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
+%             end                
+%             self.updateFastProtocol() ;
+%         end  % method
+
+        function result = getSelectedFastProtocolProperty(self, propertyName)
+            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+            result = self.getFastProtocolProperty(selectedIndex, propertyName) ;
+        end
+        
+        function setSelectedFastProtocolProperty(self, propertyName, newValue)
+            selectedIndex = self.IndexOfSelectedFastProtocol ;  % this is never empty
+            self.setFastProtocolProperty(selectedIndex, propertyName, newValue) ;
+        end
+        
+        function result = getFastProtocolProperty(self, index, propertyName)
+            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,               
+                fastProtocol = self.FastProtocols_{index} ;
+                result = fastProtocol.(propertyName) ;
             else
-                self.updateFastProtocol() ;
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
-            self.updateFastProtocol() ;
-        end  % method
+        end        
         
-        function setFastProtocolAutoStartType(self, index, newValue)
-            % newFileName should be an absolute file path
-            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
-                if ws.isAStartType(newValue) ,
-                    fastProtocol = self.FastProtocols{index} ;
-                    fastProtocol.AutoStartType = newValue ;
-                else
-                    self.updateFastProtocol() ;                    
-                    error('ws:invalidPropertyValue', ...
-                          'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
+        function setFastProtocolProperty(self, index, propertyName, newValue)
+            if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,               
+                fastProtocol = self.FastProtocols_{index} ;
+                try 
+                    fastProtocol.(propertyName) = newValue ;
+                catch exception
+                    self.updateFastProtocol() ;
+                    rethrow(exception) ;
                 end
             else
                 self.updateFastProtocol() ;
@@ -3316,10 +3354,29 @@ classdef WavesurferModel < ws.Model
             end                
             self.updateFastProtocol() ;
         end  % method        
+                
+%         function setFastProtocolAutoStartType(self, index, newValue)
+%             % newFileName should be an absolute file path
+%             if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
+%                 if ws.isAStartType(newValue) ,
+%                     fastProtocol = self.FastProtocols_{index} ;
+%                     fastProtocol.AutoStartType = newValue ;
+%                 else
+%                     self.updateFastProtocol() ;                    
+%                     error('ws:invalidPropertyValue', ...
+%                           'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
+%                 end
+%             else
+%                 self.updateFastProtocol() ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
+%             end                
+%             self.updateFastProtocol() ;
+%         end  % method        
         
-        function setSubsystemProperty(self, subsystemName, propertyName, newValue)
-            self.(subsystemName).(propertyName) = newValue ;
-        end
+%         function setSubsystemProperty(self, subsystemName, propertyName, newValue)
+%             self.(subsystemName).(propertyName) = newValue ;
+%         end
         
         function incrementSessionIndex(self)
             self.Logging_.incrementSessionIndex() ;
@@ -3338,7 +3395,7 @@ classdef WavesurferModel < ws.Model
         
         function openFastProtocolByIndex(self, index)
             if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,
-                fastProtocol = self.FastProtocols{index} ;
+                fastProtocol = self.FastProtocols_{index} ;
                 fileName = fastProtocol.ProtocolFileName ;
                 if ~isempty(fileName) , 
                     if exist(fileName, 'file') ,
@@ -3353,7 +3410,7 @@ classdef WavesurferModel < ws.Model
         
         function performAutoStartForFastProtocolByIndex(self, index) 
             if ws.isIndex(index) && 1<=index && index<=self.NFastProtocols ,
-                fastProtocol = self.FastProtocols{index} ;            
+                fastProtocol = self.FastProtocols_{index} ;            
                 if isequal(fastProtocol.AutoStartType,'play') ,
                     self.play();
                 elseif isequal(fastProtocol.AutoStartType,'record') ,
@@ -3427,7 +3484,7 @@ classdef WavesurferModel < ws.Model
               % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
               % don't want to preserve the stim lib parent pointer, b/c
               % that leads back to the entire WSM.
-            refillerProtocol.DoRepeatSequence = self.Stimulation_.DoRepeatSequence ;
+            refillerProtocol.DoRepeatSequence = self.DoRepeatStimulusSequence ;
             refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
@@ -4374,7 +4431,7 @@ classdef WavesurferModel < ws.Model
             % Get the data from the most-recent data available callback, as
             % doubles.
             rawAnalogData = self.Acquisition_.getLatestRawAnalogData() ;
-            channelScales=self.AIChannelScales(self.IsAIChannelActive) ;
+            channelScales = self.AIChannelScales(self.IsAIChannelActive) ;
             scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
             scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
         end  % function
@@ -4407,6 +4464,10 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
             self.didSetIsInputChannelActive() ;
         end    
+        
+        function result = getLatestDIData(self)
+            result = self.Acquisition_.getLatestRawDigitalData() ;
+        end  % function
         
         function result=aiChannelUnitsFromName(self,channelName)
             if isempty(channelName) ,
@@ -4540,6 +4601,14 @@ classdef WavesurferModel < ws.Model
         function toggleIsDIChannelDisplayed(self, diChannelIndex) 
             nDIChannels = self.NDIChannels ;
             self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+        end
+        
+        function result = get.IsAIChannelDisplayed(self)
+            result = self.Display_.IsAnalogChannelDisplayed ;
+        end
+        
+        function result = get.IsDIChannelDisplayed(self)
+            result = self.Display_.IsDigitalChannelDisplayed ;
         end
         
         function result = get.NAIChannels(self)
@@ -4838,17 +4907,33 @@ classdef WavesurferModel < ws.Model
             self.Display_.toggleIsGridOn_() ;
         end
 
+        function result = get.IsGridOn(self)
+            result = self.Display_.IsGridOn ;
+        end
+        
         function toggleAreColorsNormal(self)
             self.Display_.toggleAreColorsNormal_() ;
         end
 
+        function result = get.AreColorsNormal(self)
+            result = self.Display_.AreColorsNormal ;
+        end
+        
         function toggleDoShowZoomButtons(self)
             self.Display_.toggleDoShowZoomButtons_() ;
+        end
+        
+        function result = get.DoShowZoomButtons(self)
+            result = self.Display_.DoShowZoomButtons ;
         end
         
         function toggleDoColorTraces(self)
             self.Display_.toggleDoColorTraces_() ;       
         end        
+        
+        function result = get.DoColorTraces(self)
+            result = self.Display_.DoColorTraces ;
+        end
         
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
@@ -5333,16 +5418,16 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.TestPulseElectrodeNames ;
         end
         
-        function subscribeMeToEphysEvent_(self,subscriber,eventName,propertyName,methodName)
+        function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
             self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
         end
         
-        function subscribeMeToElectrodeManagerEvent_(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToElectrodeManagerEvent_(subscriber,eventName,propertyName,methodName) ;
+        function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+            self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
         end
         
-        function subscribeMeToTestPulserEvent_(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToTestPulserEvent_(subscriber,eventName,propertyName,methodName) ;
+        function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
+            self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;
         end
         
         function result = get.TestPulseElectrodesCount(self)
@@ -5461,5 +5546,114 @@ classdef WavesurferModel < ws.Model
             result = self.Acquisition_.AnalogScalingCoefficients ;
         end
         
+        function value = get.XOffset(self)
+            value = self.Display_.XOffset ;
+        end
+                
+        function value = get.YLimitsPerAIChannel(self)
+            value = self.Display_.YLimitsPerAnalogChannel ;
+        end
+
+        function result = get.AreYLimitsLockedTightToDataForAIChannel(self)
+            result = self.Display_.AreYLimitsLockedTightToDataForAnalogChannel ;
+        end
+        
+        function result = get.ChannelIndexWithinTypeFromPlotIndex(self)
+            result = self.Display_.ChannelIndexWithinTypeFromPlotIndex ;
+        end
+
+        function result = get.IsAnalogFromPlotIndex(self)
+            result = self.Display_.IsAnalogFromPlotIndex ;
+        end
+        
+        function result = get.ChannelIndexFromPlotIndex(self)
+            result = self.Display_.ChannelIndexFromPlotIndex ;
+        end
+        
+        function result = get.ActiveInputChannelIndexFromInputChannelIndex(self)
+            result = self.Acquisition_.ActiveChannelIndexFromChannelIndex ;
+        end
+        
+        function result = get.PlotHeightFromPlotIndex(self)
+            result = self.Display_.PlotHeightFromPlotIndex ;
+        end
+        
+        function subscribeMeToDisplayEvent(self,subscriber,eventName,propertyName,methodName)
+            self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
+            self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
+            self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function result = get.PlotIndexFromChannelIndex(self)
+            result = self.Display_.PlotIndexFromChannelIndex ;
+        end
+        
+        function setAreYLimitsLockedTightToDataForSingleAIChannel_(self, aiChannelIndex, newValue)            
+            % Underscore b/c doesn't trigger an update
+            self.Display_.setAreYLimitsLockedTightToDataForSingleChannel_(aiChannelIndex, newValue) ;
+        end        
+        
+        function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
+            % Underscore b/c doesn't trigger an update
+            self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
+        end
+
+        function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+            self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+        end
+        
+        function result = get.AIChannelTerminalNames(self)
+            result = self.Acquisition_.AnalogTerminalNames ;
+        end
+        
+        function result = get.DIChannelTerminalNames(self)
+            result = self.Acquisition_.DigitalTerminalNames ;
+        end
+        
+        function result = get.AOChannelTerminalNames(self)
+            result = self.Stimulation_.AnalogTerminalNames ;
+        end
+        
+        function result = get.DOChannelTerminalNames(self)
+            result = self.Stimulation_.DigitalTerminalNames ;
+        end
+        
+        function result = isStimulusLibrarySelfConsistent(self)
+            result = self.Stimulation_.isStimulusLibrarySelfConsistent() ;
+        end
+        
+        function result = get.DoRepeatStimulusSequence(self)
+            result= self.Stimulation_.DoRepeatSequence ;
+        end
+        
+        function set.DoRepeatStimulusSequence(self, newValue)
+            self.Stimulation_.DoRepeatSequence = newValue ;
+        end
+        
+        function setYLimitsForSingleAIChannel(self, i, newValue)
+            self.Display_.setYLimitsForSingleAnalogChannel(i, newValue) ;
+        end
+
+        function scrollUp(self, plotIndex)  % works on analog channels only
+            self.Display_.scrollUp(plotIndex) ;
+        end  % function
+        
+        function scrollDown(self, plotIndex)  % works on analog channels only
+            self.Display_.scrollDown(plotIndex) ;
+        end  % function
+                
+        function zoomIn(self, plotIndex)  % works on analog channels only
+            self.Display_.zoomIn(plotIndex) ;
+        end  % function
+                
+        function zoomOut(self, plotIndex)  % works on analog channels only
+            self.Display_.zoomOut(plotIndex) ;
+        end        
     end  % public methods
 end  % classdef

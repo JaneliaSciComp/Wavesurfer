@@ -70,7 +70,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = ~isempty(filesCreated);
             self.verifyFalse(wasAnOutputFileCreated) ;
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 1) ;
+            self.verifyEqual(wsModel.NextSweepIndex, 1) ;
             
             % Now start and stop a sweep before it is finished; the data
             % file should only contain the collected data rather than
@@ -111,7 +111,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
+            self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
         end  % function
     end  % test methods
 

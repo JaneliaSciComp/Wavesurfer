@@ -59,7 +59,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map = wsModel.Stimulation.StimulusLibrary.addNewMap() ;
 %             map.Name='Godzilla out first AO';
-%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             firstAoChannelName=wsModel.AOChannelNames{1};
 %             map.addBinding(firstAoChannelName,godzilla);
 
             % make a map that puts the just-made stimulus out of the first AO channel, add
@@ -137,14 +137,14 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Godzilla out first AO';
-%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             firstAoChannelName=wsModel.AOChannelNames{1};
 %             map.addBinding(firstAoChannelName,godzilla);
 
             % make a map that puts the just-made stimulus out of the first AO channel, add
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;
@@ -205,7 +205,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             % to stim library.
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;

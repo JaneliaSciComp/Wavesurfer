@@ -740,7 +740,7 @@ classdef Acquisition < ws.Subsystem
             % Get the data from the most-recent data available callback
             data = self.LatestRawDigitalData_ ;
         end  % function
-
+        
         function addDataToUserCache(self, rawAnalogData, rawDigitalData, isSweepBased)
             %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;

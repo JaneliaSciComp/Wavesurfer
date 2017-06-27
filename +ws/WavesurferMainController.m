@@ -431,11 +431,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             plotArrangementDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
             wsModel = self.Model ;
-            display = wsModel.Display ;
-            channelNames = wsModel.Acquisition.ChannelNames ;
-            isDisplayed = horzcat(display.IsAnalogChannelDisplayed, display.IsDigitalChannelDisplayed) ;
-            plotHeights = horzcat(display.PlotHeightFromAnalogChannelIndex, display.PlotHeightFromDigitalChannelIndex) ;
-            rowIndexFromChannelIndex = horzcat(display.RowIndexFromAnalogChannelIndex, display.RowIndexFromDigitalChannelIndex) ;
+            %wsModel = wsModel.Display ;
+            channelNames = horzcat(wsModel.AIChannelNames, wsModel.DIChannelNames) ;
+            isDisplayed = horzcat(wsModel.IsAIChannelDisplayed, wsModel.IsDIChannelDisplayed) ;
+            plotHeights = horzcat(wsModel.PlotHeightFromAnalogChannelIndex, wsModel.PlotHeightFromDigitalChannelIndex) ;
+            rowIndexFromChannelIndex = horzcat(wsModel.RowIndexFromAnalogChannelIndex, wsModel.RowIndexFromDigitalChannelIndex) ;
             %callbackFunction = ...
             %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             callbackFunction = ...
@@ -460,22 +460,22 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         % per-plot button methods
         function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
             %self.Model.scrollUp(plotIndex);
-            self.Model.Display.do('scrollUp', plotIndex) ;
+            self.Model.do('scrollUp', plotIndex) ;
         end
                 
         function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
             %self.Model.scrollDown(plotIndex);
-            self.Model.Display.do('scrollDown', plotIndex) ;
+            self.Model.do('scrollDown', plotIndex) ;
         end
                 
         function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
             %self.Model.zoomIn(plotIndex);
-            self.Model.Display.do('zoomIn', plotIndex) ;
+            self.Model.do('zoomIn', plotIndex) ;
         end
                 
         function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
             %self.Model.zoomOut(plotIndex);
-            self.Model.Display.do('zoomOut', plotIndex) ;
+            self.Model.do('zoomOut', plotIndex) ;
         end
                 
         function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
@@ -493,7 +493,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             wsModel = self.Model ;
             display = wsModel.Display ;            
             aiChannelIndex = display.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-            yLimits = display.YLimitsPerAnalogChannel(:,aiChannelIndex)' ;
+            yLimits = wsModel.YLimitsPerAIChannel(:,aiChannelIndex)' ;
             yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
             callbackFunction = @(newYLimits)(display.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;

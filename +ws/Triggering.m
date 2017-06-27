@@ -490,7 +490,7 @@ classdef Triggering < ws.Subsystem
         end
         
         function result = counterIDsInUse(self)
-            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers)) ;
+            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers_)) ;
         end
         
         function result = freeCounterIDs(self)

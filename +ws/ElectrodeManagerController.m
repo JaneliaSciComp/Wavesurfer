@@ -75,10 +75,10 @@ classdef ElectrodeManagerController < ws.Controller
 
         function MonitorPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Acquisition.ChannelNames;
+            wavesurferModel=self.Model;
+            %ephys=electrodeManager.Parent;
+            %wavesurferModel=ephys.Parent;
+            validChoices=wavesurferModel.AIChannelNames;
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.MonitorPopups);
@@ -116,10 +116,10 @@ classdef ElectrodeManagerController < ws.Controller
         
         function CommandPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+            %electrodeManager=self.Model;
+            %ephys=electrodeManager.Parent;
+            wavesurferModel=self.Model;
+            validChoices=wavesurferModel.AOChannelNames;
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
@@ -132,7 +132,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrodeManager=self.Model;
 %             ephys=electrodeManager.Parent;
 %             wavesurferModel=ephys.Parent;
-%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             validChoices=wavesurferModel.AOChannelNames;
 %             % Do the rest
 %             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.VoltageCommandPopups);
@@ -145,7 +145,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrodeManager=self.Model;
 %             ephys=electrodeManager.Parent;
 %             wavesurferModel=ephys.Parent;
-%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             validChoices=wavesurferModel.AOChannelNames;
 %             % Do the rest
 %             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.CurrentCommandPopups);

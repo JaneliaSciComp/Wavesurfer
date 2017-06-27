@@ -47,7 +47,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Godzilla out first AO';
-%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             firstAoChannelName=wsModel.AOChannelNames{1};
 %             map.addBinding(firstAoChannelName,godzilla);
 % 
 %             % make the new map the current sequence/map

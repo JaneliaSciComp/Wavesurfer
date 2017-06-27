@@ -104,11 +104,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             % Subscribe to model events
             if ~isempty(wsModel) ,
                 %electrodeManager = wsModel.Ephys.getElectrodeManagerReference_() ;
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'Update','','update');
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidSetIsInputChannelActive','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update');
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidSetIsInputChannelActive','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
                 wsModel.subscribeMe(self,'DidSetState','','update');
                 wsModel.subscribeMe(self,'UpdateElectrodeManager','','update');
             end
@@ -219,7 +219,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
-                                                      wsModel.Acquisition.AnalogChannelNames, ...
+                                                      wsModel.AIChannelNames, ...
                                                       wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName'), ...
                                                       alwaysShowUnspecifiedAsMenuItem);
                     if isChannelOvercommitted,
@@ -268,7 +268,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'));
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
-                                                      wsModel.Acquisition.AnalogChannelNames, ...
+                                                      wsModel.AIChannelNames, ...
                                                       wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'), ...
                                                       alwaysShowUnspecifiedAsMenuItem);
                     if isChannelOvercommitted,
@@ -290,7 +290,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'));
                     isChannelOvercommitted=(nElectrodesClaimingChannel>1);
                     ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
-                                                      wsModel.Stimulation.AnalogChannelNames, ...
+                                                      wsModel.AOChannelNames, ...
                                                       wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'), ...
                                                       alwaysShowUnspecifiedAsMenuItem);
                     if isChannelOvercommitted,

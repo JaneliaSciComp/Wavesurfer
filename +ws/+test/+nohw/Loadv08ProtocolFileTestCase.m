@@ -35,7 +35,7 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
             pause(5) ;
             [~,warningID] = lastwarn() ;
             self.verifyNotEqual(warningID, 'MATLAB:hg:uicontrol:ValueMustBeScalar') ;
-            self.verifyTrue( wsModel.Stimulation.StimulusLibrary.isSelfConsistent() ) ;
+            self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;
             wsController.quit() ;
         end  % function    
     end  % test methods

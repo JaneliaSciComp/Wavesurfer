@@ -105,13 +105,13 @@ classdef (Abstract) Subsystem < ws.Model
             end
         end
 
-        function logWarning(self, identifier, message, causeOrEmpty)
-            % Hand off to the WSM, since it does the warning logging
-            if nargin<4 ,
-                causeOrEmpty = [] ;
-            end
-            self.Parent.logWarning(identifier, message, causeOrEmpty) ;
-        end  % method        
+%         function logWarning(self, identifier, message, causeOrEmpty)
+%             % Hand off to the WSM, since it does the warning logging
+%             if nargin<4 ,
+%                 causeOrEmpty = [] ;
+%             end
+%             self.Parent.logWarning(identifier, message, causeOrEmpty) ;
+%         end  % method        
     end  % methods block
     
     methods (Access = protected)

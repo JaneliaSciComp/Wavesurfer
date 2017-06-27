@@ -32,10 +32,16 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             
             % Load a fast protocol with 2 electrodes and one with 6
             % electrodes
-            fpOne = wsModel.FastProtocols{1};
-            fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
-            fpTwo = wsModel.FastProtocols{2};
-            fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
+            %fpOne = wsModel.FastProtocols{1};
+            %fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
+            wsModel.setFastProtocolProperty(1, ...
+                                            'ProtocolFileName', ...
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg') ) ;
+            %fpTwo = wsModel.FastProtocols{2};
+            %fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
+            wsModel.setFastProtocolProperty(2, ...
+                                            'ProtocolFileName', ...
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg') ) ;
             storeNumberOfElectrodesInFigure = zeros(1,2);
             storeNumberOfElectrodesInModel = zeros(1,2);
             

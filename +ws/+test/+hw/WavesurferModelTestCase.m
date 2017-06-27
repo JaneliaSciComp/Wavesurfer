@@ -176,7 +176,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModelAsDecoded = ws.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
 
             % Check the self-consistency of the stim library
-            self.verifyTrue(wsModelAsDecoded.Stimulation.StimulusLibrary.isSelfConsistent());
+            self.verifyTrue(wsModelAsDecoded.isStimulusLibrarySelfConsistent());
             
             % Get the stimulation source name now
             selectedOutputableNameCheck=wsModelAsDecoded.stimulusLibrarySelectedOutputableProperty('Name') ;  

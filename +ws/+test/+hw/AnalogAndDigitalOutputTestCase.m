@@ -113,7 +113,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Pulse out first DO';
-%             firstDOChannelName=wsModel.Stimulation.DigitalChannelNames{1};
+%             firstDOChannelName=wsModel.DOChannelNames{1};
 %             map.addBinding(firstDOChannelName,pulse);
 
             % make a map that puts the just-made pulse out of the first DO channel, add

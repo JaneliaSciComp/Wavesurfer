@@ -774,11 +774,11 @@ classdef Ephys < ws.Subsystem
 %             result = self.ElectrodeManager_ ;
 %         end
            
-        function subscribeMeToElectrodeManagerEvent_(self,subscriber,eventName,propertyName,methodName)
+        function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
             self.ElectrodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
         end
         
-        function subscribeMeToTestPulserEvent_(self,subscriber,eventName,propertyName,methodName)
+        function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
             self.TestPulser_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
         end
         

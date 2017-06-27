@@ -127,7 +127,7 @@ classdef RasterTreadMill < ws.UserClass
         function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % get data
             analogData = wsModel.getLatestAIData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData();
+            digitalData = wsModel.getLatestDIData();
             
             nScans = size(analogData,1) ;
             %fprintf('RasterTreadMill::dataAvailable(): nScans: %d\n',nScans) ;
@@ -350,7 +350,7 @@ classdef RasterTreadMill < ws.UserClass
             hold(self.RasterAxes_, 'on');
             axis(self.RasterAxes_, 'ij');
             ylabel(self.RasterAxes_, 'lap #');
-            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
+            title(self.RasterAxes_, ['channel ' wsModel.AIChannelNames{self.ElectrodeChannel}]);
             set(self.RasterAxes_,'XTickLabel',{});
             set(self.RasterAxes_,'YLim',[0.5 1.5+eps]);
             set(self.RasterAxes_,'YTick',1);
@@ -385,7 +385,7 @@ classdef RasterTreadMill < ws.UserClass
             hold(self.RasterAxes_, 'on');
             axis(self.RasterAxes_, 'ij');
             ylabel(self.RasterAxes_, 'lap #');
-            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);            
+            title(self.RasterAxes_, ['channel ' wsModel.AIChannelNames{self.ElectrodeChannel}]);            
         end
         
         function syncLatencyFigAndAxes_(self)

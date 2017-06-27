@@ -46,7 +46,7 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;

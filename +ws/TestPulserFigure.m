@@ -83,11 +83,11 @@ classdef TestPulserFigure < ws.MCOSFigure
             %end
             if ~isempty(wsModel) ,
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
-                wsModel.subscribeMeToEphysEvent_(self,'UpdateTestPulser','','update') ;
-                wsModel.subscribeMeToElectrodeManagerEvent_(self,'Update','','update') ;
-                wsModel.subscribeMeToTestPulserEvent_(self,'Update','','update') ;
-                wsModel.subscribeMeToTestPulserEvent_(self,'UpdateTrace','','updateTrace') ;
-                wsModel.subscribeMeToTestPulserEvent_(self,'DidSetIsInputChannelActive','','update') ;
+                wsModel.subscribeMeToEphysEvent(self,'UpdateTestPulser','','update') ;
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'UpdateTrace','','updateTrace') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'DidSetIsInputChannelActive','','update') ;
             end
         end  % constructor
         

@@ -284,11 +284,11 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %fprintf('UserCodeManagerFigure::updateSubscriptionsToModelEvents_()\n');
             %self.unsubscribeFromAll();
             
-            wavesurferModel = self.Model ;
-            if isempty(wavesurferModel) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            userCodeManager = wavesurferModel.UserCodeManager ;
+            %userCodeManager = wavesurferModel.UserCodeManager ;
             
 %             model.subscribeMe(self,'PostSet','SweepWillStart','update');
 %             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
@@ -297,9 +297,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             model.subscribeMe(self,'PostSet','RunDidComplete','update');
 %             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
-            userCodeManager.subscribeMe(self,'Update','','update');
+            wsModel.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
             
-            wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
+            wsModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                
     end
     
