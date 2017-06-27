@@ -66,7 +66,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.populateStimulusLibraryForTesting() ;
             
             % Make a copy of it in the populated state
-            stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copy() ;
+            stimulusLibraryCopy = wsModel.getStimulusLibraryCopy() ;
             
             % Save the protocol to disk
             protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
@@ -84,7 +84,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % compare the stim library in model to the copy of the
             % populated version
-            self.verifyEqual(wsModel.Stimulation.StimulusLibrary,stimulusLibraryCopy) ;
+            stimulusLibraryCheck = wsModel.getStimulusLibraryCopy ;
+            self.verifyEqual(stimulusLibraryCheck,stimulusLibraryCopy) ;
         end  % function
         
         
@@ -109,7 +110,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % Populate the Wavesurfer Stim library
             stimulusLibrary = self.createPopulatedStimulusLibrary() ;
-            wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary);
+            wsModel.mimicStimulusLibrary_(stimulusLibrary);
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
@@ -142,11 +143,11 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.StimulationUsesAcquisitionTrigger = false ;
             
             % Clear the stim lib within the WavesurferModel
-            wsModel.Stimulation.StimulusLibrary.clear();
+            wsModel.clearStimulusLibrary() ;
 
             % Populate the Wavesurfer Stim library
             stimulusLibrary=self.createPopulatedStimulusLibrary();
-            wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary);
+            wsModel.mimicStimulusLibrary_(stimulusLibrary) ;
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
@@ -257,7 +258,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             settings(end+1,:)={'IsDisplayEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
-            settings(end+1,:)={'Display.UpdateRate' 9};
+            settings(end+1,:)={'DisplayUpdateRate' 9};
             settings(end+1,:)={'IsXSpanSlavedToAcquistionDuration' false};
             settings(end+1,:)={'XSpan' 2.01};
             

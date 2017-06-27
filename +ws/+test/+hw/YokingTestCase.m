@@ -34,9 +34,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.IsYokedToScanImage = true ;
             tempFilePath = tempname() ;
             [tempFolderPath, tempStem] = fileparts(tempFilePath) ;
-            wsModel.Logging.FileLocation = tempFolderPath ;
-            wsModel.Logging.FileBaseName = tempStem ;
-            wsModel.Logging.IsOKToOverwrite = true ;
+            wsModel.LoggingFileLocation = tempFolderPath ;
+            wsModel.LoggingFileBaseName = tempStem ;
+            wsModel.IsOKToOverwriteLoggingFile = true ;
             wsModel.record() ;
             wsModel.IsYokedToScanImage = false ;
             siMockProcess.CloseMainWindow() ;
@@ -89,7 +89,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             % Spin-wait to be done
             didPerformAllSweepsAndReturnToIdleness = false ;
             for i=1:10 ,
-                if isequal(wsModel.State, 'idle') && wsModel.Logging.NextSweepIndex==4 ,
+                if isequal(wsModel.State, 'idle') && wsModel.NextSweepIndex==4 ,
                     didPerformAllSweepsAndReturnToIdleness = true ;
                     break
                 end

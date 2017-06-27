@@ -853,6 +853,11 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function populateStimulusLibraryForTesting(self)
             self.StimulusLibrary_.populateForTesting() ;
         end  % function
+        
+        function mimicStimulusLibrary_(self, newValue) 
+            self.StimulusLibrary_.mimic(newValue) ;
+        end
+        
     end  % public methods block    
     
 end  % classdef

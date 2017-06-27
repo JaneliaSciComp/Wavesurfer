@@ -864,8 +864,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.AutoSpanCheckbox, 'Value', model.IsXSpanSlavedToAcquistionDuration);
             
             % Logging panel
-            set(self.LocationEdit, 'String', model.Logging.FileLocation);
-            set(self.BaseNameEdit, 'String', model.Logging.FileBaseName);
+            set(self.LocationEdit, 'String', model.LoggingFileLocation);
+            set(self.BaseNameEdit, 'String', model.LoggingFileBaseName);
             set(self.IncludeDateCheckbox, 'Value', model.Logging.DoIncludeDate);
             set(self.SessionIndexCheckbox, 'Value', model.Logging.DoIncludeSessionIndex);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.Logging.SessionIndex));
@@ -876,7 +876,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             else
                 set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
             end            
-            set(self.OverwriteCheckbox, 'Value', model.Logging.IsOKToOverwrite);
+            set(self.OverwriteCheckbox, 'Value', model.IsOKToOverwriteLoggingFile);
             
             % Update the Stimulation/Source popupmenu
             outputableNames = model.stimulusLibraryOutputableNames() ;
@@ -1436,13 +1436,13 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         % Buttons
         function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
             if ~isempty(self.Model_) ,
-                winopen(self.Model_.Logging.FileLocation) ;
+                winopen(self.Model_.LoggingFileLocation) ;
             end
         end
         
         function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
             if ~isempty(self.Model_) ,
-                folderName = uigetdir(self.Model_.Logging.FileLocation, 'Change Data Folder...');
+                folderName = uigetdir(self.Model_.LoggingFileLocation, 'Change Data Folder...');
                 if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
                     % do nothing
                 else

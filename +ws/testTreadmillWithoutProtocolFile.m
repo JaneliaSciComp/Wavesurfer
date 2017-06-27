@@ -87,7 +87,7 @@ wsModel.setSingleDOChannelTerminalID(channelIndex,1) ;
 % configure the rest of the stuff
 wsModel.IsStimulationEnabled = true ;
 wsModel.IsDisplayEnabled = true ;
-wsModel.Logging.IsOKToOverwrite=true ;
+wsModel.IsOKToOverwriteLoggingFile=true ;
 
 wsModel.AreSweepsContinuous = true ;
 wsModel.AIChannelScales = [0.001 0.01] ;  % electrode, velocity

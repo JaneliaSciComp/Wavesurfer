@@ -193,7 +193,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             statusBarAreaHeight=30;
             
             % Make this figure a good size for the number of plots
-            nPlots = self.Model.Display.NPlots ;
+            nPlots = self.Model.NPlots ;
             idealPlotAreaHeight = 250 * max(1,nPlots) ;
             idealFigureHeight = toolbarAreaHeight + idealPlotAreaHeight + statusBarAreaHeight ;            
             initialHeight = min(idealFigureHeight, maxInitialHeight) ;

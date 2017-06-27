@@ -85,6 +85,10 @@ classdef WavesurferModel < ws.Model
         LoggingFileLocation
         LoggingFileBaseName
         IsOKToOverwriteLoggingFile
+        NPlots
+        NextSweepIndex
+        DisplayUpdateRate
+        AIScalingCoefficients
     end
     
     properties (Access=protected)
@@ -5405,12 +5409,56 @@ classdef WavesurferModel < ws.Model
             result = self.Logging_.FileLocation ;
         end
 
+        function set.LoggingFileLocation(self, newValue)
+            self.Logging_.FileLocation = newValue ;
+        end
+        
         function result = get.LoggingFileBaseName(self)
             result = self.Logging_.FileBaseName ;
         end
         
+        function set.LoggingFileBaseName(self, newValue)
+            self.Logging_.FileBaseName = newValue ;
+        end
+                
         function result = get.IsOKToOverwriteLoggingFile(self)
             result = self.Logging_.IsOKToOverwrite ;
+        end
+        
+        function set.IsOKToOverwriteLoggingFile(self, newValue)
+            self.Logging_.IsOKToOverwrite = newValue ;
+        end
+        
+        function result = get.NPlots(self) 
+            result = self.Display_.NPlots ;
+        end
+        
+        function set.NextSweepIndex(self, newValue)
+            self.Logging_.NextSweepIndex = newValue ;
+        end
+        
+        function result = get.NextSweepIndex(self)
+            result = self.Logging_.NextSweepIndex ;
+        end
+        
+        function result = getStimulusLibraryCopy(self)
+            result = self.Stimulation_.getStimulusLibraryCopy() ;
+        end
+        
+        function value = get.DisplayUpdateRate(self)
+            value = self.Display_.UpdateRate ;
+        end
+        
+        function set.DisplayUpdateRate(self, newValue)
+            self.Display_.UpdateRate = newValue ;
+        end
+        
+        function mimicStimulusLibrary_(self, newValue) 
+            self.Stimulation_.mimicStimulusLibrary_(newValue) ;
+        end
+        
+        function result = get.AIScalingCoefficients(self)
+            result = self.Acquisition_.AnalogScalingCoefficients ;
         end
         
     end  % public methods
