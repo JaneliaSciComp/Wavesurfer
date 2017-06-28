@@ -826,7 +826,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isRootIdleSensuLato() ;
+                shouldStayPut = ~model.isIdleSensuLato() ;
             end
         end  % function
         

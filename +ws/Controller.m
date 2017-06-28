@@ -238,7 +238,7 @@ classdef Controller < handle
                 shouldStayPut = false ;
             else
                 %shouldStayPut = ~model.isRootIdleSensuLato() ;
-                shouldStayPut = ~isequal(model.State, 'idle') ;
+                shouldStayPut = ~model.isIdleSensuLato() ;
             end
         end  % function
         

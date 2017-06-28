@@ -5694,5 +5694,10 @@ classdef WavesurferModel < ws.Model
             result = self.Logging_.CurrentRunAbsoluteFileName ;
         end                
         
+        function result = isIdleSensuLato(self)
+            state = self.State ;
+            result = isequal(state,'idle') || isequal(state,'no_device') ;
+        end
+
     end  % public methods
 end  % classdef

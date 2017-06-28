@@ -483,7 +483,7 @@ classdef Ephys < ws.Subsystem
             if isempty(newValue) ,
                 self.TestPulser_.setElectrodeIndex_([]) ;
             else
-                if isnumeric(newValue) && isscalar(newValue) && 1<=newValue && newValue<=self.ElectrodeCount && newValue==round(newValue) ,
+                if isnumeric(newValue) && isscalar(newValue) && 1<=newValue && newValue<=self.getElectrodeCount_() && newValue==round(newValue) ,
                     newElectrodeIndex = double(newValue) ;
                     self.TestPulser_.setElectrodeIndex_(newElectrodeIndex) ;
                 end
@@ -497,7 +497,7 @@ classdef Ephys < ws.Subsystem
         
         function setTestPulseElectrodeByName(self, newValue)
             if isempty(newValue) ,
-                self.TestPulserElectrodeIndex = [] ;
+                self.TestPulseElectrodeIndex = [] ;
             else
                 % Check that the newValue is an available electrode, unless we
                 % can't get a list of electrodes.
@@ -505,7 +505,7 @@ classdef Ephys < ws.Subsystem
                 electrodeNames = electrodeManager.TestPulseElectrodeNames ;
                 newElectrodeIndex = find(strcmp(newValue, electrodeNames), 1) ;
                 if ~isempty(newElectrodeIndex) ,
-                    self.TestPulserElectrodeIndex = newElectrodeIndex ;
+                    self.TestPulseElectrodeIndex = newElectrodeIndex ;
                 end
             end
         end

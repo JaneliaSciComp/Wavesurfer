@@ -87,7 +87,7 @@ classdef TestPulserController < ws.Controller
         function AmplitudeEditActuated(self, source, event, varargin)  %#ok<INUSD>
             value = get(self.Figure.AmplitudeEdit,'String') ;
             %ephys = self.Model.Ephys ;
-            wsModel.do('setTestPulseElectrodeProperty', 'TestPulseAmplitude', value) ;
+            self.Model.do('setTestPulseElectrodeProperty', 'TestPulseAmplitude', value) ;
         end
         
         function DurationEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -137,7 +137,7 @@ classdef TestPulserController < ws.Controller
 
             % Change the setting
             %ephys = self.Model.Ephys ;
-            wsModel.do('setTestPulseElectrodeProperty', 'Mode', 'vc') ;
+            self.Model.do('setTestPulseElectrodeProperty', 'Mode', 'vc') ;
         end  % function
         
         function CCToggleActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -147,7 +147,7 @@ classdef TestPulserController < ws.Controller
             
             % Change the setting    
             %ephys = self.Model.Ephys ;
-            wsModel.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
+            self.Model.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
         end  % function
     end  % methods
     
@@ -160,7 +160,7 @@ classdef TestPulserController < ws.Controller
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isRootIdleSensuLato() || model.IsTestPulsing ;
+                shouldStayPut = ~model.isIdleSensuLato() || model.IsTestPulsing ;
             end
         end
     end % protected methods block    
