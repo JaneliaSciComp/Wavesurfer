@@ -52,7 +52,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 %pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButtonIndex);
                 try
                     %wsController.FastProtocolButtonsActuated(pressedButtonHandle);
-                    wsController.fakeControlActuatedInTest('FastProtocolButtons', i) ;
+                    ws.fakeControlActuationInTestBang(wsController, 'FastProtocolButtons', i) ;
                 catch exception
                     % If just warnings, print them but proceed.  Otherwise,
                     % rethrow.

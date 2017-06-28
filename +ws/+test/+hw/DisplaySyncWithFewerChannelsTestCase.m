@@ -24,7 +24,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
 
             protocolFileName = fullfile(tempdir(),'three-channels-sdfkjsghdf.cfg') ;
             %wsController.saveProtocolFileGivenFileName(protocolFileName) ;
-            wsController.fakeControlActuatedInTest('SaveProtocolGivenFileNameFauxControl', protocolFileName) ;
+            ws.fakeControlActuationInTestBang(wsController, 'SaveProtocolGivenFileNameFauxControl', protocolFileName) ;
             
             wsModel.IsAIChannelMarkedForDeletion(3) = true ;
             wsModel.deleteMarkedAIChannels() ;
