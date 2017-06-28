@@ -306,12 +306,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.Figure,'Position') ;
             wsModel = self.Model ;
-            display = wsModel.Display ;            
-            aiChannelIndex = display.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            %display = wsModel.Display ;            
+            aiChannelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
             yLimits = wsModel.YLimitsPerAIChannel(:,aiChannelIndex)' ;
             yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
-            callbackFunction = @(newYLimits)(display.do('setYLimitsForSingleAnalogChannel', aiChannelIndex, newYLimits)) ;
+            callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSingleAIChannel', aiChannelIndex, newYLimits)) ;
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        

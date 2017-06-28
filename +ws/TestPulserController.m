@@ -109,16 +109,17 @@ classdef TestPulserController < ws.Controller
             
             wsModel = self.Model ;
             
-            function setModelYLimits(newYLimits)
-                wsModel.do('set', 'TestPulseYLimits', newYLimits) ;
-            end
+            setModelYLimitsCallback = @(newYLimits)(wsModel.do('set', 'TestPulseYLimits', newYLimits)) ;
+%             function setModelYLimits(newYLimits)
+%                 wsModel.do('set', 'TestPulseYLimits', newYLimits) ;
+%             end
             
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure([], ...
                                     get(self.Figure,'Position'), ...
                                     wsModel.TestPulseYLimits, ...
                                     wsModel.getTestPulseElectrodeMonitorUnits(), ...
-                                    @setModelYLimits) ;
+                                    setModelYLimitsCallback) ;
         end
         
         function ScrollUpButtonActuated(self, source, event, varargin)  %#ok<INUSD>

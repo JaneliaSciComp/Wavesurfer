@@ -1291,7 +1291,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 yRadius=0.001;
             end
             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
-            self.Model.setYLimitsForSingleAnalogChannel_(aiChannelIndex, newYLimits)
+            self.Model.setYLimitsForSingleAIChannel(aiChannelIndex, newYLimits) ;
         end
         
         function yMinAndMax = dataYMinAndMax_(self, aiChannelIndex)
