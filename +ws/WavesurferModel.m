@@ -114,6 +114,10 @@ classdef WavesurferModel < ws.Model
         SessionIndex
         StimulusLibrary
         CurrentRunAbsoluteFileName
+        PlotHeightFromAIChannelIndex
+        PlotHeightFromDIChannelIndex
+        RowIndexFromAIChannelIndex
+        RowIndexFromDIChannelIndex
     end
     
     properties (Access=protected)
@@ -5699,5 +5703,21 @@ classdef WavesurferModel < ws.Model
             result = isequal(state,'idle') || isequal(state,'no_device') ;
         end
 
+        function result = get.PlotHeightFromAIChannelIndex(self)
+            result = self.Display_.PlotHeightFromAnalogChannelIndex ;
+        end
+        
+        function result = get.PlotHeightFromDIChannelIndex(self)
+            result = self.Display_.PlotHeightFromDigitalChannelIndex ;
+        end
+        
+        function result = get.RowIndexFromAIChannelIndex(self)
+            result = self.Display_.RowIndexFromAnalogChannelIndex ;
+        end
+        
+        function result = get.RowIndexFromDIChannelIndex(self)
+            result = self.Display_.RowIndexFromDigitalChannelIndex ;
+        end
+        
     end  % public methods
 end  % classdef

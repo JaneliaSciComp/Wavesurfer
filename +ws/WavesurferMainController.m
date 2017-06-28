@@ -259,8 +259,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             %wsModel = wsModel.Display ;
             channelNames = horzcat(wsModel.AIChannelNames, wsModel.DIChannelNames) ;
             isDisplayed = horzcat(wsModel.IsAIChannelDisplayed, wsModel.IsDIChannelDisplayed) ;
-            plotHeights = horzcat(wsModel.PlotHeightFromAnalogChannelIndex, wsModel.PlotHeightFromDigitalChannelIndex) ;
-            rowIndexFromChannelIndex = horzcat(wsModel.RowIndexFromAnalogChannelIndex, wsModel.RowIndexFromDigitalChannelIndex) ;
+            plotHeights = horzcat(wsModel.PlotHeightFromAIChannelIndex, wsModel.PlotHeightFromDIChannelIndex) ;
+            rowIndexFromChannelIndex = horzcat(wsModel.RowIndexFromAIChannelIndex, wsModel.RowIndexFromDIChannelIndex) ;
             %callbackFunction = ...
             %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             callbackFunction = ...
