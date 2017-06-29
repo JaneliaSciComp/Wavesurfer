@@ -1893,7 +1893,7 @@ classdef WavesurferModel < ws.Model
                 self.UserCodeManager_.stoppingRun() ;
             end
             if self.Logging_.IsEnabled ,
-                self.Logging_.stoppingRun(wsModel) ;
+                self.Logging_.stoppingRun(self) ;
             end
             if self.Triggering_.IsEnabled ,
                 self.Triggering_.stoppingRun() ;
@@ -1940,7 +1940,7 @@ classdef WavesurferModel < ws.Model
                 self.UserCodeManager_.abortingRun() ;
             end
             if self.Logging_.IsEnabled ,
-                self.Logging_.abortingRun(wsModel) ;
+                self.Logging_.abortingRun(self) ;
             end
             if self.Triggering_.IsEnabled ,
                 self.Triggering_.abortingRun() ;
