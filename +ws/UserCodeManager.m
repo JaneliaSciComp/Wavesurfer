@@ -158,7 +158,7 @@ classdef UserCodeManager < ws.Subsystem
 %             end            
         end  % function
 
-        function invoke(self, rootModel, eventName, varargin)
+        function invoke(self, wsModel, eventName, varargin)
             try
 %                 if isempty(self.TheObject_) ,
 %                     exception = self.tryToInstantiateObject_() ;
@@ -168,7 +168,7 @@ classdef UserCodeManager < ws.Subsystem
 %                 end
                 
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.(eventName)(rootModel, eventName, varargin{:});
+                    self.TheObject_.(eventName)(wsModel, eventName, varargin{:});
                 end
 
 %                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
@@ -182,28 +182,28 @@ classdef UserCodeManager < ws.Subsystem
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                rootModel.logWarning('ws:userCodeError', ...
-                                     sprintf('Error in user class method %s',eventName), ...
-                                     me) ;
+                wsModel.logWarning('ws:userCodeError', ...
+                                   sprintf('Error in user class method %s',eventName), ...
+                                   me) ;
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end
         end  % function
         
-        function invokeSamplesAcquired(self, rootModel, scaledAnalogData, rawDigitalData) 
+        function invokeSamplesAcquired(self, wsModel, scaledAnalogData, rawDigitalData) 
             % This method is designed to be fast, at the expense of
             % error-checking.
             try
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                    self.TheObject_.samplesAcquired(wsModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
                 end
             catch me
                 %warningException = MException('wavesurfer:usercodemanager:codeerror', ...
                 %                              'Error in user class method samplesAcquired') ;
                 %warningException = warningException.addCause(me) ;                                          
-                self.logWarning('ws:userCodeError', ...
-                                'Error in user class method samplesAcquired', ...
-                                me) ;
+                wsModel.logWarning('ws:userCodeError', ...
+                                   'Error in user class method samplesAcquired', ...
+                                   me) ;
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end            

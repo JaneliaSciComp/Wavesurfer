@@ -53,6 +53,7 @@ classdef SIMock < handle
                   'grab' ...
                   'focus' ...
                   'abort' ...
+                  'did-complete-run-normally' ...
                   'ping' ...
                   'exit' } ;
             if ismember(commandName, commandDictionary) ,
@@ -117,6 +118,11 @@ classdef SIMock < handle
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
+        function sendDidCompleteLoopNormally(self)
+            commandFileAsString = sprintf('1\ndid-complete-loop-normally\n') ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function        
+        
         function sendRecord(self)
             commandFileAsString = sprintf('1\nrecord\n') ;
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
@@ -172,30 +178,11 @@ classdef SIMock < handle
             self.sendOpeningUserFile(siUserFilePath) ;
             self.sendPlay() ;
             pause(20) ;  % wait for that to finish
+            self.sendDidCompleteLoopNormally() ;
             self.sendRecord() ;
             self.sendStop() ;  % Hopefully arrives during recording...
             pause(4) ;
             self.sendDisconnect() ;            
         end  % function
-
-%         function sendSomeMessages(self)
-%             %self.sendSetIndexOfFirstSweepInRun(7) ;
-%             %self.sendSetNumberOfSweepsInRun(3) ;
-%             %tempFilePath = tempname() ;
-%             %[tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
-%             %self.sendSetDataFileFolderPath(tempFolderPath) ;
-%             %self.sendSetDataFileBaseName(tempStemName) ;
-%             %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
-%             %self.sendSavingConfigurationFile(protocolFilePath) ;
-%             %self.sendLoadingConfigurationFile(protocolFilePath) ;
-%             %userFilePath = horzcat(tempFilePath, '.wsu') ;
-%             %self.sendSavingUserFile(userFilePath) ;
-%             %self.sendOpeningUserFile(userFilePath) ;
-%             self.sendPlay() ;
-%             pause(20) ;  % wait for that to finish
-%             self.sendRecord() ;
-%             self.sendStop() ;  % Hopefully arrives during recording...
-%         end  % function
-        
     end    
 end

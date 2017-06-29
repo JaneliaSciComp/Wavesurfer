@@ -1843,18 +1843,29 @@ classdef WavesurferModel < ws.Model
             self.IPCPublisher_.send('completingRun') ;
 
             % Notify subsystems
-            for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.completingRun();
+            for idx = 1: numel(self.Subsystems_) ,
+                if self.Subsystems_{idx}.IsEnabled ,
+                    self.Subsystems_{idx}.completingRun() ;
                 end
             end
             
             % Call user method
-            self.callUserMethod_('completingRun');
-            
+            self.callUserMethod_('completingRun') ;
+
             % Finalize
-            self.IsPerformingRun_ =  false;
-            self.setState_('idle');            
+            self.IsPerformingRun_ =  false ;
+            self.setState_('idle') ;            
+            
+            % Notify SI, if called for.  If there's a problem, log a
+            % warning and then proceed.
+            try
+                self.notifyScanImageThatRunCompletedNormallyIfYoked_() ;
+            catch exception
+                self.logWarning('ws:errorNotifyingScanImageThatRunFinishedNormally', ...
+                                'The run finished normally, but there was a problem notifying ScanImage of this', ...
+                                exception) ;
+            end
+            
         end  % function
         
         function stopTheOngoingRun_(self)
@@ -1872,13 +1883,37 @@ classdef WavesurferModel < ws.Model
             % % Notify other processes
             % self.IPCPublisher_.send('stoppingRun') ;
 
-            % Notify subsystems
-            for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.stoppingRun() ;
-                end
+            % Notify subsystems, in reverse of starting order
+%             for idx = numel(self.Subsystems_):-1:1 ,
+%                 if self.Subsystems_{idx}.IsEnabled ,
+%                     self.Subsystems_{idx}.stoppingRun() ;
+%                 end
+%             end
+            if self.UserCodeManager_.IsEnabled ,
+                self.UserCodeManager_.stoppingRun() ;
             end
-
+            if self.Logging_.IsEnabled ,
+                self.Logging_.stoppingRun(wsModel) ;
+            end
+            if self.Triggering_.IsEnabled ,
+                self.Triggering_.stoppingRun() ;
+            end
+            if self.Display_.IsEnabled ,
+                self.Display_.stoppingRun() ;
+            end
+            if self.Stimulation_.IsEnabled ,
+                self.Stimulation_.stoppingRun() ;
+            end
+            if self.Acquisition_.IsEnabled ,
+                self.Acquisition_.stoppingRun() ;
+            end
+            if self.Ephys_.IsEnabled ,
+                self.Ephys_.stoppingRun() ;
+            end
+            
+              
+            
+            
             % Call user method
             self.callUserMethod_('stoppingRun');                
             
@@ -1895,12 +1930,33 @@ classdef WavesurferModel < ws.Model
             % Notify other processes
             self.IPCPublisher_.send('abortingRun') ;
 
-            % Notify subsystems
-            for idx = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.abortingRun() ;
-                end
+            % Notify subsystems, in reverse of starting order
+%             for idx = numel(self.Subsystems_):-1:1 ,
+%                 if self.Subsystems_{idx}.IsEnabled ,
+%                     self.Subsystems_{idx}.abortingRun() ;
+%                 end
+%             end
+            if self.UserCodeManager_.IsEnabled ,
+                self.UserCodeManager_.abortingRun() ;
             end
+            if self.Logging_.IsEnabled ,
+                self.Logging_.abortingRun(wsModel) ;
+            end
+            if self.Triggering_.IsEnabled ,
+                self.Triggering_.abortingRun() ;
+            end
+            if self.Display_.IsEnabled ,
+                self.Display_.abortingRun() ;
+            end
+            if self.Stimulation_.IsEnabled ,
+                self.Stimulation_.abortingRun() ;
+            end
+            if self.Acquisition_.IsEnabled ,
+                self.Acquisition_.abortingRun() ;
+            end
+            if self.Ephys_.IsEnabled ,
+                self.Ephys_.abortingRun() ;
+            end            
             
             % Call user method
             self.callUserMethod_('abortingRun');
@@ -2247,7 +2303,13 @@ classdef WavesurferModel < ws.Model
                     % with in the CommandServer
                     self.play()
                 case 'stop'
+                    % This is similar to the user pressing the stop button
+                    % in the WS UI
                     self.stop();
+                case 'did-complete-loop-normally'
+                    % SI sends this when a loop finishes without
+                    % problems on its end.  Currently, we don't do anything in
+                    % response to this.
                 otherwise
                     error('WavesurferModel:UnknownScanImageCommand', ...
                           'Received unknown command ''%s'' from ScanImage', commandName) ;
@@ -2278,6 +2340,11 @@ classdef WavesurferModel < ws.Model
             
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
         end  % function        
+        
+        function notifyScanImageThatRunCompletedNormallyIfYoked_(self)
+            commandFileAsString = sprintf('1\ndid-complete-run-normally\n') ;  % sprintf converts '\n' to a newline
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        end
         
         function notifyScanImageThatSavingProtocolFileIfYoked_(self, absoluteProtocolFileName)
             commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
