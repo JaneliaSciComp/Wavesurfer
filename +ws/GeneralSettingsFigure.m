@@ -57,8 +57,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
     end  % properties
     
     methods
-        function self = GeneralSettingsFigure(model, mainFigurePosition)
-            self = self@ws.MCOSFigureWithSelfControl(model) ;            
+        function self = GeneralSettingsFigure(wsModel, mainFigurePosition)
+            self = self@ws.MCOSFigureWithSelfControl(wsModel) ;            
             set(self.FigureGH_, ...
                 'Tag','GeneralSetingsFigure', ...
                 'Units','Pixels', ...
@@ -85,30 +85,28 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
            
            if ~isempty(mainFigurePosition) ,
                self.positionUpperLeftRelativeToOtherUpperRight_(mainFigurePosition, [40 0]) ;
-               %mainFigure = controller.Parent.Figure ;
-               %self.positionUpperLeftRelativeToOtherUpperRight(mainFigure, [40 0]) ;
            end
            
            % Do an update to sync with model
            self.update_();
            
            % Subscribe to stuff
-           if ~isempty(model) ,
-               model.subscribeMe(self,'Update','','update');
-               model.subscribeMe(self,'WillSetState','','willSetModelState');
-               model.subscribeMe(self,'DidSetState','','didSetModelState');           
-               model.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
-               model.subscribeMeToStimulationEvent(self,'DidSetIsEnabled','','update');               
-               model.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
+           if ~isempty(wsModel) ,
+               wsModel.subscribeMe(self,'Update','','update');
+               wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
+               wsModel.subscribeMe(self,'DidSetState','','didSetModelState');           
+               wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
+               wsModel.subscribeMeToStimulationEvent(self,'DidSetIsEnabled','','update');               
+               wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
                %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
-               model.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');               
-               model.subscribeMeToDisplayEvent(self,'Update','','update');
-               model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
-               model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
-               model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
-               model.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
-               model.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
-               model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+               wsModel.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');               
+               wsModel.subscribeMeToDisplayEvent(self,'Update','','update');
+               wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
+               wsModel.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
+               wsModel.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
+               wsModel.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
+               wsModel.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
+               wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
            end
            
            % Make the figure visible
@@ -375,48 +373,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             statusBarAreaHeight=4;  % this is just a pad, really
             
             figureHeight=toolbarAreaHeight+topRowAreaHeight+loggingAreaHeight+statusBarAreaHeight;
-
-%             %
-%             % Layout the "toolbar"
-%             %
-%             vcrButtonsXOffset=11;
-%             vcrButtonWidth=26;
-%             vcrButtonHeight=26;
-%             spaceBetweenVCRButtons=5;
-%             widthFromFastProtocolButtonBarToEdge=5;
-%             %spaceFromVCRButtonsToFastProtocolButtons=40;
-%             fastProtocolButtonWidth=26;
-%             fastProtocolButtonHeight=26;
-%             spaceBetweenFastProtocolButtons=5;
-%             widthBetweenFastProtocolTextAndButtons=4;
-%             
-%             % VCR buttons
-%             vcrButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-vcrButtonHeight)/2;            
-%             xOffset=vcrButtonsXOffset;
-%             set(self.PlayButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
-%             xOffset=xOffset+vcrButtonWidth+spaceBetweenVCRButtons;
-%             set(self.RecordButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
-%             xOffset=xOffset+vcrButtonWidth+spaceBetweenVCRButtons;
-%             set(self.StopButton,'Position',[xOffset vcrButtonsYOffset vcrButtonWidth vcrButtonHeight]);
-%             
-%             % Fast Protocol text
-%             fastProtocolTextExtent=get(self.FastProtocolText,'Extent');
-%             fastProtocolTextWidth=fastProtocolTextExtent(3)+2;
-%             fastProtocolTextPosition=get(self.FastProtocolText,'Position');
-%             fastProtocolTextHeight=fastProtocolTextPosition(4);
-%             nFastProtocolButtons=length(self.FastProtocolButtons);
-%             widthOfFastProtocolButtonBar=nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons;            
-%             xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
-%             fastProtocolButtonsYOffset=figureHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
-%             yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
-%             set(self.FastProtocolText,'Position',[xOffset yOffset fastProtocolTextWidth fastProtocolTextHeight]);
-%             
-%             % fast protocol buttons
-%             xOffset=figureWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar;
-%             for i=1:nFastProtocolButtons ,
-%                 set(self.FastProtocolButtons(i),'Position',[xOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]);
-%                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
-%             end
             
             %
             % The "top row" containing the acq, stim, and display panels
@@ -472,22 +428,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             self.layoutStimulationPanel_(stimulationPanelWidth,stimulationPanelHeight);
             self.layoutDisplayPanel_(displayPanelWidth,displayPanelHeight);
             self.layoutLoggingPanel_(loggingPanelWidth,loggingPanelHeight);
-            
-%             % The status area
-%             statusTextWidth=160;
-%             statusTextPosition=get(self.StatusText,'Position');
-%             statusTextHeight=statusTextPosition(4);
-%             statusTextXOffset=10;
-%             statusTextYOffset=(statusBarAreaHeight-statusTextHeight)/2-2;  % shim
-%             set(self.StatusText,'Position',[statusTextXOffset statusTextYOffset statusTextWidth statusTextHeight]);
-%                         
-%             % The progress bar
-%             widthFromProgressBarRightToFigureRight=10;
-%             progressBarWidth=240;
-%             progressBarHeight=12;
-%             progressBarXOffset = figureWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
-%             progressBarYOffset = (statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
-%             set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);
             
             % We return the figure size
             figureSize=[figureWidth figureHeight];
@@ -773,18 +713,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         end  % function
     end
     
-%     methods (Access = protected)
-%         function initializeGuidata_(self)
-%             % Set up the figure guidata the way it would be if this were a
-%             % GUIDE UI, or close enough to fool a ws.most.Controller.
-%             handles=ws.WavesurferMainFigure.initializeGuidataHelper_(struct(),self.FigureGH_);
-%             % Add a pointer to self to the figure guidata
-%             handles.FigureObject=self;
-%             % commit to the guidata
-%             guidata(self.FigureGH_,handles);
-%         end  % function        
-%     end  % protected methods block
-    
     methods (Access = protected)
         function updateControlsInExistance_(self) %#ok<MANU>
             % In subclass, this should make sure the non-fixed controls in
@@ -898,7 +826,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
-%             %import ws.*
 
             % If no model, can't really do anything
             model=self.Model_;
@@ -907,63 +834,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                 return
             end
             
-            % Get the figureObject, and figureGH
-            %figureObject=self.Figure; 
-            %window=self.hGUIData.WavesurferWindow;
-            
-            %isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
             isSweepBased=model.AreSweepsFiniteDuration;
-            %isTestPulsing=(model.State == ws.ApplicationState.TestPulsing);
-            %isAcquiring= (model.State == ws.ApplicationState.AcquiringSweepBased) || (model.State == ws.ApplicationState.AcquiringContinuously);
-            %isAcquiring = isequal(model.State,'running') ;
-            
-            % File menu items
-            %set(self.LoadMachineDataFileMenuItem,'Enable',ws.onIff(isNoDevice));
-            % set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isNoDevice||isIdle));            
-%             set(self.SaveProtocolMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.SaveProtocolAsMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.LoadUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.SaveUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.SaveUserSettingsAsMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
-            %set(self.QuitMenuItem,'Enable',ws.onIff(true));  % always available          
-            
-            %% Run Menu
-            %window.StartMenu.IsEnabled=isIdle;
-            %%window.PreviewMenu.IsEnabled=isIdle;
-            %window.StopMenu.IsEnabled= isAcquiring;
-            
-%             % Tools Menu
-%             set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
-%             set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
-%             %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.IsDisplayEnabled));
-%             set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
-%               % Device & Channels menu is always available so that
-%               % user can get at radiobutton for untimed DO channels,
-%               % if desired.
-%             set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
-%             set(self.StimulusLibraryMenuItem,'Enable',ws.onIff(isIdle));
-%             set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
-%             set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
-%             set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
-%             set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
-%             
-%             % Help menu
-%             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
-%             
-%             % Toolbar buttons
-%             set(self.PlayButton,'Enable',ws.onIff(isIdle));
-%             set(self.RecordButton,'Enable',ws.onIff(isIdle));
-%             set(self.StopButton,'Enable',ws.onIff(isAcquiring));
-%             
-%             % Fast config buttons
-%             nFastProtocolButtons=length(self.FastProtocolButtons);
-%             for i=1:nFastProtocolButtons ,
-%                 set(self.FastProtocolButtons(i),'Enable',ws.onIff( isIdle && model.FastProtocols{i}.IsNonempty));
-%             end
-
             % Acquisition controls
             set(self.SweepBasedRadiobutton,'Enable',ws.onIff(isIdle));
             set(self.ContinuousRadiobutton,'Enable',ws.onIff(isIdle));            
@@ -985,25 +857,11 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             
             % Logging controls
             self.updateEnablementAndVisibilityOfLoggingControls_();
-
-%             % Status bar controls
-%             if ~isAcquiring , 
-%                 set(self.ProgressBarAxes,'Visible','off') ;
-%             end
         end
     end
     
     methods (Access = protected)
         function updateEnablementAndVisibilityOfDisplayControls_(self,varargin)
-            %import ws.*
-            
-            % Get the figureObject
-            %figureGH=self.hGUIsArray;  % should be a scalar
-            %handles=guidata(figureGH);
-            %figureObject=handles.FigureObject;            
-            %figureObject=self.Figure;            
-            %window=self.hGUIData.WavesurferWindow;
-            
             wsModel=self.Model_;
             if isempty(wsModel) ,
                 return
@@ -1063,151 +921,18 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
         function willSetModelState(self, varargin)  %#ok<INUSD>
             % Used to inform the controller that the model run state is
             % about to be set
-            %self.OriginalModelState_=self.Model_.State;
         end
         
         function didSetModelState(self,varargin)
             % Used to inform the controller that the model run state has
             % been set
             
-%             % Make a local copy of the original state, clear the cache
-%             originalModelState=self.OriginalModelState_;
-%             self.OriginalModelState_=[];
-            
             % If we're switching out of the "no_device" mode, update the scope menu            
             self.update_();
-%             if isequal(originalModelState,'no_device') && ~isequal(self.Model_.State,'no_device') ,
-%                 self.update_();
-%             else
-%                 % More limited update is sufficient
-%                 self.updateControlProperties();
-%                 self.updateControlEnablement();
-%             end
         end
     end     
-    
-%     methods (Access=protected)
-% %         function updateProgressBarProperties_(self)
-% %             %fprintf('WavesurferMainFigure::updateProgressBarProperties_\n');
-% %             %dbstack
-% %             model=self.Model_;
-% %             state=model.State;
-% %             if isequal(state,'running') ,
-% %                 if model.AreSweepsFiniteDuration ,
-% %                     if isfinite(model.NSweepsPerRun) ,
-% %                         nSweeps=model.NSweepsPerRun;
-% %                         nSweepsCompleted=model.NSweepsCompletedInThisRun;
-% %                         fractionCompleted=nSweepsCompleted/nSweeps;
-% %                         set(self.ProgressBarPatch, ...
-% %                             'XData',[0 fractionCompleted fractionCompleted 0 0], ...
-% %                             'YData',[0 0 1 1 0], ...
-% %                             'Visible','on');
-% %                         set(self.ProgressBarAxes, ...                
-% %                             'Visible','on');
-% %                     else
-% %                         % number of sweeps is infinite
-% %                         nSweepsPretend=20;
-% %                         nSweepsCompleted = model.NSweepsCompletedInThisRun ;
-% %                         nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
-% %                         if nSweepsCompletedModded==0 ,
-% %                             if nSweepsCompleted==0 ,
-% %                                 nSweepsCompletedPretend = 0 ;
-% %                             else
-% %                                 nSweepsCompletedPretend = nSweepsPretend ;                            
-% %                             end
-% %                         else
-% %                             nSweepsCompletedPretend = nSweepsCompletedModded ;
-% %                         end                    
-% %                         fractionCompletedPretend=nSweepsCompletedPretend/nSweepsPretend;
-% %                         set(self.ProgressBarPatch, ...
-% %                             'XData',[0 fractionCompletedPretend fractionCompletedPretend 0 0], ...
-% %                             'YData',[0 0 1 1 0], ...
-% %                             'Visible','on');
-% %                         set(self.ProgressBarAxes, ...                
-% %                             'Visible','on');
-% %                     end
-% %                 else
-% %                     % continuous acq
-% %                     nTimesDataAvailableCalledSinceRunStart=model.NTimesDataAvailableCalledSinceRunStart;
-% %                     nSegments=10;
-% %                     nPositions=2*nSegments;
-% %                     barWidth=1/nSegments;
-% %                     stepWidth=1/nPositions;
-% %                     xOffset=stepWidth*mod(nTimesDataAvailableCalledSinceRunStart,nPositions);
-% %                     set(self.ProgressBarPatch, ...
-% %                         'XData',xOffset+[0 barWidth barWidth 0 0], ...
-% %                         'YData',[0 0 1 1 0], ...
-% %                         'Visible','on');
-% %                     set(self.ProgressBarAxes, ...                
-% %                         'Visible','on');
-% %                 end
-% %             else
-% %                 set(self.ProgressBarPatch, ...
-% %                     'XData',[0 0 0 0 0], ...
-% %                     'YData',[0 0 1 1 0], ...
-% %                     'Visible','off');
-% %                 set(self.ProgressBarAxes, ...                
-% %                     'Visible','off');
-% %             end
-% %         end  % function
-%     end
-    
-%     methods 
-%         function updateForNewData(self,varargin)
-%             % Want this to be as fast as possible, so we just update the
-%             % bare minimum
-%             model=self.Model_;
-%             if model.AreSweepsContinuous ,
-%                 self.updateProgressBarProperties_();
-%             end
-%         end
-%     end    
-    
-%     methods (Access=protected)
-%         function updateSaveProtocolMenuItem_(self)
-%             absoluteProtocolFileName=self.Model_.AbsoluteProtocolFileName;
-%             if ~isempty(absoluteProtocolFileName) ,
-%                 [~, name, ext] = fileparts(absoluteProtocolFileName);
-%                 relativeFileName=[name ext];
-%                 menuItemHG=self.SaveProtocolMenuItem;
-%                 set(menuItemHG,'Label',sprintf('Save %s',relativeFileName));
-%             else
-%                 menuItemHG=self.SaveProtocolMenuItem;
-%                 set(menuItemHG,'Label','Save Protocol');
-%             end                
-%         end        
-%     end
-    
-%     methods (Access=protected)
-%         function updateSaveUserSettingsMenuItem_(self)
-%             absoluteUserSettingsFileName=self.Model_.AbsoluteUserSettingsFileName;
-%             if ~isempty(absoluteUserSettingsFileName) ,            
-%                 [~, name, ext] = fileparts(absoluteUserSettingsFileName);
-%                 relativeFileName=[name ext];
-%                 menuItemHG=self.SaveUserSettingsMenuItem;
-%                 set(menuItemHG,'Label',sprintf('Save %s',relativeFileName));
-%             else
-%                 menuItemHG=self.SaveUserSettingsMenuItem;
-%                 set(menuItemHG,'Label','Save User Settings');
-%             end
-%         end
-%     end    
 
     methods  % Control actuation methods, which are public
-%         function PlayButtonActuated(self, source, event)  %#ok<INUSD>
-%             %self.Model_.play();
-%             self.doWithModel_('play') ;
-%         end
-%         
-%         function RecordButtonActuated(self, source, event)  %#ok<INUSD>
-%             %self.Model_.record();
-%             self.doWithModel_('record') ;
-%         end
-%         
-%         function StopButtonActuated(self, source, event)  %#ok<INUSD>
-%             self.doWithModel_('stop') ;
-%         end
-        
         function SweepBasedRadiobuttonActuated(self, source, event)  %#ok<INUSD>
             newValue = get(source, 'Value') ;
             %ws.Controller.setWithBenefits(self.Model_,'AreSweepsFiniteDuration',newValue);
@@ -1314,125 +1039,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             self.doWithModel_('set', 'IsOKToOverwriteDataFile', newValue) ;
         end        
         
-%         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-%             initialFolderForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
-%             isFileNameKnown = false ;
-%             absoluteFileName = ...
-%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'cfg', 'load', initialFolderForFilePicker);            
-%             if ~isempty(absoluteFileName)
-%                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-%                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
-%             end
-%         end
-% 
-%         function OpenProtocolGivenFileNameFauxControlActuated(self, source, event, fileName)  %#ok<INUSL>
-%             self.openProtocolFileGivenFileName_(fileName) ;
-%         end
-% 
-%         function SaveProtocolGivenFileNameFauxControlActuated(self, source, event, fileName)  %#ok<INUSL>
-%             self.saveProtocolFileGivenFileName_(fileName) ;
-%         end
-%         
-%         function SaveProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-%             % This is the action for the File > Save menu item
-%             isSaveAs=false;
-%             self.saveOrSaveAsProtocolFile_(isSaveAs);
-%         end
-%         
-%         function SaveProtocolAsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             % This is the action for the File > Save As... menu item
-%             isSaveAs=true;
-%             self.saveOrSaveAsProtocolFile_(isSaveAs);
-%         end
-
-%         function LoadUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             initialFilePickerFolder = ws.Preferences.sharedPreferences().loadPref('LastUserFilePath');            
-%             isFileNameKnown=false;
-%             userSettingsAbsoluteFileName = ...
-%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-%                         isFileNameKnown, '', 'usr', 'load', initialFilePickerFolder);                
-%             if ~isempty(userSettingsAbsoluteFileName) ,
-%                 ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
-%                 self.doWithModel_('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
-%             end            
-%         end
-% 
-%         function SaveUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             isSaveAs = false ;
-%             self.saveOrSaveAsUser_(isSaveAs) ;
-%         end
-%         
-%         function SaveUserSettingsAsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             isSaveAs = true ;
-%             self.saveOrSaveAsUser_(isSaveAs) ;
-%         end
-        
-%         function ExportModelAndControllerToWorkspaceMenuItemActuated(self,source,event) %#ok<INUSD>
-%             assignin('base', 'wsModel', self.Model_);
-%             assignin('base', 'wsController', self);
-%         end
-%         
-%         function QuitMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.windowCloseRequested();  % piggyback on the existing method for handling the upper-left window close button
-%         end
-        
-%         % Tools menu
-%         function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('FastProtocolsController');
-%         end        
-%         
-%         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('ChannelsController');
-%         end
-%         
-%         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('TriggersController');
-%         end
-%         
-%         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('StimulusLibraryController');
-%         end
-%         
-%         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('UserCodeManagerController');
-%         end
-%         
-%         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('ElectrodeManagerController');
-%         end
-%         
-%         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('TestPulserController');
-%         end
-%         
-%         function DisplayMenuItemActuated(self, source, event)  %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('DisplayController');
-%         end
-%         
-%         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
-%             %fprintf('Inside YokeToScanimageMenuItemActuated()\n');
-%             model=self.Model_;
-%             if ~isempty(model) ,
-%                 try
-%                     model.do('set', 'IsYokedToScanImage', ~model.IsYokedToScanImage) ;
-%                 catch cause
-%                     if isequal(cause.identifier, 'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
-%                         exception = MException('ws:cantEnableYokedMode', 'Can''t enable yoked mode: %s', cause.message) ;
-%                         exception = addCause(exception, cause) ;
-%                         throw(exception);
-%                     else
-%                         rethrow(cause);
-%                     end
-%                 end
-%             end                        
-%         end  % function
-%                 
-%         % Help menu
-%         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
-%             %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');
-%             msgbox(sprintf('This is WaveSurfer %s.',ws.versionString()),'About','modal');
-%         end
-        
         % Buttons
         function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
             if ~isempty(self.Model_) ,
@@ -1497,49 +1103,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                     model.do('setSelectedOutputableByIndex', outputableIndex) ;
                 end
             end
-        end  % method
-        
-%         function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-%             self.showAndRaiseChildFigure_('StimulusLibraryController');
-%         end
-        
-%         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
-%             if ~isempty(self.Model_) ,
-%                 self.Model_.startLoggingWarnings() ;
-%                 self.Model_.openFastProtocolByIndex(fastProtocolIndex) ;
-%                 % Restore the layout...
-%                 layoutForAllWindows = self.Model_.LayoutForAllWindows ;
-%                 monitorPositions = ws.Controller.getMonitorPositions() ;
-%                 self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-%                 % Done restoring layout
-%                 % Now do an auto-start, if called for by the fast protocol
-%                 self.Model_.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
-%                 % Now throw if there were any warnings
-%                 warningExceptionMaybe = self.Model_.stopLoggingWarnings() ;
-%                 if ~isempty(warningExceptionMaybe) ,
-%                     warningException = warningExceptionMaybe{1} ;
-%                     throw(warningException) ;
-%                 end
-%             end
-%         end  % method
-        
-%         function windowCloseRequested(self, source, event)  %#ok<INUSD>
-%             % This is target method for pressing the close button in the
-%             % upper-right of the window.
-%             % Need to put in some checks here so that user doesn't quit
-%             % by being slightly clumsy.
-%             % This is also the final common path for the Quit menu item and the
-%             % upper-right close button.
-% 
-%             % Delete the figure GHs for all the child controllers
-%             for i=1:length(self.ChildControllers_) ,
-%                 thisChildController = self.ChildControllers_{i} ;
-%                 if isvalid(thisChildController) ,
-%                     thisChildController.quittingWavesurfer();
-%                 end
-%             end
-% 
-%             self.tellFigureToDeleteFigureGH_() ;
-%         end  % function        
+        end  % method        
     end  % Control actuation methods block
 end  % classdef

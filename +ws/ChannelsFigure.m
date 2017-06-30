@@ -1,4 +1,4 @@
-classdef ChannelsFigure < ws.MCOSFigure
+classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
     properties  % protected by gentleman's agreement
         DeviceNamePopupLabelText
         DeviceNamePopup
@@ -39,7 +39,6 @@ classdef ChannelsFigure < ws.MCOSFigure
         AOUnitsEdits
         AOScaleEdits
         AOScaleUnitsTexts
-        %AOIsActiveCheckboxes
         AOIsMarkedForDeletionCheckboxes
         AddAOChannelButton
         DeleteAOChannelsButton
@@ -69,21 +68,15 @@ classdef ChannelsFigure < ws.MCOSFigure
         DOIsMarkedForDeletionCheckboxes
         AddDOChannelButton
         DeleteDOChannelsButton
-        
-%         DOsPanel
-%         DOIsTimedColTitleText        
-%         DOIsOnColTitleText        
-%         DOLabelTexts
-%         DOIsTimedCheckboxes
-%         DOIsOnRadiobuttons            
     end  % properties
     
     methods
-        function self=ChannelsFigure(model,controller)
-            self = self@ws.MCOSFigure(model,controller);
+        function self=ChannelsFigure(wsModel)
+            self = self@ws.MCOSFigureWithSelfControl(wsModel) ;                        
+            %self = self@ws.MCOSFigure(model,controller);
             
             % Set the relevant properties of the figure itself
-            set(self.FigureGH,'Tag','ChannelsFigure', ...
+            set(self.FigureGH_,'Tag','ChannelsFigure', ...
                               'Units','pixels', ...
                               'Resize','off', ...
                               'Name','Device & Channels...', ...
@@ -104,82 +97,29 @@ classdef ChannelsFigure < ws.MCOSFigure
             self.update();         
             
             % Subscribe to model events
-            model=self.Model;  % this is the root model
-            if ~isempty(model) ,
-                model.subscribeMe(self,'Update','','update');                
-                model.subscribeMe(self,'DidSetState','','updateControlProperties');
-                model.subscribeMe(self,'UpdateChannels','','update');         
-                model.subscribeMe(self,'UpdateDigitalOutputStateIfUntimed','','updateControlProperties');
-%                 acquisition=model.Acquisition;
-%                 if ~isempty(acquisition) ,
-%                     %acquisition.subscribeMe(self,'DidChangeNumberOfChannels','','update');
-%                     %acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');
-%                     %acquisition.subscribeMe(self,'DidSetIsChannelActive','','updateControlProperties');
-%                 end
-%                 stimulation=model.Stimulation;
-%                 if ~isempty(stimulation) ,
-%                     %stimulation.subscribeMe(self,'DidChangeNumberOfChannels','','update');
-%                     %stimulation.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales','','updateControlProperties');                    
-%                     %stimulation.subscribeMe(self,'DidSetIsDigitalChannelTimed','','update');               
-%                     %stimulation.subscribeMe(self,'DidSetDigitalOutputStateIfUntimed','','updateControlProperties');               
-%                 end
+            %wsModel=self.Model;  % this is the root model
+            if ~isempty(wsModel) ,
+                wsModel.subscribeMe(self,'Update','','update');                
+                wsModel.subscribeMe(self,'DidSetState','','updateControlProperties');
+                wsModel.subscribeMe(self,'UpdateChannels','','update');         
+                wsModel.subscribeMe(self,'UpdateDigitalOutputStateIfUntimed','','updateControlProperties');
             end
             
             % make the figure visible
-            set(self.FigureGH,'Visible','on');                        
+            set(self.FigureGH_,'Visible','on');                        
         end
-
-%         function value=maximumAILabelTextWidth(self)
-%             n=length(self.AILabelTexts);
-%             value=-inf;
-%             for i=1:n ,
-%                 thisExtent=get(self.AILabelTexts(i),'Extent');
-%                 thisWidth=thisExtent(3);
-%                 value=max(value,thisWidth);
-%             end            
-%         end
-        
-%         function value=maximumAOLabelTextWidth(self)
-%             n=length(self.AOLabelTexts);            
-%             value=-inf;
-%             for i=1:n ,
-%                 thisExtent=get(self.AOLabelTexts(i),'Extent');
-%                 thisWidth=thisExtent(3);
-%                 value=max(value,thisWidth);
-%             end            
-%         end
-%         
-%         function value=maximumDILabelTextWidth(self)
-%             n=length(self.DILabelTexts);
-%             value=-inf;
-%             for i=1:n ,
-%                 thisExtent=get(self.DILabelTexts(i),'Extent');
-%                 thisWidth=thisExtent(3);
-%                 value=max(value,thisWidth);
-%             end            
-%         end
-%         
-%         function value=maximumDOLabelTextWidth(self)
-%             n=length(self.DOLabelTexts);            
-%             value=-inf;
-%             for i=1:n ,
-%                 thisExtent=get(self.DOLabelTexts(i),'Extent');
-%                 thisWidth=thisExtent(3);
-%                 value=max(value,thisWidth);
-%             end            
-%         end
     end  % public methods block
         
     methods (Access=protected)
         function createFixedControls_(self)
             % Create the device name popup and label
             self.DeviceNamePopupLabelText = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH_, ...
                              'Style','text', ...
                              'HorizontalAlignment','right', ...
                              'String','Device:');
             self.DeviceNamePopup = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
+                ws.uicontrol('Parent',self.FigureGH_, ...
                              'Style','popup', ...
                              'BackgroundColor','w', ...
                              'HorizontalAlignment','left', ...
@@ -197,7 +137,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         function createTimebasePanelFixedControls_(self)
             % Make the panel itself
             self.TimebasePanel= ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                            'Tag','TimebasePanel', ...
                            'Title','Timebase');
             
@@ -237,7 +177,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         function createAIPanelFixedControls_(self)
             % Make the panel itself
             self.AIsPanel= ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                            'Tag','AIsPanel', ...
                            'Title','AI Channels');
             
@@ -289,7 +229,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         function createAOPanelFixedControls_(self)
             % Make the panel itself
             self.AOsPanel= ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Tag','AOsPanel', ...
                         'Title','AO Channels');
             
@@ -314,11 +254,6 @@ classdef ChannelsFigure < ws.MCOSFigure
                           'Style','text', ...
                           'HorizontalAlignment','center', ...
                           'String','Scale');
-%             self.AOIsActiveColTitleText= ...
-%                 ws.uicontrol('Parent',self.AOsPanel, ...
-%                           'Style','text', ...
-%                           'HorizontalAlignment','center', ...
-%                           'String','Active?');
             self.AOIsMarkedForDeletionColTitleText= ...
                 ws.uicontrol('Parent',self.AOsPanel, ...
                           'Style','text', ...
@@ -341,7 +276,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         function createDIPanelFixedControls_(self)
             % Make the panel itself
             self.DIsPanel= ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Tag','DIsPanel', ...
                         'Title','DI Channels');
             
@@ -383,7 +318,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         function createDOPanelFixedControls_(self)
             % Make the panel itself
             self.DOsPanel= ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Tag','DOsPanel', ...
                         'Title','DO Channels');
             
@@ -548,12 +483,12 @@ classdef ChannelsFigure < ws.MCOSFigure
             figureWidth = panelBorderSize + aiPanelWidth + interPanelSpaceWidth + aoPanelWidth + panelBorderSize ;
             
             % Position the figure, keeping upper left corner fixed
-            currentPosition=get(self.FigureGH,'Position');
+            currentPosition=get(self.FigureGH_,'Position');
             currentOffset=currentPosition(1:2);
             currentSize=currentPosition(3:4);
             currentUpperY=currentOffset(2)+currentSize(2);
             figurePosition=[currentOffset(1) currentUpperY-figureHeight figureWidth figureHeight];
-            set(self.FigureGH,'Position',figurePosition);
+            set(self.FigureGH_,'Position',figurePosition);
             
             % Position the device name popup in the middle (vertically) of
             % the top area, at the given x offset.
@@ -708,22 +643,6 @@ classdef ChannelsFigure < ws.MCOSFigure
                                 addButtonWidth, ...
                                 buttonHeight, ...
                                 withinPanelRightPadWidth )
-            
-%             
-%             self.layoutDOPanel_(panelBorderSize, ...
-%                                 aiPanelWidth, ...
-%                                 interPanelSpaceWidth, ...
-%                                 aoPanelWidth, ...
-%                                 digitalPanelsHeight, ...
-%                                 panelToTitleRowSpaceHeight, ...
-%                                 titleRowHeight, ...
-%                                 panelToChannelNameColSpaceWidth, ...
-%                                 spaceBelowTitleRowHeight, ...
-%                                 rowHeight, ...
-%                                 interRowHeight, ...
-%                                 outputLabelWidth, ...
-%                                 spaceBetweenTerminalAndRestWidth, ...                                
-%                                 scaleAndUnitsControlsWidth);
         end  % method
     
         function layoutTimebasePanel_(self, ...
@@ -1380,7 +1299,7 @@ classdef ChannelsFigure < ws.MCOSFigure
 %         end        
 
         function updateControlPropertiesImplementation_(self,varargin)
-            model=self.Model;
+            model=self.Model_;
             if isempty(model) || ~isvalid(model) ,
                 return
             end
@@ -1408,7 +1327,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function        
 
         function updateTimebasePanelControlPropertiesImplementation_(self)
-            model=self.Model;
+            model=self.Model_;
             isWavesurferIdle=isequal(model.State,'idle');
             
             % Update the timebase source popup
@@ -1424,7 +1343,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateAIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
             % update the AIs
-            wsModel=self.Model;
+            wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
@@ -1453,9 +1372,9 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AIScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
-                set(self.AIIsActiveCheckboxes(i),'Value',self.Model.IsAIChannelActive(i), ...
+                set(self.AIIsActiveCheckboxes(i),'Value',self.Model_.IsAIChannelActive(i), ...
                                                  'Enable',ws.onIff(isWavesurferIdle));                                     
-                set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsAIChannelMarkedForDeletion(i), ...
+                set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model_.IsAIChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
@@ -1470,7 +1389,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateAOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
             % update the AOs
-            wsModel=self.Model;
+            wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Stimulation.AnalogDeviceNames;  % cell array of strings
@@ -1499,9 +1418,9 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.AOScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
                                          'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
                 set(self.AOScaleUnitsTexts(i),'String',sprintf('%s/V',channelUnits{i})) ;
-                %set(self.AOIsActiveCheckboxes(i),'Value',self.Model.Stimulation.IsAnalogChannelActive(i), ...
+                %set(self.AOIsActiveCheckboxes(i),'Value',self.Model_.Stimulation.IsAnalogChannelActive(i), ...
                 %                                 'Enable',ws.onIff(isWavesurferIdle));                                     
-                set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsAOChannelMarkedForDeletion(i), ...
+                set(self.AOIsMarkedForDeletionCheckboxes(i),'Value',self.Model_.IsAOChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end
             
@@ -1516,7 +1435,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         
         function updateDIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
-            wsModel=self.Model;
+            wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
@@ -1534,9 +1453,9 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.DITerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
-                set(self.DIIsActiveCheckboxes(i),'Value',self.Model.IsDIChannelActive(i), ...
+                set(self.DIIsActiveCheckboxes(i),'Value',self.Model_.IsDIChannelActive(i), ...
                                                  'Enable',ws.onIff(isWavesurferIdle));                                     
-                set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsDIChannelMarkedForDeletion(i), ...
+                set(self.DIIsMarkedForDeletionCheckboxes(i),'Value',self.Model_.IsDIChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
@@ -1553,7 +1472,7 @@ classdef ChannelsFigure < ws.MCOSFigure
        
         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)
             % update the DIs
-            wsModel=self.Model;
+            wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
@@ -1571,11 +1490,11 @@ classdef ChannelsFigure < ws.MCOSFigure
                 set(self.DOTerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
-                set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
+                set(self.DOIsTimedCheckboxes(i),'value',self.Model_.IsDOChannelTimed(i),...
                                                 'enable',ws.onIff(isWavesurferIdle));
-                set(self.DOIsOnRadiobuttons(i),'value',self.Model.DOChannelStateIfUntimed(i),...
+                set(self.DOIsOnRadiobuttons(i),'value',self.Model_.DOChannelStateIfUntimed(i),...
                                                'enable',ws.onIff(~isTimed(i)));
-                set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model.IsDOChannelMarkedForDeletion(i), ...
+                set(self.DOIsMarkedForDeletionCheckboxes(i),'Value',self.Model_.IsDOChannelMarkedForDeletion(i), ...
                                                             'Enable',ws.onIff(isWavesurferIdle));                                     
             end            
             
@@ -1592,7 +1511,7 @@ classdef ChannelsFigure < ws.MCOSFigure
        
 %         function updateDOPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)  %#ok<INUSD>
 %             % update the DOs
-%             model=self.Model;
+%             model=self.Model_;
 %             isWavesurferIdle=isequal(model.State,'idle');
 %             
 %             terminalNameForEachChannel = model.Stimulation.DigitalTerminalNames ;
@@ -1601,9 +1520,9 @@ classdef ChannelsFigure < ws.MCOSFigure
 %             nDOs = length(self.DOLabelTexts) ;
 %             for i=1:nDOs ,
 %                 set(self.DOLabelTexts(i),'String',sprintf('%s (%s):',channelNames{i}, terminalNameForEachChannel{i}));                
-%                 set(self.DOIsTimedCheckboxes(i),'value',self.Model.IsDOChannelTimed(i),...
+%                 set(self.DOIsTimedCheckboxes(i),'value',self.Model_.IsDOChannelTimed(i),...
 %                                                 'enable',ws.onIff(isWavesurferIdle));
-%                 set(self.DOIsOnRadiobuttons(i),'value',self.Model.DOChannelStateIfUntimed(i),...
+%                 set(self.DOIsOnRadiobuttons(i),'value',self.Model_.DOChannelStateIfUntimed(i),...
 %                                                'enable',ws.onIff(~isTimed(i)));
 %             end            
 %         end        
@@ -1623,7 +1542,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateAIPanelControlsInExistance_(self)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 nAIs = 0 ;
             else
@@ -1709,7 +1628,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateAOPanelControlsInExistance_(self)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 nAOs = 0 ;
             else
@@ -1795,7 +1714,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateDIPanelControlsInExistance_(self)
-            model = self.Model ;
+            model = self.Model_ ;
             if isempty(model) ,
                 nDIs = 0 ;
             else
@@ -1856,7 +1775,7 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
         
         function updateDOPanelControlsInExistance_(self)
-            model = self.Model ;
+            model = self.Model_ ;
             if isempty(model) ,
                 nDOs = 0 ;
             else
@@ -1927,5 +1846,260 @@ classdef ChannelsFigure < ws.MCOSFigure
         end  % function
                 
     end  % protected methods block    
+    
+    methods
+        function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
+            allDeviceNames = self.Model_.AllDeviceNames ;
+            deviceName = ws.getPopupMenuSelection(source, allDeviceNames) ;
+            if isempty(deviceName) ,
+                self.Figure.update() ;
+            else
+                self.Model_.do('set', 'DeviceName', deviceName) ;
+            end
+        end
+        
+        function TimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
+            availableTimebaseSources = self.Model_.AvailableTimebaseSources ;
+            timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
+            if isempty(timebaseSource) ,
+                self.Figure.update() ;
+            else
+                self.Model_.do('set', 'TimebaseSource', timebaseSource) ;
+            end
+        end
+        
+        function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
+            %self.Model_.Acquisition.setSingleAnalogChannelName(i, newString) ;
+            self.Model_.do('setSingleAIChannelName', i, newString) ;
+        end
+        
+        function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.getAllAITerminalNames() ;
+            % Do the rest
+            choice=ws.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            %self.Model_.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AIScaleEdits);
+            i=find(isTheChannel);
+            newString=get(self.Figure.AIScaleEdits(i),'String');
+            newValue=str2double(newString);
+            %self.Model_.Acquisition.setSingleAnalogChannelScale(i,newValue);
+            self.Model_.do('setSingleAIChannelScale', i, newValue) ;
+        end
+        
+        function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AIUnitsEdits);
+            i=find(isTheChannel);
+            newString=get(self.Figure.AIUnitsEdits(i),'String');
+            %self.Model_.Acquisition.setSingleAnalogChannelUnits(i,newString);
+            self.Model_.do('setSingleAIChannelUnits', i, newString) ;
+        end
+        
+        function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
+            isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
+            isAnalogChannelActive=self.Model_.IsAIChannelActive;
+            isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            %self.Model_.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
+            self.Model_.do('set', 'IsAIChannelActive', isAnalogChannelActive) ;             
+        end
+
+        function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model_.IsAIChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            %self.Model_.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+            self.Model_.do('set', 'IsAIChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
+        end
+
+        function AddAIChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.Acquisition.addAnalogChannel() ;
+            self.Model_.do('addAIChannel') ;
+        end
+        
+        function DeleteAIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.Acquisition.deleteMarkedAnalogChannels() ;
+            self.Model_.do('deleteMarkedAIChannels') ;
+        end
+        
+        function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.AOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
+            %self.Model_.Stimulation.setSingleAnalogChannelName(i, newString) ;
+            self.Model_.do('setSingleAOChannelName', i, newString) ;
+        end
+        
+        function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.getAllAOTerminalNames() ;
+            % Do the rest
+            choice=ws.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            %self.Model_.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleAOTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AOScaleEdits);
+            i=find(isTheChannel);
+            newString=get(self.Figure.AOScaleEdits(i),'String');
+            newValue=str2double(newString);
+            %self.Model_.Stimulation.setSingleAnalogChannelScale(i,newValue);
+            self.Model_.do('setSingleAOChannelScale', i, newValue);            
+        end
+        
+        function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=(source==self.Figure.AOUnitsEdits);
+            i=find(isTheChannel);            
+            newString=get(self.Figure.AOUnitsEdits(i),'String');
+            newValue=strtrim(newString);
+            %self.Model_.Stimulation.setSingleAnalogChannelUnits(i,newValue);
+            self.Model_.do('setSingleAOChannelUnits', i, newValue) ;
+        end
+        
+        function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
+            isAnalogChannelMarkedForDeletion = self.Model_.IsAOChannelMarkedForDeletion ;
+            isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            %self.Model_.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
+            self.Model_.do('set', 'IsAOChannelMarkedForDeletion', isAnalogChannelMarkedForDeletion) ;
+        end
+
+        function AddAOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.Stimulation.addAnalogChannel() ;
+            self.Model_.do('addAOChannel') ;            
+        end
+        
+        function DeleteAOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.deleteMarkedAOChannels() ;
+            self.Model_.do('deleteMarkedAOChannels') ;
+        end
+        
+        function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DIChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
+            %self.Model_.Acquisition.setSingleDigitalChannelName(i, newString) ;
+            self.Model_.do('setSingleDIChannelName', i, newString) ;
+        end
+        
+        function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            % Do the rest
+            choice=ws.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            %self.Model_.setSingleDIChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleDIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isDigitalChannelActive=self.Model_.IsDIChannelActive;
+            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
+            self.Model_.do('set', 'IsDIChannelActive', isDigitalChannelActive);
+        end
+
+        function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
+            isChannelMarkedForDeletion = self.Model_.IsDIChannelMarkedForDeletion ;
+            isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            self.Model_.do('set', 'IsDIChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
+        end
+
+        function AddDIChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.addDIChannel() ;
+            self.Model_.do('addDIChannel') ;
+        end
+        
+        function DeleteDIChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.deleteMarkedDIChannels() ;
+            self.Model_.do('deleteMarkedDIChannels') ;
+        end
+        
+        function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOChannelNameEdits) ;
+            i = find(isTheChannel) ;
+            newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
+            %self.Model_.Stimulation.setSingleDigitalChannelName(i, newString) ;
+            self.Model_.do('setSingleDOChannelName', i, newString) ;
+        end
+        
+        function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+            % Get the list of valid choices, if we can
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            % Do the rest
+            choice=ws.getPopupMenuSelection(source,validChoices);
+            terminalIDAsString = choice(4:end) ;
+            terminalID = str2double(terminalIDAsString) ;            
+            isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            %self.Model_.setSingleDOChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleDOChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+        end
+        
+        function DOIsTimedCheckboxesActuated(self, source, event)  %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
+            i = find(isTheChannel) ;            
+            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
+            %self.Model_.IsDOChannelTimed(i)=newState;
+            newArray = ws.replace(self.Model_.IsDOChannelTimed, i, newState) ;
+            self.Model_.do('set','IsDOChannelTimed', newArray) ;
+            %self.Figure.update();  % Surely this is not necessary anymore,
+                                    % right?  -- ALT, 2016-09-12
+        end
+        
+        function DOIsOnRadiobuttonsActuated(self,source,event)  %#ok<INUSD>
+            isTheChannel = (source==self.Figure.DOIsOnRadiobuttons) ;
+            i = find(isTheChannel) ;
+            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value') ;
+            value = self.Model_.DOChannelStateIfUntimed ;
+            newValue = ws.replace(value, i, newState) ;
+            % self.Model_.DOChannelStateIfUntimed = newValue ;
+            self.Model_.do('set', 'DOChannelStateIfUntimed', newValue) ;            
+        end
+        
+        function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
+            indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
+            %isChannelMarkedForDeletion = self.Model_.IsDOChannelMarkedForDeletion ;
+            %isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
+            originalArray = self.Model_.IsDOChannelMarkedForDeletion ;
+            newValue = get(source,'Value') ;
+            newArray = ws.replace(originalArray, indexOfTheChannel, newValue) ;  %#ok<FNDSB>
+            %self.Model_.IsDOChannelMarkedForDeletion = isChannelMarkedForDeletion ;             
+            self.Model_.do('set', 'IsDOChannelMarkedForDeletion', newArray) ;             
+        end
+
+        function AddDOChannelButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.addDOChannel() ;
+            self.Model_.do('addDOChannel') ;
+        end
+        
+        function DeleteDOChannelsButtonActuated(self,source,event)  %#ok<INUSD>
+            %self.Model_.deleteMarkedDOChannels() ;
+            self.Model_.do('deleteMarkedDOChannels') ;
+        end       
+    end  % public methods block
     
 end  % classdef

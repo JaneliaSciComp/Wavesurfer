@@ -8,7 +8,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         StimulusLibraryController = [];
         FastProtocolsController = [];
         UserCodeManagerController = [];
-        ChannelsController = [];
+        ChannelsFigure = [];
         TestPulserController = [];
         ElectrodeManagerController= [];        
         GeneralSettingsFigure = [] ;
@@ -40,14 +40,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             fig = ws.WavesurferMainFigure(model,self) ;
             self.Figure_ = fig ;
 
-            % Create the controller specifications
-            %self.ControllerSpecifications_ = ws.WavesurferMainController.createControllerSpecs_() ;
-            
-            % Update all the controls
+            % Update all the controls for the main figure
             self.Figure.update();            
-            
-%             % Show the display figure by default
-%             self.showAndRaiseChildFigure_('DisplayController');
         end
         
         function delete(self)
@@ -158,7 +152,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ChannelsController') ;
+            self.showAndRaiseChildFigure_('ChannelsFigure') ;
         end
         
         function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -533,7 +527,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                 'StimulusLibraryController' ...
                                 'FastProtocolsController' ...
                                 'UserCodeManagerController' ...
-                                'ChannelsController' ...
+                                'ChannelsFigure' ...
                                 'TestPulserController' ...
                                 'ElectrodeManagerController' ...
                                 'GeneralSettingsFigure' } ;
@@ -635,9 +629,11 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             if isempty(self.(controllerClassName)) ,
                 fullControllerClassName=['ws.' controllerClassName];
                 if isequal(fullControllerClassName, 'ws.GeneralSettingsFigure') ,
-                    controller = feval(fullControllerClassName, self.Model, self.Figure.getPositionInPixels() );
+                    controller = feval(fullControllerClassName, self.Model, self.Figure.getPositionInPixels() ) ;
+                elseif isequal(fullControllerClassName, 'ws.ChannelsFigure') ,
+                    controller = feval(fullControllerClassName, self.Model) ;
                 else
-                    controller = feval(fullControllerClassName,self,self.Model);
+                    controller = feval(fullControllerClassName, self, self.Model) ;
                 end
                 self.ChildControllers_{end+1}=controller;
                 self.(controllerClassName)=controller;
