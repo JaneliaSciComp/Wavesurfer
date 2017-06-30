@@ -723,7 +723,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
     end
         
     methods (Access = protected)
-        function closeRequested_(self, source, event)
+        function closeRequested_(self, source, event)  %#ok<INUSD>
             % Frameworks that windows with close boxes or similar decorations should set the
             % callback to this method when they take control of the window.  For example,
             % the CloseRequestFcn for HG windows, or the Closing event in WPF.
@@ -737,7 +737,12 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             % intercept the close (or hide) attempt and cancel it.  By default it simply
             % returns false to continue.
             
-            shouldStayPut = self.shouldStayPutQ_(source, event);
+            wsModel = self.Model_ ;
+            if isempty(wsModel) || ~isvalid(wsModel) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~wsModel.isIdleSensuLato() ;
+            end
             
             if shouldStayPut ,
                 % Do nothing
@@ -745,18 +750,6 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                 self.hide() ;
             end
         end
-        
-        function shouldStayPut = shouldStayPutQ_(self, varargin)
-            % This is called after the user indicates she wants to close
-            % the window.  Returns true if the window should _not_ close,
-            % false if it should go ahead and close.
-            model = self.Model_ ;
-            if isempty(model) || ~isvalid(model) ,
-                shouldStayPut = false ;
-            else
-                shouldStayPut = ~model.isIdleSensuLato() ;
-            end
-        end  % function
         
         function updateControlPropertiesImplementation_(self) 
             % In subclass, this should make sure the properties of the
