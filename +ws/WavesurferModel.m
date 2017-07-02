@@ -118,6 +118,7 @@ classdef WavesurferModel < ws.Model
         PlotHeightFromDIChannelIndex
         RowIndexFromAIChannelIndex
         RowIndexFromDIChannelIndex
+        NRunsCompleted  % number of runs *completed* (not stopped or aborted) since WS was started
     end
     
     properties (Access=protected)
@@ -146,6 +147,8 @@ classdef WavesurferModel < ws.Model
         
         IsDIChannelTerminalOvercommitted_ = false(1,0)        
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
+        
+        NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
     end   
 
     properties (Dependent = true)
@@ -499,21 +502,21 @@ classdef WavesurferModel < ws.Model
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
-                %pause(10);  % TODO: Take out eventually
-
-%                 % Delete SICommandPollTimer_
-%                 if ~isempty(self.SICommandPollTimer_) && isvalid(self.SICommandPollTimer_) ,
-%                     stop(self.SICommandPollTimer_);
-%                     delete(self.SICommandPollTimer_);
-%                     self.SICommandPollTimer_ = [] ;
-%                 end
                 
                 % Close the sockets
                 self.LooperIPCSubscriber_ = [] ;
                 self.RefillerIPCSubscriber_ = [] ;
                 self.LooperIPCRequester_ = [] ;
                 self.RefillerIPCRequester_ = [] ;
-                self.IPCPublisher_ = [] ;                
+                self.IPCPublisher_ = [] ;                                
+                
+                % If yoked, tell SI that we're quitting
+                try
+                    self.notifyScanImageThatWavesurferIsQuittingIfYoked_() ;
+                catch exception  %#ok<NASGU>
+                    % If something goes wrong, just ignore it, since this is delete() method   
+                    fprintf('notifyScanImageThatWavesurferIsQuittingIfYoked_() threw in the WSM delete() method\n') ;                    
+                end                    
             end
             % Delete CommandServer_, client
             ws.deleteIfValidHandle(self.CommandServer_) ;
@@ -1174,7 +1177,7 @@ classdef WavesurferModel < ws.Model
         function didSetAcquisitionSampleRate(self,newValue)
             ephys = self.Ephys_ ;
             ephys.didSetAcquisitionSampleRate(newValue) ;
-        end
+        end        
     end  % methods
     
     methods (Access = protected)
@@ -1574,7 +1577,7 @@ classdef WavesurferModel < ws.Model
             self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
             timeout = 12 ;  % s
             err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
-            if ~isempty(err) ,
+            if ~isempty(err) 
                 % Something went wrong
                 self.abortOngoingRun_();
                 self.changeReadiness(+1);
@@ -1855,11 +1858,12 @@ classdef WavesurferModel < ws.Model
             % Finalize
             self.IsPerformingRun_ =  false ;
             self.setState_('idle') ;            
+            self.NRunsCompleted_ = self.NRunsCompleted_ + 1 ;
             
             % Notify SI, if called for.  If there's a problem, log a
             % warning and then proceed.
             try
-                self.notifyScanImageThatRunCompletedNormallyIfYoked_() ;
+                %self.notifyScanImageThatRunCompletedNormallyIfYoked_() ;
             catch exception
                 self.logWarning('ws:errorNotifyingScanImageThatRunFinishedNormally', ...
                                 'The run finished normally, but there was a problem notifying ScanImage of this', ...
@@ -1964,6 +1968,16 @@ classdef WavesurferModel < ws.Model
             % Set state back to idle
             self.IsPerformingRun_ = false ; 
             self.setState_('idle');
+            
+            % Notify SI if yoked
+            try
+                self.notifyScanImageThatRunAbortedIfYoked_() ;
+            catch exception
+                self.logWarning('ws:errorNotifyingScanImageThatRunAborted', ...
+                                'The run aborted, and then there was a problem notifying ScanImage of this', ...
+                                exception) ;
+            end
+            
         end  % function
         
         function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
@@ -2306,10 +2320,22 @@ classdef WavesurferModel < ws.Model
                     % This is similar to the user pressing the stop button
                     % in the WS UI
                     self.stop();
-                case 'did-complete-loop-normally'
-                    % SI sends this when a loop finishes without
-                    % problems on its end.  Currently, we don't do anything in
-                    % response to this.
+                case 'did-complete-acquisition-mode-normally'
+                    % SI sends this when "acquisiition mode" (aka a loop or
+                    % grab) finishes without problems on its end.
+                    % Currently, we don't do anything in response to this.
+                case 'error'
+                    % SI send this when something goes wrong during
+                    % acquisition mode.  This is equivalent to an "abort"
+                    % in WS terminology.
+                    if isempty(parameters) ,
+                        message = '' ;  %#ok<NASGU>
+                    else
+                        message = parameters{1} ;                     %#ok<NASGU>
+                    end
+                    self.stop() ;
+                case 'ping'
+                    % do nothing (exception send an "OK" back to SI
                 otherwise
                     error('WavesurferModel:UnknownScanImageCommand', ...
                           'Received unknown command ''%s'' from ScanImage', commandName) ;
@@ -2344,6 +2370,19 @@ classdef WavesurferModel < ws.Model
         function notifyScanImageThatRunCompletedNormallyIfYoked_(self)
             commandFileAsString = sprintf('1\ndid-complete-run-normally\n') ;  % sprintf converts '\n' to a newline
             self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        end
+        
+        function notifyScanImageThatRunAbortedIfYoked_(self)
+            commandFileAsString = sprintf('1\nerror\n') ;  % sprintf converts '\n' to a newline
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        end
+        
+        function notifyScanImageThatWavesurferIsQuittingIfYoked_(self)
+            commandFileAsString = sprintf('1\nwavesurfer-is-quitting\n') ;  % sprintf converts '\n' to a newline
+            commandClient = self.CommandClient_ ;
+            if ~isempty(commandClient) && isvalid(commandClient) ,
+                commandClient.sendCommandFileAsString(commandFileAsString) ;
+            end
         end
         
         function notifyScanImageThatSavingProtocolFileIfYoked_(self, absoluteProtocolFileName)
@@ -5784,6 +5823,10 @@ classdef WavesurferModel < ws.Model
         
         function result = get.RowIndexFromDIChannelIndex(self)
             result = self.Display_.RowIndexFromDigitalChannelIndex ;
+        end
+        
+        function result = get.NRunsCompleted(self)
+            result = self.NRunsCompleted_ ;
         end
         
     end  % public methods

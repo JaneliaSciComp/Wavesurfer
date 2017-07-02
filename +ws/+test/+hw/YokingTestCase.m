@@ -86,20 +86,31 @@ classdef YokingTestCase < matlab.unittest.TestCase
             pause(20) ;
             %siMockProcess.CloseMainWindow() ;
             
-            % Spin-wait to be done
-            didPerformAllSweepsAndReturnToIdleness = false ;
-            for i=1:10 ,
-                if isequal(wsModel.State, 'idle') && wsModel.NextSweepIndex==4 ,
-                    didPerformAllSweepsAndReturnToIdleness = true ;
+            % Wait to be done with the first run
+            didPerformFirstRunAndReturnToIdleness = false ;
+            for i=1:100 ,
+                if isequal(wsModel.State, 'idle') && wsModel.NRunsCompleted>=1 ,
+                    didPerformFirstRunAndReturnToIdleness = true ;
                     break
                 end
                 pause(2) ;
             end
-            self.verifyTrue(didPerformAllSweepsAndReturnToIdleness) ;            
+            self.verifyTrue(didPerformFirstRunAndReturnToIdleness) ;            
             
-            % Spin-wait for disconnect
+            % Wait to be done with the second run
+            didPerformSecondRunAndReturnToIdleness = false ;
+            for i=1:100 ,
+                if isequal(wsModel.State, 'idle') && wsModel.NRunsCompleted>=2 ,
+                    didPerformSecondRunAndReturnToIdleness = true ;
+                    break
+                end
+                pause(2) ;
+            end
+            self.verifyTrue(didPerformSecondRunAndReturnToIdleness) ;            
+            
+            % Wait for disconnect
             didDisconnect = false ;
-            for i=1:10 ,
+            for i=1:100 ,
                 if ~wsModel.IsYokedToScanImage ,
                     didDisconnect = true ;
                     break
