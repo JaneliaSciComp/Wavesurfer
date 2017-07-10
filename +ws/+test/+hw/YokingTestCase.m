@@ -19,9 +19,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;
+            wsModel.setIsYokedToScanImageForTesting_(true) ;
             wsModel.play() ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -31,14 +31,14 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;
+            wsModel.setIsYokedToScanImageForTesting_(true) ;
             tempFilePath = tempname() ;
             [tempFolderPath, tempStem] = fileparts(tempFilePath) ;
             wsModel.DataFileLocation = tempFolderPath ;
             wsModel.DataFileBaseName = tempStem ;
             wsModel.IsOKToOverwriteDataFile = true ;
             wsModel.record() ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -48,11 +48,11 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;  
+            wsModel.setIsYokedToScanImageForTesting_(true) ;  
             protocolFilePath = horzcat(tempname(), '.wsp') ;
             wsModel.saveProtocolFileGivenFileName(protocolFilePath) ;
             wsModel.openProtocolFileGivenFileName(protocolFilePath) ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -65,7 +65,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             userSettingsFilePath = horzcat(tempname(), '.wsu') ;
             wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
             wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
             wsModel.delete() ;
@@ -73,7 +73,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
 
         function testMessageReceptionFromSI(self)
             wsModel = wavesurfer('--nogui') ;            
-            %wsModel.IsYokedToScanImage = true ;            
+            %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
             siMockProcess = System.Diagnostics.Process() ;
@@ -129,7 +129,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         function testFECDeleting(self)
             fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
             wsModel = wavesurfer('--nogui') ;
-            wsModel.IsYokedToScanImage = true ;  % should create a FEC
+            wsModel.setIsYokedToScanImageForTesting_(true) ;  % should create a FEC
             fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
             wsModel.delete() ;
