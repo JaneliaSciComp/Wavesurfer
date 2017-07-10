@@ -1056,8 +1056,10 @@ classdef WavesurferModel < ws.Model
         function didSetDigitalOutputStateIfUntimed(self)
             self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
         end
-        
-        function set.IsYokedToScanImage(self, newValue)
+    end
+       
+    methods (Access=protected)
+        function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
             % Set the value by enabling/disabling the command connector
@@ -1078,10 +1080,12 @@ classdef WavesurferModel < ws.Model
                 throw(err) ;
             end
         end  % function
-        
-%         function setIsYokedToScanImageForTesting_(self, newValue)
-%             self.setIsYokedToScanImage_(newValue) ;
-%         end        
+    end  % protected methods block
+    
+    methods
+        function setIsYokedToScanImageForTesting_(self, newValue)
+            self.setIsYokedToScanImage_(newValue) ;
+        end        
         
         function value=get.IsYokedToScanImage(self)
             value = self.IsYokedToScanImage_ ;
@@ -2276,9 +2280,9 @@ classdef WavesurferModel < ws.Model
             parameters = command.parameters ;
             switch commandName ,
                 case 'connect'
-                    self.IsYokedToScanImage = true ;
+                    self.setIsYokedToScanImage_(true) ;
                 case 'disconnect'
-                    self.IsYokedToScanImage = false ;
+                    self.setIsYokedToScanImage_(false) ;
                 case 'set-index-of-first-sweep-in-run'
                     self.Logging_.NextSweepIndex = str2double(parameters{1}) ;
                 case 'set-number-of-sweeps-in-run'

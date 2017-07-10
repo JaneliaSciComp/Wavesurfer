@@ -184,21 +184,20 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 %         end
         
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
-            %fprintf('Inside YokeToScanimageMenuItemActuated()\n');
-            wsModel = self.Model ;
-            if ~isempty(wsModel) ,
-                try
-                    wsModel.do('set', 'IsYokedToScanImage', ~wsModel.IsYokedToScanImage) ;
-                catch cause
-                    if isequal(cause.identifier, 'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
-                        exception = MException('ws:cantEnableYokedMode', 'Can''t enable yoked mode: %s', cause.message) ;
-                        exception = addCause(exception, cause) ;
-                        throw(exception);
-                    else
-                        rethrow(cause);
-                    end
-                end
-            end                        
+%             wsModel = self.Model ;
+%             if ~isempty(wsModel) ,
+%                 try
+%                     wsModel.do('set', 'IsYokedToScanImage', ~wsModel.IsYokedToScanImage) ;
+%                 catch cause
+%                     if isequal(cause.identifier, 'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
+%                         exception = MException('ws:cantEnableYokedMode', 'Can''t enable yoked mode: %s', cause.message) ;
+%                         exception = addCause(exception, cause) ;
+%                         throw(exception);
+%                     else
+%                         rethrow(cause);
+%                     end
+%                 end
+%             end                        
         end  % function
                 
         % Help menu

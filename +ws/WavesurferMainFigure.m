@@ -262,6 +262,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.YokeToScanimageMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Separator','on', ...
+                       'Enable', 'off', ...
                        'Label','Yoked to ScanImage');
 
             % View menu
@@ -814,7 +815,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
             set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
-            set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
+            %set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
