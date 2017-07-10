@@ -12,12 +12,14 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         
         AIsPanel
         AIChannelNameColTitleText
+        AIDeviceNameColTitleText
         AITerminalNameColTitleText
         AIUnitsColTitleText
         AIScaleColTitleText
         AIIsActiveColTitleText        
         AIIsMarkedForDeletionColTitleText        
         AIChannelNameEdits
+        AIDeviceNamePopups
         AITerminalNamePopups        
         AIUnitsEdits
         AIScaleEdits
@@ -71,7 +73,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
     end  % properties
     
     methods
-        function self=ChannelsFigure(wsModel)
+        function self = ChannelsFigure(wsModel)
             self = self@ws.MCOSFigureWithSelfControl(wsModel) ;                        
             %self = self@ws.MCOSFigure(model,controller);
             
@@ -187,6 +189,11 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                              'Style','text', ...
                              'HorizontalAlignment','center', ...
                              'String','Name');
+            self.AIDeviceNameColTitleText = ...
+                ws.uicontrol('Parent',self.AIsPanel, ...
+                             'Style','text', ...
+                             'HorizontalAlignment','center', ...
+                             'String','Device');
             self.AITerminalNameColTitleText = ...
                 ws.uicontrol('Parent',self.AIsPanel, ...
                              'Style','text', ...
@@ -366,7 +373,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             % Layout parameters
             topAreaHeight = 60 ;
             deviceNamePopupXOffset = 66 ;
-            deviceNamePopupWidth = 100 ;
+            deviceNamePopupWidth = 80 ;
             %deviceNamePopupHeight = 16 ;
             timebasePanelWidth = 300 ;
             timebasePanelHeight = 50 ;
@@ -387,8 +394,10 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             %rowToRowHeight=rowHeight+interRowHeight;
             panelToChannelNameColSpaceWidth=5;
             channelNameEditWidth = 100 ;
+            spaceBetweenChannelNameAndTerminalNameWidth = 14 ;  % soon to be gone
+            spaceBetweenChannelNameAndDeviceNameWidth = 14 ;
+            spaceBetweenDeviceNameAndTerminalNameWidth = 14 ;
             terminalNamePopupWidth = 52 ;
-            spaceBetweenChannelNameAndTerminalNameWidth = 14 ;
             %diLabelWidthWanted=max(30,self.maximumDILabelTextWidth());
             %aiLabelWidthWanted=max(30,self.maximumAILabelTextWidth());
             %inputLabelWidth=max(diLabelWidthWanted,aiLabelWidthWanted);
@@ -440,7 +449,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             aiPanelWidth = ...
                 panelToChannelNameColSpaceWidth+...
                 channelNameEditWidth + ...
-                spaceBetweenChannelNameAndTerminalNameWidth + ...
+                spaceBetweenChannelNameAndDeviceNameWidth + ...
+                deviceNamePopupWidth + ...
+                spaceBetweenDeviceNameAndTerminalNameWidth + ...
                 terminalNamePopupWidth + ...                
                 spaceBetweenTerminalAndRestWidth+ ...
                 unitsEditWidth+ ...
@@ -526,7 +537,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                                 interRowHeight, ...
                                 spaceBetweenTerminalAndRestWidth, ...
                                 channelNameEditWidth, ...
-                                spaceBetweenChannelNameAndTerminalNameWidth, ...
+                                spaceBetweenChannelNameAndDeviceNameWidth, ...
+                                deviceNamePopupWidth, ...
+                                spaceBetweenDeviceNameAndTerminalNameWidth, ...                                
                                 terminalNamePopupWidth , ...
                                 scaleEditWidth, ...
                                 spaceBetweenScaleAndScaleUnitsWidth, ...
@@ -694,7 +707,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                                 interRowHeight, ...
                                 spaceBetweenTerminalAndRestWidth, ...
                                 channelNameEditWidth , ...
-                                spaceBetweenChannelNameAndTerminalNameWidth, ...
+                                spaceBetweenChannelNameAndDeviceNameWidth, ...
+                                deviceNamePopupWidth, ...
+                                spaceBetweenDeviceNameAndTerminalNameWidth, ...                                
                                 terminalNamePopupWidth , ...
                                 scaleEditWidth, ...
                                 spaceBetweenScaleAndScaleUnitsWidth, ...
@@ -730,14 +745,20 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             % Channel Name
             channelNameColLeftX = panelToChannelNameColSpaceWidth ;
             ws.alignTextInRectangleBang(self.AIChannelNameColTitleText, ...
-                                                [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
-                                                'cm');
+                                        [channelNameColLeftX titleRowBottomY channelNameEditWidth titleRowHeight], ...
+                                        'cm');
+            
+            % Device Name                                            
+            deviceNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndDeviceNameWidth ;
+            ws.alignTextInRectangleBang(self.AIDeviceNameColTitleText, ...
+                                        [deviceNameColLeftX titleRowBottomY deviceNamePopupWidth titleRowHeight], ...
+                                        'cm');
             
             % Channel Terminal Name                                            
-            terminalNameColLeftX = channelNameColLeftX + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
+            terminalNameColLeftX = deviceNameColLeftX + deviceNamePopupWidth + spaceBetweenDeviceNameAndTerminalNameWidth ;
             ws.alignTextInRectangleBang(self.AITerminalNameColTitleText, ...
-                                                [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
-                                                'cm');
+                                        [terminalNameColLeftX titleRowBottomY terminalNamePopupWidth titleRowHeight], ...
+                                        'cm');
             
             % Channel Unit
             unitColLeftX = terminalNameColLeftX + terminalNamePopupWidth + spaceBetweenTerminalAndRestWidth ;
@@ -770,8 +791,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 xColLeft=panelToChannelNameColSpaceWidth;
                 set(self.AIChannelNameEdits(i), ...
                     'Position',[xColLeft aiYRowBottom-editShimHeight channelNameEditWidth editHeight]);  % shim to make look nice
+                % device name
+                xColLeft = xColLeft + channelNameEditWidth + spaceBetweenChannelNameAndDeviceNameWidth ;
+                set(self.AIDeviceNamePopups(i), ...
+                    'Position',[xColLeft aiYRowBottom deviceNamePopupWidth rowHeight]);  % shim to make look nice
                 % terminal name
-                xColLeft = xColLeft + channelNameEditWidth + spaceBetweenChannelNameAndTerminalNameWidth ;
+                xColLeft = xColLeft + deviceNamePopupWidth + spaceBetweenDeviceNameAndTerminalNameWidth ;
                 set(self.AITerminalNamePopups(i), ...
                     'Position',[xColLeft aiYRowBottom terminalNamePopupWidth rowHeight]);  % shim to make look nice
                 % units
@@ -1347,12 +1372,14 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
+            deviceNameForEachChannel = wsModel.AIChannelDeviceNames ;
+            allDeviceNames = wsModel.AllDeviceNames ;
             terminalNameForEachChannel = wsModel.AIChannelTerminalNames ;
             allAITerminalNames = wsModel.getAllAITerminalNames() ;
             %terminalIDs=model.Acquisition.AnalogTerminalIDs;  % zero-based NI channel index
-            channelNames=wsModel.AIChannelNames;
-            channelScales = wsModel.AIChannelScales;
-            channelUnits=wsModel.AIChannelUnits;
+            channelNames = wsModel.AIChannelNames ;
+            channelScales = wsModel.AIChannelScales ;
+            channelUnits = wsModel.AIChannelUnits ;
             nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingAIChannel();
             isChannelScaleEnslaved=(nElectrodesClaimingChannel>=1);
             %isChannelOvercommitted=(nElectrodesClaimingChannel>1);
@@ -1361,9 +1388,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             for i=1:nAIs ,
                 set(self.AIChannelNameEdits(i), 'String', channelNames{i} , ...
                                                 'Enable', ws.onIff(isWavesurferIdle) ) ;
+                ws.setPopupMenuItemsAndSelectionBang(self.AIDeviceNamePopups(i), ...
+                                                     allDeviceNames, ...
+                                                     deviceNameForEachChannel{i});
                 ws.setPopupMenuItemsAndSelectionBang(self.AITerminalNamePopups(i), ...
-                                                             allAITerminalNames, ...
-                                                             terminalNameForEachChannel{i});
+                                                     allAITerminalNames, ...
+                                                     terminalNameForEachChannel{i});
                 set(self.AITerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
@@ -1556,6 +1586,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 
                 % redimension arrays
                 self.AIChannelNameEdits(nAIs) = 0 ;
+                self.AIDeviceNamePopups(nAIs) = 0 ;
                 self.AITerminalNamePopups(nAIs) = 0 ;
                 self.AIScaleEdits(nAIs)= 0 ;
                 self.AIScaleUnitsTexts(nAIs)= 0 ;
@@ -1565,18 +1596,26 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 
                 % Populate the AI channel rows      
                 for i=(nAIsBefore+1):nAIs ,
-                    self.AIChannelNameEdits(i)= ...
+                    self.AIChannelNameEdits(i) = ...
                         ws.uiedit('Parent',self.AIsPanel, ...
                                   'Tag',sprintf('AIChannelNameEdits%d',i), ...
                                   'HorizontalAlignment','left', ...
                                   'Callback',@(source,event)(self.controlActuated('AIChannelNameEdits',source,event)) );
-                    self.AITerminalNamePopups(i)= ...
+                    self.AIDeviceNamePopups(i) = ...
                         ws.uicontrol('Parent',self.AIsPanel, ...
-                                  'Style','popup', ...
-                                  'Tag',sprintf('AITerminalNamePopups%d',i), ...
-                                  'BackgroundColor','w', ...
-                                  'HorizontalAlignment','right', ...
-                                  'Callback',@(source,event)(self.controlActuated('AITerminalNamePopups',source,event)) );
+                                     'Style','popup', ...
+                                     'Tag',sprintf('AIDeviceNamePopups%d',i), ...
+                                     'BackgroundColor','w', ...
+                                     'HorizontalAlignment','right', ...
+                                     'String', {'(Stuff)'}, ...
+                                     'Callback',@(source,event)(self.controlActuated('AIDeviceNamePopups',source,event)) );
+                    self.AITerminalNamePopups(i) = ...
+                        ws.uicontrol('Parent',self.AIsPanel, ...
+                                     'Style','popup', ...
+                                     'Tag',sprintf('AITerminalNamePopups%d',i), ...
+                                     'BackgroundColor','w', ...
+                                     'HorizontalAlignment','right', ...
+                                     'Callback',@(source,event)(self.controlActuated('AITerminalNamePopups',source,event)) );
                     self.AIScaleEdits(i)= ...
                         ws.uiedit('Parent',self.AIsPanel, ...
                                   'Tag',sprintf('AIScaleEdits%d',i), ...
@@ -1609,6 +1648,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             elseif nAIsBefore>nAIs 
                 % delete the objects
                 delete(self.AIChannelNameEdits(nAIs+1:end)) ;
+                delete(self.AIDeviceNamePopups(nAIs+1:end)) ;                
                 delete(self.AITerminalNamePopups(nAIs+1:end)) ;                
                 delete(self.AIScaleEdits(nAIs+1:end)) ;
                 delete(self.AIScaleUnitsTexts(nAIs+1:end)) ;
@@ -1618,6 +1658,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 
                 % need to trim the arrays
                 self.AIChannelNameEdits(nAIs+1:end) = [] ;
+                self.AIDeviceNamePopups(nAIs+1:end) = [] ;
                 self.AITerminalNamePopups(nAIs+1:end) = [] ;
                 self.AIScaleEdits(nAIs+1:end) = [] ;
                 self.AIScaleUnitsTexts(nAIs+1:end) = [] ;
@@ -1880,27 +1921,19 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
             allDeviceNames = self.Model_.AllDeviceNames ;
             deviceName = ws.getPopupMenuSelection(source, allDeviceNames) ;
-            if isempty(deviceName) ,
-                self.Figure.update() ;
-            else
-                self.Model_.do('set', 'DeviceName', deviceName) ;
-            end
+            self.Model_.do('set', 'DeviceName', deviceName) ;
         end
         
         function TimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
             availableTimebaseSources = self.Model_.AvailableTimebaseSources ;
             timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
-            if isempty(timebaseSource) ,
-                self.Figure.update() ;
-            else
-                self.Model_.do('set', 'TimebaseSource', timebaseSource) ;
-            end
+            self.Model_.do('set', 'TimebaseSource', timebaseSource) ;
         end
         
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
+            isTheChannel = (source==self.AIChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
+            newString = get(self.AIChannelNameEdits(i),'String') ;
             %self.Model_.Acquisition.setSingleAnalogChannelName(i, newString) ;
             self.Model_.do('setSingleAIChannelName', i, newString) ;
         end
@@ -1913,31 +1946,31 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
+            isTheChannel = (source==self.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AIScaleEdits);
+            isTheChannel=(source==self.AIScaleEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AIScaleEdits(i),'String');
+            newString=get(self.AIScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model_.Acquisition.setSingleAnalogChannelScale(i,newValue);
             self.Model_.do('setSingleAIChannelScale', i, newValue) ;
         end
         
         function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AIUnitsEdits);
+            isTheChannel=(source==self.AIUnitsEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AIUnitsEdits(i),'String');
+            newString=get(self.AIUnitsEdits(i),'String');
             %self.Model_.Acquisition.setSingleAnalogChannelUnits(i,newString);
             self.Model_.do('setSingleAIChannelUnits', i, newString) ;
         end
         
         function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
-            isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
+            isTheChannel=find(source==self.AIIsActiveCheckboxes);
             isAnalogChannelActive=self.Model_.IsAIChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             %self.Model_.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
@@ -1945,7 +1978,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.AIIsMarkedForDeletionCheckboxes) ;
             isAnalogChannelMarkedForDeletion = self.Model_.IsAIChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model_.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
@@ -1963,9 +1996,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.AOChannelNameEdits) ;
+            isTheChannel = (source==self.AOChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
+            newString = get(self.AOChannelNameEdits(i),'String') ;
             %self.Model_.Stimulation.setSingleAnalogChannelName(i, newString) ;
             self.Model_.do('setSingleAOChannelName', i, newString) ;
         end
@@ -1978,32 +2011,32 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
+            isTheChannel = (source==self.AOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleAOTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOScaleEdits);
+            isTheChannel=(source==self.AOScaleEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AOScaleEdits(i),'String');
+            newString=get(self.AOScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model_.Stimulation.setSingleAnalogChannelScale(i,newValue);
             self.Model_.do('setSingleAOChannelScale', i, newValue);            
         end
         
         function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOUnitsEdits);
+            isTheChannel=(source==self.AOUnitsEdits);
             i=find(isTheChannel);            
-            newString=get(self.Figure.AOUnitsEdits(i),'String');
+            newString=get(self.AOUnitsEdits(i),'String');
             newValue=strtrim(newString);
             %self.Model_.Stimulation.setSingleAnalogChannelUnits(i,newValue);
             self.Model_.do('setSingleAOChannelUnits', i, newValue) ;
         end
         
         function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.AOIsMarkedForDeletionCheckboxes) ;
             isAnalogChannelMarkedForDeletion = self.Model_.IsAOChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model_.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
@@ -2021,9 +2054,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DIChannelNameEdits) ;
+            isTheChannel = (source==self.DIChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
+            newString = get(self.DIChannelNameEdits(i),'String') ;
             %self.Model_.Acquisition.setSingleDigitalChannelName(i, newString) ;
             self.Model_.do('setSingleDIChannelName', i, newString) ;
         end
@@ -2036,21 +2069,21 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
+            isTheChannel = (source==self.DITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDIChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleDIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isTheChannel=find(source==self.DIIsActiveCheckboxes);
             isDigitalChannelActive=self.Model_.IsDIChannelActive;
             isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model_.do('set', 'IsDIChannelActive', isDigitalChannelActive);
         end
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.DIIsMarkedForDeletionCheckboxes) ;
             isChannelMarkedForDeletion = self.Model_.IsDIChannelMarkedForDeletion ;
             isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             self.Model_.do('set', 'IsDIChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
@@ -2067,9 +2100,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOChannelNameEdits) ;
+            isTheChannel = (source==self.DOChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
+            newString = get(self.DOChannelNameEdits(i),'String') ;
             %self.Model_.Stimulation.setSingleDigitalChannelName(i, newString) ;
             self.Model_.do('setSingleDOChannelName', i, newString) ;
         end
@@ -2082,27 +2115,27 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
+            isTheChannel = (source==self.DOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDOChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleDOChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DOIsTimedCheckboxesActuated(self, source, event)  %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
+            isTheChannel = (source==self.DOIsTimedCheckboxes) ;
             i = find(isTheChannel) ;            
-            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
+            newState = get(self.DOIsTimedCheckboxes(i),'value') ;
             %self.Model_.IsDOChannelTimed(i)=newState;
             newArray = ws.replace(self.Model_.IsDOChannelTimed, i, newState) ;
             self.Model_.do('set','IsDOChannelTimed', newArray) ;
-            %self.Figure.update();  % Surely this is not necessary anymore,
+            %self.update();  % Surely this is not necessary anymore,
                                     % right?  -- ALT, 2016-09-12
         end
         
         function DOIsOnRadiobuttonsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOIsOnRadiobuttons) ;
+            isTheChannel = (source==self.DOIsOnRadiobuttons) ;
             i = find(isTheChannel) ;
-            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value') ;
+            newState = get(self.DOIsOnRadiobuttons(i),'value') ;
             value = self.Model_.DOChannelStateIfUntimed ;
             newValue = ws.replace(value, i, newState) ;
             % self.Model_.DOChannelStateIfUntimed = newValue ;
@@ -2110,7 +2143,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.DOIsMarkedForDeletionCheckboxes) ;
             %isChannelMarkedForDeletion = self.Model_.IsDOChannelMarkedForDeletion ;
             %isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             originalArray = self.Model_.IsDOChannelMarkedForDeletion ;

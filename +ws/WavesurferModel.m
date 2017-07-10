@@ -119,6 +119,7 @@ classdef WavesurferModel < ws.Model
         RowIndexFromAIChannelIndex
         RowIndexFromDIChannelIndex
         NRunsCompleted  % number of runs *completed* (not stopped or aborted) since WS was started
+        AIChannelDeviceNames
     end
     
     properties (Access=protected)
@@ -3105,57 +3106,6 @@ classdef WavesurferModel < ws.Model
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
             self.FastProtocols_ = ws.Coding.copyCellArrayOfHandles(source) ;
-        end  % function
-        
-        function setDeviceName_(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if ws.isString(newValue) && ~isempty(newValue) ,
-                    allDeviceNames = self.AllDeviceNames ;
-                    isAMatch = strcmpi(newValue,allDeviceNames) ;
-                    if any(isAMatch) ,
-                        iMatch = find(isAMatch,1) ;
-                        deviceName = allDeviceNames{iMatch} ;
-                        self.DeviceName_ = deviceName ;
-                        
-                        % Probe the device to find out its capabilities
-                        self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                        self.syncAvailableTimebaseSourcesFromDeviceName_() ;
-                        %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
-                        
-                        % Recalculate which digital terminals are now
-                        % overcommitted, since that also updates which are
-                        % out-of-range for the device
-                        self.syncIsAIChannelTerminalOvercommitted_() ;
-                        self.syncIsAOChannelTerminalOvercommitted_() ;
-                        self.syncIsDigitalChannelTerminalOvercommitted_() ;
-                        
-                        % Tell the subsystems that we've changed the device
-                        % name
-                        self.didSetDeviceName_(deviceName,  self.NCounters_, self.NPFITerminals_) ;
-                        
-                        % Change our state to reflect the presence of the
-                        % device
-                        self.setState_('idle') ;
-
-                        % Notify the satellites
-                        if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDeviceInFrontend', ...
-                                                    deviceName, ...
-                                                    self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
-                                                    self.IsDOChannelTerminalOvercommitted) ;
-                        end                        
-                    else
-                        self.broadcast('Update');
-                        error('ws:invalidPropertyValue', ...
-                              'DeviceName must be the name of an NI DAQmx device');       
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'DeviceName must be a nonempty string');       
-                end
-            end
-            self.broadcast('Update');
         end  % function        
     end  % protected methods block
     
@@ -3646,7 +3596,52 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function set.DeviceName(self, newValue)
-            self.setDeviceName_(newValue) ;
+            if ws.isString(newValue) && ~isempty(newValue) ,
+                allDeviceNames = self.AllDeviceNames ;
+                isAMatch = strcmpi(newValue,allDeviceNames) ;
+                if any(isAMatch) ,
+                    iMatch = find(isAMatch,1) ;
+                    deviceName = allDeviceNames{iMatch} ;
+                    self.DeviceName_ = deviceName ;
+
+                    % Probe the device to find out its capabilities
+                    self.syncDeviceResourceCountsFromDeviceName_() ;                        
+                    self.syncAvailableTimebaseSourcesFromDeviceName_() ;
+                    %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+
+                    % Recalculate which digital terminals are now
+                    % overcommitted, since that also updates which are
+                    % out-of-range for the device
+                    self.syncIsAIChannelTerminalOvercommitted_() ;
+                    self.syncIsAOChannelTerminalOvercommitted_() ;
+                    self.syncIsDigitalChannelTerminalOvercommitted_() ;
+
+                    % Tell the subsystems that we've changed the device
+                    % name
+                    self.didSetDeviceName_(deviceName,  self.NCounters_, self.NPFITerminals_) ;
+
+                    % Change our state to reflect the presence of the
+                    % device
+                    self.setState_('idle') ;
+
+                    % Notify the satellites
+                    if self.IsITheOneTrueWavesurferModel_ ,
+                        self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                                                deviceName, ...
+                                                self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
+                                                self.IsDOChannelTerminalOvercommitted) ;
+                    end                        
+                else
+                    self.broadcast('Update');
+                    error('ws:invalidPropertyValue', ...
+                          'DeviceName must be the name of an NI DAQmx device');       
+                end                        
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'DeviceName must be a nonempty string');       
+            end
+            self.broadcast('Update');
         end  % function
     end  % public methods block
     
@@ -4671,7 +4666,8 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function newChannelName = addAIChannel(self)
-            newChannelName = self.Acquisition_.addAnalogChannel_() ;            
+            allDeviceNames = self.AllDeviceNames ;
+            newChannelName = self.Acquisition_.addAnalogChannel_(allDeviceNames) ;            
             self.didAddAnalogInputChannel() ;
         end  % function
         
@@ -5829,5 +5825,19 @@ classdef WavesurferModel < ws.Model
             result = self.NRunsCompleted_ ;
         end
         
+        function result = get.AIChannelDeviceNames(self)
+            result = self.Acquisition_.AnalogDeviceNames ;
+        end
+        
+        function setSingleAIChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NAIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Acquisition_.setSingleAnalogDeviceName(i, newValue) ;
+            else                
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The AI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAIChannels);
+            end                
+            self.broadcast('UpdateChannels') ;
+        end  % function                
     end  % public methods
 end  % classdef

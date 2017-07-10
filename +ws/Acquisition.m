@@ -14,7 +14,7 @@ classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-%         AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
 %         DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogTerminalNames % the physical channel name for each analog channel
         DigitalTerminalNames  % the physical channel name for each digital channel
@@ -60,6 +60,7 @@ classdef Acquisition < ws.Subsystem
         SampleRate_ = 20000  % Hz
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
+        AnalogDeviceNames_ = cell(1,0) ;  % The device name for each analog channel
         AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         DigitalTerminalIDs_ = zeros(1,0)  % Store for the digital channel IDs, zero-based port0 channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
@@ -603,11 +604,9 @@ classdef Acquisition < ws.Subsystem
             self.SampleRate_ = newValue ;
         end  % function
         
-%         function out = get.AnalogDeviceNames(self)
-%             %out = self.AnalogDeviceNames_ ;
-%             deviceName = self.Parent.DeviceName ;
-%             out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
-%         end  % function
+        function result = get.AnalogDeviceNames(self)
+            result = self.AnalogDeviceNames_ ;
+        end  % function
 %         
 %         function out = get.DigitalDeviceNames(self)
 %             %out = self.DigitalDeviceNames_ ;
@@ -884,15 +883,27 @@ classdef Acquisition < ws.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function newChannelName = addAnalogChannel_(self)
+        function newChannelName = addAnalogChannel_(self, allDeviceNames)
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
-                                          0, ...
-                                          max(self.AnalogTerminalIDs)+1) ;
+                                   0, ...
+                                   max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AI%d',newTerminalID) ;
             newChannelName = newChannelPhysicalName ;
             
+            % Determine device name for the new channel
+            if self.NAnalogChannels==0 ,                
+                if isempty(allDeviceNames) ,                   
+                    deviceNameForNewChannel = 'Dev1' ;
+                else
+                    deviceNameForNewChannel = allDeviceNames{1} ;
+                end
+            else
+                deviceNameForNewChannel = self.AnalogDeviceNames_{1} ;
+            end
+            
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
+            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
@@ -914,6 +925,7 @@ classdef Acquisition < ws.Subsystem
                 %self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogTerminalIDs_ = zeros(1,0) ;
                 self.AnalogChannelNames_ = cell(1,0) ;
+                self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogChannelScales_ = zeros(1,0) ;
                 self.AnalogChannelUnits_ = cell(1,0) ;
                 self.IsAnalogChannelActive_ = true(1,0) ;
@@ -923,6 +935,7 @@ classdef Acquisition < ws.Subsystem
                 %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
@@ -934,7 +947,7 @@ classdef Acquisition < ws.Subsystem
             wasDeleted = isToBeDeleted ;
             %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function        
-    end
+    end  % public methods block
     
     methods (Access=protected)
         function sanitizePersistedState_(self)
@@ -947,6 +960,7 @@ classdef Acquisition < ws.Subsystem
             nAIChannels = length(self.AnalogChannelNames_) ;
             %self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAIChannels, {''}) ;
             self.AnalogTerminalIDs_ = ws.sanitizeRowVectorLength(self.AnalogTerminalIDs_, nAIChannels, 0) ;
+            self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAIChannels, {'Dev1'}) ;
             self.AnalogChannelScales_ = ws.sanitizeRowVectorLength(self.AnalogChannelScales_, nAIChannels, 1) ;
             self.AnalogChannelUnits_ = ws.sanitizeRowVectorLength(self.AnalogChannelUnits_, nAIChannels, {'V'}) ;
             self.IsAnalogChannelActive_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelActive_, nAIChannels, true) ;
@@ -971,4 +985,10 @@ classdef Acquisition < ws.Subsystem
         end  % function
     end  % protected methods block
 
+    methods
+        function setSingleAnalogDeviceName(self, i, newValue)
+            % Checking done by parent
+            self.AnalogDeviceNames_{i} = newValue ;
+        end  % function        
+    end  % public methods block
 end  % classdef
