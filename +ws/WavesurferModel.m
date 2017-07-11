@@ -120,6 +120,9 @@ classdef WavesurferModel < ws.Model
         RowIndexFromDIChannelIndex
         NRunsCompleted  % number of runs *completed* (not stopped or aborted) since WS was started
         AIChannelDeviceNames
+        AOChannelDeviceNames
+        DIChannelDeviceNames
+        DOChannelDeviceNames
     end
     
     properties (Access=protected)
@@ -2684,20 +2687,22 @@ classdef WavesurferModel < ws.Model
 %         end
         
         function channelName = addAOChannel(self)
-            channelName = self.Stimulation_.addAnalogChannel() ;
+            allDeviceNames = self.AllDeviceNames ;            
+            channelName = self.Stimulation_.addAnalogChannel(allDeviceNames) ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             self.Ephys_.didChangeNumberOfOutputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('UpdateStimulusLibrary') ;
         end
         
-        function addDIChannel(self)
+        function channelName = addDIChannel(self)
             freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-            self.Acquisition_.addDigitalChannel_(freeTerminalIDs) ;
+            allDeviceNames = self.AllDeviceNames ;
+            channelName = self.Acquisition_.addDigitalChannel_(freeTerminalIDs, allDeviceNames) ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             self.Display_.didAddDigitalInputChannel() ;
-            self.Ephys_.didChangeNumberOfInputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
+            self.Ephys_.didChangeNumberOfInputChannels() ;
+            self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
             self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
                                     self.IsDOChannelTerminalOvercommitted) ;
@@ -2790,7 +2795,8 @@ classdef WavesurferModel < ws.Model
         
         function addDOChannel(self)
             freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-            self.Stimulation_.addDigitalChannel_(freeTerminalIDs) ;
+            allDeviceNames = self.AllDeviceNames ;
+            self.Stimulation_.addDigitalChannel_(freeTerminalIDs, allDeviceNames) ;
             %self.Display_.didAddDigitalOutputChannel() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
             %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
@@ -5833,6 +5839,18 @@ classdef WavesurferModel < ws.Model
             result = self.Acquisition_.AnalogDeviceNames ;
         end
         
+        function result = get.AOChannelDeviceNames(self)
+            result = self.Stimulation_.AnalogDeviceNames ;
+        end
+        
+        function result = get.DIChannelDeviceNames(self)
+            result = self.Acquisition_.DigitalDeviceNames ;
+        end
+        
+        function result = get.DOChannelDeviceNames(self)
+            result = self.Stimulation_.DigitalDeviceNames ;
+        end
+        
         function setSingleAIChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
                 self.Acquisition_.setSingleAnalogDeviceName(i, newValue) ;
@@ -5843,5 +5861,39 @@ classdef WavesurferModel < ws.Model
             end                
             self.broadcast('UpdateChannels') ;
         end  % function                
+        
+        function setSingleDIChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NDIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Acquisition_.setSingleDigitalDeviceName(i, newValue) ;
+            else
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The DI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDIChannels);
+            end                
+            self.broadcast('UpdateChannels') ;
+        end  % function
+        
+        function setSingleAOChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NAOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Stimulation_.setSingleAnalogDeviceName(i, newValue) ;
+            else                
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The AO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAOChannels);
+            end                
+            self.broadcast('UpdateChannels') ;
+        end  % function                
+        
+        function setSingleDOChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NDOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Stimulation_.setSingleDigitalDeviceName(i, newValue) ;
+            else
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The DO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDOChannels);
+            end                
+            self.broadcast('UpdateChannels') ;
+        end  % function
+        
     end  % public methods
 end  % classdef

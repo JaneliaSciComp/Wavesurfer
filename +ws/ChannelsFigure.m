@@ -1487,7 +1487,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
-            %deviceNames=model.Stimulation.AnalogDeviceNames;  % cell array of strings
+            allDeviceNames = wsModel.AllDeviceNames ;
+            deviceNameForEachChannel = wsModel.AOChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.AOChannelTerminalNames ;
             allAOTerminalNames = wsModel.getAllAOTerminalNames() ;
             %terminalIDs=model.Stimulation.AnalogTerminalIDs;  % zero-based NI channel index
@@ -1502,9 +1503,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             for i=1:nAOChannels ,
                 set(self.AOChannelNameEdits(i), 'String', channelNames{i}, ...
                                                 'Enable', ws.onIff(isWavesurferIdle) );
+                ws.setPopupMenuItemsAndSelectionBang(self.AODeviceNamePopups(i), ...
+                                                     allDeviceNames, ...
+                                                     deviceNameForEachChannel{i});
                 ws.setPopupMenuItemsAndSelectionBang(self.AOTerminalNamePopups(i), ...
-                                                             allAOTerminalNames, ...
-                                                             terminalNameForEachChannel{i});
+                                                     allAOTerminalNames, ...
+                                                     terminalNameForEachChannel{i});
                 set(self.AOTerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
@@ -1533,7 +1537,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
-            %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
+            allDeviceNames = wsModel.AllDeviceNames ;
+            deviceNameForEachChannel = wsModel.DIChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.DIChannelTerminalNames ;
             allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
             channelNames=wsModel.DIChannelNames;
@@ -1542,9 +1547,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             for i=1:nDIChannels ,
                 set(self.DIChannelNameEdits(i), 'String', channelNames{i}, ...
                                                 'Enable', ws.onIff(isWavesurferIdle) );
+                ws.setPopupMenuItemsAndSelectionBang(self.DIDeviceNamePopups(i), ...
+                                                     allDeviceNames, ...
+                                                     deviceNameForEachChannel{i});
                 ws.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
-                                                             allTerminalNames, ...
-                                                             terminalNameForEachChannel{i});
+                                                     allTerminalNames, ...
+                                                     terminalNameForEachChannel{i});
                 set(self.DITerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
@@ -1570,7 +1578,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             wsModel=self.Model_;
             isWavesurferIdle=isequal(wsModel.State,'idle');
 
-            %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
+            allDeviceNames = wsModel.AllDeviceNames ;
+            deviceNameForEachChannel = wsModel.DOChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.DOChannelTerminalNames ;
             allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
             channelNames=wsModel.DOChannelNames;
@@ -1579,9 +1588,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             nDOs=length(self.DOChannelNameEdits);            
             for i=1:nDOs ,
                 set(self.DOChannelNameEdits(i), 'String', channelNames{i}, 'Enable', ws.onIff(isWavesurferIdle) );
+                ws.setPopupMenuItemsAndSelectionBang(self.DODeviceNamePopups(i), ...
+                                                     allDeviceNames, ...
+                                                     deviceNameForEachChannel{i});
                 ws.setPopupMenuItemsAndSelectionBang(self.DOTerminalNamePopups(i), ...
-                                                             allTerminalNames, ...
-                                                             terminalNameForEachChannel{i});
+                                                     allTerminalNames, ...
+                                                     terminalNameForEachChannel{i});
                 set(self.DOTerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
@@ -2032,6 +2044,15 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.Model_.do('setSingleAIChannelName', i, newString) ;
         end
         
+        function AIDeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.AllDeviceNames ;
+            choice = ws.getPopupMenuSelection(source, validChoices) ;
+            isTheChannel = (source==self.AIDeviceNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model_.do('setSingleAIChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+        end
+        
         function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can
             wavesurferModel = self.Model_ ;
@@ -2042,7 +2063,6 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            %self.Model_.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
@@ -2095,6 +2115,15 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             newString = get(self.AOChannelNameEdits(i),'String') ;
             %self.Model_.Stimulation.setSingleAnalogChannelName(i, newString) ;
             self.Model_.do('setSingleAOChannelName', i, newString) ;
+        end
+        
+        function AODeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.AllDeviceNames ;
+            choice = ws.getPopupMenuSelection(source, validChoices) ;
+            isTheChannel = (source==self.AODeviceNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model_.do('setSingleAOChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
         end
         
         function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
@@ -2155,6 +2184,15 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.Model_.do('setSingleDIChannelName', i, newString) ;
         end
         
+        function DIDeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.AllDeviceNames ;
+            choice = ws.getPopupMenuSelection(source, validChoices) ;
+            isTheChannel = (source==self.DIDeviceNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model_.do('setSingleDIChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+        end        
+        
         function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can
             wavesurferModel = self.Model_ ;
@@ -2200,6 +2238,15 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             %self.Model_.Stimulation.setSingleDigitalChannelName(i, newString) ;
             self.Model_.do('setSingleDOChannelName', i, newString) ;
         end
+        
+        function DODeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
+            wavesurferModel = self.Model_ ;
+            validChoices = wavesurferModel.AllDeviceNames ;
+            choice = ws.getPopupMenuSelection(source, validChoices) ;
+            isTheChannel = (source==self.DODeviceNamePopups) ;
+            iChannel = find(isTheChannel) ;
+            self.Model_.do('setSingleDOChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+        end        
         
         function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can

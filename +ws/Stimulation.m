@@ -20,8 +20,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
-        %AnalogDeviceNames
-        %DigitalDeviceNames
+        AnalogDeviceNames
+        DigitalDeviceNames
         AnalogTerminalNames % the physical channel name for each analog channel, e.g. 'AO0'
         DigitalTerminalNames  % the physical channel name for each digital channel, e.g. 'line0'
         TerminalNames
@@ -37,6 +37,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     
     properties (Access = protected)
         SampleRate_ = 20000  % Hz
+        AnalogDeviceNames_ = cell(1,0)  % the device name for each analog channel
+        DigitalDeviceNames_ = cell(1,0)  % the device name for each digital channel        
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
@@ -114,7 +116,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
         end
         
-        function addDigitalChannel_(self, freeTerminalIDs)
+        function addDigitalChannel_(self, freeTerminalIDs, allDeviceNames)
             %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
             %deviceName = self.Parent.DeviceName ;
             
@@ -128,7 +130,18 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             newChannelName = sprintf('P0.%d',newTerminalID) ;
             %newChannelName = newChannelPhysicalName ;
             
-            %self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            % Determine device name for the new channel
+            if self.NDigitalChannels==0 ,                
+                if isempty(allDeviceNames) ,                   
+                    deviceNameForNewChannel = 'Dev1' ;
+                else
+                    deviceNameForNewChannel = allDeviceNames{1} ;
+                end
+            else
+                deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
+            end
+            
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
@@ -156,14 +169,14 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             % Now do the real deleting
             if all(isToBeDeleted)
                 % Keep everything a row vector
-                %self.DigitalDeviceNames_ = cell(1,0) ;
+                self.DigitalDeviceNames_ = cell(1,0) ;
                 self.DigitalTerminalIDs_ = zeros(1,0) ;
                 self.DigitalChannelNames_ = cell(1,0) ;
                 self.IsDigitalChannelTimed_ = true(1,0) ;
                 self.DigitalOutputStateIfUntimed_ = false(1,0) ;
                 self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
             else
-                %self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
                 self.IsDigitalChannelTimed_ = self.IsDigitalChannelTimed_(isKeeper) ;
@@ -489,17 +502,28 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.AnalogChannelScales_(i) = newValue ;
         end  % function
         
-        function newChannelName = addAnalogChannel(self)
+        function newChannelName = addAnalogChannel(self, allDeviceNames)
             %deviceName = self.Parent.DeviceName ;
             
             %newChannelDeviceName = deviceName ;
             newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
-                                          0, ...
-                                          max(self.AnalogTerminalIDs)+1) ;
+                                   0, ...
+                                   max(self.AnalogTerminalIDs)+1) ;
             newChannelPhysicalName = sprintf('AO%d',newTerminalID) ;
             newChannelName = newChannelPhysicalName ;
             
-            %self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {newChannelDeviceName} ] ;
+            % Determine device name for the new channel
+            if self.NAnalogChannels==0 ,                
+                if isempty(allDeviceNames) ,                   
+                    deviceNameForNewChannel = 'Dev1' ;
+                else
+                    deviceNameForNewChannel = allDeviceNames{1} ;
+                end
+            else
+                deviceNameForNewChannel = self.AnalogDeviceNames_{1} ;
+            end
+            
+            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel} ] ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             %self.AnalogTerminalNames_ =  [self.AnalogTerminalNames_ {newChannelPhysicalName}] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
@@ -522,7 +546,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;
             if all(isToBeDeleted)
                 % Want everything to still be a row vector
-                %self.AnalogDeviceNames_ = cell(1,0) ;
+                self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogTerminalIDs_ = zeros(1,0) ;
                 self.AnalogChannelNames_ = cell(1,0) ;
                 self.AnalogChannelScales_ = zeros(1,0) ;
@@ -530,7 +554,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                 self.IsAnalogChannelMarkedForDeletion_ = false(1,0) ;
             else
                 isKeeper = ~isToBeDeleted ;
-                %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
@@ -623,12 +647,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
-            % This is often useful to provide backwards compatibility
+            % This is often useful to provide backwards compatibility.
             
             % the length of AnalogChannelNames_ is the "true" number of AI
             % channels
             nAOChannels = length(self.AnalogChannelNames_) ;
-            %self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAOChannels, {''}) ;
+            self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAOChannels, {'Dev1'}) ;
             self.AnalogTerminalIDs_ = ws.sanitizeRowVectorLength(self.AnalogTerminalIDs_, nAOChannels, 0) ;
             self.AnalogChannelScales_ = ws.sanitizeRowVectorLength(self.AnalogChannelScales_, nAOChannels, 1) ;
             self.AnalogChannelUnits_ = ws.sanitizeRowVectorLength(self.AnalogChannelUnits_, nAOChannels, {'V'}) ;
@@ -636,7 +660,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.IsAnalogChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelMarkedForDeletion_, nAOChannels, false) ;
             
             nDOChannels = length(self.DigitalChannelNames_) ;
-            %self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDOChannels, {''}) ;
+            self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDOChannels, {'Dev1'}) ;
             self.DigitalTerminalIDs_ = ws.sanitizeRowVectorLength(self.DigitalTerminalIDs_, nDOChannels, 0) ;
             self.IsDigitalChannelTimed_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelTimed_, nDOChannels, true) ;
             self.DigitalOutputStateIfUntimed_ = ws.sanitizeRowVectorLength(self.DigitalOutputStateIfUntimed_, nDOChannels, false) ;            
@@ -862,6 +886,25 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             result = self.StimulusLibrary_.isSelfConsistent() ;
         end
         
+        function result = get.AnalogDeviceNames(self)
+            result = self.AnalogDeviceNames_ ;
+        end  % function
+        
+        function result = get.DigitalDeviceNames(self)
+            result = self.DigitalDeviceNames_ ;
+        end  % function        
     end  % public methods block    
+    
+    methods
+        function setSingleAnalogDeviceName(self, i, newValue)
+            % Checking done by parent
+            self.AnalogDeviceNames_{i} = newValue ;
+        end  % function        
+        
+        function setSingleDigitalDeviceName(self, i, newValue)
+            % Checking done by parent
+            self.DigitalDeviceNames_{i} = newValue ;
+        end  % function                
+    end  % public methods block
     
 end  % classdef
