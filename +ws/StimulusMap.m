@@ -339,7 +339,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end        
         
         function nullGivenTargetInAllBindings(self, targetStimulusIndex)
-            % Set all occurances of targetStimulusIndex in the bindings to []
+            % Set all occurences of targetStimulusIndex in the bindings to []
             for i = 1:self.NBindings ,
                 thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
                 if thisStimulusIndex==targetStimulusIndex ,

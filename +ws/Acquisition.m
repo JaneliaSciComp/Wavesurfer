@@ -196,29 +196,29 @@ classdef Acquisition < ws.Subsystem
 %     end  % methods block    
     
     methods
-        function newChannelName = addDigitalChannel_(self, freeTerminalIDs, allDeviceNames)
+        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
             %deviceName = self.Parent.DeviceName ;
             
-            %newChannelDeviceName = deviceName ;
-            %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
+%             %newChannelDeviceName = deviceName ;
+%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+%             if isempty(freeTerminalIDs) ,
+%                 return  % can't add a new one, because no free IDs
+%             else
+%                 newTerminalID = freeTerminalIDs(1) ;
+%             end
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            % Determine device name for the new channel
-            if self.NDigitalChannels==0 ,                
-                if isempty(allDeviceNames) ,                   
-                    deviceNameForNewChannel = 'Dev1' ;
-                else
-                    deviceNameForNewChannel = allDeviceNames{1} ;
-                end
-            else
-                deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
-            end            
+%             %newChannelName = newChannelPhysicalName ;
+%             
+%             % Determine device name for the new channel
+%             if self.NDigitalChannels==0 ,                
+%                 if isempty(allDeviceNames) ,                   
+%                     deviceNameForNewChannel = 'Dev1' ;
+%                 else
+%                     deviceNameForNewChannel = allDeviceNames{1} ;
+%                 end
+%             else
+%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
+%             end            
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
@@ -231,6 +231,8 @@ classdef Acquisition < ws.Subsystem
             self.updateActiveChannelIndexFromChannelIndex_() ;
             %self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
+            
+            newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
         
         function wasDeleted = deleteMarkedDigitalChannels_(self)
@@ -893,24 +895,8 @@ classdef Acquisition < ws.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function newChannelName = addAnalogChannel_(self, allDeviceNames)
-            newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
-                                   0, ...
-                                   max(self.AnalogTerminalIDs)+1) ;
-            newChannelPhysicalName = sprintf('AI%d',newTerminalID) ;
-            newChannelName = newChannelPhysicalName ;
-            
-            % Determine device name for the new channel
-            if self.NAnalogChannels==0 ,                
-                if isempty(allDeviceNames) ,                   
-                    deviceNameForNewChannel = 'Dev1' ;
-                else
-                    deviceNameForNewChannel = allDeviceNames{1} ;
-                end
-            else
-                deviceNameForNewChannel = self.AnalogDeviceNames_{1} ;
-            end
-            
+        function newChannelIndex = addAnalogChannel_(self, deviceNameForNewChannel, newTerminalID)
+            newChannelName = sprintf('AI%d',newTerminalID) ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel}] ;
@@ -920,7 +906,7 @@ classdef Acquisition < ws.Subsystem
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             self.updateActiveChannelIndexFromChannelIndex_() ;
             
-            %self.Parent.didAddAnalogInputChannel() ;
+            newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
         function wasDeleted = deleteMarkedAnalogChannels_(self)

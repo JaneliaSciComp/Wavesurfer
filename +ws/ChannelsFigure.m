@@ -1438,9 +1438,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
 
             %deviceNames=model.Acquisition.AnalogDeviceNames;  % cell array of strings
             deviceNameForEachChannel = wsModel.AIChannelDeviceNames ;
-            allDeviceNames = wsModel.AllDeviceNames ;
             terminalNameForEachChannel = wsModel.AIChannelTerminalNames ;
-            allAITerminalNames = wsModel.getAllAITerminalNames() ;
+            allDeviceNames = wsModel.AllDeviceNames ;
+            %allAITerminalNames = wsModel.getAllAITerminalNames() ;
             %terminalIDs=model.Acquisition.AnalogTerminalIDs;  % zero-based NI channel index
             channelNames = wsModel.AIChannelNames ;
             channelScales = wsModel.AIChannelScales ;
@@ -1456,26 +1456,28 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 ws.setPopupMenuItemsAndSelectionBang(self.AIDeviceNamePopups(i), ...
                                                      allDeviceNames, ...
                                                      deviceNameForEachChannel{i});
+                deviceName = deviceNameForEachChannel{i} ;                           
+                allAITerminalNames = wsModel.getAllAITerminalNames(deviceName) ;
                 ws.setPopupMenuItemsAndSelectionBang(self.AITerminalNamePopups(i), ...
                                                      allAITerminalNames, ...
-                                                     terminalNameForEachChannel{i});
+                                                     terminalNameForEachChannel{i}) ;
                 set(self.AITerminalNamePopups(i) , ...
                     'BackgroundColor',ws.fif(isTerminalOvercommitted(i),warningBackgroundColor,normalBackgroundColor), ...
                     'Enable', ws.onIff(isWavesurferIdle) ) ;
                 set(self.AIUnitsEdits(i),'String',channelUnits{i}, ...
-                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i))) ;
                 set(self.AIScaleEdits(i),'String',sprintf('%g',channelScales(i)), ...
-                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i)));
+                                         'Enable',ws.onIff(isWavesurferIdle&&~isChannelScaleEnslaved(i))) ;
                 set(self.AIScaleUnitsTexts(i),'String',sprintf('V/%s',channelUnits{i})) ;
                 set(self.AIIsActiveCheckboxes(i),'Value',self.Model_.IsAIChannelActive(i), ...
-                                                 'Enable',ws.onIff(isWavesurferIdle));                                     
+                                                 'Enable',ws.onIff(isWavesurferIdle)) ;                                     
                 set(self.AIIsMarkedForDeletionCheckboxes(i),'Value',self.Model_.IsAIChannelMarkedForDeletion(i), ...
-                                                            'Enable',ws.onIff(isWavesurferIdle));                                     
-            end            
+                                                            'Enable',ws.onIff(isWavesurferIdle)) ;                                     
+            end
             
             % Deal with enablement of add/delete buttons
-            nAITerminals = wsModel.NAITerminals ;   
-            areAnyFreeAITerminals =  (nAIs<nAITerminals) ;
+            nAITerminalsTotal = sum(wsModel.NAITerminalsPerDevice) ;
+            areAnyFreeAITerminals = (nAIs<nAITerminalsTotal) ;
             isAIChannelMarkedForDeletion = wsModel.IsAIChannelMarkedForDeletion ;
             isAnyAIChannelMarkedForDeletion = any(isAIChannelMarkedForDeletion) ;
             set(self.AddAIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areAnyFreeAITerminals)) ;
@@ -1490,7 +1492,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             allDeviceNames = wsModel.AllDeviceNames ;
             deviceNameForEachChannel = wsModel.AOChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.AOChannelTerminalNames ;
-            allAOTerminalNames = wsModel.getAllAOTerminalNames() ;
+            %allAOTerminalNames = wsModel.getAllAOTerminalNames() ;
             %terminalIDs=model.Stimulation.AnalogTerminalIDs;  % zero-based NI channel index
             channelNames=wsModel.AOChannelNames;
             channelScales=wsModel.AOChannelScales;
@@ -1506,6 +1508,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 ws.setPopupMenuItemsAndSelectionBang(self.AODeviceNamePopups(i), ...
                                                      allDeviceNames, ...
                                                      deviceNameForEachChannel{i});
+                deviceName = deviceNameForEachChannel{i} ;
+                allAOTerminalNames = wsModel.getAllAOTerminalNames(deviceName) ;                                                 
                 ws.setPopupMenuItemsAndSelectionBang(self.AOTerminalNamePopups(i), ...
                                                      allAOTerminalNames, ...
                                                      terminalNameForEachChannel{i});
@@ -1524,7 +1528,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             end
             
             % Deal with enablement of add/delete buttons
-            nAOTerminals = wsModel.NAOTerminals ;   
+            nAOTerminals = sum(wsModel.NAOTerminalsPerDevice) ;   
             areAnyFreeAOTerminals =  (nAOChannels<nAOTerminals) ;
             isAOChannelMarkedForDeletion = wsModel.IsAOChannelMarkedForDeletion ;
             isAnyAOChannelMarkedForDeletion = any(isAOChannelMarkedForDeletion) ;
@@ -1540,7 +1544,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             allDeviceNames = wsModel.AllDeviceNames ;
             deviceNameForEachChannel = wsModel.DIChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.DIChannelTerminalNames ;
-            allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
+            %allTerminalNames = wsModel.getAllDIOTerminalNames() ;
             channelNames=wsModel.DIChannelNames;
             isTerminalOvercommitted = wsModel.IsDIChannelTerminalOvercommitted ;
             nDIChannels=length(self.DIChannelNameEdits);            
@@ -1550,6 +1554,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 ws.setPopupMenuItemsAndSelectionBang(self.DIDeviceNamePopups(i), ...
                                                      allDeviceNames, ...
                                                      deviceNameForEachChannel{i});
+                deviceName = deviceNameForEachChannel{i} ;
+                allTerminalNames = wsModel.getAllDIOTerminalNames(deviceName) ;                                                 
                 ws.setPopupMenuItemsAndSelectionBang(self.DITerminalNamePopups(i), ...
                                                      allTerminalNames, ...
                                                      terminalNameForEachChannel{i});
@@ -1563,9 +1569,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = wsModel.NDIOTerminals ;   
-            nDigitalChannels = wsModel.NDigitalChannels ;
-            areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;
+            nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
+            nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels ;
+            areFewerDigitalChannelsThanDIOTerminals = (nDigitalChannels<nDIOTerminals) ;
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDIChannelMarkedForDeletion = wsModel.IsDIChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
@@ -1581,7 +1587,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             allDeviceNames = wsModel.AllDeviceNames ;
             deviceNameForEachChannel = wsModel.DOChannelDeviceNames ;
             terminalNameForEachChannel = wsModel.DOChannelTerminalNames ;
-            allTerminalNames = wsModel.getAllDigitalTerminalNames() ;
+            %allTerminalNames = wsModel.getAllDIOTerminalNames() ;
             channelNames=wsModel.DOChannelNames;
             isTimed = wsModel.IsDOChannelTimed ;
             isTerminalOvercommitted = wsModel.IsDOChannelTerminalOvercommitted ;
@@ -1591,6 +1597,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                 ws.setPopupMenuItemsAndSelectionBang(self.DODeviceNamePopups(i), ...
                                                      allDeviceNames, ...
                                                      deviceNameForEachChannel{i});
+                deviceName = deviceNameForEachChannel{i} ;
+                allTerminalNames = wsModel.getAllDIOTerminalNames(deviceName) ;                                                 
                 ws.setPopupMenuItemsAndSelectionBang(self.DOTerminalNamePopups(i), ...
                                                      allTerminalNames, ...
                                                      terminalNameForEachChannel{i});
@@ -1606,8 +1614,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = wsModel.NDIOTerminals ;   
-            nDigitalChannels = wsModel.NDigitalChannels ;
+            nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
+            nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels;
             areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDOChannelMarkedForDeletion = wsModel.IsDOChannelMarkedForDeletion ;
@@ -2055,15 +2063,15 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         
         function AITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.getAllAITerminalNames() ;
+            %wavesurferModel = self.Model_ ;
+            %validChoices = wavesurferModel.getAllAITerminalNames() ;
             % Do the rest
-            choice=ws.getPopupMenuSelection(source,validChoices);
-            terminalIDAsString = choice(3:end) ;
-            terminalID = str2double(terminalIDAsString) ;            
+            choice = ws.getPopupMenuSelection(source) ;
+            %terminalIDAsString = choice(3:end) ;
+            %terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
-            self.Model_.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleAIChannelTerminalName', iChannel, choice) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -2126,18 +2134,18 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.Model_.do('setSingleAOChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
         end
         
-        function AOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+        function AOTerminalNamePopupsActuated(self, source, event)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.getAllAOTerminalNames() ;
+            %wavesurferModel = self.Model_ ;
+            %validChoices = wavesurferModel.getAllAOTerminalNames() ;
             % Do the rest
-            choice=ws.getPopupMenuSelection(source,validChoices);
-            terminalIDAsString = choice(3:end) ;
-            terminalID = str2double(terminalIDAsString) ;            
+            choice = ws.getPopupMenuSelection(source) ;
+            %terminalIDAsString = choice(3:end) ;
+            %terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.AOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model_.do('setSingleAOTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleAOChannelTerminalName', iChannel, choice) ;  %#ok<FNDSB>
         end
         
         function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
@@ -2193,18 +2201,18 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.Model_.do('setSingleDIChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
         end        
         
-        function DITerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
+        function DITerminalNamePopupsActuated(self, source, event)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            %wavesurferModel = self.Model_ ;
+            %validChoices = wavesurferModel.getAllDIOTerminalNames() ;
             % Do the rest
-            choice=ws.getPopupMenuSelection(source,validChoices);
-            terminalIDAsString = choice(4:end) ;
-            terminalID = str2double(terminalIDAsString) ;            
+            terminalName = ws.getPopupMenuSelection(source) ;
+            %terminalIDAsString = terminalName(4:end) ;
+            %terminalID = str2double(terminalIDAsString) ;
             isTheChannel = (source==self.DITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDIChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model_.do('setSingleDIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleDIChannelTerminalName', iChannel, terminalName) ;  %#ok<FNDSB>
         end
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
@@ -2250,16 +2258,16 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         
         function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>
             % Get the list of valid choices, if we can
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.getAllDigitalTerminalNames() ;
+            %wavesurferModel = self.Model_ ;
+            %validChoices = wavesurferModel.getAllDIOTerminalNames() ;
             % Do the rest
-            choice=ws.getPopupMenuSelection(source,validChoices);
-            terminalIDAsString = choice(4:end) ;
-            terminalID = str2double(terminalIDAsString) ;            
+            terminalName = ws.getPopupMenuSelection(source) ;
+            %terminalIDAsString = terminalName(4:end) ;
+            %terminalID = str2double(terminalIDAsString) ;            
             isTheChannel = (source==self.DOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDOChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
-            self.Model_.do('setSingleDOChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
+            self.Model_.do('setSingleDOChannelTerminalName', iChannel, terminalName) ;  %#ok<FNDSB>
         end
         
         function DOIsTimedCheckboxesActuated(self, source, event)  %#ok<INUSD>

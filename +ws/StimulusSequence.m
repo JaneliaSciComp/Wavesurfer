@@ -139,7 +139,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %         end   % function        
         
         function nullGivenTargetInAllBindings(self, targetMapIndex)
-            % Set all occurances of targetStimulusIndex in the bindings to []
+            % Set all occurences of targetStimulusIndex in the bindings to []
             for i = 1:self.NBindings ,
                 thisMapIndex = self.IndexOfEachMapInLibrary_{i} ;
                 if thisMapIndex==targetMapIndex ,

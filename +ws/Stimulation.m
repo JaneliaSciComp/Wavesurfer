@@ -116,30 +116,30 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
         end
         
-        function addDigitalChannel_(self, freeTerminalIDs, allDeviceNames)
+        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
             %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
             %deviceName = self.Parent.DeviceName ;
             
-            %newChannelDeviceName = deviceName ;
-            %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
+%             %newChannelDeviceName = deviceName ;
+%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+%             if isempty(freeTerminalIDs) ,
+%                 return  % can't add a new one, because no free IDs
+%             else
+%                 newTerminalID = freeTerminalIDs(1) ;
+%             end
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
-            
-            % Determine device name for the new channel
-            if self.NDigitalChannels==0 ,                
-                if isempty(allDeviceNames) ,                   
-                    deviceNameForNewChannel = 'Dev1' ;
-                else
-                    deviceNameForNewChannel = allDeviceNames{1} ;
-                end
-            else
-                deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
-            end
+%             %newChannelName = newChannelPhysicalName ;
+%             
+%             % Determine device name for the new channel
+%             if self.NDigitalChannels==0 ,                
+%                 if isempty(allDeviceNames) ,                   
+%                     deviceNameForNewChannel = 'Dev1' ;
+%                 else
+%                     deviceNameForNewChannel = allDeviceNames{1} ;
+%                 end
+%             else
+%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
+%             end
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
@@ -152,6 +152,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
             %self.broadcast('DidChangeNumberOfChannels');            
             %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
+            
+            newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
         
         function deleteMarkedDigitalChannels_(self, isToBeDeleted)
@@ -502,41 +504,17 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.AnalogChannelScales_(i) = newValue ;
         end  % function
         
-        function newChannelName = addAnalogChannel(self, allDeviceNames)
-            %deviceName = self.Parent.DeviceName ;
-            
-            %newChannelDeviceName = deviceName ;
-            newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
-                                   0, ...
-                                   max(self.AnalogTerminalIDs)+1) ;
-            newChannelPhysicalName = sprintf('AO%d',newTerminalID) ;
-            newChannelName = newChannelPhysicalName ;
-            
-            % Determine device name for the new channel
-            if self.NAnalogChannels==0 ,                
-                if isempty(allDeviceNames) ,                   
-                    deviceNameForNewChannel = 'Dev1' ;
-                else
-                    deviceNameForNewChannel = allDeviceNames{1} ;
-                end
-            else
-                deviceNameForNewChannel = self.AnalogDeviceNames_{1} ;
-            end
+        function newChannelIndex = addAnalogChannel(self, deviceNameForNewChannel, newTerminalID)
+            newChannelName = sprintf('AO%d',newTerminalID) ;
             
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel} ] ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
-            %self.AnalogTerminalNames_ =  [self.AnalogTerminalNames_ {newChannelPhysicalName}] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
-            %self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
-            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             
-            %self.Parent.didAddAnalogOutputChannel() ;
-            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-            
-            %self.broadcast('DidChangeNumberOfChannels');            
+            newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
         function wasDeleted = deleteMarkedAnalogChannels_(self)
