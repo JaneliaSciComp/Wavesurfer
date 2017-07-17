@@ -100,21 +100,15 @@ classdef InputTask < handle
             % after adding channels)
             if nChannels>0 ,
                 for i=1:nChannels ,
-                    %terminalName = terminalNames{i} ;
                     deviceName = deviceNames{i} ;
                     terminalID = terminalIDs(i) ;
-                    %channelName = channelNames{i} ;
                     if self.IsAnalog ,
-                        %deviceName = ws.deviceNameFromTerminalName(terminalName);
-                        %terminalID = ws.terminalIDFromTerminalName(terminalName);
                         if doUseDefaultTermination ,
                             self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', []);
                         else                            
                             self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', [], 'DAQmx_Val_Diff');
                         end
                     else
-                        %deviceName = ws.deviceNameFromTerminalName(terminalName);
-                        %restOfName = ws.chopDeviceNameFromTerminalName(terminalName);
                         lineName = sprintf('line%d',terminalID) ;
                         self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
                     end

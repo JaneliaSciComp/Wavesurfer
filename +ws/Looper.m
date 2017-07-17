@@ -10,18 +10,19 @@ classdef Looper < handle
     end
     
     properties (Access = protected)        
-        DeviceName_ = ''
+        %DeviceName_ = ''
         TimebaseSource_ = []
         TimebaseRate_ = []
-        NDIOTerminals_ = 0
-        NPFITerminals_ = 0
-        NCounters_ = 0
-        NAITerminals_ = 0
-        AITerminalIDsOnDevice_ = cell(1,0)
-        NAOTerminals_ = 0 ;            
+        %NDIOTerminals_ = 0
+        %NPFITerminals_ = 0
+        %NCounters_ = 0
+        %NAITerminals_ = 0
+        %AITerminalIDsOnDevice_ = cell(1,0)
+        %NAOTerminals_ = 0 ;            
         NSweepsPerRun_ = 1
         SweepDuration_ = [] 
-        DOTerminalIDs_ = zeros(1,0)
+        DOChannelDeviceNames_ = cell(1,0)
+        DOChannelTerminalIDs_ = zeros(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
         IsDOChannelTimed_ = false(1,0)     
         DOChannelNames_ = cell(1,0)
@@ -29,11 +30,13 @@ classdef Looper < handle
         AIChannelNames_ = cell(1,0)
         AIChannelScales_ = zeros(1,0)
         IsAIChannelActive_ = false(1,0)
-        AITerminalIDs_ = zeros(1,0)
+        AIChannelDeviceNames_ = cell(1,0)
+        AIChannelTerminalIDs_ = zeros(1,0)
             
         DIChannelNames_ = cell(1,0)
         IsDIChannelActive_ = false(1,0)
-        DITerminalIDs_ = zeros(1,0)
+        DIChannelDeviceNames_ = cell(1,0)
+        DIChannelTerminalIDs_ = zeros(1,0)
             
         DataCacheDurationWhenContinuous_ = []
         
@@ -218,17 +221,15 @@ classdef Looper < handle
         
     methods  % RPC methods block
         function result = didSetDeviceInFrontend(self, ...
-                                                 deviceName, ...
-                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
                                                  isDOChannelTerminalOvercommitted)
             % Set stuff
-            self.DeviceName_ = deviceName ;
-            self.NDIOTerminals_ = nDIOTerminals ;
-            self.NPFITerminals_ = nPFITerminals ;
-            self.NCounters_ = nCounters ;
-            self.NAITerminals_ = nAITerminals ;
-            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-            self.NAOTerminals_ = nAOTerminals ;            
+            %self.DeviceName_ = deviceName ;
+            %self.NDIOTerminals_ = nDIOTerminals ;
+            %self.NPFITerminals_ = nPFITerminals ;
+            %self.NCounters_ = nCounters ;
+            %self.NAITerminals_ = nAITerminals ;
+            %self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+            %self.NAOTerminals_ = nAOTerminals ;            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Get a task, if we need one
@@ -325,7 +326,7 @@ classdef Looper < handle
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
                                                                         isDOChannelTerminalOvercommitted)
-            self.DOTerminalIDs_(i) = newValue ;
+            self.DOChannelTerminalIDs_(i) = newValue ;
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
@@ -461,7 +462,7 @@ classdef Looper < handle
             end
         end  % function
         
-        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
+        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self, timeSinceSweepStart)
             %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             self.IPCSubscriber_.processMessagesIfAvailable() ;
@@ -509,13 +510,10 @@ classdef Looper < handle
                 
                 % Get the digital device names and terminal IDs, other
                 % things out of self
-                deviceName = self.DeviceName_ ;
-                deviceNameForEachDOChannel = repmat({deviceName},size(self.DOTerminalIDs_)) ;
-                terminalIDForEachDOChannel = self.DOTerminalIDs_ ;
-                %if length(deviceNameForEachDigitalChannel) ~= length(terminalIDForEachDigitalChannel) ,
-                %    self
-                %    keyboard
-                %end
+                %deviceName = self.DeviceName_ ;
+                %deviceNameForEachDOChannel = repmat({deviceName},size(self.DOChannelTerminalIDs_)) ;
+                deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
+                terminalIDForEachDOChannel = self.DOChannelTerminalIDs_ ;
                 
                 onDemandOutputStateForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
@@ -599,9 +597,8 @@ classdef Looper < handle
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
             self.releaseTimedHardwareResources_() ;           
-            %wsModel = ws.Coding.decodeEncodingContainer(looperProtocol) ;
-            %self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
-            self.setLooperProtocol_(looperProtocol) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            self.setLooperProtocol_(looperProtocol) ;  
+              % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
             self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
@@ -888,14 +885,17 @@ classdef Looper < handle
             self.AIChannelNames_ = looperProtocol.AIChannelNames ;
             self.AIChannelScales_ = looperProtocol.AIChannelScales ;
             self.IsAIChannelActive_ = looperProtocol.IsAIChannelActive ;
-            self.AITerminalIDs_ = looperProtocol.AITerminalIDs ;
+            self.AIChannelDeviceNames_ = looperProtocol.AIChannelDeviceNames ;
+            self.AIChannelTerminalIDs_ = looperProtocol.AIChannelTerminalIDs ;
             
             self.DIChannelNames_ = looperProtocol.DIChannelNames ;
             self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
-            self.DITerminalIDs_ = looperProtocol.DITerminalIDs ;
+            self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
+            self.DIChannelTerminalIDs_ = looperProtocol.DIChannelTerminalIDs ;
             
             self.DOChannelNames_ = looperProtocol.DOChannelNames ;
-            self.DOTerminalIDs_ = looperProtocol.DOTerminalIDs ;
+            self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
+            self.DOChannelTerminalIDs_ = looperProtocol.DOChannelTerminalIDs ;
             self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
             self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
             
@@ -915,7 +915,7 @@ classdef Looper < handle
                                                      onDemandOutputForEachDOChannel)
             self.DOChannelNames_ = channelNameForEachDOChannel ;
             %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
-            self.DOTerminalIDs_ = terminalIDForEachDOChannel ;
+            self.DOChannelTerminalIDs_ = terminalIDForEachDOChannel ;
             self.IsDOChannelTimed_ = isTimedForEachDOChannel ;
             self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
             self.reacquireOnDemandHardwareResources_() ;
@@ -930,11 +930,10 @@ classdef Looper < handle
             if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAIChannelActive = self.IsAIChannelActive_ ;
-                %activeAIChannelNames = self.AIChannelNames(isAIChannelActive) ;
-                %activeAnalogTerminalNames = self.AnalogTerminalNames(isAIChannelActive) ;
-                aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                aiDeviceNames = self.AIChannelDeviceNames_ ;                
                 activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
-                activeAITerminalIDs = self.AITerminalIDs_(isAIChannelActive) ;
+                activeAITerminalIDs = self.AIChannelTerminalIDs_(isAIChannelActive) ;
                 self.TimedAnalogInputTask_ = ...
                     ws.InputTask(self, ...
                                  'analog', ...
@@ -950,11 +949,10 @@ classdef Looper < handle
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
                 isDIChannelActive = self.IsDIChannelActive_ ;
-                %activeDIChannelNames = self.DIChannelNames(isDIChannelActive) ;                
-                %activeDigitalTerminalNames = self.DigitalTerminalNames(isDIChannelActive) ;                
-                diDeviceNames = repmat({self.DeviceName_}, size(isDIChannelActive)) ;
+                %diDeviceNames = repmat({self.DeviceName_}, size(isDIChannelActive)) ;
+                diDeviceNames = self.DIChannelDeviceNames_ ;          
                 activeDIDeviceNames = diDeviceNames(isDIChannelActive) ;
-                activeDITerminalIDs = self.DITerminalIDs_(isDIChannelActive) ;
+                activeDITerminalIDs = self.DIChannelTerminalIDs_(isDIChannelActive) ;
                 self.TimedDigitalInputTask_ = ...
                     ws.InputTask(self, ...
                                  'digital', ...

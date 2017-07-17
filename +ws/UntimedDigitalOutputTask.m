@@ -41,9 +41,9 @@ classdef UntimedDigitalOutputTask < handle
                                     
             % Create the task, channels
             if nChannels==0 ,
-                self.DabsDaqTask_ = [];
+                self.DabsDaqTask_ = [] ;
             else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
             end            
             
             % Store this stuff

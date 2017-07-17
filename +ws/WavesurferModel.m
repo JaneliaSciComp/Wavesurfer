@@ -123,6 +123,10 @@ classdef WavesurferModel < ws.Model
         AOChannelDeviceNames
         DIChannelDeviceNames
         DOChannelDeviceNames
+        AIChannelTerminalIDs
+        AOChannelTerminalIDs
+        DIChannelTerminalIDs
+        DOChannelTerminalIDs
     end
     
     properties (Access=protected)
@@ -2908,15 +2912,15 @@ classdef WavesurferModel < ws.Model
                 % this means the device name does not specify a currently-valid device name
                 nCounters = 0 ;
                 nPFITerminals = 0 ;
-                nAITerminals = 0 ;
-                nAOTerminals = 0 ;                                    
-                nDIOTerminals = 0 ;
+                %nAITerminals = 0 ;
+                %nAOTerminals = 0 ;                                    
+                %nDIOTerminals = 0 ;
             else
                 nCounters = self.NCountersPerDevice_(deviceIndex) ;                
                 nPFITerminals = self.NPFITerminalsPerDevice_(deviceIndex) ;                
-                nAITerminals = self.NAITerminalsPerDevice_(deviceIndex) ;
-                nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
-                nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
+                %nAITerminals = self.NAITerminalsPerDevice_(deviceIndex) ;
+                %nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
+                %nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
             end
             self.didSetDeviceName_(deviceName, nCounters, nPFITerminals) ;  
                 % Old protocol files don't store the 
@@ -2936,9 +2940,7 @@ classdef WavesurferModel < ws.Model
             if self.IsITheOneTrueWavesurferModel_ ,
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
                 self.IPCPublisher_.send('didSetDeviceInFrontend', ...
-                                        deviceName, ...
-                                        nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
-                                        isTerminalOvercommittedForEachDOChannel) ;                
+                                        isTerminalOvercommittedForEachDOChannel) ;
                 %wavesurferModelSettings = self.encodeForPersistence() ;
                 looperProtocol = self.getLooperProtocol_() ;
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
@@ -3361,14 +3363,17 @@ classdef WavesurferModel < ws.Model
             looperProtocol.AIChannelNames = self.AIChannelNames ;
             looperProtocol.AIChannelScales = self.AIChannelScales ;
             looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
-            looperProtocol.AITerminalIDs = self.Acquisition_.AnalogTerminalIDs ;
+            looperProtocol.AIChannelDeviceNames = self.AIChannelDeviceNames ;
+            looperProtocol.AIChannelTerminalIDs = self.AIChannelTerminalIDs ;
             
             looperProtocol.DIChannelNames = self.DIChannelNames ;
             looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-            looperProtocol.DITerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
+            looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
+            looperProtocol.DIChannelTerminalIDs = self.DIChannelTerminalIDs ;
             
             looperProtocol.DOChannelNames = self.DOChannelNames ;
-            looperProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
+            looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            looperProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
             
@@ -3379,14 +3384,11 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             looperProtocol.TheUserObject = self.TheUserObject ;
-            
-            %s = whos('looperProtocol') ;
-            %looperProtocolSizeInBytes = s.bytes
         end  % method
         
         function refillerProtocol = getRefillerProtocol_(self)
             refillerProtocol = struct() ;
-            refillerProtocol.DeviceName = self.DeviceName ;
+            %refillerProtocol.DeviceName = self.DeviceName ;
             refillerProtocol.TimebaseSource = self.TimebaseSource ;
             refillerProtocol.TimebaseRate = self.TimebaseRate ;
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
@@ -3395,11 +3397,13 @@ classdef WavesurferModel < ws.Model
 
             refillerProtocol.AOChannelNames = self.Stimulation_.AnalogChannelNames ;
             refillerProtocol.AOChannelScales = self.AOChannelScales ;
-            refillerProtocol.AOTerminalIDs = self.Stimulation_.AnalogTerminalIDs ;
+            refillerProtocol.AOChannelDeviceNames = self.AOChannelDeviceNames ;
+            refillerProtocol.AOChannelTerminalIDs = self.AOChannelTerminalIDs ;
             
             refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
             refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            refillerProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
+            refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            refillerProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
             refillerProtocol.StimulationTrigger = self.Triggering_.getStimulationTriggerCopy() ;            
@@ -3413,9 +3417,6 @@ classdef WavesurferModel < ws.Model
             
             refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             refillerProtocol.TheUserObject = self.TheUserObject ;
-            
-            %s = whos('refillerProtocol') ;
-            %refillerProtocolSizeInBytes = s.bytes
         end  % method        
     end  % protected methods block
     
@@ -3485,13 +3486,11 @@ classdef WavesurferModel < ws.Model
                     self.setState_('idle') ;
 
                     % Notify the satellites
-                    nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
-                    nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
-                    nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
+                    %nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
+                    %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
+                    %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
                     if self.IsITheOneTrueWavesurferModel_ ,
                         self.IPCPublisher_.send('didSetDeviceInFrontend', ...
-                                                deviceName, ...
-                                                nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
                                                 self.IsDOChannelTerminalOvercommitted) ;
                     end                        
                 else
@@ -5767,6 +5766,22 @@ classdef WavesurferModel < ws.Model
         
         function result = get.DOChannelDeviceNames(self)
             result = self.Stimulation_.DigitalDeviceNames ;
+        end
+        
+        function result = get.AIChannelTerminalIDs(self)
+            result = self.Acquisition_.AnalogTerminalIDs ;
+        end
+        
+        function result = get.AOChannelTerminalIDs(self)
+            result = self.Stimulation_.AnalogTerminalIDs ;
+        end
+        
+        function result = get.DIChannelTerminalIDs(self)
+            result = self.Acquisition_.DigitalTerminalIDs ;
+        end
+        
+        function result = get.DOChannelTerminalIDs(self)
+            result = self.Stimulation_.DigitalTerminalIDs ;
         end
         
         function setSingleAIChannelDeviceName(self, i, newValue)

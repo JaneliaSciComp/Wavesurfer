@@ -2,7 +2,7 @@ classdef Refiller < handle
     % The main Refiller model object.
     
     properties (Access = protected)        
-        DeviceName_ = ''
+        %DeviceName_ = ''
 
         TimebaseSource_ = []
         TimebaseRate_ = []
@@ -21,12 +21,14 @@ classdef Refiller < handle
         AOChannelNames_ = cell(1,0)
         AOChannelScales_ = zeros(1,0)
         IsAOChannelActive_ = false(1,0)
-        AOTerminalIDs_ = zeros(1,0)
+        AOChannelDeviceNames_ = cell(1,0)
+        AOChannelTerminalIDs_ = zeros(1,0)
         IsAOChannelTerminalOvercommitted_ = false(1,0) 
         
         DOChannelNames_ = cell(1,0)
         IsDOChannelTimed_ = false(1,0)     
-        DOTerminalIDs_ = zeros(1,0)
+        DOChannelDeviceNames_ = cell(1,0)
+        DOChannelTerminalIDs_ = zeros(1,0)
         IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
         IsUserCodeManagerEnabled_
@@ -186,8 +188,6 @@ classdef Refiller < handle
         
     methods  % RPC methods block
         function result = didSetDeviceInFrontend(self, ...
-                                                 deviceName, ...
-                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
                                                  isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % Don't need to do anything---we'll get updated info when a run
             % is started, which is when it matters to us.
@@ -1270,7 +1270,7 @@ classdef Refiller < handle
 %         end  % function
         
         function setRefillerProtocol_(self, protocol)
-            self.DeviceName_ = protocol.DeviceName ;
+            %self.DeviceName_ = protocol.DeviceName ;
             
             self.TimebaseSource_ = protocol.TimebaseSource ;
             self.TimebaseRate_ = protocol.TimebaseRate ;
@@ -1281,11 +1281,13 @@ classdef Refiller < handle
 
             self.AOChannelNames_ = protocol.AOChannelNames ;
             self.AOChannelScales_ = protocol.AOChannelScales ;
-            self.AOTerminalIDs_ = protocol.AOTerminalIDs ;
+            self.AOChannelDeviceNames_ = protocol.AOChannelDeviceNames ;
+            self.AOChannelTerminalIDs_ = protocol.AOChannelTerminalIDs ;
             
             self.DOChannelNames_ = protocol.DOChannelNames ;
             self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
-            self.DOTerminalIDs_ = protocol.DOTerminalIDs ;
+            self.DOChannelDeviceNames_ = protocol.DOChannelDeviceNames ;
+            self.DOChannelTerminalIDs_ = protocol.DOChannelTerminalIDs ;
             
             self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
             self.StimulationTrigger_ = protocol.StimulationTrigger ;            
@@ -1299,11 +1301,12 @@ classdef Refiller < handle
         
         function acquireHardwareResourcesStimulation_(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
-                deviceNameForEachAOChannel = repmat({self.DeviceName_}, size(self.AOChannelNames_)) ;
+                %deviceNameForEachAOChannel = repmat({self.DeviceName_}, size(self.AOChannelNames_)) ;
+                deviceNameForEachAOChannel = self.AOChannelDeviceNames_ ;
                 isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted_ ;
                 isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
                 deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
-                terminalIDForEachChannelInAOTask = self.AOTerminalIDs_(isInTaskForEachAOChannel) ;                
+                terminalIDForEachChannelInAOTask = self.AOChannelTerminalIDs_(isInTaskForEachAOChannel) ;                
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.FiniteOutputTask('analog', ...
                                         'WaveSurfer Finite Analog Output Task', ...
@@ -1317,12 +1320,13 @@ classdef Refiller < handle
                 %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
-                deviceNameForEachDOChannel = repmat({self.DeviceName_}, size(self.DOChannelNames_)) ;
+                %deviceNameForEachDOChannel = repmat({self.DeviceName_}, size(self.DOChannelNames_)) ;
+                deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
                 isTimedForEachDOChannel = self.IsDOChannelTimed_ ;
                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
                 deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
-                terminalIDForEachChannelInDOTask = self.DOTerminalIDs_(isInTaskForEachDOChannel) ;                
+                terminalIDForEachChannelInDOTask = self.DOChannelTerminalIDs_(isInTaskForEachDOChannel) ;                
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
