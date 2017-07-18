@@ -55,7 +55,7 @@ classdef DigitalChan < ws.dabs.ni.daqmx.Channel
 
             %Determine if channel(s) added are port- or line-based
             for i=1:length(obj)
-               if ~isempty(strfind(obj.chanNamePhysical,'line'))
+               if ~isempty(strfind(obj(i).chanNamePhysical,'line'))
                    obj(i).channelType = 'line';
                else
                    obj(i).channelType = 'port';

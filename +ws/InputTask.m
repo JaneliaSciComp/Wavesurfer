@@ -99,18 +99,35 @@ classdef InputTask < handle
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
-                for i=1:nChannels ,
-                    deviceName = deviceNames{i} ;
-                    terminalID = terminalIDs(i) ;
-                    if self.IsAnalog ,
-                        if doUseDefaultTermination ,
-                            self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', []);
-                        else                            
-                            self.DabsDaqTask_.createAIVoltageChan(deviceName, terminalID, [], -10, +10, 'DAQmx_Val_Volts', [], 'DAQmx_Val_Diff');
-                        end
-                    else
-                        lineName = sprintf('line%d',terminalID) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;
+                [deviceNamePerDevice, terminalIDsPerDevice] = collectTerminalsByDevice(deviceNames, terminalIDs) ;
+                if self.IsAnalog ,
+                    if doUseDefaultTermination ,
+                        self.DabsDaqTask_.createAIVoltageChan(deviceNamePerDevice, ...
+                                                              terminalIDsPerDevice, ...
+                                                              [], ...
+                                                              -10, ...
+                                                              +10, ...
+                                                              'DAQmx_Val_Volts', ...
+                                                              []) ;
+                    else                            
+                        self.DabsDaqTask_.createAIVoltageChan(deviceNamePerDevice, ...
+                                                              terminalIDsPerDevice, ...
+                                                              [], ...
+                                                              -10, ...
+                                                              +10, ...
+                                                              'DAQmx_Val_Volts', ...
+                                                              [], ...
+                                                              'DAQmx_Val_Diff') ;
+                    end
+                else
+                    for iChannel = 1:nChannels ,
+                        deviceName = deviceNames{iChannel} ;
+                        terminalID = terminalIDs(iChannel) ;
+                        lineName = sprintf('line%d', terminalID) ;
+                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;  % create one DI channel per TTL line
+                          % Note that this won't support DI channels that span more than one device.
+                          % Tests reveal that we could probably support this by having one DI task per
+                          % device, but then we'd have to support multiple tasks, 
                     end
                 end
                 set(self.DabsDaqTask_, 'sampClkTimebaseSrc', timebaseSource) ;                
