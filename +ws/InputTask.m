@@ -315,7 +315,7 @@ classdef InputTask < handle
                     if isempty(nScansToRead) ,
                         readData = self.queryUntilEnoughThenRead_();
                     else
-                        readData = self.DabsDaqTask_.readDigitalData(nScansToRead,'uint32') ;
+                        readData = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
                     end
                     %shiftBy = cellfun(@(x) ws.terminalIDFromTerminalName(x), self.TerminalNames_);
                     shiftBy = self.TerminalIDs_ ;
@@ -360,7 +360,7 @@ classdef InputTask < handle
             if self.IsAnalog_ ,
                 data = self.DabsDaqTask_.readAnalogData([],'native') ;
             else
-                data = self.DabsDaqTask_.readDigitalData([],'uint32');
+                data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
             end
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function

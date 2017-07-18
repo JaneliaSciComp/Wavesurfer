@@ -1,15 +1,17 @@
-%readDigitalData - Read digital data from a digital input task
+%readDigitalUn - Read digital data from a digital input task, in a
+%                'port-oriented' style
 %
-%   [outputData, nScansRead] = readDigitalData(task, nScansWanted, outputFormat, timeout) 
+%   [outputData, nScansRead] = readDigitalData(task, outputFormat, nScansWanted, timeout) 
 %   
 %     task: the handle of the ws.dabs.ni.daqmx.Task object
 %
+%     outputFormat: The type of output data desired.  Should be 'uint8',
+%                   'uint16', 'uint32'.  This determines which of the 
+%                   DAQmxReadDigitalU<n>() functions is called to read the
+%                   data.  Required.
+%
 %     nScansWanted: The number of scans (time points) of data desired.  If
 %                   omitted, empty, or +inf, all available scans are returned.
-%
-%     outputFormat: The type of output data desired.  Should be 'uint8',
-%                   'uint16', 'uint32', or empty.  If omitted or empty, the smallest
-%                   unsigned int type that will hold the data is determined.
 %
 %     timeout: The maximum time to wait for nScansWanted scans to happen.
 %              If empty, omitted, or inf, will wait indefinitely.
