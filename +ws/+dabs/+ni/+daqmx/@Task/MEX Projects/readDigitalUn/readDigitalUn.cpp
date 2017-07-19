@@ -119,12 +119,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		timeout = mxGetScalar(prhs[3]);
 
 	// Determine # of channels
-    /*
-	uInt32 numChannels ; 
-	status = DAQmxGetReadNumChans(taskID, &numChannels);  // Reflects number of channels in Task, or the number of channels specified by 'ReadChannelsToRead' property
+	uInt32 nChannels ; 
+	status = DAQmxGetReadNumChans(taskID, &nChannels);  // Reflects number of channels in Task, or the number of channels specified by 'ReadChannelsToRead' property
 	if (status)
 		handleDAQmxError(status, "DAQmxGetReadNumChans");  // this terminates the mex function
-    */
 	
     // Determine how many scans to *attempt* to read
     uInt32 nScansToAttemptToRead ;
@@ -141,13 +139,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	
 	// Allocate a buffer to store the data
 	mxArray *dataBuffer;
-	dataBuffer = mxCreateNumericMatrix(nScansToAttemptToRead, 1, outputDataClass, mxREAL) ;
-    //uInt32 nElementsInRawDataBuffer = (uInt32) nScansToAttemptToRead ;
+	dataBuffer = mxCreateNumericMatrix(nScansToAttemptToRead, nChannels, outputDataClass, mxREAL) ;
+    uInt32 dataBufferSizeInSamples = nScansToAttemptToRead*nChannels ;
 	void *dataBufferPtr = mxGetData(dataBuffer);
 
-    // Dertermine how many scans 
-
-	//Read data
+	// Read data
 	int32 nScansRead;
 	int32 numBytesPerScan;
 
@@ -158,13 +154,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 		switch (outputDataClass)
 		    {
 		    case mxUINT8_CLASS:
-			    status = DAQmxReadDigitalU8(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt8*) dataBufferPtr, nScansToAttemptToRead, &nScansRead, NULL);
+			    status = DAQmxReadDigitalU8(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt8*) dataBufferPtr, dataBufferSizeInSamples, &nScansRead, NULL);
 			    break;
 		    case mxUINT16_CLASS:
-			    status = DAQmxReadDigitalU16(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt16*) dataBufferPtr, nScansToAttemptToRead, &nScansRead, NULL);
+			    status = DAQmxReadDigitalU16(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt16*) dataBufferPtr, dataBufferSizeInSamples, &nScansRead, NULL);
 			    break;
 		    case mxUINT32_CLASS:
-			    status = DAQmxReadDigitalU32(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt32*) dataBufferPtr, nScansToAttemptToRead, &nScansRead, NULL);
+			    status = DAQmxReadDigitalU32(taskID, nScansToAttemptToRead, timeout, DAQmx_Val_GroupByChannel, (uInt32*) dataBufferPtr, dataBufferSizeInSamples, &nScansRead, NULL);
 			    break;
 		    default:
 			    mexErrMsgTxt("Unknown output data class");

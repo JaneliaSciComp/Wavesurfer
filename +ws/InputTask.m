@@ -99,7 +99,7 @@ classdef InputTask < handle
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
-                [deviceNamePerDevice, terminalIDsPerDevice] = collectTerminalsByDevice(deviceNames, terminalIDs) ;
+                [deviceNamePerDevice, terminalIDsPerDevice] = ws.collectTerminalsByDevice(deviceNames, terminalIDs) ;
                 if self.IsAnalog ,
                     if doUseDefaultTermination ,
                         self.DabsDaqTask_.createAIVoltageChan(deviceNamePerDevice, ...
