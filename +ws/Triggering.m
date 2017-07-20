@@ -87,7 +87,7 @@ classdef Triggering < ws.Subsystem
             % Set up the built-in trigger task
             if isempty(self.BuiltinTriggerDABSTask_) ,
                 self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-                sweepTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
+                sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
                 %builtinTrigger = self.BuiltinTrigger_
                 self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
                 self.BuiltinTriggerDABSTask_.writeDigitalData(false);
@@ -115,7 +115,7 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                acquisitionTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
+                acquisitionTriggerTerminalName = sprintf('/%s/PFI%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
                 self.AcquisitionCounterTask_ = ...
                     ws.CounterTriggerTask(self, ...
                                           taskName, ...
@@ -143,7 +143,7 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                stimulationTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
+                stimulationTriggerTerminalName = sprintf('/%s/PFI%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
                 self.StimulationCounterTask_ = ...
                     ws.CounterTriggerTask(self, ...
                                           taskName, ...
@@ -451,7 +451,7 @@ classdef Triggering < ws.Subsystem
             trigger = ws.ExternalTrigger() ;   % Triggers are now parentless
 
             % Set the trigger parameters
-            trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
+            trigger.Name = sprintf('External trigger on /%s/PFI%d', deviceName, pfiID) ;
             trigger.DeviceName = deviceName ; 
             trigger.PFIID = pfiID ;  % we know this PFIID is free
             trigger.Edge = 'rising' ;

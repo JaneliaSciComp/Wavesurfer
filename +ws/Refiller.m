@@ -1236,14 +1236,14 @@ classdef Refiller < handle
                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
             elseif isequal(keystoneTask,'ao') ,
-                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
             elseif isequal(keystoneTask,'do') ,
                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
-                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('PFI%d',self.StimulationTrigger_.PFIID) ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
             else
                 % Getting here means there was a programmer error

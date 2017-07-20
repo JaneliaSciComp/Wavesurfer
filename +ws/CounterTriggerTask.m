@@ -46,7 +46,7 @@ classdef CounterTriggerTask < handle
             else
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', repeatCount);
             end
-            exportTerminalList = sprintf('PFI%d', pfiID) ;
+            exportTerminalList = sprintf('/%s/PFI%d', deviceName, pfiID) ;
             self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList) ;
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType('rising') ;
             self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;

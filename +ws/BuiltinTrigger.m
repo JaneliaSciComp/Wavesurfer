@@ -1,4 +1,4 @@
-classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef BuiltinTrigger < ws.Model 
     % A class that represents the built-in trigger, a trigger on
     % PFI8, that we "manually" throw at the start of each leg of the run.  This
     % trigger can trigger AI/AO/DI/DO tasks directly, and can also trigger

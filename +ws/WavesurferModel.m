@@ -3379,6 +3379,7 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
             
+            looperProtocol.AcquisitionTriggerDeviceName = self.Triggering_.getAcquisitionTriggerProperty('DeviceName') ;
             looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.getAcquisitionTriggerProperty('PFIID') ;
             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.getAcquisitionTriggerProperty('Edge') ;
             

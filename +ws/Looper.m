@@ -42,6 +42,7 @@ classdef Looper < handle
         
         IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
+        AcquisitionTriggerDeviceName_
         AcquisitionTriggerPFIID_
         AcquisitionTriggerEdge_
         
@@ -644,14 +645,15 @@ classdef Looper < handle
             keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
             %acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_ ;
             if isequal(keystoneTask,'ai') ,
-                self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
+                self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
+                %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d', self.AcquisitionTriggerPFIID_) ;
                 self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
                 self.TimedDigitalInputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
                 self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
             elseif isequal(keystoneTask,'di') ,
                 self.TimedAnalogInputTask_.TriggerTerminalName = 'di/StartTrigger' ;
                 self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
-                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
+                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
                 self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
             else
                 % Getting here means there was a programmer error
@@ -901,6 +903,7 @@ classdef Looper < handle
             
             self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
             
+            self.AcquisitionTriggerDeviceName_ = looperProtocol.AcquisitionTriggerDeviceName ;
             self.AcquisitionTriggerPFIID_ = looperProtocol.AcquisitionTriggerPFIID ;
             self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
             
