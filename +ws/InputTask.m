@@ -306,22 +306,12 @@ classdef InputTask < handle
                     else
                         readData = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
                     end
-                    %shiftBy = cellfun(@(x) ws.terminalIDFromTerminalName(x), self.TerminalNames_);
-                    shiftBy = self.TerminalIDs_ ;
-                    shiftedData = bsxfun(@bitshift,readData,(0:(length(shiftBy)-1))-shiftBy);
-                    packedData = zeros(size(readData,1),1,'uint32');
-                    for column = 1:size(readData,2)
-                        packedData = bitor(packedData,shiftedData(:,column));
-                    end
+                    % readData is nScans x nLines 
+                    terminalIDPerLine = self.TerminalIDs_ ;
+                    packedData = ws.packDigitalData(readData, terminalIDPerLine) ;
                 end
-                nChannels = length(self.TerminalIDs_);
-                if nChannels<=8
-                    rawData = uint8(packedData);
-                elseif nChannels<=16
-                    rawData = uint16(packedData);
-                else %nActiveChannels<=32
-                    rawData = packedData;
-                end
+                nLines = length(self.TerminalIDs_) ;
+                rawData = ws.dropExtraBits(packedData, nLines) ;
             end
             timeSinceRunStartAtStartOfData = timeSinceRunStartNow - size(rawData,1)/self.SampleRate_ ;
         end  % function
