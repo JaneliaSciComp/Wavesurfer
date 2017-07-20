@@ -124,7 +124,8 @@ classdef InputTask < handle
                         deviceName = deviceNames{iChannel} ;
                         terminalID = terminalIDs(iChannel) ;
                         lineName = sprintf('line%d', terminalID) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;  % create one DI channel per TTL line
+                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;  
+                          % Create one DI channel per TTL line.
                           % Note that this won't support DI channels that span more than one device.
                           % Tests reveal that we could probably support this by having one DI task per
                           % device, but then we'd have to support multiple tasks, 
