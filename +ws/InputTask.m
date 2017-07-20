@@ -247,7 +247,7 @@ classdef InputTask < handle
             value = self.IsUsingDefaultTermination_ ;
         end  % function
         
-        function [rawData,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
+        function [data,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
             % If nScansToRead is empty, read all the available scans.  If
             % nScansToRead is nonempty, read that number of scans.
             timeSinceRunStartNow = toc(fromRunStartTicId) ;
@@ -262,7 +262,7 @@ classdef InputTask < handle
                         nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
                         nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
                         nScans = nScansPossible ;
-                        rawData = zeros(nScans,0,'int16');
+                        data = zeros(nScans,0,'int16');
                         self.TimeAtLastRead_ = timeNow ;
                     else
                         %nScansRequested = nScansToRead ;
@@ -272,14 +272,14 @@ classdef InputTask < handle
                         %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
                         %nScans = min(nScansPossible,nScansRequested) ;
                         %nScans = nScansRequested ;
-                        rawData = zeros(nScansToRead,0,'int16');
+                        data = zeros(nScansToRead,0,'int16');
                         self.TimeAtLastRead_ = timeNow ;
                     end
                 else
                     if isempty(nScansToRead) ,
-                        rawData = self.queryUntilEnoughThenRead_();
+                        data = self.queryUntilEnoughThenRead_();
                     else
-                        rawData = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
+                        data = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
                     end
                 end
             else % IsDigital
@@ -293,7 +293,7 @@ classdef InputTask < handle
                         nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
                         nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
                         nScans = nScansPossible ;
-                        packedData = zeros(nScans,0,'uint32');
+                        dataAsUint32 = zeros(nScans,0,'uint32');
                         self.TimeAtLastRead_ = timeNow ;
                     else
                         %nScansRequested = nScansToRead ;
@@ -303,23 +303,24 @@ classdef InputTask < handle
                         %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
                         %nScans = min(nScansPossible,nScansRequested) ;
                         %nScans = nScansRequested ;
-                        packedData = zeros(nScansToRead,0,'uint32');
+                        dataAsUint32 = zeros(nScansToRead,0,'uint32');
                         self.TimeAtLastRead_ = timeNow ;
                     end
                 else       
                     if isempty(nScansToRead) ,
-                        readData = self.queryUntilEnoughThenRead_();
+                        dataAsRead = self.queryUntilEnoughThenRead_();
                     else
-                        readData = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
+                        dataAsRead = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
                     end
                     % readData is nScans x nLines 
                     terminalIDPerLine = self.TerminalIDs_ ;
-                    packedData = ws.packDigitalData(readData, terminalIDPerLine) ;
+                    dataAsUint32 = ws.reorderDIData(dataAsRead, terminalIDPerLine) ;
                 end
                 nLines = length(self.TerminalIDs_) ;
-                rawData = ws.dropExtraBits(packedData, nLines) ;
+                data = ws.dropExtraBits(dataAsUint32, nLines) ;
             end
-            timeSinceRunStartAtStartOfData = timeSinceRunStartNow - size(rawData,1)/self.SampleRate_ ;
+            nScans = size(data,1) ;
+            timeSinceRunStartAtStartOfData = timeSinceRunStartNow - nScans/self.SampleRate_ ;
         end  % function
     
         function debug(self) %#ok<MANU>
