@@ -1880,27 +1880,27 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
             allDeviceNames = self.Model_.AllDeviceNames ;
             deviceName = ws.getPopupMenuSelection(source, allDeviceNames) ;
-            if isempty(deviceName) ,
-                self.Figure.update() ;
-            else
+%             if isempty(deviceName) ,
+%                 self.Figure.update() ;
+%             else
                 self.Model_.do('set', 'DeviceName', deviceName) ;
-            end
+%             end
         end
         
         function TimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
             availableTimebaseSources = self.Model_.AvailableTimebaseSources ;
             timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
-            if isempty(timebaseSource) ,
-                self.Figure.update() ;
-            else
+%             if isempty(timebaseSource) ,
+%                 self.Figure.update() ;
+%             else
                 self.Model_.do('set', 'TimebaseSource', timebaseSource) ;
-            end
+%            end
         end
         
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.AIChannelNameEdits) ;
+            isTheChannel = (source==self.AIChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.AIChannelNameEdits(i),'String') ;
+            newString = get(self.AIChannelNameEdits(i),'String') ;
             %self.Model_.Acquisition.setSingleAnalogChannelName(i, newString) ;
             self.Model_.do('setSingleAIChannelName', i, newString) ;
         end
@@ -1913,31 +1913,31 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.AITerminalNamePopups) ;
+            isTheChannel = (source==self.AITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.Acquisition.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleAIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AIScaleEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AIScaleEdits);
+            isTheChannel=(source==self.AIScaleEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AIScaleEdits(i),'String');
+            newString=get(self.AIScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model_.Acquisition.setSingleAnalogChannelScale(i,newValue);
             self.Model_.do('setSingleAIChannelScale', i, newValue) ;
         end
         
         function AIUnitsEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AIUnitsEdits);
+            isTheChannel=(source==self.AIUnitsEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AIUnitsEdits(i),'String');
+            newString=get(self.AIUnitsEdits(i),'String');
             %self.Model_.Acquisition.setSingleAnalogChannelUnits(i,newString);
             self.Model_.do('setSingleAIChannelUnits', i, newString) ;
         end
         
         function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
-            isTheChannel=find(source==self.Figure.AIIsActiveCheckboxes);
+            isTheChannel=find(source==self.AIIsActiveCheckboxes);
             isAnalogChannelActive=self.Model_.IsAIChannelActive;
             isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             %self.Model_.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
@@ -1945,7 +1945,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.AIIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.AIIsMarkedForDeletionCheckboxes) ;
             isAnalogChannelMarkedForDeletion = self.Model_.IsAIChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model_.Acquisition.IsAnalogChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
@@ -1963,9 +1963,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function AOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.AOChannelNameEdits) ;
+            isTheChannel = (source==self.AOChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.AOChannelNameEdits(i),'String') ;
+            newString = get(self.AOChannelNameEdits(i),'String') ;
             %self.Model_.Stimulation.setSingleAnalogChannelName(i, newString) ;
             self.Model_.do('setSingleAOChannelName', i, newString) ;
         end
@@ -1978,32 +1978,32 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(3:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.AOTerminalNamePopups) ;
+            isTheChannel = (source==self.AOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.Stimulation.setSingleAnalogTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleAOTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function AOScaleEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOScaleEdits);
+            isTheChannel=(source==self.AOScaleEdits);
             i=find(isTheChannel);
-            newString=get(self.Figure.AOScaleEdits(i),'String');
+            newString=get(self.AOScaleEdits(i),'String');
             newValue=str2double(newString);
             %self.Model_.Stimulation.setSingleAnalogChannelScale(i,newValue);
             self.Model_.do('setSingleAOChannelScale', i, newValue);            
         end
         
         function AOUnitsEditsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=(source==self.Figure.AOUnitsEdits);
+            isTheChannel=(source==self.AOUnitsEdits);
             i=find(isTheChannel);            
-            newString=get(self.Figure.AOUnitsEdits(i),'String');
+            newString=get(self.AOUnitsEdits(i),'String');
             newValue=strtrim(newString);
             %self.Model_.Stimulation.setSingleAnalogChannelUnits(i,newValue);
             self.Model_.do('setSingleAOChannelUnits', i, newValue) ;
         end
         
         function AOIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.AOIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.AOIsMarkedForDeletionCheckboxes) ;
             isAnalogChannelMarkedForDeletion = self.Model_.IsAOChannelMarkedForDeletion ;
             isAnalogChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             %self.Model_.IsAOChannelMarkedForDeletion = isAnalogChannelMarkedForDeletion ;             
@@ -2021,9 +2021,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DIChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DIChannelNameEdits) ;
+            isTheChannel = (source==self.DIChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.DIChannelNameEdits(i),'String') ;
+            newString = get(self.DIChannelNameEdits(i),'String') ;
             %self.Model_.Acquisition.setSingleDigitalChannelName(i, newString) ;
             self.Model_.do('setSingleDIChannelName', i, newString) ;
         end
@@ -2036,21 +2036,21 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.DITerminalNamePopups) ;
+            isTheChannel = (source==self.DITerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDIChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleDIChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=find(source==self.Figure.DIIsActiveCheckboxes);
+            isTheChannel=find(source==self.DIIsActiveCheckboxes);
             isDigitalChannelActive=self.Model_.IsDIChannelActive;
             isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
             self.Model_.do('set', 'IsDIChannelActive', isDigitalChannelActive);
         end
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.DIIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.DIIsMarkedForDeletionCheckboxes) ;
             isChannelMarkedForDeletion = self.Model_.IsDIChannelMarkedForDeletion ;
             isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             self.Model_.do('set', 'IsDIChannelMarkedForDeletion', isChannelMarkedForDeletion) ;
@@ -2067,9 +2067,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DOChannelNameEditsActuated(self,source,event) %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOChannelNameEdits) ;
+            isTheChannel = (source==self.DOChannelNameEdits) ;
             i = find(isTheChannel) ;
-            newString = get(self.Figure.DOChannelNameEdits(i),'String') ;
+            newString = get(self.DOChannelNameEdits(i),'String') ;
             %self.Model_.Stimulation.setSingleDigitalChannelName(i, newString) ;
             self.Model_.do('setSingleDOChannelName', i, newString) ;
         end
@@ -2082,27 +2082,27 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             choice=ws.getPopupMenuSelection(source,validChoices);
             terminalIDAsString = choice(4:end) ;
             terminalID = str2double(terminalIDAsString) ;            
-            isTheChannel = (source==self.Figure.DOTerminalNamePopups) ;
+            isTheChannel = (source==self.DOTerminalNamePopups) ;
             iChannel = find(isTheChannel) ;
             %self.Model_.setSingleDOChannelTerminalID(iChannel, terminalID) ;  %#ok<FNDSB>
             self.Model_.do('setSingleDOChannelTerminalID', iChannel, terminalID) ;  %#ok<FNDSB>
         end
         
         function DOIsTimedCheckboxesActuated(self, source, event)  %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOIsTimedCheckboxes) ;
+            isTheChannel = (source==self.DOIsTimedCheckboxes) ;
             i = find(isTheChannel) ;            
-            newState = get(self.Figure.DOIsTimedCheckboxes(i),'value') ;
+            newState = get(self.DOIsTimedCheckboxes(i),'value') ;
             %self.Model_.IsDOChannelTimed(i)=newState;
             newArray = ws.replace(self.Model_.IsDOChannelTimed, i, newState) ;
             self.Model_.do('set','IsDOChannelTimed', newArray) ;
-            %self.Figure.update();  % Surely this is not necessary anymore,
+            %self.update();  % Surely this is not necessary anymore,
                                     % right?  -- ALT, 2016-09-12
         end
         
         function DOIsOnRadiobuttonsActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel = (source==self.Figure.DOIsOnRadiobuttons) ;
+            isTheChannel = (source==self.DOIsOnRadiobuttons) ;
             i = find(isTheChannel) ;
-            newState = get(self.Figure.DOIsOnRadiobuttons(i),'value') ;
+            newState = get(self.DOIsOnRadiobuttons(i),'value') ;
             value = self.Model_.DOChannelStateIfUntimed ;
             newValue = ws.replace(value, i, newState) ;
             % self.Model_.DOChannelStateIfUntimed = newValue ;
@@ -2110,7 +2110,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DOIsMarkedForDeletionCheckboxesActuated(self, source, event)  %#ok<INUSD>
-            indexOfTheChannel = find(source==self.Figure.DOIsMarkedForDeletionCheckboxes) ;
+            indexOfTheChannel = find(source==self.DOIsMarkedForDeletionCheckboxes) ;
             %isChannelMarkedForDeletion = self.Model_.IsDOChannelMarkedForDeletion ;
             %isChannelMarkedForDeletion(indexOfTheChannel) = get(source,'Value') ;  %#ok<FNDSB>
             originalArray = self.Model_.IsDOChannelMarkedForDeletion ;
