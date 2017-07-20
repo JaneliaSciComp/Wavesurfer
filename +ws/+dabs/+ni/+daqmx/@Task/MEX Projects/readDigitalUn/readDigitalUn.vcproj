@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="9.00"
 	Name="readDigitalUn"
-	ProjectGUID="{095177F4-F8FF-452E-8BF8-E7A981CCF129}"
+	ProjectGUID="{18AFF9FF-731C-431E-BEE9-FC04093F2348}"
 	RootNamespace="readDigitalData"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"

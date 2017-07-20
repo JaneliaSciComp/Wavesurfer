@@ -26,7 +26,10 @@ classdef AIChan < ws.dabs.ni.daqmx.private.AnalogChan
             %Handle input data type
             errorCond = false;
             for i=1:length(obj)
-                rawSampSize = obj(i).getQuiet('rawSampSize');
+                %rawSampSize = obj(i).getQuiet('rawSampSize');  
+                  % the above fails with multi-device tasks,
+                  % b/c the task is still set up for on-demand timing
+                rawSampSize = 16 ;  % WS only supports X-series, and all X-series boards have 16-bit sampling (no more, no less)
                 switch rawSampSize
                     case 8
                         rawSampClass = 'int8';

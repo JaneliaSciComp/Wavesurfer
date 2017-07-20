@@ -1,7 +1,7 @@
 %readDigitalUn - Read digital data from a digital input task, in a
 %                'port-oriented' style
 %
-%   [outputData, nScansRead] = readDigitalData(task, outputFormat, nScansWanted, timeout) 
+%   [outputData, nScansRead] = readDigitalUn(task, outputFormat, nScansWanted, timeout) 
 %   
 %     task: the handle of the ws.dabs.ni.daqmx.Task object
 %
