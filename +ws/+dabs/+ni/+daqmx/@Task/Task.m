@@ -576,9 +576,10 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
             % 
             %            If port name is ommitted, port0 is assumed. 
             %
-            %            At this time, unlike DAQmx function, you cannot specify a comma-
-            %            separated list, e.g. of lines on different ports, for the channel 
-            %            specification
+            %            You can also specify a comma-separated list for each element of 
+            %            chanIDs, e.g. of lines on different ports, for the channel 
+            %            specification.  This works like DAQMXCreateDIChan()'s "lines" 
+            %            argument.
             %
             %            The Channel(s) added by this method are either 'line-based' or 
             %            'port-based': If the string 'line' is part of the chanIDs value 
