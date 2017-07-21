@@ -9,7 +9,7 @@ function orderedData = reorderDIData(dataAsRead, terminalIDPerLine)
     nLines = length(terminalIDPerLine) ;
     orderedData = zeros(nScans,1,'uint32') ;
     for lineIndex = 1:nLines ,  % bitIndexToSet is a one-based index
-        thisLine = bitget(dataAsRead, terminalIDPerLine(lineIndex)) ;  % this will be uint32, but only the lowest-order bit can be nonzero
-        orderedData = bitset(orderedData, thisLine) ;
+        thisLine = bitget(dataAsRead, terminalIDPerLine(lineIndex)+1) ;  % this will be uint32, but only the lowest-order bit can be nonzero
+        orderedData = bitset(orderedData, lineIndex, thisLine) ;
     end    
 end

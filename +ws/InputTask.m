@@ -114,16 +114,21 @@ classdef InputTask < handle
                                                               termination) ;
                     end
                 else
-                    for iChannel = 1:nChannels ,
-                        deviceName = deviceNames{iChannel} ;
-                        terminalID = terminalIDs(iChannel) ;
-                        lineName = sprintf('line%d', terminalID) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, lineName) ;  
-                          % Create one DI channel per TTL line.
-                          % Note that this won't support DI channels that span more than one device.
-                          % Tests reveal that we could probably support this by having one DI task per
-                          % device, but then we'd have to support multiple tasks, 
-                    end
+                    % If get here task is a DI task
+                    uniqueDeviceNames = unique(deviceNames) ;
+                    if isscalar(uniqueDeviceNames) ,
+                        deviceName = uniqueDeviceNames{1} ;
+                        linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
+                        self.DabsDaqTask_.createDIChan(deviceName, linesSpecification) ;
+                          % Create one DAQmx DI channel, with all the TTL DI lines on it.
+                          % This way, when we read the data with readDigitalUn('uint32', []),
+                          % we'll get a uint32 col vector with all the lines multiplexed on it in the
+                          % bits indicated by terminalIDs.
+                    else
+                        exception = MException('ws:daqmx:allDIChannelsMustBeOnOneDevice', ...
+                                               'All DI Channels must be on a single device') ;
+                        throw(exception) ;
+                    end                        
                 end
                 set(self.DabsDaqTask_, 'sampClkTimebaseSrc', timebaseSource) ;                
                 set(self.DabsDaqTask_, 'sampClkTimebaseRate', timebaseRate) ;                
