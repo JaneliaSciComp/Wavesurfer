@@ -49,7 +49,7 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, timebaseSource, timebaseRate, deviceNames, terminalIDs, isChannelInTask, sampleRate)
+        function self = FiniteOutputTask(taskType, taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceNames, terminalIDs, isChannelInTask, sampleRate)
             nChannels=length(terminalIDs);
             
 %             % Store the parent
@@ -92,8 +92,8 @@ classdef FiniteOutputTask < handle
                         self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
                 end
-                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', timebaseSource) ;                
-                set(self.DabsDaqTask_, 'sampClkTimebaseRate', timebaseRate) ;                
+                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', sampleClockTimebaseSource) ;                
+                set(self.DabsDaqTask_, 'sampClkTimebaseRate', sampleClockTimebaseRate) ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');

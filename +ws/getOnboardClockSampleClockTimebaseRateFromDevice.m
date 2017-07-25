@@ -1,4 +1,4 @@
-function result = getOnboardClockRateFromDevice(deviceName) 
+function result = getOnboardClockSampleClockTimebaseRateFromDevice(deviceName) 
     if isempty(deviceName) ,
         result = 100e6 ;  % this is the default for X series devices
     else
