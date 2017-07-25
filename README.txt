@@ -2,7 +2,7 @@ WaveSurfer
 ==========
 
 WaveSurfer is an application for acquiring electrophysiology
-data.  It runs within Matlab R2013b and later (64-bit only).  At
+data.  It runs within Matlab R2014b and later (64-bit only).  At
 present, you must have a Matlab license to use it.
 
 PLEASE NOTE THAT WAVESURFER IS CURRENTLY PRE-RELEASE SOFTWARE.  THERE
@@ -18,7 +18,7 @@ System Requirements
 
 National Instruments X Series card (i.e. 63xx)
 
-National Instruments DAQmx driver, version 9.8.x, 14.5.x, or 15.1.x.
+National Instruments DAQmx driver, version 9.8.x or later.
 
 Matlab R2013b or later (64-bit)
 
@@ -71,7 +71,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2016 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2017 by the Howard Hughes Medical 
 Institute.
 
 
@@ -424,3 +424,9 @@ Version History
 0.947    Apr 6, 2017     Added support for very-low sampling rates, 
                          down to ~1/(40 s).
                          
+0.95     Jul 25, 2017    Improved SI-WS integration, now using SI-WS communication 
+                         protocol version 2.0.0.  Input signals now displayed in 
+                         main window, acquisition/stimulation settings moved to 
+                         "General" window.  Eliminated direct external access 
+                         to WavesurferModel subsystems in user code.  Eliminated 
+                         Parent properties in all ws.Model objects.  
