@@ -75,8 +75,8 @@ classdef FileExistenceCheckerManager < handle
             self.NextUID_ = self.NextUID_ + 1 ;
             self.UIDs_ = horzcat(self.UIDs_, thisUID) ;            
             uid = self.UIDs_(end) ;
-            fprintf('Just added an FEC with UID %d\n', thisUID) ;
-            dbstack
+            %fprintf('Just added an FEC with UID %d\n', thisUID) ;
+            %dbstack
         end  % function
         
         function remove(self, uid)

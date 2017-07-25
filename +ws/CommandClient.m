@@ -54,7 +54,7 @@ classdef CommandClient < handle
         end  % function
         
         function delete(self)            
-            fprintf('In ws.CommandClient::delete()\n') ;
+            %fprintf('In ws.CommandClient::delete()\n') ;
             self.IsEnabled = false ;  % this will delete the CommandFileExistenceChecker_, if it is a valid object
         end  % function
 
@@ -163,8 +163,8 @@ classdef CommandClient < handle
                 return
             end
             
-            fprintf('About to send command:\n') ;
-            disp(commandFileAsString) ;
+            %fprintf('About to send command:\n') ;
+            %disp(commandFileAsString) ;
             
             [fid,fopenErrorMessage] = fopen(self.OutgoingCommandFilePath_,'wt') ;
             if fid<0 ,
@@ -177,7 +177,7 @@ classdef CommandClient < handle
             
             [isPartnerReady,errorMessage] = self.waitForResponse_() ;
             if isPartnerReady ,
-                fprintf('Got OK response.\n\n\n') ;
+                %fprintf('Got OK response.\n\n\n') ;
             else
                 %fprintf('There was no response, or an ERROR response, or some other problem.\n') ;
                 self.ensureYokingFilesAreGone_();
