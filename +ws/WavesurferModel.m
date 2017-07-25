@@ -123,14 +123,14 @@ classdef WavesurferModel < ws.Model
     
     properties (Access=protected)
         DeviceName_ = ''   % an empty string represents "no device specified"
-        SampleClockTimebaseSource_ = 'OnboardClock' 
+        SampleClockTimebaseSource_ = '100MHzTimebase' 
     end
 
     properties (Access=protected, Transient=true)
         AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
 
         AvailableSampleClockTimebaseSources_ = cell(1,0)
-        OnboardClockSampleClockTimebaseRate_ = []  % Hz
+        %OnboardClockSampleClockTimebaseRate_ = []  % Hz
         
         %SampleClockTimebaseRate_ = []   % Hz
         
@@ -3639,15 +3639,14 @@ classdef WavesurferModel < ws.Model
 %         end  % function
         
         function value = get.SampleClockTimebaseRate(self)
-            timebaseSource = self.SampleClockTimebaseSource_ ;
-            if isequal(timebaseSource, 'OnboardClock') ,
-                value = self.OnboardClockSampleClockTimebaseRate_ ;  % Hz
-            elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-                value = 10e6 ;  % Hz, PXI backplace rate
+            clockSource = self.SampleClockTimebaseSource_ ;
+            if isequal(clockSource, '100MHzTimebase') ,
+                value = 100e6 ;  % Hz
+            elseif isequal(clockSource, 'PXI_CLK10') ,
+                value = 10e6 ;  % Hz, the 10 means 10 MHz
             else
                 % don't think should ever get here right now
                 error('Internal error 948509345876905') ;
-                %value = self.SampleClockTimebaseRate_ ;
             end            
         end  % function
 
@@ -3773,14 +3772,14 @@ classdef WavesurferModel < ws.Model
             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            onboardClockSampleClockTimebaseRate = ws.getOnboardClockSampleClockTimebaseRateFromDevice(deviceName) ;
+            %onboardClockSampleClockTimebaseRate = ws.getOnboardClockSampleClockTimebaseRateFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
-            self.OnboardClockSampleClockTimebaseRate_ = onboardClockSampleClockTimebaseRate ;
+            %self.OnboardClockSampleClockTimebaseRate_ = onboardClockSampleClockTimebaseRate ;
         end
 
         function syncAvailableSampleClockTimebaseSourcesFromDeviceName_(self)

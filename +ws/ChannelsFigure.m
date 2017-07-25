@@ -368,12 +368,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             deviceNamePopupXOffset = 66 ;
             deviceNamePopupWidth = 100 ;
             %deviceNamePopupHeight = 16 ;
-            timebasePanelWidth = 300 ;
+            timebasePanelWidth = 304 ;
             timebasePanelHeight = 50 ;
             timebaseSourcePopupXOffset = 60 ;
             timebaseSourcePopupYOffset = 10 ;
-            timebaseSourcePopupWidth = 100 ;
-            timebaseRateEditXOffset = 215 ;
+            timebaseSourcePopupWidth = 114 ;
+            timebaseRateEditXOffset = timebaseSourcePopupXOffset + timebaseSourcePopupWidth + 55 ;
             timebaseRateEditYOffset = 10 ;
             timebaseRateEditWidth = 42 ;
             panelBorderSize=6;  % this is the space between the panel borders and the figure border on the left, right, and bottom

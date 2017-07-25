@@ -1,7 +1,7 @@
 function result = getAvailableSampleClockTimebaseSourcesFromDevice(deviceName) 
     if ws.isDeviceAPXIDevice(deviceName) ,
-        result = { 'OnboardClock' 'PXI_CLK10' } ;
+        result = { '100MHzTimebase' 'PXI_CLK10' } ;
     else
-        result = { 'OnboardClock' } ;
+        result = { '100MHzTimebase' } ;
     end
 end
