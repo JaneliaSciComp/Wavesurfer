@@ -29,7 +29,11 @@ classdef AppendScalingCoefficientsToDataFileTestCase < matlab.unittest.TestCase
             ws.appendCalibrationCoefficientsToCopyOfDataFile(inputFileName, fakeCoefficients, outputFileName) ;
             dataFileAsStruct = ws.loadDataFile(outputFileName, 'raw') ;
             delete(outputFileName) ;
-            fakeCoefficientsAsRead = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
+                fakeCoefficientsAsRead = dataFileAsStruct.header.AIScalingCoefficients ;
+            else
+                fakeCoefficientsAsRead = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            end
             self.verifyEqual(fakeCoefficients,fakeCoefficientsAsRead) ;
         end
         

@@ -17,14 +17,14 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = ChirpStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
-            propNames = pvArgs(1:2:end);
-            propValues = pvArgs(2:2:end);               
-            for i = 1:length(propValues)
-                self.(propNames{i}) = propValues{i};
-            end            
+        function self = ChirpStimulusDelegate()
+            self = self@ws.StimulusDelegate() ;
+%             pvArgs = ws.filterPVArgs(varargin, {'InitialFrequency' 'FinalFrequency'}, {});
+%             propNames = pvArgs(1:2:end);
+%             propValues = pvArgs(2:2:end);               
+%             for i = 1:length(propValues)
+%                 self.(propNames{i}) = propValues{i};
+%             end            
         end  % function
         
         function set.InitialFrequency(self, value)

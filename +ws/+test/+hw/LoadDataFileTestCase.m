@@ -31,10 +31,10 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -52,8 +52,8 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -67,14 +67,14 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
+            absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
             wsModel.record();  % blocking, now
@@ -88,10 +88,10 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             
             % These should not error, at the least...
             fs = dataAsStruct.header.AcquisitionSampleRate;   %#ok<NASGU> % Hz
-            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
+            analogChannelNames = dataAsStruct.header.AIChannelNames;   %#ok<NASGU> 
             analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
             analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
-            digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
+            digitalChannelNames = dataAsStruct.header.DIChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>

@@ -31,10 +31,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
                                                       
             wsModel.AcquisitionSampleRate=20000;  % Hz
             wsModel.IsAIChannelActive = [true true false true true true true false];
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -65,10 +65,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %                                               isCommandLineOnly);
 % 
 %             wsModel.AcquisitionSampleRate=20000;  % Hz
-%             wsModel.Stimulation.IsEnabled=true;
+%             wsModel.IsStimulationEnabled=true;
 %             wsModel.StimulationSampleRate=20000;  % Hz
-%             wsModel.Display.IsEnabled=true;
-%             wsModel.Logging.IsEnabled=true;
+%             wsModel.IsDisplayEnabled=true;
+%             wsModel.IsLoggingEnabled=true;
 % 
 %             nSweeps=10;
 %             wsModel.NSweepsPerRun=nSweeps;
@@ -76,10 +76,10 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
 %             % set the data file name
 %             thisFileName=mfilename();
 %             [~,dataFileBaseName]=fileparts(thisFileName);
-%             wsModel.Logging.FileBaseName=dataFileBaseName;
+%             wsModel.DataFileBaseName=dataFileBaseName;
 % 
 %             % delete any preexisting data files
-%             dataDirNameAbsolute=wsModel.Logging.FileLocation;
+%             dataDirNameAbsolute=wsModel.DataFileLocation;
 %             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
 %             delete(dataFilePatternAbsolute);
 % 

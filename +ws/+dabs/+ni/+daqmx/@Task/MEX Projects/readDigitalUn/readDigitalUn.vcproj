@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="readDigitalData"
-	ProjectGUID="{095177F4-F8FF-452E-8BF8-E7A981CCF129}"
+	Name="readDigitalUn"
+	ProjectGUID="{18AFF9FF-731C-431E-BEE9-FC04093F2348}"
 	RootNamespace="readDigitalData"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -318,7 +318,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\readDigitalData.cpp"
+				RelativePath=".\readDigitalUn.cpp"
 				>
 			</File>
 			<File

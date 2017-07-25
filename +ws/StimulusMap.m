@@ -30,8 +30,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     end
     
     methods
-        function self = StimulusMap(parent)  %#ok<INUSD>
-            self@ws.Model([]);
+        function self = StimulusMap()
+            self@ws.Model();
         end
         
         function debug(self) %#ok<MANU>
@@ -364,14 +364,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     end  % methods
     
     methods
-        function other=copyGivenParent(self,parent)
-            % Makes a "copy" of self, but where other.Stimuli_ point to
-            % elements of otherStimulusDictionary.  StimulusMaps are not
-            % meant to be free-standing objects, and so are not subclassed
-            % from matlab.mixin.Copyable.
-            
-            % Do the easy part
-            other=ws.StimulusMap(parent);
+        function other = copy(self)
+            other=ws.StimulusMap();
             other.Name_ = self.Name_ ;
             other.ChannelName_ = self.ChannelName_ ;
             other.IndexOfEachStimulusInLibrary_ = self.IndexOfEachStimulusInLibrary_ ;

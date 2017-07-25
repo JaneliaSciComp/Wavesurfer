@@ -83,8 +83,8 @@ classdef ExampleUserClass < ws.UserClass
         function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % has been accumulated from the looper.
-            analogData = wsModel.getLatestAIData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+            analogData = wsModel.getLatestAIData() ;
+            digitalData = wsModel.getLatestDIData() ; 
             nScans = size(analogData,1);
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end

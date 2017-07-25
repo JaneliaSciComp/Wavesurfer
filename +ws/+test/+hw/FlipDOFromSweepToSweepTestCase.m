@@ -19,17 +19,17 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun = 4 ;
             
             % Turn on stimulation 
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
 
             % Turn on display, just to test more stuff
-            wsModel.Display.IsEnabled = true ;            
+            wsModel.IsDisplayEnabled = true ;            
             
             % Add an untimed DO channel
             wsModel.addDOChannel() ;
             wsModel.IsDOChannelTimed = false ;
             
             % Set the user class
-            wsModel.UserCodeManager.ClassName = 'ws.examples.FlipDOFromSweepToSweep' ;
+            wsModel.UserClassName = 'ws.examples.FlipDOFromSweepToSweep' ;
 
             % Play, logging warnings
             wsModel.startLoggingWarnings() ;
@@ -50,6 +50,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             end
             
             % Release the WavesurferModel, even though it's a little stilly
+            wsModel.delete() ;
             wsModel = [] ;  %#ok<NASGU>    
             
             self.verifyEmpty(exceptionMaybe, 'wsModel.play() threw one or more warnings') ;

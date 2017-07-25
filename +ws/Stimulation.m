@@ -4,7 +4,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     properties (Dependent = true)
         %SampleRate  % Hz
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
-        StimulusLibrary
+        %StimulusLibrary
 %         AnalogChannelScales
 %           % A row vector of scale factors to convert each channel from native units to volts on the coax.
 %           % This is implicitly in units of ChannelUnits per volt (see below)
@@ -56,9 +56,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end
     
     methods
-        function self = Stimulation(parent)
-            self@ws.Subsystem(parent) ;
-            self.StimulusLibrary_ = ws.StimulusLibrary([]);  % create a StimulusLibrary, which doesn't need to know its parent
+        function self = Stimulation()
+            self@ws.Subsystem() ;
+            self.StimulusLibrary_ = ws.StimulusLibrary();  % create a StimulusLibrary, which doesn't need to know its parent
         end
         
         function startingRun(self) %#ok<MANU>
@@ -219,11 +219,11 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     methods (Access=protected)    
         function disableAllBroadcastsDammit_(self)
             self.disableBroadcasts() ;
-            self.StimulusLibrary.disableBroadcasts() ;
+            self.StimulusLibrary_.disableBroadcasts() ;
         end
         
         function enableBroadcastsMaybeDammit_(self)
-            self.StimulusLibrary.enableBroadcastsMaybe() ;            
+            self.StimulusLibrary_.enableBroadcastsMaybe() ;            
             self.enableBroadcastsMaybe() ;
         end
     end  % protected methods block
@@ -234,26 +234,30 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             self.StimulusLibrary_ = ws.StimulusLibrary(self);  % create a StimulusLibrary
 %         end
         
-        function value=get.StimulusLibrary(self)
-            value=self.StimulusLibrary_;
+%         function value=get.StimulusLibrary(self)
+%             value=self.StimulusLibrary_;
+%         end
+%         
+%         function set.StimulusLibrary(self,newValue)
+%             if isempty(newValue) ,
+%                 if isempty(self.StimulusLibrary_) ,
+%                     % do nothing
+%                 else
+%                     self.StimulusLibrary_ = [] ;
+%                 end
+%             elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
+%                 if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
+%                     self.StimulusLibrary_ = newValue.copy() ;
+%                     %self.StimulusLibrary_.Parent = self ;
+%                 end
+%             end
+%             %self.broadcast('DidSetStimulusLibrary');
+%         end
+
+        function result = getStimulusLibraryCopy(self)
+            result = self.StimulusLibrary_.copy() ;
         end
-        
-        function set.StimulusLibrary(self,newValue)
-            if isempty(newValue) ,
-                if isempty(self.StimulusLibrary_) ,
-                    % do nothing
-                else
-                    self.StimulusLibrary_ = [] ;
-                end
-            elseif isa(newValue, 'ws.StimulusLibrary') && isscalar(newValue) ,
-                if isempty(self.StimulusLibrary_) || self.StimulusLibrary_ ~= newValue ,
-                    self.StimulusLibrary_ = newValue.copyGivenParent(self) ;
-                    %self.StimulusLibrary_.Parent = self ;
-                end
-            end
-            %self.broadcast('DidSetStimulusLibrary');
-        end
-        
+
         function out = getSampleRate_(self)
             out= self.SampleRate_ ;
         end
@@ -585,7 +589,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
                     target = self.(thisPropertyName) ;
                     if isempty(target) ,
-                        self.setPropertyValue_(thisPropertyName, source.copyGivenParent(self)) ;
+                        self.setPropertyValue_(thisPropertyName, source.copy()) ;
                     else
                         target.mimic(source);
                     end
@@ -849,6 +853,15 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function populateStimulusLibraryForTesting(self)
             self.StimulusLibrary_.populateForTesting() ;
         end  % function
+        
+        function mimicStimulusLibrary_(self, newValue) 
+            self.StimulusLibrary_.mimic(newValue) ;
+        end
+        
+        function result = isStimulusLibrarySelfConsistent(self)
+            result = self.StimulusLibrary_.isSelfConsistent() ;
+        end
+        
     end  % public methods block    
     
 end  % classdef

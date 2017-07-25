@@ -31,11 +31,11 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SW-new-test-3.cfg') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
-            wsController.fakeControlActuatedInTest('OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
+            ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
             pause(5) ;
             [~,warningID] = lastwarn() ;
             self.verifyNotEqual(warningID, 'MATLAB:hg:uicontrol:ValueMustBeScalar') ;
-            self.verifyTrue( wsModel.Stimulation.StimulusLibrary.isSelfConsistent() ) ;
+            self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;
             wsController.quit() ;
         end  % function    
     end  % test methods

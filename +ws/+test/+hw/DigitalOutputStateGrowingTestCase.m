@@ -17,7 +17,7 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTest(self)
             wsModel=wavesurfer('--nogui') ;
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 0);
             wsModel.addDOChannel() ;
             self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 1) ;

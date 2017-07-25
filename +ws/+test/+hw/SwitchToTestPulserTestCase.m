@@ -26,10 +26,10 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;                                 
                            
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -47,8 +47,8 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -62,10 +62,10 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
@@ -92,15 +92,15 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             %
             
             % Set up a single electrode
-            electrodeIndex = wsModel.Ephys.ElectrodeManager.addNewElectrode() ;
+            electrodeIndex = wsModel.addNewElectrode() ;
 
             %electrode = wsModel.Ephys.ElectrodeManager.Electrodes{electrodeIndex};
             %electrode.VoltageMonitorChannelName = 'V1' ;
             %electrode.CurrentCommandChannelName = 'Cmd1' ;
             %electrode.Mode = 'cc' ;            
-            wsModel.Ephys.ElectrodeManager.setElectrodeModeOrScaling(electrodeIndex, 'Mode', 'cc') ;
-            wsModel.Ephys.ElectrodeManager.setElectrodeMonitorChannelName(electrodeIndex, 'V1') ;
-            wsModel.Ephys.ElectrodeManager.setElectrodeCommandChannelName(electrodeIndex, 'Cmd1') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'Mode', 'cc') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'MonitorChannelName', 'V1') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'CommandChannelName', 'Cmd1') ;
             
             % Start test pulsing
             wsModel.startTestPulsing();

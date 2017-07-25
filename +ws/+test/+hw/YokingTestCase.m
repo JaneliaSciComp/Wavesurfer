@@ -19,9 +19,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;
+            wsModel.setIsYokedToScanImageForTesting_(true) ;
             wsModel.play() ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -31,14 +31,14 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;
+            wsModel.setIsYokedToScanImageForTesting_(true) ;
             tempFilePath = tempname() ;
             [tempFolderPath, tempStem] = fileparts(tempFilePath) ;
-            wsModel.Logging.FileLocation = tempFolderPath ;
-            wsModel.Logging.FileBaseName = tempStem ;
-            wsModel.Logging.IsOKToOverwrite = true ;
+            wsModel.DataFileLocation = tempFolderPath ;
+            wsModel.DataFileBaseName = tempStem ;
+            wsModel.IsOKToOverwriteDataFile = true ;
             wsModel.record() ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -48,11 +48,11 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel = wavesurfer('--nogui') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
-            wsModel.IsYokedToScanImage = true ;  
+            wsModel.setIsYokedToScanImageForTesting_(true) ;  
             protocolFilePath = horzcat(tempname(), '.wsp') ;
             wsModel.saveProtocolFileGivenFileName(protocolFilePath) ;
             wsModel.openProtocolFileGivenFileName(protocolFilePath) ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
             wsModel.delete() ;
@@ -65,7 +65,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             userSettingsFilePath = horzcat(tempname(), '.wsu') ;
             wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
             wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
-            wsModel.IsYokedToScanImage = false ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
             wsModel.delete() ;
@@ -73,7 +73,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
 
         function testMessageReceptionFromSI(self)
             wsModel = wavesurfer('--nogui') ;            
-            %wsModel.IsYokedToScanImage = true ;            
+            %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
             siMockProcess = System.Diagnostics.Process() ;
@@ -86,20 +86,31 @@ classdef YokingTestCase < matlab.unittest.TestCase
             pause(20) ;
             %siMockProcess.CloseMainWindow() ;
             
-            % Spin-wait to be done
-            didPerformAllSweepsAndReturnToIdleness = false ;
-            for i=1:10 ,
-                if isequal(wsModel.State, 'idle') && wsModel.Logging.NextSweepIndex==4 ,
-                    didPerformAllSweepsAndReturnToIdleness = true ;
+            % Wait to be done with the first run
+            didPerformFirstRunAndReturnToIdleness = false ;
+            for i=1:100 ,
+                if isequal(wsModel.State, 'idle') && wsModel.NRunsCompleted>=1 ,
+                    didPerformFirstRunAndReturnToIdleness = true ;
                     break
                 end
                 pause(2) ;
             end
-            self.verifyTrue(didPerformAllSweepsAndReturnToIdleness) ;            
+            self.verifyTrue(didPerformFirstRunAndReturnToIdleness) ;            
             
-            % Spin-wait for disconnect
+            % Wait to be done with the second run
+            didPerformSecondRunAndReturnToIdleness = false ;
+            for i=1:100 ,
+                if isequal(wsModel.State, 'idle') && wsModel.NRunsCompleted>=2 ,
+                    didPerformSecondRunAndReturnToIdleness = true ;
+                    break
+                end
+                pause(2) ;
+            end
+            self.verifyTrue(didPerformSecondRunAndReturnToIdleness) ;            
+            
+            % Wait for disconnect
             didDisconnect = false ;
-            for i=1:10 ,
+            for i=1:100 ,
                 if ~wsModel.IsYokedToScanImage ,
                     didDisconnect = true ;
                     break
@@ -109,16 +120,16 @@ classdef YokingTestCase < matlab.unittest.TestCase
             self.verifyTrue(didDisconnect) ;            
             
             % Check that a few things are as we set them
-            self.verifyTrue(wsModel.Logging.DoIncludeDate) ;
-            self.verifyTrue(wsModel.Logging.DoIncludeSessionIndex) ;
-            self.verifyEqual(wsModel.Logging.SessionIndex, 7) ;
+            self.verifyTrue(wsModel.DoIncludeDateInDataFileName) ;
+            self.verifyTrue(wsModel.DoIncludeSessionIndexInDataFileName) ;
+            self.verifyEqual(wsModel.SessionIndex, 7) ;
             wsModel.delete() ;
         end  % function
         
         function testFECDeleting(self)
             fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
             wsModel = wavesurfer('--nogui') ;
-            wsModel.IsYokedToScanImage = true ;  % should create a FEC
+            wsModel.setIsYokedToScanImageForTesting_(true) ;  % should create a FEC
             fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
             wsModel.delete() ;

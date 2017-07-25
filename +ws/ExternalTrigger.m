@@ -27,8 +27,8 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
     end
     
     methods
-        function self=ExternalTrigger(parent)  %#ok<INUSD>
-            self@ws.Model([]) ;  % ignore parent arg
+        function self=ExternalTrigger()
+            self@ws.Model() ;  % ignore parent arg
             self.Name_ = 'Destination';
             self.DeviceName_ = '' ;
             self.PFIID_ = 0;

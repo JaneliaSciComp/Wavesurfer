@@ -166,7 +166,7 @@ classdef CommandClient < handle
             fprintf('About to send command:\n') ;
             disp(commandFileAsString) ;
             
-            [fid,fopenErrorMessage]=fopen(self.OutgoingCommandFilePath_,'wt');
+            [fid,fopenErrorMessage] = fopen(self.OutgoingCommandFilePath_,'wt') ;
             if fid<0 ,
                 error('CommandClient:UnableToOpenYokingFile', ...
                       'Unable to open outgoing command file: %s',fopenErrorMessage);
@@ -175,7 +175,7 @@ classdef CommandClient < handle
             fprintf(fid,'%s',commandFileAsString);
             fclose(fid);
             
-            [isPartnerReady,errorMessage]=self.waitForResponse_();
+            [isPartnerReady,errorMessage] = self.waitForResponse_() ;
             if isPartnerReady ,
                 fprintf('Got OK response.\n\n\n') ;
             else

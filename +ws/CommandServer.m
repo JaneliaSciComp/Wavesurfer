@@ -121,6 +121,7 @@ classdef CommandServer < handle
             % If we're in the midst of executing a command already, the
             % next command will have to wait.
             if self.IsProcessingIncomingCommand_ ,
+                fprintf('About to exit didReceiveIncomingCommandFile b/c IsProcessingIncomingCommand is true\n') ;
                 return
             end
             self.IsProcessingIncomingCommand_ = true ;
@@ -145,6 +146,8 @@ classdef CommandServer < handle
                     self.acknowledgeCommand_(exception) ;
                     %fprintf(2,'%s\n',exception.message);
                 end
+            else
+                fprintf('In didReceiveIncomingCommandFile(), the incoming command file does not exist\n') ;
             end
             
             self.IsProcessingIncomingCommand_ = false ;

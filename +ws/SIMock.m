@@ -53,6 +53,9 @@ classdef SIMock < handle
                   'grab' ...
                   'focus' ...
                   'abort' ...
+                  'did-complete-run-normally' ...
+                  'wavesurfer-is-quitting' ...
+                  'error' ...
                   'ping' ...
                   'exit' } ;
             if ismember(commandName, commandDictionary) ,
@@ -117,6 +120,11 @@ classdef SIMock < handle
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
+        function sendDidCompleteAcquisitionModeNormally(self)
+            commandFileAsString = sprintf('1\ndid-complete-acquisition-mode-normally\n') ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function        
+        
         function sendRecord(self)
             commandFileAsString = sprintf('1\nrecord\n') ;
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
@@ -124,6 +132,11 @@ classdef SIMock < handle
         
         function sendStop(self)
             commandFileAsString = sprintf('1\nstop\n') ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
+        end  % function        
+        
+        function sendError(self)
+            commandFileAsString = sprintf('1\nerror| Something went horribly wrong\n') ;
             self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function        
         
@@ -170,32 +183,22 @@ classdef SIMock < handle
             siUserFilePath = horzcat(tempFilePath, '.usr') ;
             self.sendSavingUserFile(siUserFilePath) ;
             self.sendOpeningUserFile(siUserFilePath) ;
+            self.sendDidCompleteAcquisitionModeNormally() ;  % this doesn't make much sense, but WS ignores it anyway, so this should be OK
+            self.sendStop() ;  % again, doesn't make much sense in context, but WS should at least acknowledge it
+            self.sendError() ;  % again, doesn't make much sense in context, but WS should at least acknowledge it
             self.sendPlay() ;
             pause(20) ;  % wait for that to finish
+            
             self.sendRecord() ;
-            self.sendStop() ;  % Hopefully arrives during recording...
-            pause(4) ;
+            pause(20) ;
+            %self.sendStop() ;  % Hopefully arrives during recording...
+%             pause(4) ;
+%             
+% %             self.sendRecord() ;
+% %             self.sendError() ;  % Hopefully arrives during recording...
+% %             pause(4) ;
+            
             self.sendDisconnect() ;            
         end  % function
-
-%         function sendSomeMessages(self)
-%             %self.sendSetIndexOfFirstSweepInRun(7) ;
-%             %self.sendSetNumberOfSweepsInRun(3) ;
-%             %tempFilePath = tempname() ;
-%             %[tempFolderPath, tempStemName] = fileparts(tempFilePath) ;
-%             %self.sendSetDataFileFolderPath(tempFolderPath) ;
-%             %self.sendSetDataFileBaseName(tempStemName) ;
-%             %protocolFilePath = horzcat(tempFilePath, '.wsp') ;
-%             %self.sendSavingConfigurationFile(protocolFilePath) ;
-%             %self.sendLoadingConfigurationFile(protocolFilePath) ;
-%             %userFilePath = horzcat(tempFilePath, '.wsu') ;
-%             %self.sendSavingUserFile(userFilePath) ;
-%             %self.sendOpeningUserFile(userFilePath) ;
-%             self.sendPlay() ;
-%             pause(20) ;  % wait for that to finish
-%             self.sendRecord() ;
-%             self.sendStop() ;  % Hopefully arrives during recording...
-%         end  % function
-        
     end    
 end

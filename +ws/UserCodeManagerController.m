@@ -1,13 +1,13 @@
 classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
     
     methods
-        function self = UserCodeManagerController(wavesurferController,wavesurferModel)
+        function self = UserCodeManagerController(wavesurferController, wavesurferModel)
             % Call the superclass constructor
-            userFunctionsModel=wavesurferModel.UserCodeManager;
-            self = self@ws.Controller(wavesurferController,userFunctionsModel);
+            %userFunctionsModel=wavesurferModel.UserCodeManager;
+            self = self@ws.Controller(wavesurferController,wavesurferModel);
 
             % Create the figure, store a pointer to it
-            fig = ws.UserCodeManagerFigure(userFunctionsModel,self) ;
+            fig = ws.UserCodeManagerFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;                        
         end  % constructor
     end  % methods block
@@ -75,7 +75,7 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         function ClassNameEditActuated(self,source,event) %#ok<INUSD>
             newString = get(source,'String') ;
             %ws.Controller.setWithBenefits(self.Model,'ClassName',newString);
-            self.Model.do('set', 'ClassName', newString) ;
+            self.Model.do('set', 'UserClassName', newString) ;
         end
 
 %         function InstantiateButtonActuated(self,source,event) %#ok<INUSD>
@@ -93,9 +93,9 @@ classdef UserCodeManagerController < ws.Controller     %& ws.EventSubscriber
         end
         
 %         function ChooseButtonActuated(self,source,event) %#ok<INUSD>
-%             mAbsoluteFileName = uigetdir(self.Model.Logging.FileLocation, 'Choose User Class M-file...');
+%             mAbsoluteFileName = uigetdir(self.Model.DataFileLocation, 'Choose User Class M-file...');
 %             if ~isempty(mAbsoluteFileName) ,
-%                 self.Model.Logging.FileLocation = mAbsoluteFileName;
+%                 self.Model.DataFileLocation = mAbsoluteFileName;
 %             end            
 %         end
     end

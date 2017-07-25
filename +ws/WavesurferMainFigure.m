@@ -139,20 +139,20 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
                 model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
                 model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
-                for i = 1:numel(model.FastProtocols) ,
-                    thisFastProtocol=model.FastProtocols{i};
-                    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
-                end
+                %for i = 1:numel(model.FastProtocols) ,
+                %    thisFastProtocol=model.FastProtocols{i};
+                %    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
+                %end
                 
                % Subscribe to events from the Display subsystem 
-               model.Display.subscribeMe(self,'Update','','update') ;
-               model.Display.subscribeMe(self,'DidSetIsEnabled','','update') ;
-               model.Display.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
-               model.Display.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
-               model.Display.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits') ;
-               model.Display.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
-               model.Display.subscribeMe(self,'ClearData','','clearData') ;
-               model.Display.subscribeMe(self, 'AddData', '', 'addData') ;
+               model.subscribeMeToDisplayEvent(self,'Update','','update') ;
+               model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update') ;
+               model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties') ;
+               model.subscribeMeToDisplayEvent(self,'UpdateXOffset','','updateXAxisLimits') ;
+               model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateXAxisLimits') ;
+               model.subscribeMeToDisplayEvent(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+               model.subscribeMeToDisplayEvent(self,'ClearData','','clearData') ;
+               model.subscribeMeToDisplayEvent(self, 'AddData', '', 'addData') ;
             end
             
             % Make the figure visible
@@ -193,7 +193,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             statusBarAreaHeight=30;
             
             % Make this figure a good size for the number of plots
-            nPlots = self.Model.Display.NPlots ;
+            nPlots = self.Model.NPlots ;
             idealPlotAreaHeight = 250 * max(1,nPlots) ;
             idealFigureHeight = toolbarAreaHeight + idealPlotAreaHeight + statusBarAreaHeight ;            
             initialHeight = min(idealFigureHeight, maxInitialHeight) ;
@@ -262,6 +262,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.YokeToScanimageMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Separator','on', ...
+                       'Enable', 'off', ...
                        'Label','Yoked to ScanImage');
 
             % View menu
@@ -501,12 +502,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % The height of the area for the x axis label on the bottom plot
             xAxisLabelAreaHeight = 34 ;
             
-            plotHeightFromPlotIndex = self.Model.Display.PlotHeightFromPlotIndex ;
+            plotHeightFromPlotIndex = self.Model.PlotHeightFromPlotIndex ;
             normalizedPlotHeightFromPlotIndex = plotHeightFromPlotIndex/sum(plotHeightFromPlotIndex) ;
             totalNormalizedHeightOfPreviousPlotsFromPlotIndex = cumsum(normalizedPlotHeightFromPlotIndex) ;
             
-            doesUserWantToSeeZoomButtons = self.Model.Display.DoShowZoomButtons ;
-            isAnalogFromPlotIndex = self.Model.Display.IsAnalogFromPlotIndex ;
+            doesUserWantToSeeZoomButtons = self.Model.DoShowZoomButtons ;
+            isAnalogFromPlotIndex = self.Model.IsAnalogFromPlotIndex ;
             nPlots = length(self.ScopePlots_) ;
             for iPlot=1:nPlots ,
                 isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
@@ -549,7 +550,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         function updateControlsInExistance_(self)
             % Make it so we have the same number of scopes as displayed channels,
             % adding/deleting them as needed.
-            isChannelDisplayed = horzcat(self.Model.Display.IsAnalogChannelDisplayed, self.Model.Display.IsDigitalChannelDisplayed) ;
+            isChannelDisplayed = horzcat(self.Model.IsAIChannelDisplayed, self.Model.IsDIChannelDisplayed) ;
             nChannelsDisplayed = sum(isChannelDisplayed) ;
             nScopePlots = length(self.ScopePlots_) ;
             if nChannelsDisplayed>nScopePlots ,
@@ -577,13 +578,13 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % exist, do exist.
             
             % Check for a valid model
-            model=self.Model;
-            if isempty(model) ,
+            wsModel=self.Model;
+            if isempty(wsModel) ,
                 return
             end            
             
             % Set the button colors and icons
-            areColorsNormal = model.Display.AreColorsNormal ;
+            areColorsNormal = wsModel.AreColorsNormal ;
             defaultUIControlBackgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             controlBackgroundColor  = ws.fif(areColorsNormal,defaultUIControlBackgroundColor,'k') ;
             controlForegroundColor = ws.fif(areColorsNormal,'k','w') ;
@@ -604,8 +605,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                thisFastProtocol = model.FastProtocols{i};
-                thisProtocolFileName = ws.baseFileNameFromPath(thisFastProtocol.ProtocolFileName);
+                %thisFastProtocol = wsModel.FastProtocols{i};
+                thisProtocolFilePath = wsModel.getFastProtocolProperty(i, 'ProtocolFileName') ;
+                thisProtocolFileName = ws.baseFileNameFromPath(thisProtocolFilePath) ;
                 set(self.FastProtocolButtons(i),...
                     'TooltipString', thisProtocolFileName)
             end
@@ -614,14 +616,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.updateDisplayControlPropertiesImplementation_() ;
             
             % Status text
-            if isequal(model.State,'running') ,
-                if model.Logging.IsEnabled ,
+            if isequal(wsModel.State,'running') ,
+                if wsModel.IsLoggingEnabled ,
                     statusString = 'Recording' ;
                 else
                     statusString = 'Playing' ;
                 end                    
             else
-                statusString = ws.titleStringFromApplicationState(model.State) ;
+                statusString = ws.titleStringFromApplicationState(wsModel.State) ;
             end
             set(self.StatusText,'String',statusString,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
             
@@ -630,7 +632,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Update whether the "Yoke to ScanImage" menu item is checked,
             % based on the model state
-            set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(model.IsYokedToScanImage));
+            set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(wsModel.IsYokedToScanImage));
             
             % The save menu items
             self.updateSaveProtocolMenuItem_();
@@ -643,25 +645,21 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end
-            displayModel = wsModel.Display ;
-            if isempty(displayModel) || ~isvalid(displayModel) ,
-                return
-            end            
             
             % Update the Show Grid togglemenu
-            isGridOn = displayModel.IsGridOn ;
+            isGridOn = wsModel.IsGridOn ;
             set(self.ShowGridMenuItem_,'Checked',ws.onIff(isGridOn));
 
             % Update the Invert Colors togglemenu
-            areColorsNormal = displayModel.AreColorsNormal ;
+            areColorsNormal = wsModel.AreColorsNormal ;
             set(self.InvertColorsMenuItem_,'Checked',ws.onIff(~areColorsNormal));
 
             % Update the Do Show Buttons togglemenu
-            doShowZoomButtons = displayModel.DoShowZoomButtons ;
+            doShowZoomButtons = wsModel.DoShowZoomButtons ;
             set(self.DoShowZoomButtonsMenuItem_,'Checked',ws.onIff(doShowZoomButtons));
 
             % Update the Do Color Traces togglemenu
-            doColorTraces = displayModel.DoColorTraces ;
+            doColorTraces = wsModel.DoColorTraces ;
             set(self.DoColorTracesMenuItem_,'Checked',ws.onIff(doColorTraces));
 
             % Compute the colors
@@ -692,22 +690,23 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end                
 
             % Determine the common x-axis limits
-            xl = displayModel.XOffset + [0 wsModel.XSpan] ;
+            xl = wsModel.XOffset + [0 wsModel.XSpan] ;
 
             % Get the y-axis limits for all analog channels
-            yLimitsPerAnalogChannel = displayModel.YLimitsPerAnalogChannel ;
+            yLimitsPerAnalogChannel = wsModel.YLimitsPerAIChannel ;
 
             % Get the channel names and units for all channels
-            acq = wsModel.Acquisition ;
-            aiChannelNames = acq.AnalogChannelNames ;            
-            diChannelNames = acq.DigitalChannelNames ;
+            %acq = wsModel.Acquisition ;
+            aiChannelNames = wsModel.AIChannelNames ;            
+            diChannelNames = wsModel.DIChannelNames ;
             aiChannelUnits = wsModel.AIChannelUnits ;            
             
             % Update the individual plot colors and icons
-            areYLimitsLockedTightToDataFromAIChannelIndex = displayModel.AreYLimitsLockedTightToDataForAnalogChannel ;
-            channelIndexWithinTypeFromPlotIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex ;
-            isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
-            channelIndexFromPlotIndex = displayModel.ChannelIndexFromPlotIndex ;
+            %displayModel = wsModel.Display ;
+            areYLimitsLockedTightToDataFromAIChannelIndex = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
+            channelIndexWithinTypeFromPlotIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
+            channelIndexFromPlotIndex = wsModel.ChannelIndexFromPlotIndex ;
             %[channelIndexWithinTypeFromPlotIndex, isAnalogFromPlotIndex] = self.getChannelIndexFromPlotIndexMapping() ;
             nPlots = length(self.ScopePlots_) ;
             for plotIndex=1:length(self.ScopePlots_) ,
@@ -806,7 +805,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
             set(self.GeneralSettingsMenuItem,'Enable',ws.onIff(isIdle));
             set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
-            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.Display.IsEnabled));
+            %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.IsDisplayEnabled));
             set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
@@ -816,7 +815,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
             set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
-            set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
+            %set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
@@ -829,7 +828,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
-                set(self.FastProtocolButtons(i),'Enable',ws.onIff( isIdle && model.FastProtocols{i}.IsNonempty));
+                isNonempty = model.getFastProtocolProperty(i, 'IsNonempty') ;
+                set(self.FastProtocolButtons(i),'Enable',ws.onIff( isIdle && isNonempty));
             end
 
             % Plots and such
@@ -843,10 +843,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         
         function updateDisplayControlEnablementImplementation_(self, wsModel)
             % Update the enablement of buttons in the panels
-            model = wsModel.Display ;
-            areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
-            channelIndexWithinTypeFromPlotIndex = model.ChannelIndexWithinTypeFromPlotIndex ;
-            isAnalogFromPlotIndex = model.IsAnalogFromPlotIndex ;
+            %display = wsModel.Display ;
+            areYLimitsLockedTightToData = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
+            channelIndexWithinTypeFromPlotIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex ;
+            isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
             for iPlot=1:length(self.ScopePlots_) ,
                 isThisPlotAnalog = isAnalogFromPlotIndex(iPlot) ;
                 thisChannelIndex = channelIndexWithinTypeFromPlotIndex(iPlot) ;
@@ -888,22 +888,22 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
-            model=self.Model;
-            state=model.State;
+            wsModel = self.Model ;
+            state = wsModel.State ;
             
             brightGreen = [0 1 0] ;
             darkBlue = [10 36 106]/255 ;
             
-            areColorsNormal = model.Display.AreColorsNormal ;
+            areColorsNormal = wsModel.AreColorsNormal ;
             axesBackgroundColor = ws.fif(areColorsNormal,'w','k') ;
             axesForegroundColor = ws.fif(areColorsNormal,'k','w') ;
             patchColor = ws.fif(areColorsNormal,darkBlue,brightGreen) ;
             
             if isequal(state,'running') ,
-                if model.AreSweepsFiniteDuration ,
-                    if isfinite(model.NSweepsPerRun) ,
-                        nSweeps=model.NSweepsPerRun;
-                        nSweepsCompleted=model.NSweepsCompletedInThisRun;
+                if wsModel.AreSweepsFiniteDuration ,
+                    if isfinite(wsModel.NSweepsPerRun) ,
+                        nSweeps=wsModel.NSweepsPerRun;
+                        nSweepsCompleted=wsModel.NSweepsCompletedInThisRun;
                         fractionCompleted=nSweepsCompleted/nSweeps;
                         set(self.ProgressBarPatch, ...
                             'XData',[0 fractionCompleted fractionCompleted 0 0], ...
@@ -919,7 +919,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     else
                         % number of sweeps is infinite
                         nSweepsPretend=20;
-                        nSweepsCompleted = model.NSweepsCompletedInThisRun ;
+                        nSweepsCompleted = wsModel.NSweepsCompletedInThisRun ;
                         nSweepsCompletedModded=mod(nSweepsCompleted,nSweepsPretend);
                         if nSweepsCompletedModded==0 ,
                             if nSweepsCompleted==0 ,
@@ -945,7 +945,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                     end
                 else
                     % continuous acq
-                    nTimesDataAvailableCalledSinceRunStart=model.NTimesDataAvailableCalledSinceRunStart;
+                    nTimesDataAvailableCalledSinceRunStart=wsModel.NTimesDataAvailableCalledSinceRunStart;
                     nSegments=10;
                     nPositions=2*nSegments;
                     barWidth=1/nSegments;
@@ -1068,11 +1068,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         
         function setYAxisLimitsTightToData(self, plotIndex)            
             if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,                
-                displayModel = self.Model.Display ;
-                isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+                wsModel = self.Model ;
+                %display = wsModel.Display ;
+                isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
                 nPlots = length(isAnalogFromPlotIndex) ;
                 if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
                     self.setYAxisLimitsInModelTightToData_(channelIndex) ;
                 end
             end
@@ -1081,14 +1082,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         
         function toggleAreYLimitsLockedTightToData(self, plotIndex)
             if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
-                displayModel = self.Model.Display ;
-                isAnalogFromPlotIndex = displayModel.IsAnalogFromPlotIndex ;
+                wsModel = self.Model ;                
+                %display = wsModel.Display ;
+                isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
                 nPlots = length(isAnalogFromPlotIndex) ;
                 if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = displayModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-                    currentValue = displayModel.AreYLimitsLockedTightToDataForAnalogChannel(channelIndex) ;
+                    channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+                    currentValue = wsModel.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
                     newValue = ~currentValue ;
-                    displayModel.setAreAreYLimitsLockedTightToDataForSingleChannel_(channelIndex, newValue) ;
+                    wsModel.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
                     if newValue ,
                         self.setYAxisLimitsInModelTightToData_(channelIndex) ;
                     end
@@ -1102,8 +1104,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     methods (Access=protected)
         function clearXDataAndYData_(self)
             self.XData_ = zeros(0,1) ;
-            acquisition = self.Model.Acquisition ;
-            nActiveChannels = acquisition.NActiveAnalogChannels + acquisition.NActiveDigitalChannels ;
+            %acquisition = self.Model.Acquisition ;
+            nActiveChannels = self.Model.getNActiveAIChannels() + self.Model.getNActiveDIChannels() ;
             self.YData_ = zeros(0,nActiveChannels) ;
         end
         
@@ -1123,9 +1125,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end
             xData = self.XData_ ;
             yData = self.YData_ ;
-            acq = self.Model.Acquisition ;
-            activeChannelIndexFromChannelIndex = acq.ActiveChannelIndexFromChannelIndex ;            
-            channelIndexFromPlotIndex = self.Model.Display.ChannelIndexFromPlotIndex ;
+            wsModel = self.Model ;
+            %acq = wsModel.Acquisition ;
+            activeChannelIndexFromChannelIndex = wsModel.ActiveInputChannelIndexFromInputChannelIndex ;            
+            channelIndexFromPlotIndex = wsModel.ChannelIndexFromPlotIndex ;
             nPlots = length(self.ScopePlots_) ;
             for iPlot = 1:nPlots ,
                 thisPlot = self.ScopePlots_(iPlot) ;
@@ -1152,16 +1155,16 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % concat it with the recentScaledAnalogData, storing the result
             % in yRecent.
             wsModel = self.Model ;
-            display = wsModel.Display ;
-            nActiveDigitalChannels = wsModel.Acquisition.NActiveDigitalChannels ;
-            if nActiveDigitalChannels==0 ,
+            %display = wsModel.Display ;
+            nActiveDIChannels = wsModel.getNActiveDIChannels() ;
+            if nActiveDIChannels==0 ,
                 yRecent = recentScaledAnalogData ;
             else
                 % Might need to write a mex function to quickly translate
                 % recentRawDigitalData to recentDigitalData.
                 nScans = size(recentRawDigitalData,1) ;                
-                recentDigitalData = zeros(nScans,nActiveDigitalChannels) ;
-                for j = 1:nActiveDigitalChannels ,
+                recentDigitalData = zeros(nScans,nActiveDIChannels) ;
+                for j = 1:nActiveDIChannels ,
                     recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
                 end
                 % End of code that might need to mex-ify
@@ -1196,7 +1199,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
             
             % Trim off scans that would be off the screen anyway
-            doKeepScan = (display.XOffset<=xAllProto) ;
+            doKeepScan = (wsModel.XOffset<=xAllProto) ;
             xNew = xAllProto(doKeepScan) ;
             yNew = yAllProto(doKeepScan,:) ;
 
@@ -1209,15 +1212,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             
             % Change the y limits to match the data, if appropriate
             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
-            plotIndicesNeedingYLimitUpdate = display.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            plotIndicesNeedingYLimitUpdate = wsModel.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
             self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
         end  % function        
         
         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
             wsModel = self.Model ;
-            model = wsModel.Display ;
-            isChannelDisplayed = model.IsAnalogChannelDisplayed ;
-            areYLimitsLockedTightToData = model.AreYLimitsLockedTightToDataForAnalogChannel ;
+            %display = wsModel.Display ;
+            isChannelDisplayed = wsModel.IsAIChannelDisplayed ;
+            areYLimitsLockedTightToData = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
             doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
             for i = indicesOfAIChannelsNeedingYLimitUpdate ,
@@ -1231,24 +1234,25 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             end            
         end  % function
         
-        function updateYAxisLabel_(self, color)
-            % Updates the y axis label handle graphics to match the model state
-            % and that of the Acquisition subsystem.
-            %set(self.Axes_,'YLim',self.YOffset+[0 self.YRange]);
-            model = self.Model.Display ;
-            if model.NChannels==0 ,
-                ylabel(self.Axes_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
-            else
-                firstChannelName=model.ChannelNames{1};
-                units=model.YUnits;
-                if isempty(units) ,
-                    unitsString = 'pure' ;
-                else
-                    unitsString = units ;
-                end
-                ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
-            end
-        end  % function
+%         function updateYAxisLabel_(self, color)
+%             % Updates the y axis label handle graphics to match the model state
+%             % and that of the Acquisition subsystem.
+%             %set(self.Axes_,'YLim',self.YOffset+[0 self.YRange]);
+%             wsModel = self.Model ;
+%             display = wsModel.Display ;
+%             if display.NChannels==0 ,
+%                 ylabel(self.Axes_,'Signal','Color',color,'FontSize',10,'Interpreter','none');
+%             else
+%                 firstChannelName = display.ChannelNames{1} ;
+%                 units = display.YUnits ;
+%                 if isempty(units) ,
+%                     unitsString = 'pure' ;
+%                 else
+%                     unitsString = units ;
+%                 end
+%                 ylabel(self.Axes_,sprintf('%s (%s)',firstChannelName,unitsString),'Color',color,'FontSize',10,'Interpreter','none');
+%             end
+%         end  % function
         
         function updateXAxisLimits_(self)
             % Update the axes limits to match those in the model
@@ -1256,11 +1260,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end
-            displaySubsystem = wsModel.Display ;
-            if isempty(displaySubsystem) || ~isvalid(displaySubsystem) ,
-                return
-            end            
-            xl = displaySubsystem.XOffset + [0 wsModel.XSpan] ;
+            xl = wsModel.XOffset + [0 wsModel.XSpan] ;
             for i = 1:length(self.ScopePlots_) ,
                 self.ScopePlots_(i).setXAxisLimits(xl) ;
             end
@@ -1268,8 +1268,9 @@ classdef WavesurferMainFigure < ws.MCOSFigure
 
         function updateYAxisLimits_(self, plotIndices, aiChannelIndices)
             % Update the axes limits to match those in the model
-            model = self.Model.Display ;
-            yLimitsFromAIChannelIndex = model.YLimitsPerAnalogChannel ;
+            wsModel = self.Model ;
+            %model = wsModel.Display ;
+            yLimitsFromAIChannelIndex = wsModel.YLimitsPerAIChannel ;
             for i = 1:length(plotIndices) ,
                 plotIndex = plotIndices(i) ;
                 aiChannelIndex = aiChannelIndices(i) ;
@@ -1291,21 +1292,21 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 yRadius=0.001;
             end
             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
-            self.Model.Display.setYLimitsForSingleAnalogChannel_(aiChannelIndex, newYLimits)
+            self.Model.setYLimitsForSingleAIChannel(aiChannelIndex, newYLimits) ;
         end
         
-        function yMinAndMax=dataYMinAndMax_(self, aiChannelIndex)
+        function yMinAndMax = dataYMinAndMax_(self, aiChannelIndex)
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            activeChannelIndexFromChannelIndex = self.Model.Acquisition.ActiveChannelIndexFromChannelIndex ;
+            activeChannelIndexFromChannelIndex = self.Model.ActiveInputChannelIndexFromInputChannelIndex ;
             indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
             y = self.YData_(:,indexWithinData) ;
-            yMinRaw=min(y);
-            yMin=ws.fif(isempty(yMinRaw),+inf,yMinRaw);
-            yMaxRaw=max(y);
-            yMax=ws.fif(isempty(yMaxRaw),-inf,yMaxRaw);            
-            yMinAndMax=double([yMin yMax]);
+            yMinRaw = min(y) ;
+            yMin = ws.fif(isempty(yMinRaw),+inf,yMinRaw) ;
+            yMaxRaw = max(y) ;
+            yMax = ws.fif(isempty(yMaxRaw),-inf,yMaxRaw) ;            
+            yMinAndMax = double([yMin yMax]) ;
         end                
     end  % protected methods block    
     

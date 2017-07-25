@@ -36,7 +36,7 @@ classdef CounterTriggerTask < handle
             self.PFIID_ = pfiID ;
             self.TriggerTerminalName_ = triggerTerminalName ;
                         
-            self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_);
+            self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_) ;
             %deviceName
             %counterID
             %repeatFrequency
@@ -47,9 +47,9 @@ classdef CounterTriggerTask < handle
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', repeatCount);
             end
             exportTerminalList = sprintf('PFI%d', pfiID) ;
-            self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList)
+            self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList) ;
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType('rising') ;
-            self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+            self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
         end  % function
         
         function delete(self)

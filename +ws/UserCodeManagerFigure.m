@@ -234,17 +234,17 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self)
             %fprintf('UserCodeManagerFigure::updateControlPropertiesImplementation_\n');
-            model=self.Model;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
 
             normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
-            isClassNameValid = model.IsClassNameValid ;
+            isClassNameValid = wsModel.IsUserClassNameValid ;
             backgroundColor = ws.fif(isClassNameValid,normalBackgroundColor,warningBackgroundColor) ;
             set(self.ClassNameEdit, ...
-                'String', model.ClassName, ...
+                'String', wsModel.UserClassName, ...
                 'BackgroundColor', backgroundColor );
 %             set(self.InstantiateButton, 'String', ws.fif(isempty(model.TheObject), ...
 %                                                          'Instantiate', ...
@@ -260,11 +260,11 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self,varargin)
-            model=self.Model;  % this is the UserCodeManager object
-            if isempty(model) || ~isvalid(model) ,
-                return
-            end
-            wavesurferModel=model.Parent;
+%             model=self.Model;  % this is the UserCodeManager object
+%             if isempty(model) || ~isvalid(model) ,
+%                 return
+%             end
+            wavesurferModel = self.Model ;
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end
@@ -273,7 +273,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
-            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&model.DoesTheObjectMatchClassName) ) ;
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&wavesurferModel.DoesTheUserObjectMatchTheUserClassName) ) ;
         end
     end
     
@@ -284,14 +284,11 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %fprintf('UserCodeManagerFigure::updateSubscriptionsToModelEvents_()\n');
             %self.unsubscribeFromAll();
             
-            model=self.Model;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            wavesurferModel=model.Parent;
-            if isempty(wavesurferModel) ,
-                return
-            end
+            %userCodeManager = wavesurferModel.UserCodeManager ;
             
 %             model.subscribeMe(self,'PostSet','SweepWillStart','update');
 %             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
@@ -300,9 +297,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             model.subscribeMe(self,'PostSet','RunDidComplete','update');
 %             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
-            model.subscribeMe(self,'Update','','update');
+            wsModel.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
             
-            wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
+            wsModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                
     end
     

@@ -134,11 +134,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end
     
     methods
-        function self = FlyLocomotionLiveUpdating(userCodeManager)
+        function self = FlyLocomotionLiveUpdating(wsModel)
             % Figure out which is the one true Wavesurfer model so that we
             % only create figures in the true Wavesurfer model:
-            if isa(userCodeManager.Parent, 'ws.WavesurferModel')
-                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = userCodeManager.Parent.IsITheOneTrueWavesurferModel;
+            if isa(wsModel, 'ws.WavesurferModel')
+                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = wsModel.IsITheOneTrueWavesurferModel;
             else
                 self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
             end
@@ -275,7 +275,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Store only the sweep indices that are started, used to name
             % the figures
-            self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex];
+            self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.NextSweepIndex];
             
             % Initialize necessary variables, where "Recent" corresponds to
             % data just collected
@@ -372,7 +372,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 %complete.
                 self.CumulativeRotationMeanToSubtract_ = nanmean(self.StoreSweepCumulativeRotation_(1:self.NumberOfScansInFirstOnePercentEndTime_));
                 self.BarPositionWrappedMeanToSubtract_ = nanmean(self.StoreSweepBarPositionWrapped_(1:self.NumberOfScansInFirstOnePercentEndTime_));
-                if self.TimeRecent_(end) + self.DeltaTime_ >= self.FirstOnePercentEndTime_ ;
+                if self.TimeRecent_(end) + self.DeltaTime_ >= self.FirstOnePercentEndTime_ ,
                     %Then this is the last time inside this statement
                     gain =nanmean( (self.StoreSweepBarPositionUnwrapped_(1:self.NumberOfScansInFirstOnePercentEndTime_) - self.BarPositionWrappedMeanToSubtract_)./...
                         (self.StoreSweepCumulativeRotation_(1:self.NumberOfScansInFirstOnePercentEndTime_) - self.CumulativeRotationMeanToSubtract_));
@@ -797,7 +797,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             inp_dig=round((inp-2.33)/0.14); %this is with the OLD wavesurfer AD conversion
             %     inp_dig=round((inp-2.51)/0.14); %this is with the NEW wavesurfer AD conversion
             
-            inp_dig = inp_dig/80; %divide by 80 to correct for pulse frequency and duration
+            inp_dig = inp_dig/80 ;  %divide by 80 to correct for pulse frequency and duration
             
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
@@ -805,14 +805,15 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             if isITheOneTrueWavesurferModel % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
-                self.RotationalDisplacementRecent_ =(inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
+                self.RotationalDisplacementRecent_ = (inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
                 
                 % translate rotation to degrees
                 self.RotationalDisplacementRecent_=self.RotationalDisplacementRecent_*degrpermmball;
                 
                 % calculate cumulative rotation
                 previousCumulativeRotation = self.CumulativeRotationRecent_;
-                self.CumulativeRotationRecent_=previousCumulativeRotation(end)+cumsum(self.RotationalDisplacementRecent_)/panorama*2*pi; % cumulative rotation in panorama normalized radians
+                self.CumulativeRotationRecent_ = previousCumulativeRotation(end) + cumsum(self.RotationalDisplacementRecent_)/panorama*2*pi ; 
+                  % cumulative rotation in panorama normalized radians
                 
                 % Calculate unwrapped bar position. To do this properly,
                 % need to know the endpoint of the previously unwrapped bar
@@ -822,7 +823,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     % Then this is the first time bar position is calculate
                     self.BarPositionUnwrappedRecent_ = unwrap(self.BarPositionWrappedRecent_);
                 else
-                    newBarPositionUnwrapped = unwrap([previousBarPositionUnwrapped(end); self.BarPositionWrappedRecent_]); % prepend previousBarPosition to ensure that unwrapping follows from the previous results
+                    newBarPositionUnwrapped = unwrap([previousBarPositionUnwrapped(end); self.BarPositionWrappedRecent_]); 
+                      % prepend previousBarPosition to ensure that unwrapping follows from the previous results
                     self.BarPositionUnwrappedRecent_ = newBarPositionUnwrapped(2:end);
                 end
                 

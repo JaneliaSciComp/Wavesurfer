@@ -40,7 +40,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                                   'Visible','off', ...
                                   'HandleVisibility','off', ...
                                   'DockControls','off', ...
-                                  'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
+                                  'CloseRequestFcn',@(source,event)(self.closeRequested_(source,event))) ;
             if exist('model','var') ,
                 self.Model_ = model ;
                 if ~isempty(model) && isvalid(model) ,
@@ -575,7 +575,8 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             
             % Set it
             set(self.FigureGH_, 'Position', newFigurePosition) ;
-        end  % function        
+        end  % function               
+        
     end  % public methods block
     
     methods (Sealed = true)

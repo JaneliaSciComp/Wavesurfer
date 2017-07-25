@@ -75,8 +75,8 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     end
     
     methods
-        function self = StimulusLibrary(parent)  %#ok<INUSD>
-            self@ws.Model([]);
+        function self = StimulusLibrary()
+            self@ws.Model();
             self.Stimuli_ = cell(1,0) ;
             self.Maps_    = cell(1,0) ;
             self.Sequences_  = cell(1,0) ;
@@ -349,14 +349,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % Want to handle this case, but there's not much to do here
             else
                 % Make a deep copy of the stimuli
-                self.Stimuli_ = cellfun(@(element)(element.copyGivenParent(self)),other.Stimuli_,'UniformOutput',false);
+                self.Stimuli_ = cellfun(@(element)(element.copy()),other.Stimuli_,'UniformOutput',false);
                 % for i=1:length(self.Stimuli_) ,
                 %     self.Stimuli_{i}.Parent=self;  % make the Parent correct
                 % end
 
                 % Make a deep copy of the maps, which needs both the old & new
                 % stimuli to work properly
-                self.Maps_ = cellfun(@(element)(element.copyGivenParent(self)),other.Maps_,'UniformOutput',false);            
+                self.Maps_ = cellfun(@(element)(element.copy()),other.Maps_,'UniformOutput',false);            
                 %for i=1:length(self.Maps_) ,
                 %    self.Maps_{i}.Parent=self;  % make the Parent correct
                 %end
@@ -364,7 +364,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % Make a deep copy of the sequences, which needs both the old & new
                 % maps to work properly            
                 %self.Sequences_=other.Sequences_.copyGivenMaps(self.Maps_,other.Maps_);
-                self.Sequences_= cellfun(@(element)(element.copyGivenParent(self)),other.Sequences_,'UniformOutput',false);                        
+                self.Sequences_= cellfun(@(element)(element.copy()),other.Sequences_,'UniformOutput',false);                        
                 %for i=1:length(self.Sequences_) ,
                 %    self.Sequences_{i}.Parent=self;  % make the Parent correct
                 %end
@@ -2280,11 +2280,11 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedItemClassName_ = '' ;
                 else
                     leafClassName = parts{end} ;
-                    if ~isempty(strfind(lower(leafClassName),'sequence')) ,
+                    if contains(lower(leafClassName),'sequence') ,
                         self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
-                    elseif ~isempty(strfind(lower(leafClassName),'map')) ,
+                    elseif contains(lower(leafClassName),'map') ,
                         self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-                    elseif ~isempty(strfind(lower(leafClassName),'stimulus')) ,
+                    elseif contains(lower(leafClassName),'stimulus') ,
                         self.SelectedItemClassName_ = 'ws.Stimulus' ;
                     else
                         self.SelectedItemClassName_ = '' ;
@@ -2302,9 +2302,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     self.SelectedOutputableClassName_ = '' ;
                 else
                     leafClassName = parts{end} ;
-                    if ~isempty(strfind(lower(leafClassName),'sequence')) ,
+                    if contains(lower(leafClassName),'sequence') ,
                         self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
-                    elseif ~isempty(strfind(lower(leafClassName),'map')) ,
+                    elseif contains(lower(leafClassName),'map') ,
                         self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
                     else
                         self.SelectedOutputableClassName_ = '' ;
@@ -2315,7 +2315,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function [sequence, sequenceIndex] = addNewSequence_(self)
             %self.disableBroadcasts();
-            sequence=ws.StimulusSequence(self);
+            sequence=ws.StimulusSequence();
             sequence.Name = self.generateUntitledSequenceName_();
             self.Sequences_{end + 1} = sequence;
             sequenceIndex = length(self.Sequences_) ;
@@ -2327,7 +2327,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         
         function [map, mapIndex] = addNewMap_(self)
             %self.disableBroadcasts();
-            map=ws.StimulusMap(self);
+            map=ws.StimulusMap();
             map.Name = self.generateUntitledMapName_();
             self.Maps_{end + 1} = map;
             mapIndex = length(self.Maps_) ;
@@ -2338,8 +2338,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function
                  
         function [stimulus, stimulusIndex] = addNewStimulus_(self)
-            typeString = 'SquarePulse' ;
-            stimulus=ws.Stimulus(self,'TypeString',typeString);
+            %typeString = 'SquarePulse' ;
+            %stimulus=ws.Stimulus([],'TypeString',typeString);
+            stimulus=ws.Stimulus();  % defaults to square pulse stimulus
             stimulus.Name = self.generateUntitledStimulusName_();
             self.Stimuli_{end + 1} = stimulus;
             stimulusIndex = length(self.Stimuli_) ;

@@ -23,16 +23,16 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     end    
     
     methods
-        function self = StimulusSequence(parent, varargin)  %#ok<INUSL>
-            self@ws.Model([]);  % Don't need or want to have a parent.  Only need or want this paddle-ball game.
-            pvArgs = ws.filterPVArgs(varargin, {'Name'}, {});
-            
-            prop = pvArgs(1:2:end);
-            vals = pvArgs(2:2:end);
-            
-            for idx = 1:length(vals)
-                self.(prop{idx}) = vals{idx};
-            end
+        function self = StimulusSequence()
+            self@ws.Model();  % Don't need or want to have a parent.  Only need or want this paddle-ball game.
+%             pvArgs = ws.filterPVArgs(varargin, {'Name'}, {});
+%             
+%             prop = pvArgs(1:2:end);
+%             vals = pvArgs(2:2:end);
+%             
+%             for idx = 1:length(vals)
+%                 self.(prop{idx}) = vals{idx};
+%             end
         end  % function
         
         function out = get.NBindings(self) 
@@ -164,8 +164,8 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     end  % methods
     
     methods
-        function other = copyGivenParent(self,parent)
-            other = ws.StimulusSequence(parent) ;
+        function other = copy(self)
+            other = ws.StimulusSequence() ;
             other.Name_ = self.Name_ ;
             other.IsMarkedForDeletion_ = self.IsMarkedForDeletion_ ;
             other.IndexOfEachMapInLibrary_ = self.IndexOfEachMapInLibrary_ ;            

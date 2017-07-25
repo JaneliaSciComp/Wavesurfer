@@ -93,8 +93,8 @@ classdef Acquisition < ws.Subsystem
     end
     
     methods
-        function self = Acquisition(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Acquisition()
+            self@ws.Subsystem() ;
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
@@ -102,9 +102,9 @@ classdef Acquisition < ws.Subsystem
             %fprintf('Acquisition::startingRun()\n');
             
             % Check that there's at least one active input channel
-            NActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
-            NActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            NActiveInputChannels = NActiveAnalogChannels + NActiveDigitalChannels ;
+            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
+            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            NActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
             if NActiveInputChannels==0 ,
                 error('wavesurfer:NoActiveInputChannels' , ...
                       'There must be at least one active input channel to perform a run');
@@ -120,12 +120,12 @@ classdef Acquisition < ws.Subsystem
             end
             if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
-                self.RawAnalogDataCache_ = zeros(nScans,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(nScans,min(1,NActiveDigitalChannels),dataType);
+                self.RawAnalogDataCache_ = zeros(nScans,nActiveAnalogChannels,'int16');
+                self.RawDigitalDataCache_ = zeros(nScans,min(1,nActiveDigitalChannels),dataType);
             elseif areSweepsFiniteDuration ,
                 expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
-                self.RawAnalogDataCache_ = zeros(expectedScanCount,NActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(expectedScanCount,min(1,NActiveDigitalChannels),dataType);
+                self.RawAnalogDataCache_ = zeros(expectedScanCount,nActiveAnalogChannels,'int16');
+                self.RawDigitalDataCache_ = zeros(expectedScanCount,min(1,nActiveDigitalChannels),dataType);
             else
                 % Shouldn't ever happen
                 self.RawAnalogDataCache_ = [];                
@@ -740,7 +740,7 @@ classdef Acquisition < ws.Subsystem
             % Get the data from the most-recent data available callback
             data = self.LatestRawDigitalData_ ;
         end  % function
-
+        
         function addDataToUserCache(self, rawAnalogData, rawDigitalData, isSweepBased)
             %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;

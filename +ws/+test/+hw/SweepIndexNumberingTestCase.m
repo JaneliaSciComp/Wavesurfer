@@ -29,9 +29,9 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.SweepDuration = 10 ;  % s
             %wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             %wsModel.StimulationSampleRate=20000;  % Hz
-            %wsModel.Display.IsEnabled=true;
+            %wsModel.IsDisplayEnabled=true;
             
             % Set to external triggering
             wsModel.addExternalTrigger() ;
@@ -43,10 +43,10 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
@@ -70,7 +70,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = ~isempty(filesCreated);
             self.verifyFalse(wasAnOutputFileCreated) ;
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 1) ;
+            self.verifyEqual(wsModel.NextSweepIndex, 1) ;
             
             % Now start and stop a sweep before it is finished; the data
             % file should only contain the collected data rather than
@@ -111,7 +111,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
+            self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
         end  % function
     end  % test methods
 

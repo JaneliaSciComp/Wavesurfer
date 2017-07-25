@@ -22,33 +22,34 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             wsModel = wavesurfer('--nogui') ;
             wsModel.DeviceName = 'Dev1' ;
             nCoeffs = 4 ;  % this holds for all x-series boards
-            nAnalogChannels = 7 ;
-            for i=1:(nAnalogChannels-1) ,
+            nAIChannels = 7 ;
+            for i=1:(nAIChannels-1) ,
                 wsModel.addAIChannel() ;
             end
-            self.verifyEqual(wsModel.Acquisition.NAnalogChannels, nAnalogChannels, 'Number of analog channels is wrong') ;
+            self.verifyEqual(wsModel.NAIChannels, nAIChannels, 'Number of analog channels is wrong') ;
             nInactiveAnalogChannels = 2 ;
             wsModel.IsAIChannelActive(3) = false ;  % shouldn't matter
             wsModel.IsAIChannelActive(5) = false ;
-            nActiveAnalogChannels = nAnalogChannels - nInactiveAnalogChannels ;
-            self.verifyEqual(wsModel.Acquisition.NActiveAnalogChannels, nActiveAnalogChannels, 'Number of active analog channels is wrong') ;
+            nActiveAIChannels = nAIChannels - nInactiveAnalogChannels ;
+            self.verifyEqual(wsModel.getNActiveAIChannels(), nActiveAIChannels, 'Number of active analog channels is wrong') ;
             wsModel.SweepDuration = 0.1 ;  % sec
 
             outputFileAbsolutePath = [tempname() '.h5'] ;
             [outputFileDirName, outputFileStem] = fileparts(outputFileAbsolutePath) ;
-            wsModel.Logging.FileLocation = outputFileDirName ;
-            wsModel.Logging.FileBaseName = outputFileStem ;
-            wsModel.Logging.IsOKToOverwrite = true ;
-            newDataFileAbsolutePath = wsModel.Logging.NextRunAbsoluteFileName ;
+            wsModel.DataFileLocation = outputFileDirName ;
+            wsModel.DataFileBaseName = outputFileStem ;
+            wsModel.IsOKToOverwriteDataFile = true ;
+            newDataFileAbsolutePath = wsModel.NextRunAbsoluteFileName ;
             wsModel.record() ;  % blocks
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1) ;
+            wsModel.delete() ; 
             wsModel = [] ;  %#ok<NASGU>
 
             newDataFileAsStruct = ws.loadDataFile(newDataFileAbsolutePath, 'raw') ;
             delete(newDataFileAbsolutePath) ;
-            realCoefficientsAsRead = newDataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            realCoefficientsAsRead = newDataFileAsStruct.header.AIScalingCoefficients ;
             % Verify that the shape of the coeffs array is correct
-            self.verifyEqual( size(realCoefficientsAsRead), [nCoeffs nActiveAnalogChannels] ) ;
+            self.verifyEqual( size(realCoefficientsAsRead), [nCoeffs nActiveAIChannels] ) ;
 
             % For every board I've ever tested the coeffs are the same
             % across channels.  This is likely because all the boards I've

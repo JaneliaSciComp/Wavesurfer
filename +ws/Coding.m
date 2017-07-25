@@ -123,12 +123,12 @@ classdef (Abstract) Coding < handle
             % override this method.
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = self.listPropertiesForPersistence() ;
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
-                thisPropertyName=propertyNames{i};
-                if isprop(other,thisPropertyName)
+                thisPropertyName = propertyNames{i} ;
+                if isprop(other, thisPropertyName) ,
                     source = other.getPropertyValue_(thisPropertyName) ;
                     self.setPropertyValue_(thisPropertyName, source) ;
                 end
@@ -143,14 +143,17 @@ classdef (Abstract) Coding < handle
         end  % function
 
         function other = copy(self)
-            other = self.copyGivenParent([]) ;
+            %other = self.copyGivenParent([]) ;
+            className = class(self) ;
+            other = feval(className) ;  % class must have a zero-arg constructor
+            other.mimic(self) ;            
         end  % function                
         
-        function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
-            className=class(self);
-            other=feval(className,parent);
-            other.mimic(self);
-        end  % function                
+%         function other=copyGivenParent(self, parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
+%             className = class(self) ;
+%             other = feval(className, parent) ;
+%             other.mimic(self) ;
+%         end  % function                
     end  % public methods block
 
     methods (Access = protected)
@@ -276,10 +279,6 @@ classdef (Abstract) Coding < handle
             if nargin<2 ,
                 warningLogger = [] ;
             end
-            result = ws.Coding.decodeEncodingContainerGivenParent(encodingContainer,[], warningLogger) ;  % parent is empty
-        end
-    
-        function result = decodeEncodingContainerGivenParent(encodingContainer, parent, warningLogger)
             % Unpack the encoding container, or try to deal with it if
             % encodingContainer is not actually an encoding container.            
             if ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
@@ -317,7 +316,7 @@ classdef (Abstract) Coding < handle
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
                 for i=1:numel(result) ,
-                    result{i} = ws.Coding.decodeEncodingContainerGivenParent(encoding{i},parent, warningLogger) ;
+                    result{i} = ws.Coding.decodeEncodingContainer(encoding{i}, warningLogger) ;
                       % A cell array can't be a parent, so we just use
                       % parent
                 end
@@ -327,7 +326,7 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;
-                        result(i).(fieldName) = ws.Coding.decodeEncodingContainerGivenParent(encoding(i).(fieldName),parent, warningLogger) ;
+                        result(i).(fieldName) = ws.Coding.decodeEncodingContainer(encoding(i).(fieldName), warningLogger) ;
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
@@ -349,7 +348,7 @@ classdef (Abstract) Coding < handle
                         % this is the normal case
                         
                         % Instantiate the object
-                        result = feval(className,parent) ;
+                        result = feval(className) ;
 
                         % Get the list of persistable properties
                         persistedPropertyNames = result.listPropertiesForPersistence() ;
@@ -476,14 +475,14 @@ classdef (Abstract) Coding < handle
                                        isequal(propertyName, 'PulseDuration_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     subresult = 1e-3 * str2double(rawSubresult) ;  % string to double, ms to s
                                 elseif isa(result, 'ws.ScopeModel') && ...
                                         ( ( isequal(fieldName, 'YUnits_') && isequal(propertyName, 'YUnits_')) || ...
                                           ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -498,7 +497,7 @@ classdef (Abstract) Coding < handle
                                        isequal(fieldName, 'ChannelNames_') && isequal(propertyName, 'ChannelName_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % rawSubresult is always a one-element cellstring.  Just
                                     % want the string.
                                     if isempty(rawSubresult) ,
@@ -511,7 +510,7 @@ classdef (Abstract) Coding < handle
                                 elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -526,7 +525,7 @@ classdef (Abstract) Coding < handle
                                        && ...
                                        isequal(fieldName,'Edge_') && isequal(propertyName,'Edge_') ,
                                     % BC hack 
-                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
+                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes subresult is empty.  If
                                     % so, don't set it.
                                     doSetPropertyValue = ~isempty(subresult) ;
@@ -537,7 +536,7 @@ classdef (Abstract) Coding < handle
                                     % file is missing.
                                     doSetPropertyValue = true ;
                                     try 
-                                        subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding, result, warningLogger) ;
+                                        subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                     catch me 
                                         if isequal(me.identifier, 'MATLAB:UndefinedFunction') ,
                                             % The class being missing
@@ -552,7 +551,7 @@ classdef (Abstract) Coding < handle
                                 else                                    
                                     % the usual case
                                     doSetPropertyValue = true ;
-                                    subresult = ws.Coding.decodeEncodingContainerGivenParent(subencoding,result, warningLogger) ;
+                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
                                 end
                                 if doSetPropertyValue ,
                                     try
@@ -594,7 +593,7 @@ classdef (Abstract) Coding < handle
                     result = cell(1,n) ;
                     for i=1:n ,
                         hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
-                        result{i} = ws.Coding.decodeEncodingContainerGivenParent(hackedContainer,parent, warningLogger) ;
+                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger) ;
                         % A cell array can't be a parent, so we just use
                         % parent
                     end
@@ -609,19 +608,19 @@ classdef (Abstract) Coding < handle
                       className);
                 
             end            
-        end  % function decodeEncodingContainerGivenParent()
+        end  % function decodeEncodingContainer()
         
         function result = isAnEncodingContainer(thing)
             result = isstruct(thing) && isscalar(thing) && isfield(thing,'className') && isfield(thing,'encoding') ;
         end  % function
         
-        function target = copyCellArrayOfHandlesGivenParent(source,parent)
+        function target = copyCellArrayOfHandles(source)
             % Utility function for copying a cell array of ws.Coding
             % entities, given a parent.
             nElements = length(source) ;
             target = cell(size(source)) ;  % want to preserve row vectors vs col vectors
             for j=1:nElements ,
-                target{j} = source{j}.copyGivenParent(parent);
+                target{j} = source{j}.copy();
             end
         end  % function
         

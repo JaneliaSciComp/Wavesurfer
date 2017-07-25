@@ -2,11 +2,11 @@ classdef ElectrodeManagerController < ws.Controller
     methods
         function self=ElectrodeManagerController(wavesurferController,wavesurferModel)
             % Call superclass constructor
-            electrodeManager = wavesurferModel.Ephys.ElectrodeManager ;
-            self = self@ws.Controller(wavesurferController,electrodeManager) ; 
+            %electrodeManager = wavesurferModel.Ephys.ElectrodeManager ;
+            self = self@ws.Controller(wavesurferController,wavesurferModel) ; 
 
             % Create the figure, store a pointer to it
-            fig = ws.ElectrodeManagerFigure(electrodeManager,self) ;
+            fig = ws.ElectrodeManagerFigure(wavesurferModel,self) ;
             self.Figure_ = fig ;
         end
         
@@ -52,7 +52,7 @@ classdef ElectrodeManagerController < ws.Controller
             newValue=get(source,'Value');
             electrodeIndex=find(isTheElectrode);
             %self.Model.setElectrodeModeOrScaling(electrodeIndex,'IsCommandEnabled',newValue);  %#ok<FNDSB>        
-            self.Model.do('setElectrodeModeOrScaling', electrodeIndex, 'IsCommandEnabled', newValue) ;  %#ok<FNDSB>        
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'IsCommandEnabled', newValue) ;  %#ok<FNDSB>        
         end               
         
         function TestPulseQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -75,17 +75,17 @@ classdef ElectrodeManagerController < ws.Controller
 
         function MonitorPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Acquisition.ChannelNames;
+            wavesurferModel=self.Model;
+            %ephys=electrodeManager.Parent;
+            %wavesurferModel=ephys.Parent;
+            validChoices=wavesurferModel.AIChannelNames;
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.MonitorPopups);
             indexOfElectrode = find(isTheElectrode, 1) ;
             %electrode=self.Model.Electrodes{isTheElectrode};
             %electrode.MonitorChannelName=choice;
-            self.Model.do('setElectrodeMonitorChannelName', indexOfElectrode, choice) ;
+            self.Model.do('setElectrodeProperty', indexOfElectrode, 'MonitorChannelName', choice) ;
         end
         
 %         function currentMonitorPopupActuated(self,source)
@@ -116,15 +116,15 @@ classdef ElectrodeManagerController < ws.Controller
         
         function CommandPopupActuated(self, source, event, varargin)  %#ok<INUSD>
             % Get the list of valid choices, if we can
-            electrodeManager=self.Model;
-            ephys=electrodeManager.Parent;
-            wavesurferModel=ephys.Parent;
-            validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+            %electrodeManager=self.Model;
+            %ephys=electrodeManager.Parent;
+            wavesurferModel=self.Model;
+            validChoices=wavesurferModel.AOChannelNames;
             % Do the rest
             choice=ws.getPopupMenuSelection(source,validChoices);
             isTheElectrode=(source==self.Figure.CommandPopups);
             indexOfElectrode = find(isTheElectrode, 1) ;
-            self.Model.do('setElectrodeCommandChannelName', indexOfElectrode, choice) ;
+            self.Model.do('setElectrodeProperty', indexOfElectrode, 'CommandChannelName', choice) ;
         end
         
 %         function voltageCommandPopupActuated(self,source)
@@ -132,7 +132,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrodeManager=self.Model;
 %             ephys=electrodeManager.Parent;
 %             wavesurferModel=ephys.Parent;
-%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             validChoices=wavesurferModel.AOChannelNames;
 %             % Do the rest
 %             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.VoltageCommandPopups);
@@ -145,7 +145,7 @@ classdef ElectrodeManagerController < ws.Controller
 %             electrodeManager=self.Model;
 %             ephys=electrodeManager.Parent;
 %             wavesurferModel=ephys.Parent;
-%             validChoices=wavesurferModel.Stimulation.AnalogChannelNames;
+%             validChoices=wavesurferModel.AOChannelNames;
 %             % Do the rest
 %             choice=ws.getPopupMenuSelection(source,validChoices);
 %             isTheElectrode=(source==self.Figure.CurrentCommandPopups);
@@ -154,17 +154,17 @@ classdef ElectrodeManagerController < ws.Controller
 %         end
         
         function ModePopupActuated(self, source, event, varargin)  %#ok<INUSD>
-            isTheElectrode=(source==self.Figure.ModePopups);
-            electrodeIndex=find(isTheElectrode,1);
-            electrode=self.Model.Electrodes{electrodeIndex};
-            allowedModes=electrode.getAllowedModes();
-            allowedModesAsStrings=cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false);
-            modeAsString=ws.getPopupMenuSelection(source,allowedModesAsStrings);
-            modeIndex=find(strcmp(modeAsString,allowedModesAsStrings),1);
+            isTheElectrode = (source==self.Figure.ModePopups) ;
+            electrodeIndex = find(isTheElectrode,1) ;
+            electrode = self.Model.Electrodes{electrodeIndex} ;
+            allowedModes = electrode.AllowedModes ;
+            allowedModesAsStrings = cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false) ;
+            modeAsString = ws.getPopupMenuSelection(source,allowedModesAsStrings) ;
+            modeIndex = find(strcmp(modeAsString,allowedModesAsStrings),1) ;
             if ~isempty(modeIndex) ,
-                mode=allowedModes{modeIndex};
+                mode = allowedModes{modeIndex} ;
                 %self.Model.setElectrodeModeOrScaling(electrodeIndex,'Mode',mode);
-                self.Model.do('setElectrodeModeOrScaling', electrodeIndex, 'Mode', mode) ;
+                self.Model.do('setElectrodeProperty', electrodeIndex, 'Mode', mode) ;
             end
         end  % function
         
@@ -172,7 +172,7 @@ classdef ElectrodeManagerController < ws.Controller
             indexOfElectrode = find((source==self.Figure.LabelEdits),1) ;
             newLabel = get(source,'String') ;
             %self.Model.setElectrodeName(indexOfElectrode, newLabel) ;
-            self.Model.do('setElectrodeName', indexOfElectrode, newLabel) ;            
+            self.Model.do('setElectrodeProperty', indexOfElectrode, 'Name', newLabel) ;            
         end  % function
 
         function MonitorScaleEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -180,7 +180,7 @@ classdef ElectrodeManagerController < ws.Controller
             newValue=str2double(get(source,'String'));
             electrodeIndex=find(isTheElectrode);
             %self.Model.setElectrodeMonitorScaling(electrodeIndex,newValue);  %#ok<FNDSB>
-            self.Model.do('setElectrodeMonitorScaling', electrodeIndex, newValue) ;  %#ok<FNDSB>
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'MonitorScaling', newValue) ;  %#ok<FNDSB>
         end  % function
         
 %         function currentMonitorScaleEditActuated(self,source)
@@ -197,7 +197,7 @@ classdef ElectrodeManagerController < ws.Controller
             newValue=str2double(get(source,'String'));
             electrodeIndex=find(isTheElectrode);
             %self.Model.setElectrodeCommandScaling(electrodeIndex,newValue);  %#ok<FNDSB>
-            self.Model.do('setElectrodeCommandScaling', electrodeIndex, newValue) ;  %#ok<FNDSB>
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'CommandScaling', newValue) ;  %#ok<FNDSB>
         end  % function
         
 %         function voltageMonitorScaleEditActuated(self,source)
@@ -223,7 +223,7 @@ classdef ElectrodeManagerController < ws.Controller
             isTheElectrode=(source==self.Figure.TypePopups);
             electrodeIndex=find(isTheElectrode);
             %self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
-            self.Model.do('setElectrodeType', electrodeIndex, choice) ; %#ok<FNDSB>            
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'Type', choice) ; %#ok<FNDSB>            
         end  % function
         
         function IndexWithinTypeEditActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -232,7 +232,7 @@ classdef ElectrodeManagerController < ws.Controller
             newValueAsString=get(source,'String');
             newValue=str2double(newValueAsString);
             %self.Model.setElectrodeIndexWithinType(electrodeIndex,newValue); %#ok<FNDSB>
-            self.Model.do('setElectrodeIndexWithinType', electrodeIndex, newValue) ; %#ok<FNDSB>
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'IndexWithinType', newValue) ; %#ok<FNDSB>
         end  % function
 
     end  % methods

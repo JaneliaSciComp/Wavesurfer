@@ -1,17 +1,19 @@
 classdef Triggering < ws.Subsystem 
+    % In the following, a "trigger" is same as a "trigger scheme".  There was
+    % once a distinction, but no longer.
     
     properties (Dependent = true)
-        BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
-        CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
-        ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
+        %BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
+        %CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
+        %ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         TriggerCount
         CounterTriggerCount
         ExternalTriggerCount
-        Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
+        %Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-        AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
-        StimulationTriggerScheme
+        %AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
+        %StimulationTriggerScheme
         AcquisitionTriggerSchemeIndex  % this is an index into Schemes
         StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
           % if StimulationUsesAcquisitionTriggerScheme is true, this
@@ -38,8 +40,8 @@ classdef Triggering < ws.Subsystem
     end
         
     methods
-        function self = Triggering(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Triggering()
+            self@ws.Subsystem() ;
             self.IsEnabled = true ;
             self.BuiltinTrigger_ = ws.BuiltinTrigger() ;  % triggers are now parentless
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
@@ -85,7 +87,7 @@ classdef Triggering < ws.Subsystem
             % Set up the built-in trigger task
             if isempty(self.BuiltinTriggerDABSTask_) ,
                 self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-                sweepTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger.PFIID) ;
+                sweepTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
                 %builtinTrigger = self.BuiltinTrigger_
                 self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
                 self.BuiltinTriggerDABSTask_.writeDigitalData(false);
@@ -103,7 +105,7 @@ classdef Triggering < ws.Subsystem
             self.StimulationCounterTask_ = [];
 
             % If needed, set up the acquisition counter task
-            acquisitionTrigger = self.AcquisitionTriggerScheme ;            
+            acquisitionTrigger = self.getAcquisitionTrigger_() ;            
             if isa(acquisitionTrigger, 'ws.CounterTrigger') ,  % acquisition subsystem is always enabled
                 deviceName = acquisitionTrigger.DeviceName ;
                 counterID = acquisitionTrigger.CounterID ;
@@ -113,7 +115,7 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                acquisitionTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger.PFIID) ;
+                acquisitionTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
                 self.AcquisitionCounterTask_ = ...
                     ws.CounterTriggerTask(self, ...
                                           taskName, ...
@@ -126,12 +128,12 @@ classdef Triggering < ws.Subsystem
             end            
             
             % If needed, set up the stimulation counter task
-            stimulationTrigger = self.StimulationTriggerScheme ;            
+            stimulationTrigger = self.getStimulationTrigger_() ;            
             % With the new no-parent movement, it's nontrivial to determine
             % from here whether stimulation is enabled.  So we just set up
             % the stimulation counter trigger regardless.  The stim
             % susbsystem will not create any tasks that are triggered off it, so this should be OK.
-            %if self.Parent.Stimulation.IsEnabled && isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
+            %if self.Parent.IsStimulationEnabled && isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
             if isa(stimulationTrigger, 'ws.CounterTrigger') && acquisitionTrigger~=stimulationTrigger ,
                 deviceName = stimulationTrigger.DeviceName ;
                 counterID = stimulationTrigger.CounterID ;
@@ -141,7 +143,7 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                stimulationTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger.PFIID) ;
+                stimulationTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
                 self.StimulationCounterTask_ = ...
                     ws.CounterTriggerTask(self, ...
                                           taskName, ...
@@ -239,26 +241,22 @@ classdef Triggering < ws.Subsystem
     end  % protected methods block   
     
     methods
-        function out = get.BuiltinTrigger(self)
-            out = self.BuiltinTrigger_;
-        end  % function
-        
-        function out = get.ExternalTriggers(self)
-            out = self.ExternalTriggers_;
-        end  % function
-        
-        function out = get.CounterTriggers(self)
-            out = self.CounterTriggers_;
-        end  % function
+%         function out = get.BuiltinTrigger(self)
+%             out = self.BuiltinTrigger_;
+%         end  % function
+%         
+%         function out = get.ExternalTriggers(self)
+%             out = self.ExternalTriggers_;
+%         end  % function
+%         
+%         function out = get.CounterTriggers(self)
+%             out = self.CounterTriggers_;
+%         end  % function
         
 %         function out = get.AcquisitionSchemes(self)
 %             %out = [ {self.BuiltinTrigger} self.ExternalTriggers ] ;
 %             out = self.Schemes ;
 %         end  % function
-        
-        function out = get.Schemes(self)
-            out = [ {self.BuiltinTrigger} self.CounterTriggers self.ExternalTriggers ] ;
-        end  % function
         
         function result = get.TriggerCount(self)
             result = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
@@ -271,15 +269,56 @@ classdef Triggering < ws.Subsystem
         function result = get.ExternalTriggerCount(self)
             result = length(self.ExternalTriggers_) ;
         end
+    end  % public methods 
+       
+    methods (Access=protected)
+        function out = getTriggers_(self)
+            out = [ {self.BuiltinTrigger_} self.CounterTriggers_ self.ExternalTriggers_ ] ;
+        end  % function
         
-        function out = get.AcquisitionTriggerScheme(self)
+        function out = getAcquisitionTrigger_(self)
             index = self.NewAcquisitionTriggerSchemeIndex_ ;
             if isempty(index) ,
                 out = [] ;
             else
-                out = self.Schemes{index} ;
+                schemes = self.getTriggers_() ;
+                out = schemes{index} ;
             end
         end  % function
+        
+        function out = getStimulationTrigger_(self)
+            if self.StimulationUsesAcquisitionTriggerScheme ,
+                out = self.getAcquisitionTrigger_() ;
+            else                
+                index = self.StimulationTriggerSchemeIndex_ ;
+                if isempty(index) ,
+                    out = [] ;
+                else
+                    schemes = self.getTriggers_() ;
+                    out = schemes{index} ;
+                end
+            end
+        end  % function                
+    end  % protected methods
+    
+    methods
+        function result = getStimulationTriggerCopy(self)
+            trigger = self.getStimulationTrigger_() ;
+            if isempty(trigger) ,
+                result = [] ;
+            else
+                result = trigger.copy() ;
+            end
+        end
+        
+        function result = getAcquisitionTriggerProperty(self, propertyName)
+            trigger = self.getAcquisitionTrigger_() ;
+            if isempty(trigger) ,
+                result = [] ;
+            else
+                result = trigger.(propertyName) ;
+            end
+        end
         
         function result = get.AcquisitionTriggerSchemeIndex(self)            
             result = self.NewAcquisitionTriggerSchemeIndex_ ;
@@ -336,19 +375,6 @@ classdef Triggering < ws.Subsystem
             end
             % self.broadcast('Update');                        
         end
-        
-        function out = get.StimulationTriggerScheme(self)
-            if self.StimulationUsesAcquisitionTriggerScheme ,
-                out = self.AcquisitionTriggerScheme ;
-            else                
-                index = self.StimulationTriggerSchemeIndex_ ;
-                if isempty(index) ,
-                    out = [] ;
-                else
-                    out = self.Schemes{index} ;
-                end
-            end
-        end  % function        
     end  % methods block
     
     methods
@@ -464,7 +490,7 @@ classdef Triggering < ws.Subsystem
         end
         
         function result = counterIDsInUse(self)
-            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers)) ;
+            result = sort(cellfun(@(trigger)(trigger.CounterID), self.CounterTriggers_)) ;
         end
         
         function result = freeCounterIDs(self)
@@ -500,7 +526,7 @@ classdef Triggering < ws.Subsystem
         
         function result = pfiIDsInUse(self)
             %counterTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.CounterTriggers) ;
-            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers) ;
+            externalTriggerPFIIDs = cellfun(@(trigger)(trigger.PFIID), self.ExternalTriggers_) ;
             
             % We consider all the default counter PFIs to be "in use",
             % regardless of whether any of the counters are in use.
@@ -509,7 +535,7 @@ classdef Triggering < ws.Subsystem
             counterTriggerPFIIDs = (nPFIIDsInHardware-nCounterIDsInHardware):nPFIIDsInHardware ;
 
             % The built-in trigger PFI line is also in use
-            builtinTriggerPFIID = self.BuiltinTrigger.PFIID ;
+            builtinTriggerPFIID = self.BuiltinTrigger_.PFIID ;
             
             result = sort([externalTriggerPFIIDs builtinTriggerPFIID counterTriggerPFIIDs]) ;
         end
@@ -642,16 +668,16 @@ classdef Triggering < ws.Subsystem
 %         end  % function        
 
 %         function releaseCurrentCounterTriggers_(self)
-%             if isa(self.AcquisitionTriggerScheme,'ws.CounterTrigger') ,
-%                 %self.AcquisitionTriggerScheme.releaseInterval();
-%                 self.AcquisitionTriggerScheme.releaseRepeatCount() ;
+%             if isa(self.getAcquisitionTrigger_(),'ws.CounterTrigger') ,
+%                 %self.getAcquisitionTrigger_().releaseInterval();
+%                 self.getAcquisitionTrigger_().releaseRepeatCount() ;
 %             end
 %         end  % function
         
         function overrideAcquisitionTriggerRepeatCountIfNeeded_(self, nSweepsPerRun)
-            if isa(self.AcquisitionTriggerScheme, 'ws.CounterTrigger') ,
-                %self.AcquisitionTriggerScheme.overrideInterval(0.01);
-                self.AcquisitionTriggerScheme.overrideRepeatCount(nSweepsPerRun) ;
+            if isa(self.getAcquisitionTrigger_(), 'ws.CounterTrigger') ,
+                %self.getAcquisitionTrigger_().overrideInterval(0.01);
+                self.getAcquisitionTrigger_().overrideRepeatCount(nSweepsPerRun) ;
             end
         end  % function        
     end  % protected methods block
@@ -675,7 +701,7 @@ classdef Triggering < ws.Subsystem
                     target.mimic(source) ;
                 elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandlesGivenParent(source,self) ;
+                    target = ws.Coding.copyCellArrayOfHandles(source) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,
@@ -793,7 +819,7 @@ classdef Triggering < ws.Subsystem
         end  % function
         
         function result = triggerNames(self)
-            schemes = self.Schemes ;
+            schemes = self.getTriggers_() ;
             result = cellfun(@(scheme)(scheme.Name),schemes,'UniformOutput',false) ;            
         end  % function
         

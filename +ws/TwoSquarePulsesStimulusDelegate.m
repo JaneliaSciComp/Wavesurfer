@@ -24,17 +24,17 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = TwoSquarePulsesStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
-            pvArgs = ...
-                ws.filterPVArgs(varargin, ...
-                                          {'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'}, ...
-                                          {});
-            propNames = pvArgs(1:2:end);
-            propValues = pvArgs(2:2:end);               
-            for i = 1:length(propValues)
-                self.(propNames{i}) = propValues{i};
-            end            
+        function self = TwoSquarePulsesStimulusDelegate()
+            self = self@ws.StimulusDelegate() ;
+%             pvArgs = ...
+%                 ws.filterPVArgs(varargin, ...
+%                                           {'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'}, ...
+%                                           {});
+%             propNames = pvArgs(1:2:end);
+%             propValues = pvArgs(2:2:end);               
+%             for i = 1:length(propValues)
+%                 self.(propNames{i}) = propValues{i};
+%             end            
         end
         
         function set.FirstPulseAmplitude(self, newValue)

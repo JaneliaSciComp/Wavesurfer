@@ -83,7 +83,11 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         
         % read the scaling coefficients
         try
-            analogScalingCoefficients=dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
+                analogScalingCoefficients = dataFileAsStruct.header.AIScalingCoefficients ;
+            else
+                analogScalingCoefficients = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            end
         catch
             error('Unable to read channel scaling coefficients from file.');
         end

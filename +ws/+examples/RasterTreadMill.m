@@ -23,7 +23,7 @@ classdef RasterTreadMill < ws.UserClass
     
     % protected, transient variables
     properties (Access = protected, Transient = true)
-        Parent_
+        RootModel_
         BinWidth_
         BinCenters_
         SampleRate_
@@ -60,9 +60,9 @@ classdef RasterTreadMill < ws.UserClass
     end
     
     methods        
-        function self = RasterTreadMill(userCodeManager)
+        function self = RasterTreadMill(wsModel)
             %fprintf('RasterTreadMill::RasterTreadMill()\n') ;
-            self.Parent_ = userCodeManager ;
+            self.RootModel_ = wsModel ;
             self.synchronizeTransientStateToPersistentState_() ;
         end
         
@@ -80,7 +80,7 @@ classdef RasterTreadMill < ws.UserClass
                 end
                 self.LatencyFig_ = [] ;
             end                
-            self.Parent_ = [] ;
+            self.RootModel_ = [] ;
         end
         
         function result = get.SampleRate(self) 
@@ -127,7 +127,7 @@ classdef RasterTreadMill < ws.UserClass
         function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
             % get data
             analogData = wsModel.getLatestAIData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData();
+            digitalData = wsModel.getLatestDIData();
             
             nScans = size(analogData,1) ;
             %fprintf('RasterTreadMill::dataAvailable(): nScans: %d\n',nScans) ;
@@ -350,7 +350,7 @@ classdef RasterTreadMill < ws.UserClass
             hold(self.RasterAxes_, 'on');
             axis(self.RasterAxes_, 'ij');
             ylabel(self.RasterAxes_, 'lap #');
-            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);
+            title(self.RasterAxes_, ['channel ' wsModel.AIChannelNames{self.ElectrodeChannel}]);
             set(self.RasterAxes_,'XTickLabel',{});
             set(self.RasterAxes_,'YLim',[0.5 1.5+eps]);
             set(self.RasterAxes_,'YTick',1);
@@ -385,7 +385,7 @@ classdef RasterTreadMill < ws.UserClass
             hold(self.RasterAxes_, 'on');
             axis(self.RasterAxes_, 'ij');
             ylabel(self.RasterAxes_, 'lap #');
-            title(self.RasterAxes_, ['channel ' wsModel.Acquisition.ChannelNames{self.ElectrodeChannel}]);            
+            title(self.RasterAxes_, ['channel ' wsModel.AIChannelNames{self.ElectrodeChannel}]);            
         end
         
         function syncLatencyFigAndAxes_(self)
@@ -417,7 +417,7 @@ classdef RasterTreadMill < ws.UserClass
     
     methods (Access=protected)
         function synchronizeTransientStateToPersistentState_(self)
-            rootModel = self.Parent_.Parent ;
+            rootModel = self.RootModel_ ;
             if isa(rootModel,'ws.WavesurferModel') ,
                 self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;

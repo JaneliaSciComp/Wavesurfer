@@ -27,7 +27,7 @@ classdef StimulusSequenceTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function createDefaultSequence(self)
-            stimulusLibrary = ws.StimulusLibrary([]);  % no parent
+            stimulusLibrary = ws.StimulusLibrary();  % no parent
             
             stimulus1Index = stimulusLibrary.addNewStimulus();
             stimulusLibrary.setItemProperty('ws.Stimulus', stimulus1Index, 'TypeString', 'SquarePulseTrain') ;

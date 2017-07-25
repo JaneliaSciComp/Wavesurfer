@@ -13,7 +13,7 @@ classdef Logging < ws.Subsystem
     
     properties (Dependent=true, SetAccess=immutable)
         AugmentedBaseName
-        NextRunAbsoluteFileName
+        %NextRunAbsoluteFileName
         CurrentRunAbsoluteFileName  % If WS is idle, empty.  If acquiring, the current run file name
         %CurrentSweepIndex
     end
@@ -58,8 +58,8 @@ classdef Logging < ws.Subsystem
     end
     
     methods
-        function self = Logging(parent)
-            self@ws.Subsystem(parent) ;
+        function self = Logging()
+            self@ws.Subsystem() ;
             self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
@@ -239,31 +239,31 @@ classdef Logging < ws.Subsystem
             result = self.augmentedBaseName_();
         end  % function
         
-        function value=get.NextRunAbsoluteFileName(self)
-            wavesurferModel=self.Parent;
-            firstSweepIndex = self.NextSweepIndex ;
-            numberOfSweeps = wavesurferModel.NSweepsPerRun ;
-            fileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfSweeps);
-            value = fullfile(self.FileLocation, fileName);
-        end  % function
+%         function value=get.NextRunAbsoluteFileName(self)
+%             wavesurferModel=self.Parent;
+%             firstSweepIndex = self.NextSweepIndex ;
+%             numberOfSweeps = wavesurferModel.NSweepsPerRun ;
+%             fileName = self.sweepSetFileNameFromNumbers(firstSweepIndex, numberOfSweeps) ;
+%             value = fullfile(self.FileLocation, fileName);
+%         end  % function
         
         function value=get.CurrentRunAbsoluteFileName(self)
             value = self.CurrentRunAbsoluteFileName_ ;
         end  % function
         
-        function startingRun(self)
+        function startingRun(self, nextRunAbsoluteFileName, isAIChannelActive, expectedSweepScanCount, acquisitionSampleRate, areSweepsFiniteDuration, headerStruct)
             if isempty(self.FileBaseName) ,
                 error('wavesurfer:saveddatasystem:emptyfilename', 'Data logging can not be enabled with an empty filename.');
             end
             
-            wavesurferModel = self.Parent ;
+            %wavesurferModel = self.Parent ;
             
             % Note that we have not yet created the current data file
             self.DidCreateCurrentDataFile_ = false ;
             %fprintf('Just did self.DidCreateCurrentDataFile_ = false\n') ;
             
             % Set the chunk size for writing data to disk
-            nActiveAnalogChannels = sum(wavesurferModel.IsAIChannelActive) ;
+            nActiveAnalogChannels = sum(isAIChannelActive) ;
             
             % For h5create() it is useful to set
             % ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels] since
@@ -271,15 +271,15 @@ classdef Logging < ws.Subsystem
             % (otherwise, all values are set to 0 from when the sweep is aborted up to
             % wavesurferModel.Acquisition.SampleRate * wavesurferModel.Acquisiton.Duration)
             self.ExpectedSweepSizeForWritingHDF5_ = [Inf nActiveAnalogChannels];
-            if wavesurferModel.AreSweepsFiniteDuration ,
-                self.ChunkSize_ = [wavesurferModel.ExpectedSweepScanCount nActiveAnalogChannels];
+            if areSweepsFiniteDuration ,
+                self.ChunkSize_ = [expectedSweepScanCount nActiveAnalogChannels];
             else
-                self.ChunkSize_ = [wavesurferModel.AcquisitionSampleRate nActiveAnalogChannels];
+                self.ChunkSize_ = [acquisitionSampleRate nActiveAnalogChannels];
             end
                 
             % Determine the absolute file names
             %self.CurrentRunAbsoluteFileName_ = fullfile(self.FileLocation, [trueLogFileName '.h5']);
-            self.CurrentRunAbsoluteFileName_ = self.NextRunAbsoluteFileName ;
+            self.CurrentRunAbsoluteFileName_ = nextRunAbsoluteFileName ;
             fprintf('In ws.Logging.startingRun(), just set self.CurrentRunAbsoluteFileName_ to "%s"\n', self.CurrentRunAbsoluteFileName_) ;
             %self.CurrentSweepIndex_ = self.NextSweepIndex ;
             
@@ -316,7 +316,7 @@ classdef Logging < ws.Subsystem
 
             % Extract all the "headerable" info in the WS model into a
             % structure
-            headerStruct = wavesurferModel.encodeForHeader();
+            %headerStruct = wavesurferModel.encodeForHeader();
             
             % Put the header into into the log file header
             %numericPrecision=4;
@@ -386,12 +386,12 @@ classdef Logging < ws.Subsystem
             self.nullOutTransients_();
         end
         
-        function stoppingRun(self)
-            self.stoppingOrAbortingRun_();
+        function stoppingRun(self, wsModel)
+            self.stoppingOrAbortingRun_(wsModel);
         end
         
-        function abortingRun(self)
-            self.stoppingOrAbortingRun_();
+        function abortingRun(self, wsModel)
+            self.stoppingOrAbortingRun_(wsModel);
         end        
     end  % public methods block
     
@@ -412,7 +412,7 @@ classdef Logging < ws.Subsystem
             end
         end
         
-        function stoppingOrAbortingRun_(self)
+        function stoppingOrAbortingRun_(self, wsModel)
             %fprintf('Logging::stoppingOrAbortingRun_()\n');
         
             %dbstop if caught
@@ -436,15 +436,15 @@ classdef Logging < ws.Subsystem
                     try
                         ws.deleteFileWithoutWarning(originalAbsoluteLogFileName) ;
                     catch exception ,
-                        self.logWarning('ws:unableToDeleteLogFile', ...
-                                        sprintf('Unable to delete data file %s after stop/abort', ...
-                                                originalLogFileName), ...
-                                        exception) ;                            
+                        wsModel.logWarning('ws:unableToDeleteLogFile', ...
+                                           sprintf('Unable to delete data file %s after stop/abort', ...
+                                                   originalLogFileName), ...
+                                           exception) ;                            
                     end
                 else    
                     % We logged some sweeps, but maybe not the number requested.  Check for this, renaming the
                     % data file if needed.
-                    newLogFileName = self.sweepSetFileNameFromNumbers_(firstSweepIndex,numberOfPartialSweepsLogged) ;
+                    newLogFileName = self.sweepSetFileNameFromNumbers(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
                     if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
                         % Nothing to do in this case.
@@ -462,24 +462,24 @@ classdef Logging < ws.Subsystem
                                     ws.deleteFileWithoutWarning(newAbsoluteLogFileName) ;
                                     isSafeToMoveFile = true ;
                                 catch exception ,
-                                    self.logWarning('ws:unableToRenameLogFile', ...
-                                                    sprintf(horzcat('Unable to rename data file %s to %s after stop/abort, ', ...
-                                                                    'because couldn''t delete pre-existing file %s'), ...
-                                                            originalLogFileName, ...
-                                                            newLogFileName, ...
-                                                            newLogFileName), ...
-                                                    exception) ;
+                                    wsModel.logWarning('ws:unableToRenameLogFile', ...
+                                                       sprintf(horzcat('Unable to rename data file %s to %s after stop/abort, ', ...
+                                                                       'because couldn''t delete pre-existing file %s'), ...
+                                                               originalLogFileName, ...
+                                                               newLogFileName, ...
+                                                               newLogFileName), ...
+                                                       exception) ;
                                 end
                             else
                                 % This means there's a filename collision,
                                 % and user doesn't want us to overwrite
                                 % files without asking.
                                 isSafeToMoveFile = false ; 
-                                self.logWarning('ws:unableToRenameLogFile', ...
-                                                sprintf('Unable to rename data file %s to %s after stop/abort, because file %s already exists', ...
-                                                        originalLogFileName, ...
-                                                        newLogFileName, ...
-                                                        newLogFileName) ) ;
+                                wsModel.logWarning('ws:unableToRenameLogFile', ...
+                                                   sprintf('Unable to rename data file %s to %s after stop/abort, because file %s already exists', ...
+                                                           originalLogFileName, ...
+                                                           newLogFileName, ...
+                                                           newLogFileName) ) ;
                             end
                         else
                             % Target file doesn't exist, so safe to move
@@ -490,11 +490,11 @@ classdef Logging < ws.Subsystem
                             try
                                 movefile(originalAbsoluteLogFileName, newAbsoluteLogFileName) ;
                             catch exception ,
-                                self.logWarning('ws:unableToRenameLogFile', ...
-                                                sprintf('Unable to rename data file %s to %s after stop/abort', ...
-                                                        originalLogFileName, ...
-                                                        newLogFileName), ...
-                                                exception) ;
+                                wsModel.logWarning('ws:unableToRenameLogFile', ...
+                                                   sprintf('Unable to rename data file %s to %s after stop/abort', ...
+                                                           originalLogFileName, ...
+                                                           newLogFileName), ...
+                                                   exception) ;
                             end                                
                         end                
                     end
@@ -536,7 +536,8 @@ classdef Logging < ws.Subsystem
     end
 
     methods
-        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSL>
+        function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, ...
+                               nActiveAnalogChannels, nActiveDigitalChannels, expectedSweepScanCount)  %#ok<INUSL>
             %ticId=tic();
             
 %             if self.Parent.State == ws.ApplicationState.TestPulsing || self.CurrentDatasetOffset_ < 1
@@ -553,7 +554,7 @@ classdef Logging < ws.Subsystem
                 thisSweepIndex = self.NextSweepIndex ;
                 timestampDatasetName = sprintf('/sweep_%04d/timestamp',thisSweepIndex) ;
                 h5create(self.CurrentRunAbsoluteFileName_, timestampDatasetName, [1 1]);  % will consist of one double
-                nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
+                %nActiveAnalogChannels = self.Parent.Acquisition.NActiveAnalogChannels ;
                 if nActiveAnalogChannels>0 ,
                     analogScansDatasetName = sprintf('/sweep_%04d/analogScans',thisSweepIndex) ;
                     h5create(self.CurrentRunAbsoluteFileName_, ...
@@ -562,7 +563,7 @@ classdef Logging < ws.Subsystem
                         'ChunkSize', self.ChunkSize_, ...
                         'DataType','int16');
                 end
-                nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
+                %nActiveDigitalChannels = self.Parent.Acquisition.NActiveDigitalChannels ;
                 if nActiveDigitalChannels>0 ,
                     if nActiveDigitalChannels<=8
                         dataType = 'uint8';
@@ -587,7 +588,7 @@ classdef Logging < ws.Subsystem
             
             if ~isempty(self.FileBaseName) ,
                 if ~isempty(rawAnalogData) ,
-                    currentRunAbsoluteFileName = self.CurrentRunAbsoluteFileName_ ;
+                    %currentRunAbsoluteFileName = self.CurrentRunAbsoluteFileName_ ;
                     h5write(self.CurrentRunAbsoluteFileName_, ...
                             sprintf('/sweep_%04d/analogScans', ...
                                     self.WriteToSweepId_), ...
@@ -607,8 +608,8 @@ classdef Logging < ws.Subsystem
             
             self.CurrentDatasetOffset_ = self.CurrentDatasetOffset_ + size(scaledAnalogData, 1);
             
-            wavesurferModel = self.Parent ;
-            if self.CurrentDatasetOffset_ > wavesurferModel.ExpectedSweepScanCount ,
+            %wavesurferModel = self.Parent ;
+            if self.CurrentDatasetOffset_ > expectedSweepScanCount ,
                 self.CurrentDatasetOffset_ = 1;
                 self.WriteToSweepId_ = self.WriteToSweepId_ + 1;
             end
@@ -633,8 +634,10 @@ classdef Logging < ws.Subsystem
                 result = baseNameWithDate ;
             end
         end  % function        
-        
-        function fileName = sweepSetFileNameFromNumbers_(self,firstSweepIndex,numberOfSweeps)
+    end  % protected methods block
+    
+    methods
+        function fileName = sweepSetFileNameFromNumbers(self, firstSweepIndex, numberOfSweeps)
             augmentedBaseName = self.augmentedBaseName_() ;
             % This is a "leaf" file name, not an absolute one
             if numberOfSweeps == 1 ,
@@ -653,7 +656,7 @@ classdef Logging < ws.Subsystem
                 end
             end            
         end  % function        
-    end  % static methods block
+    end  % public methods block
     
     methods (Access=protected)        
         function out = getPropertyValue_(self, name)

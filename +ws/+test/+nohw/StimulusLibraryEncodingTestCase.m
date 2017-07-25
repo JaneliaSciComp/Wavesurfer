@@ -19,7 +19,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulus=stimuli{2};  % a test pulse
 
             % make an orpan copy
-            orphanStimulus = stimulus.copyGivenParent([]);
+            orphanStimulus = stimulus.copy();
             
             % save to disk
             fileName=[tempname() '.mat'];
@@ -39,7 +39,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             %stimuli=self.makeExampleStimulusParts();
-            stimulus=stimulusLibrary.Stimuli{1}.copyGivenParent([]);  % this is a chirp
+            stimulus=stimulusLibrary.Stimuli{1}.copy();  % this is a chirp
 
             % save to disk
             fileName=[tempname() '.mat'];
@@ -195,7 +195,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %stimulusLibrary.add(sequences);
             stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
             
-            stimulusLibraryCheck = ws.StimulusLibrary([]) ;
+            stimulusLibraryCheck = ws.StimulusLibrary() ;
             stimulusLibraryCheck.mimic(stimulusLibrary) ;
             
             self.verifyTrue(stimulusLibraryCheck.isSelfConsistent()) ;  % test soundness of the restored one            

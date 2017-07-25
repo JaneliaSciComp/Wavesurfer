@@ -1,6 +1,6 @@
 classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)
+    % To run these tests, need to have an NI daq attached.  
+    % (Can be a simulated daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -19,7 +19,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
         function testCorrectNumberOfElectrodes(self)
             thisDirName=fileparts(mfilename('fullpath'));
             %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
-            [wsModel,wsController]=wavesurfer() ;
+            [wsModel,wsController] = wavesurfer() ;
 
 %             % Add the channels
 %             wsModel.addAIChannel() ;
@@ -32,10 +32,16 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             
             % Load a fast protocol with 2 electrodes and one with 6
             % electrodes
-            fpOne = wsModel.FastProtocols{1};
-            fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
-            fpTwo = wsModel.FastProtocols{2};
-            fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
+            %fpOne = wsModel.FastProtocols{1};
+            %fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
+            wsModel.setFastProtocolProperty(1, ...
+                                            'ProtocolFileName', ...
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg') ) ;
+            %fpTwo = wsModel.FastProtocols{2};
+            %fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
+            wsModel.setFastProtocolProperty(2, ...
+                                            'ProtocolFileName', ...
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg') ) ;
             storeNumberOfElectrodesInFigure = zeros(1,2);
             storeNumberOfElectrodesInModel = zeros(1,2);
             
@@ -46,7 +52,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 %pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButtonIndex);
                 try
                     %wsController.FastProtocolButtonsActuated(pressedButtonHandle);
-                    wsController.fakeControlActuatedInTest('FastProtocolButtons', i) ;
+                    ws.fakeControlActuationInTestBang(wsController, 'FastProtocolButtons', i) ;
                 catch exception
                     % If just warnings, print them but proceed.  Otherwise,
                     % rethrow.
@@ -61,7 +67,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                 
                 electrodeManagerController = wsController.ElectrodeManagerController ;
                 storeNumberOfElectrodesInFigure(i) = length(electrodeManagerController.Figure.LabelEdits);
-                storeNumberOfElectrodesInModel(i) = wsModel.Ephys.ElectrodeManager.NElectrodes;
+                storeNumberOfElectrodesInModel(i) = wsModel.ElectrodeCount ;
             end
             
             % Compare number of electrodes in figure and model

@@ -85,9 +85,9 @@ wsModel.setSingleDOChannelTerminalID(channelIndex,1) ;
 % laserDOChannel.TerminalID = 1 ;
 
 % configure the rest of the stuff
-wsModel.Stimulation.IsEnabled = true ;
-wsModel.Display.IsEnabled = true ;
-wsModel.Logging.IsOKToOverwrite=true ;
+wsModel.IsStimulationEnabled = true ;
+wsModel.IsDisplayEnabled = true ;
+wsModel.IsOKToOverwriteDataFile=true ;
 
 wsModel.AreSweepsContinuous = true ;
 wsModel.AIChannelScales = [0.001 0.01] ;  % electrode, velocity
@@ -167,12 +167,12 @@ wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindin
 %Stimulation.StimulusLibrary.SelectedOutputable = stimulusMap1 ;
 wsModel.setSelectedOutputableByIndex(1) ;  % should be the only one
 
-wsModel.UserCodeManager.ClassName = 'ws.examples.RasterTreadMill' ;
+wsModel.UserClassName = 'ws.examples.RasterTreadMill' ;
 
 %scope = wsModel.Display.Scopes{1} ;
 %scope.YLim = [-55 +25] ;
-wsModel.Display.setYLimitsForSingleAnalogChannel(1, [-75 +25]) ;
-wsModel.Display.setYLimitsForSingleAnalogChannel(2, [-10 +60]) ;
+wsModel.setYLimitsForSingleAIChannel(1, [-75 +25]) ;
+wsModel.setYLimitsForSingleAIChannel(2, [-10 +60]) ;
 
 wsModel.XSpan=10 ;  % s
 

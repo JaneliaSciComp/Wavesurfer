@@ -241,19 +241,29 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
             
             responseCodeInfo.errorName = num2str(responseCode);
             
-            %Determine size of errorDescription
+            % Determine size of errorDescription
             errorDescriptionLength = obj.apiCallRaw('DAQmxGetErrorString', responseCode, libpointer(), 0);
             
-            %Get errorDescription
+            % Get errorDescription
             if errorDescriptionLength <= 0
-                responseCodeInfo.errorDescription = '';
+                errorDescription = '';
             else
-                errorDescription = char(ones(1, errorDescriptionLength));
-                responseCodeInfo.errorDescription = obj.apiCall('DAQmxGetErrorString', responseCode, errorDescription, errorDescriptionLength);
+                errorDescriptionBuffer = char(ones(1, errorDescriptionLength));
+                errorDescription = obj.apiCall('DAQmxGetErrorString', responseCode, errorDescriptionBuffer, errorDescriptionLength);
             end
             
+            % Get the extended error description
+            extendedErrorDescriptionLength = obj.apiCallRaw('DAQmxGetExtendedErrorInfo', libpointer(), 0) ;
+            if errorDescriptionLength <= 0
+                extendedErrorDescription = '' ;
+            else
+                extendedErrorDescriptionBuffer = char(ones(1, extendedErrorDescriptionLength));
+                extendedErrorDescription = obj.apiCall('DAQmxGetExtendedErrorInfo', extendedErrorDescriptionBuffer, extendedErrorDescriptionLength);
+            end
+            responseCodeInfo.errorDescription = horzcat(errorDescription, '\n\n', extendedErrorDescription) ;
+            
             %Determine if warning or error
-            responseCodeInfo.warningOnly = responseCode > 0;
+            responseCodeInfo.warningOnly = (responseCode > 0) ;
             
         end
         
