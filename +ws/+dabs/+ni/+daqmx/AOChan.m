@@ -25,7 +25,8 @@ classdef AOChan < ws.dabs.ni.daqmx.private.AnalogChan
             
             errorCond = false;
             for i=1:length(obj)
-                resolution = obj(i).getQuiet('resolution');
+                %resolution = obj(i).getQuiet('resolution');  % fails for multi-device tasks, on adding channel from 2nd device
+                resolution = 16 ;  % WS only supports X-series, and all X-series boards have 16-bit AO resolution (no more, no less)
                 if resolution <= 8
                     rawSampClass = 'int8';
                 elseif resolution <=16 
