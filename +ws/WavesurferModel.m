@@ -1265,7 +1265,9 @@ classdef WavesurferModel < ws.Model
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
                 end
                 if self.Triggering_.IsEnabled ,
-                    self.Triggering_.startingRun() ;
+                    timebaseSource = self.TimebaseSource ;
+                    timebaseRate = self.TimebaseRate ;
+                    self.Triggering_.startingRun(timebaseSource, timebaseRate) ;
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
