@@ -66,7 +66,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         % Buttons at the bottom, that also persist for the lifetime of the
         % window
         UpdateButton
-        SoftpanelButton
+        CommandSoftpanelButton
         ReconnectButton
         
         % Checkbox that persists for the lifetime of the window
@@ -159,7 +159,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             areAnyElectrodesCommandable=wsModel.areAnyElectrodesCommandable();
             
             % Update toggle state of Softpanel button
-            set(self.SoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
+            set(self.CommandSoftpanelButton,'Value',areAnyElectrodesCommandable&&isInControlOfSoftpanelModeAndGains);
             
             % Update state of Update Before Run checkbox
             doTrodeUpdateBeforeRun = wsModel.DoTrodeUpdateBeforeRun ;
@@ -365,7 +365,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             set(self.RemoveButton,'Enable',ws.onIff(isRemoveButtonEnabled));
             areAnyElectrodesCommandable = wsModel.areAnyElectrodesCommandable() ;
             isSoftpanelButtonEnabled= isWavesurferIdle&&areAnyElectrodesCommandable;
-            set(self.SoftpanelButton,'Enable',ws.onIff(isSoftpanelButtonEnabled));
+            set(self.CommandSoftpanelButton,'Enable',ws.onIff(isSoftpanelButtonEnabled));
             %isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart&&areSoftpanelsEnabled;
             areAnyElectrodesSmart = wsModel.areAnyElectrodesSmart() ;
             isUpdateButtonEnabled= isWavesurferIdle&&areAnyElectrodesSmart;  
@@ -377,7 +377,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             isUpdateBeforeRunCheckboxEnabled = isWavesurferIdle&&isDoTrodeUpdateBeforeRunSensible;
             set(self.DoTrodeUpdateBeforeRunCheckbox,'Enable',ws.onIff(isUpdateBeforeRunCheckboxEnabled));
 %             % Update toggle state of Softpanel button
-%             set(self.SoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
+%             set(self.CommandSoftpanelButton,'Value',areAnyElectrodesSmart&&isInControlOfSoftpanelModeAndGains);
             
             % Specify common parameters for channel popups
 %             fallbackItem='(Unspecified)';
@@ -691,11 +691,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'String','Update', ...
                           'Callback',@(src,evt)(self.controlActuated('UpdateButton',src,evt)));
                       
-            self.SoftpanelButton= ...
+            self.CommandSoftpanelButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
                           'Style','togglebutton', ...
                           'String','Command Softpanel', ...
-                          'Callback',@(src,evt)(self.controlActuated('SoftpanelButton',src,evt)));
+                          'Callback',@(src,evt)(self.controlActuated('CommandSoftpanelButton',src,evt)));
 
             self.ReconnectButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -1121,7 +1121,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             rightButtonRowXOffset=figureWidth-bottomButtonSideSpaceWidth-rightButtonRowWidth;
             
             softpanelButtonXOffset=leftButtonRowXOffset;
-            set(self.SoftpanelButton,'Position',[softpanelButtonXOffset buttonYOffset softpanelBottomButtonWidth bottomButtonHeight]);
+            set(self.CommandSoftpanelButton,'Position',[softpanelButtonXOffset buttonYOffset softpanelBottomButtonWidth bottomButtonHeight]);
             
             updateButtonXOffset=leftButtonRowXOffset+softpanelBottomButtonWidth+interBottomButtonSpaceWidth;
             set(self.UpdateButton,'Position',[updateButtonXOffset buttonYOffset bottomButtonWidth bottomButtonHeight]);

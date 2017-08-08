@@ -42,7 +42,7 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.do('set', 'DoTrodeUpdateBeforeRun', newValue) ;
         end
         
-        function SoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
+        function CommandSoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             %self.Model.toggleSoftpanelEnablement();
             self.Model.do('toggleSoftpanelEnablement');
         end
