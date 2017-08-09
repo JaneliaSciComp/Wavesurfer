@@ -4,15 +4,13 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -29,12 +27,12 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
-            wsModel.UserCodeManager.ClassName='ws.examples.FlipDOFromSweepToSweep';
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
+            wsModel.UserClassName='ws.examples.FlipDOFromSweepToSweep';
 
             nSweeps=5;
             wsModel.NSweepsPerRun=nSweeps;
@@ -51,7 +49,7 @@ classdef UntimedDigitalOutputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Godzilla out first AO';
-%             firstDoChannelName=wsModel.Stimulation.DigitalChannelNames{1};
+%             firstDoChannelName=wsModel.DOChannelNames{1};
 %             map.addBinding(firstDoChannelName,godzilla);
 % 
 %             % make the new map the current sequence/map

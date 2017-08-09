@@ -10,7 +10,7 @@ On breakout box, connect AO0 to AI0, AO1 to AI1
 
 Start wavesurfer
 
-Check stim, display, overwrite without asking boxes
+Check stim, overwrite without asking boxes
 
 Show acquire
 

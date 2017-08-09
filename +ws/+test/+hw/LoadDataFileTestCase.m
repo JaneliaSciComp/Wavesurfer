@@ -4,15 +4,13 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -32,11 +30,11 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=3;
             wsModel.NSweepsPerRun=nSweeps;
@@ -54,8 +52,8 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -69,14 +67,14 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
-            absoluteFileName = wsModel.Logging.NextRunAbsoluteFileName ;
+            absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
             wsModel.record();  % blocking, now
@@ -89,11 +87,11 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             dataAsStruct = ws.loadDataFile(absoluteFileName) ;
             
             % These should not error, at the least...
-            fs = dataAsStruct.header.Acquisition.SampleRate;   %#ok<NASGU> % Hz
-            analogChannelNames = dataAsStruct.header.Acquisition.AnalogChannelNames;   %#ok<NASGU> 
-            analogChannelScales = dataAsStruct.header.Acquisition.AnalogChannelScales;   %#ok<NASGU> 
-            analogChannelUnits = dataAsStruct.header.Acquisition.AnalogChannelUnits;   %#ok<NASGU> 
-            digitalChannelNames = dataAsStruct.header.Acquisition.DigitalChannelNames;   %#ok<NASGU>    
+            fs = dataAsStruct.header.AcquisitionSampleRate;   %#ok<NASGU> % Hz
+            analogChannelNames = dataAsStruct.header.AIChannelNames;   %#ok<NASGU> 
+            analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
+            analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
+            digitalChannelNames = dataAsStruct.header.DIChannelNames;   %#ok<NASGU>    
             analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
             %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
             digitalData = dataAsStruct.sweep_0003.digitalScans ;   %#ok<NASGU>
@@ -103,6 +101,62 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
         end  % function
+
+        function testOneDI(self)
+            isCommandLineOnly='--nogui';
+            wsModel = wavesurfer(isCommandLineOnly) ;
+
+            % Remove the pre-existing channels
+            wsModel.IsAIChannelMarkedForDeletion(:) = true ;
+            wsModel.deleteMarkedAIChannels() ;
+            wsModel.IsAOChannelMarkedForDeletion(:) = true ;
+            wsModel.deleteMarkedAOChannels() ;
+            
+            % Make sure all deleted
+            self.verifyEqual(wsModel.NAIChannels, 0) ;            
+            self.verifyEqual(wsModel.NAOChannels, 0) ;            
+            
+            % Add a single DI channel
+            wsModel.addDIChannel() ;
+                           
+            % set the data file name
+            thisFileName = mfilename() ;
+            [~,dataFileBaseName] = fileparts(thisFileName) ;
+            wsModel.DataFileBaseName = dataFileBaseName ;
+
+            % delete any preexisting data files
+            dataDirNameAbsolute=wsModel.DataFileLocation;
+            dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
+            delete(dataFilePatternAbsolute);
+
+            absoluteFileName = wsModel.NextRunAbsoluteFileName ;
+            
+            pause(1);
+            wsModel.record();  % blocking, now
+            pause(0.5);
+
+            % Make sure that worked
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
+            
+            % Try to read the data file
+            dataAsStruct = ws.loadDataFile(absoluteFileName) ;
+            
+            % These should not error, at the least...
+            fs = dataAsStruct.header.AcquisitionSampleRate;   %#ok<NASGU> % Hz
+%             analogChannelNames = dataAsStruct.header.AIChannelNames;   %#ok<NASGU> 
+%             analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
+%             analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
+            digitalChannelNames = dataAsStruct.header.DIChannelNames;   %#ok<NASGU>    
+%            analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
+            %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
+            digitalData = dataAsStruct.sweep_0001.digitalScans ;   %#ok<NASGU>
+            %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
+            %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
+            
+            % Delete the data file
+            delete(dataFilePatternAbsolute);
+        end  % function
+        
         
     end  % test methods
 

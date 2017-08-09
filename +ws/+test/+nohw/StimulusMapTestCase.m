@@ -37,7 +37,7 @@ classdef StimulusMapTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function createDefaultMapIndex(self)
-            stimulusLibrary = ws.StimulusLibrary([]);  % no parent
+            stimulusLibrary = ws.StimulusLibrary();  % no parent
             
 %             stimulus1Index.DCOffset = 0;
 %             stimulus1Index.Delegate.Period = 0.5;  % s

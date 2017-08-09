@@ -10,7 +10,7 @@ classdef CounterTriggerTask < handle
 %     end
     
     properties (Access = protected)
-        Parent_
+        %Parent_
         TaskName_ = 'Counter Trigger Task';        
         DeviceName_ = ''   % NI device name to use
         CounterID_ = 0   % Index of NI counter (CTR) to use (zero-based)
@@ -26,8 +26,9 @@ classdef CounterTriggerTask < handle
 %     end
     
     methods
-        function self = CounterTriggerTask(parent, taskName, deviceName, counterID, repeatFrequency, repeatCount, pfiID, triggerTerminalName)            
-            self.Parent_ = parent;
+        function self = CounterTriggerTask(taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceName, counterID, repeatFrequency, ...
+                                           repeatCount, pfiID, triggerTerminalName)            
+            %self.Parent_ = parent;
             self.TaskName_ = taskName;
             self.DeviceName_ = deviceName;
             self.CounterID_ = counterID;
@@ -36,7 +37,7 @@ classdef CounterTriggerTask < handle
             self.PFIID_ = pfiID ;
             self.TriggerTerminalName_ = triggerTerminalName ;
                         
-            self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_);
+            self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(self.TaskName_) ;
             %deviceName
             %counterID
             %repeatFrequency
@@ -46,10 +47,12 @@ classdef CounterTriggerTask < handle
             else
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', repeatCount);
             end
+            set(self.DabsDaqTask_, 'sampClkTimebaseSrc', sampleClockTimebaseSource) ;
+            set(self.DabsDaqTask_, 'sampClkTimebaseRate', sampleClockTimebaseRate) ;
             exportTerminalList = sprintf('PFI%d', pfiID) ;
-            self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList)
+            self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList) ;
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType('rising') ;
-            self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+            self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
         end  % function
         
         function delete(self)
@@ -59,7 +62,7 @@ classdef CounterTriggerTask < handle
             end                
             ws.deleteIfValidHandle(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
             self.DabsDaqTask_ = [];            
-            self.Parent_ = [];
+            %self.Parent_ = [];
         end
         
         function start(self)

@@ -15,14 +15,14 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = FileStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.filterPVArgs(varargin, {'FileName'}, {});
-            propNames = pvArgs(1:2:end);
-            propValues = pvArgs(2:2:end);               
-            for i = 1:length(propValues)
-                self.(propNames{i}) = propValues{i};
-            end            
+        function self = FileStimulusDelegate()
+            self=self@ws.StimulusDelegate();
+%             pvArgs = ws.filterPVArgs(varargin, {'FileName'}, {});
+%             propNames = pvArgs(1:2:end);
+%             propValues = pvArgs(2:2:end);               
+%             for i = 1:length(propValues)
+%                 self.(propNames{i}) = propValues{i};
+%             end            
         end  % function
         
         %e.g. sprintf('C:\\Users\\arthurb\\Documents\\MATLAB\\Wavesurfer\\data\\electrode%d.wav',i)

@@ -16,6 +16,8 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         MaximumNumberOfTriggersPerSweep
         DurationToBlankAfterRisingEdge  % s
         DurationToBlankAfterFallingEdge  % s        
+        RefractoryPeriod  % s, don't trigger for this long after previous trigger
+        ProbabilityOfSincereSweep  % the probability of a non-sham sweep
     end  % properties
 
     % Information that you want to stick around between calls to the
@@ -32,6 +34,9 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
         NTriggersCompletedThisSweep_
         NScansToBlankAfterRisingEdge_
         NScansToBlankAfterFallingEdge_        
+        RefractoryPeriodInScans_
+        NScansSinceLastTriggerFallingEdge_
+        IsThisSweepSincere_
     end
     
     methods
@@ -47,6 +52,8 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             self.DurationToBlankAfterRisingEdge = 2 ;  % s
             self.DurationToBlankAfterFallingEdge = 4 ;  % s
             %self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
+            self.RefractoryPeriod = 0.050 ;  % s
+            self.ProbabilityOfSincereSweep = 1 ;
         end
         
         function delete(self) %#ok<INUSD>
@@ -121,6 +128,22 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 self.NTriggersCompletedThisSweep_ = 0 ;
                 % Record the new NSweepsCompletedInThisRun
                 self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
+                self.RefractoryPeriodInScans_ = self.RefractoryPeriod * fs ;
+                self.NScansSinceLastTriggerFallingEdge_ = inf ;
+                
+                % rand() will generate the same sequence of values in each
+                % Matlab session if you don't do this
+                seed = getfield(rng(),'Seed') ;  % the seed is zero on Matlab start-up
+                if seed==0 ,
+                    rng('shuffle') ;
+                end
+                %seed = getfield(rng(),'Seed')
+                
+                U = rand(1) ;   % uniform RV on [0,1)  
+                isThisSweepSincere = (U<self.ProbabilityOfSincereSweep) ;  
+                    % e.g. if p=1/2, want to be sincere iff U /in [0,1/2) i.e. iff U<1/2, since that's same prob as U /in [1/2,1)
+                %isThisSweepSincere_ = ws.fif(isempty(self.IsThisSweepSincere_),false, ~self.IsThisSweepSincere_) ;
+                self.IsThisSweepSincere_ = isThisSweepSincere ;
                 isFirstCallInSweep = true ;
             else
                 isFirstCallInSweep = false ;                
@@ -163,6 +186,9 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 hasBlankingSignalGoneHighThisSweep = true ;
             end
             
+            % Determine how many scans have passed since last trigger
+            % falling edge
+            
             % Determine the output value
             %fprintf('nScansSinceBlankingEdge: %8d\n', nScansSinceBlankingEdge) ;
             if self.IsEnabled ,                
@@ -172,31 +198,59 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 %nScansToBlankAfterFallingEdge_ = self.NScansToBlankAfterFallingEdge_
                 %nTriggersCompletedThisSweep_ = self.NTriggersCompletedThisSweep_
                 %maximumNumberOfTriggersPerSweep = self.MaximumNumberOfTriggersPerSweep
-                if hasBlankingSignalGoneHighThisSweep && ...
-                   nScansSinceBlankingRisingEdge>self.NScansToBlankAfterRisingEdge_ && ...
-                   nScansSinceBlankingFallingEdge>self.NScansToBlankAfterFallingEdge_ && ...
-                   self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,                    
-                    lastInputValue = analogData(end, self.InputAIChannelIndex) ;
-                    rectifiedLastInputValue = abs(lastInputValue) ;
-                    if rectifiedLastInputValue > self.InputThreshold ,
-                        newValueForRTOutput = 1 ;
-                        %fprintf('true option 1\n') ;
+                if hasBlankingSignalGoneHighThisSweep ,
+                    if nScansSinceBlankingRisingEdge>self.NScansToBlankAfterRisingEdge_ , 
+                        if nScansSinceBlankingFallingEdge>self.NScansToBlankAfterFallingEdge_ ,
+                            if self.NTriggersCompletedThisSweep_<self.MaximumNumberOfTriggersPerSweep ,
+                                if self.NScansSinceLastTriggerFallingEdge_ > self.RefractoryPeriodInScans_ ,                    
+                                    lastInputValue = analogData(end, self.InputAIChannelIndex) ;
+                                    rectifiedLastInputValue = abs(lastInputValue) ;
+                                    if rectifiedLastInputValue > self.InputThreshold ,
+                                        % We put the test for sincerity here, so that sham
+                                        % and non-sham trials are doing most-nearly the
+                                        % same thing.  (Maybe the animal could hear the
+                                        % fans spinning up on real trials otherwise, or
+                                        % something like that.)
+                                        if self.IsThisSweepSincere_ ,
+                                            newValueForRTOutput = 1 ;
+                                            %fprintf('true option 1\n') ;
+                                        else
+                                            newValueForRTOutput = 0 ;
+                                            %fprintf('false option 1\n') ;
+                                        end
+                                    else
+                                        newValueForRTOutput = 0 ;
+                                        %fprintf('false option 2\n') ;
+                                    end
+                                else
+                                    newValueForRTOutput = 0 ;
+                                    %fprintf('false option 3\n') ;
+                                end
+                            else
+                                newValueForRTOutput = 0 ;
+                                %fprintf('false option 4\n') ;
+                            end
+                        else
+                            newValueForRTOutput = 0 ;
+                            %fprintf('false option 5\n') ;
+                        end
                     else
                         newValueForRTOutput = 0 ;
-                        %fprintf('false option 1\n') ;
+                        %fprintf('false option 6\n') ;
                     end
                 else
                     newValueForRTOutput = 0 ;
-                    %fprintf('false option 2\n') ;
+                    %fprintf('false option 7\n') ;
                 end
             else
                 newValueForRTOutput = 0 ;
-                %fprintf('false option 3\n') ;
+                %fprintf('false option 8\n') ;
             end
             %fprintf('newValueForRTOutput: %d\n', newValueForRTOutput) ;
             
             % If the new output value differs from the old, set it
-            if isFirstCallInSweep || newValueForRTOutput ~= self.LastRTOutput_ ,
+            oldValueForRTOutput = self.LastRTOutput_ ;
+            if isFirstCallInSweep || newValueForRTOutput ~= oldValueForRTOutput ,
                 %fprintf('About to set RT output to %d\n', newValueForRTOutput) ;
                 doStateWhenUntimed = looper.DigitalOutputStateIfUntimed ;
                 outputDOChannelIndex = self.OutputDOChannelIndex ;
@@ -219,11 +273,23 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
                 self.LastRTOutput_ = newValueForRTOutput ;
             end
             
+            % Update the number of scans since the last falling edge
+            if ~isempty(oldValueForRTOutput) && oldValueForRTOutput && ~newValueForRTOutput ,
+                % Just did a falling edge
+                self.NScansSinceLastTriggerFallingEdge_ = 0 ;                
+            else
+                self.NScansSinceLastTriggerFallingEdge_ = self.NScansSinceLastTriggerFallingEdge_ + nScans ;
+            end
+            
             % Update the things that need to be updated after each call to
             % this function
             self.NScansSinceBlankingRisingEdge_ = nScansSinceBlankingRisingEdge ;
             self.NScansSinceBlankingFallingEdge_ = nScansSinceBlankingFallingEdge ;
-            self.FinalBlankingValue_ = blanking(end) ;                        
+            if self.IsBlankingEnabled ,
+                self.FinalBlankingValue_ = blanking(end) ;
+            else
+                self.FinalBlankingValue_ = false ;
+            end                
         end
         
         % These methods are called in the refiller process

@@ -1,0 +1,164 @@
+Users: This files contains information for the Wavesurfer
+developer(s).  You can safely ignore it.
+
+
+
+To bump version
+---------------
+
+1.  Change +ws/versionString.m to return the new version.
+
+2.  Add a paragraph to the README about the new release.
+
+
+
+To run automated tests
+----------------------
+
+To run all tests: Run 'ws.test()'.
+
+All tests are written using Matlab's built in unittest framework.
+ws.test() runs all the tests.
+
+If hardware is not present or is not configured, the +nohw packages in
+each framework can be run just the tests that do not require an active
+hardware connection.
+
+ws.clean() is a utility function related to testing, but not
+used by the actual tests.  It clears any persistent information (saved
+preferences, etc).  This allows running and testing Wavesurfer in a
+"clean" environment.
+
+
+
+Wavesurfer coding/development conventions
+-----------------------------------------
+
+We use git-flow to organize our branches:
+http://nvie.com/posts/a-successful-git-branching-model/
+
+--
+
+Property names are camelcase, with the first letter uppercase.
+
+--
+
+Method names are camelcase, with the first letter lowercase. (One
+exception to this is control-actuation methods in a controller.  These
+are camelcase, with the first letter uppercase.  This is because the
+controller method to call is automatically generated from the name of
+the control, and since those are properties, they're upper camelcase.)
+
+--
+
+Protected and private methods/properties have a trailing underscore in
+their name.  Occasionally, so do pubic methods/properties, to signal
+to consumers that they are not meant to be used by consumers unless
+the consumer really knows what they're doing.
+
+--
+
+Local variables are camelcase, with the first letter lowercase.
+
+--
+
+Indents are 4 spaces (no tabs).
+
+--
+
+Lines should be no longer than 160 chars.
+
+--
+
+Generally, don't use Hidden properties, SetObservable properties, or
+Abortset properties.  If you're tempted to use a hidden property,
+write a get<PropertyName> method (N.B. not a get-method).
+SetObservable and Abortset both cause things to happen that are not
+reflected in any way in the code at the point of access, and this is
+bad.
+
+--
+
+All public properties should be dependent (i.e. computed).  All
+independent (i.e. stored) properties should be private.  Among other
+things, this makes it easy to tell if a line of code is simply setting
+some object state (with no bang-on effects), or if that line of code
+might causes event(s) to be broadcast, views to get updated, etc.
+
+--
+
+Most WS windows are subclassed from ws.MCOSFigure, and each is
+associated with a controller subclassed from ws.Controller.  Often,
+there is also a model associated with a window, subclassed from
+ws.Model.  (But some windows share models.)
+
+(But note that in the last year (as of 04/2017) I've started
+implementing figures as ws.MCOSFigureWithSelfControl's, which
+essentially combine the view and the controller.  This seems to lead
+to cleaner code, generally.  The whole view/controller distinction
+probably makes more sense when you design your views in a UI
+designer, but we don't do that.  Moving forward, new figures should be
+ws.MCOSFigureWithSelfControl's.)
+
+--
+
+ws.Model defines an Update event, which should be broadcast at the end
+of any set method, unless the set method throws a
+ws:invalidPropertyValue error.  (This allows invalid property
+changes initiated from the GUI to be 'undone'.)
+
+--
+
+Generally, avoid abbreviations when naming things, unless they're
+abbreviations that are commonly used in spoken/written English.  "i" and
+"j" for indices are OK, but if you have more than two indices,
+probably better to give them names with more semantic content.
+Exceptions: "col" is OK for "column".
+
+--
+
+Names should generally be grammatically valid noun phrases.
+E.g. prefer "elementCount" or "numberOfElements" to "nElements".  
+
+--
+
+Names of booleans, or functions/methods returning a boolean, should
+start with some tense of the verb "to be".  E.g. "isRunning",
+"didFindMatchingElement", etc.
+
+--
+
+If you write a naked function that mutates one of its arguments, the
+mutated argument should be the first one, and you should end the name
+with "Bang".  (This is a convention from Lisp.)  This reminds
+consumers that this is no ordinary function call.
+
+--
+
+Somewhat controversially, we include compiled mex files (*.mexw64) in
+the source repo.  It would be nice to end this practice, but that
+would be a fair bit of work.  (Because then we'd have to automate the
+process of compiling them all.)  As of this writing (04/2017), we compile
+all of these with VS 2008, b/c that makes them dependent on a version
+of the MS Visual C++ redistributable that is already required by
+Matlab, hence is guaranteed to already be present.  If your fellow
+developers need to do something besides "mex --largeArrayDims
+whatever.cpp" with mex setup to use VS2008 to compile your mex file,
+leave a README.txt in the same folder as the .cpp to tell them what
+they need to do.
+
+--
+
+Every commit comment should start with "<branch name>:", e.g.
+
+    feature/raster: Did something awesome
+    develop: Did something rad
+    feature/untimed_do: Merge branch 'develop' into feature/untimed_do
+
+Note that you should do this for merge commits also, and not use git's
+default merge commit comment.  This helps *tons* when you have a
+complicated history and you're trying to determine which commits go in
+which git-flow "swimlane".
+
+--
+

@@ -1,17 +1,18 @@
 classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
-    % The controller from the main wavesurfer window.
+    % The controller for the main wavesurfer window.
     
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
-        DisplayController = [];
+        %DisplayController = [];
         TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
         UserCodeManagerController = [];
-        ChannelsController = [];
+        ChannelsFigure = [];
         TestPulserController = [];
         ElectrodeManagerController= [];        
-    end
+        GeneralSettingsFigure = [] ;
+    end    
     
     properties (Access=protected, Transient)
         % Defines relationships between controller instances/names, window instances,
@@ -20,6 +21,14 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
         % An array of all the child controllers, which is sometimes handy
         ChildControllers_ = {}
+    end
+    
+    properties
+        MyYLimDialogFigure=[]
+    end
+
+    properties (Access=protected)
+        PlotArrangementDialogFigure_ = []
     end
     
     methods
@@ -31,18 +40,32 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             fig = ws.WavesurferMainFigure(model,self) ;
             self.Figure_ = fig ;
 
-            % Create the controller specifications
-            %self.ControllerSpecifications_ = ws.WavesurferMainController.createControllerSpecs_() ;
-            
-            % Update all the controls
+            % Update all the controls for the main figure
             self.Figure.update();            
-            
-            % Show the display figure by default
-            self.showAndRaiseChildFigure_('DisplayController');
         end
         
         function delete(self)
-            self.ChildControllers_ = {} ;  % don't think this is needed
+            % This is the final common path for the Quit menu item and the
+            % upper-right close button.
+
+            % Delete the figure GHs for all the child controllers
+            for i=1:length(self.ChildControllers_) ,
+                thisChildController = self.ChildControllers_{i} ;
+                if isvalid(thisChildController) ,
+                    delete(thisChildController) ;
+                    self.ChildControllers_{i} = [] ;  % NB: Not changing the number of elements of self.ChildControllers_
+                end
+            end
+
+            % Delete the main figure
+            self.deleteFigure_() ;
+            
+            % Finally, delete the model explicitly, b/c the model uses a
+            % timer-like-thing for SI yoking, and don't want the model to stick around
+            % just b/c of that timer.  Sadly, this means that the model may get deleted
+            % in some situations where the user doesn't want it to, but this seems like
+            % the best of a bad set of options.
+            self.deleteModel_() ;            
         end
     end  % public methods block
     
@@ -60,118 +83,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         function StopButtonActuated(self, source, event)  %#ok<INUSD>
             self.Model.do('stop') ;
         end
-        
-        function SweepBasedRadiobuttonActuated(self, source, event)  %#ok<INUSD>
-            newValue = get(source, 'Value') ;
-            %ws.Controller.setWithBenefits(self.Model,'AreSweepsFiniteDuration',newValue);
-            self.Model.do('set', 'AreSweepsFiniteDuration', newValue) ;
-        end
-
-        function ContinuousRadiobuttonActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            %ws.Controller.setWithBenefits(self.Model,'AreSweepsContinuous',newValue);
-            self.Model.do('set', 'AreSweepsContinuous', newValue);
-        end
-
-        function NSweepsEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('set','NSweepsPerRun',newValue);
-        end
-
-        function SweepDurationEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('set','SweepDuration',newValue);
-        end
-
-        function AcquisitionSampleRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            %ws.Controller.setWithBenefits(self.Model.Acquisition,'SampleRate',newValue);
-            self.Model.do('setSubsystemProperty','Acquisition','SampleRate',newValue) ;
-        end
-
-        function StimulationEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Stimulation','IsEnabled',newValue);
-        end
-        
-        function StimulationSampleRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Stimulation','SampleRate',newValue);
-        end
-
-        function RepeatsCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Stimulation','DoRepeatSequence',newValue);
-        end
-
-        function DisplayEnabledCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Display','IsEnabled',newValue);
-        end
-        
-        function UpdateRateEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Display','UpdateRate',newValue);
-        end
-
-        function SpanEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Display','XSpan',newValue);
-        end
-
-        function AutoSpanCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Display','IsXSpanSlavedToAcquistionDuration',newValue);
-        end
-        
-        function LocationEditActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'String');
-            self.Model.do('setSubsystemProperty','Logging','FileLocation',newValue);
-        end
-
-        function BaseNameEditActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'String');
-            self.Model.do('setSubsystemProperty','Logging','FileBaseName',newValue);
-        end
-
-        function IncludeDateCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','DoIncludeDate',newValue);
-        end
-        
-        function SessionIndexCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','DoIncludeSessionIndex',newValue);
-        end
-        
-        function SessionIndexEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Logging','SessionIndex',newValue);
-        end
-        
-        function NextSweepEditActuated(self,source,event) %#ok<INUSD>
-            newValueAsString=get(source,'String');
-            newValue=str2double(newValueAsString);
-            self.Model.do('setSubsystemProperty','Logging','NextSweepIndex',newValue);
-        end
-
-        function OverwriteCheckboxActuated(self,source,event) %#ok<INUSD>
-            newValue=get(source,'Value');
-            self.Model.do('setSubsystemProperty','Logging','IsOKToOverwrite',newValue);
-        end        
-        
+                
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             initialFolderForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'cfg', 'load', initialFolderForFilePicker);            
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFolderForFilePicker);            
             if ~isempty(absoluteFileName)
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
@@ -203,7 +120,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             isFileNameKnown=false;
             userSettingsAbsoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-                        isFileNameKnown, '', 'usr', 'load', initialFilePickerFolder);                
+                        isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
             if ~isempty(userSettingsAbsoluteFileName) ,
                 ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
                 self.Model.do('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
@@ -221,148 +138,83 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function ExportModelAndControllerToWorkspaceMenuItemActuated(self,source,event) %#ok<INUSD>
-            assignin('base', 'wsModel', self.Model);
-            assignin('base', 'wsController', self);
+            assignin('base', 'wsModel', self.Model) ;
+            assignin('base', 'wsController', self) ;
         end
         
-        function QuitMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.windowCloseRequested();  % piggyback on the existing method for handling the upper-left window close button
+        function QuitMenuItemActuated(self,source,event)
+            self.windowCloseRequested(source, event);  % piggyback on the existing method for handling the upper-left window close button
         end
         
         % Tools menu
         function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('FastProtocolsController');
+            self.showAndRaiseChildFigure_('FastProtocolsController') ;
         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ChannelsController');
+            self.showAndRaiseChildFigure_('ChannelsFigure') ;
+        end
+        
+        function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.showAndRaiseChildFigure_('GeneralSettingsFigure') ;
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TriggersController');
+            self.showAndRaiseChildFigure_('TriggersController') ;
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController');
+            self.showAndRaiseChildFigure_('StimulusLibraryController') ;
         end
         
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('UserCodeManagerController');
+            self.showAndRaiseChildFigure_('UserCodeManagerController') ;
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ElectrodeManagerController');
+            self.showAndRaiseChildFigure_('ElectrodeManagerController') ;
         end
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TestPulserController');
+            self.showAndRaiseChildFigure_('TestPulserController') ;
         end
         
-        function DisplayMenuItemActuated(self, source, event)  %#ok<INUSD>
-            self.showAndRaiseChildFigure_('DisplayController');
-        end
+%         function DisplayMenuItemActuated(self, source, event)  %#ok<INUSD>
+%             self.showAndRaiseChildFigure_('DisplayController');
+%         end
         
         function YokeToScanimageMenuItemActuated(self,source,event) %#ok<INUSD>
-            %fprintf('Inside YokeToScanimageMenuItemActuated()\n');
-            model=self.Model;
-            if ~isempty(model) ,
-                try
-                    model.do('set', 'IsYokedToScanImage', ~model.IsYokedToScanImage) ;
-                catch cause
-                    if isequal(cause.identifier, 'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
-                        exception = MException('ws:cantEnableYokedMode', 'Can''t enable yoked mode: %s', cause.message) ;
-                        exception = addCause(exception, cause) ;
-                        throw(exception);
-                    else
-                        rethrow(cause);
-                    end
-                end
-            end                        
+%             wsModel = self.Model ;
+%             if ~isempty(wsModel) ,
+%                 try
+%                     wsModel.do('set', 'IsYokedToScanImage', ~wsModel.IsYokedToScanImage) ;
+%                 catch cause
+%                     if isequal(cause.identifier, 'WavesurferModel:UnableToDeleteExistingYokeFiles') ,
+%                         exception = MException('ws:cantEnableYokedMode', 'Can''t enable yoked mode: %s', cause.message) ;
+%                         exception = addCause(exception, cause) ;
+%                         throw(exception);
+%                     else
+%                         rethrow(cause);
+%                     end
+%                 end
+%             end                        
         end  % function
                 
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');
             msgbox(sprintf('This is WaveSurfer %s.',ws.versionString()),'About','modal');
-        end
-        
-        % Buttons
-        function ShowLocationButtonActuated(self,source,event)  %#ok<INUSD>
-            if ~isempty(self.Model) ,
-                winopen(self.Model.Logging.FileLocation) ;
-            end
-        end
-        
-        function ChangeLocationButtonActuated(self,source,event)  %#ok<INUSD>
-            folderName = uigetdir(self.Model.Logging.FileLocation, 'Change Data Folder...');
-            if isempty(folderName) || isnumeric(folderName) ,  % uigetdir returns 0 if user clicks "Cancel" button
-                % do nothing
-            else
-                self.Model.do('setSubsystemProperty', 'Logging', 'FileLocation', folderName) ;
-            end
         end        
-
-        function IncrementSessionIndexButtonActuated(self,source,event) %#ok<INUSD>
-            %self.Model.Logging.incrementSessionIndex();
-            self.Model.do('incrementSessionIndex') ;
-        end        
-        
-        function SourcePopupmenuActuated(self,source,event) %#ok<INUSD>
-            model=self.Model;
-            if ~isempty(model) ,
-                menuItems=get(source,'String');            
-                nMenuItems=length(menuItems);
-                if nMenuItems==0 ,
-                    doSomething = false ;
-                    outputableIndex = [] ;  % not used
-                else
-                    if nMenuItems==1 ,
-                        menuItem=menuItems{1};
-                        if isequal(menuItem,'(No library)') || isequal(menuItem,'(No outputables)') ,
-                            doSomething = false ;
-                            outputableIndex = [] ;  % not used
-                        elseif isequal(menuItem,'(None selected)') ||  isequal(menuItem,'(No selection)') ,
-                            doSomething = true ;
-                            outputableIndex = [] ;
-                            %model.Stimulation.StimulusLibrary.SelectedOutputable=[];
-                        else
-                            doSomething = true ;
-                            outputableIndex = 1 ;
-                            %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(1);
-                        end
-                    else
-                        % at least 2 menu items
-                        firstMenuItem=menuItems{1};
-                        menuIndex=get(source,'Value');
-                        if isequal(firstMenuItem,'(None selected)') || isequal(firstMenuItem,'(No selection)') ,
-                            doSomething = true ;
-                            outputableIndex=menuIndex-1;
-                        else
-                            doSomething = true ;
-                            outputableIndex=menuIndex;
-                        end
-                        %model.Stimulation.StimulusLibrary.setSelectedOutputableByIndex(outputableIndex);
-                    end
-                end            
-                if doSomething, 
-                    model.do('setSelectedOutputableByIndex', outputableIndex) ;
-                end
-            end
-        end  % method
-        
-        function EditStimulusLibraryButtonActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController');
-        end
         
         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
             if ~isempty(self.Model) ,
                 self.Model.startLoggingWarnings() ;
                 self.Model.openFastProtocolByIndex(fastProtocolIndex) ;
-                % Restore the layout...
-                layoutForAllWindows = self.Model.LayoutForAllWindows ;
-                monitorPositions = ws.Controller.getMonitorPositions() ;
-                self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-                % Done restoring layout
+                % % Restore the layout...
+                % layoutForAllWindows = self.Model.LayoutForAllWindows ;
+                % monitorPositions = ws.Controller.getMonitorPositions() ;
+                % self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+                % % Done restoring layout
                 % Now do an auto-start, if called for by the fast protocol
                 self.Model.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
                 % Now throw if there were any warnings
@@ -374,23 +226,101 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end
         end  % method
         
-        function windowCloseRequested(self, source, event)  %#ok<INUSD>
+        % View menu        
+        function ShowGridMenuItemGHActuated(self, varargin)
+            %self.Model.toggleIsGridOn();
+            self.Model.do('toggleIsGridOn') ;
+        end  % method        
+
+        function DoShowZoomButtonsMenuItemGHActuated(self, varargin)
+            self.Model.do('toggleDoShowZoomButtons') ;
+        end  % method        
+
+        function doColorTracesMenuItemActuated(self, varargin)
+            self.Model.do('toggleDoColorTraces') ;
+        end  % method        
+        
+        function InvertColorsMenuItemGHActuated(self, varargin)
+            self.Model.do('toggleAreColorsNormal');
+        end  % method        
+
+        function arrangementMenuItemActuated(self, varargin)
+            self.PlotArrangementDialogFigure_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            plotArrangementDialogModel = [] ;
+            parentFigurePosition = get(self.Figure,'Position') ;
+            wsModel = self.Model ;
+            %wsModel = wsModel.Display ;
+            channelNames = horzcat(wsModel.AIChannelNames, wsModel.DIChannelNames) ;
+            isDisplayed = horzcat(wsModel.IsAIChannelDisplayed, wsModel.IsDIChannelDisplayed) ;
+            plotHeights = horzcat(wsModel.PlotHeightFromAIChannelIndex, wsModel.PlotHeightFromDIChannelIndex) ;
+            rowIndexFromChannelIndex = horzcat(wsModel.RowIndexFromAIChannelIndex, wsModel.RowIndexFromDIChannelIndex) ;
+            %callbackFunction = ...
+            %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
+            callbackFunction = ...
+                @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(wsModel.do('setPlotHeightsAndOrder',isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
+            self.PlotArrangementDialogFigure_ = ...
+                ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
+                                               parentFigurePosition, ...
+                                               channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
+                                               callbackFunction) ;
+        end  % method        
+
+        % per-plot button methods
+        function YScrollUpButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            %self.Model.scrollUp(plotIndex);
+            self.Model.do('scrollUp', plotIndex) ;
+        end
+                
+        function YScrollDownButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            %self.Model.scrollDown(plotIndex);
+            self.Model.do('scrollDown', plotIndex) ;
+        end
+                
+        function YZoomInButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            %self.Model.zoomIn(plotIndex);
+            self.Model.do('zoomIn', plotIndex) ;
+        end
+                
+        function YZoomOutButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            %self.Model.zoomOut(plotIndex);
+            self.Model.do('zoomOut', plotIndex) ;
+        end
+                
+        function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Figure.setYAxisLimitsTightToData(plotIndex) ;
+        end  % method       
+        
+        function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
+            self.Figure.toggleAreYLimitsLockedTightToData(plotIndex) ;
+        end  % method       
+
+        function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
+            self.MyYLimDialogFigure=[] ;  % if not first call, this should cause the old controller to be garbage collectable
+            myYLimDialogModel = [] ;
+            parentFigurePosition = get(self.Figure,'Position') ;
+            wsModel = self.Model ;
+            %display = wsModel.Display ;            
+            aiChannelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            yLimits = wsModel.YLimitsPerAIChannel(:,aiChannelIndex)' ;
+            yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
+            %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
+            callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSingleAIChannel', aiChannelIndex, newYLimits)) ;
+            self.MyYLimDialogFigure = ...
+                ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
+        end  % method        
+        
+        function windowCloseRequested(self, source, event)
             % This is target method for pressing the close button in the
             % upper-right of the window.
-            % Need to put in some checks here so that user doesn't quit
+            % TODO: Put in some checks here so that user doesn't quit
             % by being slightly clumsy.
-            % This is also the final common path for the Quit menu item and the
-            % upper-right close button.
-
-            % Delete the figure GHs for all the child controllers
-            for i=1:length(self.ChildControllers_) ,
-                thisChildController = self.ChildControllers_{i} ;
-                if isvalid(thisChildController) ,
-                    thisChildController.quittingWavesurfer();
-                end
+            shouldStayPut = self.shouldWindowStayPutQ(source, event);
+            
+            if shouldStayPut ,
+                % Do nothing
+            else
+                delete(self) ;
             end
-
-            self.tellFigureToDeleteFigureGH_() ;
         end  % function        
     end  % Control actuation methods block
     
@@ -408,7 +338,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function quit(self)
-            self.windowCloseRequested() ;
+            delete(self) ;
         end  % function
     end  % convenience methods block
 
@@ -423,6 +353,17 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 childControllers{i}.setAreUpdatesEnabledForFigure(newValue) ;
             end
         end
+        
+        function layoutForAllWindowsRequested(self, varargin)
+            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
+            self.Model.setLayoutForAllWindows_(layoutForAllWindows) ;
+        end        
+        
+        function layoutAllWindows(self)
+            layoutForAllWindows = self.Model.LayoutForAllWindows ;
+            monitorPositions = ws.Controller.getMonitorPositions() ;
+            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;            
+        end        
     end  % public methods block             
     
     methods  (Access=protected)
@@ -439,10 +380,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % still want to set the layout afterwards...
             self.Model.startLoggingWarnings() ;
             self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
-            % Restore the layout...
-            layoutForAllWindows = self.Model.LayoutForAllWindows ;
-            monitorPositions = ws.Controller.getMonitorPositions() ;
-            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+%             % Restore the layout...  (This now happens when the model
+%             does a broadcast of LayoutAllWindows in
+%             openProtocolFileGivenFileName(), which results in
+%             self.layoutAllWindows() getting called.
+%             layoutForAllWindows = self.Model.LayoutForAllWindows ;
+%             monitorPositions = ws.Controller.getMonitorPositions() ;
+%             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
             % Now throw if there were any warnings
             warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
@@ -477,7 +421,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     fileName='';  % not used
                     lastProtocolFileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
                     if isempty(lastProtocolFileName)
-                        fileChooserInitialFileName = fullfile(pwd(),'untitled.cfg');
+                        fileChooserInitialFileName = fullfile(pwd(),'untitled.wsp');
                     else
                         fileChooserInitialFileName = lastProtocolFileName;
                     end
@@ -490,7 +434,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
-                    'cfg', ...
+                    'protocol', ...
                     'save', ...
                     fileChooserInitialFileName);
             
@@ -500,16 +444,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end  % method        
         
         function saveProtocolFileGivenFileName_(self, fileName)
-            % Actually loads the named config file.  fileName should be an
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
-            self.Model.do('saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout', absoluteFileName, layoutForAllWindows) ;
+            % Actually saves the named protocol file.
+            self.Model.do('saveProtocolFileGivenFileName', fileName) ;
         end  % function
         
         function saveOrSaveAsUser_(self, isSaveAs)
@@ -552,7 +488,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                     isFileNameKnown, ...
                     fileName, ...
-                    'usr', ...
+                    'user-settings', ...
                     'save', ...
                     fileChooserInitialFileName);
 
@@ -590,10 +526,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                                 'StimulusLibraryController' ...
                                 'FastProtocolsController' ...
                                 'UserCodeManagerController' ...
-                                'ChannelsController' ...
+                                'ChannelsFigure' ...
                                 'TestPulserController' ...
-                                'DisplayController' ...
-                                'ElectrodeManagerController' } ;
+                                'ElectrodeManagerController' ...
+                                'GeneralSettingsFigure' } ;
             for i=1:length(controllerNames) ,
                 controllerName = controllerNames{i} ;
                 if isprop(self, controllerName) ,  
@@ -668,24 +604,41 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
-            if didCreate ,
-                % no need to update
+            if isa(controller, 'ws.Controller') ,
+                if didCreate ,
+                    % no need to update
+                else
+                    controller.updateFigure();  % figure might be out-of-date
+                end
+                controller.showFigure();
+                controller.raiseFigure();
             else
-                controller.updateFigure();  % figure might be out-of-date
+                if didCreate ,
+                    % no need to update
+                else
+                    controller.update();  % figure might be out-of-date
+                end
+                % is a MCOSFigureWithSelfControl
+                controller.show() ;
+                controller.raise() ;
             end
-            controller.showFigure();
-            controller.raiseFigure();
         end  % function
         
-        function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerName, varargin)
-            if isempty(self.(controllerName)) ,
-                fullControllerClassName=['ws.' controllerName];
-                controller = feval(fullControllerClassName,self,self.Model);
+        function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerClassName, varargin)
+            if isempty(self.(controllerClassName)) ,
+                fullControllerClassName=['ws.' controllerClassName];
+                if isequal(fullControllerClassName, 'ws.GeneralSettingsFigure') ,
+                    controller = feval(fullControllerClassName, self.Model, self.Figure.getPositionInPixels() ) ;
+                elseif isequal(fullControllerClassName, 'ws.ChannelsFigure') ,
+                    controller = feval(fullControllerClassName, self.Model) ;
+                else
+                    controller = feval(fullControllerClassName, self, self.Model) ;
+                end
                 self.ChildControllers_{end+1}=controller;
-                self.(controllerName)=controller;
+                self.(controllerClassName)=controller;
                 didCreate = true ;
             else
-                controller = self.(controllerName);
+                controller = self.(controllerClassName);
                 didCreate = false ;
             end
         end  % function
@@ -702,43 +655,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     end  % protected methods
     
     methods (Static = true, Access = protected)
-%         function specs = createControllerSpecs_()
-%             %createControllerSpecs Specify data for managing controllers.
-%             %
-%             %   Wavesurfer contains several dialogs and figure windows.  This function defines
-%             %   the relationships between the controller variable name in this class, the
-%             %   .NET control name or HG fig file name, and controller class name.  This
-%             %   allows various functions that create these controllers on demand, save and
-%             %   load window layout information, and other actions to operate on this data
-%             %   structure, rather than having a long list of controllers in each of those
-%             %   methods.
-%             
-%             specs.TriggersController.className = 'ws.TriggersController';
-%             %specs.TriggersController.controlName = 'TriggersFigure';
-%                         
-%             specs.StimulusLibraryController.className = 'ws.StimulusLibraryController';
-%             %specs.StimulusLibraryController.controlName = 'StimulusLibraryFigure';
-%                         
-%             specs.FastProtocolsController.className = 'ws.FastProtocolsController';
-%             %specs.FastProtocolsController.controlName = 'FastProtocolsFigure';
-%             
-%             specs.UserCodeManagerController.className = 'ws.UserCodeManagerController';
-%             %specs.UserCodeManagerController.controlName = 'UserFunctionFigure';
-%             
-%             specs.ChannelsController.className = 'ws.ChannelsController';
-%             %specs.ChannelsController.controlName = 'ChannelsFigure';
-%             
-%             specs.TestPulserController.className = 'ws.TestPulserController';
-%             %specs.TestPulserController.controlName = 'TestPulserFigure';
-%             
-%             specs.DisplayController.className = 'ws.DisplayController';
-%             %specs.ScopeController.controlName = 'ScopeFigure';
-%             
-%             specs.ElectrodeManagerController.className = 'ws.ElectrodeManagerController';
-%             %specs.ElectrodeManagerController.controlName = 'ElectrodeManagerFigure';
-%         end  % function
-        
-        function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, cfgOrUsr, loadOrSave, fileChooserInitialFileName)
+        function absoluteFileName = obtainAndVerifyAbsoluteFileName_(isFileNameKnown, fileName, fileTypeString, loadOrSave, fileChooserInitialFileName)
             % A function that tries to obtain a valid absolute file name
             % for the caller. If isFileNameKnown is true, the function
             % will try to use fileName, possibly adding a leading
@@ -753,14 +670,16 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             
             % Determine the file descriptor string for use in file choose
             % dialog titles
-            if isequal(cfgOrUsr,'cfg') ,
-                fileTypeString='Protocol';
-            elseif isequal(cfgOrUsr,'usr') ,
-                fileTypeString='User Settings';
+            if isequal(fileTypeString,'protocol') ,
+                fileExtension = 'wsp' ;
+                humanReadableTitleCaseFileTypeString = 'Protocol' ;
+            elseif isequal(fileTypeString,'user-settings') ,
+                fileExtension = 'wsu' ;
+                humanReadableTitleCaseFileTypeString = 'User Settings' ;
             else
                 % this should never happen, but in case it does...
-                cfgOrUsr='cfg';
-                fileTypeString='Protocol';
+                fileExtension = 'wsp' ;
+                humanReadableTitleCaseFileTypeString = 'Protocol' ;
             end
             
             % Obtain an absolute file name
@@ -774,19 +693,21 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     p = pwd();
                 end
                 if isempty(e)
-                    e = cfgOrUsr;
+                    e = fileTypeString;
                 end
                 absoluteFileName = fullfile(p, [f e]);
             else                
                 if isequal(loadOrSave,'load')
                     [f,p] = ...
-                        uigetfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
-                                  sprintf('Open %s...', fileTypeString), ...
+                        uigetfile({sprintf('*.%s', fileExtension), sprintf('WaveSurfer %s Files',humanReadableTitleCaseFileTypeString) ; ...
+                                   '*.*',  'All Files (*.*)'}, ...
+                                  sprintf('Open %s...', humanReadableTitleCaseFileTypeString), ...
                                   fileChooserInitialFileName);
                 elseif isequal(loadOrSave,'save')
                     [f,p] = ...
-                        uiputfile({sprintf('*.%s', cfgOrUsr), sprintf('WaveSurfer %s File',fileTypeString)}, ...
-                                  sprintf('Save %s As...', fileTypeString), ...
+                        uiputfile({sprintf('*.%s', fileExtension), sprintf('WaveSurfer %s Files',humanReadableTitleCaseFileTypeString)  ; ...
+                                   '*.*',  'All Files (*.*)'}, ...
+                                  sprintf('Save %s As...', humanReadableTitleCaseFileTypeString), ...
                                   fileChooserInitialFileName);
                 else
                     % this should never happen, but if it does...

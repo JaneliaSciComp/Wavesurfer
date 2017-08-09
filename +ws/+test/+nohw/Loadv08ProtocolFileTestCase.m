@@ -13,16 +13,14 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Type','Figure')) ;
-            daqSystem = ws.dabs.ni.daqmx.System() ;
-            ws.deleteIfValidHandle(daqSystem.tasks) ;
+            ws.reset() ;
         end
     end
 
@@ -33,12 +31,12 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SW-new-test-3.cfg') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
-            wsController.fakeControlActuatedInTest('OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
+            ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
             pause(5) ;
             [~,warningID] = lastwarn() ;
             self.verifyNotEqual(warningID, 'MATLAB:hg:uicontrol:ValueMustBeScalar') ;
-            self.verifyTrue( wsModel.Stimulation.StimulusLibrary.isSelfConsistent() ) ;
-            wsController.windowCloseRequested() ;
+            self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;
+            wsController.quit() ;
         end  % function    
     end  % test methods
 

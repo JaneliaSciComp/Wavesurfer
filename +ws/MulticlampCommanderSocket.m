@@ -49,8 +49,8 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     
     methods
         %%
-        function self=MulticlampCommanderSocket(parent)
-            self@ws.Model(parent) ;
+        function self = MulticlampCommanderSocket()
+            self@ws.Model() ;
             %self.IsOpen_=false;
         end  % function
         
@@ -170,7 +170,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setMode(self,electrodeIndex,newMode)
-%             import ws.*
+%             %import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -337,7 +337,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-%             import ws.*
+%             %import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -387,7 +387,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-%             import ws.*
+%             %import ws.*
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
 %             end
@@ -448,7 +448,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 
 %         %%
 %         function self=setVoltageCommandGain(self,electrodeIndex,newValue)
-%             import ws.*
+%             %import ws.*
 %             % newValue should be in mV/V
 %             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
 %                 electrodeIndex=1;
@@ -497,7 +497,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 %         %%
 %         function setUIEnablement(self,newValueRaw)
 %             % Set whether the EPCMaster UI is enabled.  true==enabled.
-%             import ws.*
+%             %import ws.*
 %             newValue=logical(newValueRaw);
 %             if ~isscalar(newValue) ,
 %                 return
@@ -569,7 +569,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 %     
 %         %%
 %         function responseString=getResponseString(self,commandIndex)
-%             import ws.*
+%             %import ws.*
 %             responseFileId=fopen(self.ResponseFileName_,'r');
 %             if responseFileId<0 ,
 %                 % Couldn't open response file
@@ -646,7 +646,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
 % 
 %         %%
 %         function responseStrings=getResponseStrings(self,commandIndex)
-%             import ws.*
+%             %import ws.*
 %             %fprintf('Just entered getResponseStrings()\n');
 %             %commandIndex
 %             responseFileId=fopen(self.ResponseFileName_,'r');

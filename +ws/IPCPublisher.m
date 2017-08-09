@@ -1,7 +1,7 @@
-classdef IPCPublisher < ws.ZMQBinder    
+classdef IPCPublisher < ws.ZMQServer    
     methods
         function self = IPCPublisher(portNumber)
-            self@ws.ZMQBinder(portNumber,'ZMQ_PUB');
+            self@ws.ZMQServer(portNumber,'ZMQ_PUB');
         end  % function
 
         function send(self, methodName, varargin)

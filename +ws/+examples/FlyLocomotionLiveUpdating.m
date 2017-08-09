@@ -134,11 +134,11 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end
     
     methods
-        function self = FlyLocomotionLiveUpdating(userCodeManager)
+        function self = FlyLocomotionLiveUpdating(wsModel)
             % Figure out which is the one true Wavesurfer model so that we
             % only create figures in the true Wavesurfer model:
-            if isa(userCodeManager.Parent, 'ws.WavesurferModel')
-                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = userCodeManager.Parent.IsITheOneTrueWavesurferModel;
+            if isa(wsModel, 'ws.WavesurferModel')
+                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = wsModel.IsITheOneTrueWavesurferModel;
             else
                 self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
             end
@@ -234,10 +234,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % acquisition, used to calculate the gain. Also calculates DeltaTime_,
             % number of scans in first one percent and maximum number of
             % scans per sweep.
-            self.FirstOnePercentEndTime_ = wsModel.Acquisition.Duration/100;
-            self.DeltaTime_ = 1/wsModel.Acquisition.SampleRate ;  % s
+            self.FirstOnePercentEndTime_ = wsModel.SweepDuration/100;
+            self.DeltaTime_ = 1/wsModel.AcquisitionSampleRate ;  % s
             self.NumberOfScansInFirstOnePercentEndTime_ = ceil(self.FirstOnePercentEndTime_/self.DeltaTime_);
-            self.MaximumNumberOfScansPerSweep_ = wsModel.Acquisition.SampleRate * wsModel.Acquisition.Duration;
+            self.MaximumNumberOfScansPerSweep_ = wsModel.AcquisitionSampleRate * wsModel.SweepDuration;
             
             % Choose a maximum downsampling ratio. Here we choose the
             % maximum downsample ratio to be the downsampling ratio
@@ -249,7 +249,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % we can just plot the original downsampled data. Plotting the
             % downsampled data in this way is much faster than plotting all
             % the data.
-            self.MaximumDownsamplingRatio_ = ws.ratioSubsampling(self.DeltaTime_, 0.1*wsModel.Acquisition.Duration, self.ScreenSize_(4));
+            self.MaximumDownsamplingRatio_ = ws.ratioSubsampling(self.DeltaTime_, 0.1*wsModel.SweepDuration, self.ScreenSize_(4));
             if isempty(self.MaximumDownsamplingRatio_ )
                 self.MaximumDownsamplingRatio_ =1;
             end
@@ -275,7 +275,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         function startingSweep(self,wsModel,eventName) %#ok<INUSD>
             % Store only the sweep indices that are started, used to name
             % the figures
-            self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.Logging.NextSweepIndex];
+            self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.NextSweepIndex];
             
             % Initialize necessary variables, where "Recent" corresponds to
             % data just collected
@@ -333,7 +333,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
             
             % Get the analog data and number of scans
-            analogData = wsModel.Acquisition.getLatestAnalogData();
+            analogData = wsModel.getLatestAIData();
             nScans = size(analogData,1);
             totalScansInSweepPrevious = self.TotalScansInSweep_;
             self.TotalScansInSweep_ = self.TotalScansInSweep_ + nScans;
@@ -372,7 +372,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 %complete.
                 self.CumulativeRotationMeanToSubtract_ = nanmean(self.StoreSweepCumulativeRotation_(1:self.NumberOfScansInFirstOnePercentEndTime_));
                 self.BarPositionWrappedMeanToSubtract_ = nanmean(self.StoreSweepBarPositionWrapped_(1:self.NumberOfScansInFirstOnePercentEndTime_));
-                if self.TimeRecent_(end) + self.DeltaTime_ >= self.FirstOnePercentEndTime_ ;
+                if self.TimeRecent_(end) + self.DeltaTime_ >= self.FirstOnePercentEndTime_ ,
                     %Then this is the last time inside this statement
                     gain =nanmean( (self.StoreSweepBarPositionUnwrapped_(1:self.NumberOfScansInFirstOnePercentEndTime_) - self.BarPositionWrappedMeanToSubtract_)./...
                         (self.StoreSweepCumulativeRotation_(1:self.NumberOfScansInFirstOnePercentEndTime_) - self.CumulativeRotationMeanToSubtract_));
@@ -420,7 +420,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
             self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
             barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-            self.BarPositionHistogramTotal_ = self.BarPositionHistogramTotal_ + barPositionHistogramCountsRecent/wsModel.Acquisition.SampleRate;
+            self.BarPositionHistogramTotal_ = self.BarPositionHistogramTotal_ + barPositionHistogramCountsRecent/wsModel.AcquisitionSampleRate;
             set(self.BarPositionHistogramPlotHandle_,'XData',self.BarPositionHistogramBinCenters_, 'YData', self.BarPositionHistogramTotal_);
             
             % Calculate Vm, and update heatmap data and plots
@@ -574,10 +574,10 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         
         function setLEDState(self, looper, onOrOff)
             % Will set the LED state              
-            digitalOutputStateIfUntimed = looper.Stimulation.DigitalOutputStateIfUntimed ;
+            digitalOutputStateIfUntimed = looper.DOChannelStateIfUntimed ;
             desiredDigitalOutputStateIfUntimed = digitalOutputStateIfUntimed ;
             desiredDigitalOutputStateIfUntimed(self.LEDDigitalOutputChannelIndex_) = strcmp(onOrOff,'On'); % If equal, will set LED on. Else will set it to off.
-            isDOChannelUntimed = ~looper.Stimulation.IsDigitalChannelTimed ;
+            isDOChannelUntimed = ~looper.IsDOChannelTimed ;
             desiredOutputForEachUntimedDigitalOutputChannel = desiredDigitalOutputStateIfUntimed(isDOChannelUntimed) ;
             looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(desiredOutputForEachUntimedDigitalOutputChannel) ;
         end
@@ -648,7 +648,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     set(self.(whichAxis), 'xTick',(0.5:2:length(self.RotationalVelocityBinEdges_)),...
                         'xTickLabel',(self.RotationalVelocityBinEdges_(1):2*diff(self.RotationalVelocityBinEdges_([1,2])):self.RotationalVelocityBinEdges_(end)),'box','on');
                     
-                    xlabel(self.(whichAxis),'v_r_o_t [°/s]');
+                    xlabel(self.(whichAxis),'v_r_o_t [?/s]');
                     if strcmp(whichHeatmap{:},'Forward')
                         ylabel(self.(whichAxis),'v_f_w [mm/s]');
                         set(self.(whichAxis),'yTick',(0.5:3:length(self.(whichBinEdges))),'yTickLabel', (self.(whichBinEdges)(end):-3*diff(self.(whichBinEdges)([1,2])):self.(whichBinEdges)(1)))
@@ -780,7 +780,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             dball=8; %ball diameter in mm
             c_factors=[1.1 0.96]; %this many pixel of rear camera correspond to 1 pixel of Cam1/2 (=pix_c/pix_rear)
             mmperpix_c=mmperpix_r.*c_factors; %this many mm ball displacement correspond to 1 pixel of treadmill cameras
-            degrpermmball=360/(pi*dball); %pi*dball=Cball==360°
+            degrpermmball=360/(pi*dball); %pi*dball=Cball==360?
             
             panorama=240; %panorama width in degrees, important for comparing cumulative rotation to arena signal
             
@@ -797,7 +797,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             inp_dig=round((inp-2.33)/0.14); %this is with the OLD wavesurfer AD conversion
             %     inp_dig=round((inp-2.51)/0.14); %this is with the NEW wavesurfer AD conversion
             
-            inp_dig = inp_dig/80; %divide by 80 to correct for pulse frequency and duration
+            inp_dig = inp_dig/80 ;  %divide by 80 to correct for pulse frequency and duration
             
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
@@ -805,14 +805,15 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             if isITheOneTrueWavesurferModel % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
-                self.RotationalDisplacementRecent_ =(inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
+                self.RotationalDisplacementRecent_ = (inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
                 
                 % translate rotation to degrees
                 self.RotationalDisplacementRecent_=self.RotationalDisplacementRecent_*degrpermmball;
                 
                 % calculate cumulative rotation
                 previousCumulativeRotation = self.CumulativeRotationRecent_;
-                self.CumulativeRotationRecent_=previousCumulativeRotation(end)+cumsum(self.RotationalDisplacementRecent_)/panorama*2*pi; % cumulative rotation in panorama normalized radians
+                self.CumulativeRotationRecent_ = previousCumulativeRotation(end) + cumsum(self.RotationalDisplacementRecent_)/panorama*2*pi ; 
+                  % cumulative rotation in panorama normalized radians
                 
                 % Calculate unwrapped bar position. To do this properly,
                 % need to know the endpoint of the previously unwrapped bar
@@ -822,7 +823,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                     % Then this is the first time bar position is calculate
                     self.BarPositionUnwrappedRecent_ = unwrap(self.BarPositionWrappedRecent_);
                 else
-                    newBarPositionUnwrapped = unwrap([previousBarPositionUnwrapped(end); self.BarPositionWrappedRecent_]); % prepend previousBarPosition to ensure that unwrapping follows from the previous results
+                    newBarPositionUnwrapped = unwrap([previousBarPositionUnwrapped(end); self.BarPositionWrappedRecent_]); 
+                      % prepend previousBarPosition to ensure that unwrapping follows from the previous results
                     self.BarPositionUnwrappedRecent_ = newBarPositionUnwrapped(2:end);
                 end
                 
@@ -836,8 +838,8 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         function addDataForHeatmaps(self, wsModel)
-            rotationalVelocityRecent =  self.RotationalDisplacementRecent_*wsModel.Acquisition.SampleRate;
-            forwardVelocityRecent =  self.ForwardDisplacementRecent_*wsModel.Acquisition.SampleRate;
+            rotationalVelocityRecent =  self.RotationalDisplacementRecent_*wsModel.AcquisitionSampleRate;
+            forwardVelocityRecent =  self.ForwardDisplacementRecent_*wsModel.AcquisitionSampleRate;
             headingRecent = self.BarPositionWrappedRecent_;
             [~, rotationalVelocityBinIndices] = histc(rotationalVelocityRecent, self.RotationalVelocityBinEdges_);
             [~, forwardVelocityBinIndicesIncreasing] = histc(forwardVelocityRecent, self.ForwardVelocityBinEdges_);

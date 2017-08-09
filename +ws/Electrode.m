@@ -2,11 +2,9 @@ classdef Electrode < ws.Model % & ws.Mimic
     
     properties (Constant=true)
         Types = {'Manual' 'Axon Multiclamp' 'Heka EPC' };  % first one is the default amplifier type
-        %Modes = {'vc' 'cc'};
     end
 
     properties (Dependent=true)
-        %Parent
         Name
         VoltageMonitorChannelName
         CurrentMonitorChannelName
@@ -21,14 +19,18 @@ classdef Electrode < ws.Model % & ws.Mimic
         VoltageMonitorScaling  % scalar, typically in V/mV
         VoltageUnits
         CurrentUnits
+        Type
+        IndexWithinType
+        IsCommandEnabled       
+        
         TestPulseAmplitude  % for whichever is the current mode
         CommandChannelName
         MonitorChannelName
         CommandScaling
         MonitorScaling
-        Type
-        IndexWithinType
-        IsCommandEnabled
+        AllowedModes
+        IsInACCMode
+        IsInAVCMode
     end
     
     properties (Dependent=true, SetAccess=immutable)  % Hidden so not calc'ed on call to disp()
@@ -37,7 +39,6 @@ classdef Electrode < ws.Model % & ws.Mimic
     end
     
     properties (Access=protected)
-        %Parent_   % the parent ElectrodeManager object, or empty
         Name_
         VoltageMonitorChannelName_
         CurrentMonitorChannelName_
@@ -58,9 +59,9 @@ classdef Electrode < ws.Model % & ws.Mimic
     end
     
     methods        
-        function self=Electrode(parent)
+        function self=Electrode()
             % Set the defaults
-            self@ws.Model(parent);
+            self@ws.Model();
             self.Name_ = '' ;
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
@@ -77,7 +78,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.CurrentUnits_ = 'pA' ;  % constant for now, may change in future
             self.TypeIndex_ = 1;  % default amplifier type
             self.IndexWithinType_=[];  % e.g. 2 means this is the second electrode of the current type
-            self.IsCommandEnabled=true;
+            self.setIsCommandEnabled_(true) ;
             
 %             % Process args
 %             validPropNames=ws.findPropertiesSuchThat(self,'SetAccess','public');
@@ -98,75 +99,68 @@ classdef Electrode < ws.Model % & ws.Mimic
             % self.mayHaveChanged();
         end  % function
         
-%         function out = get.Parent(self)
-%             out=self.Parent_;
+%         function result = get.Parent(self)
+%             result=self.Parent_;
 %         end  % function
         
-        function out = get.Name(self)
-            out=self.Name_;
+        function result = get.Name(self)
+            result=self.Name_;
         end  % function
         
-        function out = get.VoltageMonitorChannelName(self)
-            out=self.VoltageMonitorChannelName_;
+        function result = get.VoltageMonitorChannelName(self)
+            result=self.VoltageMonitorChannelName_;
         end  % function
         
-        function out = get.CurrentMonitorChannelName(self)
-            out=self.CurrentMonitorChannelName_;
+        function result = get.CurrentMonitorChannelName(self)
+            result=self.CurrentMonitorChannelName_;
         end  % function
         
-        function out = get.VoltageCommandChannelName(self)
-            out=self.VoltageCommandChannelName_;
+        function result = get.VoltageCommandChannelName(self)
+            result=self.VoltageCommandChannelName_;
         end  % function
         
-        function out = get.CurrentCommandChannelName(self)
-            out=self.CurrentCommandChannelName_;
+        function result = get.CurrentCommandChannelName(self)
+            result=self.CurrentCommandChannelName_;
         end  % function
         
-        function out = get.Mode(self)
-            out=self.Mode_;
+        function result = get.Mode(self)
+            result=self.Mode_;
         end  % function
 
-%         function set.Parent(self,newValue)
-%             if isa(newValue,'ws.ElectrodeManager')
-%                 self.Parent_=newValue;
-%             end
-%             self.mayHaveChanged('Parent');
-%         end  % function
-        
-        function set.Name(self,newValue)
-            if ischar(newValue)
-                self.Name_=newValue;
+        function setName_(self, newValue)
+            if ws.isString(newValue) ,
+                self.Name_ = newValue ;
             end
-            self.mayHaveChanged('Name');
+            %self.mayHaveChanged('Name');
         end  % function
         
-        function set.VoltageMonitorChannelName(self,newValue)
-            if ~ischar(newValue)
+        function setVoltageMonitorChannelName_(self, newValue)
+            if ~ws.isString(newValue)
                 return
             end
             self.VoltageMonitorChannelName_=newValue;
-            self.mayHaveChanged('VoltageMonitorChannelName');
+            %self.mayHaveChanged('VoltageMonitorChannelName');
         end  % function
         
-        function set.VoltageCommandChannelName(self,newValue)
-            if ischar(newValue)
+        function setVoltageCommandChannelName_(self,newValue)
+            if ws.isString(newValue)
                 self.VoltageCommandChannelName_=newValue;
             end
-            self.mayHaveChanged('VoltageCommandChannelName');
+            %self.mayHaveChanged('VoltageCommandChannelName');
         end  % function
 
-        function set.CurrentMonitorChannelName(self,newValue)
-            if ischar(newValue)
+        function setCurrentMonitorChannelName_(self,newValue)
+            if ws.isString(newValue)
                 self.CurrentMonitorChannelName_=newValue;
             end
-            self.mayHaveChanged('CurrentMonitorChannelName');
+            %self.mayHaveChanged('CurrentMonitorChannelName');
         end  % function
         
-        function set.CurrentCommandChannelName(self,newValue)
-            if ischar(newValue)
+        function setCurrentCommandChannelName_(self,newValue)
+            if ws.isString(newValue)
                 self.CurrentCommandChannelName_=newValue;
             end
-            self.mayHaveChanged('CurrentCommandChannelName');
+            %self.mayHaveChanged('CurrentCommandChannelName');
         end  % function
         
         function didSetAnalogInputChannelName(self, oldValue, newValue)
@@ -184,126 +178,121 @@ classdef Electrode < ws.Model % & ws.Mimic
                 self.CurrentCommandChannelName =  newValue ;
             end
         end        
-        
-        function set.Mode(self,newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setMode_(newValue);
-        end  % function
-        
-        function out = get.CommandChannelName(self)
+                
+        function result = get.CommandChannelName(self)
             if isequal(self.Mode,'vc') ,
-                out = self.VoltageCommandChannelName;
+                result = self.VoltageCommandChannelName;
             else
-                out = self.CurrentCommandChannelName;
+                result = self.CurrentCommandChannelName;
             end
         end  % function
         
-        function set.CommandChannelName(self,newValue)
+        function setCommandChannelName_(self,newValue)
             if isequal(self.Mode,'vc') ,
-                self.VoltageCommandChannelName=newValue;
+                self.setVoltageCommandChannelName_(newValue) ;
             else
-                self.CurrentCommandChannelName=newValue;
+                self.setCurrentCommandChannelName_(newValue) ;
             end
             %self.mayHaveChanged();
         end  % function
         
-        function out = get.MonitorChannelName(self)
+        function result = get.MonitorChannelName(self)
             if isequal(self.Mode,'vc') ,
-                out = self.CurrentMonitorChannelName;
+                result = self.CurrentMonitorChannelName;
             else
-                out = self.VoltageMonitorChannelName;
+                result = self.VoltageMonitorChannelName;
             end
         end  % function
         
-        function set.MonitorChannelName(self,newValue)
+        function setMonitorChannelName_(self,newValue)
             if isequal(self.Mode,'vc') ,
-                self.CurrentMonitorChannelName=newValue;
+                self.setCurrentMonitorChannelName_(newValue) ;
             else
-                self.VoltageMonitorChannelName=newValue;
+                self.setVoltageMonitorChannelName_(newValue) ;
             end
             %self.mayHaveChanged();
         end  % function
         
-        function out = get.VoltageUnits(self)
-            out = self.VoltageUnits_;
+        function result = get.VoltageUnits(self)
+            result = self.VoltageUnits_;
         end  % function
 
-        function out = get.CurrentUnits(self)
-            out = self.CurrentUnits_;
+        function result = get.CurrentUnits(self)
+            result = self.CurrentUnits_;
         end  % function
 
-        function out = get.CommandUnits(self) 
+        function result = get.CommandUnits(self) 
             if isequal(self.Mode,'vc') ,
-                out = self.VoltageUnits;
+                result = self.VoltageUnits;
             else
-                out = self.CurrentUnits;
+                result = self.CurrentUnits;
             end
         end  % function
         
-        function out = get.MonitorUnits(self)
+        function result = get.MonitorUnits(self)
             if isequal(self.Mode,'vc') ,
-                out = self.CurrentUnits;
+                result = self.CurrentUnits;
             else
-                out = self.VoltageUnits;
+                result = self.VoltageUnits;
             end
         end
         
-        function out = get.CommandScaling(self)
+        function result = get.CommandScaling(self)
             if isequal(self.Mode,'vc') ,
-                out = self.VoltageCommandScaling;
+                result = self.VoltageCommandScaling;
             else
-                out = self.CurrentCommandScaling;
+                result = self.CurrentCommandScaling;
             end
         end
         
-        function set.CommandScaling(self, newValue)
+        function setCommandScaling_(self, newValue)
             if isequal(self.Mode,'vc') ,
-                self.VoltageCommandScaling=newValue;
+                self.setVoltageCommandScaling_(newValue) ;
             else
-                self.CurrentCommandScaling=newValue;
+                self.setCurrentCommandScaling_(newValue) ;
             end
         end
         
-        function out = get.MonitorScaling(self)
+        function result = get.MonitorScaling(self)
             if isequal(self.Mode,'vc') ,
-                out = self.CurrentMonitorScaling;
+                result = self.CurrentMonitorScaling;
             else
-                out = self.VoltageMonitorScaling;
+                result = self.VoltageMonitorScaling;
             end
         end
         
-        function set.MonitorScaling(self, newValue)
+        function setMonitorScaling_(self, newValue)
             if isequal(self.Mode,'vc') ,
-                self.CurrentMonitorScaling=newValue;
+                self.setCurrentMonitorScaling_(newValue) ;
             else
-                self.VoltageMonitorScaling=newValue;
+                self.setVoltageMonitorScaling_(newValue) ;
             end
         end
 
-        function set.CurrentMonitorScaling(self, newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setCurrentMonitorScaling_(newValue);
-        end
+%         function setCurrentMonitorScaling_(self, newValue)
+%             % Want subclasses to be able to override, so we indirect
+%             self.setCurrentMonitorScaling_(newValue);
+%         end
+%         
+%         function set.VoltageMonitorScaling(self, newValue)
+%             % Want subclasses to be able to override, so we indirect
+%             self.setVoltageMonitorScaling_(newValue);
+%         end
+%         
+%         function set.CurrentCommandScaling(self, newValue)
+%             % Want subclasses to be able to override, so we indirect
+%             self.setCurrentCommandScaling_(newValue);
+%         end
+%         
+%         function set.VoltageCommandScaling(self, newValue)
+%             % Want subclasses to be able to override, so we indirect
+%             self.setVoltageCommandScaling_(newValue);
+%         end
         
-        function set.VoltageMonitorScaling(self, newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setVoltageMonitorScaling_(newValue);
-        end
-        
-        function set.CurrentCommandScaling(self, newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setCurrentCommandScaling_(newValue);
-        end
-        
-        function set.VoltageCommandScaling(self, newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setVoltageCommandScaling_(newValue);
-        end
-        
-        function set.IsCommandEnabled(self, newValue)
-            % Want subclasses to be able to override, so we indirect
-            self.setIsCommandEnabled_(newValue);
-        end
+%         function set.IsCommandEnabled(self, newValue)
+%             % Want subclasses to be able to override, so we indirect
+%             self.setIsCommandEnabled_(newValue);
+%         end
         
         function result = get.VoltageCommandScaling(self)
 %             electrodeManager=self.Parent_;
@@ -356,18 +345,28 @@ classdef Electrode < ws.Model % & ws.Mimic
             result=self.TestPulseAmplitudeInCC_;
         end
         
-        function set.TestPulseAmplitudeInVC(self,newThang)
-            if isnumeric(newThang) && isscalar(newThang) ,
-                self.TestPulseAmplitudeInVC_= double(newThang);
-            end
-            self.mayHaveChanged('TestPulseAmplitudeInVC');
+        function setTestPulseAmplitudeInVC_(self, newValue)
+            if ws.isString(newValue) ,
+                newValueAsDouble = str2double(newValue) ;
+            elseif isnumeric(newValue) && isscalar(newValue) ,
+                newValueAsDouble = double(newValue) ;
+            else
+                newValueAsDouble = nan ;  % isfinite(nan) is false
+            end            
+            self.TestPulseAmplitudeInVC_= newValueAsDouble;
+            %self.mayHaveChanged('TestPulseAmplitudeInVC');
         end
         
-        function set.TestPulseAmplitudeInCC(self,newThang)
-            if isnumeric(newThang) && isscalar(newThang) ,
-                self.TestPulseAmplitudeInCC_= double(newThang);
-            end
-            self.mayHaveChanged('TestPulseAmplitudeInCC');
+        function setTestPulseAmplitudeInCC_(self, newValue)
+            if ws.isString(newValue) ,
+                newValueAsDouble = str2double(newValue) ;
+            elseif isnumeric(newValue) && isscalar(newValue) ,
+                newValueAsDouble = double(newValue) ;
+            else
+                newValueAsDouble = nan ;  % isfinite(nan) is false
+            end            
+            self.TestPulseAmplitudeInCC_= double(newValueAsDouble);
+            %self.mayHaveChanged('TestPulseAmplitudeInCC');
         end  % function
         
         function result = get.TestPulseAmplitude(self)
@@ -378,15 +377,15 @@ classdef Electrode < ws.Model % & ws.Mimic
             end
         end  % function
         
-        function set.TestPulseAmplitude(self,newValue)
+        function setTestPulseAmplitude_(self,newValue)
             if isequal(self.Mode,'cc')
-                self.TestPulseAmplitudeInCC=newValue;
+                self.setTestPulseAmplitudeInCC_(newValue) ;
             else
-                self.TestPulseAmplitudeInVC=newValue;
+                self.setTestPulseAmplitudeInVC_(newValue) ;
             end
         end  % function
         
-        function result=isTestPulsable(self)
+        function result = isTestPulsable(self, aiChannelNames, aoChannelNames)
             % In order to be test-pulse-able, the command and monitor
             % channel names for the current mode have to refer to valid
             % active channels.
@@ -405,112 +404,47 @@ classdef Electrode < ws.Model % & ws.Mimic
                 return
             end            
 
-            % Need to trace back our ancestry to find other objects to
-            % query.  If we can't do that, we can't test pulse.
-            electrodeManager=self.Parent_;
-            if isempty(electrodeManager) ,
-                return
-            end
-            
-            ephys=electrodeManager.Parent;
-            if isempty(ephys) ,
-                return
-            end
-            
-            wavesurferModel=ephys.Parent;
-            if isempty(wavesurferModel) ,
-                return
-            end
-
-            acquisition=wavesurferModel.Acquisition;
-            if isempty(acquisition) ,
-                return
-            end
-
-            stimulus=wavesurferModel.Stimulation;            
-            if isempty(stimulus) ,
-                return
-            end
+%             % Need to trace back our ancestry to find other objects to
+%             % query.  If we can't do that, we can't test pulse.
+%             electrodeManager=self.Parent_;
+%             if isempty(electrodeManager) ,
+%                 return
+%             end
+%             
+%             ephys=electrodeManager.Parent;
+%             if isempty(ephys) ,
+%                 return
+%             end
+%             
+%             wavesurferModel=ephys.Parent;
+%             if isempty(wavesurferModel) ,
+%                 return
+%             end
+% 
+%             acquisition=wavesurferModel.Acquisition;
+%             if isempty(acquisition) ,
+%                 return
+%             end
+% 
+%             stimulus=wavesurferModel.Stimulation;            
+%             if isempty(stimulus) ,
+%                 return
+%             end
             
             % If we get here, it means that we have been able to find all
             % the other objects we depend upon for this method
             
-            acquisitionChannelNames=acquisition.ActiveChannelNames;
-            stimulusChannelNames=stimulus.AnalogChannelNames;
+            %acquisitionChannelNames=acquisition.ActiveChannelNames;
+            %stimulusChannelNames=stimulus.AnalogChannelNames;
 
             % Finally, compute the result!
-            result=any(strcmp(commandChannelName,stimulusChannelNames)) && ...
-                   any(strcmp(monitorChannelName,acquisitionChannelNames));
+            result=any(strcmp(commandChannelName,aoChannelNames)) && ...
+                   any(strcmp(monitorChannelName,aiChannelNames));
                % this will be false if either acquisitionChannelNames or
                % stimulusChannelNames is empty
         end  % function
         
-%         function s=encodeSettings(self)
-%             % Note that this only gets public properties
-%             s=struct();
-%             s.Name=self.Name;
-%             s.Type=self.Type;
-%             s.IndexWithinType=self.IndexWithinType;
-%             s.Mode=self.Mode;
-%             s.VoltageCommandChannelName=self.VoltageCommandChannelName;
-%             s.CurrentMonitorChannelName=self.CurrentMonitorChannelName;
-%             s.CurrentCommandChannelName=self.CurrentCommandChannelName;
-%             s.VoltageMonitorChannelName=self.VoltageMonitorChannelName;
-%             s.TestPulseAmplitudeInVC=self.TestPulseAmplitudeInVC.getRepresentation();
-%             s.TestPulseAmplitudeInCC=self.TestPulseAmplitudeInCC.getRepresentation();            
-%             s.VoltageCommandScaling=self.VoltageCommandScaling;
-%             s.CurrentMonitorScaling=self.CurrentMonitorScaling;
-%             s.CurrentCommandScaling=self.CurrentCommandScaling;
-%             s.VoltageMonitorScaling=self.VoltageMonitorScaling;
-%             s.IsCommandEnabled=self.IsCommandEnabled;
-%         end  % function
-%         
-%         function restoreSettings(self, s)
-%             % Note that currently this only sets public properties, with
-%             % all that that implies.
-%             self.Name=s.Name;
-%             self.Type=s.Type;
-%             self.IndexWithinType=s.IndexWithinType;
-%             self.Mode=s.Mode;
-%             self.VoltageCommandChannelName=s.VoltageCommandChannelName;
-%             self.CurrentMonitorChannelName=s.CurrentMonitorChannelName;
-%             self.CurrentCommandChannelName=s.CurrentCommandChannelName;
-%             self.VoltageMonitorChannelName=s.VoltageMonitorChannelName;
-%             self.TestPulseAmplitudeInVC=ws.DoubleString(s.TestPulseAmplitudeInVC);
-%             self.TestPulseAmplitudeInCC=ws.DoubleString(s.TestPulseAmplitudeInCC);
-%             self.VoltageCommandScaling=s.VoltageCommandScaling;
-%             self.CurrentMonitorScaling=s.CurrentMonitorScaling;
-%             self.CurrentCommandScaling=s.CurrentCommandScaling;
-%             self.VoltageMonitorScaling=s.VoltageMonitorScaling;
-%             self.IsCommandEnabled=s.IsCommandEnabled;            
-%         end  % function
-        
         function mimic(self, other)
-            % Note that currently this only sets public properties, with
-            % all that that implies.
-            
-%             % Disable broadcasts for speed
-%             self.disableBroadcasts();
-            
-% %             self.Name=other.Name;
-% %             self.IndexWithinType=other.IndexWithinType;
-% %             self.Mode=other.Mode;
-% %             self.VoltageCommandChannelName=other.VoltageCommandChannelName;
-% %             self.CurrentMonitorChannelName=other.CurrentMonitorChannelName;
-% %             self.CurrentCommandChannelName=other.CurrentCommandChannelName;
-% %             self.VoltageMonitorChannelName=other.VoltageMonitorChannelName;
-% %             self.TestPulseAmplitudeInVC=other.TestPulseAmplitudeInVC;
-% %             self.TestPulseAmplitudeInCC=other.TestPulseAmplitudeInCC;
-% %             self.VoltageCommandScaling=other.VoltageCommandScaling;
-% %             self.CurrentMonitorScaling=other.CurrentMonitorScaling;
-% %             self.CurrentCommandScaling=other.CurrentCommandScaling;
-% %             self.VoltageMonitorScaling=other.VoltageMonitorScaling;
-% %             self.IsCommandEnabled=other.IsCommandEnabled;
-% %             self.Type=other.Type;
-            %disp('in Electrode, mimic before mayhavechanged');
-
-
-            
             self.Name_=other.Name;
             self.IndexWithinType_=other.IndexWithinType;
             self.Mode_=other.Mode;
@@ -526,81 +460,66 @@ classdef Electrode < ws.Model % & ws.Mimic
             self.VoltageMonitorScaling_=other.VoltageMonitorScaling;
             self.IsCommandEnabled_=other.IsCommandEnabled;
             self.setType_(other.Type);
-            self.mayHaveChanged(); % Want to call it once, argument doesn't matter
-       %     self.mayHaveChanged('Name');
-       %     self.mayHaveChanged('IndexWithinType');
-       %     self.mayHaveChanged({'Name', 'IndexWithinType', 'Mode', 'VoltageCommandChannelName', ...
-%                 'CurrentMonitorChannelName', 'CurrentCommandChannelName', 'VoltageMonitorChannelName',...
-%                 'TestPulseAmplitudeInVC', 'TestPulseAmplitudeInCC', 'VoltageCommandScaling',...
-%                  'CurrentMonitorScaling', 'CurrentCommandScaling', 'VoltageMonitorScaling', 'IsCommandEnabled','Type'});
-             
-%              % Re-enable broadcasts
-%              self.enableBroadcastsMaybe();
-%     
-%              % Broadcast update
-%              self.broadcast('Update');
+            %self.mayHaveChanged();  % Want to call it once, argument doesn't matter
         end  % function
 
-%         function other=copyGivenParent(self,parent)  % We base this on mimic(), which we need anyway.  Note that we don't inherit from ws.Copyable
-%             className=class(self);
-%             other=feval(className,parent);
-%             other.mimic(self);
+%         function set.Type(self,newValue)
+%             isMatch=strcmp(newValue,self.Types);
+%             newTypeIndex=find(isMatch,1);
+%             if ~isempty(newTypeIndex) ,
+%                 % Some trode types can't do 'i_equals_zero' mode, so check for that
+%                 % and change to 'cc' if needed
+%                 newType=self.Types{newTypeIndex};
+%                 mode=self.Mode;
+%                 if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
+%                     newMode = ws.Electrode.findClosestAllowedModeForType(mode,newType) ;
+%                     self.Mode = newMode;
+%                 end                
+%                 % Actually change the type index
+%                 self.TypeIndex_=newTypeIndex;
+%                 % Set IndexWithinType_ as needed
+%                 if isequal(newValue,'Manual') ,
+%                     self.IndexWithinType_=[];
+%                 else
+%                     if isempty(self.IndexWithinType_) ,
+%                         self.IndexWithinType_=1;
+%                     end
+%                 end
+%             end                       
+%             self.mayHaveChanged('Type');
 %         end  % function
-        
-        function set.Type(self,newValue)
-            isMatch=strcmp(newValue,self.Types);
-            newTypeIndex=find(isMatch,1);
-            if ~isempty(newTypeIndex) ,
-                % Some trode types can't do 'i_equals_zero' mode, so check for that
-                % and change to 'cc' if needed
-                newType=self.Types{newTypeIndex};
-                mode=self.Mode;
-                if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
-                    newMode = ws.Electrode.findClosestAllowedModeForType(mode,newType) ;
-                    self.Mode = newMode;
-                end                
-                % Actually change the type index
-                self.TypeIndex_=newTypeIndex;
-                % Set IndexWithinType_ as needed
-                if isequal(newValue,'Manual') ,
-                    self.IndexWithinType_=[];
-                else
-                    if isempty(self.IndexWithinType_) ,
-                        self.IndexWithinType_=1;
-                    end
-                end
-            end                       
-            self.mayHaveChanged('Type');
-        end  % function
         
         function value=get.Type(self)
             value=self.Types{self.TypeIndex_};
         end  % function
         
-        function set.IndexWithinType(self,newValue)
+        function setIndexWithinType_(self,newValue)
             if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>0 && ~isequal(self.Type,'Manual') ,
                 self.IndexWithinType_=newValue;
             end            
-            self.mayHaveChanged('IndexWithinType');
+            %self.mayHaveChanged('IndexWithinType');
         end  % function
         
         function value=get.IndexWithinType(self)
             value=self.IndexWithinType_;
         end  % function
         
-        function setModeAndScalings(self,newMode,newCurrentMonitorScaling,newVoltageMonitorScaling,newCurrentCommandScaling,newVoltageCommandScaling,...
-                                    newIsCommandEnabled)
-            doNotify=false;
-            self.setMode_(newMode,doNotify);
-            self.setCurrentMonitorScaling_(newCurrentMonitorScaling,doNotify);
-            self.setVoltageMonitorScaling_(newVoltageMonitorScaling,doNotify);
-            self.setCurrentCommandScaling_(newCurrentCommandScaling,doNotify);
-            self.setIsCommandEnabled_(newIsCommandEnabled,doNotify);
-            doNotify=true;
-            self.setVoltageCommandScaling_(newVoltageCommandScaling,doNotify);            
+        function setModeAndScalings_(self,...
+                                     newMode, ...
+                                     newCurrentMonitorScaling, ...
+                                     newVoltageMonitorScaling, ...
+                                     newCurrentCommandScaling, ...
+                                     newVoltageCommandScaling,...
+                                     newIsCommandEnabled)
+            self.setMode_(newMode);
+            self.setCurrentMonitorScaling_(newCurrentMonitorScaling);
+            self.setVoltageMonitorScaling_(newVoltageMonitorScaling);
+            self.setCurrentCommandScaling_(newCurrentCommandScaling);
+            self.setIsCommandEnabled_(newIsCommandEnabled);
+            self.setVoltageCommandScaling_(newVoltageCommandScaling);            
         end  % function
         
-        function result=whichCommandOrMonitor(self,commandOrMonitor)
+        function result=whichCommandOrMonitor(self, commandOrMonitor)
             % commandOrMonitor should be either 'Command' or 'Monitor'.
             % If commandOrMonitor is 'Monitor', and the current electrode
             % is 'vc', then the result is 'CurrentMonitor', for example.
@@ -620,7 +539,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             end            
         end  % function
         
-        function result=isNamedMonitorChannelManaged(self,channelName)
+        function result = isNamedMonitorChannelManaged(self,channelName)
             if isempty(channelName)
                 result=false;
             else
@@ -630,7 +549,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             end
         end
         
-        function result=isNamedCommandChannelManaged(self,channelName)
+        function result = isNamedCommandChannelManaged(self,channelName)
             if isempty(channelName)
                 result=false;
             else
@@ -728,98 +647,77 @@ classdef Electrode < ws.Model % & ws.Mimic
             keyboard
         end
         
-        function modes = getAllowedModes(self)
-            modes=ws.Electrode.allowedModesForType(self.Type);
+        function modes = get.AllowedModes(self)
+            modes = ws.Electrode.allowedModesForType(self.Type) ;
         end
         
-        function result = getIsInACCMode(self)
+        function result = get.IsInACCMode(self)
             result = isequal(self.Mode_,'cc') || isequal(self.Mode_,'i_equals_zero') ;
         end
 
-        function result = getIsInAVCMode(self)
+        function result = get.IsInAVCMode(self)
             result = isequal(self.Mode_,'vc') ;
         end
         
-    end  % public methods block
-    
-    methods (Access = protected)
-        function setMode_(self,newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setMode_(self, newValue)
             if ~isempty(newValue) ,  % empty sometimes used to signal that mode is unknown
-                allowedModes=self.getAllowedModes();
+                allowedModes = self.AllowedModes ;
                 isMatch=cellfun(@(mode)(isequal(mode,newValue)),allowedModes);            
                 if any(isMatch) ,
                     self.Mode_ = newValue;
                 end
             end
-            if doNotify,
-                 self.mayHaveChanged('Mode');
-            end
-        end  % function
+%             if doNotify,
+%                  self.mayHaveChanged('Mode');
+%             end
+        end  % function        
         
-        function setVoltageMonitorScaling_(self,newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setVoltageMonitorScaling_(self,newValue)
             if isscalar(newValue) && isfinite(newValue) ,  % need isfinite() check b/c smart amps use this as "unknown" value
                 self.VoltageMonitorScaling_=newValue;
             end
-            if doNotify,
-                self.mayHaveChanged('VoltageMonitorScaling');
-            end
+%             if doNotify,
+%                 self.mayHaveChanged('VoltageMonitorScaling');
+%             end
         end
         
-        function setCurrentCommandScaling_(self, newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setCurrentCommandScaling_(self, newValue)
             if isscalar(newValue) && isfinite(newValue) ,  % need isfinite() check b/c smart amps use this as "unknown" value
                 self.CurrentCommandScaling_=newValue;
             end
-            if doNotify,
-                self.mayHaveChanged('CurrentCommandScaling');
-            end
+%             if doNotify,
+%                 self.mayHaveChanged('CurrentCommandScaling');
+%             end
         end
         
-        function setVoltageCommandScaling_(self, newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setVoltageCommandScaling_(self, newValue)
             if isscalar(newValue) && isfinite(newValue) ,  % need isfinite() check b/c smart amps use this as "unknown" value
                 self.VoltageCommandScaling_=newValue;
             end
-            if doNotify,
-                self.mayHaveChanged('VoltageCommandScaling');
-            end
+%             if doNotify,
+%                 self.mayHaveChanged('VoltageCommandScaling');
+%             end
         end
         
-        function setCurrentMonitorScaling_(self, newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setCurrentMonitorScaling_(self, newValue)
             if isscalar(newValue) && isfinite(newValue) ,  % need isfinite() check b/c smart amps use this as "unknown" value
                 self.CurrentMonitorScaling_=newValue;
             end
-            if doNotify,
-                self.mayHaveChanged('CurrentMonitorScaling');
-            end
-        end
+%             if doNotify,
+%                 self.mayHaveChanged('CurrentMonitorScaling');
+%             end
+        end        
         
-        function setIsCommandEnabled_(self, newValue,doNotify)
-            if nargin<3 ,
-                doNotify=true;
-            end
+        function setIsCommandEnabled_(self, newValue)
             if islogical(newValue) && isscalar(newValue) ,
                 % This property is always true for manual trodes
                 if ~isequal(self.Type,'Manual') ,
                     self.IsCommandEnabled_=newValue;
                 end
             end
-            if doNotify,
-                self.mayHaveChanged('IsCommandEnabled');
-            end
+%             if doNotify,
+%                 self.mayHaveChanged('IsCommandEnabled');
+%             end
         end
         
         function setType_(self,newValue)
@@ -832,7 +730,7 @@ classdef Electrode < ws.Model % & ws.Mimic
                 mode=self.Mode;
                 if ~ws.Electrode.isModeAllowedForType(mode,newType) ,
                     newMode = ws.Electrode.findClosestAllowedModeForType(mode,newType) ;
-                    self.Mode = newMode;
+                    self.Mode_ = newMode;
                 end                
                 % Actually change the type index
                 self.TypeIndex_=newTypeIndex;
@@ -846,27 +744,27 @@ classdef Electrode < ws.Model % & ws.Mimic
                 end
             end                       
         end  % function
-    end  % protected methods block
+    end  % public methods block
     
-    methods (Access=protected)
-        function mayHaveChanged(self,propertyName)
-            electrodeManager=self.Parent_;
-            if isempty(electrodeManager) || ~isvalid(electrodeManager) ,
-                return
-            end
-            if ~exist('propertyName','var') ,
-                propertyName='';
-            end
-            electrodeManager.electrodeMayHaveChanged(self,propertyName);
-        end
-    end
+%     methods (Access=protected)
+%         function mayHaveChanged(self,propertyName)
+%             electrodeManager=self.Parent_;
+%             if isempty(electrodeManager) || ~isvalid(electrodeManager) ,
+%                 return
+%             end
+%             if ~exist('propertyName','var') ,
+%                 propertyName='';
+%             end
+%             electrodeManager.electrodeMayHaveChanged(self,propertyName);
+%         end
+%     end
     
     methods (Access = protected)
-        function out = getPropertyValue_(self, name)
+        function result = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
             % some other kind of transformation on encoding, this method can be overridden.
-            out = self.(name);
+            result = self.(name);
         end
         
         function setPropertyValue_(self, name, value)
@@ -918,4 +816,13 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         mdlHeaderExcludeProps = {};
 %     end
     
+    methods
+        function setProperty_(self, propertyName, newValue)            
+            % This one is deisigned to be used for most setting needs.
+            % setPropertyValue_() is mostly just for use by ws.Coding.
+            methodName = horzcat('set', propertyName, '_') ;
+            feval(methodName, self, newValue) ;
+        end
+    end
+
 end  % classdef

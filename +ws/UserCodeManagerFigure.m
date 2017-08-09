@@ -2,9 +2,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
     properties
         ClassNameText
         ClassNameEdit        
-        %ChooseButton
-        InstantiateButton
-        %AbortCallsCompleteCheckbox
+        %InstantiateButton
+        ReinstantiateButton
     end  % properties
     
     methods
@@ -62,10 +61,15 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
                 ws.uiedit('Parent',self.FigureGH, ...
                           'HorizontalAlignment','left');
                       
-            self.InstantiateButton = ...
+%             self.InstantiateButton = ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
+%                              'Style','pushbutton', ...
+%                              'String','Instantiate');
+                      
+            self.ReinstantiateButton = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','pushbutton', ...
-                          'String','Instantiate');
+                             'Style','pushbutton', ...
+                             'String','Reinstantiate');
                       
 %             self.ChooseButton = ...
 %                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -144,9 +148,10 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %widthFromEditToChooseButton=5;
             %chooseButtonWidth = 80 ;
 
-            heightFromInstantiateButtonToBottomEdit=6;
-            instantiateButtonHeight = 24 ;
-            instantiateButtonWidth = 80 ;
+            heightFromButtonRowToBottomEdit=6;            
+            reinstantiateButtonHeight = 24 ;
+            reinstantiateButtonWidth = 80 ;
+            %widthBetweenButtons = 8 ;
             
             % Just want to use the default edit height
             sampleEditPosition=get(self.ClassNameEdit,'Position');
@@ -162,8 +167,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %figureWidth=leftPadWidth+labelWidth+editWidth+ widthFromEditToChooseButton +chooseButtonWidth+rightPadWidth;
             figureHeight= bottomPadHeight + ...
                           editHeight + ...
-                          instantiateButtonHeight + ...
-                          heightFromInstantiateButtonToBottomEdit + ...
+                          reinstantiateButtonHeight + ...
+                          heightFromButtonRowToBottomEdit + ...
                           topPadHeight;
             
             % The edit and its label
@@ -179,11 +184,19 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             set(self.ChooseButton, ...
 %                 'Position',[chooseButtonXOffset chooseButtonYOffset chooseButtonWidth chooseButtonHeight]);
                                       
-            % Button
-            instantiateButtonXOffset = editXOffset + editWidth - instantiateButtonWidth ;
-            instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - instantiateButtonHeight ;
-            set(self.InstantiateButton, ...
-                'Position',[instantiateButtonXOffset instantiateButtonYOffset instantiateButtonWidth instantiateButtonHeight]);
+%             % Button
+%             instantiateButtonXOffset = editXOffset + editWidth - reinstantiateButtonWidth ;
+%             instantiateButtonYOffset = editYOffset - heightFromInstantiateButtonToBottomEdit - reinstantiateButtonHeight ;
+%             set(self.InstantiateButton, ...
+%                 'Position',[instantiateButtonXOffset instantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
+
+            % Other button
+%             reinstantiateButtonWidth = reinstantiateButtonWidth ;
+%             reinstantiateButtonHeight = reinstantiateButtonHeight ;
+            reinstantiateButtonXOffset = editXOffset + editWidth - reinstantiateButtonWidth ;
+            reinstantiateButtonYOffset = editYOffset - heightFromButtonRowToBottomEdit - reinstantiateButtonHeight ;
+            set(self.ReinstantiateButton, ...
+                'Position',[reinstantiateButtonXOffset reinstantiateButtonYOffset reinstantiateButtonWidth reinstantiateButtonHeight]);
                                       
 %             % Checkbox
 %             checkboxFullExtent=get(self.AbortCallsCompleteCheckbox,'Extent');
@@ -221,32 +234,37 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self)
             %fprintf('UserCodeManagerFigure::updateControlPropertiesImplementation_\n');
-            model=self.Model;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
 
             normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
             warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
-            isClassNameValid = model.IsClassNameValid ;
+            isClassNameValid = wsModel.IsUserClassNameValid ;
             backgroundColor = ws.fif(isClassNameValid,normalBackgroundColor,warningBackgroundColor) ;
             set(self.ClassNameEdit, ...
-                'String', model.ClassName, ...
+                'String', wsModel.UserClassName, ...
                 'BackgroundColor', backgroundColor );
-            %set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
-            set(self.InstantiateButton, 'String', ws.fif(isempty(model.TheObject), ...
-                                                         'Instantiate', ...
-                                                         'Reinstantiate') ) ;
+%             set(self.InstantiateButton, 'String', ws.fif(isempty(model.TheObject), ...
+%                                                          'Instantiate', ...
+%                                                          'Reinstantiate') ) ;
+%             set(self.InstantiateButton, 'Visible', ws.fif(isempty(model.TheObject), ...
+%                                                          'on', ...
+%                                                          'off') ) ;
+%             set(self.ReinstantiateButton, 'Visible', ws.fif(~isempty(model.TheObject), ...
+%                                                             'on', ...
+%                                                             'off') ) ;
         end
     end
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self,varargin)
-            model=self.Model;  % this is the UserCodeManager object
-            if isempty(model) || ~isvalid(model) ,
-                return
-            end
-            wavesurferModel=model.Parent;
+%             model=self.Model;  % this is the UserCodeManager object
+%             if isempty(model) || ~isvalid(model) ,
+%                 return
+%             end
+            wavesurferModel = self.Model ;
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end
@@ -254,7 +272,8 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             set(self.ClassNameEdit, 'Enable', ws.onIff(isIdle) );
             %set(self.ChooseButton, 'Enable', ws.onIff(isIdle) );
             %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle&&~isempty(model.ClassName)) );
-            set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
+            %set(self.InstantiateButton, 'Enable', ws.onIff(isIdle) ) ;
+            set(self.ReinstantiateButton, 'Enable', ws.onIff(isIdle&&wavesurferModel.DoesTheUserObjectMatchTheUserClassName) ) ;
         end
     end
     
@@ -265,14 +284,11 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
             %fprintf('UserCodeManagerFigure::updateSubscriptionsToModelEvents_()\n');
             %self.unsubscribeFromAll();
             
-            model=self.Model;
-            if isempty(model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 return
             end
-            wavesurferModel=model.Parent;
-            if isempty(wavesurferModel) ,
-                return
-            end
+            %userCodeManager = wavesurferModel.UserCodeManager ;
             
 %             model.subscribeMe(self,'PostSet','SweepWillStart','update');
 %             model.subscribeMe(self,'PostSet','SweepDidComplete','update');
@@ -281,9 +297,9 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             model.subscribeMe(self,'PostSet','RunDidComplete','update');
 %             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
-            model.subscribeMe(self,'Update','','update');
+            wsModel.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
             
-            wavesurferModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
+            wsModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                
     end
     

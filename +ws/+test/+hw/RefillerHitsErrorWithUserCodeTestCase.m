@@ -5,15 +5,13 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -35,11 +33,11 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
             
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             wsModel.AreSweepsContinuous = true ;
 
-            wsModel.UserCodeManager.ClassName = 'ws.examples.ExampleUserClass' ;
-            wsModel.UserCodeManager.TheObject.Greeting = 'This is a test.  This is only a test.' ;
+            wsModel.UserClassName = 'ws.examples.ExampleUserClass' ;
+            wsModel.TheUserObject.Greeting = 'This is a test.  This is only a test.' ;
             
             aTimer = timer('ExecutionMode', 'singleShot', ...
                            'StartDelay', 20, ...
@@ -52,6 +50,7 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
 
             wsController.quit() ;
             wsController = [] ;  %#ok<NASGU>
+            wsModel.delete() ;
             wsModel = [] ;  %#ok<NASGU>    % release the WavesurferModel
             
             self.verifyTrue(true) ;            

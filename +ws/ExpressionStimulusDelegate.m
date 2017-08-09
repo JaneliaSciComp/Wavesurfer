@@ -15,14 +15,14 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = ExpressionStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
-            pvArgs = ws.filterPVArgs(varargin, {'Expression'}, {});
-            propNames = pvArgs(1:2:end);
-            propValues = pvArgs(2:2:end);               
-            for i = 1:length(propValues)
-                self.(propNames{i}) = propValues{i};
-            end            
+        function self = ExpressionStimulusDelegate()
+            self=self@ws.StimulusDelegate();
+%             pvArgs = ws.filterPVArgs(varargin, {'Expression'}, {});
+%             propNames = pvArgs(1:2:end);
+%             propValues = pvArgs(2:2:end);               
+%             for i = 1:length(propValues)
+%                 self.(propNames{i}) = propValues{i};
+%             end            
         end  % function
         
         function set.Expression(self, value)
@@ -58,6 +58,11 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
                     stringToEval=sprintf('@(t,i)(%s)',expression);
                     expressionAsFunction=eval(stringToEval);
                     y=expressionAsFunction(t,sweepIndexWithinSet);
+                    % Expressions not involving t will generally return a
+                    % scalar, so deal with that.
+                    if isscalar(y) ,
+                        y = repmat(y,size(t)) ;
+                    end
                 catch me %#ok<NASGU>
                     y=zeros(size(t));
                 end

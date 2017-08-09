@@ -1,9 +1,7 @@
 classdef EPCMasterSocket < handle
     % Represents a "socket" for talking to Heka EPCMaster or PatchMaster.
     
-    %%
     properties (SetAccess=protected, Hidden=true)
-        %ModeDetents={'vc' 'cc'}';
         CurrentMonitorNominalGainDetents= 1e-3*[ ...
             0.005 ...
             0.010 ...
@@ -31,50 +29,43 @@ classdef EPCMasterSocket < handle
             0 10 20]';  % mV/V (the hardware allows for a (largely) arbitrary setting, but these are convenient values for testing)
     end
     
-    %%
-    properties  (Access=protected)
+    properties (Dependent=true, SetAccess=immutable)
+        IsOpen  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet        
+        HasCommandOnOffSwitch
+    end
+    
+    properties  (Access=protected, Transient=true)
         NextCommandIndex_  % Each command has to have an index.  EPCMaster keeps track of this index, and will ignore commands with an index <= the 
                            % index of a command it has previously responded to.
         IsOpen_  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet       
         HasCommandOnOffSwitch_  % true iff the EPC is a model that has an explicit on/off switch for the external command
-    end
+    end    
     
-    %%
-    properties (Dependent=true, SetAccess=immutable)
-        IsOpen  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet        
-        %NextCommandIndex
-        HasCommandOnOffSwitch
-    end
-    
-    %%
     properties (Constant=true, Hidden=true)
-        EPCMasterDirName_='C:/Program Files (x86)/HEKA/EpcMaster';
-        CommandFileName_='C:/Program Files (x86)/HEKA/EpcMaster/E9Batch.In';
-        ResponseFileName_='C:/Program Files (x86)/HEKA/EpcMaster/E9Batch.Out';        
+        EPCMasterDirName_ = 'C:/Program Files (x86)/HEKA/EpcMaster' ;
+        CommandFileName_ = 'C:/Program Files (x86)/HEKA/EpcMaster/E9Batch.In' ;
+        ResponseFileName_ = 'C:/Program Files (x86)/HEKA/EpcMaster/E9Batch.Out' ;        
     end
     
-    %% Some properties that are read-only
+    % Some properties that are read-only
     properties (GetAccess=public, SetAccess=immutable, Hidden=true)
         CurrentMonitorNominalGainDetentsWithSpaceHolders
     end    
     
     methods
-        %%
         function self=EPCMasterSocket()
             self.CurrentMonitorNominalGainDetentsWithSpaceHolders = ...
-                self.computeCurrentMonitorNominalGainDetentsWithSpaceHolders_();
-            self.IsOpen_=false;
+                self.computeCurrentMonitorNominalGainDetentsWithSpaceHolders_() ;
+            self.IsOpen_ = false ;
             %self.CommandFileID_=[];
-            self.NextCommandIndex_=1;
-            self.HasCommandOnOffSwitch_=[];
+            self.NextCommandIndex_ = 1 ;
+            self.HasCommandOnOffSwitch_ = [] ;
         end  % function
         
-        %%
         function delete(self)
             self.close();
         end
         
-        %%
         function err=open(self)
             % Attempt to get EPCMaster (the application) into a state where
             % it's ready to receive new commands, and we've established a few things about what the hardware's capabilities are.
@@ -108,48 +99,37 @@ classdef EPCMasterSocket < handle
             err=[];
         end
         
-        %%
         function close(self)
-            import ws.*
+            %import ws.*
             self.IsOpen_=false;
             self.HasCommandOnOffSwitch_=[];
             if exist(self.CommandFileName_,'file') ,
-                deleteFileWithoutWarning(self.CommandFileName_)
+                ws.deleteFileWithoutWarning(self.CommandFileName_)
             end            
             if exist(self.ResponseFileName_,'file') ,
-                deleteFileWithoutWarning(self.ResponseFileName_)
+                ws.deleteFileWithoutWarning(self.ResponseFileName_)
             end            
         end  % function        
 
-        %%
         function self=reopen(self)
             % Close the connection, then open it.
             self.close();
             self.open();
         end        
         
-        %%
         function value=get.IsOpen(self)
             value=self.IsOpen_;
         end  % function
         
-        %%
         function mimic(self,other) %#ok<INUSD>
             % EPCMasterSocket's state is all concerned with the state of
             % the connection to hardware, so nothing to do here.
         end
         
-%         %%
-%         function value=get.NextCommandIndex(self)
-%             value=self.NextCommandIndex_;
-%         end  % function
-        
-        %%
         function value=get.HasCommandOnOffSwitch(self)
             value=self.HasCommandOnOffSwitch_;
         end  % function
         
-        %%
         function [value,err]=getElectrodeParameter(self,electrodeIndex,parameterName)
             err=[];
             
@@ -193,32 +173,12 @@ classdef EPCMasterSocket < handle
             end
         end
         
-        %%
         function err=setElectrodeParameter(self,electrodeIndex,parameterName,newValue)
             methodName=sprintf('set%s',parameterName);
             err=self.(methodName)(electrodeIndex,newValue);
         end
         
-%         %%
-%         function [mode,err]=getMode(self,electrodeIndex)
-%             err=self.open();  % does nothing if already open
-%             if isempty(err) ,
-%                 commandString=sprintf('GetEpcParams-%d Mode',electrodeIndex);
-%                 [responseString,err]=self.issueCommandAndGetResponse(commandString);
-%                 if isempty(err) ,
-%                     [mode,err]=ws.EPCMasterSocket.parseModeResponse(responseString);
-%                 else
-%                     mode=[];
-%                 end
-%             else
-%                 mode=[];
-%             end
-%         end  % function
-
-        %%
         function err=setMode(self,electrodeIndex,newMode)
-            import ws.*
-            
             err=[]; %#ok<NASGU>
             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
                 errorId='EPCMasterSocket:InvalidMode';
@@ -241,7 +201,7 @@ classdef EPCMasterSocket < handle
             if ~isempty(err) ,
                 return
             end              
-            newModeIndex=fif(isequal(newMode,'cc'),4,3);
+            newModeIndex=ws.fif(isequal(newMode,'cc'),4,3);
               % 4 == Current clamp
               % 3 == Whole cell
             commandString2=sprintf('Set E Mode %d',newModeIndex);
@@ -264,7 +224,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
 
-        %%
         function [overallError,perElectrodeErrors,modes,currentMonitorGains,voltageMonitorGains,currentCommandGains,voltageCommandGains,isCommandEnabled]=...
             getModeAndGainsAndIsCommandEnabled(self,electrodeIndices)
             % Note that the current monitor gain returned by this is the
@@ -370,57 +329,6 @@ classdef EPCMasterSocket < handle
             %fprintf('About to exit getModeAndGains.\n');
         end  % function            
 
-%         %%
-%         function [value,err]=getCurrentMonitorNominalGain(self,electrodeIndex)
-%             % Returns the current monitor gain, in V/pA
-%             err=self.open();  % does nothing if already open
-%             if isempty(err) ,
-%                 commandString=sprintf('GetEpcParams-%d Gain',electrodeIndex);
-%                 [responseString,err]=self.issueCommandAndGetResponseString(commandString);
-%                 try
-%                     value=ws.EPCMasterSocket.parseCurrentMonitorNominalGainResponse(responseString);
-%                 catch me
-%                     if isequal(me.identifier,'EPCMasterSocket:UnableToParseCurrentMonitorNominalGainResponseString');
-%                         errorId='EPCMasterSocket:UnableToGetCurrentMonitorNominalGain';
-%                         errorMessage='Unable to get the nominal current monitor gain for the electrode';
-%                         error(errorId,errorMessage);
-%                     else
-%                         rethrow(me);
-%                     end
-%                 end
-%             end
-%             
-%         end  % function            
-
-%         %%
-%         function value=getCurrentMonitorRealizedGain(self,electrodeIndex)
-%             % Returns the current monitor gain, in V/pA
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~self.IsOpen_ ,
-%                 errorId='EPCMasterSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because EPCMasterSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             %commandIndex=self.issueCommand('GetEpcParams-1 RealGain');
-%             commandString=sprintf('GetEpcParams-%d RealGain',electrodeIndex);
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%             try
-%                 value=ws.EPCMasterSocket.parseCurrentMonitorRealizedGainResponse(responseString);
-%             catch me
-%                 if isequal(me.identifier,'EPCMasterSocket:UnableToParseCurrentMonitorRealizedGainResponseString');
-%                     errorId='EPCMasterSocket:UnableToGetCurrentMonitorRealizedGain';
-%                     errorMessage='Unable to get the current monitor gain for the electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
-%         end  % function            
-
-        %%
         function err=setCurrentMonitorNominalGain(self,electrodeIndex,newWantedValue)
             err=[]; %#ok<NASGU>
             
@@ -466,35 +374,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function            
 
-%         %%
-%         function value=getVoltageMonitorGain(self,electrodeIndex)
-%             % Returns the current voltage gain, in V/mV
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~self.IsOpen_ ,
-%                 errorId='EPCMasterSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because EPCMasterSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             % commandIndex=self.issueCommand('GetEpcParams-1 VmonGain');
-%             commandString=sprintf('GetEpcParams-%d VmonGain',electrodeIndex);
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%             try
-%                 value=ws.EPCMasterSocket.parseVoltageMonitorGainResponse(responseString);
-%             catch me
-%                 if isequal(me.identifier,'EPCMasterSocket:UnableToParseVoltageMonitorGainResponseString');
-%                     errorId='EPCMasterSocket:UnableToGetVoltageMonitorGain';
-%                     errorMessage='Unable to get the voltage monitor gain for the electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
-%         end  % function            
-
-        %%
         function err=setVoltageMonitorGain(self,electrodeIndex,newWantedValue)
             err=[]; %#ok<NASGU>
             if newWantedValue<=0 ,
@@ -538,42 +417,8 @@ classdef EPCMasterSocket < handle
             end
         end  % function            
 
-        %%
-%         function value=getIsCommandEnabled(self,electrodeIndex)
-%             % Returns whether the external command is enabled.  If the
-%             % hardware doesn't support setting this, always returns true.
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~self.HasCommandOnOffSwitch_ ,
-%                 value=true;
-%                 return
-%             end
-%             if ~self.IsOpen_ ,
-%                 errorId='EPCMasterSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because EPCMasterSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             % commandIndex=self.issueCommand('GetEpcParams-1 VmonGain');
-%             commandString=sprintf('Get E TestDacToStim%d',electrodeIndex);
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%             try
-%                 value=ws.EPCMasterSocket.parseIsCommandEnabledResponse(responseString);
-%             catch me
-%                 if isequal(me.identifier,'EPCMasterSocket:UnableToParseIsCommandEnabledResponseString') ,
-%                     errorId='EPCMasterSocket:UnableToGetIsCommandEnabled';
-%                     errorMessage='Unable to get the external command enabled setting for the electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
-%         end  % function            
-
-        %%
         function err=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-            import ws.*
+            %import ws.*
             if ~isscalar(newWantedValue) ,
                 errorId='EPCMasterSocket:InvalidValue';
                 errorMessage='Couldn''t set IsCommandEnabled because given value is not a scalar.';
@@ -608,7 +453,7 @@ classdef EPCMasterSocket < handle
             % For some models, have to explicitly turn on/off the external
             % command
             if self.HasCommandOnOffSwitch_ ,
-                selectionIndex=fif(newWantedValue==0,0,2);
+                selectionIndex=ws.fif(newWantedValue==0,0,2);
                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
                 [responseString2,err]=self.issueCommandAndGetResponse(commandString2);  %#ok<ASGLU>
                 if ~isempty(err) ,
@@ -617,37 +462,8 @@ classdef EPCMasterSocket < handle
             end              
         end  % function            
 
-        %%
-%         function value=getCurrentCommandGain(self,electrodeIndex)
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             % Returns the current command gain, in pA/V
-%             if ~self.IsOpen_ ,
-%                 errorId='EPCMasterSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because EPCMasterSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             % commandIndex=self.issueCommand('GetEpcParams-1 CCGain');
-%             commandString=sprintf('GetEpcParams-%d CCGain',electrodeIndex);
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%             try
-%                 value=ws.EPCMasterSocket.parseCurrentCommandGainResponse(responseString);
-%             catch me
-%                 if isequal(me.identifier,'EPCMasterSocket:UnableToParseCurrentCommandGainResponseString');
-%                     errorId='EPCMasterSocket:UnableToGetCurrentCommandGain';
-%                     errorMessage='Unable to get the current command gain for the electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
-%         end  % function
-
-        %%
         function err=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-            import ws.*
+            %import ws.*
 
             if newWantedValue<=0 ,
                 errorId='EPCMasterSocket:invalidValue';
@@ -699,37 +515,8 @@ classdef EPCMasterSocket < handle
             end
         end  % function            
 
-%         %%
-%         function value=getVoltageCommandGain(self,electrodeIndex)
-%             % Returns the command voltage gain, in mV/V
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~self.IsOpen_ ,
-%                 errorId='EPCMasterSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because EPCMasterSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             % commandIndex=self.issueCommand('GetEpcParams-1 ExtStim');
-%             commandString=sprintf('GetEpcParams-%d ExtStim',electrodeIndex);
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%             try
-%                 value=ws.EPCMasterSocket.parseVoltageCommandGainResponse(responseString);
-%             catch me
-%                 if isequal(me.identifier,'EPCMasterSocket:UnableToParseVoltageCommandGainResponseString');
-%                     errorId='EPCMasterSocket:UnableToGetVoltageCommandGain';
-%                     errorMessage='Unable to get the voltage command gain for the electrode';
-%                     error(errorId,errorMessage);
-%                 else
-%                     rethrow(me);
-%                 end
-%             end
-%         end  % function
-
-        %%
         function err=setVoltageCommandGain(self,electrodeIndex,newValue)
-            import ws.*
+            %import ws.*
             % newValue should be in mV/V
 
             % Unlike the others, can set this to zero, meaning "turn off
@@ -757,7 +544,7 @@ classdef EPCMasterSocket < handle
             % For some models, have to explicitly turn on/off the external
             % command
             if self.HasCommandOnOffSwitch_ ,
-                selectionIndex=fif(newValue==0,0,2);
+                selectionIndex=ws.fif(newValue==0,0,2);
                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
                 [responseString2,err]=self.issueCommandAndGetResponse(commandString2); %#ok<ASGLU>
                 if ~isempty(err) ,
@@ -784,10 +571,9 @@ classdef EPCMasterSocket < handle
             end
         end  % function            
 
-        %%
         function err=setUIEnablement(self,newValueRaw)
             % Set whether the EPCMaster UI is enabled.  true==enabled.
-            import ws.*
+            %import ws.*
             
             err=[]; %#ok<NASGU>
             
@@ -806,7 +592,7 @@ classdef EPCMasterSocket < handle
             end
             
             %commandIndex=self.issueCommand('GetEpcParams-1 RealGain');
-            commandString=fif(newValue,'EnableUserActions','DisableUserActions');
+            commandString=ws.fif(newValue,'EnableUserActions','DisableUserActions');
             commandIndex=self.issueCommand(commandString);
             [responseString,err]=self.getResponseString(commandIndex); %#ok<ASGLU>
               % this last is mainly just to throw an exception if it
@@ -826,7 +612,6 @@ classdef EPCMasterSocket < handle
             end
         end
             
-        %%
         function [commandIndex,err]=issueCommand(self,commandString)
             % Open the command file, and clear the current contents (if
             % any)
@@ -850,7 +635,6 @@ classdef EPCMasterSocket < handle
             fclose(commandFileId);
         end
     
-        %%
         function [commandIndex,err]=issueCommands(self,commandStrings)
             % Open the command file, and clear the current contents (if
             % any)
@@ -880,10 +664,7 @@ classdef EPCMasterSocket < handle
             fclose(commandFileId);
         end
     
-        %%
         function [responseString,err]=getResponseString(self,commandIndex)
-            import ws.*
-            
             % fallback return values
             responseString='';
             err=[];
@@ -934,7 +715,7 @@ classdef EPCMasterSocket < handle
                         break
                     else
                         % wait longer
-                        sleep(dt);
+                        ws.sleep(dt);
 %                     else
 %                         % the response index is somehow greater than the
 %                         % command index we're looking for
@@ -944,7 +725,7 @@ classdef EPCMasterSocket < handle
 %                         error(errorId,errorMessage);
                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             
@@ -966,10 +747,7 @@ classdef EPCMasterSocket < handle
             end
         end  % function
 
-        %%
         function [responseStrings,err]=getResponseStrings(self,commandIndex)
-            import ws.*
-            
             % Fallback values
             responseStrings={};
             err=[];
@@ -1014,7 +792,7 @@ classdef EPCMasterSocket < handle
                         break
                     else
                         % wait longer
-                        sleep(dt);
+                        ws.sleep(dt);
                     end
 %                     elseif responseIndex==commandIndex ,
 %                     else
@@ -1026,7 +804,7 @@ classdef EPCMasterSocket < handle
 %                         error(errorId,errorMessage);
 %                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             % toc(tStart)
@@ -1062,7 +840,6 @@ classdef EPCMasterSocket < handle
     end  % public methods
         
     methods (Access=protected)
-        %%
         function err=establishConnection_(self)
             % Attempt to establish a connection with EPCMaster.  Throw an
             % exception if unable to do this.
@@ -1080,17 +857,17 @@ classdef EPCMasterSocket < handle
             % command file, but not actually try to read the command from
             % it and respond to it appropriately.
             
-            import ws.*
+            %import ws.*
 
             % Default return value
             err=[];
             
             % try to delete any pre-existing command, response files
             if exist(self.CommandFileName_,'file') ,
-                deleteFileWithoutWarning(self.CommandFileName_)
+                ws.deleteFileWithoutWarning(self.CommandFileName_)
             end            
             if exist(self.ResponseFileName_,'file') ,
-                deleteFileWithoutWarning(self.ResponseFileName_)
+                ws.deleteFileWithoutWarning(self.ResponseFileName_)
             end
             
             % Verify the existance of the directory in which the command, response
@@ -1121,7 +898,7 @@ classdef EPCMasterSocket < handle
                                'Unable to open connection to EPCMaster because the command file was missing after blanking it');
                 return
             end                
-            commandFileModificationTimeAfterBlanking=fileModificationTime(self.CommandFileName_);
+            commandFileModificationTimeAfterBlanking=ws.fileModificationTime(self.CommandFileName_);
             if isempty(commandFileModificationTimeAfterBlanking) ,
                 err=MException('EPCMasterSocket:UnableToGetModificationTimeOfBlankedCommandFile', ...
                                'Unable to open connection to EPCMaster because unable to get modification time of the command file after blanking it');
@@ -1131,7 +908,7 @@ classdef EPCMasterSocket < handle
             % Look at the response file
             if exist(self.ResponseFileName_,'file') ,
                 responseFileExistedAfter=true;
-                responseFileModificationTimeAfterBlanking=fileModificationTime(self.ResponseFileName_);
+                responseFileModificationTimeAfterBlanking=ws.fileModificationTime(self.ResponseFileName_);
                 if isempty(responseFileModificationTimeAfterBlanking) ,
                     err=MException('EPCMasterSocket:UnableToGetResponseModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on response file after issuing blank command');
@@ -1160,7 +937,7 @@ classdef EPCMasterSocket < handle
             
             % Get the modification date on the command file.
             if exist(self.CommandFileName_,'file') ,
-                commandFileModificationTime=fileModificationTime(self.CommandFileName_);
+                commandFileModificationTime=ws.fileModificationTime(self.CommandFileName_);
                 if isempty(commandFileModificationTime),
                     err=MException('EPCMasterSocket:UnableToGetCommandModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on command file after issuing test command');
@@ -1182,15 +959,15 @@ classdef EPCMasterSocket < handle
                 if exist(self.ResponseFileName_,'file') ,
                     % Check that the response file was changed after the command
                     % file mode date
-                    responseFileModificationTime=fileModificationTime(self.ResponseFileName_);
+                    responseFileModificationTime=ws.fileModificationTime(self.ResponseFileName_);
                     if ~isempty(responseFileModificationTime) && commandFileModificationTime<=responseFileModificationTime ,
                         wasResponseGenerated=true;
                         break
                     else
-                        sleep(dt);
+                        ws.sleep(dt);
                     end
                 else
-                    sleep(dt);
+                    ws.sleep(dt);
                 end
             end
             
@@ -1203,11 +980,10 @@ classdef EPCMasterSocket < handle
             end
         end  % function
         
-        %%
         function [hasCommandOnOffSwitch,err]=probeForHasCommandOnOffSwitch_(self)
             [responseString,err]=self.issueCommandAndGetResponse('Get E TestDacToStim1');  % may throw, which we don't catch here
             if isempty(err)
-                hasCommandOnOffSwitch=isempty(strfind(responseString,'error'));
+                hasCommandOnOffSwitch = ~contains(responseString,'error') ;
             else
                 hasCommandOnOffSwitch=[];
             end
@@ -1216,7 +992,6 @@ classdef EPCMasterSocket < handle
 %             end
         end
         
-        %%
         function err=blankTheCommandFile_(self)
             % Open the command file, and clear the current contents (if
             % any)
@@ -1231,7 +1006,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
         
-        %%
         function result=computeCurrentMonitorNominalGainDetentsWithSpaceHolders_(self)
             result=inf(length(self.CurrentMonitorNominalGainDetents)+2,1);
             result(1:6)=self.CurrentMonitorNominalGainDetents(1:6);
@@ -1242,7 +1016,6 @@ classdef EPCMasterSocket < handle
     end  % protected methods
     
     methods (Static=true)  % public class methods
-        %%
         function [mode,err]=parseModeResponse(responseString)
             % The response should look like 'GetEpcParams-1 VC'
             % Returns either an ws.ElectrodeMode scalar, or empty if
@@ -1259,7 +1032,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
 
-        %%
         function [gain,err]=parseCurrentMonitorRealizedGainResponse(responseString)
             % The response should look like 'GetEpcParams-1 1.00000E+10',
             % with that gain in V/A.  We convert to V/pA.
@@ -1287,7 +1059,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
 
-        %%
         function [gain,err]=parseCurrentMonitorNominalGainResponse(responseString)
             % The response should look like 'GetEpcParams-1 0.020mV/pA',
             % with that gain in mV/pA (obviously).  We convert to V/pA.
@@ -1315,7 +1086,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function                
 
-        %%
         function [gain,err]=parseVoltageMonitorGainResponse(responseString)
             % The response should look like 'GetEpcParams-1 VmonX10' or 'GetEpcParams-1 VmonX100',
             % with that gain in mV/mV.  We convert to V/mV.
@@ -1341,7 +1111,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
 
-        %%
         function [gain,err]=parseCurrentCommandGainResponse(responseString)
             % The response should look like 'GetEpcParams-1 CC0.1pA' [sic], 
             % with that gain in pA/mV.  We convert to pA/V.
@@ -1394,7 +1163,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function                        
 
-        %%
         function [value,err]=parseIsCommandEnabledResponse(responseString)
             % The response should end in either 'ON' or 'OFF'.
             responseStringTokens=strsplit(responseString);
@@ -1420,7 +1188,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function                        
 
-        %%
         function [xDetent,iDetent]=findClosestDetent(x,detents)
             [~,iDetent]=min(abs(x-detents));
             xDetent=detents(iDetent);
@@ -1428,7 +1195,6 @@ classdef EPCMasterSocket < handle
     end  % public class methods
 
     methods (Static=true, Access=protected)  % protected class methods
-        %%
         function [responseIndex,err]=getResponseIndex_(responseFileId)
             % If successful, leaves the file pointer at the start of the
             % second line of the response file

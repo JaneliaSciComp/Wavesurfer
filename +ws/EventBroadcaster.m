@@ -57,6 +57,8 @@ classdef (Abstract=true) EventBroadcaster < handle
                                    'eventName',eventName, ...
                                    'propertyName',propertyName, ...
                                    'methodName',methodName);
+            %fprintf('About to subscribe a figure of class %s to a model of class %s, for events of type %s\n', class(subscriber), class(self), eventName) ;
+            %dbstack
             if isempty(propertyName)                   
                 newListener=self.addlistener(eventName,@(source,event)(subscriber.(methodName)(self,eventName,propertyName,source,event)));
             else
@@ -108,30 +110,11 @@ classdef (Abstract=true) EventBroadcaster < handle
         end
         
         function disableBroadcasts(self)
-            %fprintf('EventBroadcaster::disableBroadcasts()\n');
-%             className = class(self);
-%             if isequal(className,'ws.UserCodeManager') ,
-%                 fprintf('UserCodeManager::disableBroadcasts()\n');
-%                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
-%             end
             self.BroadcastEnablement_.disable();
-%             if isequal(class(self),'ws.UserCodeManager') ,
-%                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
-%             end
         end
         
         function enableBroadcastsMaybe(self)
-            %fprintf('EventBroadcaster::enableBroadcasts()\n');
-%             className = class(self);
-%             if isequal(className,'ws.UserCodeManager') ,
-%                 fprintf('UserCodeManager::enableBroadcastsMaybe()\n');
-%                 %dbstack
-%                 degreeBefore = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
-%             end
             self.BroadcastEnablement_.enableMaybe();
-%             if isequal(class(self),'ws.UserCodeManager') ,
-%                 degreeAfter = self.BroadcastEnablement_.peekAtDegreeOfEnablement() 
-%             end
         end
         
         function broadcast(self,eventName,varargin)

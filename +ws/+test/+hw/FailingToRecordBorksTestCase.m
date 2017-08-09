@@ -5,15 +5,13 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -28,18 +26,18 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
                            
             % Turn on stimulation (there's a single pulse output by
             % default)
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
 
             % Turn on logging
-            %wsModel.Logging.IsEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % Want to make sure there's a pre-existing file by that name
-            nextRunAbsoluteFileName=wsModel.Logging.NextRunAbsoluteFileName;
+            nextRunAbsoluteFileName=wsModel.NextRunAbsoluteFileName;
             if ~exist(nextRunAbsoluteFileName,'file');
                 fid=fopen(nextRunAbsoluteFileName,'w');
                 fclose(fid);
@@ -60,7 +58,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             end
 
             % Now check the "OK to overwrite" box.
-            wsModel.Logging.IsOKToOverwrite=true;
+            wsModel.IsOKToOverwriteDataFile=true;
             
             % wait a spell
             pause(0.1);
@@ -80,7 +78,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
 %             end                   
 
             % Delete the data file
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
             

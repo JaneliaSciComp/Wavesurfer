@@ -28,7 +28,7 @@ classdef FastProtocolsController < ws.Controller
             % that does not exist, then it will start in the current
             % directory.
             filePickerInitialFolderFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
-            originalFastProtocolFileName = self.Model.selectedFastProtocolFileName() ;
+            originalFastProtocolFileName = self.Model.getSelectedFastProtocolProperty('ProtocolFileName') ;
             if isempty(originalFastProtocolFileName) ,
                 if ~exist('startLocationFromPreferences','var') ,
                     filePickerInitialFolder = '' ;
@@ -38,7 +38,10 @@ classdef FastProtocolsController < ws.Controller
             else
                 filePickerInitialFolder = originalFastProtocolFileName ;
             end
-            [filename, dirName] = uigetfile({'*.cfg'}, 'Select a Protocol File', filePickerInitialFolder);
+            [filename, dirName] = uigetfile({'*.wsp', 'WaveSurfer Protocol Files' ; ...
+                                             '*.*',  'All Files (*.*)'} , ...
+                                            'Select a Protocol File' , ...
+                                            filePickerInitialFolder) ;
 
             % If the user cancels, just exit.
             if filename == 0 ,
@@ -47,7 +50,7 @@ classdef FastProtocolsController < ws.Controller
             
             % Set the fast protocol to the selected file
             newProtocolFileName = fullfile(dirName, filename) ;
-            self.Model.do('setSelectedFastProtocolFileName', newProtocolFileName) ;
+            self.Model.do('setSelectedFastProtocolProperty', 'ProtocolFileName', newProtocolFileName) ;
 
             % If newFileName and startLocationFromPreferences differ, then
             % save the former as the new LastProtocolFilePath.
@@ -77,13 +80,13 @@ classdef FastProtocolsController < ws.Controller
 %                     theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
 %                     ws.Controller.setWithBenefits(theFastProtocol,'ProtocolFileName',newString);
 %                 end
-                self.Model.do('setFastProtocolFileName', fastProtocolIndex, newString) ;
+                self.Model.do('setFastProtocolProperty', fastProtocolIndex, 'ProtocolFileName', newString) ;
             elseif (columnIndex==2) ,
                 % this is the Action column
                 newValue = ws.startTypeFromTitleString(newString) ;  
 %                 theFastProtocol=self.Model.FastProtocols{fastProtocolIndex};
 %                 ws.Controller.setWithBenefits(theFastProtocol,'AutoStartType',newValue);
-                self.Model.do('setFastProtocolAutoStartType', fastProtocolIndex, newValue) ;
+                self.Model.do('setFastProtocolProperty', fastProtocolIndex, 'AutoStartType', newValue) ;
             end            
         end  % function        
     end  % public methods block

@@ -4,15 +4,13 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -26,11 +24,11 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.addDOChannel() ;                                 
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -48,7 +46,7 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -63,10 +61,10 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 

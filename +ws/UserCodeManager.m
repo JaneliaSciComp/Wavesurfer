@@ -1,13 +1,14 @@
 classdef UserCodeManager < ws.Subsystem
     
     properties (Dependent = true)
-        ClassName
+        %ClassName
         %AbortCallsComplete
     end
     
     properties (Dependent = true, SetAccess = immutable)
-        TheObject  % an instance of ClassName, or []
-        IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
+        %TheObject  % an instance of ClassName, or []
+        %IsClassNameValid  % if ClassName is empty, always true.  If ClassName is nonempty, true iff self.TheObject is a scalar of class self.ClassName
+        %DoesTheObjectMatchClassName
     end
     
     properties (Access = protected)
@@ -23,8 +24,8 @@ classdef UserCodeManager < ws.Subsystem
     end
     
     methods
-        function self = UserCodeManager(parent)
-            self@ws.Subsystem(parent) ;
+        function self = UserCodeManager()
+            self@ws.Subsystem() ;
             self.IsEnabled=true;            
         end  % function
 
@@ -34,31 +35,34 @@ classdef UserCodeManager < ws.Subsystem
             self.TheObject_ = [] ;
         end
         
-        function result = get.ClassName(self)
+        function result = getClassName_(self)
             result = self.ClassName_;
         end
                 
-        function result = get.IsClassNameValid(self)
+        function result = getIsClassNameValid_(self)
             result = ( isempty(self.ClassName_) || ...
                        ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ) ;
-            %result = self.IsClassNameValid_ ;
         end
-                
+
+        function result = getDoesTheObjectMatchClassName_(self)
+            result = ( isscalar(self.TheObject_) && isa(self.TheObject_, self.ClassName_) ) ;
+        end               
+        
 %         function result = get.AbortCallsComplete(self)
 %             result = self.AbortCallsComplete_;
 %         end
                 
-        function result = get.TheObject(self)
+        function result = getTheObject_(self)
             result = self.TheObject_;
         end
-                
-        function set.ClassName(self, value)
+        
+        function setClassName_(self, value, wsModel)
             if ws.isString(value) ,
                 % If it's a string, we'll keep it, but we have to check if
                 % it's a valid class name
                 trimmedValue = strtrim(value) ;
                 self.ClassName_ = trimmedValue ;
-                err = self.tryToInstantiateObject_() ;
+                err = self.tryToInstantiateObject_(wsModel) ;
                 self.broadcast('Update');
                 if ~isempty(err) ,
                   error('wavesurfer:errorWhileInstantiatingUserObject', ...
@@ -71,12 +75,62 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % function
         
-        function instantiateUserObject(self)
-            err = self.tryToInstantiateObject_() ;
+        % We have separate methods for instantiation and reinstantiation
+        % b/c of the following issue.  We used to have a single method, and
+        % a single button that we changed the label of.  But if, starting
+        % from an empty edit (and no user object), the user typed in the
+        % class name, then clicked on "Instantiate", two events would get
+        % generated: An "editbox edited" event when the button click caused
+        % the editbox to lose keyboard focus, then a "button clicked"
+        % event.  The first event would causes the user object to be
+        % instantiated, then the second one would cause it to be
+        % *re*-instantiated.  This was problematic for some user classes,
+        % so we now have two methods, which do nothing if they're called
+        % when a user object exists/doesn't exist.  And now we have two
+        % separate buttons in the same place, only one of which is visible
+        % at a time.
+        %
+        % But this has its own problems: If you have one class name in the
+        % edit, and the object exists, the Reinstantiate button will be
+        % showing.  But if you then replace the class name with a different
+        % one, the Reinstantiate button stays there until the edit
+        % loses focus.  So after replacing the class name, the user can
+        % press the Reinstantiate button, which generates two events.  The
+        % first causes the new object, of the new class, to be
+        % instantiated.  The second event (the Reinstantiate button press) then 
+        % causes a second instantiation of the new class.        
+        %
+        % Might make sense to just get rid of the button...
+        % Or just leave things as they are...
+        
+%         function instantiateUserObject(self)
+%             % This instantiates the user object if no user object exists.
+%             % If the user object already exists, it just does an update.
+%             if ~self.DoesTheObjectMatchClassName ,
+%                 err = self.tryToInstantiateObject_() ;
+%             else
+%                 err = [] ;
+%             end
+%             self.broadcast('Update');
+%             if ~isempty(err) ,
+%                 error('wavesurfer:errorWhileInstantiatingUserObject', ...
+%                       'Unable to instantiate user object: %s.',err.message);
+%             end
+%         end  % method
+
+        function reinstantiateUserObject_(self, wsModel)
+            % This reinstantiates the user object.
+            % If the object name doesn't match
+            % the class name, does nothing.  
+            if self.DoesTheUserObjectMatchTheUserClassName ,
+                err = self.tryToInstantiateObject_(wsModel) ;
+            else
+                err = [] ;
+            end
             self.broadcast('Update');
             if ~isempty(err) ,
                 error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                      'Unable to instantiate user object: %s.',err.message);
+                      'Unable to reinstantiate user object: %s.',err.message);
             end
         end  % method
         
@@ -104,7 +158,7 @@ classdef UserCodeManager < ws.Subsystem
 %             end            
         end  % function
 
-        function invoke(self, rootModel, eventName, varargin)
+        function invoke(self, wsModel, eventName, varargin)
             try
 %                 if isempty(self.TheObject_) ,
 %                     exception = self.tryToInstantiateObject_() ;
@@ -114,7 +168,7 @@ classdef UserCodeManager < ws.Subsystem
 %                 end
                 
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.(eventName)(rootModel, eventName, varargin{:});
+                    self.TheObject_.(eventName)(wsModel, eventName, varargin{:});
                 end
 
 %                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
@@ -128,36 +182,36 @@ classdef UserCodeManager < ws.Subsystem
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                self.logWarning('ws:userCodeError', ...
-                                sprintf('Error in user class method %s',eventName), ...
-                                me) ;
+                wsModel.logWarning('ws:userCodeError', ...
+                                   sprintf('Error in user class method %s',eventName), ...
+                                   me) ;
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end
         end  % function
         
-        function invokeSamplesAcquired(self, rootModel, scaledAnalogData, rawDigitalData) 
+        function invokeSamplesAcquired(self, wsModel, scaledAnalogData, rawDigitalData) 
             % This method is designed to be fast, at the expense of
             % error-checking.
             try
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                    self.TheObject_.samplesAcquired(wsModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
                 end
             catch me
                 %warningException = MException('wavesurfer:usercodemanager:codeerror', ...
                 %                              'Error in user class method samplesAcquired') ;
                 %warningException = warningException.addCause(me) ;                                          
-                self.logWarning('ws:userCodeError', ...
-                                'Error in user class method samplesAcquired', ...
-                                me) ;
+                wsModel.logWarning('ws:userCodeError', ...
+                                   'Error in user class method samplesAcquired', ...
+                                   me) ;
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end            
         end
         
-        function quittingWavesurfer(self)
-            ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
-        end
+%         function quittingWavesurfer(self)
+%             ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
+%         end
         
         % You might thing user methods would get invoked inside the
         % UserCodeManager methods startingRun, startingSweep,
@@ -192,7 +246,7 @@ classdef UserCodeManager < ws.Subsystem
                     if isempty(source) ,
                         newUserObject = [] ;
                     else
-                        newUserObject = source.copyGivenParent(self) ;
+                        newUserObject = source.copy() ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
                 else
@@ -212,7 +266,7 @@ classdef UserCodeManager < ws.Subsystem
     end  % public methods block
        
     methods (Access=protected)
-        function exception = tryToInstantiateObject_(self)
+        function exception = tryToInstantiateObject_(self, wsModel)
             % This method syncs self.TheObject_ given the value of
             % self.ClassName_ . If object creation is attempted and fails,
             % exception will be nonempty, and will be an MException.  But
@@ -232,7 +286,7 @@ classdef UserCodeManager < ws.Subsystem
             else
                 % className is non-empty
                 try 
-                    newObject = feval(className,self) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className, wsModel) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;

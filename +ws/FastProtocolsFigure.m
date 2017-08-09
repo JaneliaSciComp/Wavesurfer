@@ -176,17 +176,18 @@ classdef FastProtocolsFigure < ws.MCOSFigure
         
     methods (Access=protected)
         function updateTable_(self,varargin)
-            model=self.Model;
-            if isempty(model) ,
+            wsModel=self.Model;
+            if isempty(wsModel) ,
                 return
             end
-            nRows=length(model.FastProtocols);
+            nRows = wsModel.NFastProtocols ;
             nColumns=2;
             data=cell(nRows,nColumns);
             for i=1:nRows ,
-                fastProtocol=model.FastProtocols{i};
-                data{i,1}=fastProtocol.ProtocolFileName;
-                data{i,2}=ws.titleStringFromStartType(fastProtocol.AutoStartType);
+                protocolFileName = wsModel.getFastProtocolProperty(i, 'ProtocolFileName') ;
+                autoStartType = wsModel.getFastProtocolProperty(i, 'AutoStartType') ;
+                data{i,1}=protocolFileName;
+                data{i,2}=ws.titleStringFromStartType(autoStartType);
             end
             set(self.Table,'Data',data);
         end  % function
@@ -198,14 +199,13 @@ classdef FastProtocolsFigure < ws.MCOSFigure
             if isempty(wavesurferModel) || ~isvalid(wavesurferModel) ,
                 return
             end            
-            import ws.onIff
             isIdle=isequal(wavesurferModel.State,'idle');
             selectedIndex = wavesurferModel.IndexOfSelectedFastProtocol;
             isARowSelected= ~isempty(selectedIndex);
 
-            set(self.ClearRowButton,'Enable',onIff(isIdle&&isARowSelected));
-            set(self.SelectFileButton,'Enable',onIff(isIdle&&isARowSelected));
-            set(self.Table,'Enable',onIff(isIdle))
+            set(self.ClearRowButton,'Enable',ws.onIff(isIdle&&isARowSelected));
+            set(self.SelectFileButton,'Enable',ws.onIff(isIdle&&isARowSelected));
+            set(self.Table,'Enable',ws.onIff(isIdle))
         end  % function        
     end
     

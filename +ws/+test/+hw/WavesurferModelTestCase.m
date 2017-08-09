@@ -4,15 +4,13 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -27,7 +25,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.addAIChannel() ;
             
             % Enable stimulation subsystem
-            model.Stimulation.IsEnabled=true;
+            model.IsStimulationEnabled=true;
 
             % Make a too-large pulse stimulus, add to the stimulus library
             model.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
@@ -68,7 +66,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.populateStimulusLibraryForTesting() ;
             
             % Make a copy of it in the populated state
-            stimulusLibraryCopy = wsModel.Stimulation.StimulusLibrary.copyGivenParent([]) ;
+            stimulusLibraryCopy = wsModel.getStimulusLibraryCopy() ;
             
             % Save the protocol to disk
             protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
@@ -86,7 +84,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % compare the stim library in model to the copy of the
             % populated version
-            self.verifyEqual(wsModel.Stimulation.StimulusLibrary,stimulusLibraryCopy) ;
+            stimulusLibraryCheck = wsModel.getStimulusLibraryCopy ;
+            self.verifyEqual(stimulusLibraryCheck,stimulusLibraryCopy) ;
         end  % function
         
         
@@ -111,11 +110,11 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 
             % Populate the Wavesurfer Stim library
             stimulusLibrary = self.createPopulatedStimulusLibrary() ;
-            wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary);
+            wsModel.mimicStimulusLibrary_(stimulusLibrary);
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             
             % Set the Stimulation source
             %wsModel.Stimulation.StimulusLibrary.SelectedOutputable = wsModel.Stimulation.StimulusLibrary.Sequences{2} ;
@@ -144,15 +143,15 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.StimulationUsesAcquisitionTrigger = false ;
             
             % Clear the stim lib within the WavesurferModel
-            wsModel.Stimulation.StimulusLibrary.clear();
+            wsModel.clearStimulusLibrary() ;
 
             % Populate the Wavesurfer Stim library
             stimulusLibrary=self.createPopulatedStimulusLibrary();
-            wsModel.Stimulation.StimulusLibrary.mimic(stimulusLibrary);
+            wsModel.mimicStimulusLibrary_(stimulusLibrary) ;
             clear stimulusLibrary
 
             % Enable the stimulation subsystem
-            wsModel.Stimulation.IsEnabled=true;
+            wsModel.IsStimulationEnabled=true;
             
             % Set the Stimulation source
             %wsModel.Stimulation.StimulusLibrary.SelectedOutputable=wsModel.Stimulation.StimulusLibrary.Sequences{2};
@@ -177,7 +176,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModelAsDecoded = ws.Coding.decodeEncodingContainer(protocolSettingsAsRead) ;
 
             % Check the self-consistency of the stim library
-            self.verifyTrue(wsModelAsDecoded.Stimulation.StimulusLibrary.isSelfConsistent());
+            self.verifyTrue(wsModelAsDecoded.isStimulusLibrarySelfConsistent());
             
             % Get the stimulation source name now
             selectedOutputableNameCheck=wsModelAsDecoded.stimulusLibrarySelectedOutputableProperty('Name') ;  
@@ -251,17 +250,17 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
-            settings(end+1,:)={'Acquisition.SampleRate' 100e6/5001};
-            settings(end+1,:)={'Acquisition.Duration' 2.17};
+            settings(end+1,:)={'AcquisitionSampleRate' 100e6/5001};
+            settings(end+1,:)={'SweepDuration' 2.17};
             
-            settings(end+1,:)={'Stimulation.IsEnabled' true};
-            settings(end+1,:)={'Stimulation.SampleRate' 100e6/4999};
+            settings(end+1,:)={'IsStimulationEnabled' true};
+            settings(end+1,:)={'StimulationSampleRate' 100e6/4999};
             
-            settings(end+1,:)={'Display.IsEnabled' true};
+            settings(end+1,:)={'IsDisplayEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};
-            settings(end+1,:)={'Display.UpdateRate' 9};
-            settings(end+1,:)={'Display.IsXSpanSlavedToAcquistionDuration' false};
-            settings(end+1,:)={'Display.XSpan' 2.01};
+            settings(end+1,:)={'DisplayUpdateRate' 9};
+            settings(end+1,:)={'IsXSpanSlavedToAcquistionDuration' false};
+            settings(end+1,:)={'XSpan' 2.01};
             
             % Set the settings in the wavesurferModel
             nSettings=size(settings,1);
@@ -280,6 +279,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...
             
@@ -300,8 +300,8 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; %#ok<NASGU>
-
+            wsModelCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ; 
+            
             % Check that all settings are as set
             for i=1:nSettings ,
                 propertyName=settings{i,1};
@@ -314,6 +314,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %                 end
                 self.verifyEqual(propertyValue,propertyValueCheck,sprintf('Problem with: %s',propertyName));
             end            
+            wsModelCheck.delete() ;
         end  % function        
         
         function testSavingAndLoadingElectrodeProperties(self)
@@ -327,7 +328,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
             
-            wsModel.Ephys.ElectrodeManager.addNewElectrode();
+            electrodeIndex = wsModel.addNewElectrode() ;
             
             % A list of settings
             settings=cell(0,2);
@@ -347,15 +348,16 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             settings(end+1,:)={'CurrentUnits' ws.SIUnit('kA')};
             
             % Set the settings
-            electrode=wsModel.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
+            %electrode=wsModel.Ephys.ElectrodeManager.Electrodes{1}; %#ok<NASGU>
             nSettings=size(settings,1);
             for i=1:nSettings ,
                 propertyName=settings{i,1};
-                propertyValue=settings{i,2}; %#ok<NASGU>
-                evalString=sprintf('electrode.%s = propertyValue ;',propertyName);
-                eval(evalString);
+                propertyValue=settings{i,2};
+                %evalString=sprintf('electrode.%s = propertyValue ;',propertyName);
+                %eval(evalString);
+                wsModel.setElectrodeProperty(electrodeIndex, propertyName, propertyValue) ;
             end
-            clear electrode  % don't want ref hanging around
+            %clear electrode  % don't want ref hanging around
             
             % Save the protocol to disk, very similar to how
             % WavesurferController does it
@@ -365,6 +367,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             save(fileName,'protocolSettings');
             
             % Delete the WavesurferModel
+            wsModel.delete() ;
             clear wsModel
             %clear protocolSettings  % that we have to do this indicates problems elsewhere...            
 
@@ -378,22 +381,22 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
 %             emCheck.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
             % Load the settings, very like WavesurferController does
-            s=load(fileName);
-            protocolSettingsCheck=s.protocolSettings;
+            s = load(fileName) ;
+            protocolSettingsCheck = s.protocolSettings ;
             %emCheck.decodeProperties(protocolSettingsCheck);
             emCheck = ws.Coding.decodeEncodingContainer(protocolSettingsCheck) ;
             
             % Check that all settings are as set
-            electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>
+            %electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>
             for i=1:nSettings ,
                 propertyName=settings{i,1};
                 propertyValue=settings{i,2};
-                %propertyValueCheck=emCheck.(propertyName);
-                evalString=sprintf('propertyValueCheck = electrode.%s ;',propertyName);
-                eval(evalString);
-                if ~isequal(propertyValue,propertyValueCheck) ,
-                    keyboard
-                end
+                %evalString=sprintf('propertyValueCheck = electrode.%s ;',propertyName);
+                %eval(evalString);
+                propertyValueCheck = emCheck.getElectrodeProperty(electrodeIndex, propertyName) ;
+                %if ~isequal(propertyValue,propertyValueCheck) ,
+                %    keyboard
+                %end
                 self.verifyEqual(propertyValue,propertyValueCheck);
             end            
         end  % function

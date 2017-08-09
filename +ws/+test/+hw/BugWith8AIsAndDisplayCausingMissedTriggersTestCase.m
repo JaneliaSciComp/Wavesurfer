@@ -4,15 +4,13 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -30,11 +28,11 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=10;
             wsModel.NSweepsPerRun=nSweeps;
@@ -42,10 +40,10 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 

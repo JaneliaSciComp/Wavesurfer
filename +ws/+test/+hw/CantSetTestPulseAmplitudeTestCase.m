@@ -4,15 +4,13 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -36,22 +34,20 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
             %
             
             % Set up a single electrode
-            wsModel.Ephys.ElectrodeManager.addNewElectrode();
+            wsModel.addNewElectrode();
                         
             % Try to set the TP amplitude
-            currentAmplitude = wsModel.Ephys.TestPulser.Amplitude ;
+            currentAmplitude = wsModel.getTestPulseElectrodeProperty('TestPulseAmplitude') ;
             if currentAmplitude==1 ,
                 targetAmplitude=10 ;
             else
                 targetAmplitude=1 ;
             end
-            wsModel.Ephys.TestPulser.Amplitude = targetAmplitude ;
-            amplitudeAfterSetting = wsModel.Ephys.TestPulser.Amplitude ;
+            wsModel.setTestPulseElectrodeProperty('TestPulseAmplitude', targetAmplitude) ;
+            amplitudeAfterSetting = wsModel.getTestPulseElectrodeProperty('TestPulseAmplitude') ;
             
             self.verifyEqual(amplitudeAfterSetting,targetAmplitude) ;                
         end  % function
-
-        
         
     end  % test methods
 

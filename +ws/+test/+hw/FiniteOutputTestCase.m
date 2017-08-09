@@ -3,15 +3,13 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -23,7 +21,7 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             %channelNames = { 'ao0' 'ao1' } ;
             fs=20000;  % Hz
             isChannelInTask = true(size(terminalIDs)) ;
-            theTask = ws.FiniteOutputTask('analog', taskName, deviceNames, terminalIDs, isChannelInTask, fs);
+            theTask = ws.FiniteOutputTask('analog', taskName, 'OnboardClock', 100e6, deviceNames, terminalIDs, isChannelInTask, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s
@@ -51,7 +49,7 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             %channelNames = { 'do0' 'do1' } ;
             isChannelInTask = true(size(terminalIDs)) ;
             fs=20000;  % Hz            
-            theTask = ws.FiniteOutputTask('digital', taskName, deviceNames, terminalIDs, isChannelInTask, fs);
+            theTask = ws.FiniteOutputTask('digital', taskName, 'OnboardClock', 100e6, deviceNames, terminalIDs, isChannelInTask, fs);
             %theTask.SampleRate = fs ;
             
             T = 1 ;  % s

@@ -5,15 +5,13 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -28,11 +26,11 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
             wsModel.addDIChannel() ;
             wsModel.addAOChannel() ;
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=false;
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=false;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -49,7 +47,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
 %             % to stim library
 %             map=wsModel.Stimulation.StimulusLibrary.addNewMap();
 %             map.Name='Godzilla out first AO';
-%             firstAoChannelName=wsModel.Stimulation.AnalogChannelNames{1};
+%             firstAoChannelName=wsModel.AOChannelNames{1};
 %             map.addBinding(firstAoChannelName,godzilla);
 % 
 %             % make the new map the current sequence/map

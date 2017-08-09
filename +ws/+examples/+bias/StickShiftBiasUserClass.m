@@ -18,9 +18,9 @@ classdef StickShiftBiasUserClass < ws.UserClass
     end
     
     methods
-        function self = StickShiftBiasUserClass(userCodeManager)
+        function self = StickShiftBiasUserClass(wsModel)
             fprintf('Creating the BIAS user object\n') ;
-            self.isIInFrontend_ = ( isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ) ;
+            self.isIInFrontend_ = ( isa(wsModel,'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ) ;
         end
         
         function delete(self)            

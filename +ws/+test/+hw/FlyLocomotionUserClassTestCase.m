@@ -4,16 +4,14 @@ classdef FlyLocomotionUserClassTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -33,17 +31,17 @@ classdef FlyLocomotionUserClassTestCase < matlab.unittest.TestCase
             %             wsModel.addDOChannel() ;
             %             wsModel.addDOChannel() ;
 
-            %wsModel.Stimulation.IsEnabled = true ;
+            %wsModel.IsStimulationEnabled = true ;
             %wsModel.AreSweepsContinuous = true ;
             wsModel.SweepDuration = 10 ;  % s
 
-            wsModel.UserCodeManager.ClassName = 'ws.examples.FlyLocomotionLiveUpdating' ;
+            wsModel.UserClassName = 'ws.examples.FlyLocomotionLiveUpdating' ;
             thisDirName = fileparts(mfilename('fullpath')) ;
             dataFileName = fullfile(thisDirName,'flyLocomotionFirstSweepTruncated.mat') ;
             %s = load(dataFileName) ;
             %fakeInputDataForDebugging = s.data ;          
-            wsModel.UserCodeManager.TheObject.setFakeInputDataForDebugging(dataFileName) ;
-            self.verifyTrue(wsModel.UserCodeManager.TheObject.IsInDebugMode) ;
+            wsModel.TheUserObject.setFakeInputDataForDebugging(dataFileName) ;
+            self.verifyTrue(wsModel.TheUserObject.IsInDebugMode) ;
 
             %             aTimer = timer('ExecutionMode', 'singleShot', ...
             %                            'StartDelay', 20, ...
@@ -56,8 +54,8 @@ classdef FlyLocomotionUserClassTestCase < matlab.unittest.TestCase
 
             %             wsController.quit() ;
             %             wsController = [] ;  %#ok<NASGU>
-            wsModel.UserCodeManager.TheObject.clearFakeInputDataForDebugging() ;
-            self.verifyFalse(wsModel.UserCodeManager.TheObject.IsInDebugMode) ;
+            wsModel.TheUserObject.clearFakeInputDataForDebugging() ;
+            self.verifyFalse(wsModel.TheUserObject.IsInDebugMode) ;
 
             wsModel.delete() ;  % Explicitly delete to cause explicit deletion of the user object, and (hopefully) destruction of any user object figures
             wsModel = [] ;         %#ok<NASGU>

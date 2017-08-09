@@ -5,15 +5,13 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -27,11 +25,11 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             wsModel.addAOChannel() ;
             wsModel.addDOChannel() ;                                 
                            
-            wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled=true;
-            wsModel.Stimulation.SampleRate=20000;  % Hz
-            wsModel.Display.IsEnabled=true;
-            %wsModel.Logging.IsEnabled=true;
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+            %wsModel.IsLoggingEnabled=true;
 
             nSweeps=1;
             wsModel.NSweepsPerRun=nSweeps;
@@ -49,8 +47,8 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             % to stim library
             mapIndex = wsModel.addNewStimulusMap() ;
             wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Pulse train out first AO, DO') ;
-            firstAOChannelName = wsModel.Stimulation.AnalogChannelNames{1} ;
-            firstDOChannelName = wsModel.Stimulation.DigitalChannelNames{1} ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            firstDOChannelName = wsModel.DOChannelNames{1} ;
             bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
             wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', pulseTrainIndex) ;
@@ -64,10 +62,10 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
@@ -94,18 +92,22 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             %
             
             % Set up a single electrode
-            wsModel.Ephys.ElectrodeManager.addNewElectrode();
-            electrode = wsModel.Ephys.ElectrodeManager.Electrodes{1};
-            electrode.VoltageMonitorChannelName = 'V1' ;
-            electrode.CurrentCommandChannelName = 'Cmd1' ;
-            electrode.Mode = 'cc' ;
+            electrodeIndex = wsModel.addNewElectrode() ;
+
+            %electrode = wsModel.Ephys.ElectrodeManager.Electrodes{electrodeIndex};
+            %electrode.VoltageMonitorChannelName = 'V1' ;
+            %electrode.CurrentCommandChannelName = 'Cmd1' ;
+            %electrode.Mode = 'cc' ;            
+            wsModel.setElectrodeProperty(electrodeIndex, 'Mode', 'cc') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'MonitorChannelName', 'V1') ;
+            wsModel.setElectrodeProperty(electrodeIndex, 'CommandChannelName', 'Cmd1') ;
             
             % Start test pulsing
-            wsModel.Ephys.TestPulser.start();
+            wsModel.startTestPulsing();
             
             % Wait a bit then stop
             pause(3);
-            wsModel.Ephys.TestPulser.stop();
+            wsModel.stopTestPulsing();
             
             % If that doesn't throw, we count that as success
             self.verifyTrue(true);            

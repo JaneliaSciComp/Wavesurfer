@@ -4,15 +4,13 @@ classdef AppendScalingCoefficientsToDataFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -31,7 +29,11 @@ classdef AppendScalingCoefficientsToDataFileTestCase < matlab.unittest.TestCase
             ws.appendCalibrationCoefficientsToCopyOfDataFile(inputFileName, fakeCoefficients, outputFileName) ;
             dataFileAsStruct = ws.loadDataFile(outputFileName, 'raw') ;
             delete(outputFileName) ;
-            fakeCoefficientsAsRead = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
+                fakeCoefficientsAsRead = dataFileAsStruct.header.AIScalingCoefficients ;
+            else
+                fakeCoefficientsAsRead = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            end
             self.verifyEqual(fakeCoefficients,fakeCoefficientsAsRead) ;
         end
         

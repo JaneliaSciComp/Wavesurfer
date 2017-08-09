@@ -33,7 +33,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % properties    
     
     methods
-        function self=MCOSFigure(model,controller)
+        function self=MCOSFigure(model, controller)
             % Note that when this is called, the controller is in a
             % not-completely-initialized state, so it's not safe to do much
             % of anything with it except copy a pointer to it.
@@ -57,9 +57,8 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
         function delete(self)
-            self.deleteFigureGH();
+            self.deleteFigureGH_() ;
             self.Controller_=[];
-            %self.setModel_([]);
             self.Model_ = [] ;
             %fprintf('here i am doing something\n');
         end
@@ -83,7 +82,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             output = self.Controller_ ;
         end
                 
-        function setModel_(self,newValue)
+        function setModel_(self, newValue)
             self.willSetModel_();
             self.Model_ = newValue ;            
             self.didSetModel_();
@@ -203,7 +202,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         end
         
 %         function changeReadiness(self,delta)
-%             import ws.*
+%             %import ws.*
 % 
 %             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
 %                 return
@@ -234,8 +233,9 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 %             value=(self.DegreeOfReadiness_>0);
 %         end       
         
-        function updateReadiness(self,varargin)
-            self.updateReadinessImplementation_();
+        function updateReadiness(self, varargin)
+            %fprintf('Inside updateReadiness()\n') ;
+            self.updateReadinessImplementation_() ;
         end
 
         function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
@@ -287,7 +287,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         
         function layout_(self)
             % This method should make sure all the controls are sized and placed
-            % appropraitely given the current model state.
+            % appropriately given the current model state.
             
             % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
@@ -401,8 +401,11 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         function didSetModel_(self) 
             % This can be overridden if the figure wants something special to
             % happen just after the model is set
+            %fprintf('Inside didSetModel_()') ;
+            %class(self)
             model=self.Model_;
             if ~isempty(model) && isvalid(model) ,
+                %fprintf('About to subscribe a figure of class %s to a model of class %s\n', class(self), class(model)) ;
                 model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
             end
         end
@@ -454,15 +457,16 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     methods
         function closeRequested(self,source,event)            
             if isempty(self.Controller_) ,
-                self.deleteFigureGH();
+                delete(self) ;
+                %self.deleteFigureGH();
             else
                 self.Controller_.windowCloseRequested(source,event);
             end
         end  % function       
     end  % methods    
     
-    methods
-        function deleteFigureGH(self)   
+    methods (Access=protected)
+        function deleteFigureGH_(self)   
             % This causes the figure HG object to be deleted, with no ifs
             % ands or buts
             if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
@@ -487,6 +491,15 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % methods
     
     methods
+        function position = getPositionInPixels(self)
+            figureGH = self.FigureGH_ ;
+            % Get our position
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            position = get(figureGH,'position') ;
+            set(figureGH,'units',originalUnits);            
+        end
+        
         function constrainPositionToMonitors(self, monitorPositions)
             % For each monitor, calculate the translation needed to get the
             % figure onto it.

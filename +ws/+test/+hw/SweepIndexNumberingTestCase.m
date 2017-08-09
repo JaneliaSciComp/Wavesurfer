@@ -4,16 +4,14 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(groot,'Type','Figure')) ;
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -29,11 +27,11 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
-            wsModel.Acquisition.Duration = 10 ;  % s
-            %wsModel.Acquisition.SampleRate=20000;  % Hz
-            wsModel.Stimulation.IsEnabled = true ;
-            %wsModel.Stimulation.SampleRate=20000;  % Hz
-            %wsModel.Display.IsEnabled=true;
+            wsModel.SweepDuration = 10 ;  % s
+            %wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled = true ;
+            %wsModel.StimulationSampleRate=20000;  % Hz
+            %wsModel.IsDisplayEnabled=true;
             
             % Set to external triggering
             wsModel.addExternalTrigger() ;
@@ -45,10 +43,10 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % set the data file name
             thisFileName=mfilename();
             [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.Logging.FileBaseName=dataFileBaseName;
+            wsModel.DataFileBaseName=dataFileBaseName;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.Logging.FileLocation;
+            dataDirNameAbsolute=wsModel.DataFileLocation;
             dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
             delete(dataFilePatternAbsolute);
 
@@ -72,11 +70,11 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = ~isempty(filesCreated);
             self.verifyFalse(wasAnOutputFileCreated) ;
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 1) ;
+            self.verifyEqual(wsModel.NextSweepIndex, 1) ;
             
             % Now start and stop a sweep before it is finished; the data
             % file should only contain the collected data rather than
-            % padding with zeros up to wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate
+            % padding with zeros up to wsModel.SweepDuration * wsModel.AcquisitionSampleRate
             
             % Set the trigger back to the Built-in Trigger
             wsModel.AcquisitionTriggerIndex = 1 ;
@@ -95,7 +93,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
                 outputData = ws.loadDataFile( fullfile(dataDirNameAbsolute, filesCreated(1).name) );
                 if isfield(outputData,'sweep_0001') ,
                     numberOfScansCollected = size(outputData.sweep_0001.analogScans,1) ;
-                    if  numberOfScansCollected>0 && numberOfScansCollected < wsModel.Acquisition.Duration * wsModel.Acquisition.SampleRate ,
+                    if  numberOfScansCollected>0 && numberOfScansCollected < wsModel.SweepDuration * wsModel.AcquisitionSampleRate ,
                         dataWrittenCorrectly = true ;
                     else
                         dataWrittenCorrectly = false ;
@@ -113,7 +111,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
-            self.verifyEqual(wsModel.Logging.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
+            self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
         end  % function
     end  % test methods
 

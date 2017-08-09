@@ -4,6 +4,9 @@ classdef Refiller < handle
     properties (Access = protected)        
         DeviceName_ = ''
 
+        SampleClockTimebaseSource_ = []
+        SampleClockTimebaseRate_ = []
+        
         NSweepsPerRun_ = 1
         SweepDuration_ = []
 
@@ -286,7 +289,7 @@ classdef Refiller < handle
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self, indexOfSweepWithinRun)
+        function result = startingSweep(self, indexOfSweepWithinRun) %#ok<INUSD>
             % Sent by the wavesurferModel iff the stim and acq systems are
             % using the identical trigger.  Prompts the Refiller to prepare
             % to run an episode.  But the sweep/episode doesn't start
@@ -733,7 +736,7 @@ classdef Refiller < handle
             self.IsPerformingEpisode_ = false;
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
-            nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
+            %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
             
             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
             %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
@@ -1268,6 +1271,10 @@ classdef Refiller < handle
         
         function setRefillerProtocol_(self, protocol)
             self.DeviceName_ = protocol.DeviceName ;
+            
+            self.SampleClockTimebaseSource_ = protocol.SampleClockTimebaseSource ;
+            self.SampleClockTimebaseRate_ = protocol.SampleClockTimebaseRate ;
+            
             self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
             self.SweepDuration_ = protocol.SweepDuration ;
             self.StimulationSampleRate_ = protocol.StimulationSampleRate ;
@@ -1300,6 +1307,8 @@ classdef Refiller < handle
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.FiniteOutputTask('analog', ...
                                         'WaveSurfer Finite Analog Output Task', ...
+                                        self.SampleClockTimebaseSource_, ...
+                                        self.SampleClockTimebaseRate_, ...
                                         deviceNameForEachChannelInAOTask, ...
                                         terminalIDForEachChannelInAOTask, ...
                                         isInTaskForEachAOChannel, ...
@@ -1317,6 +1326,8 @@ classdef Refiller < handle
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.FiniteOutputTask('digital', ...
                                            'WaveSurfer Finite Digital Output Task', ...
+                                           self.SampleClockTimebaseSource_, ...
+                                           self.SampleClockTimebaseRate_, ...
                                            deviceNameForEachChannelInDOTask, ...
                                            terminalIDForEachChannelInDOTask, ...
                                            isInTaskForEachDOChannel, ...

@@ -20,8 +20,8 @@ function clean()
     %ws.Preferences.sharedpreferences('clear');
     delete(findall(0,'type','figure'));
     delete(timerfindall());
-    clear persistent;  % screw it, just get rid of any 'persistent' vars
-    clear classes;  % and any classes
+    %clear persistent;  % screw it, just get rid of any 'persistent' vars
+    clear classes;  %#ok<CLCLS> % and any classes
 
     % Clear out the persisted Most stuff
     absoluteFileNameOfThisFile=mfilename('fullpath');
@@ -30,8 +30,7 @@ function clean()
     delete(fullfile(absoluteDirNameOfMostPrivate,'*.mat'));
 
     % delete any ongoing daq tasks
-    daqSystem = ws.dabs.ni.daqmx.System();
-    ws.deleteIfValidHandle(daqSystem.tasks);
+    ws.reset() ;
 end  % function
 
 % function localMakeBackup(filename)

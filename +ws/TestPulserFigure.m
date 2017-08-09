@@ -41,9 +41,9 @@ classdef TestPulserFigure < ws.MCOSFigure
 %     end
     
     methods
-        function self=TestPulserFigure(model,controller)
+        function self=TestPulserFigure(wsModel, controller)
             % The model should be an instance of TestPulser, or []
-            self = self@ws.MCOSFigure(model,controller);
+            self = self@ws.MCOSFigure(wsModel,controller);
             
             % Create the widgets (except figure, created in superclass
             % constructor)
@@ -81,35 +81,21 @@ classdef TestPulserFigure < ws.MCOSFigure
             %    self.Host.Acquisition.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %    self.Host.Stimulus.subscribeMe(self,'DidSetAnalogChannelUnitsOrScales');
             %end
-            if ~isempty(self.Model) ,
-                self.Model.subscribeMe(self,'Update','','update');
-                %self.Model.subscribeMe(self,'UpdateIsReady','','updateIsReady');
-                self.Model.subscribeMe(self,'UpdateTrace','','updateTrace');
-                self.Model.subscribeMe(self,'DidSetIsInputChannelActive','','update');
-                ephys=self.Model.Parent;
-                if ~isempty(ephys) && isvalid(ephys) ,
-                    electrodeManager=ephys.ElectrodeManager;
-                    if ~isempty(electrodeManager) && isvalid(electrodeManager) ,
-                        electrodeManager.subscribeMe(self,'Update','','update');
-                    end
-                    wavesurferModel=ephys.Parent;
-                    if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                        wavesurferModel.subscribeMe(self,'Update','','update');                        
-                        wavesurferModel.subscribeMe(self,'DidSetState','','updateControlProperties');                        
-%                         acquisition=wavesurferModel.Acquisition;
-%                         if ~isempty(acquisition) && isvalid(acquisition) ,
-%                             acquisition.subscribeMe(self,'DidSetIsChannelActive','','update');
-%                         end                        
-                    end
-                end                
+            if ~isempty(wsModel) ,
+                wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
+                wsModel.subscribeMeToEphysEvent(self,'UpdateTestPulser','','update') ;
+                wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'Update','','update') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'UpdateTrace','','updateTrace') ;
+                wsModel.subscribeMeToTestPulserEvent(self,'DidSetIsInputChannelActive','','update') ;
             end
         end  % constructor
         
         function delete(self)
             %self.Host=[];
             %fprintf('Inside TestPulserFigure delete() function...\n');
-            %if ~isempty(self.Model) && isvalid(self.Model) ,
-            %    self.Model.unsubscribeAll(self);
+            %if ~isempty(testPulser) && isvalid(testPulser) ,
+            %    testPulser.unsubscribeAll(self);
             %end            
             if isempty(self.Controller) ,
                 if ~isempty(self.FigureGH) && ishandle(self.FigureGH) ,
@@ -150,14 +136,16 @@ classdef TestPulserFigure < ws.MCOSFigure
         function updateTrace(self,varargin)
             % If there are issues with either the host or the model, just return
             %fprintf('updateTrace!\n');
-            import ws.*
             if ~self.AreUpdatesEnabled ,
                 return
             end
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
-
+            wsModel = self.Model ;
+            %ephys = wsModel.Ephys ;
+            %testPulser = ephys.TestPulser ;
+            
             %fprintf('here -1\n');
             % draw the trace line
             %monitor=self.Model.Monitor;
@@ -166,8 +154,8 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % If y range hasn't been set yet, and Y Auto is engaged, set
             % the y range.
-            if self.Model.IsRunning && self.Model.IsAutoY ,   %&& self.Model.AreYLimitsForRunDetermined ,
-                yLimitsInModel=self.Model.YLimits;
+            if wsModel.IsTestPulsing && wsModel.IsAutoYInTestPulseView ,   %&& testPulser.AreYLimitsForRunDetermined ,
+                yLimitsInModel = wsModel.TestPulseYLimits ;
                 yLimits=self.YLimits_;
                 %if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
                 if ~isequal(yLimits,yLimitsInModel) ,
@@ -182,12 +170,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % Update the graphics objects to match the model and/or host
             % Extra spaces b/c right-align cuts of last char a bit
-            set(self.UpdateRateText,'String',fif(isnan(self.Model.UpdateRate),'? ',sprintf('%0.1f ',self.Model.UpdateRate)));
+            updateRate = wsModel.getUpdateRateInTestPulseView() ;
+            set(self.UpdateRateText,'String',ws.fif(isnan(updateRate),'? ',sprintf('%0.1f ',updateRate)));
             %fprintf('here\n');
-            %rawGainOrResistance=self.Model.GainOrResistancePerElectrode;
-            %rawGainOrResistanceUnits = self.Model.GainOrResistanceUnitsPerElectrode ;
+            %rawGainOrResistance=testPulser.GainOrResistancePerElectrode;
+            %rawGainOrResistanceUnits = testPulser.GainOrResistanceUnitsPerElectrode ;
             %[gainOrResistanceUnits,gainOrResistance] = rawGainOrResistanceUnits.convertToEngineering(rawGainOrResistance) ;
-            [gainOrResistance,gainOrResistanceUnits] = self.Model.getGainOrResistancePerElectrodeWithNiceUnits() ;
+            [gainOrResistance, gainOrResistanceUnits] = wsModel.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
             %fprintf('here 2\n');
             nElectrodes=length(gainOrResistance);
             for j=1:nElectrodes ,
@@ -203,13 +192,16 @@ classdef TestPulserFigure < ws.MCOSFigure
             end
             %fprintf('here 3\n');
             % draw the trace line
-            monitor=self.Model.Monitor;
-            %t=self.Model.Time;  % s            
-            set(self.TraceLine,'YData',monitor);
+            %ephys = testPulser.Parent ;
+            monitor = wsModel.getTestPulseMonitorTrace() ;
+            %t=testPulser.Time;  % s            
+            if ~isempty(monitor) ,
+                set(self.TraceLine, 'YData', monitor) ;
+            end
         end  % method
         
 %         function updateIsReady(self,varargin)            
-%             if isempty(self.Model) || self.Model.IsReady ,
+%             if isempty(testPulser) || testPulser.IsReady ,
 %                 set(self.FigureGH,'pointer','arrow');
 %             else
 %                 % Change cursor to hourglass
@@ -228,19 +220,24 @@ classdef TestPulserFigure < ws.MCOSFigure
             self.updateControlPropertiesImplementation_();
             self.layout();
             % update readiness, without the drawnow()
-            if isempty(self.Model) || self.Model.IsReady ,
+            wsModel = self.Model ;
+            if isempty(wsModel) ,
                 set(self.FigureGH,'pointer','arrow');
-            else
-                % Change cursor to hourglass
-                set(self.FigureGH,'pointer','watch');
-            end
+            else                
+                %ephys = wsModel.Ephys ;
+                if wsModel.IsReady ,
+                    set(self.FigureGH,'pointer','arrow');
+                else
+                    % Change cursor to hourglass
+                    set(self.FigureGH,'pointer','watch');
+                end
+            end            
         end
         
         function updateControlPropertiesImplementation_(self,varargin)
             %fprintf('\n\nTestPulserFigure.updateControlPropertiesImplementation:\n');
             %dbstack
             % If there are issues with the model, just return
-            import ws.*
             if isempty(self.Model) || ~isvalid(self.Model) ,
                 return
             end
@@ -250,43 +247,47 @@ classdef TestPulserFigure < ws.MCOSFigure
 %             fprintf('\n');            
             
             % Get some handles we'll need
-            ephys=self.Model.Parent;
-            electrodeManager=ephys.ElectrodeManager;
-            electrode=self.Model.Electrode;
-            wavesurferModel=ephys.Parent;
+            wsModel = self.Model ;
+            %ephys = wsModel.Ephys ;
+            %testPulser = ephys.TestPulser ;
+            %electrodeManager=ephys.ElectrodeManager;
+            %electrode = ephys.TestPulseElectrode ;
+            tpElectrodeIndex = wsModel.TestPulseElectrodeIndex ;
             
             % Define some useful booleans
-            isElectrodeManual=isempty(electrode)||isequal(electrode.Type,'Manual');
-            isElectrodeManagerInControlOfSoftpanelModeAndGains=electrodeManager.IsInControlOfSoftpanelModeAndGains;
-            isWavesurferIdle=isequal(wavesurferModel.State,'idle');
+            isElectrodeManual = isempty(tpElectrodeIndex) || isequal(wsModel.getTestPulseElectrodeProperty('Type'), 'Manual') ; 
+            isElectrodeManagerInControlOfSoftpanelModeAndGains=wsModel.IsInControlOfSoftpanelModeAndGains;
+            isWavesurferIdle=isequal(wsModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
-            isWavesurferTestPulsing=self.Model.IsRunning;
-            isWavesurferIdleOrTestPulsing=isWavesurferIdle||isWavesurferTestPulsing;
+            isWavesurferTestPulsing = wsModel.IsTestPulsing ;
+            isWavesurferIdleOrTestPulsing = isWavesurferIdle||isWavesurferTestPulsing ;
+            isAutoY = wsModel.IsAutoYInTestPulseView ;
+            isAutoYRepeating = wsModel.IsAutoYRepeatingInTestPulseView ;
             
             % Update the graphics objects to match the model and/or host
             isStartStopButtonEnabled= ...
                 isWavesurferIdleOrTestPulsing && ...
-                ~isempty(electrode) && ...
-                electrodeManager.areAllElectrodesTestPulsable() && ...
-                electrodeManager.areAllMonitorAndCommandChannelNamesDistinct();
+                ~isempty(tpElectrodeIndex) && ...
+                wsModel.areAllElectrodesTestPulsable() && ...
+                wsModel.areAllMonitorAndCommandChannelNamesDistinct();
             set(self.StartStopButton, ...
-                'String',fif(isWavesurferTestPulsing,'Stop','Start'), ...
-                'Enable',onIff(isStartStopButtonEnabled));
+                'String',ws.fif(isWavesurferTestPulsing,'Stop','Start'), ...
+                'Enable',ws.onIff(isStartStopButtonEnabled));
             
-            electrodeNames=electrodeManager.TestPulseElectrodeNames;
-            electrodeName=self.Model.ElectrodeName;
+            electrodeNames = wsModel.TestPulseElectrodeNames ;
+            electrodeName = wsModel.getTestPulseElectrodeProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
                                                             electrodeNames, ...
                                                             electrodeName);
             set(self.ElectrodePopupMenu, ...
-                'Enable',onIff(isWavesurferIdleOrTestPulsing));
+                'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
                                          
-            set(self.SubtractBaselineCheckbox,'Value',self.Model.DoSubtractBaseline, ...
-                                              'Enable',onIff(isWavesurferIdleOrTestPulsing));
-            set(self.AutoYCheckbox,'Value',self.Model.IsAutoY, ...
-                                   'Enable',onIff(isWavesurferIdleOrTestPulsing));
-            set(self.AutoYRepeatingCheckbox,'Value',self.Model.IsAutoYRepeating, ...
-                                            'Enable',onIff(isWavesurferIdleOrTestPulsing&&self.Model.IsAutoY));
+            set(self.SubtractBaselineCheckbox,'Value',wsModel.DoSubtractBaselineInTestPulseView, ...
+                                              'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
+            set(self.AutoYCheckbox,'Value',isAutoY, ...
+                                   'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
+            set(self.AutoYRepeatingCheckbox,'Value',isAutoYRepeating, ...
+                                            'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&isAutoY));
                    
             % Have to disable these togglebuttons during test pulsing,
             % because switching an electrode's mode during test pulsing can
@@ -300,44 +301,51 @@ classdef TestPulserFigure < ws.MCOSFigure
             % can always stop test pulsing, switch the mode, then start
             % again (if that's a valid action in the target mode).
             % Hopefully this limitation is not too annoying for users.
-            set(self.VCToggle,'Enable',onIff(isWavesurferIdle && ...
-                                             ~isempty(electrode) && ...
-                                             (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
-                              'Value',~isempty(electrode)&&isequal(electrode.Mode,'vc'));
-            set(self.CCToggle,'Enable',onIff(isWavesurferIdle && ...
-                                             ~isempty(electrode)&& ...
-                                             (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
-                              'Value',~isempty(electrode)&& ...
-                                      (isequal(electrode.Mode,'cc')||isequal(electrode.Mode,'i_equals_zero')));
+            mode = wsModel.getTestPulseElectrodeProperty('Mode') ;
+            set(self.VCToggle, 'Enable', ws.onIff(isWavesurferIdle && ...
+                                                  ~isempty(tpElectrodeIndex) && ...
+                                                  (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
+                               'Value', ~isempty(tpElectrodeIndex)&&isequal(mode,'vc'));
+            set(self.CCToggle, 'Enable', ws.onIff(isWavesurferIdle && ...
+                                                  ~isempty(tpElectrodeIndex)&& ...
+                                                  (isElectrodeManual||isElectrodeManagerInControlOfSoftpanelModeAndGains)), ...
+                               'Value', ~isempty(tpElectrodeIndex) && ...
+                                        (isequal(mode,'cc')||isequal(mode,'i_equals_zero')));
                         
-            set(self.AmplitudeEdit,'String',sprintf('%g',self.Model.Amplitude), ...
-                                   'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.AmplitudeEditUnitsText,'String',self.Model.CommandUnits, ...
-                                            'Enable',onIff(isWavesurferIdleOrTestPulsing&&~isempty(electrode)));
-            set(self.DurationEdit,'String',self.Model.PulseDurationInMsAsString, ...
-                                  'Enable',onIff(isWavesurferIdleOrTestPulsing));
-            set(self.DurationEditUnitsText,'Enable',onIff(isWavesurferIdleOrTestPulsing));
+            amplitude = wsModel.getTestPulseElectrodeProperty('TestPulseAmplitude') ;                      
+            set(self.AmplitudeEdit,'String',sprintf('%g',amplitude), ...
+                                   'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(tpElectrodeIndex)));
+            set(self.AmplitudeEditUnitsText,'String',wsModel.getTestPulseElectrodeCommandUnits, ...
+                                            'Enable',ws.onIff(isWavesurferIdleOrTestPulsing&&~isempty(tpElectrodeIndex)));
+            set(self.DurationEdit, 'String', sprintf('%g', 1e3*wsModel.TestPulseDuration), ...
+                                   'Enable', ws.onIff(isWavesurferIdleOrTestPulsing)) ;
+            set(self.DurationEditUnitsText,'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
             nElectrodes=length(self.GainLabelTexts);
+            isVCPerTestPulseElectrode = wsModel.getIsVCPerTestPulseElectrode() ;
+            isCCPerTestPulseElectrode = wsModel.getIsCCPerTestPulseElectrode() ;
+            tpElectrodeNames = wsModel.TestPulseElectrodeNames ;
             for i=1:nElectrodes ,
-                if self.Model.IsCCPerElectrode(i) || self.Model.IsVCPerElectrode(i) ,
-                    set(self.GainLabelTexts(i),'String',sprintf('%s Resistance: ',self.Model.Electrodes{i}.Name));
+                if isCCPerTestPulseElectrode(i) || isVCPerTestPulseElectrode(i) ,
+                    set(self.GainLabelTexts(i), 'String', sprintf('%s Resistance: ', tpElectrodeNames{i})) ;
                 else
-                    set(self.GainLabelTexts(i),'String',sprintf('%s Gain: ',self.Model.Electrodes{i}.Name));
+                    set(self.GainLabelTexts(i), 'String', sprintf('%s Gain: ', tpElectrodeNames{i})) ;
                 end
-                %set(self.GainUnitsTexts(i),'String',string(self.Model.GainOrResistanceUnitsPerElectrode(i)));
+                %set(self.GainUnitsTexts(i),'String',string(testPulser.GainOrResistanceUnitsPerElectrode(i)));
                 set(self.GainUnitsTexts(i),'String','');
             end
-            set(self.TraceAxes,'XLim',1000*[0 self.Model.SweepDuration]);
-            self.YLimits_ = self.Model.YLimits;
+            sweepDuration = 2*wsModel.TestPulseDuration ;
+            set(self.TraceAxes,'XLim',1000*[0 sweepDuration]);
+            self.YLimits_ = wsModel.TestPulseYLimits ;
             set(self.TraceAxes,'YLim',self.YLimits_);
-            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',self.Model.MonitorUnits));
-            t=self.Model.Time;
+            set(self.YAxisLabel,'String',sprintf('Monitor (%s)',wsModel.getTestPulseElectrodeMonitorUnits()));
+            t = wsModel.getTestPulseMonitorTraceTimeline() ;
+            %t=testPulser.Time;
             set(self.TraceLine,'XData',1000*t,'YData',nan(size(t)));  % convert s to ms
-            set(self.ZoomInButton,'Enable',onIff(~self.Model.IsAutoY));
-            set(self.ZoomOutButton,'Enable',onIff(~self.Model.IsAutoY));
-            set(self.ScrollUpButton,'Enable',onIff(~self.Model.IsAutoY));
-            set(self.ScrollDownButton,'Enable',onIff(~self.Model.IsAutoY));
-            set(self.YLimitsButton,'Enable',onIff(~self.Model.IsAutoY));
+            set(self.ZoomInButton,'Enable',ws.onIff(~isAutoY));
+            set(self.ZoomOutButton,'Enable',ws.onIff(~isAutoY));
+            set(self.ScrollUpButton,'Enable',ws.onIff(~isAutoY));
+            set(self.ScrollDownButton,'Enable',ws.onIff(~isAutoY));
+            set(self.YLimitsButton,'Enable',ws.onIff(~isAutoY));
             self.updateTrace();
         end  % method        
                 
@@ -928,10 +936,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             % exist, given the current model state.
 
             % Determine the number of electrodes right now
-            if isempty(self.Model) || ~isvalid(self.Model) ,
+            wsModel = self.Model ;
+            if isempty(wsModel) || ~isvalid(wsModel) ,
                 nElectrodes=0;
             else
-                nElectrodes=self.Model.NElectrodes;
+                %testPulser = self.Model.Ephys.TestPulser ;
+                %nElectrodes=testPulser.NElectrodes;
+                nElectrodes = wsModel.TestPulseElectrodesCount ;
             end
             %nElectrodes=4  % FOR DEBUGGING ONLY
             

@@ -23,11 +23,11 @@ classdef UserClassWithFigs < ws.UserClass
     end
     
     methods        
-        function self = UserClassWithFigs(userCodeManager)
+        function self = UserClassWithFigs(wsModel)
             % creates the "user object"
             fprintf('%s  Instantiating an instance of UserClassWithFigs.\n', ...
                     self.Greeting);
-            if isa(userCodeManager.Parent, 'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,                                
+            if isa(wsModel, 'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ,                                
                 self.FigureGH_ = figure() ;
                 self.ButtonGH_ = uicontrol('Parent', self.FigureGH_ , ...
                                            'Style', 'pushbutton', ...
@@ -101,8 +101,8 @@ classdef UserClassWithFigs < ws.UserClass
         function dataAvailable(self,wsModel,eventName)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % has been accumulated from the looper.
-            analogData = wsModel.Acquisition.getLatestAnalogData();
-            digitalData = wsModel.Acquisition.getLatestRawDigitalData(); 
+            analogData = wsModel.getLatestAIData();
+            digitalData = wsModel.getLatestDIData(); 
             nScans = size(analogData,1);
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end

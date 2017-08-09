@@ -555,29 +555,61 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
         
         
         function chanObj = createDIChan(obj,deviceNames,chanIDs,chanNames,lineGrouping)
-            %Creates channel(s) to measure digital signals and adds the channel(s) to the task you specify with taskHandle. 
-            %You can group digital lines into one digital channel or separate them into multiple digital channels. 
-            %If you specify one or more entire ports in lines by using port physical channel names, you cannot separate the ports into multiple channels.
-            %To separate ports into multiple channels, use this function multiple times with a different port each time.
+            % Creates channel(s) to measure digital signals and adds the channel(s) to
+            % the task you specify with taskHandle. You can group digital lines into one
+            % digital channel or separate them into multiple digital channels. If you
+            % specify one or more entire ports in lines by using port physical channel
+            % names, you cannot separate the ports into multiple channels. To separate
+            % ports into multiple channels, use this function multiple times with a
+            % different port each time.
             %
-            %%function chanObj = createDIChan(obj,deviceNames,chanIDs,chanNames,lineGrouping)
-            %   deviceNames: String or string cell array specifying names of device on which channel(s) should be added, e.g. 'Dev1'. If a cell array, chanIDs must also be a cell array (of equal length).
-            %   chanIDs: A string identifying port and/or line IDs for this Channel, e.g. 'port0','port1:2', 'port0/line0:1', or 'line0:15'. In the case of multiple deviceNames (a multi-device Task), a cell array of such strings
-            %       If port name is ommitted, port0 is assumed. 
-            %       At this time, unlike DAQmx function, you cannot specify a comma-separated list, e.g. of lines on different ports, for the channel specification
-            %       The Channel(s) added by this method are either 'line-based' or 'port-based':
-            %           If the string 'line' is part of the chanIDs value specified, the channel(s) added are line-based. 
-            %           Otherwise, the channel added is port-based (note that lineGrouping='DAQmx_Val_ChanForAllLines' is mandatory in this case)
+            % function chanObj = createDIChan(obj,deviceNames,chanIDs,chanNames,lineGrouping)
             %
-            %   chanNames: <OPTIONAL> A string or string cell array specifying names to assign to each of the channels in chanIDs (if a single string, the chanID is appended for each channel) In the case of a multi-device Task, a cell array of such strings or string cell arrays. If omitted/empty, then default DAQmx channel name is used.
-            %   lineGrouping: <OPTIONAL - one of {'DAQmx_Val_ChanPerLine', 'DAQmx_Val_ChanForAllLines'} - Default: DAQmx_Val_ChanForAllLines> Specifies whether to group digital lines into one or more virtual channels. If you specify one or more entire ports in chanIDs (i.e. 'port-based'), you must set lineGrouping to DAQmx_Val_ChanForAllLines.
+            %   deviceNames: String or string cell array specifying names of device on 
+            %                which channel(s) should be added, e.g. 'Dev1'. If a cell 
+            %                array, chanIDs must also be a cell array (of equal length).
+            %
+            %   chanIDs: A string identifying port and/or line IDs for this Channel, e.g. 
+            %            'port0','port1:2', 'port0/line0:1', or 'line0:15'. In the case 
+            %            of multiple deviceNames (a multi-device Task), a cell array of 
+            %            such strings
+            % 
+            %            If port name is ommitted, port0 is assumed. 
+            %
+            %            You can also specify a comma-separated list for each element of 
+            %            chanIDs, e.g. of lines on different ports, for the channel 
+            %            specification.  This works like DAQMXCreateDIChan()'s "lines" 
+            %            argument.
+            %
+            %            The Channel(s) added by this method are either 'line-based' or 
+            %            'port-based': If the string 'line' is part of the chanIDs value 
+            %            specified, the channel(s) added are line-based.  Otherwise, the 
+            %            channel added is port-based (note that 
+            %            lineGrouping='DAQmx_Val_ChanForAllLines' is mandatory in this 
+            %            case)
+            %
+            %   chanNames: <OPTIONAL> A string or string cell array specifying names to 
+            %              assign to each of the channels in chanIDs (if a single string, 
+            %              the chanID is appended for each channel) In the case of a multi-
+            %              device Task, a cell array of such strings or string cell arrays. 
+            %              If omitted/empty, then default DAQmx channel name is used.
+            %
+            %   lineGrouping: <OPTIONAL - one of {'DAQmx_Val_ChanPerLine', 
+            %                 'DAQmx_Val_ChanForAllLines'} - Default: DAQmx_Val_ChanForAllLines> 
+            %                 Specifies whether to group digital lines into one or more virtual 
+            %                 channels. If you specify one or more entire ports in chanIDs 
+            %                 (i.e. 'port-based'), you must set lineGrouping to 
+            %                 DAQmx_Val_ChanForAllLines.
             %
             %   chanObj: The created Channel object
             %
                    
             % TODO
-            %   * Support comma-separated list specification of multiple physical channels. In doing so, deal with coercion: if any of the channels is port-based, then all are forced to be port-based, even if containing the string 'line'.
-            %   * Create separate createDXChan() methods specifically for port and line-based channels, with numeric specification.
+            %   * Support comma-separated list specification of multiple physical channels. In 
+            %     doing so, deal with coercion: if any of the channels is port-based, then all 
+            %     are forced to be port-based, even if containing the string 'line'.
+            %   * Create separate createDXChan() methods specifically for port and line-based 
+            %     channels, with numeric specification.
             %   * At moment, the 'DAQmx_Val_ChanPerLine' option is /not/ working!
             
             %Supply default input arguments, as needed

@@ -7,8 +7,8 @@ classdef RampStimulusDelegate < ws.StimulusDelegate
     end
     
     methods
-        function self = RampStimulusDelegate(parent,varargin)
-            self=self@ws.StimulusDelegate(parent);
+        function self = RampStimulusDelegate()
+            self=self@ws.StimulusDelegate();
         end                
     end
     

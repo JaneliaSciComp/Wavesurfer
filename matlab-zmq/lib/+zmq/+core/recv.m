@@ -2,7 +2,6 @@
 %
 % Usage: message = zmq.core.recv(socket)
 %        message = zmq.core.recv(socket, bufferLength)
-%        message = zmq.core.recv(socket, option1, option2, ...)
 %        message = zmq.core.recv(socket, bufferLength, option1, option2, ...)
 %        [msg, len] = zmq.core.recv(socket)
 %

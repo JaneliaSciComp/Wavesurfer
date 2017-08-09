@@ -4,16 +4,14 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -33,11 +31,11 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
 %             wsModel.addDOChannel() ;
 %             wsModel.addDOChannel() ;
             
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             %wsModel.AreSweepsContinuous = true ;
 
-            wsModel.UserCodeManager.ClassName = 'ws.examples.UserClassWithFigs' ;
-            wsModel.UserCodeManager.TheObject.Greeting = 'This is a test.  This is only a test.' ;
+            wsModel.UserClassName = 'ws.examples.UserClassWithFigs' ;
+            wsModel.TheUserObject.Greeting = 'This is a test.  This is only a test.' ;
             
 %             aTimer = timer('ExecutionMode', 'singleShot', ...
 %                            'StartDelay', 20, ...

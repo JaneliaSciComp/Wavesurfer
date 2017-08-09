@@ -3,16 +3,14 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Type','figure')) ;            
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Type','figure')) ;            
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
@@ -20,7 +18,7 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
         function theTest(self)            
             wsModel = wavesurfer('--nogui') ;
             wsModel.NSweepsPerRun = 3 ;
-            wsModel.Stimulation.IsEnabled = true ;
+            wsModel.IsStimulationEnabled = true ;
             wsModel.addCounterTrigger() ;
             wsModel.setTriggerProperty('counter', 1, 'RepeatCount', 2) ;
             wsModel.setTriggerProperty('counter', 1, 'Interval', 1.5) ;            

@@ -4,16 +4,14 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            daqSystem = ws.dabs.ni.daqmx.System();
-            ws.deleteIfValidHandle(daqSystem.tasks);
+            ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Type','Figure')) ;
-            daqSystem = ws.dabs.ni.daqmx.System() ;
-            ws.deleteIfValidHandle(daqSystem.tasks) ;
+            ws.reset() ;
         end
     end
     
@@ -21,14 +19,14 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
         function theTest(self)
             [wsModel,wsController] = wavesurfer() ;
 
-            wsModel.Acquisition.addAnalogChannel() ;
-            wsModel.Acquisition.addAnalogChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
 
             protocolFileName = fullfile(tempdir(),'three-channels-sdfkjsghdf.cfg') ;
             %wsController.saveProtocolFileGivenFileName(protocolFileName) ;
-            wsController.fakeControlActuatedInTest('SaveProtocolGivenFileNameFauxControl', protocolFileName) ;
+            ws.fakeControlActuationInTestBang(wsController, 'SaveProtocolGivenFileNameFauxControl', protocolFileName) ;
             
-            wsModel.Acquisition.IsAnalogChannelMarkedForDeletion(3) = true ;
+            wsModel.IsAIChannelMarkedForDeletion(3) = true ;
             wsModel.deleteMarkedAIChannels() ;
 
             wsModel.play() ;  % this blocks
@@ -50,6 +48,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
             
             wsController.quit() ;
             wsController = [] ; %#ok<NASGU>
+            wsModel.delete() ;
             wsModel = [] ; %#ok<NASGU>
            
             delete(protocolFileName) ;           

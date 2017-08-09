@@ -10,19 +10,6 @@ classdef Controller < handle
         Parent_
         Model_
         Figure_
-        HideFigureOnClose_ = true  % By default do not destroy the window when closed, just hide
-%         IsSuiGeneris_ = true  
-%             % Whether or not multiple instances of the controller class can
-%             % exist at a time. If true, only one instance of the controller
-%             % class can exist at a time.  If false, multiple instances of
-%             % the controller class can exist at a time. Currently, Most of
-%             % our controllers are sui generis, so true is a good default.
-%             % (Making this abstract creates headaches.  Ditto making
-%             % SetAccess=immutable, or Constant=true, all of which would
-%             % arguably make sense.)  You should only set this in the
-%             % constructor, and not change it for the lifetime of the
-%             % object.  Also, it should have the same value for all
-%             % instances of the class.
     end
         
     methods
@@ -43,10 +30,14 @@ classdef Controller < handle
         function delete(self)
             %fprintf('ws.Controller::delete()\n');
             if ~isempty(self.Figure) && isvalid(self.Figure) ,
-                self.Figure.deleteFigureGH() ;
+                delete(self.Figure) ;
             end
             %self.deleteFigure_();
-            self.Model_ = [] ;
+            self.Model_ = [] ;  
+              % we don't generally delete the model b/c most controllers are
+              % sub-controllers, and their model is a sub-model of the main
+              % model.  So the main controller will handle deleting the
+              % model, if needed.
             self.Parent_=[];            
         end
         
@@ -74,7 +65,7 @@ classdef Controller < handle
             output = self.Model_ ;
         end
         
-        function self=setAreUpdatesEnabledForFigure(self,newValue)
+        function setAreUpdatesEnabledForFigure(self,newValue)
             self.Figure.AreUpdatesEnabled = newValue ;
         end        
     end
@@ -96,20 +87,30 @@ classdef Controller < handle
             self.Figure.hide();
         end
         
-        function quittingWavesurfer(self)   
-            self.deleteFigureGH();
-        end  % function
+%         function quittingWavesurfer(self)   
+%             self.deleteFigureGH();
+%         end  % function
         
-        function deleteFigureGH(self)   
-            self.tellFigureToDeleteFigureGH_();
-        end  % function
+%         function deleteFigureGH(self)   
+%             self.tellFigureToDeleteFigureGH_();
+%         end  % function
         
         function raiseFigure(self)
             self.Figure.raise();
-        end            
+        end 
+        
     end  % methods
             
     methods (Access = protected)
+        function deleteModel_(self)
+            % Explictly delete the model.
+            % Usually this is unnecessary and you shouldn't do it, but
+            % sometimes it's needful.  E.g. if there's a timer that points
+            % to the model, then the model can fail to be deleted even
+            % though there are no pointers to it except the timer.
+            delete(self.Model_) ;
+        end
+        
 %         function deleteFigure_(self)
 %             % Destroy the window rather than just hide it.
 %             figure=self.Figure;
@@ -118,10 +119,10 @@ classdef Controller < handle
 %             end
 %         end
         
-        function tellFigureToDeleteFigureGH_(self)
-            figure=self.Figure;
+        function deleteFigure_(self)
+            figure = self.Figure ;
             if ~isempty(figure) && isvalid(figure) ,
-                figure.deleteFigureGH();
+                delete(figure) ;
             end
         end            
     end  % methods
@@ -214,17 +215,7 @@ classdef Controller < handle
             if shouldStayPut ,
                 % Do nothing
             else
-                if self.HideFigureOnClose_ ,
-                    % This is not simply a call to hide() because some frameworks will require
-                    % modification to the evt object, other actions to actually cancel an
-                    % in-progress close event.
-                    self.hideFigure();
-                else
-                    % Actually release the window.  This may actual result in
-                    % active deletion of the controller so care should be taken in adding any code
-                    % to this method after this call.
-                    self.deleteFigureGH();
-                end
+                self.hideFigure();
             end
         end
     end
@@ -246,7 +237,8 @@ classdef Controller < handle
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isRootIdleSensuLato() ;
+                %shouldStayPut = ~model.isRootIdleSensuLato() ;
+                shouldStayPut = ~model.isIdleSensuLato() ;
             end
         end  % function
         
@@ -335,73 +327,72 @@ classdef Controller < handle
                     % ignore completely, don't even pass on to output
                     exceptionMaybe = {} ;
                 else
-                    self.raiseDialogOnException_(exception) ;
+                    ws.raiseDialogOnException(exception) ;
                     exceptionMaybe = { exception } ;
                 end
             end
         end  % function
         
-        function fakeControlActuatedInTest(self, controlName, varargin)            
-            % This is like controlActuated(), but used when you want to
-            % fake the actuation of a control, often in a testing script.
-            % So, for instance, if only ws:warnings occur, if prints them,
-            % rather than showing a dialog box.  Also, this lets
-            % non-warning errors (including ws:invalidPropertyValue)
-            % percolate upward, unlike controlActuated().  Also, this
-            % always calls [controlName 'Actuated'], rather than using
-            % source.Type to determine the method name.  That's becuase
-            % there's generally no real source for fake actuations.
-            try
-                methodName=[controlName 'Actuated'] ;
-                if ismethod(self,methodName) ,
-                    source = [] ;
-                    event = [] ;
-                    self.(methodName)(source,event,varargin{:}) ;
-                end
-            catch exception
-                indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
-                isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
-                if isWarning ,
-                    fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
-                    disp(exception.getReport()) ;
-                    fprintf('(End of report for warning-level exception.)\n\n') ;
-                else
-                    rethrow(exception) ;
-                end
-            end
-        end  % function
+%         function fakeControlActuatedInTest(self, controlName, varargin)            
+%             % This is like controlActuated(), but used when you want to
+%             % fake the actuation of a control, often in a testing script.
+%             % So, for instance, if only ws:warnings occur, if prints them,
+%             % rather than showing a dialog box.  Also, this lets
+%             % non-warning errors (including ws:invalidPropertyValue)
+%             % percolate upward, unlike controlActuated().  Also, this
+%             % always calls [controlName 'Actuated'], rather than using
+%             % source.Type to determine the method name.  That's becuase
+%             % there's generally no real source for fake actuations.
+%             try
+%                 methodName = [controlName 'Actuated'] ;
+%                 if ismethod(self,methodName) ,
+%                     source = [] ;
+%                     event = [] ;
+%                     self.(methodName)(source,event,varargin{:}) ;
+%                 else
+%                     error('ws:noSuchMethod' , ...
+%                           'There is no method named %s', methodName) ;                    
+%                 end
+%             catch exception
+%                 indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+%                 isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+%                 if isWarning ,
+%                     fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
+%                     disp(exception.getReport()) ;
+%                     fprintf('(End of report for warning-level exception.)\n\n') ;
+%                 else
+%                     rethrow(exception) ;
+%                 end
+%             end
+%         end  % function
     end  % public methods block
     
-    methods (Access=protected)        
-        function raiseDialogOnException_(self, exception)
-            model = self.Model ;
-            if ~isempty(model) ,
-                model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
-            end
-            indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
-            isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
-            if isWarning ,
-                dialogContentString = exception.message ;
-                dialogTitleString = ws.fif(length(exception.cause)<=1, 'Warning', 'Warnings') ;
-            else
-                if isempty(exception.cause)
-                    dialogContentString = exception.message ;
-                    dialogTitleString = 'Error' ;
-                else
-                    primaryCause = exception.cause{1} ;
-                    if isempty(primaryCause.cause) ,
-                        dialogContentString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
-                        dialogTitleString = 'Error' ;
-                    else
-                        secondaryCause = primaryCause.cause{1} ;
-                        dialogContentString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
-                        dialogTitleString = 'Error' ;
-                    end
-                end            
-            end
-            ws.errordlg(dialogContentString, dialogTitleString, 'modal') ;                
-        end  % method
-    end  % protected methods block
+%     methods (Access=protected)        
+%         function raiseDialogOnException_(self, exception)
+%             indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
+%             isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
+%             if isWarning ,
+%                 dialogContentString = exception.message ;
+%                 dialogTitleString = ws.fif(length(exception.cause)<=1, 'Warning', 'Warnings') ;
+%             else
+%                 if isempty(exception.cause)
+%                     dialogContentString = exception.message ;
+%                     dialogTitleString = 'Error' ;
+%                 else
+%                     primaryCause = exception.cause{1} ;
+%                     if isempty(primaryCause.cause) ,
+%                         dialogContentString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
+%                         dialogTitleString = 'Error' ;
+%                     else
+%                         secondaryCause = primaryCause.cause{1} ;
+%                         dialogContentString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
+%                         dialogTitleString = 'Error' ;
+%                     end
+%                 end            
+%             end
+%             ws.errordlg(dialogContentString, dialogTitleString, 'modal') ;                
+%         end  % method
+%     end  % protected methods block
     
     methods (Static=true)
         function setWithBenefits(object,propertyName,newValue)

@@ -24,8 +24,8 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
     end
     
     methods
-        function self=BuiltinTrigger(parent)  %#ok<INUSD>            
-            self@ws.Model([]) ;  % have to accept parent arg, but ignore it
+        function self=BuiltinTrigger()   
+            self@ws.Model() ;  % have to accept parent arg, but ignore it
             %fprintf('ws.BuiltinTrigger constructor called\n') ;
             %dbstack
             self.Name_ = 'Built-in Trigger (PFI8)' ;

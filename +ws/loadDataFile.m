@@ -53,17 +53,30 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % data file is recent enough that there's no problem
     end
     
-    % Parse the format string
-    if strcmpi(formatString,'raw')
-        % User wants raw data, so nothing to do
+    % If needed, use the analog scaling coefficients and scales to convert the
+    % analog scans from counts to experimental units.
+    if strcmpi(formatString,'raw') || dataFileAsStruct.header.NAIChannels==0 ,
+        % User wants raw data and/or there are no AI channels, so nothing to do
     else
         try
-            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            if isfield(dataFileAsStruct.header, 'AIChannelScales') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                allAnalogChannelScales = dataFileAsStruct.header.AIChannelScales ;
+            else
+                % Fallback for older files
+                allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
+            end
         catch
             error('Unable to read channel scale information from file.');
         end
         try
-            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            if isfield(dataFileAsStruct.header, 'IsAIChannelActive') ,
+                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+                isActive = logical(dataFileAsStruct.header.IsAIChannelActive) ;
+            else
+                % Fallback for older files
+                isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
+            end
         catch
             error('Unable to read active/inactive channel information from file.');
         end
@@ -71,7 +84,11 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         
         % read the scaling coefficients
         try
-            analogScalingCoefficients=dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
+                analogScalingCoefficients = dataFileAsStruct.header.AIScalingCoefficients ;
+            else
+                analogScalingCoefficients = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+            end
         catch
             error('Unable to read channel scaling coefficients from file.');
         end
