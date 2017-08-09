@@ -316,6 +316,17 @@ classdef WavesurferModel < ws.Model
         UpdateElectrodeManager
     end
     
+    properties (Dependent = true, SetAccess=immutable, Transient=true)
+        IsReady  % true <=> figures are showing the normal (as opposed to waiting) cursor
+    end
+    
+    properties (Access = protected, Transient=true)
+        DegreeOfReadiness_ = 1
+    end
+
+    events
+        UpdateReadiness
+    end
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
@@ -5826,5 +5837,44 @@ classdef WavesurferModel < ws.Model
             result = self.NRunsCompleted_ ;
         end
         
-    end  % public methods
+        function changeReadiness(self,delta)
+            if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
+                return
+            end
+                    
+            newDegreeOfReadinessRaw = self.DegreeOfReadiness_ + delta ;
+            self.setReadiness_(newDegreeOfReadinessRaw) ;
+        end  % function        
+        
+        function resetReadiness(self)
+            % Used during error handling to reset model back to the ready
+            % state.
+            self.setReadiness_(1) ;
+        end  % function        
+        
+        function value=get.IsReady(self)
+            value=(self.DegreeOfReadiness_>0);
+        end               
+    end  % public methods block
+    
+    methods (Access = protected)
+        function setReadiness_(self, newDegreeOfReadinessRaw)
+            %fprintf('Inside setReadiness_(%d)\n', newDegreeOfReadinessRaw) ;
+            %dbstack
+            isReadyBefore=self.IsReady;
+            
+            self.DegreeOfReadiness_ = ...
+                    ws.fif(newDegreeOfReadinessRaw<=1, ...
+                                   newDegreeOfReadinessRaw, ...
+                                   1);
+                        
+            isReadyAfter=self.IsReady;
+            
+            if isReadyAfter ~= isReadyBefore ,
+                fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
+                self.broadcast('UpdateReadiness');
+            end            
+        end  % function                
+    end  % protected methods block        
+    
 end  % classdef
