@@ -20,7 +20,7 @@ National Instruments X Series card (i.e. 63xx)
 
 National Instruments DAQmx driver, version 9.8.x or later.
 
-Matlab R2013b or later (64-bit)
+Matlab R2014b or later (64-bit)
 
 
 Installation
@@ -47,13 +47,13 @@ Installation
 6.  At the Matlab command line, execute "wavesurfer".  You should now
     be presented with the WaveSurfer user interface.
 
-7.  Go to Tools > Device & Channels... to specify what DAQ board you
+7.  Go to Protocol > Device & Channels... to specify what DAQ board you
     want to use, what channels you want to use, and to set channel
     units and scales, if desired.
 
-8.  In the main window, click the Stimulation > Enabled checkbox to
-    turn on stmulation.  Click the Display > Enabled checkbox to show
-    the "oscilloscope" windows where acquired data will be displayed.
+8.  Go to Protocol > General... to launch the general settings window.
+    In it, click the Stimulation > Enabled checkbox to turn on
+    stimulation.
 
 9.  In the main window, click the play button (the one with the black
     righward-pointing arrow) to acquire data without saving to disk.
@@ -424,7 +424,7 @@ Version History
 0.947    Apr 6, 2017     Added support for very-low sampling rates, 
                          down to ~1/(40 s).
                          
-0.95     Jul 25, 2017    Improved SI-WS integration, now using SI-WS communication 
+0.95     Aug 9, 2017     Improved SI-WS integration, now using SI-WS communication 
                          protocol version 2.0.0.  Input signals now displayed in 
                          main window, acquisition/stimulation settings moved to 
                          "General" window.  Eliminated direct external access 
