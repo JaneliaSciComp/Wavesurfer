@@ -44,6 +44,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             if exist('model','var') ,
                 self.Model_ = model ;
                 if ~isempty(model) && isvalid(model) ,
+                    %fprintf('About to subscribe a figure-with-self-control of class %s to a model of class %s\n', class(self), class(model)) ;
                     model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
                 end
             else

@@ -215,12 +215,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = ~self.AreSoftpanelsEnabled_ ;
         end
 
-        function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
-            if islogical(newValue) && isscalar(newValue) ,
-                self.AreSoftpanelsEnabled_ = (~newValue) ;
-            end
-            self.broadcast('Update');            
-        end
+%         function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
+%             if islogical(newValue) && isscalar(newValue) ,
+%                 self.AreSoftpanelsEnabled_ = (~newValue) ;
+%             end
+%             self.broadcast('Update');            
+%         end
         
         function electrodeIndex = addNewElectrode_(self)
             % Figure out an electrode name that is not already an electrode
@@ -315,11 +315,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end        
         
         function doNeedToUpdateGainsAndModes = setElectrodeType_(self, electrodeIndex, newValue)
-            % can only change the electrode type if softpanels are
-            % enabled.  I.e. only when WS is _not_ in command of the
-            % gain settings
+            % Can only change the electrode type if softpanels are
+            % enabled.  I.e. only when WS is *not* in command of the
+            % gain settings.
             doNeedToUpdateGainsAndModes = false ;  % fallback return value
-            self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
+            %self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             if self.AreSoftpanelsEnabled_ ,
                 electrode=self.Electrodes_{electrodeIndex};
                 originalType=electrode.Type;
@@ -338,7 +338,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     end                    
                 end
             end
-            self.changeReadiness(+1);
+            %self.changeReadiness(+1);
+            self.broadcast('Update');
         end  % function
         
         function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
@@ -362,6 +363,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     end                    
                 end
             end
+            self.broadcast('Update');
         end  % function
 
 %         function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
@@ -831,31 +833,30 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end            
         end
         
-        function doUpdateSmartElectrodeGainsAndModes = toggleSoftpanelEnablement_(self)
-            originalValue=self.AreSoftpanelsEnabled_;
-            putativeNewValue=~originalValue;
-            try
-                self.EPCMasterSocket_.setUIEnablement(putativeNewValue);
-            catch me
-                % If the exception is an EPCMasterSocket-specific one, then
-                % we failed to set the mode
-                indicesThatMatch=strfind(me.identifier,'EPCMasterSocket:');                
-                if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
-                    putativeNewValue=originalValue;
-                else
-                    rethrow(me)
+        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains_(self, desiredNewValueOfIsInControlOfSoftpanelModeAndGains)
+            if islogical(desiredNewValueOfIsInControlOfSoftpanelModeAndGains) && isscalar(desiredNewValueOfIsInControlOfSoftpanelModeAndGains) ,
+                desiredNewValueOfAreSoftPanelsEnabled = ~desiredNewValueOfIsInControlOfSoftpanelModeAndGains ;
+                %originalValue = self.AreSoftpanelsEnabled_ ;
+                %desiredNewValue = ~originalValue ;
+                try
+                    self.EPCMasterSocket_.setUIEnablement(desiredNewValueOfAreSoftPanelsEnabled) ;
+                catch me
+                    % If the exception is an EPCMasterSocket-specific one, then
+                    % we failed to set the mode
+                    indicesThatMatch=strfind(me.identifier,'EPCMasterSocket:');                
+                    if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
+                        desiredNewValueOfAreSoftPanelsEnabled = self.AreSoftpanelsEnabled_ ;
+                    else
+                        self.broadcast('Update') ;
+                        rethrow(me) ;
+                    end
                 end
+                newValueOfAreSoftPanelsEnabled = desiredNewValueOfAreSoftPanelsEnabled ;
+                self.AreSoftpanelsEnabled_ = newValueOfAreSoftPanelsEnabled ;
+                % If softpanels were just disabled, make sure that the
+                % gains and modes are up-to-date
+                doUpdateSmartElectrodeGainsAndModes = ~newValueOfAreSoftPanelsEnabled ;
             end
-            newValue=putativeNewValue;
-            self.AreSoftpanelsEnabled_=newValue;
-%             if ~newValue ,
-%                 % If softpanels were just disabled, make sure that the
-%                 % gains and modes are up-to-date
-%                 self.updateSmartElectrodeGainsAndModes();      
-%             end
-            % If softpanels were just disabled, make sure that the
-            % gains and modes are up-to-date
-            doUpdateSmartElectrodeGainsAndModes = ~newValue ;
             self.broadcast('Update');
         end  % function
         

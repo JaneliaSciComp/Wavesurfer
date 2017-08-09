@@ -423,13 +423,13 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.getIsRunning_() ;
         end
         
-        function changeTestPulserReadiness_(self, delta)
-            self.TestPulser_.changeReadiness(delta) ;
-        end
+%         function changeTestPulserReadiness_(self, delta)
+%             self.TestPulser_.changeReadiness(delta) ;
+%         end
 
-        function changeElectrodeManagerReadiness_(self, delta)
-            self.ElectrodeManager_.changeReadiness(delta) ;
-        end
+%         function changeElectrodeManagerReadiness_(self, delta)
+%             self.ElectrodeManager_.changeReadiness(delta) ;
+%         end
         
 %         function toggleIsTestPulsing(self)
 %             if self.IsTestPulsing , 
@@ -641,8 +641,8 @@ classdef Ephys < ws.Subsystem
             doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
         end
         
-        function doUpdateSmartElectrodeGainsAndModes = toggleSoftpanelEnablement_(self)
-            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.toggleSoftpanelEnablement_() ;
+        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains_(self, newValue)
+            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
         end
         
         function newElectrodeIndex = addNewElectrode_(self)
@@ -704,9 +704,9 @@ classdef Ephys < ws.Subsystem
             result = self.ElectrodeManager_.getIsInControlOfSoftpanelModeAndGains_() ;
         end
 
-        function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
-            self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
-        end
+%         function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
+%             self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+%         end
 
         function [channelScalesFromElectrodes, isChannelScaleEnslaved] = getMonitorScalingsByName(self, aiChannelNames)
             [channelScalesFromElectrodes, isChannelScaleEnslaved] = self.ElectrodeManager_.getMonitorScalingsByName(aiChannelNames) ;

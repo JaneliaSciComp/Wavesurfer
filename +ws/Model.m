@@ -109,6 +109,8 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.Se
     
     methods (Access = protected)
         function setReadiness_(self, newDegreeOfReadinessRaw)
+            fprintf('Inside setReadiness_(%d)\n', newDegreeOfReadinessRaw) ;
+            dbstack
             isReadyBefore=self.IsReady;
             
             self.DegreeOfReadiness_ = ...
@@ -119,6 +121,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.Se
             isReadyAfter=self.IsReady;
             
             if isReadyAfter ~= isReadyBefore ,
+                fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
                 self.broadcast('UpdateReadiness');
             end            
         end  % function                

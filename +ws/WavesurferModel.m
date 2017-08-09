@@ -4886,7 +4886,7 @@ classdef WavesurferModel < ws.Model
             
             try       
                 % Takes some time to start...
-                self.changeTestPulserReadiness_(-1) ;
+                self.changeReadiness_(-1) ;
 
                 % Update the smart electrode channel scales, if possible and
                 % needed
@@ -4936,13 +4936,13 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % OK, now we consider the TP no longer busy
-                self.changeTestPulserReadiness_(+1);
+                self.changeReadiness_(+1);
 
                 % Actually start the test pulsing
                 self.Ephys_.startTestPulsing_() ;                
             catch exception
                 self.abortTestPulsing_() ;
-                self.changeTestPulserReadiness_(+1) ;
+                self.changeReadiness_(+1) ;
                 rethrow(exception) ;                
             end
         end
@@ -4954,27 +4954,31 @@ classdef WavesurferModel < ws.Model
             end
             
             try             
+                self.changeReadiness(-1) ;  % Takes some time to stop
                 self.Ephys_.stopTestPulsing_() ;
+                self.changeReadiness(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
                 end
             catch exception
                 self.abortTestPulsing_() ;
-                self.changeTestPulserReadiness_(+1) ;
+                self.changeReadiness_(+1) ;
                 rethrow(exception) ;                                
             end            
         end  % function    
     end
     
     methods (Access=protected)
-        function changeTestPulserReadiness_(self, delta)
-            self.Ephys_.changeTestPulserReadiness_(delta) ;
-        end
+%         function changeTestPulserReadiness_(self, delta)
+%             self.Ephys_.changeTestPulserReadiness_(delta) ;
+%         end
         
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
+            self.changeReadiness(-1);
             self.Ephys_.abortTestPulsing_() ;
+            self.changeReadiness(+1);
             if isequal(self.State,'test_pulsing') ,
                 self.setState_('idle') ;
             end
@@ -5282,7 +5286,7 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function updateSmartElectrodeGainsAndModes(self)
-            self.Ephys_.changeElectrodeManagerReadiness_(-1) ;
+            self.changeReadiness_(-1) ;
             % Get the current mode and scaling from any smart electrodes
             smartElectrodeTypes = setdiff(ws.Electrode.Types,{'Manual'}) ;
             for k = 1:length(smartElectrodeTypes) , 
@@ -5312,7 +5316,7 @@ classdef WavesurferModel < ws.Model
                     end
                 end
             end
-            self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
+            self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodeManager') ;
         end  % function
         
@@ -5322,10 +5326,10 @@ classdef WavesurferModel < ws.Model
         
         function reconnectWithSmartElectrodes(self)
             % Close and repoen the connection to any smart electrodes
-            self.Ephys_.changeElectrodeManagerReadiness_(-1) ;
+            self.changeReadiness_(-1) ;
             self.Ephys_.reconnectWithSmartElectrodes_() ;
             self.updateSmartElectrodeGainsAndModes() ;
-            self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
+            self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodeManager');
         end  % function
     end
@@ -5335,10 +5339,12 @@ classdef WavesurferModel < ws.Model
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
+            self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
             doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
             if doNeedToUpdateGainsAndModes, 
                 self.updateSmartElectrodeGainsAndModes() ;
             end
+            self.changeReadiness(+1);
         end  % function
        
         function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
@@ -5350,10 +5356,17 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods
-        function toggleSoftpanelEnablement(self)
-            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.toggleSoftpanelEnablement_() ;
-            if doUpdateSmartElectrodeGainsAndModes ,
-                self.updateSmartElectrodeGainsAndModes() ;
+        function toggleIsInControlOfSoftpanelModeAndGains(self)
+            currentValue = self.IsInControlOfSoftpanelModeAndGains ;
+            self.IsInControlOfSoftpanelModeAndGains = ~currentValue ;
+        end        
+        
+        function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
+            if self.areAnyElectrodesCommandable() ,
+                doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+                if doUpdateSmartElectrodeGainsAndModes ,
+                    self.updateSmartElectrodeGainsAndModes() ;
+                end
             end
         end
         
@@ -5469,9 +5482,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.getIsInControlOfSoftpanelModeAndGains_() ;
         end
 
-        function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
-            self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
-        end
+%         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
+%             self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+%         end
 
         function result = areAnyElectrodesCommandable(self)
             result = self.Ephys_.areAnyElectrodesCommandable() ;
@@ -5493,9 +5506,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.AreSoftpanelsEnabled ;
         end
 
-        function set.AreSoftpanelsEnabled(self, newValue)
-            self.Ephys_.AreSoftpanelsEnabled = newValue ;
-        end
+%         function set.AreSoftpanelsEnabled(self, newValue)
+%             self.Ephys_.AreSoftpanelsEnabled = newValue ;
+%         end
         
         function result = doesElectrodeHaveCommandOnOffSwitch(self)
             result = self.Ephys_.doesElectrodeHaveCommandOnOffSwitch() ;
