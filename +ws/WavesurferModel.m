@@ -8,10 +8,10 @@ classdef WavesurferModel < ws.Model
     properties (Dependent = true)
         AllDeviceNames
         DeviceName
-        AvailableTimebaseSources
-        OnboardClockTimebaseRate
-        TimebaseSource
-        TimebaseRate
+        AvailableSampleClockTimebaseSources
+        %OnboardClockSampleClockTimebaseRate
+        SampleClockTimebaseSource
+        SampleClockTimebaseRate
         NDIOTerminals
         NPFITerminals
         NCounters
@@ -123,16 +123,16 @@ classdef WavesurferModel < ws.Model
     
     properties (Access=protected)
         DeviceName_ = ''   % an empty string represents "no device specified"
-        TimebaseSource_ = 'OnboardClock' 
+        SampleClockTimebaseSource_ = '100MHzTimebase' 
     end
 
     properties (Access=protected, Transient=true)
         AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
 
-        AvailableTimebaseSources_ = cell(1,0)
-        OnboardClockTimebaseRate_ = []  % Hz
+        AvailableSampleClockTimebaseSources_ = cell(1,0)
+        %OnboardClockSampleClockTimebaseRate_ = []  % Hz
         
-        %TimebaseRate_ = []   % Hz
+        %SampleClockTimebaseRate_ = []   % Hz
         
         NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
                             % file load than it did when the protocol file was saved
@@ -316,6 +316,17 @@ classdef WavesurferModel < ws.Model
         UpdateElectrodeManager
     end
     
+    properties (Dependent = true, SetAccess=immutable, Transient=true)
+        IsReady  % true <=> figures are showing the normal (as opposed to waiting) cursor
+    end
+    
+    properties (Access = protected, Transient=true)
+        DegreeOfReadiness_ = 1
+    end
+
+    events
+        UpdateReadiness
+    end
     
     methods
         function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
@@ -498,7 +509,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function delete(self)            
-            fprintf('WavesurferModel::delete()\n');
+            %fprintf('WavesurferModel::delete()\n');
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 self.IPCPublisher_.send('frontendIsBeingDeleted') ;
@@ -857,10 +868,10 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end
         
-        function set.TimebaseSource(self, newValue)
-            if ws.isString(newValue) && ismember(newValue, self.AvailableTimebaseSources) ,
-                self.TimebaseSource_ = newValue ;
-                %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+        function set.SampleClockTimebaseSource(self, newValue)
+            if ws.isString(newValue) && ismember(newValue, self.AvailableSampleClockTimebaseSources) ,
+                self.SampleClockTimebaseSource_ = newValue ;
+                %self.syncSampleClockTimebaseRateFromDeviceNameAndAvailableSampleClockTimebaseSourcesEtc_() ;
                 isNewValueValid = true ;
             else
                 isNewValueValid = false ;
@@ -868,7 +879,7 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
             if ~isNewValueValid ,
                 error('ws:invalidPropertyValue', ...
-                      'TimebaseSource must be a string, and equal to some element of AvailableTimebaseSources');
+                      'SampleClockTimebaseSource must be a string, and equal to some element of AvailableSampleClockTimebaseSources');
             end
         end
         
@@ -1204,7 +1215,7 @@ classdef WavesurferModel < ws.Model
             end
 
             % Change the readiness (this changes the pointer in the view)
-            self.changeReadiness(-1);
+            self.changeReadiness_(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
@@ -1213,7 +1224,7 @@ classdef WavesurferModel < ws.Model
                     self.commandScanImageToStartLoopIfYoked_() ;
                 catch excp
                     self.abortOngoingRun_() ;
-                    self.changeReadiness(+1) ;
+                    self.changeReadiness_(+1) ;
                     rethrow(excp) ;
                 end
             end
@@ -1265,7 +1276,9 @@ classdef WavesurferModel < ws.Model
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
                 end
                 if self.Triggering_.IsEnabled ,
-                    self.Triggering_.startingRun() ;
+                    timebaseSource = self.SampleClockTimebaseSource ;
+                    timebaseRate = self.SampleClockTimebaseRate ;
+                    self.Triggering_.startingRun(timebaseSource, timebaseRate) ;
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
@@ -1273,7 +1286,7 @@ classdef WavesurferModel < ws.Model
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 me.rethrow();
             end
             
@@ -1333,7 +1346,7 @@ classdef WavesurferModel < ws.Model
             else
                 % Something went wrong
                 %self.abortOngoingRun_();
-                %self.changeReadiness(+1);
+                %self.changeReadiness_(+1);
                 summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
                                                 'The looper encountered a problem while getting ready for the run');
                 summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
@@ -1361,7 +1374,7 @@ classdef WavesurferModel < ws.Model
             else
                 % Something went wrong
                 %self.abortOngoingRun_();
-                %self.changeReadiness(+1);
+                %self.changeReadiness_(+1);
                 summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
                                                   'The refiller encountered a problem while getting ready for the run');
                 summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
@@ -1374,19 +1387,19 @@ classdef WavesurferModel < ws.Model
                     % nothing to do
                 else
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryRefillerError) ;                    
                 end
             else
                 if isempty(summaryRefillerError) ,
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryLooperError) ;                                        
                 else
                     % Problems abound!  Throw the looper one, for no good
                     % reason...
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryLooperError) ;                                                            
                 end                
             end
@@ -1409,7 +1422,7 @@ classdef WavesurferModel < ws.Model
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 me.rethrow();
             end
             
@@ -1434,7 +1447,7 @@ classdef WavesurferModel < ws.Model
                                                    self.Acquisition_.NActiveDigitalChannels, ...
                                                    bufferSizeInScans) ;
             
-            self.changeReadiness(+1);  % do this now to give user hint that they can press stop during run...
+            self.changeReadiness_(+1);  % do this now to give user hint that they can press stop during run...
 
             %
             % Move on to the main within-run loop
@@ -1572,7 +1585,7 @@ classdef WavesurferModel < ws.Model
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(err);
                 end
             end
@@ -1584,7 +1597,7 @@ classdef WavesurferModel < ws.Model
             if ~isempty(err) 
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 throw(err);
             end
 
@@ -1667,7 +1680,7 @@ classdef WavesurferModel < ws.Model
 %             if ~isempty(err) ,
 %                 % Something went wrong
 %                 self.abortOngoingRun_();
-%                 self.changeReadiness(+1);
+%                 self.changeReadiness_(+1);
 %                 throw(err);
 %             end
 % 
@@ -2131,16 +2144,16 @@ classdef WavesurferModel < ws.Model
     
     methods
 %         function initializeFromMDFFileName(self,mdfFileName)
-%             self.changeReadiness(-1);
+%             self.changeReadiness_(-1);
 %             try
 %                 mdfStructure = ws.readMachineDataFile(mdfFileName);
 %                 ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
 %                 self.initializeFromMDFStructure_(mdfStructure);
 %             catch me
-%                 self.changeReadiness(+1);
+%                 self.changeReadiness_(+1);
 %                 rethrow(me) ;
 %             end
-%             self.changeReadiness(+1);
+%             self.changeReadiness_(+1);
 %         end
         
         function addStarterChannelsAndStimulusLibrary(self)
@@ -2449,7 +2462,7 @@ classdef WavesurferModel < ws.Model
             % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1);
+            self.changeReadiness_(-1);
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2469,7 +2482,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
-            self.changeReadiness(+1);
+            self.changeReadiness_(+1);
         end  % function
     end
     
@@ -2487,7 +2500,7 @@ classdef WavesurferModel < ws.Model
 
         function saveProtocolFileGivenFileName(self, fileName)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
-            self.changeReadiness(-1);       
+            self.changeReadiness_(-1);       
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2512,7 +2525,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1);            
+            self.changeReadiness_(+1);            
             self.broadcast('Update');
         end
 
@@ -2542,7 +2555,7 @@ classdef WavesurferModel < ws.Model
             % Actually opens the named user file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1) ;
+            self.changeReadiness_(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2558,7 +2571,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1) ;            
+            self.changeReadiness_(+1) ;            
             self.broadcast('UpdateFastProtocols') ;
             self.broadcast('Update') ;
         end
@@ -2566,7 +2579,7 @@ classdef WavesurferModel < ws.Model
 
     methods
         function saveUserFileGivenFileName(self, fileName)
-            self.changeReadiness(-1) ;
+            self.changeReadiness_(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2583,7 +2596,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1) ;            
+            self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;            
         end  % function
     end
@@ -3123,8 +3136,8 @@ classdef WavesurferModel < ws.Model
                         
                         % Probe the device to find out its capabilities
                         self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                        self.syncAvailableTimebaseSourcesFromDeviceName_() ;
-                        %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+                        self.syncAvailableSampleClockTimebaseSourcesFromDeviceName_() ;
+                        %self.syncSampleClockTimebaseRateFromDeviceNameAndAvailableSampleClockTimebaseSourcesEtc_() ;
                         
                         % Recalculate which digital terminals are now
                         % overcommitted, since that also updates which are
@@ -3294,6 +3307,7 @@ classdef WavesurferModel < ws.Model
                 % matter.  But we want to restore the model to the
                 % non-logging state.
                 self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+                self.resetReadiness_() ;  % Need to do this to make sure we don't stay unready for the rest of the WSM lifetime
                 rethrow(exception) ;
             end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
@@ -3547,8 +3561,8 @@ classdef WavesurferModel < ws.Model
         function looperProtocol = getLooperProtocol_(self)
             looperProtocol = struct() ;
             
-            looperProtocol.TimebaseSource = self.TimebaseSource ;
-            looperProtocol.TimebaseRate = self.TimebaseRate ;
+            looperProtocol.SampleClockTimebaseSource = self.SampleClockTimebaseSource ;
+            looperProtocol.SampleClockTimebaseRate = self.SampleClockTimebaseRate ;
             
             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
@@ -3583,8 +3597,8 @@ classdef WavesurferModel < ws.Model
         function refillerProtocol = getRefillerProtocol_(self)
             refillerProtocol = struct() ;
             refillerProtocol.DeviceName = self.DeviceName ;
-            refillerProtocol.TimebaseSource = self.TimebaseSource ;
-            refillerProtocol.TimebaseRate = self.TimebaseRate ;
+            refillerProtocol.SampleClockTimebaseSource = self.SampleClockTimebaseSource ;
+            refillerProtocol.SampleClockTimebaseRate = self.SampleClockTimebaseRate ;
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
             refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
@@ -3624,28 +3638,27 @@ classdef WavesurferModel < ws.Model
             value = self.DeviceName_ ;
         end  % function
 
-        function value = get.AvailableTimebaseSources(self)
-            value = self.AvailableTimebaseSources_ ;
+        function value = get.AvailableSampleClockTimebaseSources(self)
+            value = self.AvailableSampleClockTimebaseSources_ ;
         end  % function
 
-        function value = get.TimebaseSource(self)
-            value = self.TimebaseSource_ ;
+        function value = get.SampleClockTimebaseSource(self)
+            value = self.SampleClockTimebaseSource_ ;
         end  % function
 
-        function value = get.OnboardClockTimebaseRate(self)
-            value = self.OnboardClockTimebaseRate_ ;
-        end  % function
+%         function value = get.OnboardClockSampleClockTimebaseRate(self)
+%             value = self.OnboardClockSampleClockTimebaseRate_ ;
+%         end  % function
         
-        function value = get.TimebaseRate(self)
-            timebaseSource = self.TimebaseSource_ ;
-            if isequal(timebaseSource, 'OnboardClock') ,
-                value = self.OnboardClockTimebaseRate_ ;  % Hz
-            elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-                value = 10e6 ;  % Hz, PXI backplace rate
+        function value = get.SampleClockTimebaseRate(self)
+            clockSource = self.SampleClockTimebaseSource_ ;
+            if isequal(clockSource, '100MHzTimebase') ,
+                value = 100e6 ;  % Hz
+            elseif isequal(clockSource, 'PXI_CLK10') ,
+                value = 10e6 ;  % Hz, the 10 means 10 MHz
             else
                 % don't think should ever get here right now
                 error('Internal error 948509345876905') ;
-                %value = self.TimebaseRate_ ;
             end            
         end  % function
 
@@ -3771,41 +3784,21 @@ classdef WavesurferModel < ws.Model
             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+            %onboardClockSampleClockTimebaseRate = ws.getOnboardClockSampleClockTimebaseRateFromDevice(deviceName) ;
             self.NDIOTerminals_ = nDIOTerminals ;
             self.NPFITerminals_ = nPFITerminals ;
             self.NCounters_ = nCounters ;
             self.NAITerminals_ = nAITerminals ;
             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             self.NAOTerminals_ = nAOTerminals ;
-            self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
+            %self.OnboardClockSampleClockTimebaseRate_ = onboardClockSampleClockTimebaseRate ;
         end
 
-        function syncAvailableTimebaseSourcesFromDeviceName_(self)
+        function syncAvailableSampleClockTimebaseSourcesFromDeviceName_(self)
             deviceName = self.DeviceName ;
-            availableTimebaseSources = ws.getAvailableTimebaseSourcesFromDevice(deviceName) ;
-            self.AvailableTimebaseSources_ = availableTimebaseSources ;
+            availableSampleClockTimebaseSources = ws.getAvailableSampleClockTimebaseSourcesFromDevice(deviceName) ;
+            self.AvailableSampleClockTimebaseSources_ = availableSampleClockTimebaseSources ;
         end       
-        
-%         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
-%             deviceName = self.DeviceName ;
-%             availableTimebaseSources = self.AvailableTimebaseSources ;
-%             timebaseSource = self.TimebaseSource ;
-%             if ismember(timebaseSource, availableTimebaseSources) ,
-%                 rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
-%             else
-%                 % Likely a bad timebaseSource for the given deviceName, so we
-%                 % guess about the clock rate
-%                 if isequal(timebaseSource, 'OnboardClock') ,
-%                     rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
-%                 elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-%                     rate = 10e6;  % Hz, PXI backplace rate
-%                 else
-%                     rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
-%                 end
-%             end
-%             self.TimebaseRate_ = rate ;
-%         end
         
         function syncIsDigitalChannelTerminalOvercommitted_(self)
             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
@@ -3875,7 +3868,7 @@ classdef WavesurferModel < ws.Model
             nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
         end        
         
-        function [sampleFrequency, timebaseRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+        function [sampleFrequency, sampleClockTimebaseRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
             % Make sure desiredSampleFrequency is a scalar
             defaultSampleFrequency  = 20000 ;
             if isempty(desiredSampleFrequency) ,
@@ -3899,8 +3892,8 @@ classdef WavesurferModel < ws.Model
             end
             
             % Limit to the allowed range of sampling frequencies
-            timebaseRate = self.TimebaseRate ;  % Hz
-            desiredTimebaseTicksPerSample = timebaseRate/sanitizedDesiredSampleFrequency ;  
+            sampleClockTimebaseRate = self.SampleClockTimebaseRate ;  % Hz
+            desiredTimebaseTicksPerSample = sampleClockTimebaseRate/sanitizedDesiredSampleFrequency ;  
             integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
             maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
             minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
@@ -3917,7 +3910,7 @@ classdef WavesurferModel < ws.Model
               % do it, but it will generally fail to keep up once the sweep
               % starts, because for instance the default timebase for X series cards is
               % 100 MHz.
-            sampleFrequency = timebaseRate/actualTimebaseTicksPerSample ;            
+            sampleFrequency = sampleClockTimebaseRate/actualTimebaseTicksPerSample ;            
         end
         
         function result = get.IsProcessingIncomingCommand(self)
@@ -3942,8 +3935,7 @@ classdef WavesurferModel < ws.Model
             % variables have been set to the encoded values.
             
             self.syncDeviceResourceCountsFromDeviceName_() ;
-            self.syncAvailableTimebaseSourcesFromDeviceName_() ;
-            %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+            self.syncAvailableSampleClockTimebaseSourcesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
@@ -4906,7 +4898,7 @@ classdef WavesurferModel < ws.Model
             
             try       
                 % Takes some time to start...
-                self.changeTestPulserReadiness_(-1) ;
+                self.changeReadiness_(-1) ;
 
                 % Update the smart electrode channel scales, if possible and
                 % needed
@@ -4956,13 +4948,13 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % OK, now we consider the TP no longer busy
-                self.changeTestPulserReadiness_(+1);
+                self.changeReadiness_(+1);
 
                 % Actually start the test pulsing
                 self.Ephys_.startTestPulsing_() ;                
             catch exception
                 self.abortTestPulsing_() ;
-                self.changeTestPulserReadiness_(+1) ;
+                self.changeReadiness_(+1) ;
                 rethrow(exception) ;                
             end
         end
@@ -4974,27 +4966,31 @@ classdef WavesurferModel < ws.Model
             end
             
             try             
+                self.changeReadiness_(-1) ;  % Takes some time to stop
                 self.Ephys_.stopTestPulsing_() ;
+                self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
                 end
             catch exception
                 self.abortTestPulsing_() ;
-                self.changeTestPulserReadiness_(+1) ;
+                self.changeReadiness_(+1) ;
                 rethrow(exception) ;                                
             end            
         end  % function    
     end
     
     methods (Access=protected)
-        function changeTestPulserReadiness_(self, delta)
-            self.Ephys_.changeTestPulserReadiness_(delta) ;
-        end
+%         function changeTestPulserReadiness_(self, delta)
+%             self.Ephys_.changeTestPulserReadiness_(delta) ;
+%         end
         
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
+            self.changeReadiness_(-1);
             self.Ephys_.abortTestPulsing_() ;
+            self.changeReadiness_(+1);
             if isequal(self.State,'test_pulsing') ,
                 self.setState_('idle') ;
             end
@@ -5302,7 +5298,7 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function updateSmartElectrodeGainsAndModes(self)
-            self.Ephys_.changeElectrodeManagerReadiness_(-1) ;
+            self.changeReadiness_(-1) ;
             % Get the current mode and scaling from any smart electrodes
             smartElectrodeTypes = setdiff(ws.Electrode.Types,{'Manual'}) ;
             for k = 1:length(smartElectrodeTypes) , 
@@ -5332,7 +5328,7 @@ classdef WavesurferModel < ws.Model
                     end
                 end
             end
-            self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
+            self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodeManager') ;
         end  % function
         
@@ -5342,10 +5338,10 @@ classdef WavesurferModel < ws.Model
         
         function reconnectWithSmartElectrodes(self)
             % Close and repoen the connection to any smart electrodes
-            self.Ephys_.changeElectrodeManagerReadiness_(-1) ;
+            self.changeReadiness_(-1) ;
             self.Ephys_.reconnectWithSmartElectrodes_() ;
             self.updateSmartElectrodeGainsAndModes() ;
-            self.Ephys_.changeElectrodeManagerReadiness_(+1) ;
+            self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodeManager');
         end  % function
     end
@@ -5355,10 +5351,12 @@ classdef WavesurferModel < ws.Model
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
+            self.changeReadiness_(-1);  % may have to establish contact with the softpanel, which can take a little while
             doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
             if doNeedToUpdateGainsAndModes, 
                 self.updateSmartElectrodeGainsAndModes() ;
             end
+            self.changeReadiness_(+1);
         end  % function
        
         function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
@@ -5370,10 +5368,17 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods
-        function toggleSoftpanelEnablement(self)
-            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.toggleSoftpanelEnablement_() ;
-            if doUpdateSmartElectrodeGainsAndModes ,
-                self.updateSmartElectrodeGainsAndModes() ;
+        function toggleIsInControlOfSoftpanelModeAndGains(self)
+            currentValue = self.IsInControlOfSoftpanelModeAndGains ;
+            self.IsInControlOfSoftpanelModeAndGains = ~currentValue ;
+        end        
+        
+        function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
+            if self.areAnyElectrodesCommandable() ,
+                doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+                if doUpdateSmartElectrodeGainsAndModes ,
+                    self.updateSmartElectrodeGainsAndModes() ;
+                end
             end
         end
         
@@ -5489,9 +5494,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.getIsInControlOfSoftpanelModeAndGains_() ;
         end
 
-        function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
-            self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
-        end
+%         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
+%             self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+%         end
 
         function result = areAnyElectrodesCommandable(self)
             result = self.Ephys_.areAnyElectrodesCommandable() ;
@@ -5513,9 +5518,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.AreSoftpanelsEnabled ;
         end
 
-        function set.AreSoftpanelsEnabled(self, newValue)
-            self.Ephys_.AreSoftpanelsEnabled = newValue ;
-        end
+%         function set.AreSoftpanelsEnabled(self, newValue)
+%             self.Ephys_.AreSoftpanelsEnabled = newValue ;
+%         end
         
         function result = doesElectrodeHaveCommandOnOffSwitch(self)
             result = self.Ephys_.doesElectrodeHaveCommandOnOffSwitch() ;
@@ -5565,9 +5570,9 @@ classdef WavesurferModel < ws.Model
 %             self.Ephys_.TestPulseElectrodeName = newValue ;
 %         end        
         
-        function result = getIsTestPulserReady(self)
-            result = self.Ephys_.getIsTestPulserReady() ;
-        end
+%         function result = getIsTestPulserReady(self)
+%             result = self.Ephys_.getIsTestPulserReady() ;
+%         end
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
@@ -5833,5 +5838,44 @@ classdef WavesurferModel < ws.Model
             result = self.NRunsCompleted_ ;
         end
         
-    end  % public methods
+        function value=get.IsReady(self)
+            value=(self.DegreeOfReadiness_>0);
+        end               
+    end  % public methods block
+    
+    methods (Access = protected)
+        function changeReadiness_(self, delta)
+            if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
+                return
+            end
+                    
+            newDegreeOfReadinessRaw = self.DegreeOfReadiness_ + delta ;
+            self.setReadiness_(newDegreeOfReadinessRaw) ;
+        end  % function        
+        
+        function resetReadiness_(self)
+            % Used during error handling to reset model back to the ready
+            % state.  (NB: But only if called via the do() method!)
+            self.setReadiness_(1) ;
+        end  % function        
+        
+        function setReadiness_(self, newDegreeOfReadinessRaw)
+            %fprintf('Inside setReadiness_(%d)\n', newDegreeOfReadinessRaw) ;
+            %dbstack
+            isReadyBefore = self.IsReady ;
+            
+            self.DegreeOfReadiness_ = ...
+                ws.fif(newDegreeOfReadinessRaw<=1, ...
+                       newDegreeOfReadinessRaw, ...
+                       1) ;
+                        
+            isReadyAfter = self.IsReady ;
+            
+            if isReadyAfter ~= isReadyBefore ,
+                %fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
+                self.broadcast('UpdateReadiness');
+            end            
+        end  % function                
+    end  % protected methods block        
+    
 end  % classdef

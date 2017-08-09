@@ -44,6 +44,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             if exist('model','var') ,
                 self.Model_ = model ;
                 if ~isempty(model) && isvalid(model) ,
+                    %fprintf('About to subscribe a figure-with-self-control of class %s to a model of class %s\n', class(self), class(model)) ;
                     model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
                 end
             else
@@ -472,34 +473,30 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
                     % ignore completely, don't even pass on to output
                     exceptionMaybe = {} ;
                 else
-                    self.raiseDialogOnException_(exception) ;
+                    ws.raiseDialogOnException(exception) ;
                     exceptionMaybe = { exception } ;
                 end
             end
         end  % function       
     end  % public methods block
     
-    methods (Access=protected)
-        function raiseDialogOnException_(self, exception)
-            model = self.Model_ ;
-            if ~isempty(model) ,
-                model.resetReadiness() ;  % don't want the spinning cursor after we show the error dialog
-            end
-            if isempty(exception.cause)
-                ws.errordlg(exception.message, 'Error', 'modal') ;
-            else
-                primaryCause = exception.cause{1} ;
-                if isempty(primaryCause.cause) ,
-                    errorString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
-                    ws.errordlg(errorString, 'Error', 'modal') ;
-                else
-                    secondaryCause = primaryCause.cause{1} ;
-                    errorString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
-                    ws.errordlg(errorString, 'Error', 'modal') ;
-                end
-            end            
-        end  % method
-    end  % protected methods block
+%     methods (Access=protected)
+%         function raiseDialogOnException_(self, exception)
+%             if isempty(exception.cause)
+%                 ws.errordlg(exception.message, 'Error', 'modal') ;
+%             else
+%                 primaryCause = exception.cause{1} ;
+%                 if isempty(primaryCause.cause) ,
+%                     errorString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
+%                     ws.errordlg(errorString, 'Error', 'modal') ;
+%                 else
+%                     secondaryCause = primaryCause.cause{1} ;
+%                     errorString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
+%                     ws.errordlg(errorString, 'Error', 'modal') ;
+%                 end
+%             end            
+%         end  % method
+%     end  % protected methods block
     
     methods
         function constrainPositionToMonitors(self, monitorPositions)

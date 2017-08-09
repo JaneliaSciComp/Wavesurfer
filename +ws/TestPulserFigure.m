@@ -225,7 +225,7 @@ classdef TestPulserFigure < ws.MCOSFigure
                 set(self.FigureGH,'pointer','arrow');
             else                
                 %ephys = wsModel.Ephys ;
-                if wsModel.getIsTestPulserReady() ,
+                if wsModel.IsReady ,
                     set(self.FigureGH,'pointer','arrow');
                 else
                     % Change cursor to hourglass

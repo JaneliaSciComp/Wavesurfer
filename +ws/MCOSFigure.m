@@ -33,7 +33,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
     end  % properties    
     
     methods
-        function self=MCOSFigure(model,controller)
+        function self=MCOSFigure(model, controller)
             % Note that when this is called, the controller is in a
             % not-completely-initialized state, so it's not safe to do much
             % of anything with it except copy a pointer to it.
@@ -82,7 +82,7 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
             output = self.Controller_ ;
         end
                 
-        function setModel_(self,newValue)
+        function setModel_(self, newValue)
             self.willSetModel_();
             self.Model_ = newValue ;            
             self.didSetModel_();
@@ -233,8 +233,9 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 %             value=(self.DegreeOfReadiness_>0);
 %         end       
         
-        function updateReadiness(self,varargin)
-            self.updateReadinessImplementation_();
+        function updateReadiness(self, varargin)
+            %fprintf('Inside updateReadiness()\n') ;
+            self.updateReadinessImplementation_() ;
         end
 
         function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
@@ -400,8 +401,11 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
         function didSetModel_(self) 
             % This can be overridden if the figure wants something special to
             % happen just after the model is set
+            %fprintf('Inside didSetModel_()') ;
+            %class(self)
             model=self.Model_;
             if ~isempty(model) && isvalid(model) ,
+                %fprintf('About to subscribe a figure of class %s to a model of class %s\n', class(self), class(model)) ;
                 model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
             end
         end

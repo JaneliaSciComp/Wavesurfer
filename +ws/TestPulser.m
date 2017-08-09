@@ -601,7 +601,7 @@ classdef TestPulser < ws.Model
             % for instance.
             %fprintf('Just entered stop()...\n');            
             % Takes some time to stop...
-            self.changeReadiness(-1);
+            %self.changeReadiness(-1);
             %self.IsReady_ = false ;
             %self.broadcast('UpdateReadiness');
 
@@ -658,7 +658,7 @@ classdef TestPulser < ws.Model
 %                 end
 
             % Takes some time to stop...
-            self.changeReadiness(+1);
+            %self.changeReadiness(+1);
             %self.IsReady_ = true ;
             %self.broadcast('Update');
         end  % function
@@ -667,8 +667,8 @@ classdef TestPulser < ws.Model
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
 
-            % And now we are once again ready to service method calls...
-            self.changeReadiness(-1);
+            % % And now we are once again ready to service method calls...
+            % self.changeReadiness(-1);
 
             % Try to gracefully wind down the output task
             if isempty(self.OutputTask_) ,
@@ -723,8 +723,8 @@ classdef TestPulser < ws.Model
 %                 wavesurferModel.didAbortTestPulse();
 %             end
             
-            % And now we are once again ready to service method calls...
-            self.changeReadiness(+1);
+            % % And now we are once again ready to service method calls...
+            % self.changeReadiness(+1);
         end  % function
         
         function completingSweep(self, varargin)

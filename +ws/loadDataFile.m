@@ -53,9 +53,10 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % data file is recent enough that there's no problem
     end
     
-    % Parse the format string
-    if strcmpi(formatString,'raw')
-        % User wants raw data, so nothing to do
+    % If needed, use the analog scaling coefficients and scales to convert the
+    % analog scans from counts to experimental units.
+    if strcmpi(formatString,'raw') || dataFileAsStruct.header.NAIChannels==0 ,
+        % User wants raw data and/or there are no AI channels, so nothing to do
     else
         try
             if isfield(dataFileAsStruct.header, 'AIChannelScales') ,

@@ -55,7 +55,7 @@ classdef CommandServer < handle
         end  % function
         
         function delete(self)            
-            fprintf('In ws.CommandServer::delete()\n') ;
+            %fprintf('In ws.CommandServer::delete()\n') ;
             self.IsEnabled = false ;  % this will delete the CommandFileExistenceChecker_, if it is a valid object
         end  % function
 
@@ -116,12 +116,12 @@ classdef CommandServer < handle
             % If complete, the commands are executed, and a response 
             % file is written.
             
-            fprintf('At top of didReceiveIncomingCommandFile\n') ;
+            %fprintf('At top of didReceiveIncomingCommandFile\n') ;
             
             % If we're in the midst of executing a command already, the
             % next command will have to wait.
             if self.IsProcessingIncomingCommand_ ,
-                fprintf('About to exit didReceiveIncomingCommandFile b/c IsProcessingIncomingCommand is true\n') ;
+                %fprintf('About to exit didReceiveIncomingCommandFile b/c IsProcessingIncomingCommand is true\n') ;
                 return
             end
             self.IsProcessingIncomingCommand_ = true ;
@@ -129,7 +129,7 @@ classdef CommandServer < handle
             if exist(self.IncomingCommandFilePath_,'file') ,
                 try
                     commandFileText = ws.readFileContents(self.IncomingCommandFilePath_) ;
-                    commandFileText
+                    %commandFileText
                 catch me ,
                     wrappingException = MException('CommandServer:UnableToOpenYokingFile', ...
                                                    'Unable to open ScanImage command file') ;
@@ -147,7 +147,7 @@ classdef CommandServer < handle
                     %fprintf(2,'%s\n',exception.message);
                 end
             else
-                fprintf('In didReceiveIncomingCommandFile(), the incoming command file does not exist\n') ;
+                %fprintf('In didReceiveIncomingCommandFile(), the incoming command file does not exist\n') ;
             end
             
             self.IsProcessingIncomingCommand_ = false ;

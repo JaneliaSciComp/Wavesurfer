@@ -42,9 +42,9 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.do('set', 'DoTrodeUpdateBeforeRun', newValue) ;
         end
         
-        function SoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
+        function CommandSoftpanelButtonActuated(self, source, event, varargin)  %#ok<INUSD>
             %self.Model.toggleSoftpanelEnablement();
-            self.Model.do('toggleSoftpanelEnablement');
+            self.Model.do('toggleIsInControlOfSoftpanelModeAndGains');
         end
 
         function IsCommandEnabledCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
@@ -156,8 +156,8 @@ classdef ElectrodeManagerController < ws.Controller
         function ModePopupActuated(self, source, event, varargin)  %#ok<INUSD>
             isTheElectrode = (source==self.Figure.ModePopups) ;
             electrodeIndex = find(isTheElectrode,1) ;
-            electrode = self.Model.Electrodes{electrodeIndex} ;
-            allowedModes = electrode.AllowedModes ;
+            %electrode = self.Model.Electrodes{electrodeIndex} ;
+            allowedModes = self.Model.getElectrodeProperty(electrodeIndex, 'AllowedModes') ;
             allowedModesAsStrings = cellfun(@(mode)(ws.titleStringFromElectrodeMode(mode)),allowedModes,'UniformOutput',false) ;
             modeAsString = ws.getPopupMenuSelection(source,allowedModesAsStrings) ;
             modeIndex = find(strcmp(modeAsString,allowedModesAsStrings),1) ;
@@ -219,11 +219,11 @@ classdef ElectrodeManagerController < ws.Controller
 %         end  % function        
 
         function TypePopupActuated(self, source, event, varargin)  %#ok<INUSD>
-            choice=ws.getPopupMenuSelection(source,ws.Electrode.Types);
-            isTheElectrode=(source==self.Figure.TypePopups);
-            electrodeIndex=find(isTheElectrode);
+            choice = ws.getPopupMenuSelection(source,ws.Electrode.Types) ;
+            isTheElectrode = (source==self.Figure.TypePopups) ;
+            electrodeIndex = find(isTheElectrode) ;
             %self.Model.setElectrodeType(electrodeIndex,choice); %#ok<FNDSB>
-            self.Model.do('setElectrodeProperty', electrodeIndex, 'Type', choice) ; %#ok<FNDSB>            
+            self.Model.do('setElectrodeProperty', electrodeIndex, 'Type', choice) ;  %#ok<FNDSB>            
         end  % function
         
         function IndexWithinTypeEditActuated(self, source, event, varargin)  %#ok<INUSD>
