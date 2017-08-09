@@ -1215,7 +1215,7 @@ classdef WavesurferModel < ws.Model
             end
 
             % Change the readiness (this changes the pointer in the view)
-            self.changeReadiness(-1);
+            self.changeReadiness_(-1);
             
             % If yoked to scanimage, write to the command file, wait for a
             % response
@@ -1224,7 +1224,7 @@ classdef WavesurferModel < ws.Model
                     self.commandScanImageToStartLoopIfYoked_() ;
                 catch excp
                     self.abortOngoingRun_() ;
-                    self.changeReadiness(+1) ;
+                    self.changeReadiness_(+1) ;
                     rethrow(excp) ;
                 end
             end
@@ -1286,7 +1286,7 @@ classdef WavesurferModel < ws.Model
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 me.rethrow();
             end
             
@@ -1346,7 +1346,7 @@ classdef WavesurferModel < ws.Model
             else
                 % Something went wrong
                 %self.abortOngoingRun_();
-                %self.changeReadiness(+1);
+                %self.changeReadiness_(+1);
                 summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
                                                 'The looper encountered a problem while getting ready for the run');
                 summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
@@ -1374,7 +1374,7 @@ classdef WavesurferModel < ws.Model
             else
                 % Something went wrong
                 %self.abortOngoingRun_();
-                %self.changeReadiness(+1);
+                %self.changeReadiness_(+1);
                 summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
                                                   'The refiller encountered a problem while getting ready for the run');
                 summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
@@ -1387,19 +1387,19 @@ classdef WavesurferModel < ws.Model
                     % nothing to do
                 else
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryRefillerError) ;                    
                 end
             else
                 if isempty(summaryRefillerError) ,
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryLooperError) ;                                        
                 else
                     % Problems abound!  Throw the looper one, for no good
                     % reason...
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(summaryLooperError) ;                                                            
                 end                
             end
@@ -1422,7 +1422,7 @@ classdef WavesurferModel < ws.Model
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 me.rethrow();
             end
             
@@ -1447,7 +1447,7 @@ classdef WavesurferModel < ws.Model
                                                    self.Acquisition_.NActiveDigitalChannels, ...
                                                    bufferSizeInScans) ;
             
-            self.changeReadiness(+1);  % do this now to give user hint that they can press stop during run...
+            self.changeReadiness_(+1);  % do this now to give user hint that they can press stop during run...
 
             %
             % Move on to the main within-run loop
@@ -1585,7 +1585,7 @@ classdef WavesurferModel < ws.Model
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
-                    self.changeReadiness(+1);
+                    self.changeReadiness_(+1);
                     throw(err);
                 end
             end
@@ -1597,7 +1597,7 @@ classdef WavesurferModel < ws.Model
             if ~isempty(err) 
                 % Something went wrong
                 self.abortOngoingRun_();
-                self.changeReadiness(+1);
+                self.changeReadiness_(+1);
                 throw(err);
             end
 
@@ -1680,7 +1680,7 @@ classdef WavesurferModel < ws.Model
 %             if ~isempty(err) ,
 %                 % Something went wrong
 %                 self.abortOngoingRun_();
-%                 self.changeReadiness(+1);
+%                 self.changeReadiness_(+1);
 %                 throw(err);
 %             end
 % 
@@ -2144,16 +2144,16 @@ classdef WavesurferModel < ws.Model
     
     methods
 %         function initializeFromMDFFileName(self,mdfFileName)
-%             self.changeReadiness(-1);
+%             self.changeReadiness_(-1);
 %             try
 %                 mdfStructure = ws.readMachineDataFile(mdfFileName);
 %                 ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
 %                 self.initializeFromMDFStructure_(mdfStructure);
 %             catch me
-%                 self.changeReadiness(+1);
+%                 self.changeReadiness_(+1);
 %                 rethrow(me) ;
 %             end
-%             self.changeReadiness(+1);
+%             self.changeReadiness_(+1);
 %         end
         
         function addStarterChannelsAndStimulusLibrary(self)
@@ -2462,7 +2462,7 @@ classdef WavesurferModel < ws.Model
             % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1);
+            self.changeReadiness_(-1);
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2482,7 +2482,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
-            self.changeReadiness(+1);
+            self.changeReadiness_(+1);
         end  % function
     end
     
@@ -2500,7 +2500,7 @@ classdef WavesurferModel < ws.Model
 
         function saveProtocolFileGivenFileName(self, fileName)
             %wavesurferModelSettings=self.encodeConfigurablePropertiesForFileType('cfg');
-            self.changeReadiness(-1);       
+            self.changeReadiness_(-1);       
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2525,7 +2525,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1);            
+            self.changeReadiness_(+1);            
             self.broadcast('Update');
         end
 
@@ -2555,7 +2555,7 @@ classdef WavesurferModel < ws.Model
             % Actually opens the named user file.  fileName should be an
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            self.changeReadiness(-1) ;
+            self.changeReadiness_(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2571,7 +2571,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1) ;            
+            self.changeReadiness_(+1) ;            
             self.broadcast('UpdateFastProtocols') ;
             self.broadcast('Update') ;
         end
@@ -2579,7 +2579,7 @@ classdef WavesurferModel < ws.Model
 
     methods
         function saveUserFileGivenFileName(self, fileName)
-            self.changeReadiness(-1) ;
+            self.changeReadiness_(-1) ;
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
             else
@@ -2596,7 +2596,7 @@ classdef WavesurferModel < ws.Model
             ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness(+1) ;            
+            self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;            
         end  % function
     end
@@ -3307,6 +3307,7 @@ classdef WavesurferModel < ws.Model
                 % matter.  But we want to restore the model to the
                 % non-logging state.
                 self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
+                self.resetReadiness_() ;  % Need to do this to make sure we don't stay unready for the rest of the WSM lifetime
                 rethrow(exception) ;
             end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
@@ -4965,9 +4966,9 @@ classdef WavesurferModel < ws.Model
             end
             
             try             
-                self.changeReadiness(-1) ;  % Takes some time to stop
+                self.changeReadiness_(-1) ;  % Takes some time to stop
                 self.Ephys_.stopTestPulsing_() ;
-                self.changeReadiness(+1) ;
+                self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
                 end
@@ -4987,9 +4988,9 @@ classdef WavesurferModel < ws.Model
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
-            self.changeReadiness(-1);
+            self.changeReadiness_(-1);
             self.Ephys_.abortTestPulsing_() ;
-            self.changeReadiness(+1);
+            self.changeReadiness_(+1);
             if isequal(self.State,'test_pulsing') ,
                 self.setState_('idle') ;
             end
@@ -5350,12 +5351,12 @@ classdef WavesurferModel < ws.Model
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
-            self.changeReadiness(-1);  % may have to establish contact with the softpanel, which can take a little while
+            self.changeReadiness_(-1);  % may have to establish contact with the softpanel, which can take a little while
             doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
             if doNeedToUpdateGainsAndModes, 
                 self.updateSmartElectrodeGainsAndModes() ;
             end
-            self.changeReadiness(+1);
+            self.changeReadiness_(+1);
         end  % function
        
         function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
@@ -5837,7 +5838,13 @@ classdef WavesurferModel < ws.Model
             result = self.NRunsCompleted_ ;
         end
         
-        function changeReadiness(self,delta)
+        function value=get.IsReady(self)
+            value=(self.DegreeOfReadiness_>0);
+        end               
+    end  % public methods block
+    
+    methods (Access = protected)
+        function changeReadiness_(self, delta)
             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
                 return
             end
@@ -5846,32 +5853,26 @@ classdef WavesurferModel < ws.Model
             self.setReadiness_(newDegreeOfReadinessRaw) ;
         end  % function        
         
-        function resetReadiness(self)
+        function resetReadiness_(self)
             % Used during error handling to reset model back to the ready
-            % state.
+            % state.  (NB: But only if called via the do() method!)
             self.setReadiness_(1) ;
         end  % function        
         
-        function value=get.IsReady(self)
-            value=(self.DegreeOfReadiness_>0);
-        end               
-    end  % public methods block
-    
-    methods (Access = protected)
         function setReadiness_(self, newDegreeOfReadinessRaw)
             %fprintf('Inside setReadiness_(%d)\n', newDegreeOfReadinessRaw) ;
             %dbstack
-            isReadyBefore=self.IsReady;
+            isReadyBefore = self.IsReady ;
             
             self.DegreeOfReadiness_ = ...
-                    ws.fif(newDegreeOfReadinessRaw<=1, ...
-                                   newDegreeOfReadinessRaw, ...
-                                   1);
+                ws.fif(newDegreeOfReadinessRaw<=1, ...
+                       newDegreeOfReadinessRaw, ...
+                       1) ;
                         
-            isReadyAfter=self.IsReady;
+            isReadyAfter = self.IsReady ;
             
             if isReadyAfter ~= isReadyBefore ,
-                fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
+                %fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
                 self.broadcast('UpdateReadiness');
             end            
         end  % function                

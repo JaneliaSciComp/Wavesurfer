@@ -233,9 +233,9 @@ classdef (Abstract) MCOSFigure < ws.EventSubscriber
 %             value=(self.DegreeOfReadiness_>0);
 %         end       
         
-        function updateReadiness(self,varargin)
-            fprintf('Inside updateReadiness()\n') ;
-            self.updateReadinessImplementation_();
+        function updateReadiness(self, varargin)
+            %fprintf('Inside updateReadiness()\n') ;
+            self.updateReadinessImplementation_() ;
         end
 
         function positionUpperLeftRelativeToOtherUpperRight(self, other, offset)
