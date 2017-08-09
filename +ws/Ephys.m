@@ -570,9 +570,9 @@ classdef Ephys < ws.Subsystem
             value = self.TestPulser_.getUpdateRate_() ;
         end        
         
-        function result = getIsTestPulserReady(self)
-            result = self.TestPulser_.IsReady ;
-        end
+%         function result = getIsTestPulserReady(self)
+%             result = self.TestPulser_.IsReady ;
+%         end
         
         function result = getTestPulserReference_(self) 
             result = self.TestPulser_ ;

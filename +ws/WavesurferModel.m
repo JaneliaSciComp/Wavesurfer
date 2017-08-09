@@ -5570,9 +5570,9 @@ classdef WavesurferModel < ws.Model
 %             self.Ephys_.TestPulseElectrodeName = newValue ;
 %         end        
         
-        function result = getIsTestPulserReady(self)
-            result = self.Ephys_.getIsTestPulserReady() ;
-        end
+%         function result = getIsTestPulserReady(self)
+%             result = self.Ephys_.getIsTestPulserReady() ;
+%         end
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
