@@ -11,7 +11,7 @@ classdef FileExistenceChecker < handle
         end
         
         function delete(self)
-            fprintf('In FileExistenceChecker::delete()\n') ;
+            %fprintf('In FileExistenceChecker::delete()\n') ;
             fecm = ws.FileExistenceCheckerManager.getShared() ;
             fecm.remove(self.UID_) ;
             self.UID_ = 0 ;

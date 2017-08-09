@@ -40,13 +40,13 @@ wsModel.setSingleDIChannelName(channelIndex,'laser') ;
 wsModel.setSingleDIChannelTerminalID(channelIndex,3) ;
 
 % add electrode AO channel
-wsModel.Stimulation.addAnalogChannel() ;
+wsModel.addAOChannel() ;
 channelIndex = wsModel.NAOChannels ;
 wsModel.setSingleAOChannelName(channelIndex,'electrodeOut') ;
 wsModel.setSingleAOChannelTerminalID(channelIndex,0) ;
 
 % add velocity AO channel
-wsModel.Stimulation.addAnalogChannel() ;
+wsModel.addAOChannel() ;
 channelIndex = wsModel.NAOChannels ;
 wsModel.setSingleAOChannelName(channelIndex,'velocityOut') ;
 wsModel.setSingleAOChannelTerminalID(channelIndex,1) ;

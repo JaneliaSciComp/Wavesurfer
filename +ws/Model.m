@@ -1,20 +1,6 @@
 classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.SetGet
-    properties (Dependent = true, SetAccess=immutable, Transient=true)
-        %Parent  
-        IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
-    end
-    
-    properties (Access = protected)
-        %Parent_
-    end
-    
-    properties (Access = protected, Transient=true)
-        DegreeOfReadiness_ = 1
-    end
-
     events
         Update  % Means that any dependent views need to update themselves
-        UpdateReadiness
     end
     
     methods
@@ -44,24 +30,24 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.Se
             self.broadcast('Update');
         end
 
-        function changeReadiness(self,delta)
-            if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
-                return
-            end
-                    
-            newDegreeOfReadinessRaw = self.DegreeOfReadiness_ + delta ;
-            self.setReadiness_(newDegreeOfReadinessRaw) ;
-        end  % function        
-        
-        function resetReadiness(self)
-            % Used during error handling to reset model back to the ready
-            % state.
-            self.setReadiness_(1) ;
-        end  % function        
-        
-        function value=get.IsReady(self)
-            value=(self.DegreeOfReadiness_>0);
-        end               
+%         function changeReadiness(self,delta)
+%             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
+%                 return
+%             end
+%                     
+%             newDegreeOfReadinessRaw = self.DegreeOfReadiness_ + delta ;
+%             self.setReadiness_(newDegreeOfReadinessRaw) ;
+%         end  % function        
+%         
+%         function resetReadiness(self)
+%             % Used during error handling to reset model back to the ready
+%             % state.
+%             self.setReadiness_(1) ;
+%         end  % function        
+%         
+%         function value=get.IsReady(self)
+%             value=(self.DegreeOfReadiness_>0);
+%         end               
         
 %         function propNames = listPropertiesForPersistence(self)
 %             propNamesRaw = listPropertiesForPersistence@ws.Coding(self) ;            
@@ -107,21 +93,24 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.Se
         end           
     end  % public methods block
     
-    methods (Access = protected)
-        function setReadiness_(self, newDegreeOfReadinessRaw)
-            isReadyBefore=self.IsReady;
-            
-            self.DegreeOfReadiness_ = ...
-                    ws.fif(newDegreeOfReadinessRaw<=1, ...
-                                   newDegreeOfReadinessRaw, ...
-                                   1);
-                        
-            isReadyAfter=self.IsReady;
-            
-            if isReadyAfter ~= isReadyBefore ,
-                self.broadcast('UpdateReadiness');
-            end            
-        end  % function                
-    end  % protected methods block
+%     methods (Access = protected)
+%         function setReadiness_(self, newDegreeOfReadinessRaw)
+%             fprintf('Inside setReadiness_(%d)\n', newDegreeOfReadinessRaw) ;
+%             dbstack
+%             isReadyBefore=self.IsReady;
+%             
+%             self.DegreeOfReadiness_ = ...
+%                     ws.fif(newDegreeOfReadinessRaw<=1, ...
+%                                    newDegreeOfReadinessRaw, ...
+%                                    1);
+%                         
+%             isReadyAfter=self.IsReady;
+%             
+%             if isReadyAfter ~= isReadyBefore ,
+%                 fprintf('Inside setReadiness_(%d), about to broadcast UpdateReadiness\n', newDegreeOfReadinessRaw) ;
+%                 self.broadcast('UpdateReadiness');
+%             end            
+%         end  % function                
+%     end  % protected methods block
     
 end  % classdef

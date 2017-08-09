@@ -101,6 +101,62 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             % Delete the data file
             delete(dataFilePatternAbsolute);
         end  % function
+
+        function testOneDI(self)
+            isCommandLineOnly='--nogui';
+            wsModel = wavesurfer(isCommandLineOnly) ;
+
+            % Remove the pre-existing channels
+            wsModel.IsAIChannelMarkedForDeletion(:) = true ;
+            wsModel.deleteMarkedAIChannels() ;
+            wsModel.IsAOChannelMarkedForDeletion(:) = true ;
+            wsModel.deleteMarkedAOChannels() ;
+            
+            % Make sure all deleted
+            self.verifyEqual(wsModel.NAIChannels, 0) ;            
+            self.verifyEqual(wsModel.NAOChannels, 0) ;            
+            
+            % Add a single DI channel
+            wsModel.addDIChannel() ;
+                           
+            % set the data file name
+            thisFileName = mfilename() ;
+            [~,dataFileBaseName] = fileparts(thisFileName) ;
+            wsModel.DataFileBaseName = dataFileBaseName ;
+
+            % delete any preexisting data files
+            dataDirNameAbsolute=wsModel.DataFileLocation;
+            dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
+            delete(dataFilePatternAbsolute);
+
+            absoluteFileName = wsModel.NextRunAbsoluteFileName ;
+            
+            pause(1);
+            wsModel.record();  % blocking, now
+            pause(0.5);
+
+            % Make sure that worked
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
+            
+            % Try to read the data file
+            dataAsStruct = ws.loadDataFile(absoluteFileName) ;
+            
+            % These should not error, at the least...
+            fs = dataAsStruct.header.AcquisitionSampleRate;   %#ok<NASGU> % Hz
+%             analogChannelNames = dataAsStruct.header.AIChannelNames;   %#ok<NASGU> 
+%             analogChannelScales = dataAsStruct.header.AIChannelScales;   %#ok<NASGU> 
+%             analogChannelUnits = dataAsStruct.header.AIChannelUnits;   %#ok<NASGU> 
+            digitalChannelNames = dataAsStruct.header.DIChannelNames;   %#ok<NASGU>    
+%            analogData = dataAsStruct.sweep_0003.analogScans ;   %#ok<NASGU>
+            %analogDataSize = size(analogData);  %#ok<NOPRT,NASGU>
+            digitalData = dataAsStruct.sweep_0001.digitalScans ;   %#ok<NASGU>
+            %digitalDataSize = size(digitalData);  %#ok<NOPRT,NASGU>
+            %digitalDataClassName = class(digitalData);  %#ok<NASGU,NOPRT>
+            
+            % Delete the data file
+            delete(dataFilePatternAbsolute);
+        end  % function
+        
         
     end  % test methods
 

@@ -57,6 +57,8 @@ classdef (Abstract=true) EventBroadcaster < handle
                                    'eventName',eventName, ...
                                    'propertyName',propertyName, ...
                                    'methodName',methodName);
+            %fprintf('About to subscribe a figure of class %s to a model of class %s, for events of type %s\n', class(subscriber), class(self), eventName) ;
+            %dbstack
             if isempty(propertyName)                   
                 newListener=self.addlistener(eventName,@(source,event)(subscriber.(methodName)(self,eventName,propertyName,source,event)));
             else

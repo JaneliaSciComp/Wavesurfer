@@ -45,7 +45,7 @@ classdef TestPulserController < ws.Controller
                     end
                 end
             catch exception
-                self.raiseDialogOnException_(exception) ;
+                ws.raiseDialogOnException(exception) ;
                 exceptionMaybe = { exception } ;
             end
         end  % function
