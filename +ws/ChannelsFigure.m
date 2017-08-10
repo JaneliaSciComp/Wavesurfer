@@ -147,7 +147,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.TimebasePanel= ...
                 ws.uipanel('Parent',self.FigureGH_, ...
                            'Tag','TimebasePanel', ...
-                           'Title','Timebase');
+                           'Title','Sample Clock Timebase');
             
             % Create the timebase source popup and label
             self.TimebaseSourcePopupLabelText = ...
@@ -1405,7 +1405,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             set(self.DeviceNamePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;
             
             % Update the timebase source popup
-            ws.setPopupMenuItemsAndSelectionBang(self.TimebaseSourcePopup, model.AvailableTimebaseSources, model.TimebaseSource) ;
+            ws.setPopupMenuItemsAndSelectionBang(self.TimebaseSourcePopup, model.AvailableSampleClockTimebaseSources, model.SampleClockTimebaseSource) ;
             set(self.TimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
             
             % Update the panels
@@ -1421,11 +1421,11 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             isWavesurferIdle=isequal(model.State,'idle');
             
             % Update the timebase source popup
-            ws.setPopupMenuItemsAndSelectionBang(self.TimebaseSourcePopup, model.AvailableTimebaseSources, model.TimebaseSource) ;
+            ws.setPopupMenuItemsAndSelectionBang(self.TimebaseSourcePopup, model.AvailableSampleClockTimebaseSources, model.SampleClockTimebaseSource) ;
             set(self.TimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
             
             % Update the timebase rate popup
-            timebaseRate = model.TimebaseRate ;  % Hz
+            timebaseRate = model.SampleClockTimebaseRate ;  % Hz
             timebaseRateInMHz = timebaseRate*1e-6 ;
             set(self.TimebaseRateEdit, 'String', sprintf('%.6g', timebaseRateInMHz)) ;
             %set(self.TimebaseRateEdit, 'Enable', ws.onIff(isWavesurferIdle) ) ;                                    
@@ -2039,9 +2039,9 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function TimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
-            availableTimebaseSources = self.Model_.AvailableTimebaseSources ;
+            availableTimebaseSources = self.Model_.AvailableSampleClockTimebaseSources ;
             timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
-            self.Model_.do('set', 'TimebaseSource', timebaseSource) ;
+            self.Model_.do('set', 'SampleClockTimebaseSource', timebaseSource) ;
         end
         
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>

@@ -3477,7 +3477,7 @@ classdef WavesurferModel < ws.Model
 
                     % Probe the device to find out its capabilities
                     self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                    self.syncAvailableTimebaseSourcesFromDeviceName_() ;
+                    self.syncAvailableSampleClockTimebaseSourcesFromDeviceName_() ;
                     %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
 
                     % Recalculate which digital terminals are now
@@ -3645,20 +3645,20 @@ classdef WavesurferModel < ws.Model
     
     methods (Access=protected)
         function syncDeviceResourceCountsFromDeviceName_(self)
-            % Probe the devices to find out their capabilities
-            deviceName = self.DeviceName ;
-%             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-%             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
-%             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-%             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
-%             self.NDIOTerminals_ = nDIOTerminals ;
-%             self.NPFITerminals_ = nPFITerminals ;
-%             self.NCounters_ = nCounters ;
-%             self.NAITerminals_ = nAITerminals ;
-%             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-%             self.NAOTerminals_ = nAOTerminals ;
-            self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
+%             % Probe the devices to find out their capabilities
+%             deviceName = self.DeviceName ;
+% %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+% %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
+% %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
+% %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
+%             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+% %             self.NDIOTerminals_ = nDIOTerminals ;
+% %             self.NPFITerminals_ = nPFITerminals ;
+% %             self.NCounters_ = nCounters ;
+% %             self.NAITerminals_ = nAITerminals ;
+% %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+% %             self.NAOTerminals_ = nAOTerminals ;
+%             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
         end  % function
 
         function syncDeviceResourceCountsFromDeviceNames_(self)
@@ -3694,7 +3694,7 @@ classdef WavesurferModel < ws.Model
             self.AITerminalIDsOnEachDevice_ = aiTerminalIDsOnEachDevice ;
         end  % function     
         
-        function syncAvailableTimebaseSourcesFromDeviceName_(self)
+        function syncAvailableSampleClockTimebaseSourcesFromDeviceName_(self)
             deviceName = self.DeviceName ;
             availableSampleClockTimebaseSources = ws.getAvailableSampleClockTimebaseSourcesFromDevice(deviceName) ;
             self.AvailableSampleClockTimebaseSources_ = availableSampleClockTimebaseSources ;
