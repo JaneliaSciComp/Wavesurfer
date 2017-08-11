@@ -2,10 +2,11 @@ classdef Refiller < handle
     % The main Refiller model object.
     
     properties (Access = protected)        
-        %DeviceName_ = ''
+        PrimaryDeviceName_ = ''
+        IsPrimaryDeviceAPXIDevice_ = false
 
-        ReferenceClockSource_ = []
-        ReferenceClockRate_ = []
+        %ReferenceClockSource_ = []
+        %ReferenceClockRate_ = []
         
         NSweepsPerRun_ = 1
         SweepDuration_ = []
@@ -1272,8 +1273,11 @@ classdef Refiller < handle
         function setRefillerProtocol_(self, protocol)
             %self.DeviceName_ = protocol.DeviceName ;
             
-            self.ReferenceClockSource_ = protocol.ReferenceClockSource ;
-            self.ReferenceClockRate_ = protocol.ReferenceClockRate ;
+            self.PrimaryDeviceName_ = protocol.PrimaryDeviceName ;
+            self.IsPrimaryDeviceAPXIDevice_ = protocol.IsPrimaryDeviceAPXIDevice ;
+            
+%             self.ReferenceClockSource_ = protocol.ReferenceClockSource ;
+%             self.ReferenceClockRate_ = protocol.ReferenceClockRate ;
             
             self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
             self.SweepDuration_ = protocol.SweepDuration ;

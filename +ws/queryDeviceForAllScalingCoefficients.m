@@ -11,6 +11,8 @@ function scalingCoefficients = queryDeviceForAllScalingCoefficients(deviceName)
     sampleRate = 1e3 ;  % want this to be low enough that even with all channels set up, don't get warning about sampling too fast
     %durationPerDataAvailableCallback = 0.1;  % s, also irrelevant
     doUseDefaultTermination = true ;  % All data files without calibration info were using default termination
-    inputTask = ws.InputTask(taskType, taskName, '100MHzTimebase', 100e6, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination) ;
+    referenceClockSource = 'OnboardClock' ;
+    referenceClockRate = 10e6 ;
+    inputTask = ws.InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination) ;
     scalingCoefficients = inputTask.ScalingCoefficients ;
 end

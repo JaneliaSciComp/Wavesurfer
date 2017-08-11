@@ -7,10 +7,11 @@ classdef WavesurferModel < ws.Model
 
     properties (Dependent = true)
         AllDeviceNames
-        DeviceName
-        AvailableReferenceClockSources
-        ReferenceClockSource
-        ReferenceClockRate
+        PrimaryDeviceName
+        IsPrimaryDeviceAPXIDevice
+%         AvailableReferenceClockSources
+%         ReferenceClockSource
+%         ReferenceClockRate
         NDIOTerminalsPerDevice
         NPFITerminalsPerDevice
         NCountersPerDevice
@@ -128,14 +129,14 @@ classdef WavesurferModel < ws.Model
     end
     
     properties (Access=protected)
-        DeviceName_ = ''   % an empty string represents "no device specified"
-        ReferenceClockSource_ = '100MHzTimebase' 
+        PrimaryDeviceName_ = ''   % an empty string represents "no device specified"
+        %ReferenceClockSource_ = '100MHzTimebase' 
     end
 
     properties (Access=protected, Transient=true)
         AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
-
-        AvailableReferenceClockSources_ = cell(1,0)
+        IsPrimaryDeviceAPXIDevice_ = false  % transient b/c depends on hardware
+        %AvailableReferenceClockSources_ = cell(1,0)
         %OnboardClockReferenceClockRate_ = []  % Hz
         
         % The terminal counts are transient b/c e.g. "Dev1" could refer to a different board on protocol
@@ -186,7 +187,6 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
-        %DeviceName
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
@@ -243,7 +243,6 @@ classdef WavesurferModel < ws.Model
         
         % Not saved to either protocol or .usr file
         Logging_
-        %DeviceName_
     end
 
     properties (Access=protected, Transient=true)
@@ -497,7 +496,7 @@ classdef WavesurferModel < ws.Model
                 % Set the device name to the first device
                 allDeviceNames = self.AllDeviceNames ;
                 if ~isempty(allDeviceNames) ,
-                    self.DeviceName = allDeviceNames{1} ;
+                    self.PrimaryDeviceName = allDeviceNames{1} ;
                 end
             end
             
@@ -874,20 +873,20 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end
         
-        function set.ReferenceClockSource(self, newValue)
-            if ws.isString(newValue) && ismember(newValue, self.AvailableReferenceClockSources) ,
-                self.ReferenceClockSource_ = newValue ;
-                %self.syncReferenceClockRateFromDeviceNameAndAvailableReferenceClockSourcesEtc_() ;
-                isNewValueValid = true ;
-            else
-                isNewValueValid = false ;
-            end                
-            self.broadcast('Update');
-            if ~isNewValueValid ,
-                error('ws:invalidPropertyValue', ...
-                      'ReferenceClockSource must be a string, and equal to some element of AvailableReferenceClockSources');
-            end
-        end
+%         function set.ReferenceClockSource(self, newValue)
+%             if ws.isString(newValue) && ismember(newValue, self.AvailableReferenceClockSources) ,
+%                 self.ReferenceClockSource_ = newValue ;
+%                 %self.syncReferenceClockRateFromDeviceNameAndAvailableReferenceClockSourcesEtc_() ;
+%                 isNewValueValid = true ;
+%             else
+%                 isNewValueValid = false ;
+%             end                
+%             self.broadcast('Update');
+%             if ~isNewValueValid ,
+%                 error('ws:invalidPropertyValue', ...
+%                       'ReferenceClockSource must be a string, and equal to some element of AvailableReferenceClockSources');
+%             end
+%         end
         
         function value = get.AreSweepsContinuous(self)
             value = ~self.AreSweepsFiniteDuration_ ;
@@ -1288,9 +1287,13 @@ classdef WavesurferModel < ws.Model
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
                 end
                 if self.Triggering_.IsEnabled ,
-                    timebaseSource = self.ReferenceClockSource ;
-                    timebaseRate = self.ReferenceClockRate ;
-                    self.Triggering_.startingRun(timebaseSource, timebaseRate) ;
+                    primaryDeviceName = self.PrimaryDeviceName ;
+                    isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+                    [referenceClockSource, referenceClockRate] = ...
+                        getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+                    %referenceClockSource = self.ReferenceClockSource ;
+                    %referenceClockRate = self.ReferenceClockRate ;
+                    self.Triggering_.startingRun(referenceClockSource, referenceClockRate) ;
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
@@ -2917,7 +2920,7 @@ classdef WavesurferModel < ws.Model
             % what probes the device to get number of counters, PFI lines,
             % etc, and we need that info to be right before we call the
             % methods below.
-            deviceName = self.DeviceName_ ;
+            deviceName = self.PrimaryDeviceName_ ;
             deviceIndex = self.getDeviceIndexFromName(deviceName) ;
             if isempty(deviceIndex) ,
                 % this means the device name does not specify a currently-valid device name
@@ -2933,10 +2936,10 @@ classdef WavesurferModel < ws.Model
                 %nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
                 %nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
             end
-            self.didSetDeviceName_(deviceName, nCounters, nPFITerminals) ;  
+            self.didSetPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;  
                 % Old protocol files don't store the 
                 % device name in subobjects, so we call
-                % this to set the DeviceName
+                % this to set the PrimaryDeviceName
                 % throughout to the one set in self
             self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_) ;  % Ditto
             self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;  % Ditto
@@ -3364,9 +3367,12 @@ classdef WavesurferModel < ws.Model
     methods (Access=protected)
         function looperProtocol = getLooperProtocol_(self)
             looperProtocol = struct() ;
+
+            looperProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
+            looperProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
             
-            looperProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-            looperProtocol.ReferenceClockRate = self.ReferenceClockRate ;
+%             looperProtocol.ReferenceClockSource = self.ReferenceClockSource ;
+%             looperProtocol.ReferenceClockRate = self.ReferenceClockRate ;
             
             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
@@ -3401,9 +3407,14 @@ classdef WavesurferModel < ws.Model
         
         function refillerProtocol = getRefillerProtocol_(self)
             refillerProtocol = struct() ;
-            %refillerProtocol.DeviceName = self.DeviceName ;
-            refillerProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-            refillerProtocol.ReferenceClockRate = self.ReferenceClockRate ;
+            
+            refillerProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
+            refillerProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            
+%             %refillerProtocol.DeviceName = self.DeviceName ;
+%             refillerProtocol.ReferenceClockSource = self.ReferenceClockSource ;
+%             refillerProtocol.ReferenceClockRate = self.ReferenceClockRate ;
+
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
             refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
@@ -3438,46 +3449,50 @@ classdef WavesurferModel < ws.Model
             value = self.AllDeviceNames_ ;
         end  % function
 
-        function value = get.DeviceName(self)
-            value = self.DeviceName_ ;
+        function value = get.PrimaryDeviceName(self)
+            value = self.PrimaryDeviceName_ ;
         end  % function
 
-        function value = get.AvailableReferenceClockSources(self)
-            value = self.AvailableReferenceClockSources_ ;
+        function value = get.IsPrimaryDeviceAPXIDevice(self)
+            value = self.IsPrimaryDeviceAPXIDevice_ ;
         end  % function
-
-        function value = get.ReferenceClockSource(self)
-            value = self.ReferenceClockSource_ ;
-        end  % function
+        
+%         function value = get.AvailableReferenceClockSources(self)
+%             value = self.AvailableReferenceClockSources_ ;
+%         end  % function
+% 
+%         function value = get.ReferenceClockSource(self)
+%             value = self.ReferenceClockSource_ ;
+%         end  % function
 
 %         function value = get.OnboardClockReferenceClockRate(self)
 %             value = self.OnboardClockReferenceClockRate_ ;
 %         end  % function
         
-        function value = get.ReferenceClockRate(self)
-            clockSource = self.ReferenceClockSource_ ;
-            if isequal(clockSource, '100MHzTimebase') ,
-                value = 100e6 ;  % Hz
-            elseif isequal(clockSource, 'PXI_CLK10') ,
-                value = 10e6 ;  % Hz, the 10 means 10 MHz
-            else
-                % don't think should ever get here right now
-                error('Internal error 948509345876905') ;
-            end            
-        end  % function
+%         function value = get.ReferenceClockRate(self)
+%             clockSource = self.ReferenceClockSource_ ;
+%             if isequal(clockSource, '100MHzTimebase') ,
+%                 value = 100e6 ;  % Hz
+%             elseif isequal(clockSource, 'PXI_CLK10') ,
+%                 value = 10e6 ;  % Hz, the 10 means 10 MHz
+%             else
+%                 % don't think should ever get here right now
+%                 error('Internal error 948509345876905') ;
+%             end            
+%         end  % function
 
-        function set.DeviceName(self, newValue)
+        function set.PrimaryDeviceName(self, newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,
                 allDeviceNames = self.AllDeviceNames ;
                 isAMatch = strcmpi(newValue,allDeviceNames) ;  % DAQmx device names are not case-sensitive
                 if any(isAMatch) ,
                     iMatch = find(isAMatch,1) ;
                     deviceName = allDeviceNames{iMatch} ;
-                    self.DeviceName_ = deviceName ;
+                    self.PrimaryDeviceName_ = deviceName ;
 
                     % Probe the device to find out its capabilities
-                    self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                    self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
+                    %self.syncDeviceResourceCountsFromDeviceName_() ;                        
+                    %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
                     %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
 
                     % Recalculate which digital terminals are now
@@ -3491,7 +3506,7 @@ classdef WavesurferModel < ws.Model
                     % name
                     nCounters = self.NCountersPerDevice_(iMatch) ;
                     nPFITerminals = self.NPFITerminalsPerDevice_(iMatch) ;
-                    self.didSetDeviceName_(deviceName, nCounters, nPFITerminals) ;
+                    self.didSetPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;
 
                     % Change our state to reflect the presence of the
                     % device
@@ -3508,12 +3523,12 @@ classdef WavesurferModel < ws.Model
                 else
                     self.broadcast('Update');
                     error('ws:invalidPropertyValue', ...
-                          'DeviceName must be the name of an NI DAQmx device');       
+                          'PrimaryDeviceName must be the name of an NI DAQmx device');       
                 end                        
             else
                 self.broadcast('Update');
                 error('ws:invalidPropertyValue', ...
-                      'DeviceName must be a nonempty string');       
+                      'PrimaryDeviceName must be a nonempty string');       
             end
             self.broadcast('Update');
         end  % function
@@ -3644,22 +3659,22 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods (Access=protected)
-        function syncDeviceResourceCountsFromDeviceName_(self)
-%             % Probe the devices to find out their capabilities
-%             deviceName = self.DeviceName ;
-% %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-% %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
-% %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-% %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-%             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
-% %             self.NDIOTerminals_ = nDIOTerminals ;
-% %             self.NPFITerminals_ = nPFITerminals ;
-% %             self.NCounters_ = nCounters ;
-% %             self.NAITerminals_ = nAITerminals ;
-% %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-% %             self.NAOTerminals_ = nAOTerminals ;
-%             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
-        end  % function
+%         function syncDeviceResourceCountsFromDeviceName_(self)
+% %             % Probe the devices to find out their capabilities
+% %             deviceName = self.DeviceName ;
+% % %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+% % %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
+% % %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
+% % %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
+% %             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+% % %             self.NDIOTerminals_ = nDIOTerminals ;
+% % %             self.NPFITerminals_ = nPFITerminals ;
+% % %             self.NCounters_ = nCounters ;
+% % %             self.NAITerminals_ = nAITerminals ;
+% % %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+% % %             self.NAOTerminals_ = nAOTerminals ;
+% %             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
+%         end  % function
 
         function syncDeviceResourceCountsFromDeviceNames_(self)
             % Probe the devices to find out their capabilities
@@ -3694,11 +3709,11 @@ classdef WavesurferModel < ws.Model
             self.AITerminalIDsOnEachDevice_ = aiTerminalIDsOnEachDevice ;
         end  % function     
         
-        function syncAvailableReferenceClockSourcesFromDeviceName_(self)
-            deviceName = self.DeviceName ;
-            availableReferenceClockSources = ws.getAvailableReferenceClockSourcesFromDevice(deviceName) ;
-            self.AvailableReferenceClockSources_ = availableReferenceClockSources ;
-        end
+%         function syncAvailableReferenceClockSourcesFromDeviceName_(self)
+%             deviceName = self.DeviceName ;
+%             availableReferenceClockSources = ws.getAvailableReferenceClockSourcesFromDevice(deviceName) ;
+%             self.AvailableReferenceClockSources_ = availableReferenceClockSources ;
+%         end
         
 %         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
 %             deviceName = self.DeviceName ;
@@ -3843,7 +3858,11 @@ classdef WavesurferModel < ws.Model
             end
             
             % Limit to the allowed range of sampling frequencies
-            referenceClockRate = self.ReferenceClockRate ;  % Hz
+            primaryDeviceName = self.PrimaryDeviceName ;
+            isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
+                % the rate only depends on the primary device
+            %referenceClockRate = self.ReferenceClockRate ;  % Hz
             desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
             integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
             maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
@@ -3885,8 +3904,8 @@ classdef WavesurferModel < ws.Model
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
-            self.syncDeviceResourceCountsFromDeviceName_() ;
-            self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
+            %self.syncDeviceResourceCountsFromDeviceName_() ;
+            %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDigitalChannelTerminalOvercommitted_() ;
@@ -3897,12 +3916,13 @@ classdef WavesurferModel < ws.Model
             self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method
         
-        function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
+        function didSetPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
+            self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
             self.Acquisition_.didSetDeviceName() ;
             self.Stimulation_.didSetDeviceName() ;
-            self.Triggering_.didSetDeviceName(deviceName, nCounters, nPFITerminals) ;
+            self.Triggering_.didSetDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
             %self.Display_.didSetDeviceName() ;
-            self.Ephys_.didSetDeviceName(deviceName) ;
+            self.Ephys_.didSetDeviceName(primaryDeviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)
@@ -3961,7 +3981,7 @@ classdef WavesurferModel < ws.Model
         
         function addCounterTrigger(self)    
             try
-                self.Triggering_.addCounterTrigger(self.DeviceName) ;
+                self.Triggering_.addCounterTrigger(self.PrimaryDeviceName) ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -3981,7 +4001,7 @@ classdef WavesurferModel < ws.Model
         
         function addExternalTrigger(self)    
             try
-                self.Triggering_.addExternalTrigger(self.DeviceName) ;
+                self.Triggering_.addExternalTrigger(self.PrimaryDeviceName) ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4875,7 +4895,7 @@ classdef WavesurferModel < ws.Model
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                deviceName =self.DeviceName ;
+                deviceName =self.PrimaryDeviceName ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
                 % Call the main routine
@@ -5865,10 +5885,10 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end  % function
 
-        function result = getDeviceIndex(self)
-            % The index of self.DeviceName in self.AllDeviceNames.  Returns empty if
-            % self.DeviceName is not in self.AllDeviceNames.
-            result = self.getDeviceIndexFromName(self.DeviceName) ;
+        function result = getPrimaryDeviceIndex(self)
+            % The index of self.PrimaryDeviceName in self.AllDeviceNames.  Returns empty if
+            % self.PrimaryDeviceName is not in self.AllDeviceNames.
+            result = self.getDeviceIndexFromName(self.PrimaryDeviceName) ;
         end
         
         function result = getDeviceIndexFromName(self, deviceName)

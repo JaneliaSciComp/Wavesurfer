@@ -1,36 +1,27 @@
 classdef InputTask < handle
     properties (Dependent = true, SetAccess = immutable)
-        % These are all set in the constructor, and not changed
-        %Parent
         IsAnalog
         IsDigital
         TaskName
-        %TerminalNames        
         DeviceNames
         TerminalIDs
-        %ChannelNames
         IsArmed
         % These are not directly settable
         ExpectedScanCount
-        %NScansPerDataAvailableCallback
         IsUsingDefaultTermination
     end
     
     properties (Dependent = true)
-        %IsChannelActive  % boolean
         SampleRate      % Hz
         DesiredAcquisitionDuration  % seconds
         FinalScanTime  % seconds, the time of the final scan, relative to the first scan
-        %DurationPerDataAvailableCallback  % Seconds
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
         ScalingCoefficients
-        %TimebaseRate  % Hz
     end
     
     properties (Transient = true, Access = protected)
-        Parent_
         DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
         TicId_
         TimeAtLastRead_
@@ -42,27 +33,17 @@ classdef InputTask < handle
     
     properties (Access = protected)
         IsAnalog_
-        %TerminalNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         TerminalIDs_ = zeros(1,0)
-        %ChannelNames_ = cell(1,0)
-        %IsChannelActive_ = true(1,0)
         SampleRate_ = 20000
         DesiredAcquisitionDuration_ = 1     % Seconds
-        %DurationPerDataAvailableCallback_ = 0.1  % Seconds
         ClockTiming_ = 'DAQmx_Val_FiniteSamps'
         TriggerTerminalName_
         TriggerEdge_
         IsArmed_ = false
         ScalingCoefficients_
         IsUsingDefaultTermination_ = false
-        %TimebaseRate_
     end
-    
-%     events
-%         AcquisitionComplete
-%         SamplesAvailable
-%     end
     
     methods
         function self = InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
@@ -71,9 +52,6 @@ classdef InputTask < handle
                 doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
             end
             self.IsUsingDefaultTermination_ = doUseDefaultTermination ;
-            
-            % % Store the parent
-            % self.Parent_ = parent ;
             
             % Determine the task type, digital or analog
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
@@ -90,11 +68,8 @@ classdef InputTask < handle
             self.TicId_ = tic();
             
             % Store this stuff
-            %self.TerminalNames_ = terminalNames ;
             self.DeviceNames_ = deviceNames ;
             self.TerminalIDs_ = terminalIDs ;
-            %self.ChannelNames_ = channelNames ;
-            %self.IsChannelActive_ = true(1,nChannels);
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -167,20 +142,14 @@ classdef InputTask < handle
             end
             
             % Store the sample rate and durationPerDataAvailableCallback
-            self.SampleRate_ = sampleRate ;
-            
-%             if ~( isnumeric(durationPerDataAvailableCallback) && isscalar(durationPerDataAvailableCallback) && durationPerDataAvailableCallback>=0 )  ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
-%             end            
-            %self.DurationPerDataAvailableCallback_ = durationPerDataAvailableCallback ;  % don't think we use this anymore, but...
+            self.SampleRate_ = sampleRate ;            
         end  % function
         
         function delete(self)
             if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
-                delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+                delete(self.DabsDaqTask_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
             end
-            self.DabsDaqTask_=[];
+            self.DabsDaqTask_ = [] ;
         end
         
         function start(self)
@@ -207,12 +176,6 @@ classdef InputTask < handle
             end
         end
         
-%         function abort(self)
-%             if ~isempty(self.DabsDaqTask_)
-%                 self.DabsDaqTask_.abort();
-%             end
-%         end
-        
         function stop(self)
             if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()
 %                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
@@ -226,7 +189,6 @@ classdef InputTask < handle
         
         function result = isTaskDone(self)
             if isempty(self.DabsDaqTask_) ,
-                %result = true ;  % Well, the task is certainly not running...
                 if isinf(self.DesiredAcquisitionDuration_) ,  % don't want to bother with toc() if we already know the answer...
                     result = false ;
                 else
@@ -238,10 +200,6 @@ classdef InputTask < handle
                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
             end            
         end
-        
-%         function value = get.Parent(self)
-%             value = self.Parent_;
-%         end  % function
         
         function value = get.ScalingCoefficients(self)
             value = self.ScalingCoefficients_ ;
@@ -270,13 +228,7 @@ classdef InputTask < handle
                         data = zeros(nScans,0,'int16');
                         self.TimeAtLastRead_ = timeNow ;
                     else
-                        %nScansRequested = nScansToRead ;
                         timeNow = toc(self.TicId_) ;                        
-                        %nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                        %nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                        %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                        %nScans = min(nScansPossible,nScansRequested) ;
-                        %nScans = nScansRequested ;
                         data = zeros(nScansToRead,0,'int16');
                         self.TimeAtLastRead_ = timeNow ;
                     end
@@ -301,13 +253,7 @@ classdef InputTask < handle
                         dataAsUint32 = zeros(nScans,0,'uint32');
                         self.TimeAtLastRead_ = timeNow ;
                     else
-                        %nScansRequested = nScansToRead ;
                         timeNow = toc(self.TicId_) ;                        
-                        %nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                        %nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                        %nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                        %nScans = min(nScansPossible,nScansRequested) ;
-                        %nScans = nScansRequested ;
                         dataAsUint32 = zeros(nScansToRead,0,'uint32');
                         self.TimeAtLastRead_ = timeNow ;
                     end
@@ -370,54 +316,6 @@ classdef InputTask < handle
             value = self.IsArmed_;
         end  % function
         
-%         function set.IsChannelActive(self, newIsChannelActive)
-%             % TODO: Need to get rid of this property, since it's not really
-%             % that useful: setting readChannelsToRead doesn't affect what
-%             % channels are actually sampled.
-%             if (islogical(newIsChannelActive) || isnumeric(newIsChannelActive)) && isequal(size(newIsChannelActive),size(self.IsChannelActive_)) ,
-%                 newIsChannelActive=logical(newIsChannelActive);
-% 
-%                 newActiveChannelNames = self.ChannelNames(newIsChannelActive) ;
-%                 
-%                 if isempty(self.DabsDaqTask_) ,
-%                     % do nothing
-%                 else
-%                     newChannelsToRead = ws.commaSeparatedList(newActiveChannelNames);
-%                     set(self.DabsDaqTask_, 'readChannelsToRead', newChannelsToRead);                    
-%                 end
-% 
-%                 self.IsChannelActive_ = newIsChannelActive;
-%             end
-%         end  % function
-        
-%         function set.ActiveChannels(self, value)
-%             if ~( isempty(value) || ( isnumeric(value) && isvector(value) && all(value==round(value)) ) ) ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'ActiveChannels must be empty or a vector of integers.');       
-%             end
-%             
-%             availableActive = intersect(self.AvailableChannels, value);
-%             
-%             if numel(value) ~= numel(availableActive)
-%                 ws.most.mimics.warning('Wavesurfer:Aqcuisition:invalidChannels', 'Not all requested channels are available.\n');
-%             end
-%             
-%             if ~isempty(self.DabsDaqTask_)
-%                 channelsToRead = '';
-%                 
-%                 for cdx = availableActive
-%                     idx = find(self.AvailableChannels == cdx, 1);
-%                     channelsToRead = sprintf('%s%s, ', channelsToRead, self.ChannelNames{idx});
-%                 end
-%                 
-%                 channelsToRead = channelsToRead(1:end-2);
-%                 
-%                 set(self.DabsDaqTask_, 'readChannelsToRead', channelsToRead);
-%             end
-%             
-%             self.ActiveChannels_ = availableActive;
-%         end  % function
-        
         function out = get.DeviceNames(self)
             out = self.DeviceNames_ ;
         end  % function
@@ -426,27 +324,6 @@ classdef InputTask < handle
             out = self.TerminalIDs_ ;
         end  % function
 
-%         function out = get.ChannelNames(self)
-%             out = self.ChannelNames_ ;
-%         end  % function
-        
-%         function out = get.ChannelNames(self)
-%             if ~isempty(self.DabsDaqTask_)
-%                 c = self.DabsDaqTask_.channels;
-%                 out = {c.chanName};
-%             else
-%                 out = {};
-%             end
-%         end  % function
-        
-%         function out = get.DeviceName(self)
-%             if ~isempty(self.DabsDaqTask_)
-%                 out = self.DabsDaqTask_.deviceNames{1};
-%             else
-%                 out = '';
-%             end
-%         end  % function
-        
         function value = get.ExpectedScanCount(self)
             value = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;
         end  % function
@@ -455,55 +332,6 @@ classdef InputTask < handle
             value = self.SampleRate_ ;
         end  % function
 
-%         function value = get.TimebaseRate(self)
-%             value = self.TimebaseRate_ ;
-%         end  % function        
-        
-%         function set.SampleRate(self,value)
-%             if ~( isnumeric(value) && isscalar(value) && (value==round(value)) && value>0 )  ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'SampleRate must be a positive integer');       
-%             end            
-%             
-%             if ~isempty(self.DabsDaqTask_)
-%                 oldSampClkRate = self.DabsDaqTask_.sampClkRate;
-%                 self.DabsDaqTask_.sampClkRate = value;
-%                 try
-%                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-%                 catch me
-%                     self.DabsDaqTask_.sampClkRate = oldSampClkRate;
-%                     % This will put the sampleRate property in sync with the hardware, but it will
-%                     % be an odd artifact that the sampleRate value did not change to the reqested,
-%                     % but to something else.  This can be fixed by doing a verify when first setting
-%                     % the clock in ziniPrepareAcquisitionDAQ and setting the sampleRate property to
-%                     % the clock value if it fails.  Since it is called at construction, the user
-%                     % will never see the original, invalid sampleRate property value.
-%                     self.SampleRate_ = oldSampClkRate;
-%                     error('Invalid sample rate value');
-%                 end
-%             end
-%             
-%             self.SampleRate_ = value;
-%         end  % function
-        
-%         function value = get.NScansPerDataAvailableCallback(self)
-%             value = round(self.DurationPerDataAvailableCallback * self.SampleRate);
-%               % The sample rate is technically a scan rate, so this is
-%               % correct.
-%         end  % function
-        
-%         function set.DurationPerDataAvailableCallback(self, value)
-%             if ~( isnumeric(value) && isscalar(value) && value>=0 )  ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'DurationPerDataAvailableCallback must be a nonnegative scalar');       
-%             end            
-%             self.DurationPerDataAvailableCallback_ = value;
-%         end  % function
-
-%         function value = get.DurationPerDataAvailableCallback(self)
-%             value = min(self.AcquisitionDuration_, self.DurationPerDataAvailableCallback_);
-%         end  % function
-        
         function out = get.TaskName(self)
             if ~isempty(self.DabsDaqTask_)
                 out = self.DabsDaqTask_.taskName;
@@ -530,27 +358,8 @@ classdef InputTask < handle
         end  % function
 
         function value = get.FinalScanTime(self)
-            %value = (self.ExpectedScanCount-1)/self.SampleRate_  ;
             value = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
         end  % function
-        
-%         function value = get.ActualAcquisitionDuration(self)
-%             %value = (self.ExpectedScanCount-1)/self.SampleRate_  ;
-%             value = ws.actualDurationFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
-%         end  % function
-        
-        
-%         function set.TriggerDelegate(self, value)
-%             if ~( isequal(value,[]) || (isa(value,'ws.HasPFIIDAndEdge') && isscalar(value)) )  ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'TriggerDelegate must be empty or a scalar ws.HasPFIIDAndEdge');       
-%             end            
-%             self.TriggerDelegate_ = value;
-%         end  % function
-%         
-%         function value = get.TriggerDelegate(self)
-%             value = self.TriggerDelegate_ ;
-%         end  % function                
         
         function set.TriggerTerminalName(self, newValue)
             if isempty(newValue) ,
@@ -582,15 +391,6 @@ classdef InputTask < handle
             value = self.TriggerEdge_ ;
         end  % function                
         
-%         function set.ClockTiming(self,value)
-%             if isequal(value,'DAQmx_Val_FiniteSamps') || isequal(value,'DAQmx_Val_ContSamps') || isequal(value,'DAQmx_Val_HWTimedSinglePoint') ,
-%                 self.ClockTiming_ = value;
-%             else
-%                 error('ws:invalidPropertyValue', ...
-%                       'ClockTiming must be ''DAQmx_Val_FiniteSamps'', ''DAQmx_Val_ContSamps'', or ''DAQmx_Val_HWTimedSinglePoint''');       
-%             end            
-%         end  % function           
-        
         function value = get.ClockTiming(self)
             value = self.ClockTiming_ ;
         end  % function                
@@ -605,15 +405,6 @@ classdef InputTask < handle
             if isempty(self.DabsDaqTask_) ,
                 % do nothing
             else
-    %             % Register callbacks
-    %             if self.DurationPerDataAvailableCallback > 0 ,
-    %                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-    %                   % This registers the callback function that is called
-    %                   % when self.NScansPerDataAvailableCallback samples are
-    %                   % available
-    %             end            
-    %             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-
                 % Set up timing
                 sampleRate = self.SampleRate_ ;
                 switch self.ClockTiming_ ,
@@ -657,46 +448,10 @@ classdef InputTask < handle
 
         function disarm(self)
             if self.IsArmed ,
-                % Unregister callbacks
-                %self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-                %self.DabsDaqTask_.doneEventCallbacks = {};
                 self.IsArmed_ = false;            
             end
-        end
-        
-%         function reset(self) %#ok<MANU>
-%             % called before the second and subsequent calls to start()
-%             %fprintf('AnalogInputTask::reset()\n');                        
-%             % Don't have to do anything to reset a finite input analog task
-%         end  % function
-
-%         function rawData = readRawData(self)
-%             if self.IsAnalog_ ,
-%                 rawData = source.readAnalogData(self.NScansPerDataAvailableCallback,'native') ;  % rawData is int16
-%             else
-%                 rawData = source.readDigitalData(self.NScansPerDataAvailableCallback) ;  % rawData is uint32
-%             end            
-%         end
+        end        
     end
-    
-%     methods (Access = protected)
-%         function registerCallbacksImplementation(self)
-%             if self.DurationPerDataAvailableCallback > 0 ,
-%                 self.DabsDaqTask_.registerEveryNSamplesEvent(@self.nSamplesAvailable_, self.NScansPerDataAvailableCallback);
-%                   % This registers the callback function that is called
-%                   % when self.NScansPerDataAvailableCallback samples are
-%                   % available
-%             end
-%             
-%             self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-%         end  % function
-%         
-%         function unregisterCallbacksImplementation(self)
-%             self.DabsDaqTask_.registerEveryNSamplesEvent([]);
-%             self.DabsDaqTask_.doneEventCallbacks = {};
-%         end  % function
-%         
-%     end  % protected methods block
     
     methods (Access = protected)
         function nSamplesAvailable_(self, source, event) %#ok<INUSD>
@@ -716,31 +471,6 @@ classdef InputTask < handle
             %self.notify('AcquisitionComplete');
         end  % function
         
-%         function ziniPrepareAcquisitionDAQ(self, device, availableChannels, taskName, channelNames)
-%             self.AvailableChannels = availableChannels;
-%             
-%             if nargin < 5
-%                 channelNames = {};
-%             end
-%             
-%             if ~isempty(device) && ~isempty(self.AvailableChannels)
-%                 self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
-%                 self.DabsDaqTask_.createAIVoltageChan(device, self.AvailableChannels, channelNames);
-%                 self.DabsDaqTask_.cfgSampClkTiming(self.SampleRate_, 'DAQmx_Val_FiniteSamps');
-%                 
-%                 % Use hardware retriggering, if possible.  For boards that do support this
-%                 % property, a start trigger must be defined in order to query the value without
-%                 % error.
-%                 self.DabsDaqTask_.cfgDigEdgeStartTrig('PFI1', 'DAQmx_Val_Rising'.daqmxName());
-%                 self.isRetriggerable = ~isempty(get(self.DabsDaqTask_, 'startTrigRetriggerable'));
-%                 self.DabsDaqTask_.disableStartTrig();
-%             else
-%                 self.DabsDaqTask_ = [];
-%             end
-%             
-%             self.ActiveChannels = self.AvailableChannels;
-%         end
-
         function unpackedData = unpackDigitalData_(self, packedData)
             % Only used for digital data.
             nScans = size(packedData,1);

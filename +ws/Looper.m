@@ -10,9 +10,10 @@ classdef Looper < handle
     end
     
     properties (Access = protected)        
-        %DeviceName_ = ''
-        ReferenceClockSource_ = []
-        ReferenceClockRate_ = []
+        PrimaryDeviceName_ = ''
+        IsPrimaryDeviceAPXIDevice_ = false
+        %ReferenceClockSource_ = []
+        %ReferenceClockRate_ = []
         %NDIOTerminals_ = 0
         %NPFITerminals_ = 0
         %NCounters_ = 0
@@ -317,12 +318,12 @@ classdef Looper < handle
             result = [] ;
         end  % function        
         
-        function result = releaseTimedHardwareResources(self)
-            % This is a req-rep method
-            self.releaseTimedHardwareResources_();
-            %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
-            result = [] ;
-        end  % function
+%         function result = releaseTimedHardwareResources(self)
+%             % This is a req-rep method
+%             self.releaseTimedHardwareResources_();
+%             %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+%             result = [] ;
+%         end  % function
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
@@ -500,8 +501,8 @@ classdef Looper < handle
         end
 
         function releaseTimedHardwareResources_(self)
-            self.TimedAnalogInputTask_=[];            
-            self.TimedDigitalInputTask_=[];            
+            self.TimedAnalogInputTask_ = [] ;            
+            self.TimedDigitalInputTask_ = [] ;            
         end
         
         function acquireOnDemandHardwareResources_(self)
@@ -877,8 +878,11 @@ classdef Looper < handle
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
             
-            self.ReferenceClockSource_ = looperProtocol.ReferenceClockSource ;
-            self.ReferenceClockRate_ = looperProtocol.ReferenceClockRate ;
+            self.PrimaryDeviceName_ = looperProtocol.PrimaryDeviceName ;
+            self.IsPrimaryDeviceAPXIDevice_ = looperProtocol.IsPrimaryDeviceAPXIDevice ;
+            
+%             self.ReferenceClockSource_ = looperProtocol.ReferenceClockSource ;
+%             self.ReferenceClockRate_ = looperProtocol.ReferenceClockRate ;
         
             self.NSweepsPerRun_  = looperProtocol.NSweepsPerRun ;
             self.SweepDuration_ = looperProtocol.SweepDuration ;
@@ -945,9 +949,6 @@ classdef Looper < handle
                                  activeAIDeviceNames, ...
                                  activeAITerminalIDs, ...
                                  self.AcquisitionSampleRate_) ;
-                % Set other things in the Task object
-                %self.TimedAnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                %self.TimedAnalogInputTask_.SampleRate = self.SampleRate;                
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
                 isDIChannelActive = self.IsDIChannelActive_ ;
@@ -963,9 +964,6 @@ classdef Looper < handle
                                  activeDIDeviceNames, ...
                                  activeDITerminalIDs, ...
                                  self.AcquisitionSampleRate_) ;
-                % Set other things in the Task object
-                %self.TimedDigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                %self.TimedDigitalInputTask_.SampleRate = self.SampleRate;                
             end
         end  % function
 
