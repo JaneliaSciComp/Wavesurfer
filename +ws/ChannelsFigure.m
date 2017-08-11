@@ -3,12 +3,12 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         DeviceNamePopupLabelText
         DeviceNamePopup
         
-        SampleClockTimebasePanel
-        SampleClockTimebaseSourcePopupLabelText
-        SampleClockTimebaseSourcePopup
-        SampleClockTimebaseRateEditLabelText
-        SampleClockTimebaseRateEdit
-        SampleClockTimebaseRateEditUnitsText
+        ReferenceClockPanel
+        ReferenceClockSourcePopupLabelText
+        ReferenceClockSourcePopup
+        ReferenceClockRateEditLabelText
+        ReferenceClockRateEdit
+        ReferenceClockRateEditUnitsText
         
         AIsPanel
         AIChannelNameColTitleText
@@ -135,48 +135,48 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
 
                       
             % Create the panels and the fixed controls in them
-            self.createSampleClockTimebasePanelFixedControls_() ;
+            self.createReferenceClockPanelFixedControls_() ;
             self.createAIPanelFixedControls_() ;
             self.createAOPanelFixedControls_() ;
             self.createDIPanelFixedControls_() ;
             self.createDOPanelFixedControls_() ;
         end  % method
 
-        function createSampleClockTimebasePanelFixedControls_(self)
+        function createReferenceClockPanelFixedControls_(self)
             % Make the panel itself
-            self.SampleClockTimebasePanel= ...
+            self.ReferenceClockPanel= ...
                 ws.uipanel('Parent',self.FigureGH_, ...
-                           'Tag','SampleClockTimebasePanel', ...
-                           'Title','Sample Clock Timebase');
+                           'Tag','ReferenceClockPanel', ...
+                           'Title','Reference Clock') ;
             
             % Create the timebase source popup and label
-            self.SampleClockTimebaseSourcePopupLabelText = ...
-                ws.uicontrol('Parent',self.SampleClockTimebasePanel, ...
+            self.ReferenceClockSourcePopupLabelText = ...
+                ws.uicontrol('Parent',self.ReferenceClockPanel, ...
                              'Style','text', ...
                              'HorizontalAlignment','right', ...
                              'String','Source:');
-            self.SampleClockTimebaseSourcePopup = ...
-                ws.uicontrol('Parent',self.SampleClockTimebasePanel, ...
+            self.ReferenceClockSourcePopup = ...
+                ws.uicontrol('Parent',self.ReferenceClockPanel, ...
                              'Style','popup', ...
                              'BackgroundColor','w', ...
                              'HorizontalAlignment','left', ...
-                             'Callback',@(source,event)(self.controlActuated('SampleClockTimebaseSourcePopup',source,event)) );
+                             'Callback',@(source,event)(self.controlActuated('ReferenceClockSourcePopup',source,event)) );
             
             % Create the timebase source popup and label
-            self.SampleClockTimebaseRateEditLabelText = ...
-                ws.uicontrol('Parent',self.SampleClockTimebasePanel, ...
+            self.ReferenceClockRateEditLabelText = ...
+                ws.uicontrol('Parent',self.ReferenceClockPanel, ...
                              'Style','text', ...
                              'HorizontalAlignment','right', ...
                              'String','Rate:') ;
-            self.SampleClockTimebaseRateEdit = ...
-                ws.uicontrol('Parent',self.SampleClockTimebasePanel, ...
+            self.ReferenceClockRateEdit = ...
+                ws.uicontrol('Parent',self.ReferenceClockPanel, ...
                              'Style','edit', ...
                              'BackgroundColor','w', ...
                              'HorizontalAlignment','right', ...
                              'Enable', 'off', ...
-                             'Callback',@(source,event)(self.controlActuated('SampleClockTimebaseRateEdit',source,event)) ) ;
-            self.SampleClockTimebaseRateEditUnitsText = ...
-                ws.uicontrol('Parent',self.SampleClockTimebasePanel, ...
+                             'Callback',@(source,event)(self.controlActuated('ReferenceClockRateEdit',source,event)) ) ;
+            self.ReferenceClockRateEditUnitsText = ...
+                ws.uicontrol('Parent',self.ReferenceClockPanel, ...
                              'Style','text', ...
                              'HorizontalAlignment','left', ...
                              'String','MHz') ;
@@ -532,8 +532,8 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             ws.positionPopupmenuAndLabelBang(self.DeviceNamePopupLabelText,self.DeviceNamePopup, ...
                                              deviceNamePopupXOffset,deviceNamePopupYOffset,deviceNamePopupWidth) ;
             
-            % Layout the SampleClockTimebase panel
-            self.layoutSampleClockTimebasePanel_(figureWidth, ...
+            % Layout the ReferenceClock panel
+            self.layoutReferenceClockPanel_(figureWidth, ...
                                       figureHeight, ...
                                       topAreaHeight, ...
                                       panelBorderSize, ...
@@ -687,7 +687,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                                 withinPanelRightPadWidth )
         end  % method
     
-        function layoutSampleClockTimebasePanel_(self, ...
+        function layoutReferenceClockPanel_(self, ...
                                       figureWidth, ...
                                       figureHeight, ...
                                       topAreaHeight, ...
@@ -703,22 +703,22 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             % Position the panel itself flush left, centered vertically within the top area of the figure
             timebasePanelXOffset = figureWidth - panelBorderSize - timebasePanelWidth ;
             timebasePanelYOffset = figureHeight - topAreaHeight/2 - timebasePanelHeight/2 ;
-            set(self.SampleClockTimebasePanel, 'Position', [timebasePanelXOffset timebasePanelYOffset timebasePanelWidth timebasePanelHeight]) ;
+            set(self.ReferenceClockPanel, 'Position', [timebasePanelXOffset timebasePanelYOffset timebasePanelWidth timebasePanelHeight]) ;
                                   
             % Position the timebase source popup in the middle (vertically) of
             % the panel, at the given x offset.
-            %timebaseSourcePopupPosition = get(self.SampleClockTimebaseSourcePopup, 'Position') ;
+            %timebaseSourcePopupPosition = get(self.ReferenceClockSourcePopup, 'Position') ;
             %timebaseSourcePopupHeight = timebaseSourcePopupPosition(4) ;
             %timebaseSourcePopupYOffset = timebasePanelHeight/2 - timebaseSourcePopupHeight/2 ;
-            ws.positionPopupmenuAndLabelBang(self.SampleClockTimebaseSourcePopupLabelText, self.SampleClockTimebaseSourcePopup, ...
+            ws.positionPopupmenuAndLabelBang(self.ReferenceClockSourcePopupLabelText, self.ReferenceClockSourcePopup, ...
                                              timebaseSourcePopupXOffset, timebaseSourcePopupYOffset, timebaseSourcePopupWidth) ;
                                          
             % Position the timebase rate edit in the middle (vertically) of
             % the panel, at the given x offset.                      
-            %timebaseRateEditPosition = get(self.SampleClockTimebaseRateEdit, 'Position') ;
+            %timebaseRateEditPosition = get(self.ReferenceClockRateEdit, 'Position') ;
             %timebaseRateEditHeight = timebaseRateEditPosition(4) ;
             %timebaseRateEditYOffset = timebasePanelHeight/2 - timebaseRateEditHeight/2 ;
-            ws.positionEditLabelAndUnitsBang(self.SampleClockTimebaseRateEditLabelText, self.SampleClockTimebaseRateEdit, self.SampleClockTimebaseRateEditUnitsText, ...
+            ws.positionEditLabelAndUnitsBang(self.ReferenceClockRateEditLabelText, self.ReferenceClockRateEdit, self.ReferenceClockRateEditUnitsText, ...
                                              timebaseRateEditXOffset,timebaseRateEditYOffset,timebaseRateEditWidth) ;
         end
         
@@ -1405,30 +1405,30 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             set(self.DeviceNamePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;
             
             % Update the timebase source popup
-            ws.setPopupMenuItemsAndSelectionBang(self.SampleClockTimebaseSourcePopup, model.AvailableSampleClockTimebaseSources, model.SampleClockTimebaseSource) ;
-            set(self.SampleClockTimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
+            ws.setPopupMenuItemsAndSelectionBang(self.ReferenceClockSourcePopup, model.AvailableReferenceClockSources, model.ReferenceClockSource) ;
+            set(self.ReferenceClockSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
             
             % Update the panels
-            self.updateSampleClockTimebasePanelControlPropertiesImplementation_() ;        
+            self.updateReferenceClockPanelControlPropertiesImplementation_() ;        
             self.updateAIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateAOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateDIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateDOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;            
         end  % function        
 
-        function updateSampleClockTimebasePanelControlPropertiesImplementation_(self)
+        function updateReferenceClockPanelControlPropertiesImplementation_(self)
             model=self.Model_;
             isWavesurferIdle=isequal(model.State,'idle');
             
             % Update the timebase source popup
-            ws.setPopupMenuItemsAndSelectionBang(self.SampleClockTimebaseSourcePopup, model.AvailableSampleClockTimebaseSources, model.SampleClockTimebaseSource) ;
-            set(self.SampleClockTimebaseSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
+            ws.setPopupMenuItemsAndSelectionBang(self.ReferenceClockSourcePopup, model.AvailableReferenceClockSources, model.ReferenceClockSource) ;
+            set(self.ReferenceClockSourcePopup, 'Enable', ws.onIff(isWavesurferIdle) ) ;                        
             
             % Update the timebase rate popup
-            timebaseRate = model.SampleClockTimebaseRate ;  % Hz
+            timebaseRate = model.ReferenceClockRate ;  % Hz
             timebaseRateInMHz = timebaseRate*1e-6 ;
-            set(self.SampleClockTimebaseRateEdit, 'String', sprintf('%.6g', timebaseRateInMHz)) ;
-            %set(self.SampleClockTimebaseRateEdit, 'Enable', ws.onIff(isWavesurferIdle) ) ;                                    
+            set(self.ReferenceClockRateEdit, 'String', sprintf('%.6g', timebaseRateInMHz)) ;
+            %set(self.ReferenceClockRateEdit, 'Enable', ws.onIff(isWavesurferIdle) ) ;                                    
         end  % function
         
         function updateAIPanelControlPropertiesImplementation_(self, normalBackgroundColor, warningBackgroundColor)            
@@ -2038,10 +2038,10 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             self.Model_.do('set', 'DeviceName', deviceName) ;
         end
         
-        function SampleClockTimebaseSourcePopupActuated(self, source, event)  %#ok<INUSD>
-            availableTimebaseSources = self.Model_.AvailableSampleClockTimebaseSources ;
+        function ReferenceClockSourcePopupActuated(self, source, event)  %#ok<INUSD>
+            availableTimebaseSources = self.Model_.AvailableReferenceClockSources ;
             timebaseSource = ws.getPopupMenuSelection(source, availableTimebaseSources) ;
-            self.Model_.do('set', 'SampleClockTimebaseSource', timebaseSource) ;
+            self.Model_.do('set', 'ReferenceClockSource', timebaseSource) ;
         end
         
         function AIChannelNameEditsActuated(self,source,event) %#ok<INUSD>

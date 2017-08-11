@@ -65,7 +65,7 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(taskType, taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
+        function self = InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
             % Deal with optional erg
             if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
                 doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
@@ -130,8 +130,8 @@ classdef InputTask < handle
                         throw(exception) ;
                     end                        
                 end
-                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', sampleClockTimebaseSource) ;                
-                set(self.DabsDaqTask_, 'sampClkTimebaseRate', sampleClockTimebaseRate) ;                
+                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', referenceClockSource) ;                
+                set(self.DabsDaqTask_, 'sampClkTimebaseRate', referenceClockRate) ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
