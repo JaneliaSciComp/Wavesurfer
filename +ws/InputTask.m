@@ -1,7 +1,7 @@
 classdef InputTask < handle
     properties (Dependent = true, SetAccess = immutable)
         % These are all set in the constructor, and not changed
-        Parent
+        %Parent
         IsAnalog
         IsDigital
         TaskName
@@ -65,15 +65,15 @@ classdef InputTask < handle
 %     end
     
     methods
-        function self = InputTask(parent, taskType, taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
+        function self = InputTask(taskType, taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
             % Deal with optional erg
             if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
                 doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
             end
             self.IsUsingDefaultTermination_ = doUseDefaultTermination ;
             
-            % Store the parent
-            self.Parent_ = parent ;
+            % % Store the parent
+            % self.Parent_ = parent ;
             
             % Determine the task type, digital or analog
             self.IsAnalog_ = ~isequal(taskType,'digital') ;
@@ -239,9 +239,9 @@ classdef InputTask < handle
             end            
         end
         
-        function value = get.Parent(self)
-            value = self.Parent_;
-        end  % function
+%         function value = get.Parent(self)
+%             value = self.Parent_;
+%         end  % function
         
         function value = get.ScalingCoefficients(self)
             value = self.ScalingCoefficients_ ;
