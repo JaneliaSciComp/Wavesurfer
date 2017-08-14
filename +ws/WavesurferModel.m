@@ -973,7 +973,7 @@ classdef WavesurferModel < ws.Model
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
@@ -2554,7 +2554,7 @@ classdef WavesurferModel < ws.Model
         function setSingleDOChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Stimulation_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             %self.didSetDigitalOutputTerminalID() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
                 %self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
@@ -2629,7 +2629,7 @@ classdef WavesurferModel < ws.Model
                 %allDeviceNames = self.AllDeviceNames ;
                 channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
-                self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
                 self.Ephys_.didChangeNumberOfInputChannels() ;
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
@@ -2650,7 +2650,7 @@ classdef WavesurferModel < ws.Model
                 newChannelIndex = self.Stimulation_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                        nextFreeDeviceNameAndTerminalID.terminalID) ;
                 %self.Display_.didAddDigitalOutputChannel() ;
-                self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                self.syncIsDIOChannelTerminalOvercommitted_() ;
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
                 self.Ephys_.didChangeNumberOfOutputChannels();
@@ -2682,7 +2682,7 @@ classdef WavesurferModel < ws.Model
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
@@ -2719,7 +2719,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
             
             % Do all the things that need doing after that
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -3496,7 +3496,7 @@ classdef WavesurferModel < ws.Model
                     % out-of-range for the device
                     self.syncIsAIChannelTerminalOvercommitted_() ;
                     self.syncIsAOChannelTerminalOvercommitted_() ;
-                    self.syncIsDigitalChannelTerminalOvercommitted_() ;
+                    self.syncIsDIOChannelTerminalOvercommitted_() ;
 
                     % Tell the subsystems that we've changed the device
                     % name
@@ -3731,7 +3731,7 @@ classdef WavesurferModel < ws.Model
 %             self.TimebaseRate_ = rate ;
 %         end
         
-%         function syncIsDigitalChannelTerminalOvercommitted_(self)
+%         function syncIsDIOChannelTerminalOvercommitted_(self)
 %             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
 %             nDIOTerminals = self.NDIOTerminals ;
 %             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
@@ -3784,7 +3784,7 @@ classdef WavesurferModel < ws.Model
             self.IsAOChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminal>1) | ~isDeviceNameAOTerminalIDPairValid ;            
         end
         
-        function syncIsDigitalChannelTerminalOvercommitted_(self)
+        function syncIsDIOChannelTerminalOvercommitted_(self)
             [nOccurencesOfDeviceAndTerminalForEachDIChannel,nOccurencesOfDeviceAndTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
             deviceNameForEachDIChannel = self.DIChannelDeviceNames ;
             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
@@ -3904,7 +3904,7 @@ classdef WavesurferModel < ws.Model
             %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             % Need something here for yoking...
             %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
             %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
