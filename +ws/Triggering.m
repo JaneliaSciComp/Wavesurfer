@@ -83,13 +83,17 @@ classdef Triggering < ws.Subsystem
             self.BuiltinTriggerDABSTask_.writeDigitalData(false);            
         end  % function
                 
-        function startingRun(self, referenceClockSource, referenceClockRate)
+        function startingRun(self, primaryDeviceName, isPrimaryDeviceAPXIDevice)
             % Set up the built-in trigger task
             if isempty(self.BuiltinTriggerDABSTask_) ,
                 self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
                 sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
                 %builtinTrigger = self.BuiltinTrigger_
                 self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+                [referenceClockSource, referenceClockRate] = ...
+                    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+                set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
+                set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
                 self.BuiltinTriggerDABSTask_.writeDigitalData(false);
             end
             

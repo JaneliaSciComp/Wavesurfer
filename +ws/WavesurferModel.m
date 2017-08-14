@@ -1272,7 +1272,7 @@ classdef WavesurferModel < ws.Model
 %                     end
 %                 end
                 if self.Ephys_.IsEnabled ,
-                    if self.DoTrodeUpdateBeforeRun
+                    if self.DoTrodeUpdateBeforeRun ,
                         self.updateSmartElectrodeGainsAndModes() ;
                     end
                     self.Ephys_.startingRun() ;
@@ -1289,11 +1289,7 @@ classdef WavesurferModel < ws.Model
                 if self.Triggering_.IsEnabled ,
                     primaryDeviceName = self.PrimaryDeviceName ;
                     isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-                    [referenceClockSource, referenceClockRate] = ...
-                        getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                    %referenceClockSource = self.ReferenceClockSource ;
-                    %referenceClockRate = self.ReferenceClockRate ;
-                    self.Triggering_.startingRun(referenceClockSource, referenceClockRate) ;
+                    self.Triggering_.startingRun(primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
