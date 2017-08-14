@@ -46,7 +46,7 @@ classdef InputTask < handle
     end
     
     methods
-        function self = InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
+        function self = InputTask(taskType, taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
             % Deal with optional erg
             if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
                 doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
@@ -105,6 +105,8 @@ classdef InputTask < handle
                         throw(exception) ;
                     end                        
                 end
+                [referenceClockSource, referenceClockRate] = ...
+                    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXiDevice) ;
                 set(self.DabsDaqTask_, 'sampClkTimebaseSrc', referenceClockSource) ;                
                 set(self.DabsDaqTask_, 'sampClkTimebaseRate', referenceClockRate) ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
