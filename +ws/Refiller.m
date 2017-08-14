@@ -1225,24 +1225,24 @@ classdef Refiller < handle
             self.acquireHardwareResourcesStimulation_() ;
                         
             % Set up the task triggering
-            keystoneTask = self.StimulationKeystoneTaskCache_ ;
-            if isequal(keystoneTask,'ai') ,
-                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+            stimulationKeystoneTask = self.StimulationKeystoneTaskCache_ ;
+            if isequal(stimulationKeystoneTask,'ai') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
-                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(keystoneTask,'di') ,
-                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+            elseif isequal(stimulationKeystoneTask,'di') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/di/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
-                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/di/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(keystoneTask,'ao') ,
+            elseif isequal(stimulationKeystoneTask,'ao') ,
                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
-                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = 'ao/StartTrigger' ;
+                self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/ao/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(keystoneTask,'do') ,
-                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = 'do/StartTrigger' ;
+            elseif isequal(stimulationKeystoneTask,'do') ,
+                self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/do/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
                 self.TheFiniteDigitalOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;

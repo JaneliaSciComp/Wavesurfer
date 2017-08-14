@@ -643,16 +643,16 @@ classdef Looper < handle
             self.acquireTimedHardwareResources_() ;
 
             % Set up the task triggering
-            keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+            acquisitionKeystoneTask = self.AcquisitionKeystoneTaskCache_ ;
             %acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_ ;
-            if isequal(keystoneTask,'ai') ,
+            if isequal(acquisitionKeystoneTask,'ai') ,
                 self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d', self.AcquisitionTriggerPFIID_) ;
                 self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-                self.TimedDigitalInputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
+                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(keystoneTask,'di') ,
-                self.TimedAnalogInputTask_.TriggerTerminalName = 'di/StartTrigger' ;
+            elseif isequal(acquisitionKeystoneTask,'di') ,
+                self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%/di/StartTrigger', self.PrimaryDeviceName_) ;
                 self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
                 self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
