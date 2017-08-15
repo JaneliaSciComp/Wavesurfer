@@ -90,23 +90,13 @@ classdef InputTask < handle
                     end
                 else
                     % If get here task is a DI task
-                    uniqueDeviceNames = unique(deviceNames) ;
-                    if isscalar(uniqueDeviceNames) ,
-                        deviceName = uniqueDeviceNames{1} ;
-                        linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, linesSpecification) ;
-                          % Create one DAQmx DI channel, with all the TTL DI lines on it.
-                          % This way, when we read the data with readDigitalUn('uint32', []),
-                          % we'll get a uint32 col vector with all the lines multiplexed on it in the
-                          % bits indicated by terminalIDs.
-                    else
-                        exception = MException('ws:daqmx:allDIChannelsMustBeOnOneDevice', ...
-                                               'All DI Channels must be on a single device') ;
-                        throw(exception) ;
-                    end                        
+                    for iChannel = 1:nChannels ,
+                        deviceName = deviceNames{iChannel} ;
+                        terminalID = terminalIDs(iChannel) ;
+                        lineSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalID) ;  % e.g. 'port0/line3'
+                        self.DabsDaqTask_.createDIChan(deviceName, lineSpecification) ;  % create one channel per line
+                    end
                 end
-%                 [referenceClockSource, referenceClockRate] = ...
-%                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;
                 set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
@@ -252,25 +242,21 @@ classdef InputTask < handle
                         nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
                         nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
                         nScans = nScansPossible ;
-                        dataAsUint32 = zeros(nScans,0,'uint32');
+                        dataAsLogical = false(nScans, 0) ;
                         self.TimeAtLastRead_ = timeNow ;
                     else
                         timeNow = toc(self.TicId_) ;                        
-                        dataAsUint32 = zeros(nScansToRead,0,'uint32');
+                        dataAsLogical = false(nScansToRead, 0) ;
                         self.TimeAtLastRead_ = timeNow ;
                     end
                 else       
                     if isempty(nScansToRead) ,
-                        dataAsRead = self.queryUntilEnoughThenRead_();
+                        dataAsLogical = self.queryUntilEnoughThenRead_();
                     else
-                        dataAsRead = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
+                        dataAsLogical = self.DabsDaqTask_.readDigitalLines(nScansToRead) ;
                     end
-                    % readData is nScans x nLines 
-                    terminalIDPerLine = self.TerminalIDs_ ;
-                    dataAsUint32 = ws.reorderDIData(dataAsRead, terminalIDPerLine) ;
                 end
-                nLines = length(self.TerminalIDs_) ;
-                data = ws.dropExtraBits(dataAsUint32, nLines) ;
+                data = ws.packLogicalDataIntoUnsigned(dataAsLogical) ;
             end
             nScans = size(data,1) ;
             timeSinceRunStartAtStartOfData = timeSinceRunStartNow - nScans/self.SampleRate_ ;
@@ -299,7 +285,7 @@ classdef InputTask < handle
             if self.IsAnalog_ ,
                 data = self.DabsDaqTask_.readAnalogData([],'native') ;
             else
-                data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
+                data = self.DabsDaqTask_.readDigitalLines([]) ;
             end
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
