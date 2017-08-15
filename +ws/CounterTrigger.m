@@ -53,9 +53,9 @@ classdef CounterTrigger < ws.Model
             self.DeviceName_ = deviceName ;
         end        
         
-        function didSetDeviceName(self, deviceName)  % should only be called by triggering subsystem
-            self.DeviceName_ = deviceName ;
-        end        
+%         function didSetDeviceName(self, deviceName)  % should only be called by triggering subsystem
+%             self.DeviceName_ = deviceName ;
+%         end        
         
         function value = get.RepeatCount(self)
             % In some circumstances, the internal value is overridden by

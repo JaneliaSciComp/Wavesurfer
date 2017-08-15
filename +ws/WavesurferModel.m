@@ -303,6 +303,8 @@ classdef WavesurferModel < ws.Model
     end
     
     events
+        UpdateMain
+        UpdateGeneralSettings
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
@@ -318,7 +320,7 @@ classdef WavesurferModel < ws.Model
         LayoutAllWindows
         DidSetAcquisitionSampleRate
         DidSetStimulationSampleRate
-        UpdateElectrodeManager
+        UpdateElectrodes
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -3517,16 +3519,19 @@ classdef WavesurferModel < ws.Model
                                                 self.IsDOChannelTerminalOvercommitted) ;
                     end                        
                 else
-                    self.broadcast('Update');
+                    self.broadcast('Update') ;
+                    self.broadcast('UpdateTriggering') ;
                     error('ws:invalidPropertyValue', ...
                           'PrimaryDeviceName must be the name of an NI DAQmx device');       
                 end                        
             else
-                self.broadcast('Update');
+                self.broadcast('Update') ;
+                self.broadcast('UpdateTriggering') ;
                 error('ws:invalidPropertyValue', ...
                       'PrimaryDeviceName must be a nonempty string');       
             end
-            self.broadcast('Update');
+            self.broadcast('Update') ;
+            self.broadcast('UpdateTriggering') ;
         end  % function
     end  % public methods block
     
@@ -3914,10 +3919,9 @@ classdef WavesurferModel < ws.Model
         
         function didSetPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
             self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
-            self.Acquisition_.didSetDeviceName() ;
-            self.Stimulation_.didSetDeviceName() ;
+            %self.Acquisition_.didSetDeviceName() ;
+            %self.Stimulation_.didSetDeviceName() ;
             self.Triggering_.didSetDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
-            %self.Display_.didSetDeviceName() ;
             self.Ephys_.didSetDeviceName(primaryDeviceName) ;
         end  % method
         
@@ -5292,7 +5296,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             self.changeReadiness_(+1) ;
-            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateElectrodes') ;
         end  % function
         
         function result = isElectrodeOfType(self, queryType)
@@ -5305,7 +5309,7 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.reconnectWithSmartElectrodes_() ;
             self.updateSmartElectrodeGainsAndModes() ;
             self.changeReadiness_(+1) ;
-            self.broadcast('UpdateElectrodeManager');
+            self.broadcast('UpdateElectrodes');
         end  % function
     end
     
@@ -5396,6 +5400,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsElectrodeMarkedForRemoval(self, newValue)
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
+            self.broadcast('UpdateElectrodes') ;
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
@@ -5550,17 +5555,19 @@ classdef WavesurferModel < ws.Model
         end
 
         function set.IsStimulationEnabled(self, newValue)
-            self.Stimulation_.IsEnabled = newValue ;
+            try
+                self.Stimulation_.IsEnabled = newValue ;
+            catch me
+                self.broadcast('UpdateGeneralSettings') ;
+                rethrow(me) ;
+            end                
+            self.broadcast('UpdateGeneralSettings') ;
         end
 
         function result = get.IsLoggingEnabled(self)
             result = self.Logging_.IsEnabled ;
         end
 
-        function set.IsLoggingEnabled(self, newValue)
-            self.Logging_.IsEnabled = newValue ;
-        end
-        
         function result = get.IsDisplayEnabled(self)
             result = self.Display_.IsEnabled ;
         end
@@ -5669,9 +5676,9 @@ classdef WavesurferModel < ws.Model
             self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
         end
         
-        function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
             self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
@@ -5720,7 +5727,13 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DoRepeatStimulusSequence(self, newValue)
-            self.Stimulation_.DoRepeatSequence = newValue ;
+            try
+                self.Stimulation_.DoRepeatSequence = newValue ;
+            catch me
+                self.broadcast('UpdateGeneralSettings') ;
+                rethrow(me) ;
+            end
+            self.broadcast('UpdateGeneralSettings') ;            
         end
         
         function setYLimitsForSingleAIChannel(self, i, newValue)

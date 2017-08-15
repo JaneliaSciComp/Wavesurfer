@@ -110,7 +110,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
                 wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
                 wsModel.subscribeMe(self,'DidSetState','','update');
-                wsModel.subscribeMe(self,'UpdateElectrodeManager','','update');
+                wsModel.subscribeMe(self,'UpdateElectrodes','','update');
             end
             
             % make the figure visible

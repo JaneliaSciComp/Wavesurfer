@@ -395,15 +395,14 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             topAreaHeight = 60 ;
             deviceNamePopupXOffset = 100 ;
             deviceNamePopupWidth = 80 ;
-            %deviceNamePopupHeight = 16 ;
-            timebasePanelWidth = 310 ;
-            timebasePanelHeight = 50 ;
-            timebaseSourcePopupXOffset = 60 ;
-            timebaseSourcePopupYOffset = 10 ;
-            timebaseSourcePopupWidth = 110 ;
-            timebaseRateEditXOffset = 225 ;
-            timebaseRateEditYOffset = 10 ;
-            timebaseRateEditWidth = 42 ;
+%             timebasePanelWidth = 310 ;
+%             timebasePanelHeight = 50 ;
+%             timebaseSourcePopupXOffset = 60 ;
+%             timebaseSourcePopupYOffset = 10 ;
+%             timebaseSourcePopupWidth = 110 ;
+%             timebaseRateEditXOffset = 225 ;
+%             timebaseRateEditYOffset = 10 ;
+%             timebaseRateEditWidth = 42 ;
             panelBorderSize=6;  % this is the space between the panel borders and the figure border on the left, right, and bottom
             interPanelSpaceWidth=10;
             interPanelSpaceHeight=10;
@@ -2035,7 +2034,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         function DeviceNamePopupActuated(self, source, event)  %#ok<INUSD>
             allDeviceNames = self.Model_.AllDeviceNames ;
             deviceName = ws.getPopupMenuSelection(source, allDeviceNames) ;
-            self.Model_.do('set', 'DeviceName', deviceName) ;
+            self.Model_.do('set', 'PrimaryDeviceName', deviceName) ;
         end
         
 %         function ReferenceClockSourcePopupActuated(self, source, event)  %#ok<INUSD>

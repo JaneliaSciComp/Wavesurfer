@@ -150,7 +150,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             if all(size(newValue)==size(self.IsElectrodeMarkedForRemoval_)) ,
                 self.IsElectrodeMarkedForRemoval_=newValue;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function out=getIsElectrodeMarkedForTestPulse_(self)

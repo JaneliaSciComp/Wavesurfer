@@ -259,12 +259,12 @@ classdef Acquisition < ws.Subsystem
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
         
-        function didSetDeviceName(self)
-            %deviceName = self.Parent.DeviceName ;
-            %self.AnalogDeviceNames_(:) = {deviceName} ;
-            %self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.broadcast('Update');
-        end
+%         function didSetDeviceName(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             self.broadcast('Update');
+%         end
         
         function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 
             self.AnalogScalingCoefficientsCache_ = analogScalingCoefficients ;

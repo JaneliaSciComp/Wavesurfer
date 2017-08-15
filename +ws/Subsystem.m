@@ -12,10 +12,6 @@ classdef (Abstract) Subsystem < ws.Model
         IsEnabled_ = false
     end
     
-    events 
-        DidSetIsEnabled
-    end
-    
     methods
         function self = Subsystem()
             self@ws.Model() ;
@@ -131,7 +127,7 @@ classdef (Abstract) Subsystem < ws.Model
             else
                 didSucceed = false ;
             end
-            self.broadcast('DidSetIsEnabled') ;
+            self.broadcast('Update') ;
             if ~didSucceed ,
                 error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;

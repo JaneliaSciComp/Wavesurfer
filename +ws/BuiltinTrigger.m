@@ -24,7 +24,7 @@ classdef BuiltinTrigger < ws.Model
     end
     
     methods
-        function self=BuiltinTrigger()   
+        function self = BuiltinTrigger()   
             self@ws.Model() ;  % have to accept parent arg, but ignore it
             %fprintf('ws.BuiltinTrigger constructor called\n') ;
             %dbstack
@@ -38,6 +38,10 @@ classdef BuiltinTrigger < ws.Model
             value = self.Name_ ;
         end
 
+        function set.Name(self, newValue)
+            self.Name_ = newValue ;
+        end
+        
         function value = get.DeviceName(self)
             value = self.DeviceName_ ;
         end

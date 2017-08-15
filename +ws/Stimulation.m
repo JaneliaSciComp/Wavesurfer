@@ -297,7 +297,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             if (islogical(value) || isnumeric(value)) && isscalar(value) ,
                 self.DoRepeatSequence_ = logical(value);
             end
-            self.broadcast('DidSetDoRepeatSequence');
+            %self.broadcast('DidSetDoRepeatSequence');
         end
         
         function result = get.AnalogTerminalNames(self)
@@ -547,14 +547,14 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             wasDeleted = isToBeDeleted() ;
         end  % function
         
-        function didSetDeviceName(self)
-            %deviceName = self.Parent.DeviceName ;
-            %self.AnalogDeviceNames_(:) = {deviceName} ;            
-            %self.DigitalDeviceNames_(:) = {deviceName} ;            
-            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.broadcast('Update');
-        end
+%         function didSetDeviceName(self)
+%             %deviceName = self.Parent.DeviceName ;
+%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
+%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
+%             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
+%             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+%             self.broadcast('Update');
+%         end
         
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
@@ -606,8 +606,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             % Re-enable broadcasts
             self.enableBroadcastsMaybe();
             
-            % Broadcast update
-            self.broadcast('Update');
+%             % Broadcast update
+%             self.broadcast('Update');
         end  % function
     end  % public methods block
 

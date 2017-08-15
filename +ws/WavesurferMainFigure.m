@@ -146,7 +146,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 
                % Subscribe to events from the Display subsystem 
                model.subscribeMeToDisplayEvent(self,'Update','','update') ;
-               model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update') ;
+               %model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update') ;
                model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties') ;
                model.subscribeMeToDisplayEvent(self,'UpdateXOffset','','updateXAxisLimits') ;
                model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateXAxisLimits') ;

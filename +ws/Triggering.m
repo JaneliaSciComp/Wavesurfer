@@ -457,12 +457,12 @@ classdef Triggering < ws.Subsystem
             trigger = ws.ExternalTrigger() ;   % Triggers are now parentless
 
             % Set the trigger parameters
-            trigger.Name = sprintf('External trigger on /%s/PFI%d', deviceName, pfiID) ;
+            trigger.Name = sprintf('External trigger on PFI%d', pfiID) ;
             trigger.DeviceName = deviceName ; 
             trigger.PFIID = pfiID ;  % we know this PFIID is free
             trigger.Edge = 'rising' ;
             
-            % Add the just-created trigger to thel list of counter triggers
+            % Add the just-created trigger to the list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
             
             % No need to adjust the indices of the acq, stim trigger, b/c
@@ -597,37 +597,37 @@ classdef Triggering < ws.Subsystem
             result = trigger.(propertyName) ;
         end  % function
         
-        function setCounterTriggerProperty(self, index, propertyName, newValue)
-            if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
-                self.broadcast('Update') ;
-                error('ws:invalidPropertyValue', ...
-                      'Illegal or taken counter ID') ;
-            end
-            trigger = self.CounterTriggers_{index} ;
-            try
-                trigger.(propertyName) = newValue ;
-            catch exception
-                self.broadcast('Update') ;
-                rethrow(exception) ;
-            end            
-            %self.broadcast('Update') ;
-        end  % function
+%         function setCounterTriggerProperty(self, index, propertyName, newValue)
+%             if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
+%                 self.broadcast('Update') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Illegal or taken counter ID') ;
+%             end
+%             trigger = self.CounterTriggers_{index} ;
+%             try
+%                 trigger.(propertyName) = newValue ;
+%             catch exception
+%                 self.broadcast('Update') ;
+%                 rethrow(exception) ;
+%             end            
+%             %self.broadcast('Update') ;
+%         end  % function
 
-        function setExternalTriggerProperty(self, index, propertyName, newValue)
-            if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
-                self.broadcast('Update') ;
-                error('ws:invalidPropertyValue', ...
-                      'Illegal or taken PFI ID') ;
-            end
-            trigger = self.ExternalTriggers_{index} ;
-            try
-                trigger.(propertyName) = newValue ;
-            catch exception
-                self.broadcast('Update') ;
-                rethrow(exception) ;
-            end            
-            %self.broadcast('Update') ;
-        end  % function
+%         function setExternalTriggerProperty(self, index, propertyName, newValue)
+%             if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
+%                 self.broadcast('Update') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Illegal or taken PFI ID') ;
+%             end
+%             trigger = self.ExternalTriggers_{index} ;
+%             try
+%                 trigger.(propertyName) = newValue ;
+%             catch exception
+%                 self.broadcast('Update') ;
+%                 rethrow(exception) ;
+%             end            
+%             %self.broadcast('Update') ;
+%         end  % function
         
 %         function update(self)
 %             % self.broadcast('Update');
@@ -735,6 +735,7 @@ classdef Triggering < ws.Subsystem
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;
+            self.BuiltinTrigger_.Name = sprintf('Built-in Trigger (/%s/PFI8)', deviceName) ;
             for i = 1:length(self.CounterTriggers_) ,
                 self.CounterTriggers_{i}.DeviceName = deviceName ;                
             end
