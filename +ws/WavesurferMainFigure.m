@@ -16,14 +16,14 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         QuitMenuItem
         
         ProtocolMenu
-        ChannelsMenuItem
         GeneralSettingsMenuItem
+        ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
         UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
-        DisplayMenuItem
+        %DisplayMenuItem
         YokeToScanimageMenuItem
         
         UserMenu
@@ -801,21 +801,27 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
             %set(self.QuitMenuItem,'Enable',ws.onIff(true));  % always available          
                         
-            % Tools Menu
-            set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
+            % Protocol Menu
             set(self.GeneralSettingsMenuItem,'Enable',ws.onIff(isIdle));
-            set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
+            %set(self.DisplayMenuItem,'Enable',ws.onIff(isIdle));
             %set(self.ScopesMenuItem,'Enable',ws.onIff(isIdle && (model.Display.NScopes>0) && model.IsDisplayEnabled));
             set(self.ChannelsMenuItem,'Enable',ws.onIff(true));  
               % Device & Channels menu is always available so that
               % user can get at radiobutton for untimed DO channels,
               % if desired.
-            set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
             set(self.StimulusLibraryMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
             set(self.TestPulseMenuItem,'Enable',ws.onIff(isIdle));
             %set(self.YokeToScanimageMenuItem,'Enable',ws.onIff(isIdle));
+
+            % View menu
+            % These things stay active all the time, so user can change them during
+            % acquisition.
+            
+            % User menu
+            set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
