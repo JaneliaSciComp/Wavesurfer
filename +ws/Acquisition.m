@@ -265,7 +265,7 @@ classdef Acquisition < ws.Subsystem
         
         function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
             % All DI channels must use the primary device
-            self.DigitalDeviceNames_{:} = newPrimaryDeviceName ;            
+            self.DigitalDeviceNames_(:) = {newPrimaryDeviceName} ;            
         end
         
         function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 

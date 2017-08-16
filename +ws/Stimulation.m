@@ -549,7 +549,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         
         function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
             % All DI channels must use the primary device
-            self.DigitalDeviceNames_{:} = newPrimaryDeviceName ;            
+            self.DigitalDeviceNames_(:) = {newPrimaryDeviceName} ;            
         end
 
         function setSingleAnalogChannelName(self, i, newValue)

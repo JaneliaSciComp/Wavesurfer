@@ -1881,6 +1881,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                                      'BackgroundColor','w', ...
                                      'HorizontalAlignment','right', ...
                                      'String', {'(Stuff)'}, ...
+                                     'Enable', 'off', ...
                                      'Callback',@(source,event)(self.controlActuated('DIDeviceNamePopups',source,event)) );
                     self.DITerminalNamePopups(i)= ...
                         ws.uicontrol('Parent',self.DIsPanel, ...
@@ -1953,6 +1954,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
                                      'BackgroundColor','w', ...
                                      'HorizontalAlignment','right', ...
                                      'String', {'(Stuff)'}, ...
+                                     'Enable', 'off', ...
                                      'Callback',@(source,event)(self.controlActuated('DODeviceNamePopups',source,event)) );
                     self.DOTerminalNamePopups(i)= ...
                         ws.uicontrol('Parent',self.DOsPanel, ...
@@ -2192,12 +2194,13 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DIDeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.AllDeviceNames ;
-            choice = ws.getPopupMenuSelection(source, validChoices) ;
-            isTheChannel = (source==self.DIDeviceNamePopups) ;
-            iChannel = find(isTheChannel) ;
-            self.Model_.do('setSingleDIChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+%             wavesurferModel = self.Model_ ;
+%             validChoices = wavesurferModel.AllDeviceNames ;
+%             choice = ws.getPopupMenuSelection(source, validChoices) ;
+%             isTheChannel = (source==self.DIDeviceNamePopups) ;
+%             iChannel = find(isTheChannel) ;
+%             self.Model_.do('setSingleDIChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+            self.update() ;
         end        
         
         function DITerminalNamePopupsActuated(self, source, event)  %#ok<INUSD>
@@ -2247,12 +2250,13 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end
         
         function DODeviceNamePopupsActuated(self, source, event)  %#ok<INUSD>
-            wavesurferModel = self.Model_ ;
-            validChoices = wavesurferModel.AllDeviceNames ;
-            choice = ws.getPopupMenuSelection(source, validChoices) ;
-            isTheChannel = (source==self.DODeviceNamePopups) ;
-            iChannel = find(isTheChannel) ;
-            self.Model_.do('setSingleDOChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+%             wavesurferModel = self.Model_ ;
+%             validChoices = wavesurferModel.AllDeviceNames ;
+%             choice = ws.getPopupMenuSelection(source, validChoices) ;
+%             isTheChannel = (source==self.DODeviceNamePopups) ;
+%             iChannel = find(isTheChannel) ;
+%             self.Model_.do('setSingleDOChannelDeviceName', iChannel, choice) ;  %#ok<FNDSB>
+            self.update() ;
         end        
         
         function DOTerminalNamePopupsActuated(self,source,event) %#ok<INUSD>

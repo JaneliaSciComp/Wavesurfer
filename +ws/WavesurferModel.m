@@ -2935,7 +2935,7 @@ classdef WavesurferModel < ws.Model
                 %nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
                 %nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
             end
-            self.didSetPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;  
+            self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;  
                 % Old protocol files don't store the 
                 % device name in subobjects, so we call
                 % this to set the PrimaryDeviceName
@@ -3494,19 +3494,19 @@ classdef WavesurferModel < ws.Model
                     %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
                     %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
 
+                    % Tell the subsystems that we've changed the device
+                    % name
+                    nCounters = self.NCountersPerDevice_(iMatch) ;
+                    nPFITerminals = self.NPFITerminalsPerDevice_(iMatch) ;
+                    self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;
+
                     % Recalculate which digital terminals are now
                     % overcommitted, since that also updates which are
                     % out-of-range for the device
                     self.syncIsAIChannelTerminalOvercommitted_() ;
                     self.syncIsAOChannelTerminalOvercommitted_() ;
                     self.syncIsDIOChannelTerminalOvercommitted_() ;
-
-                    % Tell the subsystems that we've changed the device
-                    % name
-                    nCounters = self.NCountersPerDevice_(iMatch) ;
-                    nPFITerminals = self.NPFITerminalsPerDevice_(iMatch) ;
-                    self.didSetPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;
-
+                    
                     % Change our state to reflect the presence of the
                     % device
                     self.setState_('idle') ;
@@ -3918,7 +3918,7 @@ classdef WavesurferModel < ws.Model
             self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method
         
-        function didSetPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
+        function informSubsystemsThatWeAreSettingPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
             self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
             self.Acquisition_.settingPrimaryDeviceName(primaryDeviceName) ;
             self.Stimulation_.settingPrimaryDeviceName(primaryDeviceName) ;
@@ -5859,17 +5859,17 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end  % function
         
-        function setSingleDIChannelDeviceName(self, i, newValue)
-            if 1<=i && i<=self.NDIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
-                self.Acquisition_.setSingleDigitalDeviceName(i, newValue) ;
-                self.syncIsDIOChannelTerminalOvercommitted_() ;
-            else
-                self.broadcast('UpdateChannels') ;
-                error('ws:invalidPropertyValue', ...
-                      'The DI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDIChannels);
-            end                
-            self.broadcast('UpdateChannels') ;
-        end  % function
+%         function setSingleDIChannelDeviceName(self, i, newValue)
+%             if 1<=i && i<=self.NDIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+%                 self.Acquisition_.setSingleDigitalDeviceName(i, newValue) ;
+%                 self.syncIsDIOChannelTerminalOvercommitted_() ;
+%             else
+%                 self.broadcast('UpdateChannels') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'The DI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDIChannels);
+%             end                
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
         
         function setSingleAOChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
@@ -5883,17 +5883,17 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end  % function                
         
-        function setSingleDOChannelDeviceName(self, i, newValue)
-            if 1<=i && i<=self.NDOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
-                self.Stimulation_.setSingleDigitalDeviceName(i, newValue) ;
-                self.syncIsDIOChannelTerminalOvercommitted_() ;
-            else
-                self.broadcast('UpdateChannels') ;
-                error('ws:invalidPropertyValue', ...
-                      'The DO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDOChannels);
-            end                
-            self.broadcast('UpdateChannels') ;
-        end  % function
+%         function setSingleDOChannelDeviceName(self, i, newValue)
+%             if 1<=i && i<=self.NDOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+%                 self.Stimulation_.setSingleDigitalDeviceName(i, newValue) ;
+%                 self.syncIsDIOChannelTerminalOvercommitted_() ;
+%             else
+%                 self.broadcast('UpdateChannels') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'The DO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDOChannels);
+%             end                
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
 
         function result = getPrimaryDeviceIndex(self)
             % The index of self.PrimaryDeviceName in self.AllDeviceNames.  Returns empty if
