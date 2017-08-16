@@ -547,15 +547,11 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             wasDeleted = isToBeDeleted() ;
         end  % function
         
-%         function didSetDeviceName(self)
-%             %deviceName = self.Parent.DeviceName ;
-%             %self.AnalogDeviceNames_(:) = {deviceName} ;            
-%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
-%             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
-%             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.broadcast('Update');
-%         end
-        
+        function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
+            % All DI channels must use the primary device
+            self.DigitalDeviceNames_{:} = newPrimaryDeviceName ;            
+        end
+
         function setSingleAnalogChannelName(self, i, newValue)
             oldValue = self.AnalogChannelNames_{i} ;
             self.AnalogChannelNames_{i} = newValue ;

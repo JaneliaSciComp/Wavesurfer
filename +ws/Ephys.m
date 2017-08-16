@@ -221,10 +221,10 @@ classdef Ephys < ws.Subsystem
             %self.broadcast('Update');  % is this necessary?
         end  % function
         
-        function didSetDeviceName(self, deviceName)
+        function settingPrimaryDeviceName(self, deviceName)
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
-            self.TestPulser_.didSetDeviceName(deviceName) ;
+            self.TestPulser_.settingPrimaryDeviceName(deviceName) ;
         end        
         
         function result = getTestPulseElectrodeProperty(self, propertyName)

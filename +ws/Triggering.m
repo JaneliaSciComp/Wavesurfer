@@ -731,7 +731,7 @@ classdef Triggering < ws.Subsystem
             % self.broadcast('Update');            
         end  % function
         
-        function didSetDeviceName(self, deviceName, nCounters, nPFITerminals)
+        function settingPrimaryDeviceName(self, deviceName, nCounters, nPFITerminals)
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;

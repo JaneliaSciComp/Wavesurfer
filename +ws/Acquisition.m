@@ -113,12 +113,16 @@ classdef Acquisition < ws.Subsystem
             end
 
             % Dimension the cache that will hold acquired data in main memory
-            if self.NDigitalChannels<=8
+            if self.NDigitalChannels<=8 ,
                 dataType = 'uint8';
-            elseif self.NDigitalChannels<=16
+            elseif self.NDigitalChannels<=16 ,
                 dataType = 'uint16';
-            else %self.NDigitalChannels<=32
+            elseif self.NDigitalChannels<=32 ,
                 dataType = 'uint32';
+            elseif self.NDigitalChannels<=64 ,
+                dataType = 'uint64';
+            else
+                error('Can''t have more than 64 DI channels') ;
             end
             if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
@@ -259,12 +263,10 @@ classdef Acquisition < ws.Subsystem
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
         
-%         function didSetDeviceName(self)
-%             %deviceName = self.Parent.DeviceName ;
-%             %self.AnalogDeviceNames_(:) = {deviceName} ;
-%             %self.DigitalDeviceNames_(:) = {deviceName} ;            
-%             self.broadcast('Update');
-%         end
+        function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
+            % All DI channels must use the primary device
+            self.DigitalDeviceNames_{:} = newPrimaryDeviceName ;            
+        end
         
         function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 
             self.AnalogScalingCoefficientsCache_ = analogScalingCoefficients ;
@@ -896,7 +898,7 @@ classdef Acquisition < ws.Subsystem
         end        
         
         function newChannelIndex = addAnalogChannel_(self, deviceNameForNewChannel, newTerminalID)
-            newChannelName = sprintf('AI%d',newTerminalID) ;
+            newChannelName = sprintf('AI%d', newTerminalID) ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel}] ;

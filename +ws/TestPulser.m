@@ -920,7 +920,7 @@ classdef TestPulser < ws.Model
     end
     
     methods
-        function didSetDeviceName(self, deviceName)
+        function settingPrimaryDeviceName(self, deviceName)
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
             self.DeviceName_ = deviceName ;

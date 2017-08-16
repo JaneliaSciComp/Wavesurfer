@@ -2597,6 +2597,7 @@ classdef WavesurferModel < ws.Model
         function newChannelIndex = addAIChannel(self)
             nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeAITerminal() ;
             if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
+                % No free AI terminals
                 newChannelIndex = [] ;
             else            
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
@@ -3919,10 +3920,10 @@ classdef WavesurferModel < ws.Model
         
         function didSetPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
             self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
-            %self.Acquisition_.didSetDeviceName() ;
-            %self.Stimulation_.didSetDeviceName() ;
-            self.Triggering_.didSetDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
-            self.Ephys_.didSetDeviceName(primaryDeviceName) ;
+            self.Acquisition_.settingPrimaryDeviceName(primaryDeviceName) ;
+            self.Stimulation_.settingPrimaryDeviceName(primaryDeviceName) ;
+            self.Triggering_.settingPrimaryDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
+            self.Ephys_.settingPrimaryDeviceName(primaryDeviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)

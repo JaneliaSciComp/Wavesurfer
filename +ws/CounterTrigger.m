@@ -53,7 +53,7 @@ classdef CounterTrigger < ws.Model
             self.DeviceName_ = deviceName ;
         end        
         
-%         function didSetDeviceName(self, deviceName)  % should only be called by triggering subsystem
+%         function settingPrimaryDeviceName(self, deviceName)  % should only be called by triggering subsystem
 %             self.DeviceName_ = deviceName ;
 %         end        
         
