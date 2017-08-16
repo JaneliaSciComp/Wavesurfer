@@ -28,7 +28,7 @@ classdef Refiller < handle
         
         DOChannelNames_ = cell(1,0)
         IsDOChannelTimed_ = false(1,0)     
-        DOChannelDeviceNames_ = cell(1,0)
+        %DOChannelDeviceNames_ = cell(1,0)
         DOChannelTerminalIDs_ = zeros(1,0)
         IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
@@ -188,8 +188,10 @@ classdef Refiller < handle
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDeviceInFrontend(self, ...
-                                                 isDOChannelTerminalOvercommitted) %#ok<INUSD>
+        function result = didSetPrimaryDeviceInFrontend(self, ...
+                                                        primaryDeviceName, ...
+                                                        isPrimaryDeviceAPXIDevice, ...
+                                                        isDOChannelTerminalOvercommitted) %#ok<INUSD>
             % Don't need to do anything---we'll get updated info when a run
             % is started, which is when it matters to us.
             result = [] ;
@@ -1290,7 +1292,7 @@ classdef Refiller < handle
             
             self.DOChannelNames_ = protocol.DOChannelNames ;
             self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
-            self.DOChannelDeviceNames_ = protocol.DOChannelDeviceNames ;
+            %self.DOChannelDeviceNames_ = protocol.DOChannelDeviceNames ;
             self.DOChannelTerminalIDs_ = protocol.DOChannelTerminalIDs ;
             
             self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
@@ -1328,8 +1330,8 @@ classdef Refiller < handle
                 %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
-                %deviceNameForEachDOChannel = repmat({self.DeviceName_}, size(self.DOChannelNames_)) ;
-                deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
+                deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
+                %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
                 isTimedForEachDOChannel = self.IsDOChannelTimed_ ;
                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
@@ -1341,13 +1343,13 @@ classdef Refiller < handle
                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                                
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.FiniteOutputTask('digital', ...
-                                           'WaveSurfer Finite Digital Output Task', ...
-                                           referenceClockSource , ...
-                                           referenceClockRate , ...
-                                           deviceNameForEachChannelInDOTask, ...
-                                           terminalIDForEachChannelInDOTask, ...
-                                           isInTaskForEachDOChannel, ...
-                                           self.StimulationSampleRate_) ;
+                                        'WaveSurfer Finite Digital Output Task', ...
+                                        referenceClockSource , ...
+                                        referenceClockRate , ...
+                                        deviceNameForEachChannelInDOTask, ...
+                                        terminalIDForEachChannelInDOTask, ...
+                                        isInTaskForEachDOChannel, ...
+                                        self.StimulationSampleRate_) ;
                 %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
                 %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end

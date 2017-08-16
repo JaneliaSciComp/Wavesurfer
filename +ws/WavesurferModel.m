@@ -2919,8 +2919,10 @@ classdef WavesurferModel < ws.Model
             % what probes the device to get number of counters, PFI lines,
             % etc, and we need that info to be right before we call the
             % methods below.
-            deviceName = self.PrimaryDeviceName_ ;
-            deviceIndex = self.getDeviceIndexFromName(deviceName) ;
+            primaryDeviceName = self.PrimaryDeviceName_ ;
+            isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+            self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            deviceIndex = self.getDeviceIndexFromName(primaryDeviceName) ;
             if isempty(deviceIndex) ,
                 % this means the device name does not specify a currently-valid device name
                 nCounters = 0 ;
@@ -2935,7 +2937,7 @@ classdef WavesurferModel < ws.Model
                 %nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
                 %nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
             end
-            self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;  
+            self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(primaryDeviceName, nCounters, nPFITerminals) ;  
                 % Old protocol files don't store the 
                 % device name in subobjects, so we call
                 % this to set the PrimaryDeviceName
@@ -2952,7 +2954,9 @@ classdef WavesurferModel < ws.Model
             %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
-                self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
+                                        primaryDeviceName, ...
+                                        isPrimaryDeviceAPXIDevice, ...
                                         isTerminalOvercommittedForEachDOChannel) ;
                 %wavesurferModelSettings = self.encodeForPersistence() ;
                 looperProtocol = self.getLooperProtocol_() ;
@@ -3385,11 +3389,11 @@ classdef WavesurferModel < ws.Model
             
             looperProtocol.DIChannelNames = self.DIChannelNames ;
             looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-            looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
+            %looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
             looperProtocol.DIChannelTerminalIDs = self.DIChannelTerminalIDs ;
             
             looperProtocol.DOChannelNames = self.DOChannelNames ;
-            looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            %looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
             looperProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
@@ -3425,7 +3429,7 @@ classdef WavesurferModel < ws.Model
             
             refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
             refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            %refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
             refillerProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
@@ -3486,8 +3490,10 @@ classdef WavesurferModel < ws.Model
                 isAMatch = strcmpi(newValue,allDeviceNames) ;  % DAQmx device names are not case-sensitive
                 if any(isAMatch) ,
                     iMatch = find(isAMatch,1) ;
-                    deviceName = allDeviceNames{iMatch} ;
-                    self.PrimaryDeviceName_ = deviceName ;
+                    primaryDeviceName = allDeviceNames{iMatch} ;
+                    self.PrimaryDeviceName_ = primaryDeviceName ;
+                    isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
 
                     % Probe the device to find out its capabilities
                     %self.syncDeviceResourceCountsFromDeviceName_() ;                        
@@ -3498,7 +3504,7 @@ classdef WavesurferModel < ws.Model
                     % name
                     nCounters = self.NCountersPerDevice_(iMatch) ;
                     nPFITerminals = self.NPFITerminalsPerDevice_(iMatch) ;
-                    self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(deviceName, nCounters, nPFITerminals) ;
+                    self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(primaryDeviceName, nCounters, nPFITerminals) ;
 
                     % Recalculate which digital terminals are now
                     % overcommitted, since that also updates which are
@@ -3516,7 +3522,9 @@ classdef WavesurferModel < ws.Model
                     %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
                     %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
                     if self.IsITheOneTrueWavesurferModel_ ,
-                        self.IPCPublisher_.send('didSetDeviceInFrontend', ...
+                        self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
+                                                primaryDeviceName, ...
+                                                isPrimaryDeviceAPXIDevice, ...
                                                 self.IsDOChannelTerminalOvercommitted) ;
                     end                        
                 else
@@ -3919,7 +3927,7 @@ classdef WavesurferModel < ws.Model
         end  % method
         
         function informSubsystemsThatWeAreSettingPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
-            self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+            %self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
             self.Acquisition_.settingPrimaryDeviceName(primaryDeviceName) ;
             self.Stimulation_.settingPrimaryDeviceName(primaryDeviceName) ;
             self.Triggering_.settingPrimaryDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;

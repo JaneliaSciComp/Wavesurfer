@@ -22,7 +22,7 @@ classdef Looper < handle
         %NAOTerminals_ = 0 ;            
         NSweepsPerRun_ = 1
         SweepDuration_ = [] 
-        DOChannelDeviceNames_ = cell(1,0)
+        %DOChannelDeviceNames_ = cell(1,0)
         DOChannelTerminalIDs_ = zeros(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
         IsDOChannelTimed_ = false(1,0)     
@@ -36,7 +36,7 @@ classdef Looper < handle
             
         DIChannelNames_ = cell(1,0)
         IsDIChannelActive_ = false(1,0)
-        DIChannelDeviceNames_ = cell(1,0)
+        %DIChannelDeviceNames_ = cell(1,0)
         DIChannelTerminalIDs_ = zeros(1,0)
             
         DataCacheDurationWhenContinuous_ = []
@@ -222,10 +222,13 @@ classdef Looper < handle
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDeviceInFrontend(self, ...
-                                                 isDOChannelTerminalOvercommitted)
+        function result = didSetPrimaryDeviceInFrontend(self, ...
+                                                        primaryDeviceName, ...
+                                                        isPrimaryDeviceAPXIDevice, ...
+                                                        isDOChannelTerminalOvercommitted)
             % Set stuff
-            %self.DeviceName_ = deviceName ;
+            self.PrimaryDeviceName_ = primaryDeviceName ;
+            self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
             %self.NDIOTerminals_ = nDIOTerminals ;
             %self.NPFITerminals_ = nPFITerminals ;
             %self.NCounters_ = nCounters ;
@@ -512,9 +515,9 @@ classdef Looper < handle
                 
                 % Get the digital device names and terminal IDs, other
                 % things out of self
-                %deviceName = self.DeviceName_ ;
-                %deviceNameForEachDOChannel = repmat({deviceName},size(self.DOChannelTerminalIDs_)) ;
-                deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
+                primaryDeviceName = self.PrimaryDeviceName_ ;
+                deviceNameForEachDOChannel = repmat({primaryDeviceName},size(self.DOChannelTerminalIDs_)) ;
+                %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
                 terminalIDForEachDOChannel = self.DOChannelTerminalIDs_ ;
                 
                 onDemandOutputStateForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
@@ -896,11 +899,11 @@ classdef Looper < handle
             
             self.DIChannelNames_ = looperProtocol.DIChannelNames ;
             self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
-            self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
+            %self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
             self.DIChannelTerminalIDs_ = looperProtocol.DIChannelTerminalIDs ;
             
             self.DOChannelNames_ = looperProtocol.DOChannelNames ;
-            self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
+            %self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
             self.DOChannelTerminalIDs_ = looperProtocol.DOChannelTerminalIDs ;
             self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
             self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
@@ -956,8 +959,8 @@ classdef Looper < handle
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
                 isDIChannelActive = self.IsDIChannelActive_ ;
-                %diDeviceNames = repmat({self.DeviceName_}, size(isDIChannelActive)) ;
-                diDeviceNames = self.DIChannelDeviceNames_ ;          
+                diDeviceNames = repmat({self.PrimaryDeviceName_}, size(isDIChannelActive)) ;
+                %diDeviceNames = self.DIChannelDeviceNames_ ;          
                 activeDIDeviceNames = diDeviceNames(isDIChannelActive) ;
                 activeDITerminalIDs = self.DIChannelTerminalIDs_(isDIChannelActive) ;
                 primaryDeviceName = self.PrimaryDeviceName_ ;
