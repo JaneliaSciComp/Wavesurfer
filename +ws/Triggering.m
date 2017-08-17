@@ -3,17 +3,11 @@ classdef Triggering < ws.Subsystem
     % once a distinction, but no longer.
     
     properties (Dependent = true)
-        %BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
-        %CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
-        %ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         TriggerCount
         CounterTriggerCount
         ExternalTriggerCount
-        %Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-        %AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
-        %StimulationTriggerScheme
         AcquisitionTriggerSchemeIndex  % this is an index into Schemes
         StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
           % if StimulationUsesAcquisitionTriggerScheme is true, this
@@ -54,25 +48,25 @@ classdef Triggering < ws.Subsystem
         end  % function
         
         function delete(self)
-            self.releaseHardwareResources() ;
+            self.releaseTimedHardwareResources() ;  % we only have timed resources
         end  % function
                 
-        function releaseHardwareResources(self)
-            self.releaseTimedHardwareResources();
-            % no untimed HW resources
-        end  % function
+%         function releaseHardwareResources(self)
+%             self.releaseTimedHardwareResources();
+%             % no untimed HW resources
+%         end  % function
 
         function releaseTimedHardwareResources(self)
             % Delete the built-in trigger task
-            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to delete b/c DABS task
+            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to explicitly delete b/c DABS task
             self.BuiltinTriggerDABSTask_ = [] ;
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                self.AcquisitionCounterTask_.stop();
-            end
+%             if ~isempty(self.AcquisitionCounterTask_) ,
+%                 self.AcquisitionCounterTask_.stop();
+%             end
             self.AcquisitionCounterTask_ = [];
-            if ~isempty(self.StimulationCounterTask_) ,
-                self.StimulationCounterTask_.stop();
-            end
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 self.StimulationCounterTask_.stop();
+%             end
             self.StimulationCounterTask_ = [];
         end  % function
         
@@ -84,29 +78,24 @@ classdef Triggering < ws.Subsystem
         end  % function
                 
         function startingRun(self, primaryDeviceName, isPrimaryDeviceAPXIDevice)
-            % Set up the built-in trigger task
-            if isempty(self.BuiltinTriggerDABSTask_) ,
-                self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-                sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
-                %builtinTrigger = self.BuiltinTrigger_
-                self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
-                [referenceClockSource, referenceClockRate] = ...
-                    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
-                set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
-                self.BuiltinTriggerDABSTask_.writeDigitalData(false);
-            end
+            % All of the tasks should be empty at this point.  This is an object
+            % invariant, that the tasks are all empty when WS is not running.
             
-            % Set up the counter triggers, if any
-            % Tear down any pre-existing counter trigger tasks
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                self.AcquisitionCounterTask_.stop();
-            end
-            self.AcquisitionCounterTask_ = [];
-            if ~isempty(self.StimulationCounterTask_) ,
-                self.StimulationCounterTask_.stop();
-            end
-            self.StimulationCounterTask_ = [];
+            % Set up the built-in trigger task
+            self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
+            sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
+            %builtinTrigger = self.BuiltinTrigger_
+            self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+            [referenceClockSource, referenceClockRate] = ...
+                ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+            set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
+            set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
+            self.BuiltinTriggerDABSTask_.writeDigitalData(false);
+            
+%             % Set up the counter triggers, if any
+%             % Tear down any pre-existing counter trigger tasks
+%             self.AcquisitionCounterTask_ = [];
+%             self.StimulationCounterTask_ = [];
 
             % If needed, set up the acquisition counter task
             acquisitionTrigger = self.getAcquisitionTrigger_() ;            
@@ -201,22 +190,23 @@ classdef Triggering < ws.Subsystem
     
     methods (Access=protected)        
         function completingOrStoppingOrAbortingRun_(self)
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                try
-                    self.AcquisitionCounterTask_.stop() ;
-                catch exception  %#ok<NASGU>
-                    % If there's a problem, we want to just keep ploughing
-                    % ahead with wrapping things up...
-                end
-            end
-            if ~isempty(self.StimulationCounterTask_) ,
-                try
-                    self.StimulationCounterTask_.stop() ;
-                catch exception  %#ok<NASGU>
-                    % If there's a problem, we want to just keep ploughing
-                    % ahead with wrapping things up...
-                end
-            end
+            self.releaseTimedHardwareResources() ;
+%             if ~isempty(self.AcquisitionCounterTask_) ,
+%                 try
+%                     self.AcquisitionCounterTask_.stop() ;
+%                 catch exception  %#ok<NASGU>
+%                     % If there's a problem, we want to just keep ploughing
+%                     % ahead with wrapping things up...
+%                 end
+%             end
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop() ;
+%                 catch exception  %#ok<NASGU>
+%                     % If there's a problem, we want to just keep ploughing
+%                     % ahead with wrapping things up...
+%                 end
+%             end
         end  % method
         
 %         function result = areTasksDoneTriggering_(self)
