@@ -8,6 +8,6 @@ function [source, rate] = getReferenceClockSourceAndRate(deviceName, primaryDevi
         else
             source = sprintf('/%s/10MHzRefClock', primaryDeviceName) ;
         end
-        rate = 10e6 ;  % You'd think that this would be 100e6, but DAQmx complains if you try to do that.
+        rate = 10e6 ;  % You'd think that this would be 100e6 for the OnboardClock, but DAQmx complains if you try to do that.
     end
 end

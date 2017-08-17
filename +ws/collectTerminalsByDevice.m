@@ -1,4 +1,4 @@
-function [deviceNamePerDevice, terminalIDsPerDevice] = collectTerminalsByDevice(deviceNamePerChannel, terminalIDPerChannel)
+function [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = collectTerminalsByDevice(deviceNamePerChannel, terminalIDPerChannel)
     % This gets the device names and terminal IDs into the form that DABS wants
     % them in when calling task.createAIVoltageChan().  deviceNamePerChannel is
     % a 1 x nChannels cellstring, giving the device name for each channel.
@@ -9,12 +9,33 @@ function [deviceNamePerDevice, terminalIDsPerDevice] = collectTerminalsByDevice(
     % element of which holds a double array containing the terminalIDs
     % associated with that device.
     
-    [deviceNamePerDevice, ~, deviceIndexPerChannel] = unique(deviceNamePerChannel) ;
+    [deviceNamePerDevice, ~, deviceIndexPerChannelAsCol] = unique(deviceNamePerChannel) ;
+    deviceIndexPerChannel = deviceIndexPerChannelAsCol' ;
+
+    % deviceIndex, here and below, is the position of a device within deviceNamePerDevice
+    
+    function terminalIDs = terminalIDsFromDeviceIndex(deviceIndex)
+        terminalIDs = terminalIDPerChannel(deviceIndexPerChannel==deviceIndex) ;
+    end    
+    
+    function channelIndices = channelIndicesFromDeviceIndex(deviceIndex)
+        channelIndices = find(deviceIndexPerChannel==deviceIndex) ;
+    end
+    
     if nargout>=2 ,
         nDevices = length(deviceNamePerDevice) ;
         deviceIndexPerDevice = 1:nDevices ;
-        terminalIDsPerDevice = arrayfun(@(deviceIndex)(terminalIDPerChannel(deviceIndexPerChannel==deviceIndex)), ...
-                                        deviceIndexPerDevice, ...
-                                        'UniformOutput', false) ;    
+        
+        terminalIDsPerDevice = ...
+            arrayfun(@terminalIDsFromDeviceIndex, ...
+                     deviceIndexPerDevice, ...
+                     'UniformOutput', false) ;                                        
+                 
+        if nargout>=3 ,
+            channelIndicesPerDevice = ...
+                arrayfun(@channelIndicesFromDeviceIndex, ...
+                         deviceIndexPerDevice, ...
+                         'UniformOutput', false) ;
+        end                                    
     end
 end
