@@ -1,14 +1,11 @@
-classdef InputTask < handle
+classdef DITask < handle
     properties (Dependent = true, SetAccess = immutable)
-        IsAnalog
-        IsDigital
         TaskName
         DeviceNames
         TerminalIDs
         IsArmed
         % These are not directly settable
         ExpectedScanCount
-        IsUsingDefaultTermination
     end
     
     properties (Dependent = true)
@@ -18,7 +15,6 @@ classdef InputTask < handle
         ClockTiming   % no setter, set when you set AcquisitionDuration
         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
         TriggerEdge
-        ScalingCoefficients
     end
     
     properties (Transient = true, Access = protected)
@@ -32,7 +28,6 @@ classdef InputTask < handle
     end
     
     properties (Access = protected)
-        IsAnalog_
         DeviceNames_ = cell(1,0)
         TerminalIDs_ = zeros(1,0)
         SampleRate_ = 20000
@@ -41,21 +36,10 @@ classdef InputTask < handle
         TriggerTerminalName_
         TriggerEdge_
         IsArmed_ = false
-        ScalingCoefficients_
-        IsUsingDefaultTermination_ = false
     end
     
     methods
-        function self = InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination)
-            % Deal with optional args
-            if ~exist('doUseDefaultTermination','var') || isempty(doUseDefaultTermination) ,
-                doUseDefaultTermination = false ;  % when false, all AI channels use differential termination
-            end
-            self.IsUsingDefaultTermination_ = doUseDefaultTermination ;
-            
-            % Determine the task type, digital or analog
-            self.IsAnalog_ = ~isequal(taskType,'digital') ;
-            
+        function self = DITask(taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate)
             % Create the task, channels
             nChannels=length(terminalIDs) ;            
             if nChannels==0 ,
@@ -74,37 +58,20 @@ classdef InputTask < handle
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
-                if self.IsAnalog ,
-                    termination = ws.fif(doUseDefaultTermination, 'DAQmx_Val_Cfg_Default', 'DAQmx_Val_Diff') ;
-                    for iChannel = 1:nChannels ,
-                        deviceName = deviceNames{iChannel} ;
-                        terminalID = terminalIDs(iChannel) ;
-                        self.DabsDaqTask_.createAIVoltageChan(deviceName, ...
-                                                              terminalID, ...
-                                                              [], ...
-                                                              -10, ...
-                                                              +10, ...
-                                                              'DAQmx_Val_Volts', ...
-                                                              [], ...
-                                                              termination) ;
-                    end
+                uniqueDeviceNames = unique(deviceNames) ;
+                if isscalar(uniqueDeviceNames) ,
+                    deviceName = uniqueDeviceNames{1} ;
+                    linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
+                    self.DabsDaqTask_.createDIChan(deviceName, linesSpecification) ;
+                      % Create one DAQmx DI channel, with all the TTL DI lines on it.
+                      % This way, when we read the data with readDigitalUn('uint32', []),
+                      % we'll get a uint32 col vector with all the lines multiplexed on it in the
+                      % bits indicated by terminalIDs.
                 else
-                    % If get here task is a DI task
-                    uniqueDeviceNames = unique(deviceNames) ;
-                    if isscalar(uniqueDeviceNames) ,
-                        deviceName = uniqueDeviceNames{1} ;
-                        linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
-                        self.DabsDaqTask_.createDIChan(deviceName, linesSpecification) ;
-                          % Create one DAQmx DI channel, with all the TTL DI lines on it.
-                          % This way, when we read the data with readDigitalUn('uint32', []),
-                          % we'll get a uint32 col vector with all the lines multiplexed on it in the
-                          % bits indicated by terminalIDs.
-                    else
-                        exception = MException('ws:daqmx:allDIChannelsMustBeOnOneDevice', ...
-                                               'All DI Channels must be on a single device') ;
-                        throw(exception) ;
-                    end                        
-                end
+                    exception = MException('ws:daqmx:allDIChannelsMustBeOnOneDevice', ...
+                                           'All DI Channels must be on a single device') ;
+                    throw(exception) ;
+                end                        
 %                 [referenceClockSource, referenceClockRate] = ...
 %                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;
@@ -129,18 +96,10 @@ classdef InputTask < handle
                 if taskSampleClockRate~=sampleRate ,
                     error('ws:sampleClockRateNotEqualToDesiredClockRate', ...
                           'Unable to set the DAQmx sample rate to the desired sampling rate');
-                end
-                
-                % If analog, get the scaling coefficients
-                if self.IsAnalog_ ,                    
-                    rawScalingCoefficients = self.DabsDaqTask_.getAIDevScalingCoeffs() ;   % nChannels x nCoefficients, low-order coeffs first
-                    self.ScalingCoefficients_ = transpose(rawScalingCoefficients) ;  % nCoefficients x nChannels , low-order coeffs first
-                else
-                    self.ScalingCoefficients_ = [] ;
-                end
+                end                
             else
                 % nChannels == 0
-                self.ScalingCoefficients_ = [] ;
+                % Nothing to do
             end
             
             % Store the sample rate and durationPerDataAvailableCallback
@@ -203,75 +162,39 @@ classdef InputTask < handle
             end            
         end
         
-        function value = get.ScalingCoefficients(self)
-            value = self.ScalingCoefficients_ ;
-        end  % function
-        
-        function value = get.IsUsingDefaultTermination(self)
-            % If false, means using all-differential termination
-            value = self.IsUsingDefaultTermination_ ;
-        end  % function
-        
         function [data,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
             % If nScansToRead is empty, read all the available scans.  If
             % nScansToRead is nonempty, read that number of scans.
             timeSinceRunStartNow = toc(fromRunStartTicId) ;
-            if self.IsAnalog ,
-                if isempty(self.DabsDaqTask_) ,
-                    % Since there are zero active channels, want to fake
-                    % the acquisition of a reasonable number of samples,
-                    % given the timing and acq duration.
-                    if isempty(nScansToRead) ,
-                        timeNow = toc(self.TicId_) ;                        
-                        nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                        nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                        nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                        nScans = nScansPossible ;
-                        data = zeros(nScans,0,'int16');
-                        self.TimeAtLastRead_ = timeNow ;
-                    else
-                        timeNow = toc(self.TicId_) ;                        
-                        data = zeros(nScansToRead,0,'int16');
-                        self.TimeAtLastRead_ = timeNow ;
-                    end
+            if isempty(self.DabsDaqTask_) ,
+                % Since there are zero active channels, want to fake
+                % the acquisition of a reasonable number of samples,
+                % given the timing and acq duration.
+                if isempty(nScansToRead) ,
+                    timeNow = toc(self.TicId_) ;                        
+                    nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
+                    nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
+                    nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
+                    nScans = nScansPossible ;
+                    dataAsUint32 = zeros(nScans,0,'uint32');
+                    self.TimeAtLastRead_ = timeNow ;
                 else
-                    if isempty(nScansToRead) ,
-                        data = self.queryUntilEnoughThenRead_();
-                    else
-                        data = self.DabsDaqTask_.readAnalogData(nScansToRead,'native') ;  % rawData is int16
-                    end
+                    timeNow = toc(self.TicId_) ;                        
+                    dataAsUint32 = zeros(nScansToRead,0,'uint32');
+                    self.TimeAtLastRead_ = timeNow ;
                 end
-            else % IsDigital
-                if isempty(self.DabsDaqTask_) ,
-                    % Since there are zero active channels, want to fake
-                    % the acquisition of a reasonable number of samples,
-                    % given the timing and acq duration.
-                    if isempty(nScansToRead) ,
-                        timeNow = toc(self.TicId_) ;                        
-                        nScansPossibleByTime = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;                        
-                        nScansPossibleByReads = self.NScansExpectedCache_ - self.NScansReadSoFar_ ;
-                        nScansPossible = min(nScansPossibleByTime,nScansPossibleByReads) ;
-                        nScans = nScansPossible ;
-                        dataAsUint32 = zeros(nScans,0,'uint32');
-                        self.TimeAtLastRead_ = timeNow ;
-                    else
-                        timeNow = toc(self.TicId_) ;                        
-                        dataAsUint32 = zeros(nScansToRead,0,'uint32');
-                        self.TimeAtLastRead_ = timeNow ;
-                    end
-                else       
-                    if isempty(nScansToRead) ,
-                        dataAsRead = self.queryUntilEnoughThenRead_();
-                    else
-                        dataAsRead = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
-                    end
-                    % readData is nScans x nLines 
-                    terminalIDPerLine = self.TerminalIDs_ ;
-                    dataAsUint32 = ws.reorderDIData(dataAsRead, terminalIDPerLine) ;
+            else       
+                if isempty(nScansToRead) ,
+                    dataAsRead = self.queryUntilEnoughThenRead_();
+                else
+                    dataAsRead = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
                 end
-                nLines = length(self.TerminalIDs_) ;
-                data = ws.dropExtraBits(dataAsUint32, nLines) ;
+                % readData is nScans x nLines 
+                terminalIDPerLine = self.TerminalIDs_ ;
+                dataAsUint32 = ws.reorderDIData(dataAsRead, terminalIDPerLine) ;
             end
+            nLines = length(self.TerminalIDs_) ;
+            data = ws.dropExtraBits(dataAsUint32, nLines) ;
             nScans = size(data,1) ;
             timeSinceRunStartAtStartOfData = timeSinceRunStartNow - nScans/self.SampleRate_ ;
         end  % function
@@ -296,24 +219,12 @@ classdef InputTask < handle
                 end
             end
             %nScansPerCheck
-            if self.IsAnalog_ ,
-                data = self.DabsDaqTask_.readAnalogData([],'native') ;
-            else
-                data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
-            end
+            data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
     end  % protected methods block
     
     methods
-        function value = get.IsAnalog(self)
-            value = self.IsAnalog_;
-        end  % function
-        
-        function value = get.IsDigital(self)
-            value = ~self.IsAnalog_;
-        end  % function
-        
         function value = get.IsArmed(self)
             value = self.IsArmed_;
         end  % function
@@ -473,20 +384,20 @@ classdef InputTask < handle
             %self.notify('AcquisitionComplete');
         end  % function
         
-        function unpackedData = unpackDigitalData_(self, packedData)
-            % Only used for digital data.
-            nScans = size(packedData,1);
-            %nChannels = length(self.TerminalNames);
-            %terminalIDs = ws.terminalIDsFromTerminalNames(self.TerminalNames);            
-            terminalIDs = self.TerminalIDs_ ;
-            nChannels = length(terminalIDs) ;            
-            unpackedData = zeros(nScans,nChannels,'uint8');
-            for j=1:nChannels ,
-                terminalID = terminalIDs(j);
-                thisChannelData = bitget(packeData,terminalID+1);  % +1 to convert to one-based indexing
-                unpackedData(:,j) = thisChannelData ;
-            end
-        end  % function
+%         function unpackedData = unpackDigitalData_(self, packedData)
+%             % Only used for digital data.
+%             nScans = size(packedData,1);
+%             %nChannels = length(self.TerminalNames);
+%             %terminalIDs = ws.terminalIDsFromTerminalNames(self.TerminalNames);            
+%             terminalIDs = self.TerminalIDs_ ;
+%             nChannels = length(terminalIDs) ;            
+%             unpackedData = zeros(nScans,nChannels,'uint8');
+%             for j=1:nChannels ,
+%                 terminalID = terminalIDs(j);
+%                 thisChannelData = bitget(packeData,terminalID+1);  % +1 to convert to one-based indexing
+%                 unpackedData(:,j) = thisChannelData ;
+%             end
+%         end  % function
     end  % protected methods block
 end
 
