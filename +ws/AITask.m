@@ -15,18 +15,20 @@ classdef AITask < handle
     % This class is not a subclass of ws.Model, and we don't persist instances
     % of it, so no need for transient/persistent distinction.
     properties (Access = protected)  
-        PrimaryDeviceName_ = ''
-        DeviceNames_ = cell(1,0)
-        TerminalIDs_ = zeros(1,0)
+        %PrimaryDeviceName_ = ''
+        %IsPrimaryDeviceAPXIDevice_ = false
+        %DeviceNames_ = cell(1,0)
+        %TerminalIDs_ = zeros(1,0)
+        ChannelCount_ = 0
         SampleRate_ = 20000
         DesiredSweepDuration_ = 1     % Seconds
-        ClockTiming_ = 'DAQmx_Val_FiniteSamps'
+        %ClockTiming_ = 'DAQmx_Val_FiniteSamps'
         %TriggerTerminalName_
         %TriggerEdge_
         %IsArmed_ = false
         ScalingCoefficients_
-        DeviceNamePerDevice_ = cell(1,0)
-        TerminalIDsPerDevice_ = cell(1,0)
+        %DeviceNamePerDevice_ = cell(1,0)
+        %TerminalIDsPerDevice_ = cell(1,0)
         ChannelIndicesPerDevice_ = cell(1,0)
         DabsDaqTasks_ = cell(1,0)     % the DABS task objects, or empty if the number of channels is zero
         TicId_
@@ -35,16 +37,16 @@ classdef AITask < handle
         NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
         CachedFinalScanTime_  % used when self.DabsDaqTask_ is empty
-        KeystoneTask_
-        TriggerDeviceName_
-        TriggerPFIID_
-        TriggerEdge_
+        %KeystoneTask_
+        %TriggerDeviceName_
+        %TriggerPFIID_
+        %TriggerEdge_
     end    
     
     methods
         function self = AITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                sampleRate, desiredSweepDuration, ...
-                               keystoneTask, triggerDeviceName, triggerPFIID, triggerEdge)          
+                               keystoneTask, triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary)
                            
             % Group the channels by device, with the primary device first
             [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = ...
@@ -63,12 +65,16 @@ classdef AITask < handle
             self.TicId_ = tic();
             
             % Store this stuff
-            self.PrimaryDeviceName_ = primaryDeviceName ;
-            self.DeviceNames_ = deviceNamePerChannel ;
-            self.TerminalIDs_ = terminalIDPerChannel ;
-            self.DeviceNamePerDevice_ = deviceNamePerDevice ;
-            self.TerminalIDsPerDevice_ = terminalIDsPerDevice ;
+            %self.PrimaryDeviceName_ = primaryDeviceName ;
+            %self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            %self.DeviceNames_ = deviceNamePerChannel ;
+            %self.TerminalIDs_ = terminalIDPerChannel ;
+            self.ChannelCount_ = length(terminalIDPerChannel) ;
+            %self.DeviceNamePerDevice_ = deviceNamePerDevice ;
+            %self.TerminalIDsPerDevice_ = terminalIDsPerDevice ;
             self.ChannelIndicesPerDevice_ = channelIndicesPerDevice ;
+            self.SampleRate_ = sampleRate ;            
+            self.DesiredSweepDuration_ = desiredSweepDuration;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -127,59 +133,51 @@ classdef AITask < handle
                 self.ScalingCoefficients_ = [] ;
             end
             
-            % Store the sample rate
-            self.SampleRate_ = sampleRate ;            
-
-            % Set the sweep duration
-            self.DesiredSweepDuration_ = desiredSweepDuration;
+            % Determine the clock timing
             if isinf(desiredSweepDuration) ,
-                self.ClockTiming_ = 'DAQmx_Val_ContSamps' ;
+                clockTiming = 'DAQmx_Val_ContSamps' ;
             else
-                self.ClockTiming_ = 'DAQmx_Val_FiniteSamps' ;
+                clockTiming = 'DAQmx_Val_FiniteSamps' ;
             end                
             
             % function setTrigger(self, keystoneTask, triggerDeviceName, triggerPFIID, triggerEdge)
-            self.KeystoneTask_ = keystoneTask ;
-            self.TriggerDeviceName_ = triggerDeviceName ;
-            self.TriggerPFIID_ = triggerPFIID ;
-            self.TriggerEdge_ = triggerEdge ;
+            %self.KeystoneTask_ = keystoneTask ;
+            %self.TriggerDeviceName_ = triggerDeviceNameIfKeystoneAndPrimary ;
+            %self.TriggerPFIID_ = triggerPFIIDIfKeystoneAndPrimary ;
+            %self.TriggerEdge_ = triggerEdgeIfKeystoneAndPrimary ;
             
             % What used to be "arming"
-            if isempty(self.DabsDaqTasks_) ,
-                % do nothing
-            else
+            if ~isempty(self.DabsDaqTasks_) ,
                 % Set up timing
-                acquisitionKeystoneTask = self.KeystoneTask_ ;
-                sampleRate = self.SampleRate_ ;
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
                     expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;
-                    ws.AITask.setDABSTaskTimingBang(dabsTask, self.ClockTiming_, expectedScanCount, sampleRate) ;
+                    ws.AITask.setDABSTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
 
                     % Set up triggering
-                    deviceName = self.DeviceNamePerDevice_{deviceIndex} ;                    
-                    if isequal(acquisitionKeystoneTask,'di') ,
-                        triggerTerminalName = sprintf('/%s/di/StartTrigger', self.PrimaryDeviceName_) ;
+                    deviceName = deviceNamePerDevice{deviceIndex} ;                    
+                    if isequal(keystoneTask,'di') ,
+                        triggerTerminalName = sprintf('/%s/di/StartTrigger', primaryDeviceName) ;
                         triggerEdge = 'rising' ;
-                    elseif isequal(acquisitionKeystoneTask,'ai') ,
+                    elseif isequal(keystoneTask,'ai') ,
                         % ideally, acquisitionKeystoneTask is 'ai', but regardless, we act like it
                         % is
-                        if isequal(deviceName, self.PrimaryDeviceName_) ,
-                            triggerTerminalName = sprintf('/%s/PFI%d',self.TriggerDeviceName_, self.TriggerPFIID_) ;
-                            triggerEdge = self.TriggerEdge_ ;
+                        if isequal(deviceName, primaryDeviceName) ,
+                            triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary) ;
+                            triggerEdge = triggerEdgeIfKeystoneAndPrimary ;
                         else
-                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
+                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
                             triggerEdge = 'rising' ;
                         end
                     else
                         % In this case, we assume the task on the primary device will start without
                         % waiting for a trigger.  This is handy for testing.
-                        if isequal(deviceName, self.PrimaryDeviceName_) ,
+                        if isequal(deviceName, primaryDeviceName) ,
                             triggerTerminalName = '' ;
                             triggerEdge = [] ;
                         else
-                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
+                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
                             triggerEdge = 'rising' ;
                         end                        
                     end
@@ -250,7 +248,7 @@ classdef AITask < handle
                     result = durationSoFar>self.CachedFinalScanTime_ ;
                 end
             else
-                deviceCount = length(self.DeviceNamePerDevice_) ;
+                deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
                     if ~dabsTask.isTaskDoneQuiet() ,
@@ -336,7 +334,7 @@ classdef AITask < handle
             end
             %nScansPerCheck
             %data = self.DabsDaqTask_.readAnalogData([],'native') ;
-            channelCount = length(self.TerminalIDs_) ;            
+            channelCount = self.ChannelCount_ ;        
             data = ws.AITask.readScanCountFromDABSTasks(nScansAvailable, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function

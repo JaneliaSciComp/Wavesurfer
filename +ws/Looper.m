@@ -1022,7 +1022,7 @@ classdef Looper < handle
                     % 10-20 ms.
                     areTasksDone = false;
                 else                    
-                    areTasksDone = ( self.TimedAnalogInputTask_.isDone() && self.TimedDigitalInputTask_.isTaskDone() ) ;
+                    areTasksDone = ( self.TimedAnalogInputTask_.isDone() && self.TimedDigitalInputTask_.isDone() ) ;
                 end
 %                 if areTasksDone ,
 %                     fprintf('Acquisition tasks are done.\n')

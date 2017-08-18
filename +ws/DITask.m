@@ -1,45 +1,33 @@
 classdef DITask < handle
-    properties (Dependent = true, SetAccess = immutable)
-        TaskName
-        DeviceNames
-        TerminalIDs
-        IsArmed
-        % These are not directly settable
-        ExpectedScanCount
-    end
+%     properties (Dependent = true)
+%         TaskName
+%         TerminalIDs
+%         % These are not directly settable
+%         ExpectedScanCount
+%         SampleRate      % Hz
+%         DesiredAcquisitionDuration  % seconds
+%         FinalScanTime  % seconds, the time of the final scan, relative to the first scan
+%         ClockTiming   % no setter, set when you set AcquisitionDuration
+%         TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
+%         TriggerEdge
+%     end
     
-    properties (Dependent = true)
-        SampleRate      % Hz
-        DesiredAcquisitionDuration  % seconds
-        FinalScanTime  % seconds, the time of the final scan, relative to the first scan
-        ClockTiming   % no setter, set when you set AcquisitionDuration
-        TriggerTerminalName  % this is the terminal name used in a call to task.cfgDigEdgeStartTrig().  E.g. 'PFI0', 'ai/StartTrigger'
-        TriggerEdge
-    end
-    
-    properties (Transient = true, Access = protected)
+    properties (Access = protected)
         DabsDaqTask_ = [];  % the DABS task object, or empty if the number of channels is zero
-        TicId_
-        TimeAtLastRead_
+        TicId_  % we use this when badgering the card for samples
+        TimeAtLastRead_  % we use this when "badgering" the card for samples, to know when we have enough
         TimeAtTaskStart_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
         NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
         CachedFinalScanTime_  % used when self.DabsDaqTask_ is empty
-    end
-    
-    properties (Access = protected)
-        DeviceNames_ = cell(1,0)
-        TerminalIDs_ = zeros(1,0)
         SampleRate_ = 20000
-        DesiredAcquisitionDuration_ = 1     % Seconds
-        ClockTiming_ = 'DAQmx_Val_FiniteSamps'
-        TriggerTerminalName_
-        TriggerEdge_
-        IsArmed_ = false
+        DesiredSweepDuration_ = 1     % Seconds
     end
     
     methods
-        function self = DITask(taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate)
+        function self = DITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
+                               sampleRate, desiredSweepDuration, ...
+                               keystoneTask, triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
             % Create the task, channels
             nChannels=length(terminalIDs) ;            
             if nChannels==0 ,
@@ -52,28 +40,18 @@ classdef DITask < handle
             self.TicId_ = tic();
             
             % Store this stuff
-            self.DeviceNames_ = deviceNames ;
-            self.TerminalIDs_ = terminalIDs ;
+            %self.DeviceNames_ = deviceNames ;
+            %self.PrimaryDeviceName_ = primaryDeviceName ;
+            %self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            %self.TerminalIDs_ = terminalIDs ;
+            self.SampleRate_ = sampleRate ;
+            self.DesiredSweepDuration_ = desiredSweepDuration ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             if nChannels>0 ,
-                uniqueDeviceNames = unique(deviceNames) ;
-                if isscalar(uniqueDeviceNames) ,
-                    deviceName = uniqueDeviceNames{1} ;
-                    linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
-                    self.DabsDaqTask_.createDIChan(deviceName, linesSpecification) ;
-                      % Create one DAQmx DI channel, with all the TTL DI lines on it.
-                      % This way, when we read the data with readDigitalUn('uint32', []),
-                      % we'll get a uint32 col vector with all the lines multiplexed on it in the
-                      % bits indicated by terminalIDs.
-                else
-                    exception = MException('ws:daqmx:allDIChannelsMustBeOnOneDevice', ...
-                                           'All DI Channels must be on a single device') ;
-                    throw(exception) ;
-                end                        
-%                 [referenceClockSource, referenceClockRate] = ...
-%                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+                [referenceClockSource, referenceClockRate] = ...
+                    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;
                 set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
@@ -97,60 +75,100 @@ classdef DITask < handle
                     error('ws:sampleClockRateNotEqualToDesiredClockRate', ...
                           'Unable to set the DAQmx sample rate to the desired sampling rate');
                 end                
-            else
-                % nChannels == 0
-                % Nothing to do
-            end
+            end         
             
-            % Store the sample rate and durationPerDataAvailableCallback
-            self.SampleRate_ = sampleRate ;            
+            % Determine trigger terminal and edge type
+            if ~isempty(self.DabsDaqTask_) ,
+                if isequal(keystoneTask,'ai') ,
+                    triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                    triggerEdge = 'rising' ;
+                elseif isequal(keystoneTask,'di') ,
+                    triggerTerminalName = sprintf('/%s/PFI%d', triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone) ;
+                    triggerEdge = triggerEdgeIfKeystone ;
+                else
+                    triggerTerminalName = '' ;
+                    triggerEdge = [] ;
+                end
+            end
+
+            % Do stuff that used to be "arming" the task
+            if ~isempty(self.DabsDaqTask_) ,
+                % Set up timing
+                clockTiming = ws.fif(isinf(desiredSweepDuration), 'DAQmx_Val_ContSamps', 'DAQmx_Val_FiniteSamps' ) ;
+                switch clockTiming ,
+                    case 'DAQmx_Val_FiniteSamps'
+                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate_, desiredSweepDuration) ;
+                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', expectedScanCount);
+                          % we validated the sample rate when we created
+                          % the input task, so should be ok, but check
+                          % anyway
+                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                              error('The DABS task sample rate is not equal to the desired sampling rate');
+                          end  
+                    case 'DAQmx_Val_ContSamps'
+                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate_, desiredSweepDuration) ;
+                        if isinf(expectedScanCount)
+                            bufferSize = sampleRate;   % Default to 1 second of data as the buffer.
+                        else
+                            bufferSize = expectedScanCount;
+                        end
+                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+                          % we validated the sample rate when we created
+                          % the input task, so should be ok, but check
+                          % anyway
+                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+                              error('The DABS task sample rate is not equal to the desired sampling rate');
+                          end  
+                    otherwise
+                        error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
+                end
+
+                % Set up triggering
+                if isempty(triggerTerminalName)
+                    self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+                else
+                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;                    
+                    self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+                end        
+            end
         end  % function
         
         function delete(self)
-            if ~isempty(self.DabsDaqTask_) && self.DabsDaqTask_.isvalid() ,
-                delete(self.DabsDaqTask_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-            end
-            self.DabsDaqTask_ = [] ;
+            ws.deleteIfValidHandle(self.DabsDaqTask_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            self.DabsDaqTask_ = [] ;  % not really necessary...
         end
         
         function start(self)
-            if self.IsArmed ,
-                if isempty(self.DabsDaqTask_) ,
-                    self.CachedFinalScanTime_ = self.FinalScanTime ;
-                      % In a normal input task, a scan is done right at the
-                      % start of the sweep (t==0).  So the the final scan occurs at
-                      % t == (nScans-1)*(1/sampleRate).  We mimic the
-                      % timing of this when there is no task (e.g. when
-                      % there are zero channels.)
-                    self.NScansExpectedCache_ = self.ExpectedScanCount ;
-                    self.NScansReadSoFar_ = 0 ;                    
-                    timeNow = toc(self.TicId_) ;
-                    self.TimeAtTaskStart_ = timeNow ;                    
-                    self.TimeAtLastRead_ = timeNow ;
-                else                    
-                    %fprintf('About to start InputTask named %s\n',self.TaskName);
-                    self.DabsDaqTask_.start();
-                    timeNow = toc(self.TicId_) ;
-                    %self.TimeAtTaskStart_ = timeNow ;
-                    self.TimeAtLastRead_ = timeNow ;
-                end
+            if isempty(self.DabsDaqTask_) ,
+                self.CachedFinalScanTime_ = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;
+                  % In a normal input task, a scan is done right at the
+                  % start of the sweep (t==0).  So the the final scan occurs at
+                  % t == (nScans-1)*(1/sampleRate).  We mimic the
+                  % timing of this when there is no task (e.g. when
+                  % there are zero channels.)
+                self.NScansExpectedCache_ = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_)  ;
+                self.NScansReadSoFar_ = 0 ;                    
+                timeNow = toc(self.TicId_) ;
+                self.TimeAtTaskStart_ = timeNow ;                    
+                self.TimeAtLastRead_ = timeNow ;
+            else                    
+                %fprintf('About to start InputTask named %s\n',self.TaskName);
+                self.DabsDaqTask_.start();
+                timeNow = toc(self.TicId_) ;
+                %self.TimeAtTaskStart_ = timeNow ;
+                self.TimeAtLastRead_ = timeNow ;
             end
         end
         
         function stop(self)
-            if ~isempty(self.DabsDaqTask_) ,   %&& ~self.DabsDaqTask_.isTaskDoneQuiet()
-%                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
-%                     fprintf('About to stop an InputTask that is done.\n');
-%                 else
-%                     fprintf('About to stop an InputTask that is *not* done.\n');
-%                 end
+            if ~isempty(self.DabsDaqTask_) ,
                 self.DabsDaqTask_.stop();
             end
         end
         
-        function result = isTaskDone(self)
+        function result = isDone(self)
             if isempty(self.DabsDaqTask_) ,
-                if isinf(self.DesiredAcquisitionDuration_) ,  % don't want to bother with toc() if we already know the answer...
+                if isinf(self.DesiredSweepDuration_) ,  % don't want to bother with toc() if we already know the answer...
                     result = false ;
                 else
                     timeNow = toc(self.TicId_) ;
@@ -225,179 +243,137 @@ classdef DITask < handle
     end  % protected methods block
     
     methods
-        function value = get.IsArmed(self)
-            value = self.IsArmed_;
-        end  % function
-        
-        function out = get.DeviceNames(self)
-            out = self.DeviceNames_ ;
-        end  % function
-
-        function out = get.TerminalIDs(self)
-            out = self.TerminalIDs_ ;
-        end  % function
-
-        function value = get.ExpectedScanCount(self)
-            value = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;
-        end  % function
-        
-        function value = get.SampleRate(self)
-            value = self.SampleRate_ ;
-        end  % function
-
-        function out = get.TaskName(self)
-            if ~isempty(self.DabsDaqTask_)
-                out = self.DabsDaqTask_.taskName;
-            else
-                out = '';
-            end
-        end  % function
-        
-        function set.DesiredAcquisitionDuration(self, value)
-            if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
-                error('ws:invalidPropertyValue', ...
-                      'AcquisitionDuration must be a positive scalar');       
-            end            
-            self.DesiredAcquisitionDuration_ = value;
-            if isinf(value) ,
-                self.ClockTiming_ = 'DAQmx_Val_ContSamps' ;
-            else
-                self.ClockTiming_ = 'DAQmx_Val_FiniteSamps' ;
-            end                
-        end  % function
-        
-        function value = get.DesiredAcquisitionDuration(self)
-            value = self.DesiredAcquisitionDuration_ ;
-        end  % function
-
-        function value = get.FinalScanTime(self)
-            value = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredAcquisitionDuration_) ;            
-        end  % function
-        
-        function set.TriggerTerminalName(self, newValue)
-            if isempty(newValue) ,
-                self.TriggerTerminalName_ = '' ;
-            elseif ws.isString(newValue) ,
-                self.TriggerTerminalName_ = newValue;
-            else
-                error('ws:invalidPropertyValue', ...
-                      'TriggerTerminalName must be empty or a string');
-            end
-        end  % function
-        
-        function value = get.TriggerTerminalName(self)
-            value = self.TriggerTerminalName_ ;
-        end  % function                
-
-        function set.TriggerEdge(self, newValue)
-            if isempty(newValue) ,
-                self.TriggerEdge_ = [] ;
-            elseif ws.isAnEdgeType(newValue) ,
-                self.TriggerEdge_ = newValue ;
-            else
-                error('ws:invalidPropertyValue', ...
-                      'TriggerEdge must be empty, or ''rising'', or ''falling''');       
-            end            
-        end  % function
-        
-        function value = get.TriggerEdge(self)
-            value = self.TriggerEdge_ ;
-        end  % function                
-        
-        function value = get.ClockTiming(self)
-            value = self.ClockTiming_ ;
-        end  % function                
-        
-        function arm(self)
-            % Must be called before the first call to start()
-            %fprintf('AnalogInputTask::setup()\n');
-            if self.IsArmed ,
-                return
-            end
-
-            if isempty(self.DabsDaqTask_) ,
-                % do nothing
-            else
-                % Set up timing
-                sampleRate = self.SampleRate_ ;
-                switch self.ClockTiming_ ,
-                    case 'DAQmx_Val_FiniteSamps'
-                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
-                          % we validated the sample rate when we created
-                          % the input task, so should be ok, but check
-                          % anyway
-                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
-                              error('The DABS task sample rate is not equal to the desired sampling rate');
-                          end  
-                    case 'DAQmx_Val_ContSamps'
-                        if isinf(self.ExpectedScanCount)
-                            bufferSize = sampleRate; % Default to 1 second of data as the buffer.
-                        else
-                            bufferSize = self.ExpectedScanCount;
-                        end
-                        self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_ContSamps', 2 * bufferSize);
-                          % we validated the sample rate when we created
-                          % the input task, so should be ok, but check
-                          % anyway
-                          if self.DabsDaqTask_.sampClkRate~=sampleRate ,
-                              error('The DABS task sample rate is not equal to the desired sampling rate');
-                          end  
-                    otherwise
-                        error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
-                end
-
-                % Set up triggering
-                if isempty(self.TriggerTerminalName)
-                    self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
-                else
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;                    
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(self.TriggerTerminalName, dabsTriggerEdge);
-                end        
-            end
-            
-            % Note that we are now armed
-            self.IsArmed_ = true;
-        end  % function
-
-        function disarm(self)
-            if self.IsArmed ,
-                self.IsArmed_ = false;            
-            end
-        end        
-    end
-    
-    methods (Access = protected)
-        function nSamplesAvailable_(self, source, event) %#ok<INUSD>
-            %fprintf('AnalogInputTask::nSamplesAvailable_()\n');
-            %self.notify('SamplesAvailable');
-        end  % function
-        
-        function taskDone_(self, source, event) %#ok<INUSD>
-            %fprintf('AnalogInputTask::taskDone_()\n');
-
-            % Stop the DABS task.
-            self.DabsDaqTask_.stop();
-            
-            % Fire the event before unregistering the callback functions.  At the end of a
-            % script the DAQmx callbacks may be the only references preventing the object
-            % from deleting before the events are sent/complete.
-            %self.notify('AcquisitionComplete');
-        end  % function
-        
-%         function unpackedData = unpackDigitalData_(self, packedData)
-%             % Only used for digital data.
-%             nScans = size(packedData,1);
-%             %nChannels = length(self.TerminalNames);
-%             %terminalIDs = ws.terminalIDsFromTerminalNames(self.TerminalNames);            
-%             terminalIDs = self.TerminalIDs_ ;
-%             nChannels = length(terminalIDs) ;            
-%             unpackedData = zeros(nScans,nChannels,'uint8');
-%             for j=1:nChannels ,
-%                 terminalID = terminalIDs(j);
-%                 thisChannelData = bitget(packeData,terminalID+1);  % +1 to convert to one-based indexing
-%                 unpackedData(:,j) = thisChannelData ;
+%         function out = get.TerminalIDs(self)
+%             out = self.TerminalIDs_ ;
+%         end  % function
+% 
+%         function value = get.ExpectedScanCount(self)
+%             value = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;
+%         end  % function
+%         
+%         function value = get.SampleRate(self)
+%             value = self.SampleRate_ ;
+%         end  % function
+% 
+%         function out = get.TaskName(self)
+%             if ~isempty(self.DabsDaqTask_)
+%                 out = self.DabsDaqTask_.taskName;
+%             else
+%                 out = '';
 %             end
 %         end  % function
-    end  % protected methods block
+        
+%         function set.DesiredAcquisitionDuration(self, value)
+%             if ~( isnumeric(value) && isscalar(value) && ~isnan(value) && value>0 )  ,
+%                 error('ws:invalidPropertyValue', ...
+%                       'AcquisitionDuration must be a positive scalar');       
+%             end            
+%             self.DesiredSweepDuration_ = value;
+%             if isinf(value) ,
+%                 self.ClockTiming_ = 'DAQmx_Val_ContSamps' ;
+%             else
+%                 self.ClockTiming_ = 'DAQmx_Val_FiniteSamps' ;
+%             end                
+%         end  % function
+%         
+%         function value = get.DesiredAcquisitionDuration(self)
+%             value = self.DesiredSweepDuration_ ;
+%         end  % function
+% 
+%         function value = get.FinalScanTime(self)
+%             value = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;            
+%         end  % function
+%         
+%         function set.TriggerTerminalName(self, newValue)
+%             if isempty(newValue) ,
+%                 self.TriggerTerminalName_ = '' ;
+%             elseif ws.isString(newValue) ,
+%                 self.TriggerTerminalName_ = newValue;
+%             else
+%                 error('ws:invalidPropertyValue', ...
+%                       'TriggerTerminalName must be empty or a string');
+%             end
+%         end  % function
+%         
+%         function value = get.TriggerTerminalName(self)
+%             value = self.TriggerTerminalName_ ;
+%         end  % function                
+% 
+%         function set.TriggerEdge(self, newValue)
+%             if isempty(newValue) ,
+%                 self.TriggerEdge_ = [] ;
+%             elseif ws.isAnEdgeType(newValue) ,
+%                 self.TriggerEdge_ = newValue ;
+%             else
+%                 error('ws:invalidPropertyValue', ...
+%                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
+%             end            
+%         end  % function
+%         
+%         function value = get.TriggerEdge(self)
+%             value = self.TriggerEdge_ ;
+%         end  % function                
+%         
+%         function value = get.ClockTiming(self)
+%             value = self.ClockTiming_ ;
+%         end  % function                
+        
+%         function arm(self)
+%             % Must be called before the first call to start()
+%             %fprintf('AnalogInputTask::setup()\n');
+%             if self.IsArmed ,
+%                 return
+%             end
+% 
+%             if isempty(self.DabsDaqTask_) ,
+%                 % do nothing
+%             else
+%                 % Set up timing
+%                 sampleRate = self.SampleRate_ ;
+%                 switch self.ClockTiming_ ,
+%                     case 'DAQmx_Val_FiniteSamps'
+%                         self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', self.ExpectedScanCount);
+%                           % we validated the sample rate when we created
+%                           % the input task, so should be ok, but check
+%                           % anyway
+%                           if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+%                               error('The DABS task sample rate is not equal to the desired sampling rate');
+%                           end  
+%                     case 'DAQmx_Val_ContSamps'
+%                         if isinf(self.ExpectedScanCount)
+%                             bufferSize = sampleRate; % Default to 1 second of data as the buffer.
+%                         else
+%                             bufferSize = self.ExpectedScanCount;
+%                         end
+%                         self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_ContSamps', 2 * bufferSize);
+%                           % we validated the sample rate when we created
+%                           % the input task, so should be ok, but check
+%                           % anyway
+%                           if self.DabsDaqTask_.sampClkRate~=sampleRate ,
+%                               error('The DABS task sample rate is not equal to the desired sampling rate');
+%                           end  
+%                     otherwise
+%                         error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
+%                 end
+% 
+%                 % Set up triggering
+%                 if isempty(self.TriggerTerminalName)
+%                     self.DabsDaqTask_.disableStartTrig();  % This means the daqmx.Task will not wait for any trigger after getting the start() message, I think
+%                 else
+%                     dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(self.TriggerEdge) ;                    
+%                     self.DabsDaqTask_.cfgDigEdgeStartTrig(self.TriggerTerminalName, dabsTriggerEdge);
+%                 end        
+%             end
+%             
+%             % Note that we are now armed
+%             self.IsArmed_ = true;
+%         end  % function
+% 
+%         function disarm(self)
+%             if self.IsArmed ,
+%                 self.IsArmed_ = false;            
+%             end
+%         end        
+    end  % public methods block   
 end
 
