@@ -430,3 +430,7 @@ Version History
                          "General" window.  Eliminated direct external access 
                          to WavesurferModel subsystems in user code.  Eliminated 
                          Parent properties in all ws.Model objects.  
+                         
+0.951    Aug 24, 2017    Fixed bug where WS used built-in contains() function, 
+                         only introduced in R2016b.
+                       
