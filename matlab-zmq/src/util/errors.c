@@ -47,6 +47,7 @@ void handle_error() {
     if (err == 0)
         err = zmq_errno();
     //mexPrintf("ZMQ Error number: %d\n",err);
+    //mexPrintf("ZMQ Error number for EAGAIN: %d\n",EAGAIN);
     
     if (err) {
         message = (const char*) zmq_strerror(err);
