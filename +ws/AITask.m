@@ -152,7 +152,7 @@ classdef AITask < handle
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;
+                    expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
                     ws.AITask.setDABSTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
 
                     % Set up triggering

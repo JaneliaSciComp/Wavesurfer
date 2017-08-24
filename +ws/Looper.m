@@ -809,20 +809,22 @@ classdef Looper < handle
         end  % function
         
         function completingOrStoppingOrAbortingRun_(self)
-            if ~isempty(self.TimedAnalogInputTask_) ,
-                if isvalid(self.TimedAnalogInputTask_) ,
-                    self.TimedAnalogInputTask_.disarm();
-                else
-                    self.TimedAnalogInputTask_ = [] ;
-                end
-            end
-            if ~isempty(self.TimedDigitalInputTask_) ,
-                if isvalid(self.TimedDigitalInputTask_) ,
-                    self.TimedDigitalInputTask_.disarm();
-                else
-                    self.TimedDigitalInputTask_ = [] ;
-                end                    
-            end
+            self.TimedAnalogInputTask_ = [] ;
+%             if ~isempty(self.TimedAnalogInputTask_) ,
+%                 if isvalid(self.TimedAnalogInputTask_) ,
+%                     %self.TimedAnalogInputTask_.disarm();
+%                 else
+%                     self.TimedAnalogInputTask_ = [] ;
+%                 end
+%             end
+            self.TimedDigitalInputTask_ = [] ;
+%             if ~isempty(self.TimedDigitalInputTask_) ,
+%                 if isvalid(self.TimedDigitalInputTask_) ,
+%                     %self.TimedDigitalInputTask_.disarm();
+%                 else
+%                     self.TimedDigitalInputTask_ = [] ;
+%                 end                    
+%             end
             self.IsArmedOrAcquiring_ = false;            
         end  % function
         
@@ -957,11 +959,11 @@ classdef Looper < handle
                               activeAIDeviceNames, ...
                               activeAITerminalIDs, ...
                               self.AcquisitionSampleRate_, ...
+                              self.SweepDuration_, ...
                               self.AcquisitionKeystoneTaskCache_, ...
                               self.AcquisitionTriggerDeviceName_, ...
                               self.AcquisitionTriggerPFIID_, ...
-                              self.AcquisitionTriggerEdge_, ...
-                              self.SweepDuration_) ;
+                              self.AcquisitionTriggerEdge_) ;
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
                 primaryDeviceName = self.PrimaryDeviceName_ ;
@@ -974,11 +976,11 @@ classdef Looper < handle
                               isPrimaryDeviceAPXIDevice , ...
                               activeDITerminalIDs, ...
                               self.AcquisitionSampleRate_, ...
+                              self.SweepDuration_, ...
                               self.AcquisitionKeystoneTaskCache_, ...
                               self.AcquisitionTriggerDeviceName_, ...
                               self.AcquisitionTriggerPFIID_, ...
-                              self.AcquisitionTriggerEdge_, ...
-                              self.SweepDuration_) ;
+                              self.AcquisitionTriggerEdge_) ;
             end
         end  % function
 
