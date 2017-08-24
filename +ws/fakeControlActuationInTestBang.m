@@ -11,7 +11,7 @@ function fakeControlActuationInTestBang(target, controlName, varargin)
     try
         methodName = [controlName 'Actuated'] ;
         if ismethod(target, methodName) ,
-            if contains(controlName, 'Checkbox') ||  contains(controlName, 'Edit') ,
+            if ws.contains(controlName, 'Checkbox') ||  ws.contains(controlName, 'Edit') ,
                 if nargin>=1 ,
                     source = ws.Valuable(varargin{1}) ; 
                     varargin = varargin(2:end) ;

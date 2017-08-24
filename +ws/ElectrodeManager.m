@@ -1150,14 +1150,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 
             electrode=self.Electrodes_{electrodeIndex};
             
-            if ~contains(propertyName,'Scaling') ,
+            if ~ws.contains(propertyName,'Scaling') ,
                 parameterName=propertyName;
             else
                 % "Scaling" should be the last thing
                 head=propertyName(1:end-7);
                 % The head can be "Command" or "Monitor",
                 % optionally preceded by "Voltage" or "Current"
-                if ~contains(head,'Voltage') && ~contains(head,'Current') ,
+                if ~ws.contains(head,'Voltage') && ~ws.contains(head,'Current') ,
                     % If here, head is either 'Command' or 'Monitor'
                     fullHeadPrototype=electrode.whichCommandOrMonitor(head);
                 else
@@ -1177,14 +1177,14 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 
             electrode=self.Electrodes_{electrodeIndex};
             
-            if ~contains(propertyName,'Scaling') ,
+            if ~ws.contains(propertyName,'Scaling') ,
                 parameterName=propertyName;
             else
                 % "Scaling" should be the last thing
                 head=propertyName(1:end-7);
                 % The head can be "Command" or "Monitor",
                 % optionally preceded by "Voltage" or "Current"
-                if ~contains(head,'Voltage') && ~contains(head,'Current') ,
+                if ~ws.contains(head,'Voltage') && ~ws.contains(head,'Current') ,
                     % If here, head is either 'Command' or 'Monitor'
                     fullHeadPrototype=electrode.whichCommandOrMonitor(head);
                 else
