@@ -22,38 +22,36 @@ classdef DITask < handle
         CachedFinalScanTime_  % used when self.DabsDaqTask_ is empty
         SampleRate_ = 20000
         DesiredSweepDuration_ = 1     % Seconds
+        TerminalIDs_
     end
     
     methods
         function self = DITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
                                sampleRate, desiredSweepDuration, ...
                                keystoneTask, triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
-            % Create the task, channels
+                           
             nChannels=length(terminalIDs) ;            
-            if nChannels==0 ,
-                self.DabsDaqTask_ = [] ;
-            else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
-            end            
-            
-            % Create a tic id
-            self.TicId_ = tic();
-            
-            % Store this stuff
-            %self.DeviceNames_ = deviceNames ;
-            %self.PrimaryDeviceName_ = primaryDeviceName ;
-            %self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
-            %self.TerminalIDs_ = terminalIDs ;
-            self.SampleRate_ = sampleRate ;
-            self.DesiredSweepDuration_ = desiredSweepDuration ;
-            
-            % Create the channels, set the timing mode (has to be done
-            % after adding channels)
             if nChannels>0 ,
+                % Create the task itself
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
+            
+                % Create the channels, set the timing mode (has to be done
+                % after adding channels)
+                % Add channels to the task
+                linesSpecification = ws.diChannelLineSpecificationFromTerminalIDs(terminalIDs) ;
+                self.DabsDaqTask_.createDIChan(primaryDeviceName, linesSpecification) ;
+                  % Create one DAQmx DI channel, with all the TTL DI lines on it.
+                  % This way, when we read the data with readDigitalUn('uint32', []),
+                  % we'll get a uint32 col vector with all the lines multiplexed on it in the
+                  % bits indicated by terminalIDs.
+                
+                % Set the reference clock for the task  
                 [referenceClockSource, referenceClockRate] = ...
                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;
                 set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;
+                
+                % Set the sampling rate, and check that is set to what we want
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
@@ -75,10 +73,8 @@ classdef DITask < handle
                     error('ws:sampleClockRateNotEqualToDesiredClockRate', ...
                           'Unable to set the DAQmx sample rate to the desired sampling rate');
                 end                
-            end         
             
-            % Determine trigger terminal and edge type
-            if ~isempty(self.DabsDaqTask_) ,
+                % Determine trigger terminal and edge type
                 if isequal(keystoneTask,'ai') ,
                     triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
                     triggerEdge = 'rising' ;
@@ -89,15 +85,13 @@ classdef DITask < handle
                     triggerTerminalName = '' ;
                     triggerEdge = [] ;
                 end
-            end
 
-            % Do stuff that used to be "arming" the task
-            if ~isempty(self.DabsDaqTask_) ,
+                % Do stuff that used to be "arming" the task
                 % Set up timing
                 clockTiming = ws.fif(isinf(desiredSweepDuration), 'DAQmx_Val_ContSamps', 'DAQmx_Val_FiniteSamps' ) ;
                 switch clockTiming ,
                     case 'DAQmx_Val_FiniteSamps'
-                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate_, desiredSweepDuration) ;
+                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
                         self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', expectedScanCount);
                           % we validated the sample rate when we created
                           % the input task, so should be ok, but check
@@ -106,7 +100,7 @@ classdef DITask < handle
                               error('The DABS task sample rate is not equal to the desired sampling rate');
                           end  
                     case 'DAQmx_Val_ContSamps'
-                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate_, desiredSweepDuration) ;
+                        expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
                         if isinf(expectedScanCount)
                             bufferSize = sampleRate;   % Default to 1 second of data as the buffer.
                         else
@@ -131,6 +125,14 @@ classdef DITask < handle
                     self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
                 end        
             end
+            
+            % Create a tic id for timing stuff
+            self.TicId_ = tic() ;
+            
+            % Store some parameters internally
+            self.SampleRate_ = sampleRate ;
+            self.DesiredSweepDuration_ = desiredSweepDuration ;            
+            self.TerminalIDs_ = terminalIDs ;
         end  % function
         
         function delete(self)

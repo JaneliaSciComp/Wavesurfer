@@ -36,7 +36,7 @@ classdef AITaskTestCase < matlab.unittest.TestCase
             end
             self.verifyTrue(isTaskDone) ;            
             fromRunStartTicId = tic() ;  % just a dummy so we can call .readData()
-            [data, timeSinceRunStartAtStartOfData] = inputTask.readData([], nan, fromRunStartTicId) ;
+            data = inputTask.readData([], nan, fromRunStartTicId) ;
             self.verifyEqual(size(data,1), fs*sweepDuration) ;
             self.verifyEqual(size(data,2), 2) ;
             inputTask.stop() ;
@@ -64,7 +64,7 @@ classdef AITaskTestCase < matlab.unittest.TestCase
             end
             self.verifyTrue(isTaskDone) ;
             fromRunStartTicId = tic() ;  % just a dummy so we can call .readData()
-            [data, timeSinceRunStartAtStartOfData] = inputTask.readData([], nan, fromRunStartTicId) ;
+            data = inputTask.readData([], nan, fromRunStartTicId) ;
             self.verifyEqual(size(data,1), fs*sweepDuration) ;
             self.verifyEqual(size(data,2), 2) ;
             inputTask.stop() ;
