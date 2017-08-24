@@ -5,7 +5,11 @@ function [deviceNamePerDeviceOrdered, terminalIDsPerDeviceOrdered, channelIndice
     isPrimary = strcmp(primaryDeviceName, deviceNamePerDevice) ;
     primaryCount = sum(isPrimary) ;
     if primaryCount==0 ,
-        error('primaryDeviceName is not in deviceNamePerDeviceRaw') ;
+        % Just return the unaltered lists.  Sometimes this happens b/c the lists
+        % are empty.
+        deviceNamePerDeviceOrdered = deviceNamePerDevice ;
+        terminalIDsPerDeviceOrdered = terminalIDsPerDevice ;
+        channelIndicesPerDeviceOrdered = channelIndicesPerDevice ;
     elseif primaryCount==1 ,
         isSatellite = ~isPrimary ;
         deviceNamePerDeviceOrdered = [deviceNamePerDevice(isPrimary) deviceNamePerDevice(isSatellite)] ;

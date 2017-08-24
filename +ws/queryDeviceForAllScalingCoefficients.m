@@ -13,6 +13,6 @@ function scalingCoefficients = queryDeviceForAllScalingCoefficients(deviceName)
     doUseDefaultTermination = true ;  % All data files without calibration info were using default termination
     referenceClockSource = 'OnboardClock' ;
     referenceClockRate = 10e6 ;
-    inputTask = ws.InputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination) ;
+    inputTask = ws.OldInputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, sampleRate, doUseDefaultTermination) ;
     scalingCoefficients = inputTask.ScalingCoefficients ;
 end
