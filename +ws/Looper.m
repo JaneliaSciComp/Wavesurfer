@@ -646,30 +646,30 @@ classdef Looper < handle
             self.acquireTimedHardwareResources_() ;
 
             % Set up the task triggering for DI channels
-            acquisitionKeystoneTask = self.AcquisitionKeystoneTaskCache_ ;
+%             acquisitionKeystoneTask = self.AcquisitionKeystoneTaskCache_ ;
 %             self.TimedAnalogInputTask_.setTrigger(self.AcquisitionKeystoneTaskCache_, ...
 %                                                   self.AcquisitionTriggerDeviceName_, ...
 %                                                   self.AcquisitionTriggerPFIID_, ...
 %                                                   self.AcquisitionTriggerEdge_) ;
-            if isequal(acquisitionKeystoneTask,'ai') ,
-                %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
-                %self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
-                self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(acquisitionKeystoneTask,'di') ,
-                %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%/di/StartTrigger', self.PrimaryDeviceName_) ;
-                %self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
-                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
-                self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-            else
-                % Getting here means there was a programmer error
-                error('ws:InternalError', ...
-                      'Adam is a dum-dum, and the magic number is 92834797');
-            end
+%             if isequal(acquisitionKeystoneTask,'ai') ,
+%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
+%                 %self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
+%                 self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
+%             elseif isequal(acquisitionKeystoneTask,'di') ,
+%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%/di/StartTrigger', self.PrimaryDeviceName_) ;
+%                 %self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
+%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
+%                 self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+%             else
+%                 % Getting here means there was a programmer error
+%                 error('ws:InternalError', ...
+%                       'Adam is a dum-dum, and the magic number is 92834797');
+%             end
             
-            % Set for finite-duration vs. continous acquisition
-            %self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
-            self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
+%             % Set for finite-duration vs. continous acquisition
+%             %self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
+%             self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
             
             % Dimension the cache that will hold acquired data in main
             % memory
@@ -699,7 +699,7 @@ classdef Looper < handle
             
             % Arm the AI and DI tasks
             %self.TimedAnalogInputTask_.arm();  % no notion of arming anymore
-            self.TimedDigitalInputTask_.arm();
+            %self.TimedDigitalInputTask_.arm();
         end  % function        
         
         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
