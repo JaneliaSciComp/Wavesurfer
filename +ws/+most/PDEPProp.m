@@ -210,7 +210,7 @@ classdef PDEPProp < ws.most.DClass
         function pdepSetAssert(obj, inVal, assertLogical, errorMessage, varargin)
             %Subclasses with pseudo-dependent properties with set-property-access methods used for error/type-checking should use this method in lieu of 'assert'
             if ~obj.pdepSetAssertSuppress && ~assertLogical && ~(obj.errorCondition && isempty(inVal)) %Allows empty value to be set during error conditions, as done by this class, regardless of assertLogical condition requirements
-                throwAsCaller(obj.DException('', 'PropSetAccessError', errorMessage, varargin{:}));
+                throw(obj.DException('', 'PropSetAccessError', errorMessage, varargin{:}));
             end
         end
         
@@ -306,7 +306,7 @@ classdef PDEPProp < ws.most.DClass
                         end
                 end
             catch ME
-                ME.throwAsCaller();
+                ME.throw();
             end
 		end
 		
@@ -345,7 +345,7 @@ classdef PDEPProp < ws.most.DClass
                     end
                 end
             catch ME
-                ME.throwAsCaller()
+                ME.throw()
             end
 		end
 		
