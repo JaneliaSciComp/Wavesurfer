@@ -81,7 +81,7 @@ classdef Ephys < ws.Subsystem
 %             self.Parent.electrodesRemoved() ;
 %         end
 
-        function self=didSetAnalogChannelUnitsOrScales(self)
+        function didSetAnalogChannelUnitsOrScales(self)
             self.TestPulser_.didSetAnalogChannelUnitsOrScales();
         end       
         

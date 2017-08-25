@@ -322,12 +322,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
 %             value = self.Parent.AreSweepsFiniteDuration ;
 %         end  % function       
-        
+
+        function didRemoveElectrodes(self)
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
+            self.broadcast('Update') ;
+        end
+
         function didSetAnalogChannelUnitsOrScales(self)
             %self.clearData_() ;
             self.broadcast('ClearData') ;
             self.broadcast('Update') ;
-        end       
+        end
         
         function startingRun(self, xSpan, sweepDuration)
             self.XOffset = 0;
