@@ -911,7 +911,38 @@ classdef WavesurferModel < ws.Model
                 self.Stimulation_.releaseStimulusLibraryMapDuration() ;
             end 
             self.broadcast('UpdateStimulusLibrary') ;
-        end        
+        end  
+
+        function electrodeMayHaveChanged_(self, electrodeIndex, propertyName)  %#ok<INUSL>
+            % Notify other systems that an electrode may have changed in the Ephys
+            % subsystem.
+            %self.Ephys_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+              % Ephys subsystem should already know...
+            isModeOrChannelNameOrScale = ...
+                isempty(propertyName) || ...
+                ismember(propertyName, ...
+                         {'Mode' ...
+                          'CommandChannelName' 'CommandScaling' ...
+                          'MonitorChannelName' 'MonitorScaling' ...
+                          'VoltageCommandChannelName' 'VoltageCommandScaling' ...
+                          'CurrentCommandChannelName' 'CurrentCommandScaling' ...
+                          'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
+                          'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
+            if isModeOrChannelNameOrScale ,
+                self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                %self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
+                self.broadcast('UpdateChannels') ;
+            end            
+        end  % function
+        
+        function notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_(self)
+            % Called after setting an analog channel unit or scale (directly), to
+            % notify other systems of the change.  Here "other" means "other than the
+            % Acquisition or Stimulation subsystem where the change was made".
+            self.Display_.didSetAnalogChannelUnitsOrScales() ;
+            self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
+        end
+
     end  % protected methods block
     
     methods
@@ -920,35 +951,8 @@ classdef WavesurferModel < ws.Model
 %             % was removed
 %             % Currently, tells Acquisition and Stimulation about the change.
 %             self.didSetAnalogChannelUnitsOrScales() ;      
-%         end
-        
-        function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
-            % Called by the Ephys to notify that the electrode
-            % may have changed.
-            self.Ephys_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
-            isModeOrChannelNameOrScale = ...
-                isempty(propertyName) || ...
-                ismember(propertyName, ...
-                         {'Mode' ...
-                          'VoltageCommandChannelName' 'VoltageCommandScaling' ...
-                          'CurrentCommandChannelName' 'CurrentCommandScaling' ...
-                          'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
-                          'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
-            if isModeOrChannelNameOrScale ,
-                self.didSetAnalogChannelUnitsOrScales();
-            end            
-        end  % function
+%         end       
 
-        function self=didSetAnalogChannelUnitsOrScales(self)
-            %fprintf('WavesurferModel.didSetAnalogChannelUnitsOrScales():\n')
-            %dbstack
-            display=self.Display_;
-            display.didSetAnalogChannelUnitsOrScales();
-            ephys=self.Ephys_;
-            ephys.didSetAnalogChannelUnitsOrScales();
-            self.broadcast('UpdateChannels') ;
-        end
-        
         function setSingleAIChannelTerminalID(self, i, newValue)
             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
             self.didSetAnalogInputTerminalID();
@@ -4491,13 +4495,15 @@ classdef WavesurferModel < ws.Model
         function set.AIChannelUnits(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelUnits_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelUnits_())) ;
-            self.didSetAnalogChannelUnitsOrScales();
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function set.AIChannelScales(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelScales_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelScales_())) ;
-            self.didSetAnalogChannelUnitsOrScales();
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setAIChannelUnitsAndScales(self,newUnitsRaw,newScales)
@@ -4505,7 +4511,8 @@ classdef WavesurferModel < ws.Model
             newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
             self.Acquisition_.setAnalogChannelUnits_( ws.fif(isChangeable, newUnits, self.Acquisition_.getAnalogChannelUnits_()) ) ;
             self.Acquisition_.setAnalogChannelScales_( ws.fif(isChangeable, newScales, self.Acquisition_.getAnalogChannelScales_()) ) ;
-            self.didSetAnalogChannelUnitsOrScales();
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSingleAIChannelUnits(self,i,newValueRaw)
@@ -4515,7 +4522,8 @@ classdef WavesurferModel < ws.Model
                 newValue = strtrim(newValueRaw) ;
                 self.Acquisition_.setSingleAnalogChannelUnits_(i, newValue) ;                
             end
-            self.didSetAnalogChannelUnitsOrScales();
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSingleAIChannelScale(self,i,newValue)
@@ -4524,7 +4532,8 @@ classdef WavesurferModel < ws.Model
             if isChangeable ,
                 self.Acquisition_.setSingleAnalogChannelScale_(i, newValue) ;
             end
-            self.didSetAnalogChannelUnitsOrScales();
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function result = get.IsAIChannelActive(self)
@@ -4775,7 +4784,8 @@ classdef WavesurferModel < ws.Model
             if isChangeable ,
                 self.Stimulation_.setSingleAnalogChannelUnits_(i, strtrim(newValue)) ;
             end
-            self.didSetAnalogChannelUnitsOrScales();            
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();            
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSingleAOChannelScale(self, i, newValue)
@@ -4784,7 +4794,8 @@ classdef WavesurferModel < ws.Model
             if isChangeable && isfinite(newValue) && newValue>0 ,
                 self.Stimulation_.setSingleAnalogChannelScale_(i, newValue) ;
             end
-            self.didSetAnalogChannelUnitsOrScales() ;
+            self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_() ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSingleAOTerminalID(self, i, newValue)
@@ -5267,7 +5278,7 @@ classdef WavesurferModel < ws.Model
                             rethrow(exception);
                         end
                     end                                        
-                    self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+                    self.electrodeMayHaveChanged_(electrodeIndex, propertyName) ;
             end
         end
         
@@ -5286,7 +5297,7 @@ classdef WavesurferModel < ws.Model
                                                      newCurrentCommandScaling, ...
                                                      newVoltageCommandScaling,...
                                                      newIsCommandEnabled) ;
-            self.electrodeMayHaveChanged(electrodeIndex, '') ;
+            self.electrodeMayHaveChanged_(electrodeIndex, '') ;
         end  % function
         
         function result = areAllElectrodesTestPulsable(self)
@@ -5388,7 +5399,8 @@ classdef WavesurferModel < ws.Model
        
         function removeMarkedElectrodes(self)
             self.Ephys_.removeMarkedElectrodes_() ;
-            self.didSetAnalogChannelUnitsOrScales() ;     
+            self.Display_.didRemoveElectrodes() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function set.DoTrodeUpdateBeforeRun(self, newValue)

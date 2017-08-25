@@ -110,7 +110,7 @@ classdef TestPulser < ws.Model
 %             end
 %         end
         
-        function self=didSetAnalogChannelUnitsOrScales(self)
+        function didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent_();
             self.broadcast('Update');            
         end
