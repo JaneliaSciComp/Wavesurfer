@@ -964,7 +964,14 @@ classdef WavesurferModel < ws.Model
 %             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
 %             self.didSetAnalogInputTerminalID();
 %         end
-        
+
+        function setSingleAIChannelTerminalName(self, i, terminalName)
+            % newValue should be a string like 'AI4' or 'AI11'
+            terminalIDAsString = terminalName(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;
+            self.setSingleAIChannelTerminalID(i, terminalID) ;
+        end
+
         function setSingleAIChannelTerminalID(self, i, newValue)
             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
