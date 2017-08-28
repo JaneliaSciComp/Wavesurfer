@@ -30,7 +30,7 @@ classdef CounterTrigger < ws.Model
 
     methods
         function self = CounterTrigger() 
-            self = self@ws.Model() ;  % ignore parent arg
+            self = self@ws.Model() ;  
             self.Name_ = 'Counter Trigger' ;
             self.IsInternalRepeatCountOverridden_ = false ;
             self.InternalRepeatCount_ = 1 ;
