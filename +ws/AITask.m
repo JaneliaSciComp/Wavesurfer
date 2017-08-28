@@ -161,8 +161,6 @@ classdef AITask < handle
                         triggerTerminalName = sprintf('/%s/di/StartTrigger', primaryDeviceName) ;
                         triggerEdge = 'rising' ;
                     elseif isequal(keystoneTask,'ai') ,
-                        % ideally, acquisitionKeystoneTask is 'ai', but regardless, we act like it
-                        % is
                         if isequal(deviceName, primaryDeviceName) ,
                             triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary) ;
                             triggerEdge = triggerEdgeIfKeystoneAndPrimary ;
@@ -520,7 +518,7 @@ classdef AITask < handle
             for deviceIndex = 1:deviceCount ,
                 dabsTask = dabsDaqTasks{deviceIndex} ;
                 dataForDevice = dabsTask.readAnalogData(scanCount, 'native') ;
-                channelIndicesForDevice = channelIndicesPerDevice{deviceCount} ;
+                channelIndicesForDevice = channelIndicesPerDevice{deviceIndex} ;
                 data(:, channelIndicesForDevice) = dataForDevice ;
             end
         end
