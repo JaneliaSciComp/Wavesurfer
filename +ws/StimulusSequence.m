@@ -7,7 +7,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         Name
         %Maps  % the items in the sequence
         IndexOfEachMapInLibrary
-        IsMarkedForDeletion  % logical, one element per element in Maps
+        IsMarkedForDeletion  % logical, one element per element in IndexOfEachMapInLibrary
     end      
     
     properties (Dependent=true, SetAccess=immutable)
