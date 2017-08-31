@@ -430,6 +430,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
         end  % function
 
+        function result = getDeviceNameFromChannelName(self, channelName)
+            % Get the DeviceName, given the channel name.
+            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+            result = self.AnalogDeviceNames{iChannel} ;
+        end  % function
+        
 %         function value = channelScaleFromName(self,channelName)
 %             channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
 %             if isnan(channelIndex) ,

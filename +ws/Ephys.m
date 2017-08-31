@@ -85,11 +85,11 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.didSetAnalogChannelUnitsOrScales();
         end       
         
-        function isElectrodeMarkedForTestPulseMayHaveChanged(self)
-            %testPulseElectrodes = self.TestPulseElectrodes ;
-            isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_() ;
-            self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(isElectrodeMarkedForTestPulseAfter) ;
-        end
+%         function isElectrodeMarkedForTestPulseMayHaveChanged(self)
+%             %testPulseElectrodes = self.TestPulseElectrodes ;
+%             isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_() ;
+%             self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(isElectrodeMarkedForTestPulseAfter) ;
+%         end
                 
         function startingRun(self)  %#ok<MANU>
             % Update all the gains and modes that are associated with smart
@@ -221,11 +221,11 @@ classdef Ephys < ws.Subsystem
             %self.broadcast('Update');  % is this necessary?
         end  % function
         
-        function settingPrimaryDeviceName(self, deviceName)
-            %fprintf('ws.Triggering::didSetDevice() called\n') ;
-            %dbstack
-            self.TestPulser_.settingPrimaryDeviceName(deviceName) ;
-        end        
+%         function settingPrimaryDeviceName(self, deviceName)
+%             %fprintf('ws.Triggering::didSetDevice() called\n') ;
+%             %dbstack
+%             self.TestPulser_.settingPrimaryDeviceName(deviceName) ;
+%         end        
         
         function result = getTestPulseElectrodeProperty(self, propertyName)
             electrodeIndex = self.TestPulseElectrodeIndex ;
@@ -334,7 +334,7 @@ classdef Ephys < ws.Subsystem
             if isempty(electrodeIndex) ,
                 result = [] ; 
             else
-                isElectrodeMarkedForTestPulse = self.getIsElectrodeMarkedForTestPulse_() ;
+                isElectrodeMarkedForTestPulse = self.getIsElectrodeMarkedForTestPulse() ;
                 indexWithinTPElectrodes = ws.indexWithinSubsetFromIndex(electrodeIndex, isElectrodeMarkedForTestPulse) ;
                 monitorPerElectrode = self.TestPulser_.getMonitorPerElectrode_() ;
                 if isempty(monitorPerElectrode) ,
@@ -374,16 +374,16 @@ classdef Ephys < ws.Subsystem
 %             self.ElectrodeManager_.setElectrodeModeOrScaling_(electrodeIndex, 'Mode', newValue) ;
 %         end  % function        
         
-        function prepForTestPulsing_(self, ...
-                                     fs, ...
-                                     isVCPerTestPulseElectrode, ...
-                                     isCCPerTestPulseElectrode, ...
-                                     commandTerminalIDPerTestPulseElectrode, ...
-                                     monitorTerminalIDPerTestPulseElectrode, ...
-                                     commandChannelScalePerTestPulseElectrode, ...
-                                     monitorChannelScalePerTestPulseElectrode, ...
-                                     deviceName, ...
-                                     gainOrResistanceUnitsPerTestPulseElectrode)
+        function prepForTestPulsing(self, ...
+                                    fs, ...
+                                    isVCPerTestPulseElectrode, ...
+                                    isCCPerTestPulseElectrode, ...
+                                    commandTerminalIDPerTestPulseElectrode, ...
+                                    monitorTerminalIDPerTestPulseElectrode, ...
+                                    commandChannelScalePerTestPulseElectrode, ...
+                                    monitorChannelScalePerTestPulseElectrode, ...
+                                    deviceName, ...
+                                    gainOrResistanceUnitsPerTestPulseElectrode)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
@@ -393,18 +393,18 @@ classdef Ephys < ws.Subsystem
             
             nTestPulseElectrodes = self.ElectrodeManager_.TestPulseElectrodesCount ;
             %gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
-            self.TestPulser_.prepForStart_(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
-                                           amplitudePerTestPulseElectrode, ...
-                                           fs, ...
-                                           nTestPulseElectrodes, ...
-                                           gainOrResistanceUnitsPerTestPulseElectrode, ...
-                                           isVCPerTestPulseElectrode, ...
-                                           isCCPerTestPulseElectrode, ...
-                                           commandTerminalIDPerTestPulseElectrode, ...
-                                           monitorTerminalIDPerTestPulseElectrode, ...
-                                           commandChannelScalePerTestPulseElectrode, ...
-                                           monitorChannelScalePerTestPulseElectrode, ...
-                                           deviceName) ;
+            self.TestPulser_.prepForStart(indexOfTestPulseElectrodeWithinTestPulseElectrodes, ...
+                                          amplitudePerTestPulseElectrode, ...
+                                          fs, ...
+                                          nTestPulseElectrodes, ...
+                                          gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                          isVCPerTestPulseElectrode, ...
+                                          isCCPerTestPulseElectrode, ...
+                                          commandTerminalIDPerTestPulseElectrode, ...
+                                          monitorTerminalIDPerTestPulseElectrode, ...
+                                          commandChannelScalePerTestPulseElectrode, ...
+                                          monitorChannelScalePerTestPulseElectrode, ...
+                                          deviceName) ;
         end
 
         function startTestPulsing_(self)
@@ -480,19 +480,24 @@ classdef Ephys < ws.Subsystem
 %         end
 
         function set.TestPulseElectrodeIndex(self, newValue)
+            nElectrodes = self.getElectrodeCount_() ;
             if isempty(newValue) ,
-                self.TestPulser_.setElectrodeIndex_([]) ;
+                self.TestPulser_.setElectrodeIndex([]) ;
+                self.setIsElectrodeMarkedForTestPulse_(false(1, nElectrodes)) ;
             else
-                if isnumeric(newValue) && isscalar(newValue) && 1<=newValue && newValue<=self.getElectrodeCount_() && newValue==round(newValue) ,
+                if isnumeric(newValue) && isscalar(newValue) && 1<=newValue && newValue<=nElectrodes && newValue==round(newValue) ,
                     newElectrodeIndex = double(newValue) ;
-                    self.TestPulser_.setElectrodeIndex_(newElectrodeIndex) ;
+                    self.TestPulser_.setElectrodeIndex(newElectrodeIndex) ;
+                    newIsElectrodeMarkedForTestPulse = false(1, nElectrodes) ;
+                    newIsElectrodeMarkedForTestPulse(newElectrodeIndex) = true ;
+                    self.setIsElectrodeMarkedForTestPulse_(newIsElectrodeMarkedForTestPulse) ;
                 end
             end
             self.broadcast('UpdateTestPulser');
         end
 
         function result = get.TestPulseElectrodeIndex(self)
-            result = self.TestPulser_.getElectrodeIndex_() ;
+            result = self.TestPulser_.getElectrodeIndex() ;
         end
         
         function setTestPulseElectrodeByName(self, newValue)
@@ -502,7 +507,7 @@ classdef Ephys < ws.Subsystem
                 % Check that the newValue is an available electrode, unless we
                 % can't get a list of electrodes.
                 electrodeManager = self.ElectrodeManager_ ;
-                electrodeNames = electrodeManager.TestPulseElectrodeNames ;
+                electrodeNames = electrodeManager.getAllElectrodeNames() ;
                 newElectrodeIndex = find(strcmp(newValue, electrodeNames), 1) ;
                 if ~isempty(newElectrodeIndex) ,
                     self.TestPulseElectrodeIndex = newElectrodeIndex ;
@@ -648,14 +653,14 @@ classdef Ephys < ws.Subsystem
         function newElectrodeIndex = addNewElectrode_(self)
             newElectrodeIndex = self.ElectrodeManager_.addNewElectrode_() ;
             %electrodeName = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, 'Name') ;
-            isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_() ;
+            isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse() ;
             self.TestPulser_.electrodeWasAdded_(newElectrodeIndex, isElectrodeMarkedForTestPulseAfter) ;
             %self.electrodeWasAdded(electrodeIndex);
         end
         
         function removeMarkedElectrodes_(self)
             wasRemoved = self.ElectrodeManager_.removeMarkedElectrodes_() ;
-            isElectrodeMarkedForTestPulseAfter = self.getIsElectrodeMarkedForTestPulse_ ;
+            isElectrodeMarkedForTestPulseAfter = self.getIsElectrodeMarkedForTestPulse() ;
             self.TestPulser_.electrodesRemoved_(wasRemoved, isElectrodeMarkedForTestPulseAfter) ;
         end
 
@@ -671,15 +676,10 @@ classdef Ephys < ws.Subsystem
 %             self.ElectrodeManager_.setElectrodeModeOrScaling_(electrodeIndex, propertyName, newValue) ;
 %         end
         
-        function result = getIsElectrodeMarkedForTestPulse_(self)
-            result = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_();
+        function result = getIsElectrodeMarkedForTestPulse(self)
+            result = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse();
         end
         
-        function setIsElectrodeMarkedForTestPulse_(self, newValue)
-            self.ElectrodeManager_.setIsElectrodeMarkedForTestPulse_(newValue);
-            self.isElectrodeMarkedForTestPulseMayHaveChanged() ; 
-        end
-
         function result = getIsElectrodeMarkedForRemoval_(self)
             result = self.ElectrodeManager_.getIsElectrodeMarkedForRemoval_();
         end
@@ -768,6 +768,10 @@ classdef Ephys < ws.Subsystem
             result = self.ElectrodeManager_.TestPulseElectrodeNames ;
         end
         
+        function result = getAllElectrodeNames(self)
+            result = self.ElectrodeManager_.getAllElectrodeNames() ;
+        end
+        
 %         function result = getElectrodeManagerReference_(self)
 %             % Should be used as little as possible, and never by consumer code.
 %             % And eventually should be removed.
@@ -784,4 +788,12 @@ classdef Ephys < ws.Subsystem
         
     end  % public methods block
 
+    methods (Access=protected)
+        function setIsElectrodeMarkedForTestPulse_(self, newValue)
+            self.ElectrodeManager_.setIsElectrodeMarkedForTestPulse(newValue);
+            %self.isElectrodeMarkedForTestPulseMayHaveChanged() ; 
+            isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse() ;
+            self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(isElectrodeMarkedForTestPulseAfter) ;            
+        end
+    end  % protected methods block    
 end  % classdef

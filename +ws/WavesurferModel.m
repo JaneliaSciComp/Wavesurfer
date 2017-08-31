@@ -1159,9 +1159,6 @@ classdef WavesurferModel < ws.Model
 %             end
 %         end  % function
         
-        function testPulserIsAboutToStartTestPulsing(self)
-            self.releaseTimedHardwareResourcesOfAllProcesses_();
-        end        
     end  % public methods block
     
     methods (Access=protected)
@@ -3942,7 +3939,7 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_.settingPrimaryDeviceName(primaryDeviceName) ;
             self.Stimulation_.settingPrimaryDeviceName(primaryDeviceName) ;
             self.Triggering_.settingPrimaryDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
-            self.Ephys_.settingPrimaryDeviceName(primaryDeviceName) ;
+            %self.Ephys_.settingPrimaryDeviceName(primaryDeviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)
@@ -4912,29 +4909,39 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Free up resources we will need for test pulsing
-                self.testPulserIsAboutToStartTestPulsing();
+                self.releaseTimedHardwareResourcesOfAllProcesses_();
                 
                 % Get things we need for test-pulsing
                 fs = self.AcquisitionSampleRate ;
                 isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
                 isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
+                commandDeviceNamePerTestPulseElectrode = self.getCommandDeviceNamePerTestPulseElectrode_() ;
+                monitorDeviceNamePerTestPulseElectrode = self.getMonitorDeviceNamePerTestPulseElectrode_() ;
                 commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode_() ;
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                deviceName =self.PrimaryDeviceName ;
+                %deviceName =self.PrimaryDeviceName ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
+                % Make sure all the channels are on the same device
+                allDeviceNames = unique([commandDeviceNamePerTestPulseElectrode monitorDeviceNamePerTestPulseElectrode]) ;
+                if ~isscalar(allDeviceNames) ,
+                    error('ws:allTestPulseChannelsMustBeOnSameDevice', ...
+                          'All test pulse channels must be on the same device') ;
+                end
+                deviceName = allDeviceNames{1} ;
+                
                 % Call the main routine
-                self.Ephys_.prepForTestPulsing_(fs, ...
-                                                isVCPerTestPulseElectrode, ...
-                                                isCCPerTestPulseElectrode, ...
-                                                commandTerminalIDPerTestPulseElectrode, ...
-                                                monitorTerminalIDPerTestPulseElectrode, ...
-                                                commandChannelScalePerTestPulseElectrode, ...
-                                                monitorChannelScalePerTestPulseElectrode, ...                                                
-                                                deviceName, ...
-                                                gainOrResistanceUnitsPerTestPulseElectrode) ;
+                self.Ephys_.prepForTestPulsing(fs, ...
+                                               isVCPerTestPulseElectrode, ...
+                                               isCCPerTestPulseElectrode, ...
+                                               commandTerminalIDPerTestPulseElectrode, ...
+                                               monitorTerminalIDPerTestPulseElectrode, ...
+                                               commandChannelScalePerTestPulseElectrode, ...
+                                               monitorChannelScalePerTestPulseElectrode, ...                                                
+                                               deviceName, ...
+                                               gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -5180,6 +5187,29 @@ classdef WavesurferModel < ws.Model
             result = cellfun(@(channelName)(self.aiChannelScaleFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
+        
+        function result = getCommandDeviceNamePerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            stimulationSubsystem = self.Stimulation_ ;
+            result = cellfun(@(channelName)(stimulationSubsystem.getDeviceNameFromChannelName(channelName)), ...
+                             commandChannelNames, ...
+                             'UniformOutput', false) ;
+        end  % function       
+        
+        function result = getMonitorDeviceNamePerTestPulseElectrode_(self)
+            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+                                          testPulseElectrodes, ...
+                                          'UniformOutput',false) ;
+            acquisition = self.Acquisition_ ;
+            result = cellfun(@(channelName)(acquisition.getDeviceNameFromChannelName(channelName)), ...
+                             monitorChannelNames, ...
+                             'UniformOutput', false) ;
+        end        
+        
     end  % protected methods block
     
     methods
@@ -5392,7 +5422,7 @@ classdef WavesurferModel < ws.Model
        
         function result = get.DoTrodeUpdateBeforeRun(self)
             result = self.Ephys_.getDoTrodeUpdateBeforeRun_() ;
-        end 
+        end
 
 %         function setElectrodeModeOrScaling(self, electrodeIndex, propertyName, newValue)
 %             try
@@ -5415,11 +5445,13 @@ classdef WavesurferModel < ws.Model
 %         end
         
         function result = get.IsElectrodeMarkedForTestPulse(self)
-            result = self.Ephys_.getIsElectrodeMarkedForTestPulse_() ;
+            result = self.Ephys_.getIsElectrodeMarkedForTestPulse() ;
         end
         
         function set.IsElectrodeMarkedForTestPulse(self, newValue)
-            self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
+            % Don't want to allow this anymore, so just ignore new value
+            %self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
+            self.broadcast('UpdateElectrodes') ;
         end        
         
         function result = get.IsElectrodeMarkedForRemoval(self)
@@ -5552,6 +5584,10 @@ classdef WavesurferModel < ws.Model
         
         function result = get.TestPulseElectrodesCount(self)
             result = self.Ephys_.TestPulseElectrodesCount ;
+        end
+        
+        function result = getAllElectrodeNames(self)
+            result = self.Ephys_.getAllElectrodeNames() ;
         end
         
 %         function result = get.TestPulseElectrodeAmplitude(self)

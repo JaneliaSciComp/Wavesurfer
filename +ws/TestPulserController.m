@@ -56,9 +56,7 @@ classdef TestPulserController < ws.Controller
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
             wsModel = self.Model ;
-            %ephys = wsModel.Ephys ;
-            %electrodeManager = ephys.ElectrodeManager ;
-            electrodeNames = wsModel.TestPulseElectrodeNames ;
+            electrodeNames = wsModel.getAllElectrodeNames() ;
             menuItem = ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
                                                 electrodeNames);
             if isempty(menuItem) ,  % indicates invalid selection

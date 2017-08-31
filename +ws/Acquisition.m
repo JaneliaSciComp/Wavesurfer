@@ -704,6 +704,13 @@ classdef Acquisition < ws.Subsystem
             terminalID=self.AnalogTerminalIDs(iChannel);
         end  % function
 
+        function result = getDeviceNameFromChannelName(self, channelName)
+            % Get the DeviceName, given the channel name.
+            iChannel = self.iAnalogChannelFromName(channelName) ;
+            result = self.AnalogDeviceNames{iChannel} ;
+        end  % function
+
+        
 %         function electrodesRemoved(self)
 %             self.Parent.didSetAnalogChannelUnitsOrScales();            
 %             %self.broadcast('DidSetAnalogChannelUnitsOrScales');

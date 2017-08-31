@@ -153,11 +153,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             %self.broadcast('Update');
         end
         
-        function out=getIsElectrodeMarkedForTestPulse_(self)
+        function out=getIsElectrodeMarkedForTestPulse(self)
             out=self.IsElectrodeMarkedForTestPulse_;
         end
         
-        function setIsElectrodeMarkedForTestPulse_(self, newValue)
+        function setIsElectrodeMarkedForTestPulse(self, newValue)
             % newValue must be same shape as old
             if all(size(newValue)==size(self.IsElectrodeMarkedForTestPulse_)) ,
                 self.IsElectrodeMarkedForTestPulse_=newValue;
@@ -215,12 +215,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = ~self.AreSoftpanelsEnabled_ ;
         end
 
-%         function setIsInControlOfSoftpanelModeAndGains_(self, newValue)
-%             if islogical(newValue) && isscalar(newValue) ,
-%                 self.AreSoftpanelsEnabled_ = (~newValue) ;
-%             end
-%             self.broadcast('Update');            
-%         end
+        function result = getAllElectrodeNames(self)
+            result = cellfun(@(electrode)(electrode.Name), self.Electrodes_, 'UniformOutput', false) ;
+        end
         
         function electrodeIndex = addNewElectrode_(self)
             % Figure out an electrode name that is not already an electrode
@@ -259,7 +256,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Add the electrode
             electrodeIndex = length(self.Electrodes_)+1 ;
             self.Electrodes_{electrodeIndex}=electrode;  
-            self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=true;
+            self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=false;
             self.IsElectrodeMarkedForRemoval_(electrodeIndex)=false;
             self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;  % true by convention
             
