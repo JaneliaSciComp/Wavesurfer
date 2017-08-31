@@ -398,12 +398,12 @@ classdef TestPulserFigure < ws.MCOSFigure
             % VC/CC toggle buttons
             self.VCToggle= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','togglebutton', ...
+                          'Style','radiobutton', ...
                           'String','VC', ...
                           'Callback',@(src,evt)(self.controlActuated('VCToggle',src,evt)));
             self.CCToggle= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','togglebutton', ...
+                          'Style','radiobutton', ...
                           'String','CC', ...
                           'Callback',@(src,evt)(self.controlActuated('CCToggle',src,evt)));
                       
@@ -602,10 +602,10 @@ classdef TestPulserFigure < ws.MCOSFigure
             heightBetweenAmplitudeAndDuration=26;
             electrodePopupWidth=100;
             widthFromPopupsRightToAmplitudeLeft=20;
-            clampToggleWidth=electrodePopupWidth/2;  % 30;
-            clampToggleHeight=20;
+            clampToggleWidth = 40 ;
+            clampToggleHeight = 20 ;
             electrodePopupToClampToggleAreaHeight=8;
-            interClampToggleWidth=0;
+            interClampToggleWidth = 2 ;
             
             % Traces plot layout parameters                      
             widthFromLayoutLeftToPlot=0;
@@ -731,12 +731,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             clampToggleAreaHeight=clampToggleHeight;
             clampToggleAreaWidth=clampToggleWidth+interClampToggleWidth+clampToggleWidth;
 
-            %clampToggleAreaCenterX=electrodePopupMenuX+popupWidth/2;
-            clampToggleAreaRightX=electrodePopupMenuX+electrodePopupWidth;
-            clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
+            clampToggleAreaCenterX=electrodePopupMenuX+electrodePopupWidth/2;
+            %clampToggleAreaRightX=electrodePopupMenuX+electrodePopupWidth;
+            %clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
             
             clampToggleAreaTopY=electrodePopupMenuY-electrodePopupToClampToggleAreaHeight;
             clampToggleAreaX=clampToggleAreaCenterX-clampToggleAreaWidth/2;
+            %clampToggleAreaX = electrodePopupMenuX ;             
             clampToggleAreaY=clampToggleAreaTopY-clampToggleAreaHeight;
             
             % VC toggle button

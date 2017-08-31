@@ -670,7 +670,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                       
             self.CommandSoftpanelButton= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                             'Style','togglebutton', ...
+                             'Style','checkbox', ...
                              'String','Command Softpanel', ...
                              'Callback',@(src,evt)(self.controlActuated('CommandSoftpanelButton',src,evt)));
 
@@ -901,7 +901,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             heightBetweenTrodesAndBottomButtonRow=10;
             bottomButtonRowHeight=40;
             bottomButtonWidth=80;
-            softpanelBottomButtonWidth=140;
+            softpanelBottomButtonWidth=116;
             bottomButtonHeight=20;
             interBottomButtonSpaceWidth=10;
             bottomButtonSideSpaceWidth=20;
