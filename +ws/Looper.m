@@ -433,7 +433,13 @@ classdef Looper < handle
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
-        end  % function        
+        end  % function  
+        
+        function result = releaseTimedHardwareResources(self)
+            % NB: This is called via RPC
+            self.releaseTimedHardwareResources_() ;
+            result = [] ;
+        end        
     end  % RPC methods block   
 
     methods  % public methods, typically called by user code
