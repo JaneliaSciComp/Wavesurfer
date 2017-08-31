@@ -603,7 +603,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             electrodePopupWidth=100;
             widthFromPopupsRightToAmplitudeLeft=20;
             clampToggleWidth = 40 ;
-            clampToggleHeight = 20 ;
+            clampToggleHeight = 18 ;
             electrodePopupToClampToggleAreaHeight=8;
             interClampToggleWidth = 2 ;
             

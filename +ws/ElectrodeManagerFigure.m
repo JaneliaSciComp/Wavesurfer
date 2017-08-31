@@ -23,7 +23,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         
         ModeText
         IsCommandEnabledText
-        TestPulseQText
+        %TestPulseQText
         RemoveQText
         AddButton
         RemoveButton
@@ -60,7 +60,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
         CommandScaleUnitsTexts
         
         IsCommandEnabledCheckboxes
-        TestPulseQCheckboxes
+        %TestPulseQCheckboxes
         RemoveQCheckboxes   
 
         % Buttons at the bottom, that also persist for the lifetime of the
@@ -304,9 +304,9 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 set(self.IsCommandEnabledCheckboxes(i), ...
                     'Value',isCommandEnabledDisplay);
 
-                % Update the Remove? checkbox
-                set(self.TestPulseQCheckboxes(i), ...
-                    'Value',wsModel.IsElectrodeMarkedForTestPulse(i));
+%                 % Update the Remove? checkbox
+%                 set(self.TestPulseQCheckboxes(i), ...
+%                     'Value',wsModel.IsElectrodeMarkedForTestPulse(i));
 
                 % Update the Remove? checkbox
                 set(self.RemoveQCheckboxes(i), ...
@@ -512,9 +512,9 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 set(self.IsCommandEnabledCheckboxes(i), ...
                     'Enable',ws.onIff(isCommandEnabledCheckboxEnabled));
 
-                % Update the Remove? checkbox
-                set(self.TestPulseQCheckboxes(i), ...
-                    'Enable',ws.onIff(isWavesurferIdle));
+%                 % Update the Remove? checkbox
+%                 set(self.TestPulseQCheckboxes(i), ...
+%                     'Enable',ws.onIff(isWavesurferIdle));
 
                 % Update the Remove? checkbox
                 set(self.RemoveQCheckboxes(i), ...
@@ -638,11 +638,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                           'HorizontalAlignment','left', ...
                           'String','Command?');
                 
-            self.TestPulseQText = ...
-                ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','text', ...
-                          'HorizontalAlignment','left', ...
-                          'String','Test Pulse?');
+%             self.TestPulseQText = ...
+%                 ws.uicontrol('Parent',self.FigureGH, ...
+%                           'Style','text', ...
+%                           'HorizontalAlignment','left', ...
+%                           'String','Test Pulse?');
                 
             self.RemoveQText = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -797,12 +797,12 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                                   'Value',0, ...
                                   'String','', ...
                                   'Callback',@(src,evt)(self.controlActuated('IsCommandEnabledCheckbox',src,evt)));
-                    self.TestPulseQCheckboxes(j)= ...
-                        ws.uicontrol('Parent',self.FigureGH, ...
-                                  'Style','checkbox', ...
-                                  'Value',0, ...
-                                  'String','', ...
-                                  'Callback',@(src,evt)(self.controlActuated('TestPulseQCheckbox',src,evt)));
+%                     self.TestPulseQCheckboxes(j)= ...
+%                         ws.uicontrol('Parent',self.FigureGH, ...
+%                                   'Style','checkbox', ...
+%                                   'Value',0, ...
+%                                   'String','', ...
+%                                   'Callback',@(src,evt)(self.controlActuated('TestPulseQCheckbox',src,evt)));
                     self.RemoveQCheckboxes(j)= ...
                         ws.uicontrol('Parent',self.FigureGH, ...
                                   'Style','checkbox', ...
@@ -835,7 +835,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                 ws.deleteIfValidHGHandle(self.CurrentCommandScaleUnitsTexts(nElectrodes+1:end));
                 
                 ws.deleteIfValidHGHandle(self.IsCommandEnabledCheckboxes(nElectrodes+1:end));
-                ws.deleteIfValidHGHandle(self.TestPulseQCheckboxes(nElectrodes+1:end));
+                %ws.deleteIfValidHGHandle(self.TestPulseQCheckboxes(nElectrodes+1:end));
                 ws.deleteIfValidHGHandle(self.RemoveQCheckboxes(nElectrodes+1:end));
 
                 % Delete the excess HG handles
@@ -861,7 +861,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                 self.CurrentCommandScaleUnitsTexts(nElectrodes+1:end)=[];
                 
                 self.IsCommandEnabledCheckboxes(nElectrodes+1:end)=[];
-                self.TestPulseQCheckboxes(nElectrodes+1:end)=[];
+                %self.TestPulseQCheckboxes(nElectrodes+1:end)=[];
                 self.RemoveQCheckboxes(nElectrodes+1:end)=[];
             end
         end  % function
@@ -883,7 +883,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             commandColWidth=100;
             monitorColWidth=100;
             isCommandEnabledColWidth=80;
-            testPulseQColWidth=80;
+            %testPulseQColWidth=0;  % Doesn't exist any more
             removeQColWidth=60;
             interColSpaceWidth=5;
             spaceBeforeMonitorCols=3*interColSpaceWidth;
@@ -996,11 +996,11 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             isCommandEnabledColCenterX = isCommandEnabledColLeftX + isCommandEnabledColWidth/2;
             %centerTextBang(self.IsCommandEnabledText,[isCommandEnabledColCenterX centerYForColumnTitles]);
 
-            testPulseQColLeftX = isCommandEnabledColLeftX + isCommandEnabledColWidth + interColSpaceWidth ;
-            testPulseQColCenterX = testPulseQColLeftX + testPulseQColWidth/2;
+            %testPulseQColLeftX = isCommandEnabledColLeftX + isCommandEnabledColWidth + interColSpaceWidth ;
+            %testPulseQColCenterX = testPulseQColLeftX + testPulseQColWidth/2;
             %centerTextBang(self.TestPulseQText,[testPulseQColCenterX centerYForColumnTitles]);
 
-            removeQColLeftX = testPulseQColLeftX + testPulseQColWidth + interColSpaceWidth;
+            removeQColLeftX = isCommandEnabledColLeftX + isCommandEnabledColWidth + interColSpaceWidth ;
             removeQColCenterX = removeQColLeftX + removeQColWidth/2;
             %centerTextBang(self.RemoveQText,[removeQColCenterX centerYForColumnTitles]);
             
@@ -1051,7 +1051,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             ws.centerTextBang(self.CommandText,[commandColCenterX centerYForColumnTitles]);
             ws.centerTextBang(self.CommandScaleText,[commandScaleColCenterX centerYForColumnTitles]);
             ws.centerTextBang(self.IsCommandEnabledText,[isCommandEnabledColCenterX centerYForColumnTitles]);
-            ws.centerTextBang(self.TestPulseQText,[testPulseQColCenterX centerYForColumnTitles]);
+            %ws.centerTextBang(self.TestPulseQText,[testPulseQColCenterX centerYForColumnTitles]);
             ws.centerTextBang(self.RemoveQText,[removeQColCenterX centerYForColumnTitles]);
             
             % For each electrode, lay out the row
@@ -1085,7 +1085,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
 %                     'Position',[currentCommandScaleUnitsColLeftX rowBottomY-4 commandScaleUnitsColWidth trodeRowHeight]);  % shims make look nice
 
                 ws.centerCheckboxBang(self.IsCommandEnabledCheckboxes(i),[isCommandEnabledColLeftX+isCommandEnabledColWidth/2 rowBottomY+trodeRowHeight/2]);
-                ws.centerCheckboxBang(self.TestPulseQCheckboxes(i),[testPulseQColLeftX+testPulseQColWidth/2 rowBottomY+trodeRowHeight/2]);
+                %ws.centerCheckboxBang(self.TestPulseQCheckboxes(i),[testPulseQColLeftX+testPulseQColWidth/2 rowBottomY+trodeRowHeight/2]);
                 ws.centerCheckboxBang(self.RemoveQCheckboxes(i),[removeQColLeftX+removeQColWidth/2 rowBottomY+trodeRowHeight/2]);
             end  % for
             
