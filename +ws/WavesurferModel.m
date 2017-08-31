@@ -321,6 +321,7 @@ classdef WavesurferModel < ws.Model
         DidSetAcquisitionSampleRate
         DidSetStimulationSampleRate
         UpdateElectrodes
+        UpdateTestPulser
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -4577,7 +4578,7 @@ classdef WavesurferModel < ws.Model
             if isempty(channelName) ,
                 result='';
             else
-                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName) ;
+                iChannel=self.Acquisition_.aiChannelIndexFromName(channelName) ;
                 if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
@@ -4590,7 +4591,7 @@ classdef WavesurferModel < ws.Model
             if isempty(channelName) ,
                 result='';
             else
-                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName);
+                iChannel=self.Acquisition_.aiChannelIndexFromName(channelName);
                 if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
@@ -4864,7 +4865,7 @@ classdef WavesurferModel < ws.Model
             if isempty(channelName) ,
                 result = '' ;
             else
-                iChannel=self.Stimulation_.indexOfAnalogChannelFromName(channelName);
+                iChannel=self.Stimulation_.aoChannelIndexFromName(channelName);
                 if isnan(iChannel) ,
                     result='';
                 else
@@ -4874,7 +4875,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function value = aoChannelScaleFromName(self, channelName)
-            channelIndex = self.Stimulation_.indexOfAnalogChannelFromName(channelName) ;
+            channelIndex = self.Stimulation_.aoChannelIndexFromName(channelName) ;
             if isnan(channelIndex) ,
                 value = nan ;
             else
@@ -5147,6 +5148,45 @@ classdef WavesurferModel < ws.Model
             [gainOrResistanceUnits,gainOrResistance] = ...
                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
+
+        function result = areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices(self)
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            result = self.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(electrodeIndex) ;
+        end
+        
+        function result = areElectrodeMonitorAndCommandChannelsOnDifferentDevices(self, electrodeIndex) 
+            monitorDeviceName = self.getElectrodeMonitorChannelDeviceName(electrodeIndex) ;
+            if isempty(monitorDeviceName) ,
+                result = false ;
+            else
+                commandDeviceName = self.getElectrodeCommandChannelDeviceName(electrodeIndex) ;
+                if isempty(commandDeviceName) ,
+                    result = false ;
+                else
+                    result = ~isequal(monitorDeviceName, commandDeviceName) ;
+                end
+            end
+        end
+        
+        function result = getElectrodeMonitorChannelDeviceName(self, electrodeIndex)
+            monitorChannelName = self.Ephys_.getElectrodeProperty(electrodeIndex, 'MonitorChannelName') ;
+            if isempty(monitorChannelName) ,
+                result = '' ;
+            else
+                aiChannelIndex = self.Acquisition_.aiChannelIndexFromName(monitorChannelName) ;
+                result = self.AIChannelDeviceNames{aiChannelIndex} ;
+            end
+        end
+
+        function result = getElectrodeCommandChannelDeviceName(self, electrodeIndex)
+            commandChannelName = self.Ephys_.getElectrodeProperty(electrodeIndex, 'CommandChannelName') ;
+            if isempty(commandChannelName) ,
+                result = '' ;
+            else
+                aoChannelIndex = self.Stimulation_.aoChannelIndexFromName(commandChannelName) ;
+                result = self.AOChannelDeviceNames{aoChannelIndex} ;
+            end
+        end        
     end
     
     methods (Access=protected)
@@ -5608,6 +5648,7 @@ classdef WavesurferModel < ws.Model
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
+            self.broadcast('UpdateTestPulser');
         end
         
         function result = getTestPulseElectrodeProperty(self, propertyName)
@@ -5920,6 +5961,8 @@ classdef WavesurferModel < ws.Model
                       'The AI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAIChannels);
             end
             self.broadcast('UpdateChannels') ;
+            self.broadcast('UpdateElectrodes') ;  % Changing the device name can put channels for same trode on diff devices, which is a problem
+            self.broadcast('UpdateTestPulser') ;            
         end  % function
         
 %         function setSingleDIChannelDeviceName(self, i, newValue)
@@ -5944,6 +5987,8 @@ classdef WavesurferModel < ws.Model
                       'The AO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAOChannels);
             end                
             self.broadcast('UpdateChannels') ;
+            self.broadcast('UpdateElectrodes') ;  % Changing the device name can put channels for same trode on diff devices, which is a problem
+            self.broadcast('UpdateTestPulser') ;
         end  % function                
         
 %         function setSingleDOChannelDeviceName(self, i, newValue)

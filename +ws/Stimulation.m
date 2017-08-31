@@ -420,7 +420,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is ao2,
             % it returns 2.
-            channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
+            channelIndex = self.aoChannelIndexFromName(channelName) ;
             if isnan(channelIndex) ,
                 terminalID = nan ;
             else
@@ -432,12 +432,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 
         function result = getDeviceNameFromChannelName(self, channelName)
             % Get the DeviceName, given the channel name.
-            iChannel = self.indexOfAnalogChannelFromName(channelName) ;
+            iChannel = self.aoChannelIndexFromName(channelName) ;
             result = self.AnalogDeviceNames{iChannel} ;
         end  % function
         
 %         function value = channelScaleFromName(self,channelName)
-%             channelIndex = self.indexOfAnalogChannelFromName(channelName) ;
+%             channelIndex = self.aoChannelIndexFromName(channelName) ;
 %             if isnan(channelIndex) ,
 %                 value = nan ;
 %             else
@@ -445,7 +445,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
 %         end  % function
 
-        function result=indexOfAnalogChannelFromName(self,channelName)            
+        function result=aoChannelIndexFromName(self,channelName)            
             iChannel=find(strcmp(channelName,self.AnalogChannelNames),1);
             if isempty(iChannel) ,
                 result = nan ;
@@ -458,7 +458,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             if isempty(channelName) ,
 %                 result = '' ;
 %             else
-%                 iChannel=self.indexOfAnalogChannelFromName(channelName);
+%                 iChannel=self.aoChannelIndexFromName(channelName);
 %                 if isnan(iChannel) ,
 %                     result='';
 %                 else

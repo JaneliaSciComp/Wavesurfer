@@ -576,7 +576,7 @@ classdef Acquisition < ws.Subsystem
 %             if isempty(channelName) ,
 %                 result='';
 %             else
-%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 iChannel=self.aiChannelIndexFromName(channelName);
 %                 if isempty(iChannel) || isnan(iChannel) ,
 %                     result='';
 %                 else
@@ -589,7 +589,7 @@ classdef Acquisition < ws.Subsystem
 %             if isempty(channelName) ,
 %                 result='';
 %             else
-%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 iChannel=self.aiChannelIndexFromName(channelName);
 %                 if isempty(iChannel) || isnan(iChannel) ,
 %                     result='';
 %                 else
@@ -684,7 +684,7 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function iChannel=iAnalogChannelFromName(self,channelName)
+        function iChannel = aiChannelIndexFromName(self, channelName)
             % Get the index of the the channel in the available channels
             % array, given the name.
             % Note that this does _not_ return a channel ID.
@@ -696,17 +696,17 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function terminalID=analogTerminalIDFromName(self,channelName)
+        function terminalID = analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is AI4,
             % it returns 4.
-            iChannel=self.iAnalogChannelFromName(channelName);
+            iChannel=self.aiChannelIndexFromName(channelName);
             terminalID=self.AnalogTerminalIDs(iChannel);
         end  % function
 
         function result = getDeviceNameFromChannelName(self, channelName)
             % Get the DeviceName, given the channel name.
-            iChannel = self.iAnalogChannelFromName(channelName) ;
+            iChannel = self.aiChannelIndexFromName(channelName) ;
             result = self.AnalogDeviceNames{iChannel} ;
         end  % function
 

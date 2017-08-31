@@ -122,17 +122,6 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
     end  % public methods block
         
     methods (Access=protected)
-%         function updateImplementation_(self,varargin)
-%             % Syncs self with model, making no prior assumptions about what
-%             % might have changed or not changed in the model.
-%             %fprintf('Inside ElectrodeManagerFigure.update():\n');
-%             %dbstack
-%             %fprintf('\n');
-%             self.updateControlsInExistance();
-%             self.updateControlPropertiesImplementation_();
-%             self.layout();
-%         end        
-
         function updateControlPropertiesImplementation_(self, varargin)
             % Makes sure the properties of all existing controls match the
             % properties they should have, given the current state of the
@@ -176,9 +165,6 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
             
             nElectrodes = min(length(self.LabelEdits), wsModel.ElectrodeCount) ;  % Don't want to error if there's a mismatch
             for i = 1:nElectrodes ,
-                % Get the current trode
-                %thisElectrode=self.Model.Electrodes{i};
-                
                 % Update the electrode label
                 set(self.LabelEdits(i), ...
                     'String',wsModel.getElectrodeProperty(i, 'Name'), ...
@@ -214,16 +200,19 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                 isThisElectrodeInAVCMode = wsModel.getElectrodeProperty(i, 'IsInAVCMode') ;
                 
                 if isThisElectrodeInAVCMode ,
-                    %
+                    % VC mode
+                    
                     % Update the current monitor popup
-                    nElectrodesClaimingChannel = ...
-                        wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName')) ;
-                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    currentMonitorChannelName = wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName') ;
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
                                                       wsModel.AIChannelNames, ...
-                                                      wsModel.getElectrodeProperty(i, 'CurrentMonitorChannelName'), ...
+                                                      currentMonitorChannelName, ...
                                                       alwaysShowUnspecifiedAsMenuItem);
-                    if isChannelOvercommitted,
+                    nElectrodesClaimingChannel = ...
+                        wsModel.getNumberOfElectrodesClaimingMonitorChannel(currentMonitorChannelName) ;
+                    isChannelOvercommitted = (nElectrodesClaimingChannel>1) ;
+                    areElectrodeMonitorAndCommandChannelsOnDifferentDevices = wsModel.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(i) ;
+                    if isChannelOvercommitted || areElectrodeMonitorAndCommandChannelsOnDifferentDevices ,
                         set(self.MonitorPopups(i),'BackgroundColor',warningBackgroundColor);
                     end
 
@@ -236,26 +225,20 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     set(self.MonitorScaleUnitsTexts(i), ...
                         'String',sprintf('V/%s',wsModel.getElectrodeProperty(i, 'CurrentUnits')));
 
-
-                    %
                     % Update the voltage command popup
-                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'VoltageCommandChannelName'));
-                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    voltageCommandChannelName = wsModel.getElectrodeProperty(i, 'VoltageCommandChannelName') ;
                     ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
                                                          wsModel.AOChannelNames, ...
-                                                         wsModel.getElectrodeProperty(i, 'VoltageCommandChannelName'), ...
+                                                         voltageCommandChannelName, ...
                                                          alwaysShowUnspecifiedAsMenuItem);
-                    if isChannelOvercommitted,
+                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(voltageCommandChannelName);
+                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    areElectrodeMonitorAndCommandChannelsOnDifferentDevices = wsModel.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(i) ;
+                    if isChannelOvercommitted || areElectrodeMonitorAndCommandChannelsOnDifferentDevices ,
                         set(self.CommandPopups(i),'BackgroundColor',warningBackgroundColor);
                     end
                     
                     % Update the voltage command scale
-    %                 isVoltageCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
-                    % Add a special case for the Heka EPC voltage command scale in CC
-                    % mode, b/c it is not changeable when in CC mode
-    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,'cc') ,
-    %                     isVoltageCommandScaleEnabled=false;
-    %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',wsModel.getElectrodeProperty(i, 'VoltageCommandScaling')), ...
                         'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
@@ -264,15 +247,18 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     set(self.CommandScaleUnitsTexts(i), ...
                         'String',sprintf('%s/V',wsModel.getElectrodeProperty(i, 'VoltageUnits')));
                 else                                
-                    %
-                    % Update the voltage monitor popup
-                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingMonitorChannel(wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'));
-                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    % CC mode
+
+                    % Update the voltage monitor popup                    
+                    voltageMonitorChannelName = wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName') ;
                     ws.setPopupMenuItemsAndSelectionBang(self.MonitorPopups(i), ...
-                                                      wsModel.AIChannelNames, ...
-                                                      wsModel.getElectrodeProperty(i, 'VoltageMonitorChannelName'), ...
-                                                      alwaysShowUnspecifiedAsMenuItem);
-                    if isChannelOvercommitted,
+                                                         wsModel.AIChannelNames, ...
+                                                         voltageMonitorChannelName, ...
+                                                         alwaysShowUnspecifiedAsMenuItem);  % this sets the background color
+                    nElectrodesClaimingChannel = wsModel.getNumberOfElectrodesClaimingMonitorChannel(voltageMonitorChannelName) ;
+                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    areElectrodeMonitorAndCommandChannelsOnDifferentDevices = wsModel.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(i) ;
+                    if isChannelOvercommitted || areElectrodeMonitorAndCommandChannelsOnDifferentDevices ,
                         set(self.MonitorPopups(i),'BackgroundColor',warningBackgroundColor);
                     end
 
@@ -285,26 +271,20 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                     set(self.MonitorScaleUnitsTexts(i), ...
                         'String',sprintf('V/%s',wsModel.getElectrodeProperty(i, 'VoltageUnits')));
 
-
-                    %
                     % Update the current command popup
-                    nElectrodesClaimingChannel=wsModel.getNumberOfElectrodesClaimingCommandChannel(wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'));
-                    isChannelOvercommitted=(nElectrodesClaimingChannel>1);
+                    currentCommandChannelName = wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName') ;
                     ws.setPopupMenuItemsAndSelectionBang(self.CommandPopups(i), ...
-                                                      wsModel.AOChannelNames, ...
-                                                      wsModel.getElectrodeProperty(i, 'CurrentCommandChannelName'), ...
-                                                      alwaysShowUnspecifiedAsMenuItem);
-                    if isChannelOvercommitted,
-                        set(self.CommandPopups(i),'BackgroundColor',warningBackgroundColor);
+                                                         wsModel.AOChannelNames, ...
+                                                         currentCommandChannelName, ...
+                                                         alwaysShowUnspecifiedAsMenuItem);  % this sets the background color
+                    nElectrodesClaimingChannel = wsModel.getNumberOfElectrodesClaimingCommandChannel(currentCommandChannelName) ;
+                    isChannelOvercommitted = (nElectrodesClaimingChannel>1) ;
+                    areElectrodeMonitorAndCommandChannelsOnDifferentDevices = wsModel.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(i) ;
+                    if isChannelOvercommitted || areElectrodeMonitorAndCommandChannelsOnDifferentDevices ,
+                        set(self.CommandPopups(i), 'BackgroundColor', warningBackgroundColor) ;
                     end
 
                     % Update the current command scale
-    %                 isCurrentCommandScaleEnabled=isWavesurferIdle&&(isThisElectrodeManual||isInControlOfSoftpanelModeAndGains);
-                    % Add a special case for the Heka EPC current command scale in CC
-                    % mode, b/c it is not changeable when in CC mode
-    %                 if ~areSoftpanelsEnabled && isequal(thisElectrode.Type,'Heka EPC') && isequal(thisElectrode.Mode,'cc') ,
-    %                     isCurrentCommandScaleEnabled=false;
-    %                 end
                     set(self.CommandScaleEdits(i), ...
                         'String',sprintf('%g',wsModel.getElectrodeProperty(i, 'CurrentCommandScaling')), ...
                         'BackgroundColor',ws.fif(~didLastElectrodeUpdateWork(i),warningBackgroundColor,normalBackgroundColor));
@@ -314,10 +294,7 @@ classdef ElectrodeManagerFigure < ws.MCOSFigure
                         'String',sprintf('%s/V',wsModel.getElectrodeProperty(i, 'CurrentUnits'))) ;
                 end                
                 
-                %
                 % Update the IsCommandEnabled checkbox
-%                 isCommandEnabledCheckboxEnabled= ...
-%                     isWavesurferIdle&&~isThisElectrodeManual&&isInControlOfSoftpanelModeAndGains&&doesElectrodeHaveCommandOnOffSwitch(i);
                 isCommandEnabledRaw=wsModel.getElectrodeProperty(i, 'IsCommandEnabled') ;
                 if isempty(isCommandEnabledRaw) ,
                     isCommandEnabledDisplay=true;

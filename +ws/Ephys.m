@@ -30,9 +30,9 @@ classdef Ephys < ws.Subsystem
         %TestPulser  % provides public access to TestPulser_
     end    
       
-    events
-        UpdateTestPulser
-    end
+%     events
+%         UpdateTestPulser
+%     end
     
     methods
         function self = Ephys()
@@ -493,7 +493,7 @@ classdef Ephys < ws.Subsystem
                     self.setIsElectrodeMarkedForTestPulse_(newIsElectrodeMarkedForTestPulse) ;
                 end
             end
-            self.broadcast('UpdateTestPulser');
+            %self.broadcast('UpdateTestPulser');
         end
 
         function result = get.TestPulseElectrodeIndex(self)
