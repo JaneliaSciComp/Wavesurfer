@@ -409,7 +409,7 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.abort_() ;
         end
         
-        function result = getIsTestPulsing(self)
+        function result = isTestPulsing(self)
             result = self.TestPulser_.getIsRunning_() ;
         end
         
@@ -728,10 +728,10 @@ classdef Ephys < ws.Subsystem
             result = self.ElectrodeManager_.getNumberOfElectrodesClaimingMonitorChannel(queryChannelNames) ;
         end
         
-        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
-            testPulseElectrodeIndex = self.TestPulser_.getElectrodeIndex() ;
-            result = self.ElectrodeManager_.areAllMonitorAndCommandChannelNamesDistinct(testPulseElectrodeIndex) ;
-        end  % function
+%         function result = areAllMonitorAndCommandChannelNamesDistinct(self)
+%             testPulseElectrodeIndex = self.TestPulser_.getElectrodeIndex() ;
+%             result = self.ElectrodeManager_.areAllMonitorAndCommandChannelNamesDistinct(testPulseElectrodeIndex) ;
+%         end  % function
         
         function value = getNumberOfElectrodesClaimingCommandChannel(self,queryChannelNames)
             value = self.ElectrodeManager_.getNumberOfElectrodesClaimingCommandChannel(queryChannelNames) ;

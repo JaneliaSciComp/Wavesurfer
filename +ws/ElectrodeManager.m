@@ -759,28 +759,28 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function        
         
-        function result=areAllCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
-            allChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                 self.Electrodes_ , ...
-                                 'UniformOutput',false);
-            channelNames=allChannelNames(testPulseElectrodeIndex);
-            uniqueChannelNames=unique(channelNames);
-            result=(length(channelNames)==length(uniqueChannelNames));
-        end  % function
+%         function result = areAllCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
+%             allChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
+%                                  self.Electrodes_ , ...
+%                                  'UniformOutput',false);
+%             channelNames=allChannelNames(testPulseElectrodeIndex);
+%             uniqueChannelNames=unique(channelNames);
+%             result=(length(channelNames)==length(uniqueChannelNames));
+%         end  % function
         
-        function result=areAllMonitorChannelNamesDistinct(self, testPulseElectrodeIndex)
-            allChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                 self.Electrodes_ , ...
-                                 'UniformOutput',false);
-            channelNames=allChannelNames(testPulseElectrodeIndex);                             
-            uniqueChannelNames=unique(channelNames);
-            result=(length(channelNames)==length(uniqueChannelNames));
-        end  % function
+%         function result = areAllMonitorChannelNamesDistinct(self, testPulseElectrodeIndex)
+%             allChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
+%                                  self.Electrodes_ , ...
+%                                  'UniformOutput',false);
+%             channelNames=allChannelNames(testPulseElectrodeIndex);                             
+%             uniqueChannelNames=unique(channelNames);
+%             result=(length(channelNames)==length(uniqueChannelNames));
+%         end  % function
         
-        function result = areAllMonitorAndCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
-            result=self.areAllCommandChannelNamesDistinct(testPulseElectrodeIndex) && ...
-                   self.areAllMonitorChannelNamesDistinct(testPulseElectrodeIndex) ;
-        end  % function
+%         function result = areAllMonitorAndCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
+%             result=self.areAllCommandChannelNamesDistinct(testPulseElectrodeIndex) && ...
+%                    self.areAllMonitorChannelNamesDistinct(testPulseElectrodeIndex) ;
+%         end  % function
         
         function result = areTestPulseElectrodeChannelsValid(self, aiChannelNames, aoChannelNames, testPulseElectrodeIndex)
             if isempty(testPulseElectrodeIndex) ,

@@ -54,7 +54,7 @@ classdef WavesurferModel < ws.Model
         StimulationSampleRate  % Hz
         IsAOChannelMarkedForDeletion
         IsDOChannelMarkedForDeletion
-        IsTestPulsing
+        %IsTestPulsing
         DoSubtractBaselineInTestPulseView
         TestPulseYLimits
         TestPulseDuration
@@ -4883,8 +4883,18 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
 
+        function result = isTestPulsingEnabled(self)
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            result = ...
+                (self.isIdle() || self.isTestPulsing()) && ...
+                ~isempty(electrodeIndex) && ...
+                self.areTestPulseElectrodeChannelsValid() && ...
+                ~wsModel.areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices() ;            
+%                 self.areAllMonitorAndCommandChannelNamesDistinct() && ...
+        end
+        
         function startTestPulsing(self)
-            if self.IsTestPulsing ,
+            if self.isTestPulsing() ,
                 return
             end            
             
@@ -4899,12 +4909,8 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Check that we can start, and if not, return
-                electrodeIndex = self.TestPulseElectrodeIndex ;
-                canStart = ...
-                    ~isempty(electrodeIndex) && ...
-                    self.areTestPulseElectrodeChannelsValid() && ...
-                    self.areAllMonitorAndCommandChannelNamesDistinct() && ...
-                    isequal(self.State, 'idle') ;
+                %electrodeIndex = self.TestPulseElectrodeIndex ;
+                canStart = self.isTestPulsingEnabled() ;
                 if ~canStart ,
                     return
                 end
@@ -4962,7 +4968,7 @@ classdef WavesurferModel < ws.Model
         end
 
         function stopTestPulsing(self)
-            if ~self.IsTestPulsing ,
+            if ~self.isTestPulsing() ,
                 %fprintf('About to exit stop() via short-circuit...\n');                            
                 return
             end
@@ -5000,16 +5006,20 @@ classdef WavesurferModel < ws.Model
     end
 
     methods
-        function result = get.IsTestPulsing(self)
-            result = self.Ephys_.getIsTestPulsing() ;
+        function result = isTestPulsing(self)
+            result = self.Ephys_.isTestPulsing() ;
         end
         
         function toggleIsTestPulsing(self)
-            if self.Ephys_.getIsTestPulsing() , 
+            if self.isTestPulsing() , 
                 self.stopTestPulsing() ;
             else
                 self.startTestPulsing() ;
             end
+        end
+
+        function result = isIdle(self)
+            result = isequal(self.State_, 'idle') ;
         end
         
         function result = get.DoSubtractBaselineInTestPulseView(self)
@@ -5143,7 +5153,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
-            if self.IsTestPulsing ,
+            if self.isTestPulsing() ,
                 result = self.Ephys_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
             else
                 commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
@@ -5626,9 +5636,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.areAnyElectrodesSmart() ;
         end        
         
-        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
-            result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
-        end  % function
+%         function result = areAllMonitorAndCommandChannelNamesDistinct(self)
+%             result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
+%         end  % function
         
         function result = getTestPulseElectrodeNames(self)
             result = self.Ephys_.getTestPulseElectrodeNames() ;
