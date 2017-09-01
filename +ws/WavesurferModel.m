@@ -61,7 +61,7 @@ classdef WavesurferModel < ws.Model
         IsAutoYInTestPulseView
         IsAutoYRepeatingInTestPulseView
         DoTrodeUpdateBeforeRun
-        IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
+        %IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
         IsElectrodeMarkedForRemoval  % logical, nElectrodes x 1
         TestPulseElectrodeIndex  % either a scalar or [] if no electrode is currently selected in the test pulser
         NextRunAbsoluteFileName
@@ -74,7 +74,7 @@ classdef WavesurferModel < ws.Model
         DidLastElectrodeUpdateWork
         AreSoftpanelsEnabled
         IsDoTrodeUpdateBeforeRunSensible
-        TestPulseElectrodeNames
+        %TestPulseElectrodeNames
         TestPulseElectrodesCount
         %TestPulseElectrodeAmplitude
         %TestPulseElectrodeName
@@ -4902,7 +4902,7 @@ classdef WavesurferModel < ws.Model
                 electrodeIndex = self.TestPulseElectrodeIndex ;
                 canStart = ...
                     ~isempty(electrodeIndex) && ...
-                    self.areAllElectrodesTestPulsable() && ...
+                    self.areTestPulseElectrodeChannelsValid() && ...
                     self.areAllMonitorAndCommandChannelNamesDistinct() && ...
                     isequal(self.State, 'idle') ;
                 if ~canStart ,
@@ -5075,23 +5075,41 @@ classdef WavesurferModel < ws.Model
         end
         
         function result = getCommandUnitsPerTestPulseElectrode(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false);
-            result = cellfun(@(channelName)(self.aoChannelUnitsFromName(channelName)), ...
-                             commandChannelNames, ...
-                             'UniformOutput',false);
+            testPulseElectrodeIndex = self.Ephys_.TestPulseElectrodeIndex ;
+            if isempty(testPulseElectrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                channelName = self.Ephys_.getElectrodeProperty(testPulseElectrodeIndex, 'CommandChannelName') ;
+                channelUnits = self.aoChannelUnitsFromName(channelName) ;
+                result = {channelUnits} ;
+            end
+%                 commandChannelNames = {commandChannelName} ;
+% %             testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+% %             commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+% %                                           testPulseElectrodes, ...
+% %                                           'UniformOutput',false);
+%                 result = cellfun(@(channelName)(self.aoChannelUnitsFromName(channelName)), ...
+%                                  commandChannelNames, ...
+%                                  'UniformOutput',false);
+%             end
         end  % function
         
         function result = getMonitorUnitsPerTestPulseElectrode(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false);
-            result = cellfun(@(channelName)(self.aiChannelUnitsFromName(channelName)), ...
-                             monitorChannelNames, ...
-                             'UniformOutput',false);
+            testPulseElectrodeIndex = self.Ephys_.TestPulseElectrodeIndex ;
+            if isempty(testPulseElectrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                channelName = self.Ephys_.getElectrodeProperty(testPulseElectrodeIndex, 'MonitorChannelName') ;
+                channelUnits = self.aiChannelUnitsFromName(channelName) ;
+                result = {channelUnits} ;
+            end
+%             testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+%             monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+%                                           testPulseElectrodes, ...
+%                                           'UniformOutput',false);
+%             result = cellfun(@(channelName)(self.aiChannelUnitsFromName(channelName)), ...
+%                              monitorChannelNames, ...
+%                              'UniformOutput',false);
         end  % function
         
         function result = getIsVCPerTestPulseElectrode(self) 
@@ -5138,7 +5156,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function value = getGainOrResistancePerTestPulseElectrode(self)
-            value=self.Ephys_.getGainOrResistancePerTestPulseElectrode_() ;
+            value=self.Ephys_.getGainOrResistancePerTestPulseElectrode() ;
         end
         
         function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
@@ -5303,7 +5321,7 @@ classdef WavesurferModel < ws.Model
         end  % function         
         
         function result = getTestPulseMonitorTrace(self)
-            result = self.Ephys_.getTestPulseMonitorTrace_() ;
+            result = self.Ephys_.getTestPulseMonitorTrace() ;
         end  % function         
         
         function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
@@ -5353,12 +5371,12 @@ classdef WavesurferModel < ws.Model
             self.electrodeMayHaveChanged_(electrodeIndex, '') ;
         end  % function
         
-        function result = areAllElectrodesTestPulsable(self)
+        function result = areTestPulseElectrodeChannelsValid(self)
             aiChannelNames = self.AIChannelNames ;
             isAIChannelActive = self.Acquisition_.getIsAnalogChannelActive_() ;            
             activeAIChannelNames = aiChannelNames(isAIChannelActive) ;
             aoChannelNames = self.AOChannelNames ;
-            result = self.Ephys_.areAllElectrodesTestPulsable(activeAIChannelNames, aoChannelNames) ;
+            result = self.Ephys_.areTestPulseElectrodeChannelsValid(activeAIChannelNames, aoChannelNames) ;
         end  % function
 
         function updateSmartElectrodeGainsAndModes(self)
@@ -5484,9 +5502,9 @@ classdef WavesurferModel < ws.Model
 %             end                                        
 %         end
         
-        function result = get.IsElectrodeMarkedForTestPulse(self)
-            result = self.Ephys_.getIsElectrodeMarkedForTestPulse() ;
-        end
+%         function result = get.IsElectrodeMarkedForTestPulse(self)
+%             result = self.Ephys_.getIsElectrodeMarkedForTestPulse() ;
+%         end
         
 %         function set.IsElectrodeMarkedForTestPulse(self, newValue)
 %             % Don't want to allow this anymore, so just ignore new value
@@ -5555,7 +5573,7 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function result = get.ElectrodeCount(self)
-            result = self.Ephys_.getElectrodeCount_() ;
+            result = self.Ephys_.getElectrodeCount() ;
         end               
         
 %         function electrode = getElectrodeByIndex(self, electrodeIndex)
@@ -5610,8 +5628,8 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
         end  % function
         
-        function result = get.TestPulseElectrodeNames(self)
-            result = self.Ephys_.TestPulseElectrodeNames ;
+        function result = getTestPulseElectrodeNames(self)
+            result = self.Ephys_.getTestPulseElectrodeNames() ;
         end
         
         function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)

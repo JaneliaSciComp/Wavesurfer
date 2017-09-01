@@ -129,6 +129,8 @@ classdef TestPulser < ws.Model
 
         function setElectrodeIndex(self, newValue)
             self.ElectrodeIndex_ = newValue ;
+            self.clearExistingSweepIfPresent_() ;
+            %self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount) ;
         end
         
 %         function value=getElectrodeName_(self)
@@ -341,8 +343,8 @@ classdef TestPulser < ws.Model
 %             end
 %         end
         
-        function value=getGainOrResistancePerElectrode_(self)
-            value=self.GainOrResistancePerElectrode_;
+        function result = getGainOrResistancePerElectrode(self)
+            result = self.GainOrResistancePerElectrode_ ;
         end
         
         function value = getUpdateRate_(self)
@@ -450,17 +452,17 @@ classdef TestPulser < ws.Model
             result = self.YLimits_ ;
         end
 
-        function addingElectrode(self, newElectrodeIndex, isElectrodeEligibleForTestPulseAfter)  %#ok<INUSL>
+        function addingElectrode(self, newElectrodeIndex, electrodeCountAfter)  %#ok<INUSL>
             % Called by the parent Ephys when an electrode is added.
             self.clearExistingSweepIfPresent_() ;
             %if isempty(self.ElectrodeIndex_) && isElectrodeMarkedForTestPulseAfter,
             %    self.ElectrodeIndex_ = electrodeIndex ;
             %end
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(isElectrodeEligibleForTestPulseAfter) ;
+            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCountAfter) ;
             self.broadcast('Update') ;
         end
 
-        function electrodesRemoved_(self, wasRemoved, isElectrodeMarkedForTestPulseAfter)
+        function electrodesRemoved_(self, wasRemoved, electrodeCountAfter)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             
@@ -472,7 +474,7 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_()
             
             % Change the electrode if needed
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(isElectrodeMarkedForTestPulseAfter);
+            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCountAfter);
             
             self.broadcast('Update') ;
         end  % function
@@ -486,14 +488,14 @@ classdef TestPulser < ws.Model
             self.broadcast('Update') ;
         end  % function
         
-        function isElectrodeMarkedForTestPulseMayHaveChanged(self, isElectrodeMarkedForTestPulseAfter)
-            % Redimension MonitorPerElectrode_ appropriately, etc.
-            %self.NElectrodes_ = nTestPulseElectrodes ;
-            self.clearExistingSweepIfPresent_()
-            
-            % Change the electrode if needed
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(isElectrodeMarkedForTestPulseAfter);
-        end  % function
+%         function settingElectrodeIndex_(self, electrodeCount)
+%             % Redimension MonitorPerElectrode_ appropriately, etc.
+%             %self.NElectrodes_ = nTestPulseElectrodes ;
+%             self.clearExistingSweepIfPresent_()
+%             
+%             % Change the electrode if needed
+%             self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount);
+%         end  % function
         
         function prepForStart(self, indexOfTestPulseElectrodeWithinTestPulseElectrodes, amplitudePerTestPulseElectrode, fs, nTestPulseElectrodes, ...
                                gainOrResistanceUnitsPerTestPulseElectrode, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, ...
@@ -859,12 +861,16 @@ classdef TestPulser < ws.Model
 %             end
 %         end
 
-        function setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(self, isElectrodeEligibleForTestPulseAfter)
+        function setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(self, electrodeCount)
             % Checks that the ElectrodeIndex_ is still a valid choice.  If not,
             % tries to find another one.  If that also fails, sets
             % ElectrodeIndex_ to empty.  Also, if ElectrodeIndex_ is empty but there
             % is at least one test pulse electrode, makes ElectrodeIndex_ point
             % to the first test pulse electrode.
+            if ~isscalar(electrodeCount) || ~isa(electrodeCount, 'double') ,
+                error('Bad!!!') ;
+            end
+            isElectrodeEligibleForTestPulseAfter = true(1, electrodeCount) ;
             if ~any(isElectrodeEligibleForTestPulseAfter) ,
                 % If there are no electrodes marked for test pulsing, set
                 % self.ElectrodeIndex_ to empty.

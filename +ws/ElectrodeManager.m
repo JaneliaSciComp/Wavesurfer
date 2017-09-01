@@ -118,7 +118,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end
 %         end
         
-        function result = getElectrodeCount_(self)
+        function result = getElectrodeCount(self)
             result = length(self.Electrodes_) ;
         end
         
@@ -378,13 +378,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end  % function
 
 %         function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
-%             electrodeIndices = (1:self.getElectrodeCount_()) ;
+%             electrodeIndices = (1:self.getElectrodeCount()) ;
 %             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
 %             result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
 %         end  % function
         
 %         function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
-%             electrodeIndices = (1:self.getElectrodeCount_()) ;
+%             electrodeIndices = (1:self.getElectrodeCount()) ;
 %             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
 %             result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
 %         end  % function
@@ -521,21 +521,20 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = find(isElectrode, 1) ;
         end  % function
 
-        function result = getElectrodePropertyByName(self, electrodeName, propertyName)
-            electrode = self.getElectrodeByName(electrodeName) ;
-            if isempty(electrode) ,
-                error('ws:noSuchElectrode' , ...
-                      'No electrode by that name') ;
-            else
-                result = electrode.(propertyName) ;
-            end
-        end  % function
+%         function result = getElectrodePropertyByName(self, electrodeName, propertyName)
+%             electrode = self.getElectrodeByName(electrodeName) ;
+%             if isempty(electrode) ,
+%                 error('ws:noSuchElectrode' , ...
+%                       'No electrode by that name') ;
+%             else
+%                 result = electrode.(propertyName) ;
+%             end
+%         end  % function
 
         function result = getElectrodeProperty(self, electrodeIndex, propertyName)
             electrode = self.Electrodes_{electrodeIndex} ;
             result = electrode.(propertyName) ;
         end  % function
-        
         
 %         function result=getIsCommandChannelManagedByName(self,channelName)
 %             if isempty(channelName) ,
@@ -608,7 +607,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             else
                 queryChannelNames=queryChannelNamesRaw;
             end
-            nElectrodes=self.getElectrodeCount_();
+            nElectrodes=self.getElectrodeCount();
             nQueryChannels=length(queryChannelNames);
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
@@ -685,7 +684,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             else
                 queryChannelNames=queryChannelNamesRaw;                
             end
-            nElectrodes=self.getElectrodeCount_();
+            nElectrodes=self.getElectrodeCount();
             nQueryChannels=length(queryChannelNames);
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
@@ -783,19 +782,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                    self.areAllMonitorChannelNamesDistinct(testPulseElectrodeIndex) ;
         end  % function
         
-        function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
-            nElectrodes = self.getElectrodeCount_() ;
-            for i=1:nElectrodes
-                if ~self.IsElectrodeMarkedForTestPulse_(i) ,
-                    continue
-                end
-                electrode =self.Electrodes_{i} ;
-                if ~electrode.isTestPulsable(aiChannelNames, aoChannelNames) ,
-                    result=false;
-                    return
-                end
+        function result = areTestPulseElectrodeChannelsValid(self, aiChannelNames, aoChannelNames, testPulseElectrodeIndex)
+            if isempty(testPulseElectrodeIndex) ,
+                result = false ;
+            else
+                electrode =self.Electrodes_{testPulseElectrodeIndex} ;
+                result = electrode.areChannelsValid(aiChannelNames, aoChannelNames) ;
             end
-            result=true;
         end  % function
         
         function result = areAnyElectrodesSmart(self)
@@ -930,7 +923,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         end  % function
         
         function result = isElectrodeConnectionOpen(self)
-            result=true(1,self.getElectrodeCount_());  % dumb electrodes always have an open connection, by convention            
+            result=true(1,self.getElectrodeCount());  % dumb electrodes always have an open connection, by convention            
             smartElectrodeTypes=setdiff(ws.Electrode.Types,{'Manual'});
             for k=1:length(smartElectrodeTypes), 
                 smartElectrodeType=smartElectrodeTypes{k};
@@ -948,7 +941,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Similarly for dumb electrodes.
             
             % populate array of number of electrodes of each type
-            nElectrodesOfType=inf(1,self.getElectrodeCount_());            
+            nElectrodesOfType=inf(1,self.getElectrodeCount());            
             electrodeTypesThatReportNumber=setdiff(ws.Electrode.Types,{'Manual' 'Heka EPC'});
             for k=1:length(electrodeTypesThatReportNumber), 
                 electrodeType=electrodeTypesThatReportNumber{k};
@@ -961,8 +954,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
 
             % Check that index of each is within range
-            indexOfElectrodeWithinType=ones(1,self.getElectrodeCount_());
-            for i=1:self.getElectrodeCount_() ,                
+            indexOfElectrodeWithinType=ones(1,self.getElectrodeCount());
+            for i=1:self.getElectrodeCount() ,                
                 electrode=self.Electrodes{i};
                 indexOfThisElectrodeWithinType=electrode.IndexWithinType;
                 if ~isempty(indexOfThisElectrodeWithinType) ,
@@ -1005,7 +998,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
-                for i=1:self.getElectrodeCount_() ,                
+                for i=1:self.getElectrodeCount() ,                
                     electrode=self.Electrodes{i};
                     electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
                 end            
@@ -1015,7 +1008,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
-                for i=1:self.getElectrodeCount_() ,                
+                for i=1:self.getElectrodeCount() ,                
                     electrode=self.Electrodes{i};
                     electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
                 end            
@@ -1105,14 +1098,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Disable broadcasts for speed
             self.disableBroadcasts() ;
 
-%             nOldElectrodes = self.getElectrodeCount_() ;
-%             self.IsElectrodeMarkedForRemoval = true(1,nOldElectrodes) ;
-%             self.removeMarkedElectrodes_() ;
-%             nNewElectrodes=length(other.Electrodes) ;
-%             for i=1:nNewElectrodes ,
-%                 self.addNewElectrode_() ;
-%                 self.Electrodes{i}.mimic(other.Electrodes{i}) ;
-%             end
+            % Mimic the trodes
             nNewElectrodes=length(other.Electrodes_) ;
             self.Electrodes_ = cell(1, nNewElectrodes) ;
             for i=1:nNewElectrodes ,
@@ -1120,9 +1106,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
             end
             
-            self.IsElectrodeMarkedForTestPulse_ = other.IsElectrodeMarkedForTestPulse_ ;
+            % Copy some fields
+            %self.IsElectrodeMarkedForTestPulse_ = other.IsElectrodeMarkedForTestPulse_ ;
             self.IsElectrodeMarkedForRemoval_ = other.IsElectrodeMarkedForRemoval_ ;
-            % LargestElectrodeIndexUsed_ ??
             self.AreSoftpanelsEnabled_ = other.AreSoftpanelsEnabled_ ;
             self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork_ ;
             
@@ -1239,19 +1225,19 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end  % class methods block
       
     methods
-        function result=get.TestPulseElectrodesCount(self)
-            result=sum(self.IsElectrodeMarkedForTestPulse_) ;
-        end
+%         function result=get.TestPulseElectrodesCount(self)
+%             result=sum(self.IsElectrodeMarkedForTestPulse_) ;
+%         end
         
 %         function electrode = getElectrodeByIndex_(self, electrodeIndex)
 %             electrode = self.Electrodes_{electrodeIndex} ;
 %         end    
         
-        function result = getTestPulseElectrodes_(self)
-            % Moving forwards, it would be better if (trusted) consumers called this to
-            % get the test pulse electrodes
-            result = self.TestPulseElectrodes ;
-        end    
+%         function result = getTestPulseElectrodes_(self)
+%             % Moving forwards, it would be better if (trusted) consumers called this to
+%             % get the test pulse electrodes
+%             result = self.TestPulseElectrodes ;
+%         end    
         
         function setElectrodeProperty_(self, electrodeIndex, propertyName, newValue)            
             switch propertyName ,
