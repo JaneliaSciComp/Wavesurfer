@@ -493,7 +493,7 @@ classdef Ephys < ws.Subsystem
                     self.setIsElectrodeMarkedForTestPulse_(newIsElectrodeMarkedForTestPulse) ;
                 end
             end
-            %self.broadcast('UpdateTestPulser');
+            %self.broadcast('UpdateTestPulser');  % now done in WSM
         end
 
         function result = get.TestPulseElectrodeIndex(self)
@@ -650,11 +650,11 @@ classdef Ephys < ws.Subsystem
             doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
         end
         
-        function newElectrodeIndex = addNewElectrode_(self)
-            newElectrodeIndex = self.ElectrodeManager_.addNewElectrode_() ;
+        function newElectrodeIndex = addNewElectrode(self)
+            newElectrodeIndex = self.ElectrodeManager_.addNewElectrode() ;
             %electrodeName = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, 'Name') ;
-            isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse() ;
-            self.TestPulser_.electrodeWasAdded_(newElectrodeIndex, isElectrodeMarkedForTestPulseAfter) ;
+            isElectrodeEligibleForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeEligibleForTestPulse() ;
+            self.TestPulser_.addingElectrode(newElectrodeIndex, isElectrodeEligibleForTestPulseAfter) ;
             %self.electrodeWasAdded(electrodeIndex);
         end
         

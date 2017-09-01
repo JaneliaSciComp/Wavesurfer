@@ -153,8 +153,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             %self.broadcast('Update');
         end
         
-        function out=getIsElectrodeMarkedForTestPulse(self)
-            out=self.IsElectrodeMarkedForTestPulse_;
+        function result = getIsElectrodeMarkedForTestPulse(self)
+            result = self.IsElectrodeMarkedForTestPulse_;
+        end
+        
+        function result = getIsElectrodeEligibleForTestPulse(self)
+            result = true(size(self.IsElectrodeMarkedForTestPulse_)) ;
         end
         
         function setIsElectrodeMarkedForTestPulse(self, newValue)
@@ -219,7 +223,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = cellfun(@(electrode)(electrode.Name), self.Electrodes_, 'UniformOutput', false) ;
         end
         
-        function electrodeIndex = addNewElectrode_(self)
+        function electrodeIndex = addNewElectrode(self)
             % Figure out an electrode name that is not already an electrode
             % name
             %currentElectrodeNames={self.Electrodes_.Name};
@@ -373,11 +377,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             self.setElectrodeModeOrScaling(electrodeIndex,propertyName,newValue);
 %         end  % function
 
-        function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
-            electrodeIndices = (1:self.getElectrodeCount_()) ;
-            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
-            result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
-        end  % function
+%         function result = electrodeIndexFromIndexWithinTestPulseElectrodes(self, indexWithinTestPulseElectrodes)
+%             electrodeIndices = (1:self.getElectrodeCount_()) ;
+%             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+%             result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
+%         end  % function
         
         function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
             electrodeIndices = (1:self.getElectrodeCount_()) ;

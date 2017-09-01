@@ -450,13 +450,13 @@ classdef TestPulser < ws.Model
             result = self.YLimits_ ;
         end
 
-        function electrodeWasAdded_(self, newElectrodeIndex, isElectrodeMarkedForTestPulseAfter)  %#ok<INUSL>
+        function addingElectrode(self, newElectrodeIndex, isElectrodeEligibleForTestPulseAfter)  %#ok<INUSL>
             % Called by the parent Ephys when an electrode is added.
             self.clearExistingSweepIfPresent_() ;
             %if isempty(self.ElectrodeIndex_) && isElectrodeMarkedForTestPulseAfter,
             %    self.ElectrodeIndex_ = electrodeIndex ;
             %end
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(isElectrodeMarkedForTestPulseAfter) ;
+            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(isElectrodeEligibleForTestPulseAfter) ;
             self.broadcast('Update') ;
         end
 
@@ -859,39 +859,38 @@ classdef TestPulser < ws.Model
 %             end
 %         end
 
-        function setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(self, isElectrodeMarkedForTestPulseAfter)
+        function setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(self, isElectrodeEligibleForTestPulseAfter)
             % Checks that the ElectrodeIndex_ is still a valid choice.  If not,
             % tries to find another one.  If that also fails, sets
             % ElectrodeIndex_ to empty.  Also, if ElectrodeIndex_ is empty but there
             % is at least one test pulse electrode, makes ElectrodeIndex_ point
             % to the first test pulse electrode.
-            if ~any(isElectrodeMarkedForTestPulseAfter) ,
+            if ~any(isElectrodeEligibleForTestPulseAfter) ,
                 % If there are no electrodes marked for test pulsing, set
                 % self.ElectrodeIndex_ to empty.
                 self.ElectrodeIndex_ = [] ;
             else
-                % If get here, there is at least one electrode marked for test pulsing
+                % If get here, there is at least one electrode eligible for test pulsing
                 if isempty(self.ElectrodeIndex_) ,
                     % If no current TP electrode, set the current TP electrode to the first
                     % electrode marked for TPing.
-                    self.ElectrodeIndex_ = find(isElectrodeMarkedForTestPulseAfter,1) ;
+                    self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;
                       % no current electrode, but list of TP electrodes is nonempty, so make the first one current.
                 else
-                    % If we get here, self.ElectrodeIndex is a scalar, and there is at least on
-                    % electrode marked for TPing.
-                    % So we make sure that the self.ElectrodeIndex points to an electrode
-                    % marked for TPing.
-                    isSupposedCurrentTestPulseElectrodeMarkedForTestPulsing = ...
-                        self.ElectrodeIndex_ <= length(isElectrodeMarkedForTestPulseAfter) && ...
-                        isElectrodeMarkedForTestPulseAfter(self.ElectrodeIndex_) ;
-                    if isSupposedCurrentTestPulseElectrodeMarkedForTestPulsing ,
+                    % If we get here, self.ElectrodeIndex is a scalar, and there is at least
+                    % one electrode eligible for TPing. So we make sure that the
+                    % self.ElectrodeIndex points to an electrode eligible for TPing.
+                    isSupposedCurrentTestPulseElectrodeEligibleForTestPulsing = ...
+                        self.ElectrodeIndex_ <= length(isElectrodeEligibleForTestPulseAfter) && ...
+                        isElectrodeEligibleForTestPulseAfter(self.ElectrodeIndex_) ;
+                    if isSupposedCurrentTestPulseElectrodeEligibleForTestPulsing ,
                         % Nothing to do here---self.ElectrodeIndex 
-                        % points to an electrode marked for test pulsing
+                        % points to an electrode eligible for test pulsing.
                     else
-                        % If get here, self.ElectrodeIndex does not point to an electrode marked
+                        % If get here, self.ElectrodeIndex does not point to an electrode eligible
                         % for TPing.
                         % In this case, the first TP electrode the current one.
-                        self.ElectrodeIndex_ = find(isElectrodeMarkedForTestPulseAfter,1) ;                        
+                        self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;                        
                     end
                 end
             end 

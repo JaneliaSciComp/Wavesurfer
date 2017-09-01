@@ -5447,7 +5447,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function electrodeIndex = addNewElectrode(self)
-            electrodeIndex = self.Ephys_.addNewElectrode_() ;
+            electrodeIndex = self.Ephys_.addNewElectrode() ;
         end
        
         function removeMarkedElectrodes(self)
@@ -5488,11 +5488,11 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.getIsElectrodeMarkedForTestPulse() ;
         end
         
-        function set.IsElectrodeMarkedForTestPulse(self, newValue)
-            % Don't want to allow this anymore, so just ignore new value
-            %self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
-            self.broadcast('UpdateElectrodes') ;
-        end        
+%         function set.IsElectrodeMarkedForTestPulse(self, newValue)
+%             % Don't want to allow this anymore, so just ignore new value
+%             %self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
+%             self.broadcast('UpdateElectrodes') ;
+%         end        
         
         function result = get.IsElectrodeMarkedForRemoval(self)
             result = self.Ephys_.getIsElectrodeMarkedForRemoval_() ;
@@ -5507,6 +5507,10 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.TestPulseElectrodeIndex ;
         end
 
+        function set.TestPulseElectrodeIndex(self, newValue)
+            self.Ephys_.TestPulseElectrodeIndex = newValue ;
+        end
+        
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             if ~isempty(testPulseElectrodeIndex) ,
