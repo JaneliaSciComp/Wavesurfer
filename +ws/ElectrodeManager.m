@@ -9,9 +9,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end
 
     properties (Dependent=true, SetAccess=immutable)
-        TestPulseElectrodes  % the electrodes that are marked for test pulsing.
-        TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
-        TestPulseElectrodesCount
+        %TestPulseElectrodes  % the electrodes that are marked for test pulsing.
+        %TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
+        %TestPulseElectrodesCount
         Electrodes
         DidLastElectrodeUpdateWork
         IsDoTrodeUpdateBeforeRunSensible
@@ -28,7 +28,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     
     properties (Access = protected)
         Electrodes_ = cell(1,0);  % row vector of electrodes
-        IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
+        %IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
         IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
         LargestElectrodeIndexUsed_ = -inf
         AreSoftpanelsEnabled_
@@ -126,16 +126,16 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             out=self.Electrodes_;
         end
         
-        function out = get.TestPulseElectrodes(self)
-            electrodes = self.Electrodes_ ;
-            out=electrodes(self.IsElectrodeMarkedForTestPulse_);
-        end
+%         function out = get.TestPulseElectrodes(self)
+%             electrodes = self.Electrodes_ ;
+%             out=electrodes(self.IsElectrodeMarkedForTestPulse_);
+%         end
         
-        function result = get.TestPulseElectrodeNames(self)
-            result = cellfun(@(electrode)(electrode.Name), ...
-                             self.TestPulseElectrodes, ...
-                             'UniformOutput',false) ;
-        end
+%         function result = get.TestPulseElectrodeNames(self)
+%             result = cellfun(@(electrode)(electrode.Name), ...
+%                              self.TestPulseElectrodes, ...
+%                              'UniformOutput',false) ;
+%         end
         
         function result = get.DidLastElectrodeUpdateWork(self)
             result = self.DidLastElectrodeUpdateWork_ ;
@@ -153,24 +153,24 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             %self.broadcast('Update');
         end
         
-        function result = getIsElectrodeMarkedForTestPulse(self)
-            result = self.IsElectrodeMarkedForTestPulse_;
-        end
+%         function result = getIsElectrodeMarkedForTestPulse(self)
+%             result = self.IsElectrodeMarkedForTestPulse_;
+%         end
         
         function result = getIsElectrodeEligibleForTestPulse(self)
-            result = true(size(self.IsElectrodeMarkedForTestPulse_)) ;
+            result = true(size(self.Electrodes_)) ;
         end
         
-        function setIsElectrodeMarkedForTestPulse(self, newValue)
-            % newValue must be same shape as old
-            if all(size(newValue)==size(self.IsElectrodeMarkedForTestPulse_)) ,
-                self.IsElectrodeMarkedForTestPulse_=newValue;
-            end
-%             if ~isempty(self.Parent_) ,
-%                 self.Parent_.isElectrodeMarkedForTestPulseMayHaveChanged();  % notify the parent, so can update ElectrodeManager
+%         function setIsElectrodeMarkedForTestPulse(self, newValue)
+%             % newValue must be same shape as old
+%             if all(size(newValue)==size(self.IsElectrodeMarkedForTestPulse_)) ,
+%                 self.IsElectrodeMarkedForTestPulse_=newValue;
 %             end
-            self.broadcast('Update');
-        end
+% %             if ~isempty(self.Parent_) ,
+% %                 self.Parent_.isElectrodeMarkedForTestPulseMayHaveChanged();  % notify the parent, so can update ElectrodeManager
+% %             end
+%             self.broadcast('Update');
+%         end
         
         function result = getDoTrodeUpdateBeforeRun_(self)
             if self.IsDoTrodeUpdateBeforeRunSensible
@@ -260,7 +260,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Add the electrode
             electrodeIndex = length(self.Electrodes_)+1 ;
             self.Electrodes_{electrodeIndex}=electrode;  
-            self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=false;
+            %self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=false;
             self.IsElectrodeMarkedForRemoval_(electrodeIndex)=false;
             self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;  % true by convention
             
@@ -281,7 +281,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % keeps row vectors row vectors, even when they are reduced to
             % zero length.
             self.Electrodes_(isToBeRemoved) = [] ;
-            self.IsElectrodeMarkedForTestPulse_(isToBeRemoved) = [] ;
+            %self.IsElectrodeMarkedForTestPulse_(isToBeRemoved) = [] ;
             self.IsElectrodeMarkedForRemoval_(isToBeRemoved) = [] ;  % should be all false afterwards
             self.DidLastElectrodeUpdateWork_(isToBeRemoved) = [] ;
             
@@ -383,11 +383,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             result = testPulseElectrodeIndices(indexWithinTestPulseElectrodes) ;
 %         end  % function
         
-        function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
-            electrodeIndices = (1:self.getElectrodeCount_()) ;
-            testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
-            result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
-        end  % function
+%         function result = indexWithinTestPulseElectrodesFromElectrodeIndex(self, electrodeIndex)
+%             electrodeIndices = (1:self.getElectrodeCount_()) ;
+%             testPulseElectrodeIndices = electrodeIndices(self.IsElectrodeMarkedForTestPulse_) ;
+%             result = find(testPulseElectrodeIndices==electrodeIndex, 1) ;
+%         end  % function
 
 %         function setElectrodeMonitorScaling(self, electrodeIndex, newValue)
 %             electrode = self.Electrodes_{electrodeIndex} ;
@@ -760,36 +760,36 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end  % function        
         
-        function result=areAllCommandChannelNamesDistinct(self)
-            channelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
+        function result=areAllCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
+            allChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
                                  self.Electrodes_ , ...
                                  'UniformOutput',false);
-            channelNames=channelNames(self.IsElectrodeMarkedForTestPulse_);                             
+            channelNames=allChannelNames(testPulseElectrodeIndex);
             uniqueChannelNames=unique(channelNames);
             result=(length(channelNames)==length(uniqueChannelNames));
         end  % function
         
-        function result=areAllMonitorChannelNamesDistinct(self)
-            channelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
+        function result=areAllMonitorChannelNamesDistinct(self, testPulseElectrodeIndex)
+            allChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
                                  self.Electrodes_ , ...
                                  'UniformOutput',false);
-            channelNames=channelNames(self.IsElectrodeMarkedForTestPulse_);                             
+            channelNames=allChannelNames(testPulseElectrodeIndex);                             
             uniqueChannelNames=unique(channelNames);
             result=(length(channelNames)==length(uniqueChannelNames));
         end  % function
         
-        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
-            result=self.areAllCommandChannelNamesDistinct() && ...
-                   self.areAllMonitorChannelNamesDistinct() ;
+        function result = areAllMonitorAndCommandChannelNamesDistinct(self, testPulseElectrodeIndex)
+            result=self.areAllCommandChannelNamesDistinct(testPulseElectrodeIndex) && ...
+                   self.areAllMonitorChannelNamesDistinct(testPulseElectrodeIndex) ;
         end  % function
         
         function result = areAllElectrodesTestPulsable(self, aiChannelNames, aoChannelNames)
-            nElectrodes=self.getElectrodeCount_();
+            nElectrodes = self.getElectrodeCount_() ;
             for i=1:nElectrodes
                 if ~self.IsElectrodeMarkedForTestPulse_(i) ,
                     continue
                 end
-                electrode=self.Electrodes_{i};
+                electrode =self.Electrodes_{i} ;
                 if ~electrode.isTestPulsable(aiChannelNames, aoChannelNames) ,
                     result=false;
                     return

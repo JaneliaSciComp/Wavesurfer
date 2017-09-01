@@ -729,7 +729,8 @@ classdef Ephys < ws.Subsystem
         end
         
         function result = areAllMonitorAndCommandChannelNamesDistinct(self)
-            result = self.ElectrodeManager_.areAllMonitorAndCommandChannelNamesDistinct() ;
+            testPulseElectrodeIndex = self.TestPulser_.getElectrodeIndex() ;
+            result = self.ElectrodeManager_.areAllMonitorAndCommandChannelNamesDistinct(testPulseElectrodeIndex) ;
         end  % function
         
         function value = getNumberOfElectrodesClaimingCommandChannel(self,queryChannelNames)

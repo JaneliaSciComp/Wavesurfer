@@ -390,7 +390,7 @@ classdef Electrode < ws.Model % & ws.Mimic
             % channel names for the current mode have to refer to valid
             % active channels.
             
-            result=false;
+            result = false ;
             
             % If either the command or monitor channel is unspecified,
             % return false
