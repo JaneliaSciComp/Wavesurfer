@@ -4934,15 +4934,15 @@ classdef WavesurferModel < ws.Model
                 deviceName = allDeviceNames{1} ;
                 
                 % Call the main routine
-                self.Ephys_.prepForTestPulsing(fs, ...
-                                               isVCPerTestPulseElectrode, ...
-                                               isCCPerTestPulseElectrode, ...
-                                               commandTerminalIDPerTestPulseElectrode, ...
-                                               monitorTerminalIDPerTestPulseElectrode, ...
-                                               commandChannelScalePerTestPulseElectrode, ...
-                                               monitorChannelScalePerTestPulseElectrode, ...                                                
-                                               deviceName, ...
-                                               gainOrResistanceUnitsPerTestPulseElectrode) ;
+                self.Ephys_.prepareForTestPulsing(fs, ...
+                                                  isVCPerTestPulseElectrode, ...
+                                                  isCCPerTestPulseElectrode, ...
+                                                  commandTerminalIDPerTestPulseElectrode, ...
+                                                  monitorTerminalIDPerTestPulseElectrode, ...
+                                                  commandChannelScalePerTestPulseElectrode, ...
+                                                  monitorChannelScalePerTestPulseElectrode, ...
+                                                  deviceName, ...
+                                                  gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -4953,7 +4953,7 @@ classdef WavesurferModel < ws.Model
                 self.changeReadiness_(+1);
 
                 % Actually start the test pulsing
-                self.Ephys_.startTestPulsing_() ;                
+                self.Ephys_.startTestPulsing() ;                
             catch exception
                 self.abortTestPulsing_() ;
                 self.changeReadiness_(+1) ;
@@ -4969,7 +4969,7 @@ classdef WavesurferModel < ws.Model
             
             try             
                 self.changeReadiness_(-1) ;  % Takes some time to stop
-                self.Ephys_.stopTestPulsing_() ;
+                self.Ephys_.stopTestPulsing() ;
                 self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
@@ -4991,7 +4991,7 @@ classdef WavesurferModel < ws.Model
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
             self.changeReadiness_(-1);
-            self.Ephys_.abortTestPulsing_() ;
+            self.Ephys_.abortTestPulsing() ;
             self.changeReadiness_(+1);
             if isequal(self.State,'test_pulsing') ,
                 self.setState_('idle') ;
@@ -5001,11 +5001,11 @@ classdef WavesurferModel < ws.Model
 
     methods
         function result = get.IsTestPulsing(self)
-            result = self.Ephys_.getIsTestPulsing_() ;
+            result = self.Ephys_.getIsTestPulsing() ;
         end
         
         function toggleIsTestPulsing(self)
-            if self.Ephys_.getIsTestPulsing_() , 
+            if self.Ephys_.getIsTestPulsing() , 
                 self.stopTestPulsing() ;
             else
                 self.startTestPulsing() ;
@@ -5208,49 +5208,54 @@ classdef WavesurferModel < ws.Model
     end
     
     methods (Access=protected)
+        function result = getTPElectrodeCommandChannelNames_(self)
+            % this returns a cell array of length zero or one
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            if isempty(electrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                result = { self.getElectrodeProperty(electrodeIndex, 'CommandChannelName') } ; 
+           end
+        end
+        
+        function result = getTPElectrodeMonitorChannelNames_(self)
+            % this returns a cell array of length zero or one
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            if isempty(electrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                result = { self.getElectrodeProperty(electrodeIndex, 'MonitorChannelName') } ; 
+           end
+        end
+        
         function result = getCommandTerminalIDPerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
             stimulationSubsystem = self.Stimulation_ ;
             result = cellfun(@(channelName)(stimulationSubsystem.analogTerminalIDFromName(channelName)), ...
                              commandChannelNames) ;
         end  % function       
 
         function result = getMonitorTerminalIDPerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
             acquisition = self.Acquisition_ ;
             result = cellfun(@(channelName)(acquisition.analogTerminalIDFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
         
         function result = getCommandChannelScalePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
             result = cellfun(@(channelName)(self.aoChannelScaleFromName(channelName)), ...
                              commandChannelNames) ;
         end
         
         function result = getMonitorChannelScalePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
             result = cellfun(@(channelName)(self.aiChannelScaleFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
         
         function result = getCommandDeviceNamePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
             stimulationSubsystem = self.Stimulation_ ;
             result = cellfun(@(channelName)(stimulationSubsystem.getDeviceNameFromChannelName(channelName)), ...
                              commandChannelNames, ...
@@ -5258,12 +5263,9 @@ classdef WavesurferModel < ws.Model
         end  % function       
         
         function result = getMonitorDeviceNamePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
-            acquisition = self.Acquisition_ ;
-            result = cellfun(@(channelName)(acquisition.getDeviceNameFromChannelName(channelName)), ...
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
+            acquisitionSubsystem = self.Acquisition_ ;
+            result = cellfun(@(channelName)(acquisitionSubsystem.getDeviceNameFromChannelName(channelName)), ...
                              monitorChannelNames, ...
                              'UniformOutput', false) ;
         end        

@@ -12,7 +12,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         %TestPulseElectrodes  % the electrodes that are marked for test pulsing.
         %TestPulseElectrodeNames  % the names of the electrodes that are marked for test pulsing.
         %TestPulseElectrodesCount
-        Electrodes
+        %Electrodes
         DidLastElectrodeUpdateWork
         IsDoTrodeUpdateBeforeRunSensible
     end
@@ -122,9 +122,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = length(self.Electrodes_) ;
         end
         
-        function out = get.Electrodes(self)
-            out=self.Electrodes_;
-        end
+%         function out = get.Electrodes(self)
+%             out=self.Electrodes_;
+%         end
         
 %         function out = get.TestPulseElectrodes(self)
 %             electrodes = self.Electrodes_ ;
@@ -612,7 +612,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
                 for j=1:nQueryChannels,
-                    isMatchBig(i,j)=self.Electrodes{i}.isNamedCommandChannelManaged(queryChannelNames{j});
+                    isMatchBig(i,j)=self.Electrodes_{i}.isNamedCommandChannelManaged(queryChannelNames{j});
                 end
             end
         end  % function
@@ -644,7 +644,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1); 
-                        electrode=self.Electrodes{iElectrode};
+                        electrode=self.Electrodes_{iElectrode};
                         queryChannelUnits{i}=electrode.getCommandUnitByName(queryChannelNames{i});
                     end                    
                 end                    
@@ -668,7 +668,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
-                        electrode=self.Electrodes{iElectrode};
+                        electrode=self.Electrodes_{iElectrode};
                         queryChannelScales(i)=electrode.getCommandScalingByName(queryChannelNames{i});
                     end                    
                 end                    
@@ -688,7 +688,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             nQueryChannels=length(queryChannelNames);
             isMatchBig=false(nElectrodes,nQueryChannels);
             for i=1:nElectrodes ,
-                electrode=self.Electrodes{i};
+                electrode=self.Electrodes_{i};
                 for j=1:nQueryChannels, 
                     isMatchBig(i,j)=electrode.isNamedMonitorChannelManaged(queryChannelNames{j});
                 end
@@ -725,7 +725,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
-                        electrode=self.Electrodes{iElectrode};
+                        electrode=self.Electrodes_{iElectrode};
                         queryChannelUnits{i}=electrode.getMonitorUnitsByName(queryChannelNames{i});
                     else
                         % do nothing, thus falling back to empty string
@@ -752,7 +752,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     iRelevantElectrodes=find(isRelevantElectrode,1);
                     if isscalar(iRelevantElectrodes) ,
                         iElectrode=iRelevantElectrodes(1);  
-                        electrode=self.Electrodes{iElectrode};
+                        electrode=self.Electrodes_{iElectrode};
                         queryChannelScales(i)=electrode.getMonitorScalingByName(queryChannelNames{i});
                     end                    
                 end                    
@@ -809,7 +809,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         
         function result = isElectrodeOfType(self, queryType)
             typePerElectrode=cellfun(@(electrode)(electrode.Type), ...
-                                     self.Electrodes, ...
+                                     self.Electrodes_, ...
                                      'UniformOutput',false);
             result=strcmp(queryType,typePerElectrode);
         end  % function
@@ -871,7 +871,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                 isThisType=self.isElectrodeOfType(smartElectrodeType);
 %                 if any(isThisType) ,
 %                     indicesOfThisTypeOfElectrodes=find(isThisType);
-%                     thisTypeOfElectrodes=self.Electrodes(indicesOfThisTypeOfElectrodes);
+%                     thisTypeOfElectrodes=self.Electrodes_(indicesOfThisTypeOfElectrodes);
 %                     indexWithinTypeOfTheseElectrodes=cellfun(@(electrode)(electrode.IndexWithinType) , ...
 %                                                            thisTypeOfElectrodes);
 %                     socketPropertyName=ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType);                                         
@@ -883,7 +883,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                         nElectrodesOfThisType=length(indicesOfThisTypeOfElectrodes);
 %                         for j=1:nElectrodesOfThisType ,
 %                             i=indicesOfThisTypeOfElectrodes(j);
-%                             electrode=self.Electrodes{i};
+%                             electrode=self.Electrodes_{i};
 %                             % Even if there's was an error on the electrode
 %                             % and no new info could be gathered, those ones
 %                             % should just be nan's or empty's, which
@@ -956,7 +956,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Check that index of each is within range
             indexOfElectrodeWithinType=ones(1,self.getElectrodeCount());
             for i=1:self.getElectrodeCount() ,                
-                electrode=self.Electrodes{i};
+                electrode=self.Electrodes_{i};
                 indexOfThisElectrodeWithinType=electrode.IndexWithinType;
                 if ~isempty(indexOfThisElectrodeWithinType) ,
                     indexOfElectrodeWithinType(i)=indexOfThisElectrodeWithinType;
@@ -999,7 +999,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
                 for i=1:self.getElectrodeCount() ,                
-                    electrode=self.Electrodes{i};
+                    electrode=self.Electrodes_{i};
                     electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
                 end            
             end
@@ -1009,7 +1009,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
                 for i=1:self.getElectrodeCount() ,                
-                    electrode=self.Electrodes{i};
+                    electrode=self.Electrodes_{i};
                     electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
                 end            
             end
@@ -1031,7 +1031,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                 isThisType=self.isElectrodeOfType(smartElectrodeType);
 %                 if any(isThisType) ,
 %                     indicesOfThisTypeOfElectrodes=find(isThisType);
-%                     thisTypeOfElectrodes=self.Electrodes(indicesOfThisTypeOfElectrodes);
+%                     thisTypeOfElectrodes=self.Electrodes_(indicesOfThisTypeOfElectrodes);
 %                     indexWithinTypeOfTheseElectrodes=cellfun(@(electrode)(electrode.IndexWithinType) , ...
 %                                                            thisTypeOfElectrodes);
 %                     socketPropertyName=ws.ElectrodeManager.socketPropertyNameFromElectrodeType_(smartElectrodeType);                                         
@@ -1042,7 +1042,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %                         nElectrodesOfThisType=length(indicesOfThisTypeOfElectrodes);
 %                         for j=1:nElectrodesOfThisType ,
 %                             i=indicesOfThisTypeOfElectrodes(j);
-%                             electrode=self.Electrodes{i};
+%                             electrode=self.Electrodes_{i};
 %                             % Even if there's was an error on the electrode
 %                             % and no new info could be gathered, those ones
 %                             % should just be nan's or empty's, which
@@ -1276,7 +1276,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                                               newCurrentCommandScaling, ...
                                               newVoltageCommandScaling,...
                                               newIsCommandEnabled)
-            electrode = self.Electrodes{electrodeIndex} ;
+            electrode = self.Electrodes_{electrodeIndex} ;
             electrode.setModeAndScalings_(newMode, ...
                                           newCurrentMonitorScaling, ...
                                           newVoltageMonitorScaling, ...

@@ -36,7 +36,7 @@ classdef TestPulser < ws.Model
         OutputTask_
         TimerValue_
         LastToc_
-        IndexOfElectrodeWithinTPElectrodesCached_
+        %IndexOfElectrodeWithinTPElectrodesCached_
         AmplitudePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
@@ -128,8 +128,11 @@ classdef TestPulser < ws.Model
         end
 
         function setElectrodeIndex(self, newValue)
+            oldValue = self.ElectrodeIndex_ ;
             self.ElectrodeIndex_ = newValue ;
-            self.clearExistingSweepIfPresent_() ;
+            if ~isequal(newValue, oldValue) ,
+                self.clearExistingSweepIfPresent_() ;
+            end
             %self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount) ;
         end
         
@@ -454,27 +457,48 @@ classdef TestPulser < ws.Model
 
         function addingElectrode(self, newElectrodeIndex, electrodeCountAfter)  %#ok<INUSL>
             % Called by the parent Ephys when an electrode is added.
-            self.clearExistingSweepIfPresent_() ;
+            %self.clearExistingSweepIfPresent_() ;
             %if isempty(self.ElectrodeIndex_) && isElectrodeMarkedForTestPulseAfter,
             %    self.ElectrodeIndex_ = electrodeIndex ;
             %end
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCountAfter) ;
+            if isempty(self.ElectrodeIndex_) && electrodeCountAfter>=1 ,
+                self.setElectrodeIndex(1) ;
+            end
             self.broadcast('Update') ;
         end
 
         function electrodesRemoved_(self, wasRemoved, electrodeCountAfter)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
+            electrodeIndexBefore = self.ElectrodeIndex_ ;
             
-            % Correct the electrode index
-            self.ElectrodeIndex_ = ws.correctIndexAfterRemoval(self.ElectrodeIndex_, wasRemoved) ;
-            
-            % Redimension MonitorPerElectrode_ appropriately, etc.
-            %self.NElectrodes_ = nTestPulseElectrodes ;
-            self.clearExistingSweepIfPresent_()
-            
-            % Change the electrode if needed
-            self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCountAfter);
+            if isempty(electrodeIndexBefore) ,
+                % Not much to do in this case
+            else                
+                % Check if the TP trode was removed
+                wasTPElectrodeRemoved = wasRemoved(electrodeIndexBefore) ;
+                if wasTPElectrodeRemoved ,
+                    % TP trode *was* removed
+                    if electrodeCountAfter>=1 ,
+                        % If there's any other electrodes, set the TP trode to the first one
+                        % Can't use setElectrodeIndex() b/c want to force the clearing of the
+                        % existing sweep
+                        self.setElectrodeIndex(1) ;
+                        if electrodeIndexBefore==1 ,
+                            % setElectrodeIndex() won't do this if the new index is the same, even though
+                            % it's a different trode now.
+                            self.clearExistingSweepIfPresent_() ;
+                        end
+                    else
+                        % If no electrodes left, there can be no TP trode
+                        self.setElectrodeIndex([]) ;  % this will clear, b/c electrodeIndexBefore is nonempty
+                    end
+                else                    
+                    % TP trode was *not* removed
+                    % Correct the electrode index
+                    self.ElectrodeIndex_ = ws.correctIndexAfterRemoval(electrodeIndexBefore, wasRemoved) ;
+                end
+            end
             
             self.broadcast('Update') ;
         end  % function
@@ -497,11 +521,17 @@ classdef TestPulser < ws.Model
 %             self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount);
 %         end  % function
         
-        function prepForStart(self, indexOfTestPulseElectrodeWithinTestPulseElectrodes, amplitudePerTestPulseElectrode, fs, nTestPulseElectrodes, ...
-                               gainOrResistanceUnitsPerTestPulseElectrode, isVCPerTestPulseElectrode, isCCPerTestPulseElectrode, ...
-                               commandTerminalIDPerTestPulseElectrode, monitorTerminalIDPerTestPulseElectrode, ...
-                               commandChannelScalePerTestPulseElectrode, monitorChannelScalePerTestPulseElectrode, ...
-                               deviceName)
+        function prepareForStart(self, ...
+                                 amplitudePerTestPulseElectrode, ...
+                                 fs, ...
+                                 gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                 isVCPerTestPulseElectrode, ...
+                                 isCCPerTestPulseElectrode, ...
+                                 commandTerminalIDPerTestPulseElectrode, ...
+                                 monitorTerminalIDPerTestPulseElectrode, ...
+                                 commandChannelScalePerTestPulseElectrode, ...
+                                 monitorChannelScalePerTestPulseElectrode, ...
+                                 deviceName)
             % Get the stimulus
             commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode, commandChannelScalePerTestPulseElectrode) ;
             nScans=size(commandsInVolts,1);
@@ -544,9 +574,9 @@ classdef TestPulser < ws.Model
             self.IsCCPerElectrodeCached_ = isCCPerTestPulseElectrode;
             self.MonitorChannelInverseScalePerElectrodeCached_ = 1./monitorChannelScalePerTestPulseElectrode ;
             self.AmplitudePerElectrodeCached_ = amplitudePerTestPulseElectrode ;
-            self.IndexOfElectrodeWithinTPElectrodesCached_ = indexOfTestPulseElectrodeWithinTestPulseElectrodes ;
+            %self.IndexOfElectrodeWithinTPElectrodesCached_ = indexOfTestPulseElectrodeWithinTestPulseElectrodes ;
             self.NScansInSweepCached_ = self.getNScansInSweep_(fs) ;
-            self.NElectrodesCached_ = nTestPulseElectrodes ;
+            self.NElectrodesCached_ = double(~isempty(self.ElectrodeIndex_)) ;
             self.GainOrResistanceUnitsPerElectrodeCached_ = gainOrResistanceUnitsPerTestPulseElectrode ;
             self.SamplingRateCached_ = fs ;
 
@@ -760,7 +790,7 @@ classdef TestPulser < ws.Model
             else
                 self.MonitorPerElectrode_=scaledMonitor;
             end
-            self.MonitorCached_=self.MonitorPerElectrode_(:,self.IndexOfElectrodeWithinTPElectrodesCached_);
+            self.MonitorCached_=self.MonitorPerElectrode_ ;
             self.tryToSetYLimitsIfCalledFor_();
             self.NSweepsCompletedThisRun_=self.NSweepsCompletedThisRun_+1;
             
@@ -828,8 +858,13 @@ classdef TestPulser < ws.Model
         function clearExistingSweepIfPresent_(self)
             self.MonitorPerElectrode_ = [] ;
             self.MonitorCached_ = [] ;
-            self.GainPerElectrode_ = [] ;
-            self.GainOrResistancePerElectrode_ = [] ;
+            if isempty(self.ElectrodeIndex_) ,                
+                self.GainPerElectrode_ = [] ;
+                self.GainOrResistancePerElectrode_ = [] ;
+            else
+                self.GainPerElectrode_ = nan ;
+                self.GainOrResistancePerElectrode_ = nan ;
+            end
             self.UpdateRate_ = nan ;
         end  % function
     end  % methods
@@ -874,13 +909,15 @@ classdef TestPulser < ws.Model
             if ~any(isElectrodeEligibleForTestPulseAfter) ,
                 % If there are no electrodes marked for test pulsing, set
                 % self.ElectrodeIndex_ to empty.
-                self.ElectrodeIndex_ = [] ;
+                %self.ElectrodeIndex_ = [] ;
+                self.setElectrodeIndex([]) ;
             else
                 % If get here, there is at least one electrode eligible for test pulsing
                 if isempty(self.ElectrodeIndex_) ,
                     % If no current TP electrode, set the current TP electrode to the first
                     % electrode marked for TPing.
-                    self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;
+                    %self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;
+                    self.setElectrodeIndex(find(isElectrodeEligibleForTestPulseAfter,1)) ;
                       % no current electrode, but list of TP electrodes is nonempty, so make the first one current.
                 else
                     % If we get here, self.ElectrodeIndex is a scalar, and there is at least
@@ -896,7 +933,8 @@ classdef TestPulser < ws.Model
                         % If get here, self.ElectrodeIndex does not point to an electrode eligible
                         % for TPing.
                         % In this case, the first TP electrode the current one.
-                        self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;                        
+                        %self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;  
+                        self.setElectrodeIndex(find(isElectrodeEligibleForTestPulseAfter,1)) ;
                     end
                 end
             end 
