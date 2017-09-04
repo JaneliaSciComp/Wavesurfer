@@ -111,7 +111,7 @@ classdef WavesurferModel < ws.Model
         DoIncludeDateInDataFileName
         DoIncludeSessionIndexInDataFileName
         SessionIndex
-        StimulusLibrary
+        %StimulusLibrary
         CurrentRunAbsoluteFileName
         PlotHeightFromAIChannelIndex
         PlotHeightFromDIChannelIndex
@@ -1073,12 +1073,6 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;            
         end  % function 
         
-        function didSetIsInputChannelActive(self) 
-            self.Ephys_.didSetIsInputChannelActive() ;
-            self.Display_.didSetIsInputChannelActive() ;
-            self.broadcast('UpdateChannels') ;
-        end
-        
         function didSetIsInputChannelMarkedForDeletion(self) 
             self.broadcast('UpdateChannels') ;
         end
@@ -1094,6 +1088,11 @@ classdef WavesurferModel < ws.Model
     end
        
     methods (Access=protected)
+        function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
+            self.Ephys_.didSetIsInputChannelActive() ;
+            self.Display_.didSetIsInputChannelActive() ;
+        end
+        
         function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
@@ -4529,7 +4528,8 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
-            self.didSetIsInputChannelActive() ;
+            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('UpdateChannels') ;
         end    
         
         function scaledAnalogData = getLatestAIData(self)
@@ -4567,14 +4567,15 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
-            self.didSetIsInputChannelActive() ;
+            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('UpdateChannels') ;
         end    
         
         function result = getLatestDIData(self)
             result = self.Acquisition_.getLatestRawDigitalData() ;
         end  % function
         
-        function result=aiChannelUnitsFromName(self,channelName)
+        function result = aiChannelUnitsFromName(self, channelName)
             if isempty(channelName) ,
                 result='';
             else
@@ -4587,7 +4588,7 @@ classdef WavesurferModel < ws.Model
             end
         end
         
-        function result=aiChannelScaleFromName(self,channelName)
+        function result = aiChannelScaleFromName(self, channelName)
             if isempty(channelName) ,
                 result='';
             else
@@ -4889,7 +4890,7 @@ classdef WavesurferModel < ws.Model
                 (self.isIdle() || self.isTestPulsing()) && ...
                 ~isempty(electrodeIndex) && ...
                 self.areTestPulseElectrodeChannelsValid() && ...
-                ~wsModel.areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices() ;            
+                ~self.areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices() ;            
 %                 self.areAllMonitorAndCommandChannelNamesDistinct() && ...
         end
         
@@ -5919,7 +5920,7 @@ classdef WavesurferModel < ws.Model
             self.Logging_.SessionIndex = newValue ;
         end
 
-        function result = get.StimulusLibrary(self)
+        function result = stimulusLibrary(self)
             % Note that this returns a *copy* of the internal stimulus library
             result = self.Stimulation_.getStimulusLibraryCopy() ;
         end

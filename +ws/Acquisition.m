@@ -378,6 +378,7 @@ classdef Acquisition < ws.Subsystem
                 % Set the setting
                 self.IsAnalogChannelActive_ = newValue;
                 self.updateActiveChannelIndexFromChannelIndex_() ;
+                self.clearAnalogScalingCoefficientsCache_() ;
             end
             %self.Parent.didSetIsInputChannelActive() ;
         end
@@ -555,6 +556,7 @@ classdef Acquisition < ws.Subsystem
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
+                    self.clearAnalogScalingCoefficientsCache_() ;
                 end
             end
             %self.Parent.didSetAnalogInputTerminalID();
@@ -914,6 +916,7 @@ classdef Acquisition < ws.Subsystem
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             self.updateActiveChannelIndexFromChannelIndex_() ;
+            self.clearAnalogScalingCoefficientsCache_() ;
             
             newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
@@ -947,6 +950,7 @@ classdef Acquisition < ws.Subsystem
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
             self.updateActiveChannelIndexFromChannelIndex_() ;
+            self.clearAnalogScalingCoefficientsCache_() ;
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             wasDeleted = isToBeDeleted ;
@@ -993,6 +997,7 @@ classdef Acquisition < ws.Subsystem
         function setSingleAnalogDeviceName(self, i, newValue)
             % Checking done by parent
             self.AnalogDeviceNames_{i} = newValue ;
+            self.clearAnalogScalingCoefficientsCache_() ;
         end  % function        
         
         function setSingleDigitalDeviceName(self, i, newValue)
