@@ -10,18 +10,20 @@ classdef Looper < handle
     end
     
     properties (Access = protected)        
-        DeviceName_ = ''
-        SampleClockTimebaseSource_ = []
-        SampleClockTimebaseRate_ = []
-        NDIOTerminals_ = 0
-        NPFITerminals_ = 0
-        NCounters_ = 0
-        NAITerminals_ = 0
-        AITerminalIDsOnDevice_ = cell(1,0)
-        NAOTerminals_ = 0 ;            
+        PrimaryDeviceName_ = ''
+        IsPrimaryDeviceAPXIDevice_ = false
+        %ReferenceClockSource_ = []
+        %ReferenceClockRate_ = []
+        %NDIOTerminals_ = 0
+        %NPFITerminals_ = 0
+        %NCounters_ = 0
+        %NAITerminals_ = 0
+        %AITerminalIDsOnDevice_ = cell(1,0)
+        %NAOTerminals_ = 0 ;            
         NSweepsPerRun_ = 1
         SweepDuration_ = [] 
-        DOTerminalIDs_ = zeros(1,0)
+        %DOChannelDeviceNames_ = cell(1,0)
+        DOChannelTerminalIDs_ = zeros(1,0)
         DigitalOutputStateIfUntimed_ = false(1,0)
         IsDOChannelTimed_ = false(1,0)     
         DOChannelNames_ = cell(1,0)
@@ -29,16 +31,19 @@ classdef Looper < handle
         AIChannelNames_ = cell(1,0)
         AIChannelScales_ = zeros(1,0)
         IsAIChannelActive_ = false(1,0)
-        AITerminalIDs_ = zeros(1,0)
+        AIChannelDeviceNames_ = cell(1,0)
+        AIChannelTerminalIDs_ = zeros(1,0)
             
         DIChannelNames_ = cell(1,0)
         IsDIChannelActive_ = false(1,0)
-        DITerminalIDs_ = zeros(1,0)
+        %DIChannelDeviceNames_ = cell(1,0)
+        DIChannelTerminalIDs_ = zeros(1,0)
             
         DataCacheDurationWhenContinuous_ = []
         
         IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
+        AcquisitionTriggerDeviceName_
         AcquisitionTriggerPFIID_
         AcquisitionTriggerEdge_
         
@@ -64,7 +69,8 @@ classdef Looper < handle
         IsPerformingRun_ = false
         IsPerformingSweep_ = false
         IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
-        AcquisitionKeystoneTaskCache_
+        AcquisitionKeystoneTaskTypeCache_
+        AcquisitionKeystoneTaskDeviceNameCache_
         IsInUntimedDOTaskForEachUntimedDOChannel_ = false(1,0)  
         % Tasks
         UntimedDigitalOutputTask_ = []
@@ -217,18 +223,19 @@ classdef Looper < handle
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetDeviceInFrontend(self, ...
-                                                 deviceName, ...
-                                                 nDIOTerminals, nPFITerminals, nCounters, nAITerminals, nAOTerminals, ...
-                                                 isDOChannelTerminalOvercommitted)
+        function result = didSetPrimaryDeviceInFrontend(self, ...
+                                                        primaryDeviceName, ...
+                                                        isPrimaryDeviceAPXIDevice, ...
+                                                        isDOChannelTerminalOvercommitted)
             % Set stuff
-            self.DeviceName_ = deviceName ;
-            self.NDIOTerminals_ = nDIOTerminals ;
-            self.NPFITerminals_ = nPFITerminals ;
-            self.NCounters_ = nCounters ;
-            self.NAITerminals_ = nAITerminals ;
-            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-            self.NAOTerminals_ = nAOTerminals ;            
+            self.PrimaryDeviceName_ = primaryDeviceName ;
+            self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            %self.NDIOTerminals_ = nDIOTerminals ;
+            %self.NPFITerminals_ = nPFITerminals ;
+            %self.NCounters_ = nCounters ;
+            %self.NAITerminals_ = nAITerminals ;
+            %self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+            %self.NAOTerminals_ = nAOTerminals ;            
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Get a task, if we need one
@@ -241,7 +248,8 @@ classdef Looper < handle
                                       currentFrontendPath, ...
                                       currentFrontendPwd, ...
                                       looperProtocol, ...
-                                      acquisitionKeystoneTask, ...
+                                      acquisitionKeystoneTaskType, ...
+                                      acquisitionKeystoneTaskDeviceName, ...
                                       isTerminalOvercommitedForEachDOChannel)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
@@ -252,7 +260,8 @@ classdef Looper < handle
             result = self.prepareForRun_(currentFrontendPath, ...
                                          currentFrontendPwd, ...
                                          looperProtocol, ...
-                                         acquisitionKeystoneTask, ...
+                                         acquisitionKeystoneTaskType, ...
+                                         acquisitionKeystoneTaskDeviceName, ...
                                          isTerminalOvercommitedForEachDOChannel) ;
         end  % function
 
@@ -315,17 +324,17 @@ classdef Looper < handle
             result = [] ;
         end  % function        
         
-        function result = releaseTimedHardwareResources(self)
-            % This is a req-rep method
-            self.releaseTimedHardwareResources_();
-            %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
-            result = [] ;
-        end  % function
+%         function result = releaseTimedHardwareResources(self)
+%             % This is a req-rep method
+%             self.releaseTimedHardwareResources_();
+%             %self.IPCPublisher_.send('looperDidReleaseTimedHardwareResources');            
+%             result = [] ;
+%         end  % function
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
                                                                         i, newValue, ...
                                                                         isDOChannelTerminalOvercommitted)
-            self.DOTerminalIDs_(i) = newValue ;
+            self.DOChannelTerminalIDs_(i) = newValue ;
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
@@ -427,7 +436,13 @@ classdef Looper < handle
             self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
-        end  % function        
+        end  % function  
+        
+        function result = releaseTimedHardwareResources(self)
+            % NB: This is called via RPC
+            self.releaseTimedHardwareResources_() ;
+            result = [] ;
+        end        
     end  % RPC methods block   
 
     methods  % public methods, typically called by user code
@@ -461,7 +476,7 @@ classdef Looper < handle
             end
         end  % function
         
-        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self,timeSinceSweepStart)
+        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self, timeSinceSweepStart)
             %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             self.IPCSubscriber_.processMessagesIfAvailable() ;
@@ -498,8 +513,8 @@ classdef Looper < handle
         end
 
         function releaseTimedHardwareResources_(self)
-            self.TimedAnalogInputTask_=[];            
-            self.TimedDigitalInputTask_=[];            
+            self.TimedAnalogInputTask_ = [] ;            
+            self.TimedDigitalInputTask_ = [] ;            
         end
         
         function acquireOnDemandHardwareResources_(self)
@@ -509,13 +524,10 @@ classdef Looper < handle
                 
                 % Get the digital device names and terminal IDs, other
                 % things out of self
-                deviceName = self.DeviceName_ ;
-                deviceNameForEachDOChannel = repmat({deviceName},size(self.DOTerminalIDs_)) ;
-                terminalIDForEachDOChannel = self.DOTerminalIDs_ ;
-                %if length(deviceNameForEachDigitalChannel) ~= length(terminalIDForEachDigitalChannel) ,
-                %    self
-                %    keyboard
-                %end
+                primaryDeviceName = self.PrimaryDeviceName_ ;
+                deviceNameForEachDOChannel = repmat({primaryDeviceName},size(self.DOChannelTerminalIDs_)) ;
+                %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
+                terminalIDForEachDOChannel = self.DOChannelTerminalIDs_ ;
                 
                 onDemandOutputStateForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
@@ -545,10 +557,10 @@ classdef Looper < handle
                 deviceNamesInTask = deviceNameForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 terminalIDsInTask = terminalIDForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 self.UntimedDigitalOutputTask_ = ...
-                    ws.UntimedDigitalOutputTask(self, ...
-                                                'WaveSurfer Untimed Digital Output Task', ...
-                                                deviceNamesInTask, ...
-                                                terminalIDsInTask) ;
+                    ws.OnDemandDOTask('WaveSurfer Untimed Digital Output Task', ...
+                                      self.PrimaryDeviceName_, self.IsPrimaryDeviceAPXIDevice_, ...
+                                      deviceNamesInTask, ...
+                                      terminalIDsInTask) ;
                 self.IsInUntimedDOTaskForEachUntimedDOChannel_ = isInTaskForEachOnDemandDOChannel ;
                                                
                 % Set the outputs to the proper values, now that we have a task                               
@@ -572,7 +584,8 @@ classdef Looper < handle
                                                  currentFrontendPath, ...
                                                  currentFrontendPwd, ...
                                                  looperProtocol, ...
-                                                 acquisitionKeystoneTask, ...
+                                                 acquisitionKeystoneTaskType, ...
+                                                 acquisitionKeystoneTaskDeviceName, ...
                                                  isTerminalOvercommitedForEachDOChannel )
             % Get ready to run, but don't start anything.
 
@@ -599,12 +612,12 @@ classdef Looper < handle
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
             self.releaseTimedHardwareResources_() ;           
-            %wsModel = ws.Coding.decodeEncodingContainer(looperProtocol) ;
-            %self.mimicWavesurferModel_(wsModel) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
-            self.setLooperProtocol_(looperProtocol) ;  % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
+            self.setLooperProtocol_(looperProtocol) ;  
+              % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
-            self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;
+            self.AcquisitionKeystoneTaskTypeCache_ = acquisitionKeystoneTaskType ;
+            self.AcquisitionKeystoneTaskDeviceNameCache_ = acquisitionKeystoneTaskDeviceName ;
             
             % Set the overcommitment arrays, since we have the info at hand
             %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
@@ -643,28 +656,31 @@ classdef Looper < handle
             % Make the NI daq task, if don't have it already
             self.acquireTimedHardwareResources_() ;
 
-            % Set up the task triggering
-            keystoneTask = self.AcquisitionKeystoneTaskCache_ ;
-            %acquisitionTriggerPFIID = self.AcquisitionTriggerPFIID_ ;
-            if isequal(keystoneTask,'ai') ,
-                self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
-                self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-                self.TimedDigitalInputTask_.TriggerTerminalName = 'ai/StartTrigger' ;
-                self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
-            elseif isequal(keystoneTask,'di') ,
-                self.TimedAnalogInputTask_.TriggerTerminalName = 'di/StartTrigger' ;
-                self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
-                self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('PFI%d',self.AcquisitionTriggerPFIID_) ;
-                self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-            else
-                % Getting here means there was a programmer error
-                error('ws:InternalError', ...
-                      'Adam is a dum-dum, and the magic number is 92834797');
-            end
+            % Set up the task triggering for DI channels
+%             acquisitionKeystoneTask = self.AcquisitionKeystoneTaskTypeCache_ ;
+%             self.TimedAnalogInputTask_.setTrigger(self.AcquisitionKeystoneTaskTypeCache_, ...
+%                                                   self.AcquisitionTriggerDeviceName_, ...
+%                                                   self.AcquisitionTriggerPFIID_, ...
+%                                                   self.AcquisitionTriggerEdge_) ;
+%             if isequal(acquisitionKeystoneTask,'ai') ,
+%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
+%                 %self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
+%                 self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
+%             elseif isequal(acquisitionKeystoneTask,'di') ,
+%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%/di/StartTrigger', self.PrimaryDeviceName_) ;
+%                 %self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
+%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
+%                 self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
+%             else
+%                 % Getting here means there was a programmer error
+%                 error('ws:InternalError', ...
+%                       'Adam is a dum-dum, and the magic number is 92834797');
+%             end
             
-            % Set for finite-duration vs. continous acquisition
-            self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
-            self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
+%             % Set for finite-duration vs. continous acquisition
+%             %self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
+%             self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
             
             % Dimension the cache that will hold acquired data in main
             % memory
@@ -693,8 +709,8 @@ classdef Looper < handle
             self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
             
             % Arm the AI and DI tasks
-            self.TimedAnalogInputTask_.arm();
-            self.TimedDigitalInputTask_.arm();
+            %self.TimedAnalogInputTask_.arm();  % no notion of arming anymore
+            %self.TimedDigitalInputTask_.arm();
         end  % function        
         
         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
@@ -804,20 +820,22 @@ classdef Looper < handle
         end  % function
         
         function completingOrStoppingOrAbortingRun_(self)
-            if ~isempty(self.TimedAnalogInputTask_) ,
-                if isvalid(self.TimedAnalogInputTask_) ,
-                    self.TimedAnalogInputTask_.disarm();
-                else
-                    self.TimedAnalogInputTask_ = [] ;
-                end
-            end
-            if ~isempty(self.TimedDigitalInputTask_) ,
-                if isvalid(self.TimedDigitalInputTask_) ,
-                    self.TimedDigitalInputTask_.disarm();
-                else
-                    self.TimedDigitalInputTask_ = [] ;
-                end                    
-            end
+            self.TimedAnalogInputTask_ = [] ;
+%             if ~isempty(self.TimedAnalogInputTask_) ,
+%                 if isvalid(self.TimedAnalogInputTask_) ,
+%                     %self.TimedAnalogInputTask_.disarm();
+%                 else
+%                     self.TimedAnalogInputTask_ = [] ;
+%                 end
+%             end
+            self.TimedDigitalInputTask_ = [] ;
+%             if ~isempty(self.TimedDigitalInputTask_) ,
+%                 if isvalid(self.TimedDigitalInputTask_) ,
+%                     %self.TimedDigitalInputTask_.disarm();
+%                 else
+%                     self.TimedDigitalInputTask_ = [] ;
+%                 end                    
+%             end
             self.IsArmedOrAcquiring_ = false;            
         end  % function
         
@@ -878,8 +896,11 @@ classdef Looper < handle
             % Cause self to resemble other, for the purposes of running an
             % experiment with the settings defined in wsModel.
             
-            self.SampleClockTimebaseSource_ = looperProtocol.SampleClockTimebaseSource ;
-            self.SampleClockTimebaseRate_ = looperProtocol.SampleClockTimebaseRate ;
+            self.PrimaryDeviceName_ = looperProtocol.PrimaryDeviceName ;
+            self.IsPrimaryDeviceAPXIDevice_ = looperProtocol.IsPrimaryDeviceAPXIDevice ;
+            
+%             self.ReferenceClockSource_ = looperProtocol.ReferenceClockSource ;
+%             self.ReferenceClockRate_ = looperProtocol.ReferenceClockRate ;
         
             self.NSweepsPerRun_  = looperProtocol.NSweepsPerRun ;
             self.SweepDuration_ = looperProtocol.SweepDuration ;
@@ -888,19 +909,23 @@ classdef Looper < handle
             self.AIChannelNames_ = looperProtocol.AIChannelNames ;
             self.AIChannelScales_ = looperProtocol.AIChannelScales ;
             self.IsAIChannelActive_ = looperProtocol.IsAIChannelActive ;
-            self.AITerminalIDs_ = looperProtocol.AITerminalIDs ;
+            self.AIChannelDeviceNames_ = looperProtocol.AIChannelDeviceNames ;
+            self.AIChannelTerminalIDs_ = looperProtocol.AIChannelTerminalIDs ;
             
             self.DIChannelNames_ = looperProtocol.DIChannelNames ;
             self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
-            self.DITerminalIDs_ = looperProtocol.DITerminalIDs ;
+            %self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
+            self.DIChannelTerminalIDs_ = looperProtocol.DIChannelTerminalIDs ;
             
             self.DOChannelNames_ = looperProtocol.DOChannelNames ;
-            self.DOTerminalIDs_ = looperProtocol.DOTerminalIDs ;
+            %self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
+            self.DOChannelTerminalIDs_ = looperProtocol.DOChannelTerminalIDs ;
             self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
             self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
             
             self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
             
+            self.AcquisitionTriggerDeviceName_ = looperProtocol.AcquisitionTriggerDeviceName ;
             self.AcquisitionTriggerPFIID_ = looperProtocol.AcquisitionTriggerPFIID ;
             self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
             
@@ -915,7 +940,7 @@ classdef Looper < handle
                                                      onDemandOutputForEachDOChannel)
             self.DOChannelNames_ = channelNameForEachDOChannel ;
             %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
-            self.DOTerminalIDs_ = terminalIDForEachDOChannel ;
+            self.DOChannelTerminalIDs_ = terminalIDForEachDOChannel ;
             self.IsDOChannelTimed_ = isTimedForEachDOChannel ;
             self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
             self.reacquireOnDemandHardwareResources_() ;
@@ -930,43 +955,45 @@ classdef Looper < handle
             if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
                 isAIChannelActive = self.IsAIChannelActive_ ;
-                %activeAIChannelNames = self.AIChannelNames(isAIChannelActive) ;
-                %activeAnalogTerminalNames = self.AnalogTerminalNames(isAIChannelActive) ;
-                aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                aiDeviceNames = self.AIChannelDeviceNames_ ;                
                 activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
-                activeAITerminalIDs = self.AITerminalIDs_(isAIChannelActive) ;
+                activeAITerminalIDs = self.AIChannelTerminalIDs_(isAIChannelActive) ;
+                primaryDeviceName = self.PrimaryDeviceName_ ;
+                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
+                %[referenceClockSource, referenceClockRate] = ...
+                %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
                 self.TimedAnalogInputTask_ = ...
-                    ws.InputTask(self, ...
-                                 'analog', ...
-                                 'WaveSurfer Analog Acquisition Task', ...
-                                 self.SampleClockTimebaseSource_ , ...
-                                 self.SampleClockTimebaseRate_ , ...
-                                 activeAIDeviceNames, ...
-                                 activeAITerminalIDs, ...
-                                 self.AcquisitionSampleRate_) ;
-                % Set other things in the Task object
-                %self.TimedAnalogInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                %self.TimedAnalogInputTask_.SampleRate = self.SampleRate;                
+                    ws.AITask('WaveSurfer AI Task', ...
+                              primaryDeviceName , ...
+                              isPrimaryDeviceAPXIDevice , ...
+                              activeAIDeviceNames, ...
+                              activeAITerminalIDs, ...
+                              self.AcquisitionSampleRate_, ...
+                              self.SweepDuration_, ...
+                              self.AcquisitionKeystoneTaskTypeCache_, ...
+                              self.AcquisitionKeystoneTaskDeviceNameCache_, ...
+                              self.AcquisitionTriggerDeviceName_, ...
+                              self.AcquisitionTriggerPFIID_, ...
+                              self.AcquisitionTriggerEdge_) ;
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
+                primaryDeviceName = self.PrimaryDeviceName_ ;
+                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
                 isDIChannelActive = self.IsDIChannelActive_ ;
-                %activeDIChannelNames = self.DIChannelNames(isDIChannelActive) ;                
-                %activeDigitalTerminalNames = self.DigitalTerminalNames(isDIChannelActive) ;                
-                diDeviceNames = repmat({self.DeviceName_}, size(isDIChannelActive)) ;
-                activeDIDeviceNames = diDeviceNames(isDIChannelActive) ;
-                activeDITerminalIDs = self.DITerminalIDs_(isDIChannelActive) ;
+                activeDITerminalIDs = self.DIChannelTerminalIDs_(isDIChannelActive) ;
                 self.TimedDigitalInputTask_ = ...
-                    ws.InputTask(self, ...
-                                 'digital', ...
-                                 'WaveSurfer Digital Acquisition Task', ...
-                                 self.SampleClockTimebaseSource_ , ...
-                                 self.SampleClockTimebaseRate_ , ...
-                                 activeDIDeviceNames, ...
-                                 activeDITerminalIDs, ...
-                                 self.AcquisitionSampleRate_) ;
-                % Set other things in the Task object
-                %self.TimedDigitalInputTask_.DurationPerDataAvailableCallback = self.Duration ;
-                %self.TimedDigitalInputTask_.SampleRate = self.SampleRate;                
+                    ws.DITask('WaveSurfer DI Task', ...
+                              primaryDeviceName , ...
+                              isPrimaryDeviceAPXIDevice , ...
+                              activeDITerminalIDs, ...
+                              self.AcquisitionSampleRate_, ...
+                              self.SweepDuration_, ...
+                              self.AcquisitionKeystoneTaskTypeCache_, ...
+                              self.AcquisitionKeystoneTaskDeviceNameCache_, ...
+                              self.AcquisitionTriggerDeviceName_, ...
+                              self.AcquisitionTriggerPFIID_, ...
+                              self.AcquisitionTriggerEdge_) ;
             end
         end  % function
 
@@ -1008,7 +1035,7 @@ classdef Looper < handle
                     % 10-20 ms.
                     areTasksDone = false;
                 else                    
-                    areTasksDone = ( self.TimedAnalogInputTask_.isTaskDone() && self.TimedDigitalInputTask_.isTaskDone() ) ;
+                    areTasksDone = ( self.TimedAnalogInputTask_.isDone() && self.TimedDigitalInputTask_.isDone() ) ;
                 end
 %                 if areTasksDone ,
 %                     fprintf('Acquisition tasks are done.\n')

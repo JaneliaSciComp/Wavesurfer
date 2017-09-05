@@ -1,16 +1,6 @@
 classdef CounterTriggerTask < handle
         
-%     properties (Dependent = true, SetAccess=immutable)
-%         Parent
-%     end
-
-%     properties (Dependent = true)
-%         RepeatCount
-%         RepeatFrequency
-%     end
-    
     properties (Access = protected)
-        %Parent_
         TaskName_ = 'Counter Trigger Task';        
         DeviceName_ = ''   % NI device name to use
         CounterID_ = 0   % Index of NI counter (CTR) to use (zero-based)
@@ -21,17 +11,12 @@ classdef CounterTriggerTask < handle
         DabsDaqTask_ = []        
     end
 
-%     properties (Access = protected)
-%         DoneCallback_ = [];
-%     end
-    
     methods
-        function self = CounterTriggerTask(taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceName, counterID, repeatFrequency, ...
-                                           repeatCount, pfiID, triggerTerminalName)            
-            %self.Parent_ = parent;
-            self.TaskName_ = taskName;
-            self.DeviceName_ = deviceName;
-            self.CounterID_ = counterID;
+        function self = CounterTriggerTask(taskName, referenceClockSource, referenceClockRate, deviceName, counterID, ...
+                                           repeatFrequency, repeatCount, pfiID, triggerTerminalName)            
+            self.TaskName_ = taskName ;
+            self.DeviceName_ = deviceName ;
+            self.CounterID_ = counterID ;
             self.RepeatFrequency_ = repeatFrequency ;
             self.RepeatCount_ = repeatCount ;
             self.PFIID_ = pfiID ;
@@ -41,15 +26,15 @@ classdef CounterTriggerTask < handle
             %deviceName
             %counterID
             %repeatFrequency
-            self.DabsDaqTask_.createCOPulseChanFreq(deviceName, counterID, '', repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low');
+            self.DabsDaqTask_.createCOPulseChanFreq(deviceName, counterID, '', repeatFrequency, 0.5, 0.0, 'DAQmx_Val_Low') ;
             if isinf(repeatCount) ,
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_ContSamps');
             else
                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', repeatCount);
             end
-            set(self.DabsDaqTask_, 'sampClkTimebaseSrc', sampleClockTimebaseSource) ;
-            set(self.DabsDaqTask_, 'sampClkTimebaseRate', sampleClockTimebaseRate) ;
-            exportTerminalList = sprintf('PFI%d', pfiID) ;
+            set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;
+            set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;
+            exportTerminalList = sprintf('/%s/pfi%d', deviceName, pfiID) ;
             self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList) ;
             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType('rising') ;
             self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
@@ -57,26 +42,25 @@ classdef CounterTriggerTask < handle
         
         function delete(self)
             try
-                self.stop();
+                self.stop() ;
             catch me %#ok<NASGU>  % would be really nice to make this only catch the specific exceptions we expect to could normally be thrown
             end                
-            ws.deleteIfValidHandle(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
-            self.DabsDaqTask_ = [];            
-            %self.Parent_ = [];
+            ws.deleteIfValidHandle(self.DabsDaqTask_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to
+            self.DabsDaqTask_ = [] ;
         end
         
         function start(self)
             %fprintf('CounterTriggerTask::start(), CTR %d\n',self.CounterID_);
             if ~isempty(self.DabsDaqTask_) ,
                 %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-                self.DabsDaqTask_.start();
+                self.DabsDaqTask_.start() ;
             end
         end
         
         function stop(self)
             %fprintf('CounterTriggerTask::stop(), CTR %d\n', self.CounterID_);
             if ~isempty(self.DabsDaqTask_) && isvalid(self.DabsDaqTask_) ,
-                self.DabsDaqTask_.stop();
+                self.DabsDaqTask_.stop() ;
 %                 if self.DabsDaqTask_.isTaskDoneQuiet() ,
 %                     self.DabsDaqTask_.stop();
 %                 else
@@ -98,58 +82,6 @@ classdef CounterTriggerTask < handle
         function debug(self)  %#ok<MANU>
             keyboard
         end
-        
-%         function exportSignal(self, terminalList)
-%             self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', terminalList)
-%         end
-%         
-%         function configureStartTrigger(self, terminalName, edge)
-%             %fprintf('CounterTriggerTask::configureStartTrigger()\n');
-%             if ~ws.isString(terminalName) ,                
-%                 error('ws:CounterTriggerTask:TerminalNameIsNotString' , ...
-%                       'The counter trigger terminal name must be a string') ;
-%             end
-%             dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(edge) ;
-%             self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge);
-%         end        
-        
-%         function value = get.Parent(self)
-%             value = self.Parent_;
-%         end  % function
-%         
-%         function val = get.RepeatCount(self)
-%             val = self.RepeatCount_;
-%         end
-%         
-%         function set.RepeatCount(self, newValue)
-%             self.RepeatCount_ = newValue;
-%             if isinf(newValue) ,
-%                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_ContSamps');
-%             else
-%                 self.DabsDaqTask_.cfgImplicitTiming('DAQmx_Val_FiniteSamps', newValue);
-%             end
-%         end
-%         
-%         function val = get.RepeatFrequency(self)
-%             val = self.RepeatFrequency_;
-%         end
-%         
-%         function set.RepeatFrequency(self, newValue)
-%             %self.setRepeatFrequency_(val);
-%             self.RepeatFrequency_ = newValue;
-%             self.DabsDaqTask_.channels(1).set('pulseFreq', newValue);
-%         end        
-        
-%         function poll(self,timeSinceSweepStart) %#ok<INUSD>
-%             if self.DabsDaqTask_.isTaskDoneQuiet() ,
-%                 self.stop();  % probably better to do self.DabsDaqTask_.stop() here...
-%                 %self.DabsDaqTask_.doneEventCallbacks = {};
-%                 if ~isempty(self.Parent) && isvalid(self.Parent) ,
-%                     %feval(self.DoneCallback_,self);
-%                     self.Parent.counterCounterTriggerTaskDone();
-%                 end
-%             end
-%         end  % function
     end  % public methods
 
 end

@@ -188,7 +188,8 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end   % function
                 
         function result = containsStimulus(self, queryStimulusIndex)
-            result = cellfun(@(element)(any(element==queryStimulusIndex)), self.IndexOfEachStimulusInLibrary_) ;
+            result = cellfun(@(element)(any(isscalar(element)&&isequal(element, queryStimulusIndex))), self.IndexOfEachStimulusInLibrary_) ;
+              % self.IndexOfEachStimulusInLibrary_ is a cell array, and each element is either empty or scalar
         end   % function
 
         function bindingIndex = addBinding(self)
@@ -339,7 +340,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end        
         
         function nullGivenTargetInAllBindings(self, targetStimulusIndex)
-            % Set all occurances of targetStimulusIndex in the bindings to []
+            % Set all occurences of targetStimulusIndex in the bindings to []
             for i = 1:self.NBindings ,
                 thisStimulusIndex = self.IndexOfEachStimulusInLibrary_{i} ;
                 if thisStimulusIndex==targetStimulusIndex ,

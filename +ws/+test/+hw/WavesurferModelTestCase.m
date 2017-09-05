@@ -250,11 +250,11 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             settings(end+1,:)={'AreSweepsFiniteDuration' true};            
             settings(end+1,:)={'NSweepsPerRun' 11};
 
-            settings(end+1,:)={'AcquisitionSampleRate' 100e6/5001};
+            settings(end+1,:)={'AcquisitionSampleRate' 10e6/501};
             settings(end+1,:)={'SweepDuration' 2.17};
             
             settings(end+1,:)={'IsStimulationEnabled' true};
-            settings(end+1,:)={'StimulationSampleRate' 100e6/4999};
+            settings(end+1,:)={'StimulationSampleRate' 10e6/499};
             
             settings(end+1,:)={'IsDisplayEnabled' true};
             %settings(end+1,:)={'Display.IsAutoRate' false};

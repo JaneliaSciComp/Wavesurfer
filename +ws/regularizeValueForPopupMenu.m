@@ -1,5 +1,5 @@
-function [menuItems,indexOfSelectedMenuItem,isOptionsLaden,isSelectionsLaden,isSelectionInOptions] = ...
-    regularizeValueForPopupMenu(selections,options,alwaysShowNoSelectionItemInMenu,stringToRepresentNoOptions,stringToRepresentNoSelection)
+function [menuItems, indexOfSelectedMenuItem, isOptionsLaden, isSelectionsLaden, isSelectionInOptions] = ...
+    regularizeValueForPopupMenu(selections, options, alwaysShowNoSelectionItemInMenu, stringToRepresentNoOptions, stringToRepresentNoSelection)
 
     % Given selections (a cell array of strings, *with either zero or one
     % element*) and a list of options (a cell array of strings, possibly

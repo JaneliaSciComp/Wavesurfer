@@ -43,13 +43,13 @@ wsModel.setSingleDIChannelTerminalID(channelIndex,3) ;
 wsModel.addAOChannel() ;
 channelIndex = wsModel.NAOChannels ;
 wsModel.setSingleAOChannelName(channelIndex,'electrodeOut') ;
-wsModel.setSingleAOTerminalID(channelIndex,0) ;
+wsModel.setSingleAOChannelTerminalID(channelIndex,0) ;
 
 % add velocity AO channel
 wsModel.addAOChannel() ;
 channelIndex = wsModel.NAOChannels ;
 wsModel.setSingleAOChannelName(channelIndex,'velocityOut') ;
-wsModel.setSingleAOTerminalID(channelIndex,1) ;
+wsModel.setSingleAOChannelTerminalID(channelIndex,1) ;
 
 % add photodiode DO channel
 wsModel.addDOChannel() ;

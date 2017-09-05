@@ -49,7 +49,7 @@ classdef FiniteOutputTask < handle
 %     end
 
     methods
-        function self = FiniteOutputTask(taskType, taskName, sampleClockTimebaseSource, sampleClockTimebaseRate, deviceNames, terminalIDs, isChannelInTask, sampleRate)
+        function self = FiniteOutputTask(taskType, taskName, referenceClockSource, referenceClockRate, deviceNames, terminalIDs, isChannelInTask, sampleRate)
             nChannels=length(terminalIDs);
             
 %             % Store the parent
@@ -92,8 +92,8 @@ classdef FiniteOutputTask < handle
                         self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
                     end
                 end
-                set(self.DabsDaqTask_, 'sampClkTimebaseSrc', sampleClockTimebaseSource) ;                
-                set(self.DabsDaqTask_, 'sampClkTimebaseRate', sampleClockTimebaseRate) ;                
+                set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;                
+                set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;                
                 self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
                 try
                     self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
@@ -428,9 +428,9 @@ classdef FiniteOutputTask < handle
                   % We validated the sample rate when we created the
                   % FiniteOutputTask, so this should be OK, but check
                   % anyway.
-                  if self.DabsDaqTask_.sampClkRate ~= sampleRate ,
-                      error('The DABS task sample rate is not equal to the desired sampling rate');
-                  end
+                if self.DabsDaqTask_.sampClkRate ~= sampleRate ,
+                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                end
 
                 % Write the data to the output buffer
                 if self.IsAnalog ,

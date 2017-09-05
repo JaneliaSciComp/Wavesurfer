@@ -1,4 +1,4 @@
-classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heterogeneous  (was second in list)
+classdef BuiltinTrigger < ws.Model 
     % A class that represents the built-in trigger, a trigger on
     % PFI8, that we "manually" throw at the start of each leg of the run.  This
     % trigger can trigger AI/AO/DI/DO tasks directly, and can also trigger
@@ -24,7 +24,7 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
     end
     
     methods
-        function self=BuiltinTrigger()   
+        function self = BuiltinTrigger()   
             self@ws.Model() ;  % have to accept parent arg, but ignore it
             %fprintf('ws.BuiltinTrigger constructor called\n') ;
             %dbstack
@@ -38,6 +38,10 @@ classdef BuiltinTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Heter
             value = self.Name_ ;
         end
 
+        function set.Name(self, newValue)
+            self.Name_ = newValue ;
+        end
+        
         function value = get.DeviceName(self)
             value = self.DeviceName_ ;
         end

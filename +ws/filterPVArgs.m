@@ -38,7 +38,7 @@ try
         error('The following required property/value pairs was expected, but not supplied: %s', missingMandatoryProps{1}); %TODO: Find way to (elegantly) display all missing props
     end
 catch ME
-    ME.throwAsCaller();
+    ME.throw();
 end
 
 %Extract and sort valid properties

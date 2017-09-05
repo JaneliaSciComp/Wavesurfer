@@ -13,59 +13,99 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
         end
     end
 
-    methods (Test)
-        function testAnalog(self)
+    methods (Test)        
+        function testAnalogSingleDevice(self)
             taskName = 'Finite Analog Output Task' ;
-            deviceNames = { 'Dev1' 'Dev1' } ;
-            terminalIDs = [0 1] ;
-            %channelNames = { 'ao0' 'ao1' } ;
-            fs=20000;  % Hz
-            isChannelInTask = true(size(terminalIDs)) ;
-            theTask = ws.FiniteOutputTask('analog', taskName, 'OnboardClock', 100e6, deviceNames, terminalIDs, isChannelInTask, fs);
-            %theTask.SampleRate = fs ;
+            primaryDeviceName = 'Dev1' ;
+            isPrimaryDeviceAPXIDevice = false ;
+            deviceNamePerChannel = { 'Dev1' 'Dev1' } ;
+            terminalIDPerChannel = [0 1] ;
+            sampleRate = 20000 ;  % Hz
+            keystoneTaskType = '' ;
+            keystoneTaskDevice = 'Dev1' ;
+            triggerDeviceNameIfKeystoneAndPrimary = '' ;
+            triggerPFIIDIfKeystoneAndPrimary = [] ;
+            triggerEdgeIfKeystoneAndPrimary = 'rising' ;
+            theTask = ws.AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
+                                sampleRate, ...
+                                keystoneTaskType, keystoneTaskDevice, ...
+                                triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
             
             T = 1 ;  % s
-            dt=1/fs;  % s
-            t=(0:dt:(T-dt))';
-            x=5*sin(2*pi*10*t);  % V
-            y=5*cos(2*pi*10*t);  % V
-            data=[x y];
+            dt = 1/sampleRate ;  % s
+            t = (0:dt:(T-dt))' ;
+            x = 5*sin(2*pi*10*t) ;  % V
+            y = 5*cos(2*pi*10*t) ;  % V
+            data = [x y] ;
             
-            theTask.arm();
-            theTask.ChannelData = data ;  % this should be OK to do after arming
-            theTask.start();
-            pause(1.1*T);
-            theTask.stop();
-            theTask.disarm();
-            theTask=[]; %#ok<NASGU>
+            theTask.setChannelData(data) ;
+            theTask.start() ;
+            pause(1.1*T) ;
+            theTask.stop() ;
+            theTask = [] ; %#ok<NASGU>
+
+            self.verifyTrue(true);
+        end  % function
+
+        function testAnalogMultipleDevices(self)
+            taskName = 'Finite Analog Output Task' ;
+            primaryDeviceName = 'Dev1' ;
+            isPrimaryDeviceAPXIDevice = false ;
+            deviceNamePerChannel = { 'Dev1' 'Dev2' } ;
+            terminalIDPerChannel = [0 0] ;
+            sampleRate = 20000 ;  % Hz
+            keystoneTaskType = '' ;
+            keystoneTaskDevice = 'Dev1' ;
+            triggerDeviceNameIfKeystoneAndPrimary = '' ;
+            triggerPFIIDIfKeystoneAndPrimary = [] ;
+            triggerEdgeIfKeystoneAndPrimary = 'rising' ;
+            theTask = ws.AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
+                                sampleRate, ...
+                                keystoneTaskType, keystoneTaskDevice, ...
+                                triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
+            
+            T = 1 ;  % s
+            dt = 1/sampleRate ;  % s
+            t = (0:dt:(T-dt))' ;
+            x = 5*sin(2*pi*10*t) ;  % V
+            y = 5*cos(2*pi*10*t) ;  % V
+            data = [x y] ;
+            
+            theTask.setChannelData(data) ;
+            theTask.start() ;
+            pause(1.1*T) ;
+            theTask.stop() ;
+            theTask = [] ; %#ok<NASGU>
 
             self.verifyTrue(true);
         end  % function
 
         function testDigital(self)
             taskName = 'Finite Digital Output Task' ;
-            deviceNames = { 'Dev1' 'Dev1' } ;
+            primaryDeviceName = 'Dev1' ;
+            isPrimaryDeviceAPXIDevice = false ;
             terminalIDs = [0 1] ;
-            %channelNames = { 'do0' 'do1' } ;
-            isChannelInTask = true(size(terminalIDs)) ;
-            fs=20000;  % Hz            
-            theTask = ws.FiniteOutputTask('digital', taskName, 'OnboardClock', 100e6, deviceNames, terminalIDs, isChannelInTask, fs);
-            %theTask.SampleRate = fs ;
+            sampleRate = 20000 ;  % Hz            
+            keystoneTask = '' ;
+            triggerDeviceNameIfKeystone = '' ;
+            triggerPFIIDIfKeystone = [] ;
+            triggerEdgeIfKeystone = 'rising' ;
+            theTask = ws.DOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
+                                sampleRate, ...
+                                keystoneTask, triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone) ;
             
             T = 1 ;  % s
-            dt=1/fs;  % s
-            t=(0:dt:(T-dt))';
-            x=logical(sin(2*pi*10*t)>0);  % V
-            y=logical(cos(2*pi*10*t)>0);  % V
-            data=[x y];
+            dt = 1/sampleRate ;  % s
+            t = (0:dt:(T-dt))' ;
+            x = logical(sin(2*pi*10*t)>0) ;  % V
+            y = logical(cos(2*pi*10*t)>0) ;  % V
+            data = [x y] ;
             
-            theTask.arm();
-            theTask.ChannelData = data ;  % this should be OK to do after arming
-            theTask.start();
-            pause(1.1*T);
-            theTask.stop();
-            theTask.disarm();
-            theTask=[]; %#ok<NASGU>
+            theTask.setChannelData(data) ;
+            theTask.start() ;
+            pause(1.1*T) ;
+            theTask.stop() ;
+            theTask = [] ; %#ok<NASGU>
 
             self.verifyTrue(true);
         end  % function

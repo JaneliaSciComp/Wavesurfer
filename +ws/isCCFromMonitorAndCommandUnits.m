@@ -2,8 +2,8 @@ function result = isCCFromMonitorAndCommandUnits(monitorUnitsPerElectrode, comma
     n=length(commandUnitsPerElectrode);
     result=false(1,n);
     for i=1:n ,
-        commandUnits = commandUnitsPerElectrode(i) ;
-        monitorUnits = monitorUnitsPerElectrode(i) ;
+        commandUnits = commandUnitsPerElectrode{i} ;
+        monitorUnits = monitorUnitsPerElectrode{i} ;
         areCommandUnitsCommensurateWithAmps = ~isempty(commandUnits) && isequal(commandUnits(end),'A') ;
         if areCommandUnitsCommensurateWithAmps ,
             areMonitorUnitsCommensurateWithVolts = ~isempty(monitorUnits) && isequal(monitorUnits(end),'V') ;

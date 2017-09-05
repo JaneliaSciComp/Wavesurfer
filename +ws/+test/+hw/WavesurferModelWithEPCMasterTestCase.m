@@ -78,12 +78,11 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             wsModel.addNewElectrode();
             tpElectrodeIndex = wsModel.addNewElectrode() ;
             
-            % Mark the first one as not being test-pulseable
-            wsModel.IsElectrodeMarkedForTestPulse = [false true] ;
+            % % Mark the first one as not being test-pulseable
+            % wsModel.IsElectrodeMarkedForTestPulse = [false true] ;
             
-            % Make the 2nd trode current in TP (should be automatic since
-            % it's the only test-pulsable one)
-            %model.Ephys.TestPulser.ElectrodeIndex=1;  % since it's now the 1st test-pulsable trode
+            % Make the 2nd trode the TP trode
+            wsModel.TestPulseElectrodeIndex = 2 ;
             
             % Set the type of new electrode to Heka
             %electrodeIndex=2;

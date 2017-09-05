@@ -23,7 +23,7 @@ classdef TestPulserController < ws.Controller
                     exceptionMaybe = {} ;
                 else
                     % If the model is running, stop it (have to disable broadcast so we don't lose the new setting)
-                    wasRunningOnEntry = wsModel.IsTestPulsing ;
+                    wasRunningOnEntry = wsModel.isTestPulsing() ;
                     if wasRunningOnEntry ,
                         self.Figure.AreUpdatesEnabled = false ;
                         wsModel.stopTestPulsing() ;
@@ -56,9 +56,7 @@ classdef TestPulserController < ws.Controller
         
         function ElectrodePopupMenuActuated(self, source, event, varargin)  %#ok<INUSD>
             wsModel = self.Model ;
-            %ephys = wsModel.Ephys ;
-            %electrodeManager = ephys.ElectrodeManager ;
-            electrodeNames = wsModel.TestPulseElectrodeNames ;
+            electrodeNames = wsModel.getAllElectrodeNames() ;
             menuItem = ws.getPopupMenuSelection(self.Figure.ElectrodePopupMenu, ...
                                                 electrodeNames);
             if isempty(menuItem) ,  % indicates invalid selection
@@ -160,7 +158,7 @@ classdef TestPulserController < ws.Controller
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                shouldStayPut = ~model.isIdleSensuLato() || model.IsTestPulsing ;
+                shouldStayPut = ~model.isIdleSensuLato() || model.isTestPulsing() ;
             end
         end
     end % protected methods block    

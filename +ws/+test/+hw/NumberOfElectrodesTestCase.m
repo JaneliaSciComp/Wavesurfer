@@ -5,6 +5,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             ws.reset() ;
+            ws.clear() ;
         end
     end
     
@@ -12,6 +13,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure')) ;
             ws.reset() ;
+            ws.clear() ;
         end
     end
     
@@ -76,6 +78,15 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             wsController.quit() ;
         end  % function
         
+        function testDimensionsOfGain(self)
+            wsModel = wavesurfer('--nogui') ;
+            gainOrResistanceWithNiceUnits = wsModel.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
+            self.verifyEmpty(gainOrResistanceWithNiceUnits) ;
+            wsModel.addNewElectrode() ;
+            gainOrResistanceWithNiceUnits = wsModel.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
+            self.verifyLength(gainOrResistanceWithNiceUnits, 1) ;
+            delete(wsModel) ;
+        end
     end  % test methods
     
 end  % classdef

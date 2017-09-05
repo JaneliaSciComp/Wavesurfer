@@ -1377,7 +1377,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
                             success = false;
                             return;
                         otherwise
-                            ME.throwAsCaller();
+                            ME.throw();
                     end
                 end
                 
@@ -1459,7 +1459,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
                     error(errMsg);
                 end
             catch ME
-                ME.throwAsCaller();
+                ME.throw();
             end
         end
     end
@@ -1724,7 +1724,7 @@ classdef Task < ws.dabs.ni.daqmx.private.DAQmxEntity
                 end
                 
             catch ME
-                ME.throwAsCaller();
+                ME.throw();
             end
             
             function status = iterativeAllocation(item)

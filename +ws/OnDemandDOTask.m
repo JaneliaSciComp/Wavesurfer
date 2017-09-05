@@ -1,10 +1,8 @@
-classdef UntimedDigitalOutputTask < handle
+classdef OnDemandDOTask < handle
     properties (Dependent = true, SetAccess = immutable)
         TaskName
-        %TerminalNames
         DeviceNames
         TerminalIDs
-        %ChannelNames
     end
     
     properties (Dependent = true)
@@ -12,45 +10,29 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        Parent_
         DabsDaqTask_ = [];
     end
     
     properties (Access = protected)
-        %TerminalNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         TerminalIDs_ = zeros(1,0)        
-        %ChannelNames_ = cell(1,0)
         ChannelData_
     end
     
-%     events
-%         OutputComplete
-%     end
-
     methods
-        function self = UntimedDigitalOutputTask(parent, taskName, deviceNames, terminalIDs)
-            %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
+        function self = OnDemandDOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNames, terminalIDs)
+            %fprintf('OnDemandDOTask::OnDemandDOTask():\n');
             %terminalNames
             %channelNames
            
             nChannels=length(terminalIDs);
                                     
-            % Store the parent
-            self.Parent_ = parent ;
-                                    
             % Create the task, channels
             if nChannels==0 ,
-                self.DabsDaqTask_ = [];
+                self.DabsDaqTask_ = [] ;
             else
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
             end            
-            
-            % Store this stuff
-            %self.TerminalNames_ = terminalNames ;
-            self.DeviceNames_ = deviceNames ;
-            self.TerminalIDs_ = terminalIDs ;
-            %self.ChannelNames_ = channelNames ;
             
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -64,8 +46,18 @@ classdef UntimedDigitalOutputTask < handle
                     %channelName = channelNames{i} ;
                     lineName = sprintf('line%d',terminalID) ;
                     self.DabsDaqTask_.createDOChan(deviceName, lineName);
-                end                
+                end       
+                [referenceClockSource, referenceClockRate] = ...
+                    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
+                set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;                
+                set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;                
             end            
+            
+            % Store this stuff
+            %self.TerminalNames_ = terminalNames ;
+            self.DeviceNames_ = deviceNames ;
+            self.TerminalIDs_ = terminalIDs ;
+            %self.ChannelNames_ = channelNames ;
         end  % function
         
         function delete(self)
