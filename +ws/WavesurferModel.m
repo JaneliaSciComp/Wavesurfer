@@ -6178,6 +6178,16 @@ classdef WavesurferModel < ws.Model
         function value=get.IsReady(self)
             value=(self.DegreeOfReadiness_>0);
         end               
+        
+        function encoding = encodeForHeader(self)
+            % Get the default header encoding
+            encoding = encodeForHeader@ws.Model(self) ;            
+            
+            % Add custom field
+            thisPropertyValue = self.stimulusLibrary() ;
+            encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
+            encoding.StimulusLibrary = encodingOfPropertyValue ;
+        end
     end  % public methods block
     
     methods (Access = protected)
