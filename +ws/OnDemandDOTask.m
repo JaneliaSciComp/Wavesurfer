@@ -1,10 +1,8 @@
-classdef UntimedDigitalOutputTask < handle
+classdef OnDemandDOTask < handle
     properties (Dependent = true, SetAccess = immutable)
         TaskName
-        %TerminalNames
         DeviceNames
         TerminalIDs
-        %ChannelNames
     end
     
     properties (Dependent = true)
@@ -16,20 +14,14 @@ classdef UntimedDigitalOutputTask < handle
     end
     
     properties (Access = protected)
-        %TerminalNames_ = cell(1,0)
         DeviceNames_ = cell(1,0)
         TerminalIDs_ = zeros(1,0)        
-        %ChannelNames_ = cell(1,0)
         ChannelData_
     end
     
-%     events
-%         OutputComplete
-%     end
-
     methods
-        function self = UntimedDigitalOutputTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNames, terminalIDs)
-            %fprintf('UntimedDigitalOutputTask::UntimedDigitalOutputTask():\n');
+        function self = OnDemandDOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNames, terminalIDs)
+            %fprintf('OnDemandDOTask::OnDemandDOTask():\n');
             %terminalNames
             %channelNames
            
