@@ -10,7 +10,8 @@ classdef DOTask < handle
     methods
         function self = DOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
                                sampleRate, ...
-                               keystoneTask, triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
+                               keystoneTaskType, keystoneTaskDeviceName, ...
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
                                     
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
@@ -38,16 +39,16 @@ classdef DOTask < handle
                 end
                 
                 % Figure out the trigger terminal and edge
-                if isequal(keystoneTask,'ai') ,
-                    triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                if isequal(keystoneTaskType,'ai') ,
+                    triggerTerminalName = sprintf('/%s/ai/StartTrigger', keystoneTaskDeviceName) ;
                     triggerEdge = 'rising' ;
-                elseif isequal(keystoneTask,'di') ,
-                    triggerTerminalName = sprintf('/%s/di/StartTrigger', primaryDeviceName) ;
+                elseif isequal(keystoneTaskType,'di') ,
+                    triggerTerminalName = sprintf('/%s/di/StartTrigger', keystoneTaskDeviceName) ;
                     triggerEdge = 'rising' ;
-                elseif isequal(keystoneTask,'ao') ,
-                    triggerTerminalName = sprintf('/%s/ao/StartTrigger', primaryDeviceName) ;
+                elseif isequal(keystoneTaskType,'ao') ,
+                    triggerTerminalName = sprintf('/%s/ao/StartTrigger', keystoneTaskDeviceName) ;
                     triggerEdge = 'rising' ;
-                elseif isequal(keystoneTask,'do') ,
+                elseif isequal(keystoneTaskType,'do') ,
                     triggerTerminalName = sprintf('/%s/PFI%d', triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone) ;
                     triggerEdge = triggerEdgeIfKeystone ;
                 else

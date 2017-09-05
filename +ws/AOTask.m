@@ -34,7 +34,8 @@ classdef AOTask < handle
     methods
         function self = AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                sampleRate, ...
-                               keystoneTask, triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary)
+                               keystoneTaskType, keystoneTaskDeviceName, ...
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
                            
             % Group the channels by device, with the primary device first
             [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = ...
@@ -108,33 +109,33 @@ classdef AOTask < handle
 
                     % Set up triggering
                     deviceName = deviceNamePerDevice{deviceIndex} ;                    
-                    if isequal(keystoneTask,'ai') ,
-                        triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                    if isequal(keystoneTaskType,'ai') ,
+                        triggerTerminalName = sprintf('/%s/ai/StartTrigger', keystoneTaskDeviceName) ;
                         triggerEdge = 'rising' ;
-                    elseif isequal(keystoneTask,'di') ,
-                        triggerTerminalName = sprintf('/%s/di/StartTrigger', primaryDeviceName) ;
+                    elseif isequal(keystoneTaskType,'di') ,
+                        triggerTerminalName = sprintf('/%s/di/StartTrigger', keystoneTaskDeviceName) ;
                         triggerEdge = 'rising' ;                
-                    elseif isequal(keystoneTask,'ao') ,
-                        if isequal(deviceName, primaryDeviceName) ,
-                            triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary) ;
-                            triggerEdge = triggerEdgeIfKeystoneAndPrimary ;
+                    elseif isequal(keystoneTaskType,'ao') ,
+                        if isequal(deviceName, keystoneTaskDeviceName) ,
+                            triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone) ;
+                            triggerEdge = triggerEdgeIfKeystone ;
                         else
-                            triggerTerminalName = sprintf('/%s/ao/StartTrigger', primaryDeviceName) ;
+                            triggerTerminalName = sprintf('/%s/ao/StartTrigger', keystoneTaskDeviceName) ;
                             triggerEdge = 'rising' ;
                         end
-                    elseif isequal(keystoneTask,'do') ,
-                        triggerTerminalName = sprintf('/%s/do/StartTrigger', primaryDeviceName) ;
+                    elseif isequal(keystoneTaskType,'do') ,
+                        triggerTerminalName = sprintf('/%s/do/StartTrigger', keystoneTaskType) ;
                         triggerEdge = 'rising' ;                
                     else
-                        % In this case, we assume the task on the primary device will start without
+                        % In this case, we assume the task on the keystone device will start without
                         % waiting for a trigger.  This is handy for testing.
-                        if isequal(deviceName, primaryDeviceName) ,
+                        if isequal(deviceName, keystoneTaskDeviceName) ,
                             triggerTerminalName = '' ;
                             triggerEdge = [] ;
                         else
-                            triggerTerminalName = sprintf('/%s/ao/StartTrigger', primaryDeviceName) ;
+                            triggerTerminalName = sprintf('/%s/ao/StartTrigger', keystoneTaskDeviceName) ;
                             triggerEdge = 'rising' ;
-                        end                        
+                        end
                     end
                     
                     % Actually set the start trigger on the DABS daq task

@@ -46,7 +46,8 @@ classdef AITask < handle
     methods
         function self = AITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                sampleRate, desiredSweepDuration, ...
-                               keystoneTask, triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary)
+                               keystoneTaskType, keystoneTaskDeviceName, ...
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
                            
             % Group the channels by device, with the primary device first
             [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = ...
@@ -157,25 +158,25 @@ classdef AITask < handle
 
                     % Set up triggering
                     deviceName = deviceNamePerDevice{deviceIndex} ;                    
-                    if isequal(keystoneTask,'di') ,
-                        triggerTerminalName = sprintf('/%s/di/StartTrigger', primaryDeviceName) ;
+                    if isequal(keystoneTaskType,'di') ,
+                        triggerTerminalName = sprintf('/%s/di/StartTrigger', keystoneTaskDeviceName) ;
                         triggerEdge = 'rising' ;
-                    elseif isequal(keystoneTask,'ai') ,
-                        if isequal(deviceName, primaryDeviceName) ,
-                            triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary) ;
-                            triggerEdge = triggerEdgeIfKeystoneAndPrimary ;
+                    elseif isequal(keystoneTaskType,'ai') ,
+                        if isequal(deviceName, keystoneTaskDeviceName) ,
+                            triggerTerminalName = sprintf('/%s/PFI%d',triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone) ;
+                            triggerEdge = triggerEdgeIfKeystone ;
                         else
-                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', keystoneTaskDeviceName) ;
                             triggerEdge = 'rising' ;
                         end
                     else
-                        % In this case, we assume the task on the primary device will start without
+                        % In this case, we assume the task on the keystone task device will start without
                         % waiting for a trigger.  This is handy for testing.
-                        if isequal(deviceName, primaryDeviceName) ,
+                        if isequal(deviceName, keystoneTaskDeviceName) ,
                             triggerTerminalName = '' ;
                             triggerEdge = [] ;
                         else
-                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                            triggerTerminalName = sprintf('/%s/ai/StartTrigger', keystoneTaskDeviceName) ;
                             triggerEdge = 'rising' ;
                         end                        
                     end

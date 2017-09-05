@@ -1312,7 +1312,9 @@ classdef WavesurferModel < ws.Model
             end
             
             % Determine the keystone tasks for acq and stim
-            [acquisitionKeystoneTask, stimulationKeystoneTask] = self.determineKeystoneTasks() ;
+            [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, ...
+             stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
+               self.determineKeystoneTasks() ;
             
             % Tell the Looper & Refiller to prepare for the run
             currentFrontendPath = path() ;
@@ -1325,13 +1327,15 @@ classdef WavesurferModel < ws.Model
                                           currentFrontendPath, ...
                                           currentFrontendPwd, ...
                                           looperProtocol, ...
-                                          acquisitionKeystoneTask, ...
+                                          acquisitionKeystoneTaskType, ...
+                                          acquisitionKeystoneTaskDeviceName,  ...
                                           self.IsDOChannelTerminalOvercommitted) ;
             self.RefillerIPCRequester_.send('startingRun', ...
                                             currentFrontendPath, ...
                                             currentFrontendPwd, ...
                                             refillerProtocol, ...
-                                            stimulationKeystoneTask, ...
+                                            stimulationKeystoneTaskType, ...
+                                            stimulationKeystoneTaskDeviceName, ...
                                             self.IsAOChannelTerminalOvercommitted, ...
                                             self.IsDOChannelTerminalOvercommitted ) ;
             
@@ -2814,65 +2818,91 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
 
     methods
-        function [acquisitionKeystoneTask, stimulationKeystoneTask] = determineKeystoneTasks(self)
-            % The acq and stim subsystems each have a "keystone" task,
-            % which is one of "ai", "di", "ao", and "do".  In some cases,
-            % the keystone task for the acq subsystem is the same as that
-            % for the stim subsystem.  All the tasks in the subsystem that
-            % are not the keystone task have their start trigger set to
-            % <keystone task>/StartTrigger.  If a task is a keystone task,
-            % it is started after all non-keystone tasks are started.
+        function [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
+                determineKeystoneTasks(self)
+            % The acq and stim subsystems each have a "keystone" task.  This task is
+            % identified by its type (one of "ai", "di", "ao", and "do") and its device
+            % name (the name of one of the devices in use).  In some cases, the
+            % keystone task for the acq subsystem is the same as that for the stim
+            % subsystem.  All the tasks in the subsystem that are not the keystone task
+            % have their start trigger set to <keystone task name>/<keystone task
+            % type>/StartTrigger.  If a task is a keystone task, it is started after
+            % all non-keystone tasks are started.
             %
-            % If you're not careful about this stuff, the acquisition tasks
-            % can end up getting triggered (e.g. by an external trigger)
-            % before the stimulation tasks have been started, even though
-            % the user has configured both acq and stim subsystems to use
-            % the same trigger.  This business with the keystone tasks is
-            % designed to eliminate this in the common case of acq and stim
-            % subsystems using the same trigger, and ameliorate it in cases
-            % where the acq and stim subsystems use different triggers.
+            % If you're not careful about this stuff, the acquisition tasks can end up
+            % getting triggered (e.g. by an external trigger) before the stimulation
+            % tasks have been started, even though the user has configured both acq and
+            % stim subsystems to use the same trigger.  This business with the keystone
+            % tasks is designed to eliminate this in the common case of acq and stim
+            % subsystems using the same trigger, and ameliorate it in cases where the
+            % acq and stim subsystems use different triggers.
             
             % First figure out the acq keystone task
-            nAIChannels = self.Acquisition_.NActiveAnalogChannels ;
-            if nAIChannels==0 ,                    
-                % There are no active AI channels, so the DI task will
-                % be the keystone.  (If there are zero active DI
-                % channels, WS won't let you start a run, so there
-                % should be no issues on that account.)
-                acquisitionKeystoneTask = 'di' ;
+            isAIChannelActive = self.IsAIChannelActive ;
+            deviceNamePerActiveChannel = self.AIChannelDeviceNames(isAIChannelActive) ;
+            terminalIDPerActiveChannel = self.AIChannelTerminalIDs(isAIChannelActive) ;                
+            % ws.collectTerminalsByDevice only returns device names that appear in deviceNamePerActiveChannel
+            deviceNamePerActiveAIDevice = ...
+                ws.collectTerminalsByDevice(deviceNamePerActiveChannel, terminalIDPerActiveChannel, self.PrimaryDeviceName) ;
+            if isempty(deviceNamePerActiveAIDevice) ,
+                nDIChannels = self.Acquisition_.NActiveDigitalChannels ;            
+                if nDIChannels==0 ,
+                    % If get here, no active AI channels, no active DI channels. WS will throw
+                    % an error at run start in this case, so doesn't really matter what we
+                    % return.
+                    acquisitionKeystoneTaskType = '' ;
+                    acquisitionKeystoneTaskDeviceName = '' ;
+                else
+                    acquisitionKeystoneTaskType = 'di' ;
+                    acquisitionKeystoneTaskDeviceName = self.PrimaryDeviceName ;
+                end
             else
-                % There's at least one active AI channel so the AI task
-                % is the acq keystone.
-                acquisitionKeystoneTask = 'ai' ;
-            end                
+                % There's at least one active AI channel
+                acquisitionKeystoneTaskType = 'ai' ;
+                acquisitionKeystoneTaskDeviceName = deviceNamePerActiveAIDevice{1} ;  
+                  % this will be the primary device, if there are any active AI channels on it
+            end
             
             % Now figure out the stim keystone task
             if self.AcquisitionTriggerIndex==self.StimulationTriggerIndex ,
                 % Acq and stim subsystems are using the same trigger, so
-                % acq and stim subsystems will have the same keystone task.
-                stimulationKeystoneTask = acquisitionKeystoneTask ;
+                % acq and stim subsystems will have the same keystone task+device.
+                stimulationKeystoneTaskType = acquisitionKeystoneTaskType ;
+                stimulationKeystoneTaskDeviceName = acquisitionKeystoneTaskDeviceName ;
             else
                 % Acq and stim subsystems are using different triggers, so
-                % acq and stim subsystems will have distinct keystone tasks.
+                % acq and stim subsystems will have distinct keystone task+device.
                 
                 % So now we have to determine the stim keystone tasks.                
-                nAOChannels = self.Stimulation_.NAnalogChannels ;
-                if nAOChannels==0 ,
-                    % There are no AO channels, so the DO task will
-                    % be the keystone.  (If there are zero active DO
-                    % channels, there won't be any output DAQmx tasks, so
-                    % this shouldn't be a problem.)
-                    stimulationKeystoneTask = 'do' ;
+                deviceNamePerChannel = self.AOChannelDeviceNames ;
+                terminalIDPerChannel = self.AOChannelTerminalIDs ;
+                % ws.collectTerminalsByDevice only returns device names that appear in deviceNamePerActiveChannel
+                deviceNamePerAODevice = ...
+                    ws.collectTerminalsByDevice(deviceNamePerChannel, terminalIDPerChannel, self.PrimaryDeviceName) ;
+                if isempty(deviceNamePerAODevice) ,
+                    nDOChannels = self.Stimulation_.NTimedDigitalChannels ;  
+                    if nDOChannels == 0 ,
+                        % No AO channel, no timed DO channels.
+                        % In this case, no timed output tasks will be created, so having these
+                        % empty shouldn't be a problem.
+                        stimulationKeystoneTaskType = '' ;
+                        stimulationKeystoneTaskDeviceName = '' ;
+                    else
+                        stimulationKeystoneTaskType = 'do' ;
+                        stimulationKeystoneTaskDeviceName = self.PrimaryDeviceName ;
+                    end
                 else
-                    % There's at least one AO channel so the AO task
-                    % is the stim keystone.
-                    stimulationKeystoneTask = 'ao' ;
-                end                                
+                    stimulationKeystoneTaskType = 'ao' ;
+                    stimulationKeystoneTaskDeviceName = deviceNamePerAODevice{1} ;
+                      % this will be the primary device, if there are any active AO channels on it
+                end
             end
             
-            %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
-            %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
-            %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+%             fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
+%             fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTaskType) ;
+%             fprintf('  acquisitionKeystoneDevice: %s\n', acquisitionKeystoneTaskDeviceName) ;
+%             fprintf('  stimulationKeystoneTask: %s\n', stimulationKeystoneTaskType) ;            
+%             fprintf('  stimulationKeystoneDevice: %s\n', stimulationKeystoneTaskDeviceName) ;            
         end
         
         function propNames = listPropertiesForCheckingIndependence(self)

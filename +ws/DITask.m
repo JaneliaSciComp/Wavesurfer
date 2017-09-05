@@ -28,7 +28,8 @@ classdef DITask < handle
     methods
         function self = DITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
                                sampleRate, desiredSweepDuration, ...
-                               keystoneTask, triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
+                               keystoneTaskType, keystoneTaskDeviceName, ...
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
                            
             nChannels=length(terminalIDs) ;            
             if nChannels>0 ,
@@ -75,10 +76,10 @@ classdef DITask < handle
                 end                
             
                 % Determine trigger terminal and edge type
-                if isequal(keystoneTask,'ai') ,
-                    triggerTerminalName = sprintf('/%s/ai/StartTrigger', primaryDeviceName) ;
+                if isequal(keystoneTaskType,'ai') ,
+                    triggerTerminalName = sprintf('/%s/ai/StartTrigger', keystoneTaskDeviceName) ;
                     triggerEdge = 'rising' ;
-                elseif isequal(keystoneTask,'di') ,
+                elseif isequal(keystoneTaskType,'di') ,
                     triggerTerminalName = sprintf('/%s/PFI%d', triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone) ;
                     triggerEdge = triggerEdgeIfKeystone ;
                 else
