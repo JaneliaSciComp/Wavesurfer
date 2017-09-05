@@ -21,13 +21,15 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             deviceNamePerChannel = { 'Dev1' 'Dev1' } ;
             terminalIDPerChannel = [0 1] ;
             sampleRate = 20000 ;  % Hz
-            keystoneTask = '' ;
+            keystoneTaskType = '' ;
+            keystoneTaskDevice = 'Dev1' ;
             triggerDeviceNameIfKeystoneAndPrimary = '' ;
             triggerPFIIDIfKeystoneAndPrimary = [] ;
             triggerEdgeIfKeystoneAndPrimary = 'rising' ;
             theTask = ws.AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                 sampleRate, ...
-                                keystoneTask, triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
+                                keystoneTaskType, keystoneTaskDevice, ...
+                                triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
             
             T = 1 ;  % s
             dt = 1/sampleRate ;  % s
@@ -52,13 +54,15 @@ classdef FiniteOutputTestCase < matlab.unittest.TestCase
             deviceNamePerChannel = { 'Dev1' 'Dev2' } ;
             terminalIDPerChannel = [0 0] ;
             sampleRate = 20000 ;  % Hz
-            keystoneTask = '' ;
+            keystoneTaskType = '' ;
+            keystoneTaskDevice = 'Dev1' ;
             triggerDeviceNameIfKeystoneAndPrimary = '' ;
             triggerPFIIDIfKeystoneAndPrimary = [] ;
             triggerEdgeIfKeystoneAndPrimary = 'rising' ;
             theTask = ws.AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                 sampleRate, ...
-                                keystoneTask, triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
+                                keystoneTaskType, keystoneTaskDevice, ...
+                                triggerDeviceNameIfKeystoneAndPrimary, triggerPFIIDIfKeystoneAndPrimary, triggerEdgeIfKeystoneAndPrimary) ;
             
             T = 1 ;  % s
             dt = 1/sampleRate ;  % s
