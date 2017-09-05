@@ -14,8 +14,8 @@ classdef Acquisition < ws.Subsystem
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-%         AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
-%         DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        AnalogDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
+        DigitalDeviceNames  % the device ID of the NI board for each channel, a cell array of strings
         AnalogTerminalNames % the physical channel name for each analog channel
         DigitalTerminalNames  % the physical channel name for each digital channel
         TerminalNames
@@ -60,6 +60,8 @@ classdef Acquisition < ws.Subsystem
         SampleRate_ = 20000  % Hz
         AnalogChannelNames_ = cell(1,0)  % the (user) channel name for each analog channel
         DigitalChannelNames_ = cell(1,0)  % the (user) channel name for each digital channel        
+        AnalogDeviceNames_ = cell(1,0) ;  % The device name for each analog channel
+        DigitalDeviceNames_ = cell(1,0) ;  % The device name for each DI channel
         AnalogTerminalIDs_ = zeros(1,0)  % Store for the channel IDs, zero-based AI channel IDs for all available channels
         DigitalTerminalIDs_ = zeros(1,0)  % Store for the digital channel IDs, zero-based port0 channel IDs for all available channels
         AnalogChannelScales_ = zeros(1,0)  % Store for the current AnalogChannelScales values, but values may be "masked" by ElectrodeManager
@@ -111,12 +113,16 @@ classdef Acquisition < ws.Subsystem
             end
 
             % Dimension the cache that will hold acquired data in main memory
-            if self.NDigitalChannels<=8
+            if self.NDigitalChannels<=8 ,
                 dataType = 'uint8';
-            elseif self.NDigitalChannels<=16
+            elseif self.NDigitalChannels<=16 ,
                 dataType = 'uint16';
-            else %self.NDigitalChannels<=32
+            elseif self.NDigitalChannels<=32 ,
                 dataType = 'uint32';
+            elseif self.NDigitalChannels<=64 ,
+                dataType = 'uint64';
+            else
+                error('Can''t have more than 64 DI channels') ;
             end
             if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
@@ -194,20 +200,31 @@ classdef Acquisition < ws.Subsystem
 %     end  % methods block    
     
     methods
-        function addDigitalChannel_(self, freeTerminalIDs)
+        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
             %deviceName = self.Parent.DeviceName ;
             
-            %newChannelDeviceName = deviceName ;
-            %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-            if isempty(freeTerminalIDs) ,
-                return  % can't add a new one, because no free IDs
-            else
-                newTerminalID = freeTerminalIDs(1) ;
-            end
+%             %newChannelDeviceName = deviceName ;
+%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
+%             if isempty(freeTerminalIDs) ,
+%                 return  % can't add a new one, because no free IDs
+%             else
+%                 newTerminalID = freeTerminalIDs(1) ;
+%             end
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-            %newChannelName = newChannelPhysicalName ;
+%             %newChannelName = newChannelPhysicalName ;
+%             
+%             % Determine device name for the new channel
+%             if self.NDigitalChannels==0 ,                
+%                 if isempty(allDeviceNames) ,                   
+%                     deviceNameForNewChannel = 'Dev1' ;
+%                 else
+%                     deviceNameForNewChannel = allDeviceNames{1} ;
+%                 end
+%             else
+%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
+%             end            
             
-            %self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {newChannelDeviceName} ] ;
+            self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
@@ -218,6 +235,8 @@ classdef Acquisition < ws.Subsystem
             self.updateActiveChannelIndexFromChannelIndex_() ;
             %self.Parent.didAddDigitalInputChannel() ;
             %self.broadcast('DidChangeNumberOfChannels');            
+            
+            newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
         
         function wasDeleted = deleteMarkedDigitalChannels_(self)
@@ -225,16 +244,16 @@ classdef Acquisition < ws.Subsystem
             %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
-                %self.DigitalDeviceNames_ = cell(1,0) ;
                 self.DigitalTerminalIDs_ = zeros(1,0) ;
                 self.DigitalChannelNames_ = cell(1,0) ;
+                self.DigitalDeviceNames_ = cell(1,0) ;
                 self.IsDigitalChannelActive_ = true(1,0) ;
                 self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
             else
                 isKeeper = ~isToBeDeleted ;
-                %self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
             end
@@ -244,11 +263,9 @@ classdef Acquisition < ws.Subsystem
 %             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
         
-        function didSetDeviceName(self)
-            %deviceName = self.Parent.DeviceName ;
-            %self.AnalogDeviceNames_(:) = {deviceName} ;
-            %self.DigitalDeviceNames_(:) = {deviceName} ;            
-            self.broadcast('Update');
+        function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
+            % All DI channels must use the primary device
+            self.DigitalDeviceNames_(:) = {newPrimaryDeviceName} ;            
         end
         
         function cacheAnalogScalingCoefficients_(self, analogScalingCoefficients) 
@@ -361,6 +378,7 @@ classdef Acquisition < ws.Subsystem
                 % Set the setting
                 self.IsAnalogChannelActive_ = newValue;
                 self.updateActiveChannelIndexFromChannelIndex_() ;
+                self.clearAnalogScalingCoefficientsCache_() ;
             end
             %self.Parent.didSetIsInputChannelActive() ;
         end
@@ -538,6 +556,7 @@ classdef Acquisition < ws.Subsystem
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
+                    self.clearAnalogScalingCoefficientsCache_() ;
                 end
             end
             %self.Parent.didSetAnalogInputTerminalID();
@@ -559,7 +578,7 @@ classdef Acquisition < ws.Subsystem
 %             if isempty(channelName) ,
 %                 result='';
 %             else
-%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 iChannel=self.aiChannelIndexFromName(channelName);
 %                 if isempty(iChannel) || isnan(iChannel) ,
 %                     result='';
 %                 else
@@ -572,7 +591,7 @@ classdef Acquisition < ws.Subsystem
 %             if isempty(channelName) ,
 %                 result='';
 %             else
-%                 iChannel=self.iAnalogChannelFromName(channelName);
+%                 iChannel=self.aiChannelIndexFromName(channelName);
 %                 if isempty(iChannel) || isnan(iChannel) ,
 %                     result='';
 %                 else
@@ -603,17 +622,13 @@ classdef Acquisition < ws.Subsystem
             self.SampleRate_ = newValue ;
         end  % function
         
-%         function out = get.AnalogDeviceNames(self)
-%             %out = self.AnalogDeviceNames_ ;
-%             deviceName = self.Parent.DeviceName ;
-%             out = repmat({deviceName}, size(self.AnalogChannelNames)) ;             
-%         end  % function
-%         
-%         function out = get.DigitalDeviceNames(self)
-%             %out = self.DigitalDeviceNames_ ;
-%             deviceName = self.Parent.DeviceName ;
-%             out = repmat({deviceName}, size(self.DigitalChannelNames)) ;             
-%         end  % function        
+        function result = get.AnalogDeviceNames(self)
+            result = self.AnalogDeviceNames_ ;
+        end  % function
+        
+        function result = get.DigitalDeviceNames(self)
+            result = self.DigitalDeviceNames_ ;
+        end  % function
         
 %         function output = get.TriggerScheme(self)
 %             output = self.Parent.Triggering.AcquisitionTriggerScheme ;
@@ -671,7 +686,7 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function iChannel=iAnalogChannelFromName(self,channelName)
+        function iChannel = aiChannelIndexFromName(self, channelName)
             % Get the index of the the channel in the available channels
             % array, given the name.
             % Note that this does _not_ return a channel ID.
@@ -683,14 +698,21 @@ classdef Acquisition < ws.Subsystem
             end
         end  % function
         
-        function terminalID=analogTerminalIDFromName(self,channelName)
+        function terminalID = analogTerminalIDFromName(self,channelName)
             % Get the channel ID, given the name.
             % This returns a channel ID, e.g. if the channel is AI4,
             % it returns 4.
-            iChannel=self.iAnalogChannelFromName(channelName);
+            iChannel=self.aiChannelIndexFromName(channelName);
             terminalID=self.AnalogTerminalIDs(iChannel);
         end  % function
 
+        function result = getDeviceNameFromChannelName(self, channelName)
+            % Get the DeviceName, given the channel name.
+            iChannel = self.aiChannelIndexFromName(channelName) ;
+            result = self.AnalogDeviceNames{iChannel} ;
+        end  % function
+
+        
 %         function electrodesRemoved(self)
 %             self.Parent.didSetAnalogChannelUnitsOrScales();            
 %             %self.broadcast('DidSetAnalogChannelUnitsOrScales');
@@ -884,22 +906,19 @@ classdef Acquisition < ws.Subsystem
             result  = self.NScansReadThisSweep_ ;
         end        
         
-        function newChannelName = addAnalogChannel_(self)
-            newTerminalID = ws.fif(isempty(self.AnalogTerminalIDs), ...
-                                          0, ...
-                                          max(self.AnalogTerminalIDs)+1) ;
-            newChannelPhysicalName = sprintf('AI%d',newTerminalID) ;
-            newChannelName = newChannelPhysicalName ;
-            
+        function newChannelIndex = addAnalogChannel_(self, deviceNameForNewChannel, newTerminalID)
+            newChannelName = sprintf('AI%d', newTerminalID) ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
+            self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
             self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
             self.updateActiveChannelIndexFromChannelIndex_() ;
+            self.clearAnalogScalingCoefficientsCache_() ;
             
-            %self.Parent.didAddAnalogInputChannel() ;
+            newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
         function wasDeleted = deleteMarkedAnalogChannels_(self)
@@ -914,6 +933,7 @@ classdef Acquisition < ws.Subsystem
                 %self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogTerminalIDs_ = zeros(1,0) ;
                 self.AnalogChannelNames_ = cell(1,0) ;
+                self.AnalogDeviceNames_ = cell(1,0) ;
                 self.AnalogChannelScales_ = zeros(1,0) ;
                 self.AnalogChannelUnits_ = cell(1,0) ;
                 self.IsAnalogChannelActive_ = true(1,0) ;
@@ -923,18 +943,20 @@ classdef Acquisition < ws.Subsystem
                 %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
                 self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
             end
             self.updateActiveChannelIndexFromChannelIndex_() ;
+            self.clearAnalogScalingCoefficientsCache_() ;
             
             %self.syncIsAnalogChannelTerminalOvercommitted_() ;
             wasDeleted = isToBeDeleted ;
             %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function        
-    end
+    end  % public methods block
     
     methods (Access=protected)
         function sanitizePersistedState_(self)
@@ -945,15 +967,15 @@ classdef Acquisition < ws.Subsystem
             % the length of AnalogChannelNames_ is the "true" number of AI
             % channels
             nAIChannels = length(self.AnalogChannelNames_) ;
-            %self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAIChannels, {''}) ;
             self.AnalogTerminalIDs_ = ws.sanitizeRowVectorLength(self.AnalogTerminalIDs_, nAIChannels, 0) ;
+            self.AnalogDeviceNames_ = ws.sanitizeRowVectorLength(self.AnalogDeviceNames_, nAIChannels, {'Dev1'}) ;
             self.AnalogChannelScales_ = ws.sanitizeRowVectorLength(self.AnalogChannelScales_, nAIChannels, 1) ;
             self.AnalogChannelUnits_ = ws.sanitizeRowVectorLength(self.AnalogChannelUnits_, nAIChannels, {'V'}) ;
             self.IsAnalogChannelActive_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelActive_, nAIChannels, true) ;
             self.IsAnalogChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsAnalogChannelMarkedForDeletion_, nAIChannels, false) ;
             
             nDIChannels = length(self.DigitalChannelNames_) ;
-            %self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDIChannels, {''}) ;
+            self.DigitalDeviceNames_ = ws.sanitizeRowVectorLength(self.DigitalDeviceNames_, nDIChannels, {'Dev1'}) ;            
             self.DigitalTerminalIDs_ = ws.sanitizeRowVectorLength(self.DigitalTerminalIDs_, nDIChannels, 0) ;
             self.IsDigitalChannelActive_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelActive_, nDIChannels, true) ;
             self.IsDigitalChannelMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsDigitalChannelMarkedForDeletion_, nDIChannels, false) ;
@@ -971,4 +993,16 @@ classdef Acquisition < ws.Subsystem
         end  % function
     end  % protected methods block
 
+    methods
+        function setSingleAnalogDeviceName(self, i, newValue)
+            % Checking done by parent
+            self.AnalogDeviceNames_{i} = newValue ;
+            self.clearAnalogScalingCoefficientsCache_() ;
+        end  % function        
+        
+        function setSingleDigitalDeviceName(self, i, newValue)
+            % Checking done by parent
+            self.DigitalDeviceNames_{i} = newValue ;
+        end  % function                
+    end  % public methods block
 end  % classdef

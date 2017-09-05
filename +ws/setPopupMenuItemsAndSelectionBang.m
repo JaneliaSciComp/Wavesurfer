@@ -1,4 +1,4 @@
-function setPopupMenuItemsAndSelectionBang(popupGH,options,selectionAsStringOrCellArray,varargin)
+function setPopupMenuItemsAndSelectionBang(popupGH, options, selectionAsStringOrCellArray, varargin)
     % Set popupGH String and Value to a "sanitized" version of
     % options.  selection is typically a string, with the empty string
     % representing no selection.  But selection can also be a cell array of
@@ -9,7 +9,7 @@ function setPopupMenuItemsAndSelectionBang(popupGH,options,selectionAsStringOrCe
     warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
         
     % If value is empty (e.g. the empty string), that gets treated as an
-    % empty optional
+    % empty optional.
     % We call it "selections" b/c it's a list, even though it should always
     % have either zero elements or one element.
     if ischar(selectionAsStringOrCellArray) ,
@@ -25,7 +25,7 @@ function setPopupMenuItemsAndSelectionBang(popupGH,options,selectionAsStringOrCe
     end
     
     [menuItems, indexOfSelectedMenuItem, isOptionsLaden, isSelectionsLaden, isSelectionInOptions] = ...
-        ws.regularizeValueForPopupMenu(selections,options,varargin{:}) ;
+        ws.regularizeValueForPopupMenu(selections, options, varargin{:}) ;
 
     if isOptionsLaden && isSelectionsLaden && isSelectionInOptions ,
         backgroundColor = normalBackgroundColor ;

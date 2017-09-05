@@ -405,7 +405,7 @@ classdef DClass < hgsetget
                     [filteredPropValArgs,otherPropValArgs] = ws.most.util.filterPVArgs(argList,validProps);
                 end
             catch ME
-                ME.throwAsCaller();
+                ME.throw();
             end
             
         end

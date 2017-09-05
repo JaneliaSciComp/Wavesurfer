@@ -413,6 +413,8 @@ classdef (Abstract) Coding < handle
                             elseif isa(result,'ws.Triggering') && isequal(fieldName, 'prvAcquisitionTriggerSchemeSourceIndex') && ...
                                     isequal(fieldName, 'AcquisitionTriggerSchemeIndex_') ,
                                 propertyName = 'NewAcquisitionTriggerSchemeIndex_' ;
+                            elseif isa(result,'ws.WavesurferModel') && isequal(fieldName, 'DeviceName_') ,
+                                propertyName = 'PrimaryDeviceName_' ;      
                             else
                                 % The typical case
                                 propertyName = fieldName ;

@@ -3,17 +3,11 @@ classdef Triggering < ws.Subsystem
     % once a distinction, but no longer.
     
     properties (Dependent = true)
-        %BuiltinTrigger  % a ws.BuiltinTrigger (not a cell array)
-        %CounterTriggers  % this is a cell row array with all elements of type ws.CounterTrigger
-        %ExternalTriggers  % this is a cell row array with all elements of type ws.ExternalTrigger
         TriggerCount
         CounterTriggerCount
         ExternalTriggerCount
-        %Schemes  % This is [{BuiltinTrigger} CounterTriggers ExternalTriggers], a row cell array
         StimulationUsesAcquisitionTriggerScheme
             % This is bound to the checkbox "Uses Acquisition Trigger" in the Stimulation section of the Triggers window
-        %AcquisitionTriggerScheme  % SweepTriggerScheme might be a better name for this...
-        %StimulationTriggerScheme
         AcquisitionTriggerSchemeIndex  % this is an index into Schemes
         StimulationTriggerSchemeIndex  % this is an index into Schemes, even if StimulationUsesAcquisitionTriggerScheme is true.
           % if StimulationUsesAcquisitionTriggerScheme is true, this
@@ -54,25 +48,25 @@ classdef Triggering < ws.Subsystem
         end  % function
         
         function delete(self)
-            self.releaseHardwareResources() ;
+            self.releaseTimedHardwareResources() ;  % we only have timed resources
         end  % function
                 
-        function releaseHardwareResources(self)
-            self.releaseTimedHardwareResources();
-            % no untimed HW resources
-        end  % function
+%         function releaseHardwareResources(self)
+%             self.releaseTimedHardwareResources();
+%             % no untimed HW resources
+%         end  % function
 
         function releaseTimedHardwareResources(self)
             % Delete the built-in trigger task
-            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to delete b/c DABS task
+            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to explicitly delete b/c DABS task
             self.BuiltinTriggerDABSTask_ = [] ;
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                self.AcquisitionCounterTask_.stop();
-            end
+%             if ~isempty(self.AcquisitionCounterTask_) ,
+%                 self.AcquisitionCounterTask_.stop();
+%             end
             self.AcquisitionCounterTask_ = [];
-            if ~isempty(self.StimulationCounterTask_) ,
-                self.StimulationCounterTask_.stop();
-            end
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 self.StimulationCounterTask_.stop();
+%             end
             self.StimulationCounterTask_ = [];
         end  % function
         
@@ -83,26 +77,25 @@ classdef Triggering < ws.Subsystem
             self.BuiltinTriggerDABSTask_.writeDigitalData(false);            
         end  % function
                 
-        function startingRun(self, timebaseSource, timebaseRate)
-            % Set up the built-in trigger task
-            if isempty(self.BuiltinTriggerDABSTask_) ,
-                self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-                sweepTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
-                %builtinTrigger = self.BuiltinTrigger_
-                self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
-                self.BuiltinTriggerDABSTask_.writeDigitalData(false);
-            end
+        function startingRun(self, primaryDeviceName, isPrimaryDeviceAPXIDevice)
+            % All of the tasks should be empty at this point.  This is an object
+            % invariant, that the tasks are all empty when WS is not running.
             
-            % Set up the counter triggers, if any
-            % Tear down any pre-existing counter trigger tasks
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                self.AcquisitionCounterTask_.stop();
-            end
-            self.AcquisitionCounterTask_ = [];
-            if ~isempty(self.StimulationCounterTask_) ,
-                self.StimulationCounterTask_.stop();
-            end
-            self.StimulationCounterTask_ = [];
+            % Set up the built-in trigger task
+            self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
+            sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
+            %builtinTrigger = self.BuiltinTrigger_
+            self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+            [referenceClockSource, referenceClockRate] = ...
+                ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+            set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
+            set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
+            self.BuiltinTriggerDABSTask_.writeDigitalData(false);
+            
+%             % Set up the counter triggers, if any
+%             % Tear down any pre-existing counter trigger tasks
+%             self.AcquisitionCounterTask_ = [];
+%             self.StimulationCounterTask_ = [];
 
             % If needed, set up the acquisition counter task
             acquisitionTrigger = self.getAcquisitionTrigger_() ;            
@@ -115,11 +108,11 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                acquisitionTriggerTerminalName = sprintf('PFI%d', self.BuiltinTrigger_.PFIID) ;
+                acquisitionTriggerTerminalName = sprintf('/%s/PFI%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
                 self.AcquisitionCounterTask_ = ...
                     ws.CounterTriggerTask(taskName, ...
-                                          timebaseSource, ...
-                                          timebaseRate, ...
+                                          referenceClockSource, ...
+                                          referenceClockRate, ...
                                           deviceName, ...
                                           counterID, ...
                                           1/acquisitionTrigger.Interval, ...
@@ -144,11 +137,11 @@ classdef Triggering < ws.Subsystem
                 % haven't made the counter tasks retriggerable, they
                 % shouldn't be triggered again on any subsequent builtin
                 % trigger pulses.
-                stimulationTriggerTerminalName = sprintf('PFI%d',self.BuiltinTrigger_.PFIID) ;
+                stimulationTriggerTerminalName = sprintf('/%s/PFI%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
                 self.StimulationCounterTask_ = ...
                     ws.CounterTriggerTask(taskName, ...
-                                          timebaseSource, ...
-                                          timebaseRate, ...
+                                          referenceClockSource, ...
+                                          referenceClockRate, ...
                                           deviceName, ...
                                           counterID, ...
                                           1/stimulationTrigger.Interval, ...
@@ -197,22 +190,23 @@ classdef Triggering < ws.Subsystem
     
     methods (Access=protected)        
         function completingOrStoppingOrAbortingRun_(self)
-            if ~isempty(self.AcquisitionCounterTask_) ,
-                try
-                    self.AcquisitionCounterTask_.stop() ;
-                catch exception  %#ok<NASGU>
-                    % If there's a problem, we want to just keep ploughing
-                    % ahead with wrapping things up...
-                end
-            end
-            if ~isempty(self.StimulationCounterTask_) ,
-                try
-                    self.StimulationCounterTask_.stop() ;
-                catch exception  %#ok<NASGU>
-                    % If there's a problem, we want to just keep ploughing
-                    % ahead with wrapping things up...
-                end
-            end
+            self.releaseTimedHardwareResources() ;
+%             if ~isempty(self.AcquisitionCounterTask_) ,
+%                 try
+%                     self.AcquisitionCounterTask_.stop() ;
+%                 catch exception  %#ok<NASGU>
+%                     % If there's a problem, we want to just keep ploughing
+%                     % ahead with wrapping things up...
+%                 end
+%             end
+%             if ~isempty(self.StimulationCounterTask_) ,
+%                 try
+%                     self.StimulationCounterTask_.stop() ;
+%                 catch exception  %#ok<NASGU>
+%                     % If there's a problem, we want to just keep ploughing
+%                     % ahead with wrapping things up...
+%                 end
+%             end
         end  % method
         
 %         function result = areTasksDoneTriggering_(self)
@@ -453,12 +447,12 @@ classdef Triggering < ws.Subsystem
             trigger = ws.ExternalTrigger() ;   % Triggers are now parentless
 
             % Set the trigger parameters
-            trigger.Name = sprintf('External trigger on PFI%d',pfiID) ;
+            trigger.Name = sprintf('External trigger on PFI%d', pfiID) ;
             trigger.DeviceName = deviceName ; 
             trigger.PFIID = pfiID ;  % we know this PFIID is free
             trigger.Edge = 'rising' ;
             
-            % Add the just-created trigger to thel list of counter triggers
+            % Add the just-created trigger to the list of counter triggers
             self.ExternalTriggers_{1,end + 1} = trigger ;
             
             % No need to adjust the indices of the acq, stim trigger, b/c
@@ -593,37 +587,37 @@ classdef Triggering < ws.Subsystem
             result = trigger.(propertyName) ;
         end  % function
         
-        function setCounterTriggerProperty(self, index, propertyName, newValue)
-            if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
-                self.broadcast('Update') ;
-                error('ws:invalidPropertyValue', ...
-                      'Illegal or taken counter ID') ;
-            end
-            trigger = self.CounterTriggers_{index} ;
-            try
-                trigger.(propertyName) = newValue ;
-            catch exception
-                self.broadcast('Update') ;
-                rethrow(exception) ;
-            end            
-            %self.broadcast('Update') ;
-        end  % function
+%         function setCounterTriggerProperty(self, index, propertyName, newValue)
+%             if isequal(propertyName, 'CounterID') && ~self.isCounterIDFree(newValue) ,
+%                 self.broadcast('Update') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Illegal or taken counter ID') ;
+%             end
+%             trigger = self.CounterTriggers_{index} ;
+%             try
+%                 trigger.(propertyName) = newValue ;
+%             catch exception
+%                 self.broadcast('Update') ;
+%                 rethrow(exception) ;
+%             end            
+%             %self.broadcast('Update') ;
+%         end  % function
 
-        function setExternalTriggerProperty(self, index, propertyName, newValue)
-            if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
-                self.broadcast('Update') ;
-                error('ws:invalidPropertyValue', ...
-                      'Illegal or taken PFI ID') ;
-            end
-            trigger = self.ExternalTriggers_{index} ;
-            try
-                trigger.(propertyName) = newValue ;
-            catch exception
-                self.broadcast('Update') ;
-                rethrow(exception) ;
-            end            
-            %self.broadcast('Update') ;
-        end  % function
+%         function setExternalTriggerProperty(self, index, propertyName, newValue)
+%             if isequal(propertyName, 'PFIID') && ~self.isPFIIDFree(newValue) ,
+%                 self.broadcast('Update') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'Illegal or taken PFI ID') ;
+%             end
+%             trigger = self.ExternalTriggers_{index} ;
+%             try
+%                 trigger.(propertyName) = newValue ;
+%             catch exception
+%                 self.broadcast('Update') ;
+%                 rethrow(exception) ;
+%             end            
+%             %self.broadcast('Update') ;
+%         end  % function
         
 %         function update(self)
 %             % self.broadcast('Update');
@@ -727,10 +721,11 @@ classdef Triggering < ws.Subsystem
             % self.broadcast('Update');            
         end  % function
         
-        function didSetDeviceName(self, deviceName, nCounters, nPFITerminals)
+        function settingPrimaryDeviceName(self, deviceName, nCounters, nPFITerminals)
             %fprintf('ws.Triggering::didSetDevice() called\n') ;
             %dbstack
             self.BuiltinTrigger_.DeviceName = deviceName ;
+            self.BuiltinTrigger_.Name = sprintf('Built-in Trigger (/%s/PFI8)', deviceName) ;
             for i = 1:length(self.CounterTriggers_) ,
                 self.CounterTriggers_{i}.DeviceName = deviceName ;                
             end

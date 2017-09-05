@@ -1034,7 +1034,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 didSucceed = false ;
             end
-            self.broadcast('DidSetIsEnabled') ;
+            self.broadcast('Update') ;
             if ~didSucceed ,
                 error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;

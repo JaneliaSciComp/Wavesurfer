@@ -579,7 +579,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                     try
                         obj.apiProcessErrorResponseCode(responseCode,funcName);
                     catch ME
-                        ME.throwAsCaller();
+                        ME.throw();
                     end
                 end
             else
@@ -608,7 +608,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                 obj.apiFilteredResponseCodes = originalAPIFilteredResponseCodes;
             catch ME
                 obj.apiFilteredResponseCodes = originalAPIFilteredResponseCodes;
-                ME.throwAsCaller();
+                ME.throw();
             end
             
         end
@@ -747,7 +747,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                 warning(s.state, 'backtrace') ;
             else
                 exception = MException([ws.most.util.className(obj) ':APICallError'], errorString) ;
-                exception.throwAsCaller() ;
+                exception.throw() ;
             end            
         end  % method
     end
@@ -818,7 +818,7 @@ classdef APIWrapper < ws.most.HasClassDataFile %& ws.most.DClass
                 if libisloaded(obj.apiDLLNames)
                     unloadlibrary(obj.apiDLLNames);
                 end
-                ME.throwAsCaller();
+                ME.throw();
             end
             
             if ~isempty(apiCurrentVersion) && ismember(apiCurrentVersion,obj.apiSupportedVersionNames)

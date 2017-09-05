@@ -31,7 +31,7 @@ function varargout = wavesurfer(varargin)
     fprintf('Starting WaveSurfer...');
     
     % Process arguments
-    [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(varargin) ;
+    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doRunInDebugMode] = processArguments(varargin) ;
     
     % Create the application (model) object.
     isITheOneTrueWavesurferModel = true ;
@@ -52,22 +52,22 @@ function varargout = wavesurfer(varargin)
       % that are possibly off-screen.  Kind of annoying...
     
     % Load the protocol/MDF file, if one was given
-    if wasProtocolOrMDFFileNameGivenAtCommandLine ,
-        [~,~,extension] = fileparts(protocolOrMDFFileName) ;
+    if wasProtocolFileNameGivenAtCommandLine ,
+        [~,~,extension] = fileparts(protocolFileName) ;
         if isequal(extension,'.m') ,
             % it's an MDF file
             if isempty(controller) ,
-                model.initializeFromMDFFileName(protocolOrMDFFileName);
+                model.initializeFromMDFFileName(protocolFileName);
             else
                 % Need to do via controller, to keep the figure updated
                 %controller.initializeGivenMDFFileName(protocolOrMDFFileName);
                 error('ws:mdfFileNotSupportedWhenUIPresent', ...
                       'WaveSurfer no longer supports the use of MDF files in the presence of the UI') ;
             end            
-        elseif isequal(extension,'.cfg')
+        elseif isequal(extension,'.cfg') || isequal(extension,'.wsp')
             % it's a protocol file
             if isempty(controller) ,
-                model.openProtocolFileGivenFileName(protocolOrMDFFileName);
+                model.openProtocolFileGivenFileName(protocolFileName);
             else
                 % Need to do via controller, to keep the figure updated
                 drawnow('expose') ;
@@ -76,7 +76,7 @@ function varargout = wavesurfer(varargin)
                 % try-catch behaviors when a control is actuated in the UI
                 source = [] ;
                 event = [] ;
-                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event, protocolOrMDFFileName) ;
+                controller.controlActuated('OpenProtocolGivenFileNameFauxControl', source, event, protocolFileName) ;
             end
         else
             % do nothing

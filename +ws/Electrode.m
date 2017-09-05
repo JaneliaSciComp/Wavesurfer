@@ -165,17 +165,17 @@ classdef Electrode < ws.Model % & ws.Mimic
         
         function didSetAnalogInputChannelName(self, oldValue, newValue)
             if isequal(self.VoltageMonitorChannelName, oldValue) ,
-                self.VoltageMonitorChannelName = newValue ;
+                self.VoltageMonitorChannelName_ = newValue ;
             elseif isequal(self.CurrentMonitorChannelName, oldValue) ,
-                self.CurrentMonitorChannelName =  newValue ;
+                self.CurrentMonitorChannelName_ =  newValue ;
             end
         end        
         
         function didSetAnalogOutputChannelName(self, oldValue, newValue)
             if isequal(self.VoltageCommandChannelName, oldValue) ,
-                self.VoltageCommandChannelName = newValue ;
+                self.VoltageCommandChannelName_ = newValue ;
             elseif isequal(self.CurrentCommandChannelName, oldValue) ,
-                self.CurrentCommandChannelName =  newValue ;
+                self.CurrentCommandChannelName_ =  newValue ;
             end
         end        
                 
@@ -385,63 +385,28 @@ classdef Electrode < ws.Model % & ws.Mimic
             end
         end  % function
         
-        function result = isTestPulsable(self, aiChannelNames, aoChannelNames)
-            % In order to be test-pulse-able, the command and monitor
+        function result = areChannelsValid(self, aiChannelNames, aoChannelNames)
+            % In order for this method to return true, the command and monitor
             % channel names for the current mode have to refer to valid
             % active channels.
-            
-            result=false;
             
             % If either the command or monitor channel is unspecified,
             % return false
             commandChannelName=self.CommandChannelName;
             if isempty(commandChannelName) ,
-                return
+                result = false ;            
+            else
+                monitorChannelName=self.MonitorChannelName;
+                if isempty(monitorChannelName) ,
+                    result = false ;            
+                else
+                    % The typical case
+                    result = any(strcmp(commandChannelName, aoChannelNames)) && ...
+                             any(strcmp(monitorChannelName, aiChannelNames));
+                       % this will be false if either aiChannelNames or
+                       % aoChannelNames is empty
+                end
             end
-
-            monitorChannelName=self.MonitorChannelName;
-            if isempty(monitorChannelName) ,
-                return
-            end            
-
-%             % Need to trace back our ancestry to find other objects to
-%             % query.  If we can't do that, we can't test pulse.
-%             electrodeManager=self.Parent_;
-%             if isempty(electrodeManager) ,
-%                 return
-%             end
-%             
-%             ephys=electrodeManager.Parent;
-%             if isempty(ephys) ,
-%                 return
-%             end
-%             
-%             wavesurferModel=ephys.Parent;
-%             if isempty(wavesurferModel) ,
-%                 return
-%             end
-% 
-%             acquisition=wavesurferModel.Acquisition;
-%             if isempty(acquisition) ,
-%                 return
-%             end
-% 
-%             stimulus=wavesurferModel.Stimulation;            
-%             if isempty(stimulus) ,
-%                 return
-%             end
-            
-            % If we get here, it means that we have been able to find all
-            % the other objects we depend upon for this method
-            
-            %acquisitionChannelNames=acquisition.ActiveChannelNames;
-            %stimulusChannelNames=stimulus.AnalogChannelNames;
-
-            % Finally, compute the result!
-            result=any(strcmp(commandChannelName,aoChannelNames)) && ...
-                   any(strcmp(monitorChannelName,aiChannelNames));
-               % this will be false if either acquisitionChannelNames or
-               % stimulusChannelNames is empty
         end  % function
         
         function mimic(self, other)

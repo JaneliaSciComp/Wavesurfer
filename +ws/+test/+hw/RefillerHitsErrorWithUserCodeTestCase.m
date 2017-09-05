@@ -1,7 +1,6 @@
 classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
-    % To run these tests, need to have an NI daq attached, pointed to by
-    % the MDF.  (Can be a simulated daq board.)  Also, the MDF must be on the current path, 
-    % and be named Machine_Data_File_8_AIs.m.
+    % To run these tests, need to have an NI daq attached.  (Can be a simulated
+    % daq board.)
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
@@ -19,14 +18,15 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
         function theTest(self)
             %thisDirName=fileparts(mfilename('fullpath'));
             %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Demo_with_4_AIs_2_DIs_2_AOs_2_DOs.m'));
-            [wsModel,wsController]=wavesurfer();
+            [wsModel,wsController] = wavesurfer() ;
 
-            % set up channels 
+            
+            % set up channels (1 AI and 1 AO are added by default)
+            %wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
-            wsModel.addAIChannel() ;
-            wsModel.addAOChannel() ;
+            %wsModel.addAOChannel() ;
             wsModel.addAOChannel() ;
             wsModel.addDIChannel() ;
             wsModel.addDIChannel() ;

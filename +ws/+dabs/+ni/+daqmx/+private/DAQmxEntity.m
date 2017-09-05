@@ -152,7 +152,7 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
             % Define some local utility functions
             function errorUnsupportedVersion()
                 formattedVersion = sprintf('%d.%d.%d', double(majorVer), double(minorVer), double(updateVer) );
-                throwAsCaller(obj.DException('', 'UnsupportedVersion', 'Version %s of the ''%s'' API is not supported', formattedVersion, obj.apiPrettyName));
+                throw(obj.DException('', 'UnsupportedVersion', 'Version %s of the ''%s'' API is not supported', formattedVersion, obj.apiPrettyName));
             end
             
             function val = apiCallLocal(funcName)
@@ -487,7 +487,7 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
                 
                 codeVal = codeNameMap(codeName);
             catch ME
-                ME.throwAsCaller();
+                ME.throw();
             end
         end
         

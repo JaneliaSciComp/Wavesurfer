@@ -440,3 +440,4 @@ Version History
                          properly update after changes in the
                          Electrodes window.
                   
+0.96     Sep 5, 2017     Added support for multiple DAQ boards.

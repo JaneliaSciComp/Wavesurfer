@@ -83,7 +83,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             %end
             if ~isempty(wsModel) ,
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
-                wsModel.subscribeMeToEphysEvent(self,'UpdateTestPulser','','update') ;
+                wsModel.subscribeMe(self,'UpdateTestPulser','','update') ;
                 wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'Update','','update') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'UpdateTrace','','updateTrace') ;
@@ -154,7 +154,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             
             % If y range hasn't been set yet, and Y Auto is engaged, set
             % the y range.
-            if wsModel.IsTestPulsing && wsModel.IsAutoYInTestPulseView ,   %&& testPulser.AreYLimitsForRunDetermined ,
+            if wsModel.isTestPulsing() && wsModel.IsAutoYInTestPulseView ,   %&& testPulser.AreYLimitsForRunDetermined ,
                 yLimitsInModel = wsModel.TestPulseYLimits ;
                 yLimits=self.YLimits_;
                 %if all(isfinite(yLimits)) && ~isequal(yLimits,yLimitsInModel) ,
@@ -259,26 +259,27 @@ classdef TestPulserFigure < ws.MCOSFigure
             isElectrodeManagerInControlOfSoftpanelModeAndGains=wsModel.IsInControlOfSoftpanelModeAndGains;
             isWavesurferIdle=isequal(wsModel.State,'idle');
             %isWavesurferTestPulsing=(wavesurferModel.State==ws.ApplicationState.TestPulsing);
-            isWavesurferTestPulsing = wsModel.IsTestPulsing ;
+            isWavesurferTestPulsing = wsModel.isTestPulsing() ;
             isWavesurferIdleOrTestPulsing = isWavesurferIdle||isWavesurferTestPulsing ;
             isAutoY = wsModel.IsAutoYInTestPulseView ;
             isAutoYRepeating = wsModel.IsAutoYRepeatingInTestPulseView ;
             
             % Update the graphics objects to match the model and/or host
-            isStartStopButtonEnabled= ...
-                isWavesurferIdleOrTestPulsing && ...
-                ~isempty(tpElectrodeIndex) && ...
-                wsModel.areAllElectrodesTestPulsable() && ...
-                wsModel.areAllMonitorAndCommandChannelNamesDistinct();
+            isStartStopButtonEnabled = wsModel.isTestPulsingEnabled() ;
+%                 isWavesurferIdleOrTestPulsing && ...
+%                 ~isempty(tpElectrodeIndex) && ...
+%                 wsModel.areTestPulseElectrodeChannelsValid() && ...
+%                 wsModel.areAllMonitorAndCommandChannelNamesDistinct() && ...
+%                 ~wsModel.areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices() ; 
             set(self.StartStopButton, ...
                 'String',ws.fif(isWavesurferTestPulsing,'Stop','Start'), ...
                 'Enable',ws.onIff(isStartStopButtonEnabled));
             
-            electrodeNames = wsModel.TestPulseElectrodeNames ;
+            electrodeNames = wsModel.getAllElectrodeNames ;
             electrodeName = wsModel.getTestPulseElectrodeProperty('Name') ;
             ws.setPopupMenuItemsAndSelectionBang(self.ElectrodePopupMenu, ...
-                                                            electrodeNames, ...
-                                                            electrodeName);
+                                                 electrodeNames, ...
+                                                 electrodeName);
             set(self.ElectrodePopupMenu, ...
                 'Enable',ws.onIff(isWavesurferIdleOrTestPulsing));
                                          
@@ -323,7 +324,7 @@ classdef TestPulserFigure < ws.MCOSFigure
             nElectrodes=length(self.GainLabelTexts);
             isVCPerTestPulseElectrode = wsModel.getIsVCPerTestPulseElectrode() ;
             isCCPerTestPulseElectrode = wsModel.getIsCCPerTestPulseElectrode() ;
-            tpElectrodeNames = wsModel.TestPulseElectrodeNames ;
+            tpElectrodeNames = wsModel.getTestPulseElectrodeNames() ;
             for i=1:nElectrodes ,
                 if isCCPerTestPulseElectrode(i) || isVCPerTestPulseElectrode(i) ,
                     set(self.GainLabelTexts(i), 'String', sprintf('%s Resistance: ', tpElectrodeNames{i})) ;
@@ -397,12 +398,12 @@ classdef TestPulserFigure < ws.MCOSFigure
             % VC/CC toggle buttons
             self.VCToggle= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','togglebutton', ...
+                          'Style','radiobutton', ...
                           'String','VC', ...
                           'Callback',@(src,evt)(self.controlActuated('VCToggle',src,evt)));
             self.CCToggle= ...
                 ws.uicontrol('Parent',self.FigureGH, ...
-                          'Style','togglebutton', ...
+                          'Style','radiobutton', ...
                           'String','CC', ...
                           'Callback',@(src,evt)(self.controlActuated('CCToggle',src,evt)));
                       
@@ -601,10 +602,10 @@ classdef TestPulserFigure < ws.MCOSFigure
             heightBetweenAmplitudeAndDuration=26;
             electrodePopupWidth=100;
             widthFromPopupsRightToAmplitudeLeft=20;
-            clampToggleWidth=electrodePopupWidth/2;  % 30;
-            clampToggleHeight=20;
+            clampToggleWidth = 40 ;
+            clampToggleHeight = 18 ;
             electrodePopupToClampToggleAreaHeight=8;
-            interClampToggleWidth=0;
+            interClampToggleWidth = 2 ;
             
             % Traces plot layout parameters                      
             widthFromLayoutLeftToPlot=0;
@@ -730,12 +731,13 @@ classdef TestPulserFigure < ws.MCOSFigure
             clampToggleAreaHeight=clampToggleHeight;
             clampToggleAreaWidth=clampToggleWidth+interClampToggleWidth+clampToggleWidth;
 
-            %clampToggleAreaCenterX=electrodePopupMenuX+popupWidth/2;
-            clampToggleAreaRightX=electrodePopupMenuX+electrodePopupWidth;
-            clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
+            clampToggleAreaCenterX=electrodePopupMenuX+electrodePopupWidth/2;
+            %clampToggleAreaRightX=electrodePopupMenuX+electrodePopupWidth;
+            %clampToggleAreaCenterX=clampToggleAreaRightX-clampToggleAreaWidth/2;
             
             clampToggleAreaTopY=electrodePopupMenuY-electrodePopupToClampToggleAreaHeight;
             clampToggleAreaX=clampToggleAreaCenterX-clampToggleAreaWidth/2;
+            %clampToggleAreaX = electrodePopupMenuX ;             
             clampToggleAreaY=clampToggleAreaTopY-clampToggleAreaHeight;
             
             % VC toggle button

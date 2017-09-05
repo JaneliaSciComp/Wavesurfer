@@ -30,7 +30,7 @@ classdef CounterTrigger < ws.Model
 
     methods
         function self = CounterTrigger() 
-            self = self@ws.Model() ;  % ignore parent arg
+            self = self@ws.Model() ;  
             self.Name_ = 'Counter Trigger' ;
             self.IsInternalRepeatCountOverridden_ = false ;
             self.InternalRepeatCount_ = 1 ;
@@ -53,9 +53,9 @@ classdef CounterTrigger < ws.Model
             self.DeviceName_ = deviceName ;
         end        
         
-        function didSetDeviceName(self, deviceName)  % should only be called by triggering subsystem
-            self.DeviceName_ = deviceName ;
-        end        
+%         function settingPrimaryDeviceName(self, deviceName)  % should only be called by triggering subsystem
+%             self.DeviceName_ = deviceName ;
+%         end        
         
         function value = get.RepeatCount(self)
             % In some circumstances, the internal value is overridden by

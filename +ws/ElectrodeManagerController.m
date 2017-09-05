@@ -55,14 +55,14 @@ classdef ElectrodeManagerController < ws.Controller
             self.Model.do('setElectrodeProperty', electrodeIndex, 'IsCommandEnabled', newValue) ;  %#ok<FNDSB>        
         end               
         
-        function TestPulseQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
-            indexOfElectrode = find((source==self.Figure.TestPulseQCheckboxes),1) ;
-            newValue = get(source,'Value') ;
-            originalArray = self.Model.IsElectrodeMarkedForTestPulse ;
-            newArray = ws.replace(originalArray, indexOfElectrode, newValue) ;
-            %self.Model.IsElectrodeMarkedForTestPulse = newArray ;     
-            self.Model.do('set', 'IsElectrodeMarkedForTestPulse', newArray) ;
-        end        
+%         function TestPulseQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
+%             indexOfElectrode = find((source==self.Figure.TestPulseQCheckboxes),1) ;
+%             newValue = get(source,'Value') ;
+%             originalArray = self.Model.IsElectrodeMarkedForTestPulse ;
+%             newArray = ws.replace(originalArray, indexOfElectrode, newValue) ;
+%             %self.Model.IsElectrodeMarkedForTestPulse = newArray ;     
+%             self.Model.do('set', 'IsElectrodeMarkedForTestPulse', newArray) ;
+%         end        
         
         function RemoveQCheckboxActuated(self, source, event, varargin)  %#ok<INUSD>
             indexOfElectrode = find((source==self.Figure.RemoveQCheckboxes),1) ;

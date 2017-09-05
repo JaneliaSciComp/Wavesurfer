@@ -7,18 +7,17 @@ classdef WavesurferModel < ws.Model
 
     properties (Dependent = true)
         AllDeviceNames
-        DeviceName
-        AvailableSampleClockTimebaseSources
-        %OnboardClockSampleClockTimebaseRate
-        SampleClockTimebaseSource
-        SampleClockTimebaseRate
-        NDIOTerminals
-        NPFITerminals
-        NCounters
-        NAITerminals
-        AITerminalIDsOnDevice
-        NAOTerminals
-        NDigitalChannels  % the number of channels the user has created, *not* the number of DIO terminals on the board
+        PrimaryDeviceName
+        IsPrimaryDeviceAPXIDevice
+%         AvailableReferenceClockSources
+%         ReferenceClockSource
+%         ReferenceClockRate
+        NDIOTerminalsPerDevice
+        NPFITerminalsPerDevice
+        NCountersPerDevice
+        NAITerminalsPerDevice
+        AITerminalIDsOnEachDevice
+        NAOTerminalsPerDevice
         AllChannelNames
         IsAIChannelTerminalOvercommitted
         IsAOChannelTerminalOvercommitted
@@ -55,14 +54,14 @@ classdef WavesurferModel < ws.Model
         StimulationSampleRate  % Hz
         IsAOChannelMarkedForDeletion
         IsDOChannelMarkedForDeletion
-        IsTestPulsing
+        %IsTestPulsing
         DoSubtractBaselineInTestPulseView
         TestPulseYLimits
         TestPulseDuration
         IsAutoYInTestPulseView
         IsAutoYRepeatingInTestPulseView
         DoTrodeUpdateBeforeRun
-        IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
+        %IsElectrodeMarkedForTestPulse  % logical, nElectrodes x 1
         IsElectrodeMarkedForRemoval  % logical, nElectrodes x 1
         TestPulseElectrodeIndex  % either a scalar or [] if no electrode is currently selected in the test pulser
         NextRunAbsoluteFileName
@@ -75,7 +74,7 @@ classdef WavesurferModel < ws.Model
         DidLastElectrodeUpdateWork
         AreSoftpanelsEnabled
         IsDoTrodeUpdateBeforeRunSensible
-        TestPulseElectrodeNames
+        %TestPulseElectrodeNames
         TestPulseElectrodesCount
         %TestPulseElectrodeAmplitude
         %TestPulseElectrodeName
@@ -112,35 +111,43 @@ classdef WavesurferModel < ws.Model
         DoIncludeDateInDataFileName
         DoIncludeSessionIndexInDataFileName
         SessionIndex
-        StimulusLibrary
+        %StimulusLibrary
         CurrentRunAbsoluteFileName
         PlotHeightFromAIChannelIndex
         PlotHeightFromDIChannelIndex
         RowIndexFromAIChannelIndex
         RowIndexFromDIChannelIndex
         NRunsCompleted  % number of runs *completed* (not stopped or aborted) since WS was started
+        AIChannelDeviceNames
+        AOChannelDeviceNames
+        DIChannelDeviceNames
+        DOChannelDeviceNames
+        AIChannelTerminalIDs
+        AOChannelTerminalIDs
+        DIChannelTerminalIDs
+        DOChannelTerminalIDs
     end
     
     properties (Access=protected)
-        DeviceName_ = ''   % an empty string represents "no device specified"
-        SampleClockTimebaseSource_ = '100MHzTimebase' 
+        PrimaryDeviceName_ = ''   % an empty string represents "no device specified"
+        %ReferenceClockSource_ = '100MHzTimebase' 
     end
 
     properties (Access=protected, Transient=true)
         AllDeviceNames_ = cell(1,0)   % transient b/c we want to probe the hardware on startup each time to get this        
-
-        AvailableSampleClockTimebaseSources_ = cell(1,0)
-        %OnboardClockSampleClockTimebaseRate_ = []  % Hz
+        IsPrimaryDeviceAPXIDevice_ = false  % transient b/c depends on hardware
+        %AvailableReferenceClockSources_ = cell(1,0)
+        %OnboardClockReferenceClockRate_ = []  % Hz
         
-        %SampleClockTimebaseRate_ = []   % Hz
-        
-        NDIOTerminals_ = 0  % these are transient b/c e.g. "Dev1" could refer to a different board on protocol 
-                            % file load than it did when the protocol file was saved
-        NPFITerminals_ = 0 
-        NCounters_ = 0
-        NAITerminals_ = 0
-        AITerminalIDsOnDevice_ = zeros(1,0)
-        NAOTerminals_ = 0
+        % The terminal counts are transient b/c e.g. "Dev1" could refer to a different board on protocol
+        % file load than it did when the protocol file was saved.  Further, the set
+        % of available device could be completely different.
+        NDIOTerminalsPerDevice_ = zeros(1,0)  
+        NPFITerminalsPerDevice_ = zeros(1,0)
+        NCountersPerDevice_ = zeros(1,0)
+        NAITerminalsPerDevice_ = zeros(1,0)
+        AITerminalIDsOnEachDevice_ = cell(1,0)
+        NAOTerminalsPerDevice_ = zeros(1,0)
 
         IsAIChannelTerminalOvercommitted_ = false(1,0)        
         IsAOChannelTerminalOvercommitted_ = false(1,0)        
@@ -180,7 +187,6 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
-        %DeviceName
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
@@ -237,7 +243,6 @@ classdef WavesurferModel < ws.Model
         
         % Not saved to either protocol or .usr file
         Logging_
-        %DeviceName_
     end
 
     properties (Access=protected, Transient=true)
@@ -298,6 +303,8 @@ classdef WavesurferModel < ws.Model
     end
     
     events
+        UpdateMain
+        UpdateGeneralSettings
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
@@ -313,7 +320,8 @@ classdef WavesurferModel < ws.Model
         LayoutAllWindows
         DidSetAcquisitionSampleRate
         DidSetStimulationSampleRate
-        UpdateElectrodeManager
+        UpdateElectrodes
+        UpdateTestPulser
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -491,7 +499,7 @@ classdef WavesurferModel < ws.Model
                 % Set the device name to the first device
                 allDeviceNames = self.AllDeviceNames ;
                 if ~isempty(allDeviceNames) ,
-                    self.DeviceName = allDeviceNames{1} ;
+                    self.PrimaryDeviceName = allDeviceNames{1} ;
                 end
             end
             
@@ -868,20 +876,20 @@ classdef WavesurferModel < ws.Model
             self.broadcast('Update');
         end
         
-        function set.SampleClockTimebaseSource(self, newValue)
-            if ws.isString(newValue) && ismember(newValue, self.AvailableSampleClockTimebaseSources) ,
-                self.SampleClockTimebaseSource_ = newValue ;
-                %self.syncSampleClockTimebaseRateFromDeviceNameAndAvailableSampleClockTimebaseSourcesEtc_() ;
-                isNewValueValid = true ;
-            else
-                isNewValueValid = false ;
-            end                
-            self.broadcast('Update');
-            if ~isNewValueValid ,
-                error('ws:invalidPropertyValue', ...
-                      'SampleClockTimebaseSource must be a string, and equal to some element of AvailableSampleClockTimebaseSources');
-            end
-        end
+%         function set.ReferenceClockSource(self, newValue)
+%             if ws.isString(newValue) && ismember(newValue, self.AvailableReferenceClockSources) ,
+%                 self.ReferenceClockSource_ = newValue ;
+%                 %self.syncReferenceClockRateFromDeviceNameAndAvailableReferenceClockSourcesEtc_() ;
+%                 isNewValueValid = true ;
+%             else
+%                 isNewValueValid = false ;
+%             end                
+%             self.broadcast('Update');
+%             if ~isNewValueValid ,
+%                 error('ws:invalidPropertyValue', ...
+%                       'ReferenceClockSource must be a string, and equal to some element of AvailableReferenceClockSources');
+%             end
+%         end
         
         function value = get.AreSweepsContinuous(self)
             value = ~self.AreSweepsFiniteDuration_ ;
@@ -953,20 +961,33 @@ classdef WavesurferModel < ws.Model
 %             self.didSetAnalogChannelUnitsOrScales() ;      
 %         end       
 
+%         function setSingleAIChannelTerminalID(self, i, newValue)
+%             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+%             self.didSetAnalogInputTerminalID();
+%         end
+
+        function setSingleAIChannelTerminalName(self, i, terminalName)
+            % newValue should be a string like 'AI4' or 'AI11'
+            terminalIDAsString = terminalName(3:end) ;
+            terminalID = str2double(terminalIDAsString) ;
+            self.setSingleAIChannelTerminalID(i, terminalID) ;
+        end
+
         function setSingleAIChannelTerminalID(self, i, newValue)
             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
-            self.didSetAnalogInputTerminalID();
-        end
-        
-        function didSetAnalogInputTerminalID(self)
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.Display_.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
         end
+
+        function setSingleDIChannelTerminalName(self, iChannel, terminalName)
+            terminalID = ws.dioTerminalIDFromName(terminalName) ;
+            self.setSingleDIChannelTerminalID(iChannel, terminalID) ;
+        end
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
@@ -993,10 +1014,10 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetAnalogOutputTerminalID(self)
-            self.syncIsAOChannelTerminalOvercommitted_() ;
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetAnalogOutputTerminalID(self)
+%             self.syncIsAOChannelTerminalOvercommitted_() ;
+%             self.broadcast('UpdateChannels') ;
+%         end
         
         function setSingleAOChannelName(self, channelIndex, newValue)
             nAOChannels = self.Stimulation_.NAnalogChannels ;
@@ -1052,12 +1073,6 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;            
         end  % function 
         
-        function didSetIsInputChannelActive(self) 
-            self.Ephys_.didSetIsInputChannelActive() ;
-            self.Display_.didSetIsInputChannelActive() ;
-            self.broadcast('UpdateChannels') ;
-        end
-        
         function didSetIsInputChannelMarkedForDeletion(self) 
             self.broadcast('UpdateChannels') ;
         end
@@ -1073,6 +1088,11 @@ classdef WavesurferModel < ws.Model
     end
        
     methods (Access=protected)
+        function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
+            self.Ephys_.didSetIsInputChannelActive() ;
+            self.Display_.didSetIsInputChannelActive() ;
+        end
+        
         function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
@@ -1139,9 +1159,6 @@ classdef WavesurferModel < ws.Model
 %             end
 %         end  % function
         
-        function testPulserIsAboutToStartTestPulsing(self)
-            self.releaseTimedHardwareResourcesOfAllProcesses_();
-        end        
     end  % public methods block
     
     methods (Access=protected)
@@ -1265,7 +1282,7 @@ classdef WavesurferModel < ws.Model
 %                     end
 %                 end
                 if self.Ephys_.IsEnabled ,
-                    if self.DoTrodeUpdateBeforeRun
+                    if self.DoTrodeUpdateBeforeRun ,
                         self.updateSmartElectrodeGainsAndModes() ;
                     end
                     self.Ephys_.startingRun() ;
@@ -1280,9 +1297,9 @@ classdef WavesurferModel < ws.Model
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
                 end
                 if self.Triggering_.IsEnabled ,
-                    timebaseSource = self.SampleClockTimebaseSource ;
-                    timebaseRate = self.SampleClockTimebaseRate ;
-                    self.Triggering_.startingRun(timebaseSource, timebaseRate) ;
+                    primaryDeviceName = self.PrimaryDeviceName ;
+                    isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+                    self.Triggering_.startingRun(primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.UserCodeManager_.startingRun() ;
@@ -1295,7 +1312,9 @@ classdef WavesurferModel < ws.Model
             end
             
             % Determine the keystone tasks for acq and stim
-            [acquisitionKeystoneTask, stimulationKeystoneTask] = self.determineKeystoneTasks() ;
+            [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, ...
+             stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
+               self.determineKeystoneTasks() ;
             
             % Tell the Looper & Refiller to prepare for the run
             currentFrontendPath = path() ;
@@ -1308,13 +1327,15 @@ classdef WavesurferModel < ws.Model
                                           currentFrontendPath, ...
                                           currentFrontendPwd, ...
                                           looperProtocol, ...
-                                          acquisitionKeystoneTask, ...
+                                          acquisitionKeystoneTaskType, ...
+                                          acquisitionKeystoneTaskDeviceName,  ...
                                           self.IsDOChannelTerminalOvercommitted) ;
             self.RefillerIPCRequester_.send('startingRun', ...
                                             currentFrontendPath, ...
                                             currentFrontendPwd, ...
                                             refillerProtocol, ...
-                                            stimulationKeystoneTask, ...
+                                            stimulationKeystoneTaskType, ...
+                                            stimulationKeystoneTaskDeviceName, ...
                                             self.IsAOChannelTerminalOvercommitted, ...
                                             self.IsDOChannelTerminalOvercommitted ) ;
             
@@ -2147,89 +2168,24 @@ classdef WavesurferModel < ws.Model
     end  % methods ( Access = protected )
     
     methods
-%         function initializeFromMDFFileName(self,mdfFileName)
-%             self.changeReadiness_(-1);
-%             try
-%                 mdfStructure = ws.readMachineDataFile(mdfFileName);
-%                 ws.Preferences.sharedPreferences().savePref('LastMDFFilePath', mdfFileName);
-%                 self.initializeFromMDFStructure_(mdfStructure);
-%             catch me
-%                 self.changeReadiness_(+1);
-%                 rethrow(me) ;
-%             end
-%             self.changeReadiness_(+1);
-%         end
-        
         function addStarterChannelsAndStimulusLibrary(self)
             % Adds an AI channel, an AO channel, creates a stimulus and a
             % map in the stim library, and sets the current outputable to
             % the newly-created map.  This is intended to be run on a
             % "virgin" wavesurferModel.
             
-            aiChannelName = self.addAIChannel() ;  %#ok<NASGU>
-            aoChannelName = self.addAOChannel() ;
-            self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
-            self.broadcast('UpdateStimulusLibrary') ;
+            self.addAIChannel() ;
+            aoChannelIndex = self.addAOChannel() ;
+            aoChannelName = self.AOChannelNames{aoChannelIndex} ;
+            if ~isempty(aoChannelName) ,
+                self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+                self.broadcast('UpdateStimulusLibrary') ;
+            end
             self.Display_.IsEnabled = true ;
         end
     end  % methods block
     
-%     methods (Access=protected)
-%         function initializeFromMDFStructure_(self, mdfStructure)
-%             % Initialize the acquisition subsystem given the MDF data
-%             self.Acquisition_.initializeFromMDFStructure(mdfStructure) ;
-%             
-%             % Initialize the stimulation subsystem given the MDF
-%             self.Stimulation_.initializeFromMDFStructure(mdfStructure) ;
-% 
-%             % Initialize the triggering subsystem given the MDF
-%             self.Triggering_.initializeFromMDFStructure(mdfStructure) ;
-%                         
-%             % Add the default scopes to the display
-%             %self.Display_.initializeScopes();
-%             % Don't need this anymore --- Display keeps itself in sync as
-%             % channels are added.
-%             
-%             % Change our state to reflect the presence of the MDF file            
-%             %self.setState_('idle');
-%             
-% %             % Notify the satellites
-% %             if self.IsITheOneTrueWavesurferModel_ ,
-% %                 self.IPCPublisher_.send('initializeFromMDFStructure',mdfStructure) ;
-% %             end
-%         end  % function
-%     end  % methods block
-        
     methods (Access = protected)        
-%         % Allows ws.DependentProperties to initiate registered dependencies on
-%         % properties that are not otherwise publicly settable.
-%         function zprvPrivateSet(self, propertyName)
-%             self.(propertyName) = NaN;
-%         end
-        
-%         function AcquisitionTriggerSchemeSourceChanged_(self, ~)
-%             % Delete the listener on the old sweep trigger
-%             delete(self.TrigListener_);
-%             
-%             % Set up a new listener
-%             if self.Triggering_.AcquisitionTriggerScheme.IsInternal ,
-%                 self.TrigListener_ = ...
-%                     self.Triggering_.AcquisitionTriggerScheme.Source.addlistener({'RepeatCount', 'Interval'}, 'PostSet', @(src,evt)self.zprvSetRunalSweepCount);
-%             else
-%                 self.TrigListener_ = ...
-%                     self.Triggering_.AcquisitionTriggerScheme.Source.addlistener('RepeatCount', 'PostSet', @(src,evt)self.zprvSetRunalSweepCount);
-%             end
-%             
-%             % Call the listener callback once to sync things up
-%             self.zprvSetRunalSweepCount();
-%         end  % function
-%         
-%         function zprvSetRunalSweepCount(self, ~)
-%             %fprintf('WavesurferModel.zprvSetRunalSweepCount()\n');
-%             %self.NSweepsPerRun = self.Triggering_.SweepTrigger.Source.RepeatCount;
-%             %self.Triggering_.SweepTrigger.Source.RepeatCount=1;  % Don't allow this to change
-%         end  % function
-        
         function callUserMethod_(self, eventName, varargin)
             % Handle user functions.  It would be possible to just make the UserCodeManager
             % subsystem a regular listener of these events.  Handling it
@@ -2241,51 +2197,6 @@ classdef WavesurferModel < ws.Model
             % Handle as standard event if applicable.
             %self.broadcast(eventName);
         end  % function     
-        
-%         function disableYoking_(self)
-%             % Disables Yoking. Executed when an error occurs in the
-%             % SICommandPollTimer_ TimerFcn
-%             self.IsYokedToScanImage = false ;            
-%         end
-
-%         function checkSICommand_(self)
-%             % Checks if a command file was created by ScanImage
-%             % If a command file is found, the command is parsed,
-%             % executed, and a response file is written
-%             
-%             if exist(self.WSCommandFilePath_,'file') ,
-%                 str = readAllLines_(self.WSCommandFilePath_);
-%                 self.ensureYokingFilesAreGone_();
-%                 
-%                 try
-%                     self.executeSICommands_(str);
-%                 catch ME
-%                     self.acknowledgeSICommand_(false);
-%                     fprintf(2,'%s\n',ME.message);
-%                 end
-%             end
-%             
-%             
-%             %%% Local function
-%             function str = readAllLines_(fileName)
-%                 [fid,fopenErrorMessage] = fopen(fileName,'r') ;
-% 
-%                 assert(fid>=0,'WavesurferModel:UnableToOpenYokingFile', ...
-%                     'Unable to open ScanImage command file: %s',fopenErrorMessage);
-%                 
-%                 str = {};
-%                 while true
-%                     str_ = fgetl(fid);
-%                     if isequal(str_,-1)
-%                         break;
-%                     else
-%                         str{end+1} = str_; %#ok<AGROW>
-%                     end
-%                 end
-%                 
-%                 fclose(fid);
-%             end
-%         end
     end  % protected methods block
     
     methods
@@ -2630,34 +2541,34 @@ classdef WavesurferModel < ws.Model
     end
 
     methods
-        function result = allDigitalTerminalIDs(self)
-            nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
-            result = 0:(nDigitalTerminalIDsInHardware-1) ;              
-        end
+%         function result = allDigitalTerminalIDs(self)
+%             nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
+%             result = 0:(nDigitalTerminalIDsInHardware-1) ;              
+%         end
         
-        function result = digitalTerminalIDsInUse(self)
-            inputDigitalTerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
-            outputDigitalTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
-            result = sort([inputDigitalTerminalIDs outputDigitalTerminalIDs]) ;
-        end
+%         function result = digitalTerminalIDsInUse(self)
+%             inputDigitalTerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
+%             outputDigitalTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
+%             result = sort([inputDigitalTerminalIDs outputDigitalTerminalIDs]) ;
+%         end
         
-        function result = freeDigitalTerminalIDs(self)
-            allIDs = self.allDigitalTerminalIDs() ;  
-            inUseIDs = self.digitalTerminalIDsInUse() ;
-            result = setdiff(allIDs, inUseIDs) ;
-        end
+%         function result = freeDigitalTerminalIDs(self)
+%             allIDs = self.allDigitalTerminalIDs() ;  
+%             inUseIDs = self.digitalTerminalIDsInUse() ;
+%             result = setdiff(allIDs, inUseIDs) ;
+%         end
         
-        function result = isDigitalTerminalIDInUse(self, DigitalTerminalID)
-            inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
-            result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
-        end
+%         function result = isDigitalTerminalIDInUse(self, DigitalTerminalID)
+%             inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
+%             result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
+%         end
     end
     
     methods
         function setSingleDOChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Stimulation_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             %self.didSetDigitalOutputTerminalID() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateChannels') ;
             if wasSet ,
                 %self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
@@ -2695,45 +2606,85 @@ classdef WavesurferModel < ws.Model
             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
         end
         
-%         function channelName = addAIChannel(self)
-%             channelName = self.Acquisition_.addAnalogChannel() ;
-%         end
+        function newChannelIndex = addAIChannel(self)
+            nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeAITerminal() ;
+            if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
+                % No free AI terminals
+                newChannelIndex = [] ;
+            else            
+                nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
+                newChannelIndex = self.Acquisition_.addAnalogChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.didAddAnalogInputChannel() ;
+            end
+        end  % function
         
-        function channelName = addAOChannel(self)
-            channelName = self.Stimulation_.addAnalogChannel() ;
-            self.syncIsAOChannelTerminalOvercommitted_() ;            
-            self.Ephys_.didChangeNumberOfOutputChannels() ;
-            self.broadcast('UpdateChannels') ;  % causes channels figure to update
-            self.broadcast('UpdateStimulusLibrary') ;
+        function newChannelIndex = addAOChannel(self)
+            nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeAOTerminal() ;
+            if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
+                newChannelIndex = [] ;
+            else            
+                nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
+                newChannelIndex = self.Stimulation_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.syncIsAOChannelTerminalOvercommitted_() ;
+                self.Ephys_.didChangeNumberOfOutputChannels() ;
+                self.broadcast('UpdateChannels') ;  % causes channels figure to update
+                self.broadcast('UpdateStimulusLibrary') ;
+            end
         end
         
-        function addDIChannel(self)
-            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-            self.Acquisition_.addDigitalChannel_(freeTerminalIDs) ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            self.Display_.didAddDigitalInputChannel() ;
-            self.Ephys_.didChangeNumberOfInputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-            self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
-                                    self.IsDOChannelTerminalOvercommitted) ;
+        function channelIndex = addDIChannel(self)
+            nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeDIOTerminal() ;
+            if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
+                channelIndex = [] ;
+            else
+                nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
+                %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+                %allDeviceNames = self.AllDeviceNames ;
+                channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                    nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.syncIsDIOChannelTerminalOvercommitted_() ;
+                self.Display_.didAddDigitalInputChannel() ;
+                self.Ephys_.didChangeNumberOfInputChannels() ;
+                self.broadcast('UpdateChannels') ;  % causes channels figure to update
+                self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+                self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
+                                        self.IsDOChannelTerminalOvercommitted) ;
+            end
         end
         
-%         function didAddDigitalInputChannel(self)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Display_.didAddDigitalInputChannel() ;
-%             self.Ephys_.didChangeNumberOfInputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-%         end
-        
-%         function didDeleteAnalogInputChannels(self, wasDeleted)
-%             self.syncIsAIChannelTerminalOvercommitted_() ;            
-%             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-%             self.Ephys_.didChangeNumberOfInputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-%         end
+        function newChannelIndex = addDOChannel(self)
+            nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeDIOTerminal() ;
+            if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
+                newChannelIndex = [] ;
+            else
+                nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
+                %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
+                %allDeviceNames = self.AllDeviceNames ;
+                newChannelIndex = self.Stimulation_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                       nextFreeDeviceNameAndTerminalID.terminalID) ;
+                %self.Display_.didAddDigitalOutputChannel() ;
+                self.syncIsDIOChannelTerminalOvercommitted_() ;
+                %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
+                self.broadcast('UpdateStimulusLibrary');
+                self.Ephys_.didChangeNumberOfOutputChannels();
+                self.broadcast('UpdateChannels');  % causes channels figure to update
+                %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
+                channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+                %deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
+                terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+                isTimedForEachDOChannel = self.IsDOChannelTimed ;
+                onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
+                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+                self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
+                                        channelNameForEachDOChannel, ...
+                                        terminalIDForEachDOChannel, ...
+                                        isTimedForEachDOChannel, ...
+                                        onDemandOutputForEachDOChannel, ...
+                                        isTerminalOvercommittedForEachDOChannel) ;
+            end
+        end        
         
         function deleteMarkedAIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels_() ;
@@ -2746,7 +2697,7 @@ classdef WavesurferModel < ws.Model
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
@@ -2755,87 +2706,6 @@ classdef WavesurferModel < ws.Model
                                     self.IsDOChannelTerminalOvercommitted) ;
         end
         
-%         function didDeleteDigitalInputChannels(self, nameOfRemovedChannels)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Display_.didDeleteDigitalInputChannels(nameOfRemovedChannels) ;
-%             self.Ephys_.didChangeNumberOfInputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-%         end
-        
-%         function didRemoveDigitalInputChannel(self, nameOfRemovedChannel)
-%             self.Display_.didRemoveDigitalInputChannel(nameOfRemovedChannel) ;
-%             self.Ephys_.didChangeNumberOfInputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-%         end
-        
-%         function didChangeNumberOfOutputChannels(self)
-%             self.Ephys_.didChangeNumberOfOutputChannels();
-%             self.broadcast('UpdateChannels');
-%         end
-        
-%         function didAddAnalogOutputChannel(self)
-%             self.syncIsAOChannelTerminalOvercommitted_() ;            
-%             %self.Display_.didAddAnalogOutputChannel() ;
-%             self.Ephys_.didChangeNumberOfOutputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-%         end
-
-%         function didAddDigitalOutputChannel(self)
-%             %self.Display_.didAddDigitalOutputChannel() ;
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Ephys_.didChangeNumberOfOutputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-%             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-%             deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
-%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
-%             self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
-%                                     channelNameForEachDOChannel, ...
-%                                     deviceNameForEachDOChannel, ...
-%                                     terminalIDForEachDOChannel, ...
-%                                     isTimedForEachDOChannel, ...
-%                                     onDemandOutputForEachDOChannel, ...
-%                                     isTerminalOvercommittedForEachDOChannel) ;
-%         end
-        
-        function addDOChannel(self)
-            freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-            self.Stimulation_.addDigitalChannel_(freeTerminalIDs) ;
-            %self.Display_.didAddDigitalOutputChannel() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
-            %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-            self.broadcast('UpdateStimulusLibrary');
-            self.Ephys_.didChangeNumberOfOutputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-            channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-            %deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
-            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.IsDOChannelTimed ;
-            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-            isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
-            self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
-                                    channelNameForEachDOChannel, ...
-                                    terminalIDForEachDOChannel, ...
-                                    isTimedForEachDOChannel, ...
-                                    onDemandOutputForEachDOChannel, ...
-                                    isTerminalOvercommittedForEachDOChannel) ;
-        end
-        
-%         function didDeleteAnalogOutputChannels(self, namesOfDeletedChannels) %#ok<INUSD>
-%             self.syncIsAOChannelTerminalOvercommitted_() ;            
-%             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
-%             self.Ephys_.didChangeNumberOfOutputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-%         end
-
         function deleteMarkedAOChannels(self)
             self.Stimulation_.deleteMarkedAnalogChannels_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
@@ -2864,7 +2734,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
             
             % Do all the things that need doing after that
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2879,28 +2749,8 @@ classdef WavesurferModel < ws.Model
                                     isTimedForEachDOChannel, ...
                                     onDemandOutputForEachDOChannel, ...
                                     isTerminalOvercommittedForEachDOChannel) ;
-        end
-        
-%         function didDeleteDigitalOutputChannels(self)
-%             self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Ephys_.didChangeNumberOfOutputChannels();
-%             self.broadcast('UpdateChannels');  % causes channels figure to update
-%             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-%             deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
-%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
-%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
-%             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
-%                                     channelNameForEachDOChannel, ...
-%                                     deviceNameForEachDOChannel, ...
-%                                     terminalIDForEachDOChannel, ...
-%                                     isTimedForEachDOChannel, ...
-%                                     onDemandOutputForEachDOChannel, ...
-%                                     isTerminalOvercommittedForEachDOChannel) ;
-%         end
-        
-    end
+        end        
+    end  % public methods block
     
 %     methods
 %         function triggeringSubsystemJustStartedFirstSweepInRun(self)
@@ -2968,65 +2818,91 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
 
     methods
-        function [acquisitionKeystoneTask, stimulationKeystoneTask] = determineKeystoneTasks(self)
-            % The acq and stim subsystems each have a "keystone" task,
-            % which is one of "ai", "di", "ao", and "do".  In some cases,
-            % the keystone task for the acq subsystem is the same as that
-            % for the stim subsystem.  All the tasks in the subsystem that
-            % are not the keystone task have their start trigger set to
-            % <keystone task>/StartTrigger.  If a task is a keystone task,
-            % it is started after all non-keystone tasks are started.
+        function [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
+                determineKeystoneTasks(self)
+            % The acq and stim subsystems each have a "keystone" task.  This task is
+            % identified by its type (one of "ai", "di", "ao", and "do") and its device
+            % name (the name of one of the devices in use).  In some cases, the
+            % keystone task for the acq subsystem is the same as that for the stim
+            % subsystem.  All the tasks in the subsystem that are not the keystone task
+            % have their start trigger set to <keystone task name>/<keystone task
+            % type>/StartTrigger.  If a task is a keystone task, it is started after
+            % all non-keystone tasks are started.
             %
-            % If you're not careful about this stuff, the acquisition tasks
-            % can end up getting triggered (e.g. by an external trigger)
-            % before the stimulation tasks have been started, even though
-            % the user has configured both acq and stim subsystems to use
-            % the same trigger.  This business with the keystone tasks is
-            % designed to eliminate this in the common case of acq and stim
-            % subsystems using the same trigger, and ameliorate it in cases
-            % where the acq and stim subsystems use different triggers.
+            % If you're not careful about this stuff, the acquisition tasks can end up
+            % getting triggered (e.g. by an external trigger) before the stimulation
+            % tasks have been started, even though the user has configured both acq and
+            % stim subsystems to use the same trigger.  This business with the keystone
+            % tasks is designed to eliminate this in the common case of acq and stim
+            % subsystems using the same trigger, and ameliorate it in cases where the
+            % acq and stim subsystems use different triggers.
             
             % First figure out the acq keystone task
-            nAIChannels = self.Acquisition_.NActiveAnalogChannels ;
-            if nAIChannels==0 ,                    
-                % There are no active AI channels, so the DI task will
-                % be the keystone.  (If there are zero active DI
-                % channels, WS won't let you start a run, so there
-                % should be no issues on that account.)
-                acquisitionKeystoneTask = 'di' ;
+            isAIChannelActive = self.IsAIChannelActive ;
+            deviceNamePerActiveChannel = self.AIChannelDeviceNames(isAIChannelActive) ;
+            terminalIDPerActiveChannel = self.AIChannelTerminalIDs(isAIChannelActive) ;                
+            % ws.collectTerminalsByDevice only returns device names that appear in deviceNamePerActiveChannel
+            deviceNamePerActiveAIDevice = ...
+                ws.collectTerminalsByDevice(deviceNamePerActiveChannel, terminalIDPerActiveChannel, self.PrimaryDeviceName) ;
+            if isempty(deviceNamePerActiveAIDevice) ,
+                nDIChannels = self.Acquisition_.NActiveDigitalChannels ;            
+                if nDIChannels==0 ,
+                    % If get here, no active AI channels, no active DI channels. WS will throw
+                    % an error at run start in this case, so doesn't really matter what we
+                    % return.
+                    acquisitionKeystoneTaskType = '' ;
+                    acquisitionKeystoneTaskDeviceName = '' ;
+                else
+                    acquisitionKeystoneTaskType = 'di' ;
+                    acquisitionKeystoneTaskDeviceName = self.PrimaryDeviceName ;
+                end
             else
-                % There's at least one active AI channel so the AI task
-                % is the acq keystone.
-                acquisitionKeystoneTask = 'ai' ;
-            end                
+                % There's at least one active AI channel
+                acquisitionKeystoneTaskType = 'ai' ;
+                acquisitionKeystoneTaskDeviceName = deviceNamePerActiveAIDevice{1} ;  
+                  % this will be the primary device, if there are any active AI channels on it
+            end
             
             % Now figure out the stim keystone task
             if self.AcquisitionTriggerIndex==self.StimulationTriggerIndex ,
                 % Acq and stim subsystems are using the same trigger, so
-                % acq and stim subsystems will have the same keystone task.
-                stimulationKeystoneTask = acquisitionKeystoneTask ;
+                % acq and stim subsystems will have the same keystone task+device.
+                stimulationKeystoneTaskType = acquisitionKeystoneTaskType ;
+                stimulationKeystoneTaskDeviceName = acquisitionKeystoneTaskDeviceName ;
             else
                 % Acq and stim subsystems are using different triggers, so
-                % acq and stim subsystems will have distinct keystone tasks.
+                % acq and stim subsystems will have distinct keystone task+device.
                 
                 % So now we have to determine the stim keystone tasks.                
-                nAOChannels = self.Stimulation_.NAnalogChannels ;
-                if nAOChannels==0 ,
-                    % There are no AO channels, so the DO task will
-                    % be the keystone.  (If there are zero active DO
-                    % channels, there won't be any output DAQmx tasks, so
-                    % this shouldn't be a problem.)
-                    stimulationKeystoneTask = 'do' ;
+                deviceNamePerChannel = self.AOChannelDeviceNames ;
+                terminalIDPerChannel = self.AOChannelTerminalIDs ;
+                % ws.collectTerminalsByDevice only returns device names that appear in deviceNamePerActiveChannel
+                deviceNamePerAODevice = ...
+                    ws.collectTerminalsByDevice(deviceNamePerChannel, terminalIDPerChannel, self.PrimaryDeviceName) ;
+                if isempty(deviceNamePerAODevice) ,
+                    nDOChannels = self.Stimulation_.NTimedDigitalChannels ;  
+                    if nDOChannels == 0 ,
+                        % No AO channel, no timed DO channels.
+                        % In this case, no timed output tasks will be created, so having these
+                        % empty shouldn't be a problem.
+                        stimulationKeystoneTaskType = '' ;
+                        stimulationKeystoneTaskDeviceName = '' ;
+                    else
+                        stimulationKeystoneTaskType = 'do' ;
+                        stimulationKeystoneTaskDeviceName = self.PrimaryDeviceName ;
+                    end
                 else
-                    % There's at least one AO channel so the AO task
-                    % is the stim keystone.
-                    stimulationKeystoneTask = 'ao' ;
-                end                                
+                    stimulationKeystoneTaskType = 'ao' ;
+                    stimulationKeystoneTaskDeviceName = deviceNamePerAODevice{1} ;
+                      % this will be the primary device, if there are any active AO channels on it
+                end
             end
             
-            %fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
-            %fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTask) ;
-            %fprintf('  stimulationKeystoneTask: %s\n\n', stimulationKeystoneTask) ;            
+%             fprintf('In WavesurferModel:determineKeystoneTasks():\n') ;
+%             fprintf('  acquisitionKeystoneTask: %s\n', acquisitionKeystoneTaskType) ;
+%             fprintf('  acquisitionKeystoneDevice: %s\n', acquisitionKeystoneTaskDeviceName) ;
+%             fprintf('  stimulationKeystoneTask: %s\n', stimulationKeystoneTaskType) ;            
+%             fprintf('  stimulationKeystoneDevice: %s\n', stimulationKeystoneTaskDeviceName) ;            
         end
         
         function propNames = listPropertiesForCheckingIndependence(self)
@@ -3081,10 +2957,29 @@ classdef WavesurferModel < ws.Model
             % what probes the device to get number of counters, PFI lines,
             % etc, and we need that info to be right before we call the
             % methods below.
-            self.didSetDeviceName_(self.DeviceName_, self.NCounters_, self.NPFITerminals_) ;  % Old protocol files don't store the 
-                                        % device name in subobjects, so we call 
-                                        % this to set the DeviceName
-                                        % throughout to the one set in self
+            primaryDeviceName = self.PrimaryDeviceName_ ;
+            isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+            self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            deviceIndex = self.getDeviceIndexFromName(primaryDeviceName) ;
+            if isempty(deviceIndex) ,
+                % this means the device name does not specify a currently-valid device name
+                nCounters = 0 ;
+                nPFITerminals = 0 ;
+                %nAITerminals = 0 ;
+                %nAOTerminals = 0 ;                                    
+                %nDIOTerminals = 0 ;
+            else
+                nCounters = self.NCountersPerDevice_(deviceIndex) ;                
+                nPFITerminals = self.NPFITerminalsPerDevice_(deviceIndex) ;                
+                %nAITerminals = self.NAITerminalsPerDevice_(deviceIndex) ;
+                %nAOTerminals = self.NAOTerminalsPerDevice_(deviceIndex) ;          
+                %nDIOTerminals = self.NDIOTerminalsPerDevice_(deviceIndex) ;
+            end
+            self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(primaryDeviceName, nCounters, nPFITerminals) ;  
+                % Old protocol files don't store the 
+                % device name in subobjects, so we call
+                % this to set the PrimaryDeviceName
+                % throughout to the one set in self
             self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_) ;  % Ditto
             self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;  % Ditto
 
@@ -3097,10 +2992,10 @@ classdef WavesurferModel < ws.Model
             %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
-                self.IPCPublisher_.send('didSetDeviceInFrontend', ...
-                                        self.DeviceName, ...
-                                        self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
-                                        isTerminalOvercommittedForEachDOChannel) ;                
+                self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
+                                        primaryDeviceName, ...
+                                        isPrimaryDeviceAPXIDevice, ...
+                                        isTerminalOvercommittedForEachDOChannel) ;
                 %wavesurferModelSettings = self.encodeForPersistence() ;
                 looperProtocol = self.getLooperProtocol_() ;
                 self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
@@ -3126,57 +3021,6 @@ classdef WavesurferModel < ws.Model
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
             self.FastProtocols_ = ws.Coding.copyCellArrayOfHandles(source) ;
-        end  % function
-        
-        function setDeviceName_(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if ws.isString(newValue) && ~isempty(newValue) ,
-                    allDeviceNames = self.AllDeviceNames ;
-                    isAMatch = strcmpi(newValue,allDeviceNames) ;
-                    if any(isAMatch) ,
-                        iMatch = find(isAMatch,1) ;
-                        deviceName = allDeviceNames{iMatch} ;
-                        self.DeviceName_ = deviceName ;
-                        
-                        % Probe the device to find out its capabilities
-                        self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                        self.syncAvailableSampleClockTimebaseSourcesFromDeviceName_() ;
-                        %self.syncSampleClockTimebaseRateFromDeviceNameAndAvailableSampleClockTimebaseSourcesEtc_() ;
-                        
-                        % Recalculate which digital terminals are now
-                        % overcommitted, since that also updates which are
-                        % out-of-range for the device
-                        self.syncIsAIChannelTerminalOvercommitted_() ;
-                        self.syncIsAOChannelTerminalOvercommitted_() ;
-                        self.syncIsDigitalChannelTerminalOvercommitted_() ;
-                        
-                        % Tell the subsystems that we've changed the device
-                        % name
-                        self.didSetDeviceName_(deviceName,  self.NCounters_, self.NPFITerminals_) ;
-                        
-                        % Change our state to reflect the presence of the
-                        % device
-                        self.setState_('idle') ;
-
-                        % Notify the satellites
-                        if self.IsITheOneTrueWavesurferModel_ ,
-                            self.IPCPublisher_.send('didSetDeviceInFrontend', ...
-                                                    deviceName, ...
-                                                    self.NDIOTerminals, self.NPFITerminals, self.NCounters, self.NAITerminals, self.NAOTerminals, ...
-                                                    self.IsDOChannelTerminalOvercommitted) ;
-                        end                        
-                    else
-                        self.broadcast('Update');
-                        error('ws:invalidPropertyValue', ...
-                              'DeviceName must be the name of an NI DAQmx device');       
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'DeviceName must be a nonempty string');       
-                end
-            end
-            self.broadcast('Update');
         end  % function        
     end  % protected methods block
     
@@ -3564,9 +3408,12 @@ classdef WavesurferModel < ws.Model
     methods (Access=protected)
         function looperProtocol = getLooperProtocol_(self)
             looperProtocol = struct() ;
+
+            looperProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
+            looperProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
             
-            looperProtocol.SampleClockTimebaseSource = self.SampleClockTimebaseSource ;
-            looperProtocol.SampleClockTimebaseRate = self.SampleClockTimebaseRate ;
+%             looperProtocol.ReferenceClockSource = self.ReferenceClockSource ;
+%             looperProtocol.ReferenceClockRate = self.ReferenceClockRate ;
             
             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
             looperProtocol.SweepDuration = self.SweepDuration ;
@@ -3575,45 +3422,53 @@ classdef WavesurferModel < ws.Model
             looperProtocol.AIChannelNames = self.AIChannelNames ;
             looperProtocol.AIChannelScales = self.AIChannelScales ;
             looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
-            looperProtocol.AITerminalIDs = self.Acquisition_.AnalogTerminalIDs ;
+            looperProtocol.AIChannelDeviceNames = self.AIChannelDeviceNames ;
+            looperProtocol.AIChannelTerminalIDs = self.AIChannelTerminalIDs ;
             
             looperProtocol.DIChannelNames = self.DIChannelNames ;
             looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-            looperProtocol.DITerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
+            %looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
+            looperProtocol.DIChannelTerminalIDs = self.DIChannelTerminalIDs ;
             
             looperProtocol.DOChannelNames = self.DOChannelNames ;
-            looperProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
+            %looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            looperProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
             looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
             
             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
             
+            looperProtocol.AcquisitionTriggerDeviceName = self.Triggering_.getAcquisitionTriggerProperty('DeviceName') ;
             looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.getAcquisitionTriggerProperty('PFIID') ;
             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.getAcquisitionTriggerProperty('Edge') ;
             
             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             looperProtocol.TheUserObject = self.TheUserObject ;
-            
-            %s = whos('looperProtocol') ;
-            %looperProtocolSizeInBytes = s.bytes
         end  % method
         
         function refillerProtocol = getRefillerProtocol_(self)
             refillerProtocol = struct() ;
-            refillerProtocol.DeviceName = self.DeviceName ;
-            refillerProtocol.SampleClockTimebaseSource = self.SampleClockTimebaseSource ;
-            refillerProtocol.SampleClockTimebaseRate = self.SampleClockTimebaseRate ;
+            
+            refillerProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
+            refillerProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            
+%             %refillerProtocol.DeviceName = self.DeviceName ;
+%             refillerProtocol.ReferenceClockSource = self.ReferenceClockSource ;
+%             refillerProtocol.ReferenceClockRate = self.ReferenceClockRate ;
+
             refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
             refillerProtocol.SweepDuration = self.SweepDuration ;
             refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
 
             refillerProtocol.AOChannelNames = self.Stimulation_.AnalogChannelNames ;
             refillerProtocol.AOChannelScales = self.AOChannelScales ;
-            refillerProtocol.AOTerminalIDs = self.Stimulation_.AnalogTerminalIDs ;
+            refillerProtocol.AOChannelDeviceNames = self.AOChannelDeviceNames ;
+            refillerProtocol.AOChannelTerminalIDs = self.AOChannelTerminalIDs ;
             
             refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
             refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            refillerProtocol.DOTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;
+            %refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
+            refillerProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
             
             refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
             refillerProtocol.StimulationTrigger = self.Triggering_.getStimulationTriggerCopy() ;            
@@ -3627,9 +3482,6 @@ classdef WavesurferModel < ws.Model
             
             refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
             refillerProtocol.TheUserObject = self.TheUserObject ;
-            
-            %s = whos('refillerProtocol') ;
-            %refillerProtocolSizeInBytes = s.bytes
         end  % method        
     end  % protected methods block
     
@@ -3638,108 +3490,182 @@ classdef WavesurferModel < ws.Model
             value = self.AllDeviceNames_ ;
         end  % function
 
-        function value = get.DeviceName(self)
-            value = self.DeviceName_ ;
+        function value = get.PrimaryDeviceName(self)
+            value = self.PrimaryDeviceName_ ;
         end  % function
 
-        function value = get.AvailableSampleClockTimebaseSources(self)
-            value = self.AvailableSampleClockTimebaseSources_ ;
+        function value = get.IsPrimaryDeviceAPXIDevice(self)
+            value = self.IsPrimaryDeviceAPXIDevice_ ;
         end  % function
+        
+%         function value = get.AvailableReferenceClockSources(self)
+%             value = self.AvailableReferenceClockSources_ ;
+%         end  % function
+% 
+%         function value = get.ReferenceClockSource(self)
+%             value = self.ReferenceClockSource_ ;
+%         end  % function
 
-        function value = get.SampleClockTimebaseSource(self)
-            value = self.SampleClockTimebaseSource_ ;
-        end  % function
-
-%         function value = get.OnboardClockSampleClockTimebaseRate(self)
-%             value = self.OnboardClockSampleClockTimebaseRate_ ;
+%         function value = get.OnboardClockReferenceClockRate(self)
+%             value = self.OnboardClockReferenceClockRate_ ;
 %         end  % function
         
-        function value = get.SampleClockTimebaseRate(self)
-            clockSource = self.SampleClockTimebaseSource_ ;
-            if isequal(clockSource, '100MHzTimebase') ,
-                value = 100e6 ;  % Hz
-            elseif isequal(clockSource, 'PXI_CLK10') ,
-                value = 10e6 ;  % Hz, the 10 means 10 MHz
-            else
-                % don't think should ever get here right now
-                error('Internal error 948509345876905') ;
-            end            
-        end  % function
+%         function value = get.ReferenceClockRate(self)
+%             clockSource = self.ReferenceClockSource_ ;
+%             if isequal(clockSource, '100MHzTimebase') ,
+%                 value = 100e6 ;  % Hz
+%             elseif isequal(clockSource, 'PXI_CLK10') ,
+%                 value = 10e6 ;  % Hz, the 10 means 10 MHz
+%             else
+%                 % don't think should ever get here right now
+%                 error('Internal error 948509345876905') ;
+%             end            
+%         end  % function
 
-        function set.DeviceName(self, newValue)
-            self.setDeviceName_(newValue) ;
+        function set.PrimaryDeviceName(self, newValue)
+            if ws.isString(newValue) && ~isempty(newValue) ,
+                allDeviceNames = self.AllDeviceNames ;
+                isAMatch = strcmpi(newValue,allDeviceNames) ;  % DAQmx device names are not case-sensitive
+                if any(isAMatch) ,
+                    iMatch = find(isAMatch,1) ;
+                    primaryDeviceName = allDeviceNames{iMatch} ;
+                    self.PrimaryDeviceName_ = primaryDeviceName ;
+                    isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+
+                    % Probe the device to find out its capabilities
+                    %self.syncDeviceResourceCountsFromDeviceName_() ;                        
+                    %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
+                    %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
+
+                    % Tell the subsystems that we've changed the device
+                    % name
+                    nCounters = self.NCountersPerDevice_(iMatch) ;
+                    nPFITerminals = self.NPFITerminalsPerDevice_(iMatch) ;
+                    self.informSubsystemsThatWeAreSettingPrimaryDeviceName_(primaryDeviceName, nCounters, nPFITerminals) ;
+
+                    % Recalculate which digital terminals are now
+                    % overcommitted, since that also updates which are
+                    % out-of-range for the device
+                    self.syncIsAIChannelTerminalOvercommitted_() ;
+                    self.syncIsAOChannelTerminalOvercommitted_() ;
+                    self.syncIsDIOChannelTerminalOvercommitted_() ;
+                    
+                    % Change our state to reflect the presence of the
+                    % device
+                    self.setState_('idle') ;
+
+                    % Notify the satellites
+                    %nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
+                    %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
+                    %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
+                    if self.IsITheOneTrueWavesurferModel_ ,
+                        self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
+                                                primaryDeviceName, ...
+                                                isPrimaryDeviceAPXIDevice, ...
+                                                self.IsDOChannelTerminalOvercommitted) ;
+                    end                        
+                else
+                    self.broadcast('Update') ;
+                    self.broadcast('UpdateTriggering') ;
+                    error('ws:invalidPropertyValue', ...
+                          'PrimaryDeviceName must be the name of an NI DAQmx device');       
+                end                        
+            else
+                self.broadcast('Update') ;
+                self.broadcast('UpdateTriggering') ;
+                error('ws:invalidPropertyValue', ...
+                      'PrimaryDeviceName must be a nonempty string');       
+            end
+            self.broadcast('Update') ;
+            self.broadcast('UpdateTriggering') ;
         end  % function
     end  % public methods block
     
     methods
         function probeHardwareAndSetAllDeviceNames(self)
             self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
+            self.syncDeviceResourceCountsFromDeviceNames_() ;
         end
         
-        function result = get.NAITerminals(self)
+        function result = get.NAITerminalsPerDevice(self)
             % The number of AI channels available, if you used them all in
             % differential mode, which is what we do.
-            result = self.NAITerminals_ ;
+            result = self.NAITerminalsPerDevice_ ;
         end
         
-        function result = get.AITerminalIDsOnDevice(self)
+        function result = get.AITerminalIDsOnEachDevice(self)
             % A list of the available AI terminal IDs on the current
             % device, if you used all AIs in differential mode, which is
             % what we do.
-            result = self.AITerminalIDsOnDevice_ ;
+            result = self.AITerminalIDsOnEachDevice_ ;
         end
         
-        function result = get.NAOTerminals(self)
+        function result = get.NAOTerminalsPerDevice(self)
             % The number of AO channels available.
-            result = self.NAOTerminals_ ;
+            result = self.NAOTerminalsPerDevice_ ;
         end
 
-        function numberOfDIOChannels = get.NDIOTerminals(self)
+        function result = get.NDIOTerminalsPerDevice(self)
             % The number of DIO channels available.  We only count the DIO
             % channels capable of timed operation, i.e. the P0.x channels.
             % This is a conscious design choice.  We treat the PFIn/Pm.x
             % channels as being only PFIn channels.
-            numberOfDIOChannels = self.NDIOTerminals_ ;
+            result = self.NDIOTerminalsPerDevice_ ;
         end  % function
         
-        function numberOfPFILines = get.NPFITerminals(self)
-            numberOfPFILines = self.NPFITerminals_ ;
+        function result = get.NPFITerminalsPerDevice(self)
+            result = self.NPFITerminalsPerDevice_ ;
         end  % function
         
-        function result = get.NCounters(self)
+        function result = get.NCountersPerDevice(self)
             % The number of counters (CTRs) on the board.
-            result = self.NCounters_ ;
+            result = self.NCountersPerDevice_ ;
         end  % function        
         
-        function result = getAllAITerminalNames(self)             
-            nAIsInHardware = self.NAITerminals ;  % this is the number of terminals if all are differential, which they are
-            %allAITerminalIDs  = 0:(nAIsInHardware-1) ;  % wrong!
-            allAITerminalIDs = ws.differentialAITerminalIDsGivenCount(nAIsInHardware) ;
+        function result = getAllAITerminalNames(self, deviceName)             
+            deviceIndex = self.getDeviceIndexFromName(deviceName) ;
+            if isempty(deviceIndex) ,
+                allAITerminalIDs = zeros(1,0) ;
+            else
+                nAIsInHardware = self.NAITerminalsPerDevice(deviceIndex) ;  % this is the number of terminals if all are differential, which they are
+                allAITerminalIDs = ws.differentialAITerminalIDsGivenCount(nAIsInHardware) ;
+            end
             result = arrayfun(@(id)(sprintf('AI%d',id)), allAITerminalIDs, 'UniformOutput', false ) ;
         end        
         
-        function result = getAllAOTerminalNames(self)             
-            nAOsInHardware = self.NAOTerminals ;
+        function result = getAllAOTerminalNames(self, deviceName)             
+            deviceIndex = self.getDeviceIndexFromName(deviceName) ;
+            if isempty(deviceIndex) ,
+                nAOsInHardware = 0 ;
+            else
+                nAOsInHardware = self.NAOTerminalsPerDevice(deviceIndex) ;
+            end
             result = arrayfun(@(id)(sprintf('AO%d',id)), 0:(nAOsInHardware-1), 'UniformOutput', false ) ;
-        end        
+        end
         
-        function result = getAllDigitalTerminalNames(self)             
-            nChannelsInHardware = self.NDIOTerminals ;
+        function result = getAllDIOTerminalNames(self, deviceName)             
+            deviceIndex = self.getDeviceIndexFromName(deviceName) ;
+            if isempty(deviceIndex) ,
+                nChannelsInHardware = 0 ;
+            else
+                nChannelsInHardware = self.NDIOTerminalsPerDevice(deviceIndex) ;
+            end
             result = arrayfun(@(id)(sprintf('P0.%d',id)), 0:(nChannelsInHardware-1), 'UniformOutput', false ) ;
         end        
         
-        function result = get.NDigitalChannels(self)
-            nDIs = self.Acquisition_.NDigitalChannels ;
-            nDOs = self.Stimulation_.NDigitalChannels ;
-            result =  nDIs + nDOs ;
-        end
+%         function result = get.NDigitalChannels(self)
+%             nDIs = self.Acquisition_.NDigitalChannels ;
+%             nDOs = self.Stimulation_.NDigitalChannels ;
+%             result =  nDIs + nDOs ;
+%         end
         
         function result = get.AllChannelNames(self)
             aiNames = self.Acquisition_.AnalogChannelNames ;
             diNames = self.Acquisition_.DigitalChannelNames ;
             aoNames = self.Stimulation_.AnalogChannelNames ;
             doNames = self.Stimulation_.DigitalChannelNames ;
-            result = [aiNames diNames aoNames doNames] ;
+            result = [ aiNames diNames aoNames doNames ] ;
         end
 
         function result = get.AIChannelNames(self)
@@ -3781,37 +3707,90 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods (Access=protected)
-        function syncDeviceResourceCountsFromDeviceName_(self)
-            % Probe the device to find out its capabilities
-            deviceName = self.DeviceName ;
-            [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-            nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
-            nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-            nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-            %onboardClockSampleClockTimebaseRate = ws.getOnboardClockSampleClockTimebaseRateFromDevice(deviceName) ;
-            self.NDIOTerminals_ = nDIOTerminals ;
-            self.NPFITerminals_ = nPFITerminals ;
-            self.NCounters_ = nCounters ;
-            self.NAITerminals_ = nAITerminals ;
-            self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-            self.NAOTerminals_ = nAOTerminals ;
-            %self.OnboardClockSampleClockTimebaseRate_ = onboardClockSampleClockTimebaseRate ;
-        end
+%         function syncDeviceResourceCountsFromDeviceName_(self)
+% %             % Probe the devices to find out their capabilities
+% %             deviceName = self.DeviceName ;
+% % %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+% % %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
+% % %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
+% % %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
+% %             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
+% % %             self.NDIOTerminals_ = nDIOTerminals ;
+% % %             self.NPFITerminals_ = nPFITerminals ;
+% % %             self.NCounters_ = nCounters ;
+% % %             self.NAITerminals_ = nAITerminals ;
+% % %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+% % %             self.NAOTerminals_ = nAOTerminals ;
+% %             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
+%         end  % function
 
-        function syncAvailableSampleClockTimebaseSourcesFromDeviceName_(self)
-            deviceName = self.DeviceName ;
-            availableSampleClockTimebaseSources = ws.getAvailableSampleClockTimebaseSourcesFromDevice(deviceName) ;
-            self.AvailableSampleClockTimebaseSources_ = availableSampleClockTimebaseSources ;
-        end       
+        function syncDeviceResourceCountsFromDeviceNames_(self)
+            % Probe the devices to find out their capabilities
+            allDeviceNames = self.AllDeviceNames ;
+            nDevices = length(allDeviceNames) ;
+            nDIOTerminalsPerDevice = zeros(1, nDevices) ;
+            nPFITerminalsPerDevice = zeros(1, nDevices) ;
+            nCountersPerDevice = zeros(1, nDevices) ;
+            nAITerminalsPerDevice = zeros(1, nDevices) ;
+            nAOTerminalsPerDevice = zeros(1, nDevices) ;
+            aiTerminalIDsOnEachDevice = cell(1, nDevices) ;
+            for i = 1:nDevices ,            
+                deviceName = allDeviceNames{i} ;
+                [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
+                nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
+                nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
+                aiTerminalsOnDevice = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+                nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
+                % Put in arrays
+                nDIOTerminalsPerDevice(i) = nDIOTerminals ;                
+                nPFITerminalsPerDevice(i) = nPFITerminals ;
+                nCountersPerDevice(i) = nCounters ;
+                nAITerminalsPerDevice(i) = nAITerminals ;
+                nAOTerminalsPerDevice(i) = nAOTerminals ;                
+                aiTerminalIDsOnEachDevice{i} = aiTerminalsOnDevice ;
+            end
+            self.NDIOTerminalsPerDevice_ = nDIOTerminalsPerDevice ;
+            self.NPFITerminalsPerDevice_ = nPFITerminalsPerDevice ;
+            self.NCountersPerDevice_ = nCountersPerDevice ;
+            self.NAITerminalsPerDevice_ = nAITerminalsPerDevice ;
+            self.NAOTerminalsPerDevice_ = nAOTerminalsPerDevice ;
+            self.AITerminalIDsOnEachDevice_ = aiTerminalIDsOnEachDevice ;
+        end  % function     
         
-        function syncIsDigitalChannelTerminalOvercommitted_(self)
-            [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
-            nDIOTerminals = self.NDIOTerminals ;
-            terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
-            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-            self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
-            self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
-        end  % function
+%         function syncAvailableReferenceClockSourcesFromDeviceName_(self)
+%             deviceName = self.DeviceName ;
+%             availableReferenceClockSources = ws.getAvailableReferenceClockSourcesFromDevice(deviceName) ;
+%             self.AvailableReferenceClockSources_ = availableReferenceClockSources ;
+%         end
+        
+%         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
+%             deviceName = self.DeviceName ;
+%             availableTimebaseSources = self.AvailableTimebaseSources ;
+%             timebaseSource = self.TimebaseSource ;
+%             if ismember(timebaseSource, availableTimebaseSources) ,
+%                 rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
+%             else
+%                 % Likely a bad timebaseSource for the given deviceName, so we
+%                 % guess about the clock rate
+%                 if isequal(timebaseSource, 'OnboardClock') ,
+%                     rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
+%                 elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
+%                     rate = 10e6;  % Hz, PXI backplace rate
+%                 else
+%                     rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
+%                 end
+%             end
+%             self.TimebaseRate_ = rate ;
+%         end
+        
+%         function syncIsDIOChannelTerminalOvercommitted_(self)
+%             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
+%             nDIOTerminals = self.NDIOTerminals ;
+%             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
+%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+%             self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
+%             self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
+%         end  % function
 
         function syncIsAIChannelTerminalOvercommitted_(self)            
             % For each channel, determines if the terminal ID for that
@@ -3823,12 +3802,17 @@ classdef WavesurferModel < ws.Model
             % available.)
             
             % For AI terminals
-            aiTerminalIDForEachChannel = self.Acquisition_.AnalogTerminalIDs ;
-            nOccurancesOfAITerminal = ws.nOccurancesOfID(aiTerminalIDForEachChannel) ;
-            aiTerminalIDsOnDevice = self.AITerminalIDsOnDevice ;
-            %nAITerminalsOnDevice = self.NAITerminals ;            
-            %self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | (aiTerminalIDForEachChannel>=nAITerminalsOnDevice) ;            
-            self.IsAIChannelTerminalOvercommitted_ = (nOccurancesOfAITerminal>1) | ~ismember(aiTerminalIDForEachChannel,aiTerminalIDsOnDevice) ;
+            deviceNameForEachAIChannel = self.AIChannelDeviceNames ;
+            aiTerminalIDForEachAIChannel = self.Acquisition_.AnalogTerminalIDs ;
+            allDeviceNames = self.AllDeviceNames ;
+            aiTerminalIDsOnEachDevice = self.AITerminalIDsOnEachDevice ;
+                       
+            nOccurencesOfDeviceAndTerminal = ws.nOccurencesOfDeviceNameAndID(deviceNameForEachAIChannel, aiTerminalIDForEachAIChannel) ;            
+            isDeviceNameAITerminalIDPairValid = ...
+                ws.isDeviceNameTerminalIDPairValid(deviceNameForEachAIChannel, aiTerminalIDForEachAIChannel, allDeviceNames, aiTerminalIDsOnEachDevice) ;
+            
+            self.IsAIChannelTerminalOvercommitted_ = ...
+                (nOccurencesOfDeviceAndTerminal>1) | ~isDeviceNameAITerminalIDPairValid ;
         end
         
         function syncIsAOChannelTerminalOvercommitted_(self)            
@@ -3840,39 +3824,65 @@ classdef WavesurferModel < ws.Model
             % overcommitted.
             
             % For AO terminals
-            aoTerminalIDs = self.Stimulation_.AnalogTerminalIDs ;
-            nOccurancesOfAOTerminal = ws.nOccurancesOfID(aoTerminalIDs) ;
-            nAOTerminals = self.NAOTerminals ;
-            self.IsAOChannelTerminalOvercommitted_ = (nOccurancesOfAOTerminal>1) | (aoTerminalIDs>=nAOTerminals) ;            
+            deviceNameForEachAOChannel = self.AOChannelDeviceNames ;
+            aoTerminalIDForEachAOChannel = self.Stimulation_.AnalogTerminalIDs ;
+            allDeviceNames = self.AllDeviceNames ;
+            nAOTerminalsPerDevice = self.NAOTerminalsPerDevice ;
+            
+            nOccurencesOfDeviceAndTerminal = ws.nOccurencesOfDeviceNameAndID(deviceNameForEachAOChannel, aoTerminalIDForEachAOChannel) ;            
+            isDeviceNameAOTerminalIDPairValid = ...
+                ws.isDeviceNameTerminalIDPairValid(deviceNameForEachAOChannel, aoTerminalIDForEachAOChannel, allDeviceNames, nAOTerminalsPerDevice) ;            
+            
+            self.IsAOChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminal>1) | ~isDeviceNameAOTerminalIDPairValid ;            
         end
         
+        function syncIsDIOChannelTerminalOvercommitted_(self)
+            [nOccurencesOfDeviceAndTerminalForEachDIChannel,nOccurencesOfDeviceAndTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
+            deviceNameForEachDIChannel = self.DIChannelDeviceNames ;
+            terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
+            deviceNameForEachDOChannel = self.DOChannelDeviceNames ;
+            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+            deviceNameForEachDIOChannel = horzcat(deviceNameForEachDIChannel, deviceNameForEachDOChannel) ;
+            terminalIDForEachDIOChannel = horzcat(terminalIDForEachDIChannel, terminalIDForEachDOChannel) ;
+            allDeviceNames = self.AllDeviceNames ;
+            nDIOTerminalsPerDevice = self.NDIOTerminalsPerDevice ;
+            
+            isDeviceNameTerminalIDPairValidForEachDIOChannel = ...
+                ws.isDeviceNameTerminalIDPairValid(deviceNameForEachDIOChannel, terminalIDForEachDIOChannel, allDeviceNames, nDIOTerminalsPerDevice) ;            
+            
+            nDIChannels = length(terminalIDForEachDIChannel) ;
+            isDeviceNameTerminalIDPairValidForEachDIChannel = isDeviceNameTerminalIDPairValidForEachDIOChannel(1:nDIChannels) ;
+            isDeviceNameTerminalIDPairValidForEachDOChannel = isDeviceNameTerminalIDPairValidForEachDIOChannel(nDIChannels+1:end) ;
+            
+            self.IsDIChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDIChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDIChannel ;
+            self.IsDOChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDOChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDOChannel ;
+        end  % function
+
     end  % protected methods block
     
     methods
-        function [nOccurancesOfAcquisitionTerminal, nOccurancesOfStimulationTerminal] = computeDIOTerminalCommitments(self) 
+        function [nOccurencesOfDeviceAndTerminalForEachDIChannel, nOccurencesOfDeviceAndTerminalForEachDOChannel] = computeDIOTerminalCommitments(self) 
             % Determine how many channels are "claiming" the terminal ID of
             % each digital channel.  On return,
-            % nOccurancesOfAcquisitionTerminal is 1 x (the number of DI
+            % nOccurencesOfAcquisitionTerminal is 1 x (the number of DI
             % channels) and is the number of channels that currently have
-            % their terminal ID to the same terminal ID as that channel.
-            % nOccurancesOfStimulationTerminal is similar, but for DO
+            % their terminal ID set to the same terminal ID as that channel.
+            % nOccurencesOfStimulationTerminal is similar, but for DO
             % channels.
-            acquisitionTerminalIDs = self.Acquisition_.DigitalTerminalIDs ;
-            stimulationTerminalIDs = self.Stimulation_.DigitalTerminalIDs ;            
-            terminalIDs = horzcat(acquisitionTerminalIDs, stimulationTerminalIDs) ;
-            nOccurancesOfTerminal = ws.nOccurancesOfID(terminalIDs) ;
-            % nChannels = length(terminalIDs) ;
-            % terminalIDsInEachRow = repmat(terminalIDs,[nChannels 1]) ;
-            % terminalIDsInEachCol = terminalIDsInEachRow' ;
-            % isMatchMatrix = (terminalIDsInEachRow==terminalIDsInEachCol) ;
-            % nOccurancesOfTerminal = sum(isMatchMatrix,1) ;   % sum rows
+            deviceNameForEachDIChannel = self.DIChannelDeviceNames ;
+            terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
+            deviceNameForEachDOChannel = self.DOChannelDeviceNames ;
+            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+            deviceNameForEachDigitalChannel = horzcat(deviceNameForEachDIChannel, deviceNameForEachDOChannel) ;
+            terminalIDForEachDigitalChannel = horzcat(terminalIDForEachDIChannel, terminalIDForEachDOChannel) ;
+            nOccurencesOfDeviceAndTerminal = ws.nOccurencesOfDeviceNameAndID(deviceNameForEachDigitalChannel, terminalIDForEachDigitalChannel) ;
             % Sort them into the acq, stim ones
-            nAcquisitionChannels = length(acquisitionTerminalIDs) ;
-            nOccurancesOfAcquisitionTerminal = nOccurancesOfTerminal(1:nAcquisitionChannels) ;
-            nOccurancesOfStimulationTerminal = nOccurancesOfTerminal(nAcquisitionChannels+1:end) ;
-        end        
+            nDIChannels = length(terminalIDForEachDIChannel) ;
+            nOccurencesOfDeviceAndTerminalForEachDIChannel = nOccurencesOfDeviceAndTerminal(1:nDIChannels) ;
+            nOccurencesOfDeviceAndTerminalForEachDOChannel = nOccurencesOfDeviceAndTerminal(nDIChannels+1:end) ;
+        end
         
-        function [sampleFrequency, sampleClockTimebaseRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
+        function [sampleFrequency, referenceClockRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
             % Make sure desiredSampleFrequency is a scalar
             defaultSampleFrequency  = 20000 ;
             if isempty(desiredSampleFrequency) ,
@@ -3896,8 +3906,12 @@ classdef WavesurferModel < ws.Model
             end
             
             % Limit to the allowed range of sampling frequencies
-            sampleClockTimebaseRate = self.SampleClockTimebaseRate ;  % Hz
-            desiredTimebaseTicksPerSample = sampleClockTimebaseRate/sanitizedDesiredSampleFrequency ;  
+            primaryDeviceName = self.PrimaryDeviceName ;
+            isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
+                % the rate only depends on the primary device
+            %referenceClockRate = self.ReferenceClockRate ;  % Hz
+            desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
             integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
             maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
             minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
@@ -3914,7 +3928,7 @@ classdef WavesurferModel < ws.Model
               % do it, but it will generally fail to keep up once the sweep
               % starts, because for instance the default timebase for X series cards is
               % 100 MHz.
-            sampleFrequency = sampleClockTimebaseRate/actualTimebaseTicksPerSample ;            
+            sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
         end
         
         function result = get.IsProcessingIncomingCommand(self)
@@ -3938,11 +3952,11 @@ classdef WavesurferModel < ws.Model
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
-            self.syncDeviceResourceCountsFromDeviceName_() ;
-            self.syncAvailableSampleClockTimebaseSourcesFromDeviceName_() ;
+            %self.syncDeviceResourceCountsFromDeviceName_() ;
+            %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.syncIsAOChannelTerminalOvercommitted_() ;
-            self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            self.syncIsDIOChannelTerminalOvercommitted_() ;
             % Need something here for yoking...
             %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
             %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
@@ -3950,12 +3964,12 @@ classdef WavesurferModel < ws.Model
             self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method
         
-        function didSetDeviceName_(self, deviceName, nCounters, nPFITerminals)
-            self.Acquisition_.didSetDeviceName() ;
-            self.Stimulation_.didSetDeviceName() ;
-            self.Triggering_.didSetDeviceName(deviceName, nCounters, nPFITerminals) ;
-            %self.Display_.didSetDeviceName() ;
-            self.Ephys_.didSetDeviceName(deviceName) ;
+        function informSubsystemsThatWeAreSettingPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
+            %self.IsPrimaryDeviceAPXIDevice_ = ws.isDeviceAPXIDevice(primaryDeviceName) ;
+            self.Acquisition_.settingPrimaryDeviceName(primaryDeviceName) ;
+            self.Stimulation_.settingPrimaryDeviceName(primaryDeviceName) ;
+            self.Triggering_.settingPrimaryDeviceName(primaryDeviceName, nCounters, nPFITerminals) ;
+            %self.Ephys_.settingPrimaryDeviceName(primaryDeviceName) ;
         end  % method
         
         function didSetNSweepsPerRun_(self, nSweepsPerRun)
@@ -4014,7 +4028,7 @@ classdef WavesurferModel < ws.Model
         
         function addCounterTrigger(self)    
             try
-                self.Triggering_.addCounterTrigger(self.DeviceName) ;
+                self.Triggering_.addCounterTrigger(self.PrimaryDeviceName) ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4034,7 +4048,7 @@ classdef WavesurferModel < ws.Model
         
         function addExternalTrigger(self)    
             try
-                self.Triggering_.addExternalTrigger(self.DeviceName) ;
+                self.Triggering_.addExternalTrigger(self.PrimaryDeviceName) ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4544,7 +4558,8 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
-            self.didSetIsInputChannelActive() ;
+            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('UpdateChannels') ;
         end    
         
         function scaledAnalogData = getLatestAIData(self)
@@ -4582,18 +4597,19 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
-            self.didSetIsInputChannelActive() ;
+            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('UpdateChannels') ;
         end    
         
         function result = getLatestDIData(self)
             result = self.Acquisition_.getLatestRawDigitalData() ;
         end  % function
         
-        function result=aiChannelUnitsFromName(self,channelName)
+        function result = aiChannelUnitsFromName(self, channelName)
             if isempty(channelName) ,
                 result='';
             else
-                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName) ;
+                iChannel=self.Acquisition_.aiChannelIndexFromName(channelName) ;
                 if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
@@ -4602,11 +4618,11 @@ classdef WavesurferModel < ws.Model
             end
         end
         
-        function result=aiChannelScaleFromName(self,channelName)
+        function result = aiChannelScaleFromName(self, channelName)
             if isempty(channelName) ,
                 result='';
             else
-                iChannel=self.Acquisition_.iAnalogChannelFromName(channelName);
+                iChannel=self.Acquisition_.aiChannelIndexFromName(channelName);
                 if isempty(iChannel) || isnan(iChannel) ,
                     result='';
                 else
@@ -4673,11 +4689,6 @@ classdef WavesurferModel < ws.Model
         
         function out = get.AcquisitionSampleRate(self)
             out = self.Acquisition_.getSampleRate_() ;
-        end  % function
-        
-        function newChannelName = addAIChannel(self)
-            newChannelName = self.Acquisition_.addAnalogChannel_() ;            
-            self.didAddAnalogInputChannel() ;
         end  % function
         
         function out = get.ExpectedSweepScanCount(self)            
@@ -4798,14 +4809,15 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateChannels') ;
         end  % function
         
-        function setSingleAOTerminalID(self, i, newValue)
+        function setSingleAOChannelTerminalID(self, i, newValue)
             if 1<=i && i<=self.NAOChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
                 end
             end
-            self.didSetAnalogOutputTerminalID();
+            self.syncIsAOChannelTerminalOvercommitted_() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function set.IsDOChannelTimed(self, newValue)
@@ -4884,7 +4896,7 @@ classdef WavesurferModel < ws.Model
             if isempty(channelName) ,
                 result = '' ;
             else
-                iChannel=self.Stimulation_.indexOfAnalogChannelFromName(channelName);
+                iChannel=self.Stimulation_.aoChannelIndexFromName(channelName);
                 if isnan(iChannel) ,
                     result='';
                 else
@@ -4894,7 +4906,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function value = aoChannelScaleFromName(self, channelName)
-            channelIndex = self.Stimulation_.indexOfAnalogChannelFromName(channelName) ;
+            channelIndex = self.Stimulation_.aoChannelIndexFromName(channelName) ;
             if isnan(channelIndex) ,
                 value = nan ;
             else
@@ -4902,8 +4914,18 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
 
+        function result = isTestPulsingEnabled(self)
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            result = ...
+                (self.isIdle() || self.isTestPulsing()) && ...
+                ~isempty(electrodeIndex) && ...
+                self.areTestPulseElectrodeChannelsValid() && ...
+                ~self.areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices() ;            
+%                 self.areAllMonitorAndCommandChannelNamesDistinct() && ...
+        end
+        
         function startTestPulsing(self)
-            if self.IsTestPulsing ,
+            if self.isTestPulsing() ,
                 return
             end            
             
@@ -4918,40 +4940,46 @@ classdef WavesurferModel < ws.Model
                 end
 
                 % Check that we can start, and if not, return
-                electrodeIndex = self.TestPulseElectrodeIndex ;
-                canStart = ...
-                    ~isempty(electrodeIndex) && ...
-                    self.areAllElectrodesTestPulsable() && ...
-                    self.areAllMonitorAndCommandChannelNamesDistinct() && ...
-                    isequal(self.State, 'idle') ;
+                %electrodeIndex = self.TestPulseElectrodeIndex ;
+                canStart = self.isTestPulsingEnabled() ;
                 if ~canStart ,
                     return
                 end
 
                 % Free up resources we will need for test pulsing
-                self.testPulserIsAboutToStartTestPulsing();
+                self.releaseTimedHardwareResourcesOfAllProcesses_();
                 
                 % Get things we need for test-pulsing
                 fs = self.AcquisitionSampleRate ;
                 isVCPerTestPulseElectrode = self.getIsVCPerTestPulseElectrode() ;
                 isCCPerTestPulseElectrode = self.getIsCCPerTestPulseElectrode() ;            
+                commandDeviceNamePerTestPulseElectrode = self.getCommandDeviceNamePerTestPulseElectrode_() ;
+                monitorDeviceNamePerTestPulseElectrode = self.getMonitorDeviceNamePerTestPulseElectrode_() ;
                 commandTerminalIDPerTestPulseElectrode = self.getCommandTerminalIDPerTestPulseElectrode_() ;
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                deviceName =self.DeviceName ;
+                %deviceName =self.PrimaryDeviceName ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
+                % Make sure all the channels are on the same device
+                allDeviceNames = unique([commandDeviceNamePerTestPulseElectrode monitorDeviceNamePerTestPulseElectrode]) ;
+                if ~isscalar(allDeviceNames) ,
+                    error('ws:allTestPulseChannelsMustBeOnSameDevice', ...
+                          'All test pulse channels must be on the same device') ;
+                end
+                deviceName = allDeviceNames{1} ;
+                
                 % Call the main routine
-                self.Ephys_.prepForTestPulsing_(fs, ...
-                                                isVCPerTestPulseElectrode, ...
-                                                isCCPerTestPulseElectrode, ...
-                                                commandTerminalIDPerTestPulseElectrode, ...
-                                                monitorTerminalIDPerTestPulseElectrode, ...
-                                                commandChannelScalePerTestPulseElectrode, ...
-                                                monitorChannelScalePerTestPulseElectrode, ...                                                
-                                                deviceName, ...
-                                                gainOrResistanceUnitsPerTestPulseElectrode) ;
+                self.Ephys_.prepareForTestPulsing(fs, ...
+                                                  isVCPerTestPulseElectrode, ...
+                                                  isCCPerTestPulseElectrode, ...
+                                                  commandTerminalIDPerTestPulseElectrode, ...
+                                                  monitorTerminalIDPerTestPulseElectrode, ...
+                                                  commandChannelScalePerTestPulseElectrode, ...
+                                                  monitorChannelScalePerTestPulseElectrode, ...
+                                                  deviceName, ...
+                                                  gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -4962,7 +4990,7 @@ classdef WavesurferModel < ws.Model
                 self.changeReadiness_(+1);
 
                 % Actually start the test pulsing
-                self.Ephys_.startTestPulsing_() ;                
+                self.Ephys_.startTestPulsing() ;                
             catch exception
                 self.abortTestPulsing_() ;
                 self.changeReadiness_(+1) ;
@@ -4971,14 +4999,14 @@ classdef WavesurferModel < ws.Model
         end
 
         function stopTestPulsing(self)
-            if ~self.IsTestPulsing ,
+            if ~self.isTestPulsing() ,
                 %fprintf('About to exit stop() via short-circuit...\n');                            
                 return
             end
             
             try             
                 self.changeReadiness_(-1) ;  % Takes some time to stop
-                self.Ephys_.stopTestPulsing_() ;
+                self.Ephys_.stopTestPulsing() ;
                 self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
@@ -5000,7 +5028,7 @@ classdef WavesurferModel < ws.Model
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
             self.changeReadiness_(-1);
-            self.Ephys_.abortTestPulsing_() ;
+            self.Ephys_.abortTestPulsing() ;
             self.changeReadiness_(+1);
             if isequal(self.State,'test_pulsing') ,
                 self.setState_('idle') ;
@@ -5009,16 +5037,20 @@ classdef WavesurferModel < ws.Model
     end
 
     methods
-        function result = get.IsTestPulsing(self)
-            result = self.Ephys_.getIsTestPulsing_() ;
+        function result = isTestPulsing(self)
+            result = self.Ephys_.isTestPulsing() ;
         end
         
         function toggleIsTestPulsing(self)
-            if self.Ephys_.getIsTestPulsing_() , 
+            if self.isTestPulsing() , 
                 self.stopTestPulsing() ;
             else
                 self.startTestPulsing() ;
             end
+        end
+
+        function result = isIdle(self)
+            result = isequal(self.State_, 'idle') ;
         end
         
         function result = get.DoSubtractBaselineInTestPulseView(self)
@@ -5084,23 +5116,41 @@ classdef WavesurferModel < ws.Model
         end
         
         function result = getCommandUnitsPerTestPulseElectrode(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false);
-            result = cellfun(@(channelName)(self.aoChannelUnitsFromName(channelName)), ...
-                             commandChannelNames, ...
-                             'UniformOutput',false);
+            testPulseElectrodeIndex = self.Ephys_.TestPulseElectrodeIndex ;
+            if isempty(testPulseElectrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                channelName = self.Ephys_.getElectrodeProperty(testPulseElectrodeIndex, 'CommandChannelName') ;
+                channelUnits = self.aoChannelUnitsFromName(channelName) ;
+                result = {channelUnits} ;
+            end
+%                 commandChannelNames = {commandChannelName} ;
+% %             testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+% %             commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
+% %                                           testPulseElectrodes, ...
+% %                                           'UniformOutput',false);
+%                 result = cellfun(@(channelName)(self.aoChannelUnitsFromName(channelName)), ...
+%                                  commandChannelNames, ...
+%                                  'UniformOutput',false);
+%             end
         end  % function
         
         function result = getMonitorUnitsPerTestPulseElectrode(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false);
-            result = cellfun(@(channelName)(self.aiChannelUnitsFromName(channelName)), ...
-                             monitorChannelNames, ...
-                             'UniformOutput',false);
+            testPulseElectrodeIndex = self.Ephys_.TestPulseElectrodeIndex ;
+            if isempty(testPulseElectrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                channelName = self.Ephys_.getElectrodeProperty(testPulseElectrodeIndex, 'MonitorChannelName') ;
+                channelUnits = self.aiChannelUnitsFromName(channelName) ;
+                result = {channelUnits} ;
+            end
+%             testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
+%             monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
+%                                           testPulseElectrodes, ...
+%                                           'UniformOutput',false);
+%             result = cellfun(@(channelName)(self.aiChannelUnitsFromName(channelName)), ...
+%                              monitorChannelNames, ...
+%                              'UniformOutput',false);
         end  % function
         
         function result = getIsVCPerTestPulseElectrode(self) 
@@ -5134,7 +5184,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function result = getGainOrResistanceUnitsPerTestPulseElectrode(self)
-            if self.IsTestPulsing ,
+            if self.isTestPulsing() ,
                 result = self.Ephys_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
             else
                 commandUnitsPerElectrode = self.getCommandUnitsPerTestPulseElectrode() ;
@@ -5147,7 +5197,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function value = getGainOrResistancePerTestPulseElectrode(self)
-            value=self.Ephys_.getGainOrResistancePerTestPulseElectrode_() ;
+            value=self.Ephys_.getGainOrResistancePerTestPulseElectrode() ;
         end
         
         function [gainOrResistance, gainOrResistanceUnits] = getGainOrResistancePerTestPulseElectrodeWithNiceUnits(self)
@@ -5157,46 +5207,110 @@ classdef WavesurferModel < ws.Model
             [gainOrResistanceUnits,gainOrResistance] = ...
                 ws.convertDimensionalQuantityToEngineering(rawGainOrResistanceUnits,rawGainOrResistance) ;
         end
+
+        function result = areTestPulseElectrodeMonitorAndCommandChannelsOnDiffrentDevices(self)
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            result = self.areElectrodeMonitorAndCommandChannelsOnDifferentDevices(electrodeIndex) ;
+        end
+        
+        function result = areElectrodeMonitorAndCommandChannelsOnDifferentDevices(self, electrodeIndex) 
+            monitorDeviceName = self.getElectrodeMonitorChannelDeviceName(electrodeIndex) ;
+            if isempty(monitorDeviceName) ,
+                result = false ;
+            else
+                commandDeviceName = self.getElectrodeCommandChannelDeviceName(electrodeIndex) ;
+                if isempty(commandDeviceName) ,
+                    result = false ;
+                else
+                    result = ~isequal(monitorDeviceName, commandDeviceName) ;
+                end
+            end
+        end
+        
+        function result = getElectrodeMonitorChannelDeviceName(self, electrodeIndex)
+            monitorChannelName = self.Ephys_.getElectrodeProperty(electrodeIndex, 'MonitorChannelName') ;
+            if isempty(monitorChannelName) ,
+                result = '' ;
+            else
+                aiChannelIndex = self.Acquisition_.aiChannelIndexFromName(monitorChannelName) ;
+                result = self.AIChannelDeviceNames{aiChannelIndex} ;
+            end
+        end
+
+        function result = getElectrodeCommandChannelDeviceName(self, electrodeIndex)
+            commandChannelName = self.Ephys_.getElectrodeProperty(electrodeIndex, 'CommandChannelName') ;
+            if isempty(commandChannelName) ,
+                result = '' ;
+            else
+                aoChannelIndex = self.Stimulation_.aoChannelIndexFromName(commandChannelName) ;
+                result = self.AOChannelDeviceNames{aoChannelIndex} ;
+            end
+        end        
     end
     
     methods (Access=protected)
+        function result = getTPElectrodeCommandChannelNames_(self)
+            % this returns a cell array of length zero or one
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            if isempty(electrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                result = { self.getElectrodeProperty(electrodeIndex, 'CommandChannelName') } ; 
+           end
+        end
+        
+        function result = getTPElectrodeMonitorChannelNames_(self)
+            % this returns a cell array of length zero or one
+            electrodeIndex = self.TestPulseElectrodeIndex ;
+            if isempty(electrodeIndex) ,
+                result = cell(1,0) ;
+            else
+                result = { self.getElectrodeProperty(electrodeIndex, 'MonitorChannelName') } ; 
+           end
+        end
+        
         function result = getCommandTerminalIDPerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
             stimulationSubsystem = self.Stimulation_ ;
             result = cellfun(@(channelName)(stimulationSubsystem.analogTerminalIDFromName(channelName)), ...
                              commandChannelNames) ;
         end  % function       
 
         function result = getMonitorTerminalIDPerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
             acquisition = self.Acquisition_ ;
             result = cellfun(@(channelName)(acquisition.analogTerminalIDFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
         
         function result = getCommandChannelScalePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            commandChannelNames = cellfun(@(electrode)(electrode.CommandChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
             result = cellfun(@(channelName)(self.aoChannelScaleFromName(channelName)), ...
                              commandChannelNames) ;
         end
         
         function result = getMonitorChannelScalePerTestPulseElectrode_(self)
-            testPulseElectrodes = self.Ephys_.getTestPulseElectrodes_() ;
-            monitorChannelNames = cellfun(@(electrode)(electrode.MonitorChannelName), ...
-                                          testPulseElectrodes, ...
-                                          'UniformOutput',false) ;
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
             result = cellfun(@(channelName)(self.aiChannelScaleFromName(channelName)), ...
                              monitorChannelNames) ;
         end        
+        
+        function result = getCommandDeviceNamePerTestPulseElectrode_(self)
+            commandChannelNames = self.getTPElectrodeCommandChannelNames_() ;
+            stimulationSubsystem = self.Stimulation_ ;
+            result = cellfun(@(channelName)(stimulationSubsystem.getDeviceNameFromChannelName(channelName)), ...
+                             commandChannelNames, ...
+                             'UniformOutput', false) ;
+        end  % function       
+        
+        function result = getMonitorDeviceNamePerTestPulseElectrode_(self)
+            monitorChannelNames = self.getTPElectrodeMonitorChannelNames_() ;
+            acquisitionSubsystem = self.Acquisition_ ;
+            result = cellfun(@(channelName)(acquisitionSubsystem.getDeviceNameFromChannelName(channelName)), ...
+                             monitorChannelNames, ...
+                             'UniformOutput', false) ;
+        end        
+        
     end  % protected methods block
     
     methods
@@ -5250,7 +5364,7 @@ classdef WavesurferModel < ws.Model
         end  % function         
         
         function result = getTestPulseMonitorTrace(self)
-            result = self.Ephys_.getTestPulseMonitorTrace_() ;
+            result = self.Ephys_.getTestPulseMonitorTrace() ;
         end  % function         
         
         function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
@@ -5300,12 +5414,12 @@ classdef WavesurferModel < ws.Model
             self.electrodeMayHaveChanged_(electrodeIndex, '') ;
         end  % function
         
-        function result = areAllElectrodesTestPulsable(self)
+        function result = areTestPulseElectrodeChannelsValid(self)
             aiChannelNames = self.AIChannelNames ;
             isAIChannelActive = self.Acquisition_.getIsAnalogChannelActive_() ;            
             activeAIChannelNames = aiChannelNames(isAIChannelActive) ;
             aoChannelNames = self.AOChannelNames ;
-            result = self.Ephys_.areAllElectrodesTestPulsable(activeAIChannelNames, aoChannelNames) ;
+            result = self.Ephys_.areTestPulseElectrodeChannelsValid(activeAIChannelNames, aoChannelNames) ;
         end  % function
 
         function updateSmartElectrodeGainsAndModes(self)
@@ -5340,7 +5454,7 @@ classdef WavesurferModel < ws.Model
                 end
             end
             self.changeReadiness_(+1) ;
-            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateElectrodes') ;
         end  % function
         
         function result = isElectrodeOfType(self, queryType)
@@ -5353,7 +5467,7 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.reconnectWithSmartElectrodes_() ;
             self.updateSmartElectrodeGainsAndModes() ;
             self.changeReadiness_(+1) ;
-            self.broadcast('UpdateElectrodeManager');
+            self.broadcast('UpdateElectrodes');
         end  % function
     end
     
@@ -5394,7 +5508,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function electrodeIndex = addNewElectrode(self)
-            electrodeIndex = self.Ephys_.addNewElectrode_() ;
+            electrodeIndex = self.Ephys_.addNewElectrode() ;
         end
        
         function removeMarkedElectrodes(self)
@@ -5409,7 +5523,7 @@ classdef WavesurferModel < ws.Model
        
         function result = get.DoTrodeUpdateBeforeRun(self)
             result = self.Ephys_.getDoTrodeUpdateBeforeRun_() ;
-        end 
+        end
 
 %         function setElectrodeModeOrScaling(self, electrodeIndex, propertyName, newValue)
 %             try
@@ -5431,13 +5545,15 @@ classdef WavesurferModel < ws.Model
 %             end                                        
 %         end
         
-        function result = get.IsElectrodeMarkedForTestPulse(self)
-            result = self.Ephys_.getIsElectrodeMarkedForTestPulse_() ;
-        end
+%         function result = get.IsElectrodeMarkedForTestPulse(self)
+%             result = self.Ephys_.getIsElectrodeMarkedForTestPulse() ;
+%         end
         
-        function set.IsElectrodeMarkedForTestPulse(self, newValue)
-            self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
-        end        
+%         function set.IsElectrodeMarkedForTestPulse(self, newValue)
+%             % Don't want to allow this anymore, so just ignore new value
+%             %self.Ephys_.setIsElectrodeMarkedForTestPulse_(newValue) ;
+%             self.broadcast('UpdateElectrodes') ;
+%         end        
         
         function result = get.IsElectrodeMarkedForRemoval(self)
             result = self.Ephys_.getIsElectrodeMarkedForRemoval_() ;
@@ -5445,12 +5561,17 @@ classdef WavesurferModel < ws.Model
         
         function set.IsElectrodeMarkedForRemoval(self, newValue)
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
+            self.broadcast('UpdateElectrodes') ;
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
             result = self.Ephys_.TestPulseElectrodeIndex ;
         end
 
+        function set.TestPulseElectrodeIndex(self, newValue)
+            self.Ephys_.TestPulseElectrodeIndex = newValue ;
+        end
+        
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             if ~isempty(testPulseElectrodeIndex) ,
@@ -5495,7 +5616,7 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function result = get.ElectrodeCount(self)
-            result = self.Ephys_.getElectrodeCount_() ;
+            result = self.Ephys_.getElectrodeCount() ;
         end               
         
 %         function electrode = getElectrodeByIndex(self, electrodeIndex)
@@ -5546,12 +5667,12 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.areAnyElectrodesSmart() ;
         end        
         
-        function result = areAllMonitorAndCommandChannelNamesDistinct(self)
-            result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
-        end  % function
+%         function result = areAllMonitorAndCommandChannelNamesDistinct(self)
+%             result = self.Ephys_.areAllMonitorAndCommandChannelNamesDistinct() ;
+%         end  % function
         
-        function result = get.TestPulseElectrodeNames(self)
-            result = self.Ephys_.TestPulseElectrodeNames ;
+        function result = getTestPulseElectrodeNames(self)
+            result = self.Ephys_.getTestPulseElectrodeNames() ;
         end
         
         function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
@@ -5568,6 +5689,10 @@ classdef WavesurferModel < ws.Model
         
         function result = get.TestPulseElectrodesCount(self)
             result = self.Ephys_.TestPulseElectrodesCount ;
+        end
+        
+        function result = getAllElectrodeNames(self)
+            result = self.Ephys_.getAllElectrodeNames() ;
         end
         
 %         function result = get.TestPulseElectrodeAmplitude(self)
@@ -5588,6 +5713,7 @@ classdef WavesurferModel < ws.Model
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
+            self.broadcast('UpdateTestPulser');
         end
         
         function result = getTestPulseElectrodeProperty(self, propertyName)
@@ -5599,17 +5725,19 @@ classdef WavesurferModel < ws.Model
         end
 
         function set.IsStimulationEnabled(self, newValue)
-            self.Stimulation_.IsEnabled = newValue ;
+            try
+                self.Stimulation_.IsEnabled = newValue ;
+            catch me
+                self.broadcast('UpdateGeneralSettings') ;
+                rethrow(me) ;
+            end                
+            self.broadcast('UpdateGeneralSettings') ;
         end
 
         function result = get.IsLoggingEnabled(self)
             result = self.Logging_.IsEnabled ;
         end
 
-        function set.IsLoggingEnabled(self, newValue)
-            self.Logging_.IsEnabled = newValue ;
-        end
-        
         function result = get.IsDisplayEnabled(self)
             result = self.Display_.IsEnabled ;
         end
@@ -5718,9 +5846,9 @@ classdef WavesurferModel < ws.Model
             self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
         end
         
-        function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
             self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
@@ -5769,7 +5897,13 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DoRepeatStimulusSequence(self, newValue)
-            self.Stimulation_.DoRepeatSequence = newValue ;
+            try
+                self.Stimulation_.DoRepeatSequence = newValue ;
+            catch me
+                self.broadcast('UpdateGeneralSettings') ;
+                rethrow(me) ;
+            end
+            self.broadcast('UpdateGeneralSettings') ;            
         end
         
         function setYLimitsForSingleAIChannel(self, i, newValue)
@@ -5816,7 +5950,7 @@ classdef WavesurferModel < ws.Model
             self.Logging_.SessionIndex = newValue ;
         end
 
-        function result = get.StimulusLibrary(self)
+        function result = stimulusLibrary(self)
             % Note that this returns a *copy* of the internal stimulus library
             result = self.Stimulation_.getStimulusLibraryCopy() ;
         end
@@ -5850,9 +5984,240 @@ classdef WavesurferModel < ws.Model
             result = self.NRunsCompleted_ ;
         end
         
+        function result = get.AIChannelDeviceNames(self)
+            result = self.Acquisition_.AnalogDeviceNames ;
+        end
+        
+        function result = get.AOChannelDeviceNames(self)
+            result = self.Stimulation_.AnalogDeviceNames ;
+        end
+        
+        function result = get.DIChannelDeviceNames(self)
+            result = self.Acquisition_.DigitalDeviceNames ;
+        end
+        
+        function result = get.DOChannelDeviceNames(self)
+            result = self.Stimulation_.DigitalDeviceNames ;
+        end
+        
+        function result = get.AIChannelTerminalIDs(self)
+            result = self.Acquisition_.AnalogTerminalIDs ;
+        end
+        
+        function result = get.AOChannelTerminalIDs(self)
+            result = self.Stimulation_.AnalogTerminalIDs ;
+        end
+        
+        function result = get.DIChannelTerminalIDs(self)
+            result = self.Acquisition_.DigitalTerminalIDs ;
+        end
+        
+        function result = get.DOChannelTerminalIDs(self)
+            result = self.Stimulation_.DigitalTerminalIDs ;
+        end
+        
+        function setSingleAIChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NAIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Acquisition_.setSingleAnalogDeviceName(i, newValue) ;
+                self.syncIsAIChannelTerminalOvercommitted_() ;
+            else
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The AI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAIChannels);
+            end
+            self.broadcast('UpdateChannels') ;
+            self.broadcast('UpdateElectrodes') ;  % Changing the device name can put channels for same trode on diff devices, which is a problem
+            self.broadcast('UpdateTestPulser') ;            
+        end  % function
+        
+%         function setSingleDIChannelDeviceName(self, i, newValue)
+%             if 1<=i && i<=self.NDIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+%                 self.Acquisition_.setSingleDigitalDeviceName(i, newValue) ;
+%                 self.syncIsDIOChannelTerminalOvercommitted_() ;
+%             else
+%                 self.broadcast('UpdateChannels') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'The DI channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDIChannels);
+%             end                
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
+        
+        function setSingleAOChannelDeviceName(self, i, newValue)
+            if 1<=i && i<=self.NAOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+                self.Stimulation_.setSingleAnalogDeviceName(i, newValue) ;
+                self.syncIsAOChannelTerminalOvercommitted_() ;
+            else                
+                self.broadcast('UpdateChannels') ;
+                error('ws:invalidPropertyValue', ...
+                      'The AO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NAOChannels);
+            end                
+            self.broadcast('UpdateChannels') ;
+            self.broadcast('UpdateElectrodes') ;  % Changing the device name can put channels for same trode on diff devices, which is a problem
+            self.broadcast('UpdateTestPulser') ;
+        end  % function                
+        
+%         function setSingleDOChannelDeviceName(self, i, newValue)
+%             if 1<=i && i<=self.NDOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
+%                 self.Stimulation_.setSingleDigitalDeviceName(i, newValue) ;
+%                 self.syncIsDIOChannelTerminalOvercommitted_() ;
+%             else
+%                 self.broadcast('UpdateChannels') ;
+%                 error('ws:invalidPropertyValue', ...
+%                       'The DO channel index must be an integer between 1 and %d, and the value must be a valid device name', self.NDOChannels);
+%             end                
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
+
+        function result = getPrimaryDeviceIndex(self)
+            % The index of self.PrimaryDeviceName in self.AllDeviceNames.  Returns empty if
+            % self.PrimaryDeviceName is not in self.AllDeviceNames.
+            result = self.getDeviceIndexFromName(self.PrimaryDeviceName) ;
+        end
+        
+        function result = getDeviceIndexFromName(self, deviceName)
+            % The index of deviceName in self.AllDeviceNames.  Returns empty if
+            % deviceName is not in self.AllDeviceNames.
+            allDeviceNames = self.AllDeviceNames ;
+            isAMatch = strcmpi(deviceName, allDeviceNames) ;  % DAQMX device names are not case-sensitive
+            result = find(isAMatch,1) ;
+        end
+        
+        function setSingleAOChannelTerminalName(self, iChannel, terminalName)
+            terminalID = ws.aoTerminalIDFromName(terminalName) ;
+            self.setSingleAOChannelTerminalID(iChannel, terminalID) ;
+        end
+        
+        function setSingleDOChannelTerminalName(self, iChannel, terminalName)
+            terminalID = ws.dioTerminalIDFromName(terminalName) ;
+            self.setSingleDOChannelTerminalID(iChannel, terminalID) ;
+        end
+        
+        function result = nextFreeAITerminal(self)
+            % Tries to find a free AI terminal, and returns it in a scalar struct with
+            % fields deviceName and terminalID if found.  Otherwise, returns an empty
+            % struct.  This is normally called when adding an AI channel.
+            deviceNameForEachAIChannel = self.AIChannelDeviceNames ;
+            terminalIDForEachAIChannel = self.Acquisition_.AnalogTerminalIDs ;
+            allDeviceNames = self.AllDeviceNames ;
+            nAITerminalsPerDevice = self.NAITerminalsPerDevice ;
+            
+            nAIChannels = length(deviceNameForEachAIChannel) ;
+            nDevices = length(allDeviceNames) ;
+            for iDevice = 1:nDevices ,
+                deviceName = allDeviceNames{iDevice} ;
+                nAITerminals = nAITerminalsPerDevice(iDevice) ;
+                aiTerminalsOnDevice = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
+                for terminalID = aiTerminalsOnDevice ,
+                    isTerminalFree = true ;  % optimism!
+                    for iChannel = 1:nAIChannels ,
+                        channelDeviceName = deviceNameForEachAIChannel{iChannel} ;
+                        channelTerminalID = terminalIDForEachAIChannel(iChannel) ;
+                        if isequal(deviceName, channelDeviceName) && isequal(terminalID, channelTerminalID) ,
+                            isTerminalFree = false ;
+                            break
+                        end
+                    end
+                    if isTerminalFree ,
+                        result = struct('deviceName', {deviceName}, ...
+                                        'terminalID', {terminalID} ) ;
+                        return
+                    end
+                end
+            end
+            % if get here, no free terminal
+            result = struct('deviceName', cell(1,0), ...
+                            'terminalID', cell(1,0) ) ;
+        end
+        
+        function result = nextFreeAOTerminal(self)
+            % Tries to find a free AO terminal, and returns it in a scalar struct with
+            % fields deviceName and terminalID if found.  Otherwise, returns an empty
+            % struct.  This is normally called when adding an AO channel.
+            deviceNameForEachAOChannel = self.AOChannelDeviceNames ;
+            terminalIDForEachAOChannel = self.Stimulation_.AnalogTerminalIDs ;
+            allDeviceNames = self.AllDeviceNames ;
+            nAOTerminalsPerDevice = self.NAOTerminalsPerDevice ;
+            
+            nAOChannels = length(deviceNameForEachAOChannel) ;
+            nDevices = length(allDeviceNames) ;
+            for iDevice = 1:nDevices ,
+                deviceName = allDeviceNames{iDevice} ;
+                nAOTerminals = nAOTerminalsPerDevice(iDevice) ;
+                for terminalID = 0:(nAOTerminals-1) ,
+                    isTerminalFree = true ;  % optimism!
+                    for iChannel = 1:nAOChannels ,
+                        channelDeviceName = deviceNameForEachAOChannel{iChannel} ;
+                        channelTerminalID = terminalIDForEachAOChannel(iChannel) ;
+                        if isequal(deviceName, channelDeviceName) && isequal(terminalID, channelTerminalID) ,
+                            isTerminalFree = false ;
+                            break
+                        end
+                    end
+                    if isTerminalFree ,
+                        result = struct('deviceName', {deviceName}, ...
+                                        'terminalID', {terminalID} ) ;
+                        return
+                    end
+                end
+            end
+            % if get here, no free terminal
+            result = struct('deviceName', cell(1,0), ...
+                            'terminalID', cell(1,0) ) ;
+        end
+        
+        function result = nextFreeDIOTerminal(self)
+            % Tries to find a free DIO terminal, and returns it in a scalar struct with
+            % fields deviceName and terminalID if found.  Otherwise, returns an empty
+            % struct.  This is normally called when adding a DI or DO channel.
+            deviceNameForEachDIChannel = self.DIChannelDeviceNames ;
+            terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
+            deviceNameForEachDOChannel = self.DOChannelDeviceNames ;
+            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+            deviceNameForEachDIOChannel = horzcat(deviceNameForEachDIChannel, deviceNameForEachDOChannel) ;
+            terminalIDForEachDIOChannel = horzcat(terminalIDForEachDIChannel, terminalIDForEachDOChannel) ;
+            allDeviceNames = self.AllDeviceNames ;
+            nDIOTerminalsPerDevice = self.NDIOTerminalsPerDevice ;
+            
+            nDIOChannels = length(deviceNameForEachDIOChannel) ;
+            nDevices = length(allDeviceNames) ;
+            for iDevice = 1:nDevices ,
+                deviceName = allDeviceNames{iDevice} ;
+                nDIOTerminals = nDIOTerminalsPerDevice(iDevice) ;
+                for terminalID = 0:(nDIOTerminals-1) ,
+                    isTerminalFree = true ;  % optimism!
+                    for iChannel = 1:nDIOChannels ,
+                        channelDeviceName = deviceNameForEachDIOChannel{iChannel} ;
+                        channelTerminalID = terminalIDForEachDIOChannel(iChannel) ;
+                        if isequal(deviceName, channelDeviceName) && isequal(terminalID, channelTerminalID) ,
+                            isTerminalFree = false ;
+                            break
+                        end
+                    end
+                    if isTerminalFree ,
+                        result = struct('deviceName', {deviceName}, ...
+                                        'terminalID', {terminalID} ) ;
+                        return
+                    end
+                end
+            end
+            % if get here, no free terminal
+            result = struct('deviceName', cell(1,0), ...
+                            'terminalID', cell(1,0) ) ;
+        end
+        
         function value=get.IsReady(self)
             value=(self.DegreeOfReadiness_>0);
         end               
+        
+        function encoding = encodeForHeader(self)
+            % Get the default header encoding
+            encoding = encodeForHeader@ws.Model(self) ;            
+            
+            % Add custom field
+            thisPropertyValue = self.stimulusLibrary() ;
+            encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
+            encoding.StimulusLibrary = encodingOfPropertyValue ;
+        end
     end  % public methods block
     
     methods (Access = protected)

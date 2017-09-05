@@ -348,7 +348,7 @@ classdef VClassic < hgsetget
         function pdepSetAssert(obj,inVal,assertLogical,errorMessage,varargin)
             %Subclasses with pseudo-dependent properties with set-property-access methods used for error/type-checking should use this method in lieu of 'assert'        
             if ~assertLogical && ~(obj.errorCondition && isempty(inVal)) %Allows empty value to be set during error conditions, as done by this class, regardless of assertLogical condition requirements                outVal = inVal;            
-                throwAsCaller(obj.VException('','PropSetAccessError',errorMessage,varargin{:}));
+                throw(obj.VException('','PropSetAccessError',errorMessage,varargin{:}));
             end
         end
         
@@ -593,7 +593,7 @@ classdef VClassic < hgsetget
             %Determine if there are any missing mandatory properties
             missingMandatoryProps= setdiff(mandatoryProps,foundMandatoryProps);
             if ~isempty(missingMandatoryProps)
-                throwAsCaller(MException([getClassNameShort(mfilename('class')) ':MissingPropArg'], 'The following required property/value pairs was expected, but not supplied: %s', missingMandatoryProps{1})); %TODO: Find way to (elegantly) display all missing props
+                throw(MException([getClassNameShort(mfilename('class')) ':MissingPropArg'], 'The following required property/value pairs was expected, but not supplied: %s', missingMandatoryProps{1})); %TODO: Find way to (elegantly) display all missing props
             end
             
             filteredPropValArgs = cell(1,2*length(validProps));
