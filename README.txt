@@ -424,9 +424,20 @@ Version History
 0.947    Apr 6, 2017     Added support for very-low sampling rates, 
                          down to ~1/(40 s).
                          
-0.95     Aug 9, 2017     Improved SI-WS integration, now using SI-WS communication 
-                         protocol version 2.0.0.  Input signals now displayed in 
-                         main window, acquisition/stimulation settings moved to 
-                         "General" window.  Eliminated direct external access 
-                         to WavesurferModel subsystems in user code.  Eliminated 
-                         Parent properties in all ws.Model objects.  
+0.95     Aug 9, 2017     Improved SI-WS integration, now using SI-WS
+                         communication protocol version 2.0.0.  Input
+                         signals now displayed in main window,
+                         acquisition/stimulation settings moved to
+                         "General" window.  Eliminated direct external
+                         access to WavesurferModel subsystems in user
+                         code.  Eliminated Parent properties in all
+                         ws.Model objects.
+                         
+0.951    Aug 24, 2017    Fixed bug where WS used built-in contains()
+                         function, only introduced in R2016b.
+                       
+0.952    Aug 25, 2017    Fixed bug where Channels window didn't
+                         properly update after changes in the
+                         Electrodes window.
+                  
+0.96     Sep 5, 2017     Added support for multiple DAQ boards.

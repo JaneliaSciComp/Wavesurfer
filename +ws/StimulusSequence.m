@@ -7,7 +7,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         Name
         %Maps  % the items in the sequence
         IndexOfEachMapInLibrary
-        IsMarkedForDeletion  % logical, one element per element in Maps
+        IsMarkedForDeletion  % logical, one element per element in IndexOfEachMapInLibrary
     end      
     
     properties (Dependent=true, SetAccess=immutable)
@@ -18,7 +18,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     properties (Access = protected)
         Name_ = ''
         % Things below are vectors of length NBindings
-        IndexOfEachMapInLibrary_ = {}
+        IndexOfEachMapInLibrary_ = {}  % cell array b/c each entry is either empty or scalar
         IsMarkedForDeletion_ = logical([])
     end    
     
@@ -75,7 +75,9 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end   % function
         
         function result = containsMap(self, queryMapIndex)
-            result = any(cellfun(@(mapIndex)(mapIndex==queryMapIndex), self.IndexOfEachMapInLibrary_)) ;
+            result = any(cellfun(@(mapIndex)(isscalar(mapIndex)&&isequal(mapIndex,queryMapIndex)), self.IndexOfEachMapInLibrary_)) ;
+              % self.IndexOfEachMapInLibrary_ is a cell array,
+              % and each element is either empty or scalar
         end   % function
         
         function bindingIndex = addBinding(self)
@@ -139,7 +141,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %         end   % function        
         
         function nullGivenTargetInAllBindings(self, targetMapIndex)
-            % Set all occurances of targetStimulusIndex in the bindings to []
+            % Set all occurences of targetStimulusIndex in the bindings to []
             for i = 1:self.NBindings ,
                 thisMapIndex = self.IndexOfEachMapInLibrary_{i} ;
                 if thisMapIndex==targetMapIndex ,

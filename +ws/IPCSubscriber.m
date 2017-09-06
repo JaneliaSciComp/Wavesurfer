@@ -55,6 +55,16 @@ classdef IPCSubscriber < ws.ZMQClient
                     rethrow(me);
                 end
             end
+            % We modified the Matlab ZMQ binding to not throw if you give the option
+            % ZMQ_DONTWAIT and no message is available.  Instead, it returns an empty
+            % message.
+            if isempty(serializedMessage) ,
+                isMessageAvailable = false ;
+                methodName = '' ;
+                methodError = [] ;
+                methodResult = [] ;
+                return
+            end                            
             isMessageAvailable = true ;
             message = getArrayFromByteStream(serializedMessage) ;
             methodName = message.methodName ;

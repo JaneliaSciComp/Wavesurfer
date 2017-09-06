@@ -20,6 +20,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RegisterSignalCallback", "R
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "readDigitalUn", "readDigitalUn\readDigitalUn.vcproj", "{18AFF9FF-731C-431E-BEE9-FC04093F2348}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "readDigitalLines", "readDigitalLines\readDigitalLines.vcproj", "{464AABEE-23CD-4D2A-AA90-588B02087132}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -99,6 +101,14 @@ Global
 		{18AFF9FF-731C-431E-BEE9-FC04093F2348}.Release|Win32.Build.0 = Release|Win32
 		{18AFF9FF-731C-431E-BEE9-FC04093F2348}.Release|x64.ActiveCfg = Release|x64
 		{18AFF9FF-731C-431E-BEE9-FC04093F2348}.Release|x64.Build.0 = Release|x64
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Debug|Win32.ActiveCfg = Debug|Win32
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Debug|Win32.Build.0 = Debug|Win32
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Debug|x64.ActiveCfg = Debug|x64
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Debug|x64.Build.0 = Debug|x64
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Release|Win32.ActiveCfg = Release|Win32
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Release|Win32.Build.0 = Release|Win32
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Release|x64.ActiveCfg = Release|x64
+		{464AABEE-23CD-4D2A-AA90-588B02087132}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

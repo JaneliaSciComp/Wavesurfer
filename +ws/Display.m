@@ -322,12 +322,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
 %             value = self.Parent.AreSweepsFiniteDuration ;
 %         end  % function       
-        
+
+        function didRemoveElectrodes(self)
+            %self.clearData_() ;
+            self.broadcast('ClearData') ;
+            self.broadcast('Update') ;
+        end
+
         function didSetAnalogChannelUnitsOrScales(self)
             %self.clearData_() ;
             self.broadcast('ClearData') ;
             self.broadcast('Update') ;
-        end       
+        end
         
         function startingRun(self, xSpan, sweepDuration)
             self.XOffset = 0;
@@ -1028,7 +1034,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 didSucceed = false ;
             end
-            self.broadcast('DidSetIsEnabled') ;
+            self.broadcast('Update') ;
             if ~didSucceed ,
                 error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;

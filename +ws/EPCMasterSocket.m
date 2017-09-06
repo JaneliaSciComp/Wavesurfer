@@ -983,7 +983,7 @@ classdef EPCMasterSocket < handle
         function [hasCommandOnOffSwitch,err]=probeForHasCommandOnOffSwitch_(self)
             [responseString,err]=self.issueCommandAndGetResponse('Get E TestDacToStim1');  % may throw, which we don't catch here
             if isempty(err)
-                hasCommandOnOffSwitch = ~contains(responseString,'error') ;
+                hasCommandOnOffSwitch = ~ws.contains(responseString,'error') ;
             else
                 hasCommandOnOffSwitch=[];
             end

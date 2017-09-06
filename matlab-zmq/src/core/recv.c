@@ -18,6 +18,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     size_t bufLen = DEFAULT_BUFFER_LENGTH;
     int optionStart = 1;  /* from which index options can be passed */
     int coreAPIReturn, coreAPIOptionFlag = 0;
+    int err=0;
 
     if (nrhs < 1) {
         mexErrMsgIdAndTxt("zmq:core:recv:invalidArgs",
@@ -52,7 +53,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     coreAPIReturn = zmq_recv(socket, buffer, bufLen * sizeof(uint8_t), coreAPIOptionFlag);
 
     if (coreAPIReturn < 0) {
-        handle_error();
+        /* ALT change: If user gave option ZMQ_DONTWAIT, and the error is EAGAIN, then don't 
+         * throw an exception, just return an empty buffer.  Throwing this as an exception
+         * makes it harder to use "dbstop if caught" for debugging, b/c this exception gets 
+         * thrown all the time. */
+       err = errno ;
+       /* Windows users can have problems with errno, see http://api.zeromq.org/master:zmq-errno */
+       if (err == 0)
+           err = zmq_errno() ;
+        if (err==EAGAIN) {
+            configure_return(nlhs, plhs, 0, bufLen, buffer);
+        } else {
+            handle_error();
+        }
     } else {
         /* Prepare the values that should be returned to MATLAB */
         configure_return(nlhs, plhs, coreAPIReturn, bufLen, buffer);

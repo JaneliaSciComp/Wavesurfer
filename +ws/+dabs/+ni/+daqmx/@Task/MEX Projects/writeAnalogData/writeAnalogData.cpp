@@ -23,18 +23,26 @@ Example:
 */
 #define Guarded_DAQmx(expr) Guarded_DAQmx_(expr,#expr,__FILE__,__LINE__,__FUNCTION__)
 
-static int32 Guarded_DAQmx_( int32 error, const char* expression, const char* file, const int line, const char* function )
-{	
-  char  errBuff[UTIL_NIDAQ_ERROR_BUFFER_SIZE]={'\0'},      
-        errBuffEx[UTIL_NIDAQ_ERROR_BUFFER_SIZE]={'\0'};
-  if( error == DAQmxSuccess)
-	  return error;
-  DAQmxGetErrorString(error, errBuff ,UTIL_NIDAQ_ERROR_BUFFER_SIZE);  // get error message
-  DAQmxGetExtendedErrorInfo(errBuffEx,UTIL_NIDAQ_ERROR_BUFFER_SIZE);  // get error message
-  mexPrintf( "(%s:%d) %s\n\t%s\n\t%s\n\t%s\n",file, line, function, (expression), errBuff, errBuffEx );// report
-  if( DAQmxFailed(error) )
-    mexErrMsgTxt("DAQmx call failed.");
-  return error;
+static int32 Guarded_DAQmx_( int32 error, const char* expression, const char* filename, const int line, const char* function_name )  {	
+    char  errBuff[UTIL_NIDAQ_ERROR_BUFFER_SIZE]={'\0'} ;      
+    char  errBuffEx[UTIL_NIDAQ_ERROR_BUFFER_SIZE]={'\0'} ;
+    char  errBuffAll[UTIL_NIDAQ_ERROR_BUFFER_SIZE]={'\0'} ;
+    if (error>=0)  {  
+        // If success or a mere warning, return the error code
+        return error ;
+    }
+    else {
+        // If a hard failure, call mexErrMsgTxt()
+        DAQmxGetErrorString(error, errBuff ,UTIL_NIDAQ_ERROR_BUFFER_SIZE);  // get error message
+        DAQmxGetExtendedErrorInfo(errBuffEx,UTIL_NIDAQ_ERROR_BUFFER_SIZE);  // get error message
+        //mexPrintf( "(%s:%d) %s\n\t%s\n\t%s\n\t%s\n",filename, line, function_name, (expression), errBuff, errBuffEx );// report
+        _snprintf_s(
+            errBuffAll, UTIL_NIDAQ_ERROR_BUFFER_SIZE, 
+            "DAQmx call failed: (%s:%d) %s\n\t%s\n\t%s\n\t%s\n",
+            filename, line, function_name, (expression), errBuff, errBuffEx) ;
+        mexErrMsgTxt(errBuffAll);
+        return error ;   // This will never be reached, but it suppresses a compiler warning
+    }
 }
 
 //% General method for writing analog data to a Task containing one or more anlog output Channels
@@ -74,7 +82,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	
 	//Read input arguments
 	float64 timeout;
-	int numSampsPerChan;
+	int32 numSampsPerChan;
 	bool32 autoStart;
 	TaskHandle taskID, *taskIDPtr;
 
@@ -101,9 +109,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 	size_t numRows = mxGetM(prhs[1]);
 	if ((nrhs < 5) || mxIsEmpty(prhs[4]))
-		numSampsPerChan = numRows;
+		numSampsPerChan = (int32) numRows;
 	else
-		numSampsPerChan = (int) mxGetScalar(prhs[4]);
+		numSampsPerChan = (int32) mxGetScalar(prhs[4]);
 
 	//Verify correct input length
 
