@@ -440,3 +440,4 @@ Version History
                          properly update after changes in the
                          Electrodes window.
                   
+0.953    Sep 15, 2017    Fixed a few bugs.
