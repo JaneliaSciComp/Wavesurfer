@@ -18,7 +18,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     properties (Access = protected)
         Name_ = ''
         % Things below are vectors of length NBindings
-        IndexOfEachMapInLibrary_ = {}
+        IndexOfEachMapInLibrary_ = {}  % cell array b/c each entry is either empty or scalar
         IsMarkedForDeletion_ = logical([])
     end    
     
@@ -75,7 +75,10 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end   % function
         
         function result = containsMap(self, queryMapIndex)
-            result = any(cellfun(@(mapIndex)(mapIndex==queryMapIndex), self.IndexOfEachMapInLibrary_)) ;
+            %result = any(cellfun(@(mapIndex)(mapIndex==queryMapIndex), self.IndexOfEachMapInLibrary_)) ;
+            result = any(cellfun(@(mapIndex)(isscalar(mapIndex)&&isequal(mapIndex,queryMapIndex)), self.IndexOfEachMapInLibrary_)) ;
+              % self.IndexOfEachMapInLibrary_ is a cell array,
+              % and each element is either empty or scalar
         end   % function
         
         function bindingIndex = addBinding(self)
