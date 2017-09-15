@@ -1524,19 +1524,23 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                     % do nothing
                 else
                     indexOfThisStimulusInLibrary = map.IndexOfEachStimulusInLibrary{bindingIndex} ; 
-                    thisStimulus = self.Stimuli_{indexOfThisStimulusInLibrary}; 
-                    if isempty(thisStimulus) ,
+                    if isempty(indexOfThisStimulusInLibrary) ,
                         % do nothing
-                    else        
-                        % Calc the signal, scale it, overwrite the appropriate col of
-                        % data
-                        nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
-                        rawSignal = thisStimulus.calculateSignal(tOffsetByHalfSample, sweepIndexWithinSet);
-                        multiplier = map.Multiplier(bindingIndex) ;
-                        if isChannelAnalog(iChannel) ,
-                            data(:, iChannel) = multiplier*rawSignal ;
-                        else
-                            data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+                    else
+                        thisStimulus = self.Stimuli_{indexOfThisStimulusInLibrary}; 
+                        if isempty(thisStimulus) ,
+                            % do nothing
+                        else        
+                            % Calc the signal, scale it, overwrite the appropriate col of
+                            % data
+                            nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
+                            rawSignal = thisStimulus.calculateSignal(tOffsetByHalfSample, sweepIndexWithinSet);
+                            multiplier = map.Multiplier(bindingIndex) ;
+                            if isChannelAnalog(iChannel) ,
+                                data(:, iChannel) = multiplier*rawSignal ;
+                            else
+                                data(:, iChannel) = (multiplier*rawSignal>=0.5) ;  % also eliminates nan, sets to false                     
+                            end
                         end
                     end
                 end
