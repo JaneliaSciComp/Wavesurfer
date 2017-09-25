@@ -166,7 +166,9 @@ classdef Electrode < ws.Model % & ws.Mimic
         function didSetAnalogInputChannelName(self, oldValue, newValue)
             if isequal(self.VoltageMonitorChannelName, oldValue) ,
                 self.VoltageMonitorChannelName_ = newValue ;
-            elseif isequal(self.CurrentMonitorChannelName, oldValue) ,
+            end
+            % Can't do elseif b/c might be equal to both
+            if isequal(self.CurrentMonitorChannelName, oldValue) ,
                 self.CurrentMonitorChannelName_ =  newValue ;
             end
         end        
@@ -174,7 +176,9 @@ classdef Electrode < ws.Model % & ws.Mimic
         function didSetAnalogOutputChannelName(self, oldValue, newValue)
             if isequal(self.VoltageCommandChannelName, oldValue) ,
                 self.VoltageCommandChannelName_ = newValue ;
-            elseif isequal(self.CurrentCommandChannelName, oldValue) ,
+            end
+            % Can't do elseif b/c might be equal to both
+            if isequal(self.CurrentCommandChannelName, oldValue) ,
                 self.CurrentCommandChannelName_ =  newValue ;
             end
         end        

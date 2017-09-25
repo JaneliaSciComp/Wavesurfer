@@ -12,7 +12,7 @@ classdef TestPulser < ws.Model
     
     properties  (Access=protected)  % need to see if some of these things should be transient
         %ElectrodeName_  
-        ElectrodeIndex_  % index into the array of *all* electrodes
+        ElectrodeIndex_  % index into the array of *all* electrodes (or empty)
         PulseDuration_  % the duration of the pulse, in s.  The sweep duration is twice this.
         DoSubtractBaseline_
         YLimits_
@@ -64,8 +64,10 @@ classdef TestPulser < ws.Model
     end
     
     methods
-        function self = TestPulser()
+        function self = TestPulser()            
             self@ws.Model() ;
+            % ElectrodeIndex_ defaults to empty, therefore there is no test pulse
+            % electrode as far as we're concerned
             self.PulseDuration_ = 10e-3 ;  % s
             self.DoSubtractBaseline_=true;
             self.IsAutoY_=true;
@@ -854,7 +856,9 @@ classdef TestPulser < ws.Model
         function didSetIsInputChannelActive(self) 
             self.broadcast('DidSetIsInputChannelActive');
         end
+    end  % methods
         
+    methods (Access=protected)                
         function clearExistingSweepIfPresent_(self)
             self.MonitorPerElectrode_ = [] ;
             self.MonitorCached_ = [] ;
@@ -867,9 +871,7 @@ classdef TestPulser < ws.Model
             end
             self.UpdateRate_ = nan ;
         end  % function
-    end  % methods
         
-    methods (Access=protected)        
         function tryToSetYLimitsIfCalledFor_(self)
             % If setting the y limits is appropriate right now, try to set them
             % Sets AreYLimitsForRunDetermined_ and YLimits_ if successful.
@@ -884,6 +886,11 @@ classdef TestPulser < ws.Model
                 end
             end
         end  % function
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            self.clearExistingSweepIfPresent_() ;  % mainly to dimension self.GainPerElectrode_ and self.GainOrResistancePerElectrode_ properly
+        end  % function        
+        
         
 %         function autosetYLimits_(self)
 %             % Syncs the Y limits to the monitor signal, if self is in the
