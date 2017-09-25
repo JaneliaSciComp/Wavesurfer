@@ -29,7 +29,7 @@ classdef AllFiguresTestCase < matlab.unittest.TestCase
             wsController.UserCodeManagerMenuItemActuated([],[]) ;        
             wsController.ElectrodesMenuItemActuated([],[]) ;        
             wsController.TestPulseMenuItemActuated([],[]) ;        
-            wsController.FastProtocolsMenuItemActuated([],[]) ;
+            wsController.ManageFastProtocolsButtonActuated([],[]) ;
             
             generalSettingsFigure = wsController.GeneralSettingsFigure ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'ContinuousRadiobutton') ;

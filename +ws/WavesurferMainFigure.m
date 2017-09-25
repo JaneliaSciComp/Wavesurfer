@@ -27,7 +27,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         YokeToScanimageMenuItem
         
         UserMenu
-        FastProtocolsMenuItem
+        %FastProtocolsMenuItem
         
         HelpMenu
         AboutMenuItem
@@ -37,6 +37,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         StopButton
         %FastProtocolText
         FastProtocolButtons
+        ManageFastProtocolsButton
         
         StatusText
         ProgressBarAxes
@@ -295,12 +296,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             self.UserMenu = ...
                 uimenu('Parent',self.FigureGH, ...
                        'Label','User');
-            self.FastProtocolsMenuItem = ...
-                uimenu('Parent',self.UserMenu, ...
-                       'Label','Fast Protocols...');
+%             self.FastProtocolsMenuItem = ...
+%                 uimenu('Parent',self.UserMenu, ...
+%                        'Label','Fast Protocols...');
             self.LoadUserSettingsMenuItem = ...
                 uimenu('Parent',self.UserMenu, ...
-                       'Separator','on', ...
                        'Label','Open User Settings...');
             self.SaveUserSettingsMenuItem = ...
                 uimenu('Parent',self.UserMenu, ...
@@ -344,10 +344,15 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             for i=1:nFastProtocolButtons ,
                 self.FastProtocolButtons(i) = ...
                     ws.uicontrol('Parent',self.FigureGH, ...
-                              'Style','pushbutton', ...
-                              'String',sprintf('%d',i));                
+                                 'Style','pushbutton', ...
+                                 'String',sprintf('%d',i));                
             end            
-                      
+            self.ManageFastProtocolsButton = ...
+                ws.uicontrol('Parent', self.FigureGH, ...
+                             'Style', 'pushbutton', ...
+                             'TooltipString', 'Manage Fast Protocols', ...
+                             'String', char(177)) ;  % unicode for plus-minus glyph
+            
             % Stuff at the bottom of the window
             self.StatusText = ...
                 ws.uicontrol('Parent',self.FigureGH, ...
@@ -466,6 +471,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             fastProtocolButtonWidth=26;
             fastProtocolButtonHeight=26;
             spaceBetweenFastProtocolButtons=5;
+            spaceBetweenFastProtocolButtonsAndManageButton = 10 ;
             %widthBetweenFastProtocolTextAndButtons=4;
             
             % VCR buttons
@@ -483,7 +489,8 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             %fastProtocolTextPosition=get(self.FastProtocolText,'Position');
             %fastProtocolTextHeight=fastProtocolTextPosition(4);
             nFastProtocolButtons=length(self.FastProtocolButtons);
-            widthOfFastProtocolButtonBar=nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons;            
+            widthOfFastProtocolButtonBar = nFastProtocolButtons*fastProtocolButtonWidth+(nFastProtocolButtons-1)*spaceBetweenFastProtocolButtons + ...
+                                           spaceBetweenFastProtocolButtonsAndManageButton + fastProtocolButtonWidth ; 
             %xOffset=layoutWidth-widthFromFastProtocolButtonBarToEdge-widthOfFastProtocolButtonBar-widthBetweenFastProtocolTextAndButtons-fastProtocolTextWidth;
             fastProtocolButtonsYOffset=layoutYOffset+layoutHeight-toolbarAreaHeight+(toolbarAreaHeight-fastProtocolButtonHeight)/2;
             %yOffset=fastProtocolButtonsYOffset+(fastProtocolButtonHeight-fastProtocolTextHeight)/2-4;  % shim
@@ -495,7 +502,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 set(self.FastProtocolButtons(i),'Position',[xOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]);
                 xOffset=xOffset+fastProtocolButtonWidth+spaceBetweenFastProtocolButtons;                
             end
-                        
+            manageFastProtocolsButtonXOffset = layoutWidth-widthFromFastProtocolButtonBarToEdge-fastProtocolButtonWidth ;
+            set(self.ManageFastProtocolsButton, ...
+                'Position', [manageFastProtocolsButtonXOffset fastProtocolButtonsYOffset fastProtocolButtonWidth fastProtocolButtonHeight]) ;
+            
+            
             %
             % The plots
             %            
@@ -821,7 +832,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             % acquisition.
             
             % User menu
-            set(self.FastProtocolsMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.ManageFastProtocolsButton,'Enable',ws.onIff(isIdle));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
