@@ -104,7 +104,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
                 % data files produced by older versions of WS.
                 analogDataAsCounts = dataFileAsStruct.(fieldName).analogScans;
                 if doesUserWantSingle ,
-                    scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                    scaledAnalogData = ws.scaledSingleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
                 else
                     scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
                 end
