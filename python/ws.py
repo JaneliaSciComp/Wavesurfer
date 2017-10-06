@@ -13,7 +13,7 @@ def loadDataFile(filename, format_string='double'):
     """
     # Check that file exists
     if not os.path.isfile(filename):
-        raise FileNotFoundError("The file %s does not exist." % filename)
+        raise IOError("The file %s does not exist." % filename)
 
     # Check that file has proper extension
     (_, ext) = os.path.splitext(filename)
