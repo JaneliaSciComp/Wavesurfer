@@ -20,7 +20,7 @@ def loadDataFile(filename, format_string='double'):
     if ext != ".h5":
         raise RuntimeError("File must be a WaveSurfer-generated HDF5 (.h5) file.")
 
-    # Extract dataset at each group level, recursively.    
+    # Extract dataset at each group level, recursively.
     file = h5py.File(filename)
     data_file_as_dict = crawl_h5_group(file)  # an h5py File is also a Group
 
@@ -35,74 +35,76 @@ def loadDataFile(filename, format_string='double'):
         version = 0
     if version < 0.9125:  # version 0.912 has the problem, version 0.913 does not
         # Fix the acquisition sample rate, if needed
-        nominalAcquisitionSampleRate = float(header["Acquisition"]["SampleRate"])
-        nominalNTimebaseTicksPerSample = 100.0e6 / nominalAcquisitionSampleRate
-        if nominalNTimebaseTicksPerSample != round(
-                nominalNTimebaseTicksPerSample):  # should use the python round, not numpy round
-            actualAcquisitionSampleRate = 100.0e6 / math.floor(
-                nominalNTimebaseTicksPerSample)  # sic: the boards floor() for acq, but round() for stim
-            header["Acquisition"]["SampleRate"] = numpy.array(actualAcquisitionSampleRate)
+        nominal_acquisition_sample_rate = float(header["Acquisition"]["SampleRate"])
+        nominal_n_timebase_ticks_per_sample = 100.0e6 / nominal_acquisition_sample_rate
+        if nominal_n_timebase_ticks_per_sample != round(
+                nominal_n_timebase_ticks_per_sample):  # should use the python round, not numpy round
+            actual_acquisition_sample_rate = 100.0e6 / math.floor(
+                nominal_n_timebase_ticks_per_sample)  # sic: the boards floor() for acq, but round() for stim
+            header["Acquisition"]["SampleRate"] = numpy.array(actual_acquisition_sample_rate)
             data_file_as_dict["header"] = header
         # Fix the stimulation sample rate, if needed
-        nominalStimulationSampleRate = float(header["Stimulation"]["SampleRate"])
-        nominalNTimebaseTicksPerSample = 100.0e6 / nominalStimulationSampleRate
-        if nominalNTimebaseTicksPerSample != round(nominalNTimebaseTicksPerSample):
-            actualStimulationSampleRate = 100.0e6 / round(
-                nominalNTimebaseTicksPerSample)  # sic: the boards floor() for acq, but round() for stim
-            header["Stimulation"]["SampleRate"] = numpy.array(actualStimulationSampleRate)
+        nominal_stimulation_sample_rate = float(header["Stimulation"]["SampleRate"])
+        nominal_n_timebase_ticks_per_sample = 100.0e6 / nominal_stimulation_sample_rate
+        if nominal_n_timebase_ticks_per_sample != round(nominal_n_timebase_ticks_per_sample):
+            actual_stimulation_sample_rate = 100.0e6 / round(
+                nominal_n_timebase_ticks_per_sample)  # sic: the boards floor() for acq, but round() for stim
+            header["Stimulation"]["SampleRate"] = numpy.array(actual_stimulation_sample_rate)
             data_file_as_dict["header"] = header
 
     # If needed, use the analog scaling coefficients and scales to convert the
     # analog scans from counts to experimental units.
     if "NAIChannels" in header:
-        nAIChannels = header["NAIChannels"]
+        n_a_i_channels = header["NAIChannels"]
     else:
-        allAnalogChannelScales = header["Acquisition"]["AnalogChannelScales"]
-        nAIChannels = allAnalogChannelScales.size  # element count
-    if format_string.lower() != "raw" and nAIChannels > 0:
+        all_analog_channel_scales = header["Acquisition"]["AnalogChannelScales"]
+        n_a_i_channels = all_analog_channel_scales.size  # element count
+    if format_string.lower() != "raw" and n_a_i_channels > 0:
         try:
             if "AIChannelScales" in header:
                 # Newer files have this field, and lack header.Acquisition.AnalogChannelScales
-                allAnalogChannelScales = header["AIChannelScales"]
+                all_analog_channel_scales = header["AIChannelScales"]
             else:
                 # Fallback for older files
-                allAnalogChannelScales = header["Acquisition"]["AnalogChannelScales"]
+                all_analog_channel_scales = header["Acquisition"]["AnalogChannelScales"]
         except KeyError:
             raise KeyError("Unable to read channel scale information from file.")
         try:
             if "IsAIChannelActive" in header:
                 # Newer files have this field, and lack header.Acquisition.AnalogChannelScales
-                isActive = header["IsAIChannelActive"].astype(bool)
+                is_active = header["IsAIChannelActive"].astype(bool)
             else:
                 # Fallback for older files
-                isActive = header["Acquisition"]["IsAnalogChannelActive"].astype(bool)
+                is_active = header["Acquisition"]["IsAnalogChannelActive"].astype(bool)
         except KeyError:
             raise KeyError("Unable to read active/inactive channel information from file.")
-        analogChannelScales = allAnalogChannelScales[isActive]
+        analog_channel_scales = all_analog_channel_scales[is_active]
 
         # read the scaling coefficients
         try:
             if "AIScalingCoefficients" in header:
-                analogScalingCoefficients = header["AIScalingCoefficients"]
+                analog_scaling_coefficients = header["AIScalingCoefficients"]
             else:
-                analogScalingCoefficients = header["Acquisition"]["AnalogScalingCoefficients"]
+                analog_scaling_coefficients = header["Acquisition"]["AnalogScalingCoefficients"]
         except KeyError:
             raise KeyError("Unable to read channel scaling coefficients from file.")
 
-        doesUserWantSingle = (format_string.lower() == "single")
+        does_user_want_single = (format_string.lower() == "single")
         for field_name in data_file_as_dict:
             # field_names = field_namess{i}
             if len(field_name) >= 5 and (field_name[0:5] == "sweep" or field_name[0:5] == "trial"):
                 # We check for "trial" for backward-compatibility with
                 # data files produced by older versions of WS.
-                analogDataAsCounts = data_file_as_dict[field_name]["analogScans"]
-                if doesUserWantSingle:
-                    scaledAnalogData = scaledSingleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales,
-                                                                     analogScalingCoefficients)
+                analog_data_as_counts = data_file_as_dict[field_name]["analogScans"]
+                if does_user_want_single:
+                    scaled_analog_data = scaled_single_analog_data_from_raw(analog_data_as_counts,
+                                                                            analog_channel_scales,
+                                                                            analog_scaling_coefficients)
                 else:
-                    scaledAnalogData = scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales,
-                                                                     analogScalingCoefficients)
-                data_file_as_dict[field_name]["analogScans"] = scaledAnalogData
+                    scaled_analog_data = scaled_double_analog_data_from_raw(analog_data_as_counts,
+                                                                            analog_channel_scales,
+                                                                            analog_scaling_coefficients)
+                data_file_as_dict[field_name]["analogScans"] = scaled_analog_data
 
     return data_file_as_dict
 
@@ -128,8 +130,7 @@ def crawl_h5_group(group):
 
 def field_name_from_hdf_name(hdf_name):
     # Convert the name of an HDF dataset/group to something that is a legal
-    # Matlab struct field name.  We do this even in Python, just to be 
-    # consistent.
+    # Matlab struct field name.  We do this even in Python, just to be consistent.
     try:
         # the group/dataset name seems to be a number.  If it's an integer, we can deal, so check that.
         hdf_name_as_double = float(hdf_name)
@@ -147,30 +148,30 @@ def field_name_from_hdf_name(hdf_name):
     return field_name
 
 
-def scaledDoubleAnalogDataFromRaw(dataAsADCCounts, channelScales, scalingCoefficients):
+def scaled_double_analog_data_from_raw(data_as_ADC_counts, channel_scales, scaling_coefficients):
     # Function to convert raw ADC data as int16s to doubles, taking to the
     # per-channel scaling factors into account.
     #
-    #   dataAsADCCounts: nChannels x nScans int16 array
-    #   channelScales: double vector of length nChannels, each element having
+    #   data_as_ADC_counts: n_channels x nScans int16 array
+    #   channel_scales: double vector of length n_channels, each element having
     #                   (implicit) units of V/(native unit), where each
     #                   channel has its own native unit.
-    #   scalingCoefficients: nChannels x nCoefficients  double array,
+    #   scaling_coefficients: n_channels x nCoefficients  double array,
     #                        contains scaling coefficients for converting
     #                        ADC counts to volts at the ADC input.
     #
-    #   scaledData: nScans x nChannels double array containing the scaled
+    #   scaled_data: nScans x n_channels double array containing the scaled
     #               data, each channel with it's own native unit.
 
-    inverseChannelScales = 1.0 / channelScales  # if some channel scales are zero, this will lead to nans and/or infs
-    nChannels = channelScales.size
-    scaledData = numpy.empty(dataAsADCCounts.shape)
-    for i in range(0, nChannels):
-        scaledData[i, :] = inverseChannelScales[i] * numpy.polyval(numpy.flipud(scalingCoefficients[i, :]),
-                                                                   dataAsADCCounts[i, :])
-    return scaledData
+    inverse_channel_scales = 1.0 / channel_scales  # if some channel scales are zero, this will lead to nans and/or infs
+    n_channels = channel_scales.size
+    scaled_data = numpy.empty(data_as_ADC_counts.shape)
+    for i in range(0, n_channels):
+        scaled_data[i, :] = inverse_channel_scales[i] * numpy.polyval(numpy.flipud(scaling_coefficients[i, :]),
+                                                                      data_as_ADC_counts[i, :])
+    return scaled_data
 
 
-def scaledSingleAnalogDataFromRaw(dataAsADCCounts, channelScales, scalingCoefficients):
-    scaledData = scaledDoubleAnalogDataFromRaw(dataAsADCCounts, channelScales, scalingCoefficients)
+def scaled_single_analog_data_from_raw(dataAsADCCounts, channelScales, scalingCoefficients):
+    scaledData = scaled_double_analog_data_from_raw(dataAsADCCounts, channelScales, scalingCoefficients)
     return scaledData.astype('single')
