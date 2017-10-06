@@ -128,7 +128,7 @@ def test_identity_function_on_vector():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     t = dt * np.arange(n_scans)
     x = (0.9 * pow(2, 14) * np.sin(2 * math.pi * 10 * t)).astype('int16').reshape(1, n_scans)
     channel_scale = (np.array(1, ndmin=1)).astype(
@@ -145,7 +145,7 @@ def test_arbitrary_on_vector():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     t = dt * np.arange(n_scans)
     x = (0.9 * pow(2, 14) * np.sin(2 * math.pi * 10 * t)).astype('int16').reshape(1, n_scans)
     channel_scale = (np.array(1, ndmin=1)).astype(
@@ -163,7 +163,7 @@ def test_arbitrary_on_empty():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.0  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     t = dt * np.arange(n_scans)
     x = (0.9 * pow(2, 14) * np.sin(2 * math.pi * 10 * t)).astype('int16').reshape(1, n_scans)
     # V/whatevers, scale for converting from V to whatever or vice-versa
@@ -179,7 +179,7 @@ def test_arbitrary_on_matrix():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 6
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
@@ -200,7 +200,7 @@ def test_arbitrary_on_zero_channels():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 0
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
@@ -218,7 +218,7 @@ def test_arbitrary_on_matrix_zero_coeffs():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 0
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
@@ -234,7 +234,7 @@ def test_arbitrary_on_matrix_one_coeff():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 6
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
@@ -252,7 +252,7 @@ def test_arbitrary_on_matrix_two_coeffs():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 3
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
@@ -273,7 +273,7 @@ def test_arbitrary_on_matrix_two_coeffs_single():
     fs = 20000.0  # Hz
     dt = 1 / fs  # s
     time = 0.2  # s
-    n_scans = round(time / dt)
+    n_scans = int(round(time / dt))
     n_channels = 3
     i_channel = np.arange(n_channels).reshape(n_channels, 1)
     t = (dt * np.arange(n_scans)).reshape(1, n_scans)
