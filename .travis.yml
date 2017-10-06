@@ -21,7 +21,7 @@ install:
   - pip install -r requirements-dev.txt
 
 script:
-  - py.test -s -v --cov=python --pep8
+  - py.test -s -v --cov=pywavesurfer --pep8
 
 after_success:
   - coveralls
