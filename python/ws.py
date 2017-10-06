@@ -1,5 +1,4 @@
 import os
-import posixpath
 import math
 import numpy
 import h5py
@@ -146,21 +145,6 @@ def field_name_from_hdf_name(hdf_name):
         field_name = hdf_name
 
     return field_name
-
-
-def local_hdf_name_from_path(raw_path):
-    # Given the path to an HDF group/dataset, get the name of the item within its parent group.
-    # This is sometimes called the "leaf" name.
-    # If the input ends in a "/", we pretend like the "/" isn't there.
-    if len(raw_path) == 0:
-        local_name = ""
-    else:
-        if raw_path[-1] == "/":
-            path = raw_path[0:-1]
-        else:
-            path = raw_path
-        (_, local_name) = posixpath.split(path)
-    return local_name
 
 
 def scaledDoubleAnalogDataFromRaw(dataAsADCCounts, channelScales, scalingCoefficients):
