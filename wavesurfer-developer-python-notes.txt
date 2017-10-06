@@ -1,0 +1,38 @@
+Users: This files contains information for the Wavesurfer
+developer(s).  You can safely ignore it.
+
+
+
+To bump version
+---------------
+
+1.  Run: bumpversion patch (or 'minor' or 'major' following: major.minor.patch)
+
+2.  Add a paragraph to the README about the new release.
+
+
+
+To run automated tests
+----------------------
+
+1. Change directory to pywavesurfer
+
+2. Run: pytest --pep8
+
+3. To see coverage run: pytest --pep8 --cov=pywavesurfer --cov-report html
+
+
+
+pyWavesurfer coding/development conventions
+-----------------------------------------
+
+As much as possible please adhere to PEP8.
+https://www.python.org/dev/peps/pep-0008/.
+
+Two exception are made:
+
+1. Line length is capped at 120
+
+2. The loading method name remains camelCase for consistency of the API
+
+
