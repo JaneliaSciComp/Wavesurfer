@@ -10,19 +10,19 @@ def test_loading_file():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    d = ws.loadDataFile(file_name)  # conversion to scaled data would fail for these files
-    scan = d['sweep_0001']['analogScans']
+    dataAsDict = ws.loadDataFile(file_name)
+    scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'float64'
     assert np.allclose(scan.mean(axis=1), np.array([1.78443789,  1.78402293]))
-    acq_sampling_rate = float(d['header']['AcquisitionSampleRate'])
+    acq_sampling_rate = float(dataAsDict['header']['AcquisitionSampleRate'])
     assert acq_sampling_rate == 20e3
-    n_a_i_channels = int(d['header']['NAIChannels'])
+    n_a_i_channels = int(dataAsDict['header']['NAIChannels'])
     assert n_a_i_channels == 3
-    n_active_a_i_channels = int(d['header']['IsAIChannelActive'].sum())
+    n_active_a_i_channels = int(dataAsDict['header']['IsAIChannelActive'].sum())
     assert n_active_a_i_channels == 2
-    stim_sampling_rate = d['header']['StimulationSampleRate']
+    stim_sampling_rate = dataAsDict['header']['StimulationSampleRate']
     assert stim_sampling_rate == 20e3
-    x = d['sweep_0001']['analogScans']
+    x = dataAsDict['sweep_0001']['analogScans']
     assert np.absolute(np.max(x[0]) - 5) < 0.01
     assert np.absolute(np.min(x[0]) - 0) < 0.01
 
@@ -45,8 +45,8 @@ def test_type_single():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    d = ws.loadDataFile(file_name, format_string='single')  # conversion to scaled data would fail for these files
-    scan = d['sweep_0001']['analogScans']
+    dataAsDict = ws.loadDataFile(file_name, format_string='single')  # conversion to scaled data would fail for these files
+    scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'float32'
     assert np.allclose(scan.mean(axis=1), np.array([1.78443789, 1.78402293]))
 
@@ -55,8 +55,8 @@ def test_type_raw():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    d = ws.loadDataFile(file_name, format_string='raw')  # conversion to scaled data would fail for these files
-    scan = d['sweep_0001']['analogScans']
+    dataAsDict = ws.loadDataFile(file_name, format_string='raw')  # conversion to scaled data would fail for these files
+    scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'int16'
     assert np.allclose(scan.mean(axis=1), np.array([5565.12903571, 5563.84042857]))
 
@@ -122,6 +122,47 @@ def test_loading_newer_file_with_funnier_sampling_rate():
     returned_stim_sampling_rate = data_file_as_struct['header']['Stimulation']['SampleRate']
     n_timebase_ticks_per_stim_sample = 100e6 / returned_stim_sampling_rate  # should be exactly 3333
     assert n_timebase_ticks_per_stim_sample == 3333
+
+
+def test_loading_0p74_file():
+    this_file_path = os.path.realpath(__file__)
+    this_dir_name = os.path.dirname(this_file_path)
+    file_name = os.path.join(this_dir_name, 'ws_0p74_data_0001.h5')
+    dataAsDict = ws.loadDataFile(file_name, 'raw')  # conversion to scaled data would fail for this file
+    acq_sampling_rate = float(dataAsDict['header']['Acquisition']['SampleRate'])
+    assert acq_sampling_rate == 20e3
+    n_a_i_channels = dataAsDict['header']['Acquisition']['ChannelScales'].size
+    assert n_a_i_channels == 4
+    n_active_a_i_channels = int(dataAsDict['header']['Acquisition']['IsChannelActive'].sum())
+    assert n_active_a_i_channels == 4
+    stim_sampling_rate = dataAsDict['header']['Stimulation']['SampleRate']
+    assert stim_sampling_rate == 20e3
+    x_as_int16 = dataAsDict['trial_0001']
+    assert x_as_int16.dtype == 'int16'
+    assert np.max(x_as_int16[0])==15204
+    assert np.min(x_as_int16[0])==2
+    x = x_as_int16.astype('float64')
+    assert np.allclose(x.mean(axis=1), np.array([7603.29115,  7594.2194 ,  7598.7204 ,  7594.06135]))
+
+
+def test_loading_0p933_file():
+    this_file_path = os.path.realpath(__file__)
+    this_dir_name = os.path.dirname(this_file_path)
+    file_name = os.path.join(this_dir_name, 'ws_0p933_data_0001.h5')
+    dataAsDict = ws.loadDataFile(file_name)
+    acq_sampling_rate = float(dataAsDict['header']['Acquisition']['SampleRate'])
+    assert acq_sampling_rate == 20e3
+    n_a_i_channels = dataAsDict['header']['Acquisition']['AnalogChannelScales'].size
+    assert n_a_i_channels == 1
+    n_active_a_i_channels = int(dataAsDict['header']['Acquisition']['IsChannelActive'].sum())
+    assert n_active_a_i_channels == 1
+    stim_sampling_rate = dataAsDict['header']['Stimulation']['SampleRate']
+    assert stim_sampling_rate == 20e3
+    x = dataAsDict['sweep_0001']['analogScans']
+    assert x.dtype == 'float64'
+    assert np.absolute(np.max(x[0]) - 5) < 0.01
+    assert np.absolute(np.min(x[0]) - 0) < 0.01
+    assert np.allclose(x.mean(axis=1), np.array([2.49962616]))
 
 
 def test_identity_function_on_vector():
