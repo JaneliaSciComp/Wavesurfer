@@ -62,7 +62,7 @@ def loadDataFile(filename, format_string='double'):
             all_analog_channel_scales = acq["AnalogChannelScales"]
         else:
             # This is presumably a very old file, from before we supported digital inputs
-            all_analog_channel_scales = acq["ChannelScales"]    
+            all_analog_channel_scales = acq["ChannelScales"]
         n_a_i_channels = all_analog_channel_scales.size  # element count
     if format_string.lower() != "raw" and n_a_i_channels > 0:
         try:
