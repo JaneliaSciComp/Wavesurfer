@@ -1,0 +1,27 @@
+language: python
+
+python:
+  - "2.7"
+  - "3.6"
+
+dist: trusty
+
+sudo: false
+
+install:
+  - wget -c http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+  - bash Miniconda-latest-Linux-x86_64.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create --yes -q -n test python=$TRAVIS_PYTHON_VERSION pip pytest numpy
+  - source activate test
+  - pip install -r requirements-dev.txt
+
+script:
+  - py.test -s -v --cov=pywavesurfer --pep8
+
+after_success:
+  - coveralls
