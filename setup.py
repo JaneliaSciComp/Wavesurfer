@@ -16,7 +16,7 @@ with open(path.join(here, 'requirements-dev.txt'), encoding='utf-8') as f:
 setup(
     name='pySparkUtils',
     packages=find_packages(exclude=['+ws', 'matlab-zmq', 'trenches', 'zeromq-4.1.3']),
-    version='0.0.0',
+    version='0.0.1',
     description="Python implementation for reading WaveSurfer files",
     long_description=long_description,
     author='Adam Taylor, Boaz Mohar',
