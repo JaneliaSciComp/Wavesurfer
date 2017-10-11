@@ -13,7 +13,7 @@ def test_loading_file():
     dataAsDict = ws.loadDataFile(file_name)
     scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'float64'
-    assert np.allclose(scan.mean(axis=1), np.array([1.78443789,  1.78402293]))
+    assert np.allclose(scan.mean(axis=1), np.array([1.78443789, 1.78402293]))
     acq_sampling_rate = float(dataAsDict['header']['AcquisitionSampleRate'])
     assert acq_sampling_rate == 20e3
     n_a_i_channels = int(dataAsDict['header']['NAIChannels'])
@@ -45,7 +45,8 @@ def test_type_single():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    dataAsDict = ws.loadDataFile(file_name, format_string='single')  # conversion to scaled data would fail for these files
+    # conversion to scaled data would fail for these files
+    dataAsDict = ws.loadDataFile(file_name, format_string='single')
     scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'float32'
     assert np.allclose(scan.mean(axis=1), np.array([1.78443789, 1.78402293]))
@@ -139,10 +140,10 @@ def test_loading_0p74_file():
     assert stim_sampling_rate == 20e3
     x_as_int16 = dataAsDict['trial_0001']
     assert x_as_int16.dtype == 'int16'
-    assert np.max(x_as_int16[0])==15204
-    assert np.min(x_as_int16[0])==2
+    assert np.max(x_as_int16[0]) == 15204
+    assert np.min(x_as_int16[0]) == 2
     x = x_as_int16.astype('float64')
-    assert np.allclose(x.mean(axis=1), np.array([7603.29115,  7594.2194 ,  7598.7204 ,  7594.06135]))
+    assert np.allclose(x.mean(axis=1), np.array([7603.29115, 7594.2194, 7598.7204, 7594.06135]))
 
 
 def test_loading_0p933_file():
