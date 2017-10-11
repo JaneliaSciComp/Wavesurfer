@@ -45,7 +45,6 @@ def test_type_single():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    # conversion to scaled data would fail for these files
     dataAsDict = ws.loadDataFile(file_name, format_string='single')
     scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'float32'
@@ -56,7 +55,7 @@ def test_type_raw():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, 'test2.h5')
-    dataAsDict = ws.loadDataFile(file_name, format_string='raw')  # conversion to scaled data would fail for these files
+    dataAsDict = ws.loadDataFile(file_name, format_string='raw')  # conversion to scaled data would fail for this file
     scan = dataAsDict['sweep_0001']['analogScans']
     assert scan.dtype == 'int16'
     assert np.allclose(scan.mean(axis=1), np.array([5565.12903571, 5563.84042857]))
@@ -66,7 +65,7 @@ def test_loading_older_file_with_funny_sampling_rate():
     this_file_path = os.path.realpath(__file__)
     this_dir_name = os.path.dirname(this_file_path)
     file_name = os.path.join(this_dir_name, '30_kHz_sampling_rate_0p912_0001.h5')
-    data_file_as_struct = ws.loadDataFile(file_name, 'raw')  # conversion to scaled data would fail for these files
+    data_file_as_struct = ws.loadDataFile(file_name, 'raw')  # conversion to scaled data would fail for this file
     # The nominal sampling rate was 30000, but the returned
     # sampling rate should be ~30003 Hz, to make (100 Mhz)/fs an
     # integer.
