@@ -6,9 +6,13 @@ developer(s).  You can safely ignore it.
 To bump version
 ---------------
 
-1.  Run: bumpversion patch (or 'minor' or 'major' following: major.minor.patch)
+1. Run: bumpversion patch (or 'minor' or 'major' following: major.minor.patch)
 
-2.  Add a paragraph to the README about the new release.
+2. Add a paragraph to the README about the new release.
+
+3. Run: python setup.py sdist
+
+4. Run: twine upload dist\pywaveserfer{version}
 
 
 
