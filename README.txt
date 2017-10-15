@@ -441,3 +441,6 @@ Version History
                          Electrodes window.
                   
 0.96     Sep 5, 2017     Added support for multiple DAQ boards.
+
+0.961    Oct 14, 2017    Bug fixes.
+
