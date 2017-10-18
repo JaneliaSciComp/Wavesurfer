@@ -34,7 +34,22 @@ classdef LoadOldProtocolFileTestCase < matlab.unittest.TestCase
             didWarningsOccur = ...
                 ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
             self.verifyFalse(didWarningsOccur) ;
-            self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;
+            self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;            
+            
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'TypeString'), 'SquarePulse') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'Delay'), '0.251') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'Duration'), '0.51') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude'), '5.1') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'DCOffset'), '0.1') ;
+            
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'TypeString'), 'TwoSquarePulses') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'Delay'), '0.251') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'FirstPulseAmplitude'), '5.1') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'FirstPulseDuration'), '0.11') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'DelayBetweenPulses'), '0.051') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'SecondPulseAmplitude'), '1.1') ;
+            self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 2, 'SecondPulseDuration'), '0.11') ;
+            
             wsController.quit() ;
         end  % function    
     end  % test methods
