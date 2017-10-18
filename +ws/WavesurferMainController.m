@@ -147,9 +147,9 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         % Tools menu
-        function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('FastProtocolsController') ;
-        end        
+%         function FastProtocolsMenuItemActuated(self,source,event) %#ok<INUSD>
+%             self.showAndRaiseChildFigure_('FastProtocolsController') ;
+%         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
             self.showAndRaiseChildFigure_('ChannelsFigure') ;
@@ -224,6 +224,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     throw(warningException) ;
                 end
             end
+        end  % method
+
+        function ManageFastProtocolsButtonActuated(self, source, event)  %#ok<INUSD>
+            self.showAndRaiseChildFigure_('FastProtocolsController') ;
         end  % method
         
         % View menu        

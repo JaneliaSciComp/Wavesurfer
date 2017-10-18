@@ -1,4 +1,4 @@
-function fakeControlActuationInTestBang(target, controlName, varargin)            
+function [didWarningsOccur, warningsException] = fakeControlActuationInTestBang(target, controlName, varargin)            
     % This is like controlActuated(), but used when you want to
     % fake the actuation of a control, often in a testing script.
     % So, for instance, if only ws:warnings occur, if prints them,
@@ -8,6 +8,8 @@ function fakeControlActuationInTestBang(target, controlName, varargin)
     % always calls [controlName 'Actuated'], rather than using
     % source.Type to determine the method name.  That's becuase
     % there's generally no real source for fake actuations.
+    didWarningsOccur = false ;
+    warningsException = [] ;  % fallback
     try
         methodName = [controlName 'Actuated'] ;
         if ismethod(target, methodName) ,
@@ -34,6 +36,8 @@ function fakeControlActuationInTestBang(target, controlName, varargin)
             fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
             disp(exception.getReport()) ;
             fprintf('(End of report for warning-level exception.)\n\n') ;
+            didWarningsOccur = true ;
+            warningsException = exception ;
         else
             rethrow(exception) ;
         end

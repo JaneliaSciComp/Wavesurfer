@@ -293,9 +293,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             %unitPulse=ws.SquarePulseStimulus('Name','Unit pulse');
             pulse=self.addNewStimulus_();
             pulse.Name='Pulse';
-            pulse.Amplitude='5';  % V, too big
-            pulse.Delay='0.25';
-            pulse.Duration='0.5';
+            pulse.setAdditionalParameter('Amplitude', '5') ;  % V, too big
+            pulse.setAdditionalParameter('Delay', '0.25') ;
+            pulse.setAdditionalParameter('Duration', '0.5') ;
             %self.add(unitPulse);
             %self.SelectedItem=pulse;
             self.setSelectedItemByClassNameAndIndex('ws.Stimulus',1) ;
