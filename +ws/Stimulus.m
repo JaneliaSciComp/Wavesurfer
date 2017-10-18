@@ -35,13 +35,17 @@ classdef Stimulus < ws.Model & ws.ValueComparable
 
     properties (Access=protected)
         Name_ = ''
-%         Delay_ = '0.25'  % sec
-%         Duration_ = '0.5'  % sec
-%         Amplitude_ = '5'
-%         DCOffset_ = '0'
         Delegate_
           % Invariant: this is a scalar ws.StimulusDelegate,
           % never empty
+    end
+    
+    properties (Access=protected, Transient=true)
+        % These are for backwards-compatibility with <=0.961 protocol files
+        LegacyDelay_ 
+        LegacyDuration_
+        LegacyAmplitude_ 
+        LegacyDCOffset_ 
     end
     
     properties (Dependent = true, Transient=true)
@@ -386,6 +390,30 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                               {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
         end  % function 
     end  % public methods block    
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            if ~isempty(self.LegacyDelay_) && ismember('Delay', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Delay', self.LegacyDelay_) ;
+            end
+            self.LegacyDelay_ = [] ;
+            if ~isempty(self.LegacyDuration_) && ismember('Duration', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Duration', self.LegacyDuration_) ;
+            end
+            self.LegacyDuration_ = [] ;
+            if ~isempty(self.LegacyAmplitude_) && ismember('Amplitude', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Amplitude', self.LegacyAmplitude_) ;
+            end
+            self.LegacyAmplitude_ = [] ;
+            if ~isempty(self.LegacyDCOffset_) && ismember('DCOffset', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('DCOffset', self.LegacyDCOffset_) ;
+            end
+            self.LegacyDCOffset_ = [] ;
+        end
+    end  % protected methods block    
     
 end
 
