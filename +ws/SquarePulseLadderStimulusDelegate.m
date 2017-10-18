@@ -2,12 +2,13 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
     
     properties (Constant)
         TypeString='SquarePulseLadder'
-        AdditionalParameterNames={'FirstPulseAmplitude' 'PulseDuration' 'DelayBetweenPulses' 'AmplitudeChangePerPulse' 'PulseCount'};
-        AdditionalParameterDisplayNames={'1st Amplitude' 'Pulse Duration' 'Delay Between' 'Amplitude Change' 'Pulse Count'};        
-        AdditionalParameterDisplayUnitses={'' 's' 's' '' ''};        
+        AdditionalParameterNames={'Delay' 'FirstPulseAmplitude' 'PulseDuration' 'DelayBetweenPulses' 'AmplitudeChangePerPulse' 'PulseCount'};
+        AdditionalParameterDisplayNames={'Delay' '1st Amplitude' 'Pulse Duration' 'Delay Between' 'Amplitude Change' 'Pulse Count'};        
+        AdditionalParameterDisplayUnitses={'s' '' 's' 's' '' ''};        
     end
     
     properties (Dependent=true)
+        Delay
         FirstPulseAmplitude
         PulseDuration
         DelayBetweenPulses
@@ -16,6 +17,7 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
     end
     
     properties (Access=protected)
+        Delay_ = '0.25'  % sec
         FirstPulseAmplitude_ = '-2'
         PulseDuration_ = '0.05'  % s
         DelayBetweenPulses_ = '0.05'  % s 
@@ -23,10 +25,36 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
         PulseCount_ = '5'
     end
     
+    properties (Dependent = true, Transient=true)
+        EndTime  % Delay + Duration
+    end
+    
+    methods
+        function val = get.EndTime(self)
+            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,1) ;
+            pulseDuration = ws.Stimulus.evaluateSweepExpression(self.PulseDuration,1) ;
+            delayBetweenPulses = ws.Stimulus.evaluateSweepExpression(self.DelayBetweenPulses,1) ;            
+            pulseCount = ws.Stimulus.evaluateSweepExpression(self.PulseCount,1) ;
+            val = delay + pulseCount * pulseDuration + max(0,pulseCount-1) * delayBetweenPulses ;
+        end
+    end        
+    
     methods
         function self = SquarePulseLadderStimulusDelegate()
             self = self@ws.StimulusDelegate() ;
         end
+        
+        function set.Delay(self, value)
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
+                % if we get here without error, safe to set
+                self.Delay_ = value ;
+            end                    
+        end  % function
+        
+        function out = get.Delay(self)
+            out = self.Delay_;
+        end   % function
         
         function set.FirstPulseAmplitude(self, newValue)
             test = ws.Stimulus.evaluateSweepExpression(newValue,1) ;
@@ -40,7 +68,7 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
             test = ws.Stimulus.evaluateSweepExpression(newValue,1) ;
             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
                 % if we get here without error, safe to set
-                self.FirstPulseDuration_ = newValue;
+                self.PulseDuration_ = newValue;
             end
         end  % function
         
@@ -91,7 +119,34 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
             out = self.PulseCount_ ;
         end
         
-        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
+        function data = calculateSignal(self, t, sweepIndexWithinSet)
+            % Process args
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
+            end
+                        
+            % Compute the delay from the expression for it
+            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
+            % Screen for illegal values
+            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
+                data=zeros(size(t));
+                return
+            end
+            
+            % Shift the timeline to account for the delay
+            tShiftedByDelay=t-delay;
+            
+            % Call a likely-overloaded method to generate the raw output data
+            data = self.calculateCoreSignal(tShiftedByDelay, sweepIndexWithinSet) ;
+                % data should be same size as t at this point            
+            
+            % Don't want to leave the DACs on when we're done    
+            if size(data,1)>0 ,
+                data(end,:)=0; 
+            end
+        end        
+        
+        function data = calculateCoreSignal(self, t, sweepIndexWithinSet)
             % Compute the first pulse amplitude from the expression for it
             firstPulseAmplitude = ws.Stimulus.evaluateSweepExpression(self.FirstPulseAmplitude,sweepIndexWithinSet) ;
             if isempty(firstPulseAmplitude) || ~isnumeric(firstPulseAmplitude) || ~isscalar(firstPulseAmplitude) || ~isreal(firstPulseAmplitude) || ...
@@ -158,7 +213,7 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
     
     methods (Access=protected)
        function value=isequalElement(self,other)
-            propertyNamesToCompare={'FirstPulseAmplitude' 'PulseDuration' 'DelayBetweenPulses' 'AmplitudeChangePerPulse' 'PulseCount'};
+            propertyNamesToCompare={'Delay' 'FirstPulseAmplitude' 'PulseDuration' 'DelayBetweenPulses' 'AmplitudeChangePerPulse' 'PulseCount'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end

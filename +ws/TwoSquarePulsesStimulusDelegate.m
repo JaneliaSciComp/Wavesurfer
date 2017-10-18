@@ -2,12 +2,13 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
     
     properties (Constant)
         TypeString='TwoSquarePulses'
-        AdditionalParameterNames={'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'};
-        AdditionalParameterDisplayNames={'1st Amplitude' '1st Duration' 'Delay Between' '2nd Amplitude' '2nd Duration'};        
-        AdditionalParameterDisplayUnitses={'' 's' 's' '' 's'};        
+        AdditionalParameterNames={'Delay' 'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'};
+        AdditionalParameterDisplayNames={'Delay' '1st Amplitude' '1st Duration' 'Delay Between' '2nd Amplitude' '2nd Duration'};        
+        AdditionalParameterDisplayUnitses={'s' '' 's' 's' '' 's'};        
     end
     
     properties (Dependent=true)
+        Delay  % this and all below are string sweep expressions, in seconds
         FirstPulseAmplitude
         FirstPulseDuration
         DelayBetweenPulses
@@ -16,6 +17,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
     end
     
     properties (Access=protected)
+        Delay_ = '0.25'  % sec
         FirstPulseAmplitude_ = '5'
         FirstPulseDuration_ = '0.1'  % s
         DelayBetweenPulses_ = '0.05'  % s 
@@ -23,19 +25,31 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
         SecondPulseDuration_ = '0.1'
     end
     
+    properties (Dependent = true, Transient=true)
+        EndTime  % Delay + Duration
+    end
+    
+    methods
+        function val = get.EndTime(self)
+            val = ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ...
+                  ws.Stimulus.evaluateSweepExpression(self.FirstPulseDuration,1) + ...
+                  ws.Stimulus.evaluateSweepExpression(self.DelayBetweenPulses,1) + ...
+                  ws.Stimulus.evaluateSweepExpression(self.SecondPulseDuration,1) ;
+        end
+    end        
+    
     methods
         function self = TwoSquarePulsesStimulusDelegate()
             self = self@ws.StimulusDelegate() ;
-%             pvArgs = ...
-%                 ws.filterPVArgs(varargin, ...
-%                                           {'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'}, ...
-%                                           {});
-%             propNames = pvArgs(1:2:end);
-%             propValues = pvArgs(2:2:end);               
-%             for i = 1:length(propValues)
-%                 self.(propNames{i}) = propValues{i};
-%             end            
         end
+        
+        function set.Delay(self, value)
+            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
+                % if we get here without error, safe to set
+                self.Delay_ = value ;
+            end                    
+        end  % function
         
         function set.FirstPulseAmplitude(self, newValue)
             test = ws.Stimulus.evaluateSweepExpression(newValue,1) ;
@@ -43,9 +57,6 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.FirstPulseAmplitude_ = newValue;
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged();
-%             end
         end  % function
         
         function set.FirstPulseDuration(self, newValue)
@@ -54,9 +65,6 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.FirstPulseDuration_ = newValue;
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged();
-%             end
         end  % function
         
         function set.DelayBetweenPulses(self, newValue)
@@ -65,9 +73,6 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.DelayBetweenPulses_ = newValue;
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged();
-%             end
         end  % function
         
         function set.SecondPulseAmplitude(self, newValue)
@@ -76,9 +81,6 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.SecondPulseAmplitude_ = newValue;
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged();
-%             end
         end  % function
         
         function set.SecondPulseDuration(self, newValue)
@@ -87,11 +89,12 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 % if we get here without error, safe to set
                 self.SecondPulseDuration_ = newValue;
             end
-%             if ~isempty(self.Parent) ,
-%                 self.Parent.childMayHaveChanged();
-%             end
         end  % function
         
+        function out = get.Delay(self)
+            out = self.Delay_;
+        end   % function
+
         function out = get.FirstPulseAmplitude(self)
             out = self.FirstPulseAmplitude_ ;
         end
@@ -159,16 +162,67 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                 data=zeros(size(t));
             end
         end                
-    end
-    
-%     methods (Access=protected)
-%         function defineDefaultPropertyTags_(self)
-%             defineDefaultPropertyTags_@ws.StimulusDelegate(self);
-%             self.setPropertyTags('AdditionalParameterNames', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AdditionalParameterDisplayNames', 'ExcludeFromFileTypes', {'header'});
-%             self.setPropertyTags('AdditionalParameterDisplayUnitses', 'ExcludeFromFileTypes', {'header'});
-%         end
-%     end
+        
+        function data = calculateSignal(self, t, sweepIndexWithinSet)
+            % Process args
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
+            end
+                        
+            % Compute the delay from the expression for it
+            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
+            % Screen for illegal values
+            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
+                data=zeros(size(t));
+                return
+            end
+            
+            % Shift the timeline to account for the delay
+            tShiftedByDelay=t-delay;
+            
+            % Call the core method to generate the raw output data
+            %delegate = self ;
+            data = self.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
+                % data should be same size as t at this point
+            
+%             % Compute the amplitude from the expression for it
+%             amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(amplitude) || ~(isnumeric(amplitude)||islogical(amplitude)) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+% 
+%             % Compute the delay from the expression for it
+%             dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(dcOffset) || ~(isnumeric(dcOffset)||islogical(dcOffset)) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+            
+%             % Scale by the amplitude, and add the DC offset
+%             data = amplitude*data + dcOffset;
+
+%             % Compute the duration from the expression for it
+%             duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(duration) || ~(isnumeric(duration)||islogical(duration)) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+%             
+%             % Zero the data outside the support
+%             % Yes, this is supposed to "override" the DC offset outside the
+%             % support.
+%             isOnSupport=(0<=tShiftedByDelay)&(tShiftedByDelay<duration);
+%             data(~isOnSupport,:)=0;
+            
+            if size(data,1)>0 ,
+                data(end,:)=0;  % don't want to leave the DACs on when we're done
+            end
+        end                
+    end  % public methods block
     
     %
     % Implementations of methods needed to be a ws.ValueComparable
@@ -182,7 +236,7 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
     
     methods (Access=protected)
        function value=isequalElement(self,other)
-            propertyNamesToCompare={'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'};
+            propertyNamesToCompare={'Delay' 'FirstPulseAmplitude' 'FirstPulseDuration' 'DelayBetweenPulses' 'SecondPulseAmplitude' 'SecondPulseDuration'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
