@@ -50,16 +50,16 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
         StimulusPanel
         StimulusNameText
         StimulusNameEdit
-        StimulusDelayText
-        StimulusDelayEdit
-        StimulusDelayUnitsText        
-        StimulusDurationText
-        StimulusDurationEdit
-        StimulusDurationUnitsText        
-        StimulusAmplitudeText
-        StimulusAmplitudeEdit
-        StimulusDCOffsetText
-        StimulusDCOffsetEdit
+        %StimulusDelayText
+        %StimulusDelayEdit
+        %StimulusDelayUnitsText        
+        %StimulusDurationText
+        %StimulusDurationEdit
+        %StimulusDurationUnitsText        
+        %StimulusAmplitudeText
+        %StimulusAmplitudeEdit
+        %StimulusDCOffsetText
+        %StimulusDCOffsetEdit
         StimulusFunctionText
         StimulusFunctionPopupmenu
         StimulusAdditionalParametersTexts
@@ -275,42 +275,42 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             self.StimulusNameEdit = ...
                 ws.uiedit('Parent',self.StimulusPanel, ...
                           'HorizontalAlignment','left');
-            self.StimulusDelayText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','Delay:');
-            self.StimulusDelayEdit = ...
-                ws.uiedit('Parent',self.StimulusPanel, ...
-                          'HorizontalAlignment','left');
-            self.StimulusDelayUnitsText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            self.StimulusDurationText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','Duration:');
-            self.StimulusDurationEdit = ...
-                ws.uiedit('Parent',self.StimulusPanel, ...
-                          'HorizontalAlignment','left');
-            self.StimulusDurationUnitsText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','s');
-            self.StimulusAmplitudeText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','Amplitude:');
-            self.StimulusAmplitudeEdit = ...
-                ws.uiedit('Parent',self.StimulusPanel, ...
-                          'HorizontalAlignment','left');
-            self.StimulusDCOffsetText = ...
-                ws.uicontrol('Parent',self.StimulusPanel, ...
-                          'Style','text', ...
-                          'String','DC Offset:');
-            self.StimulusDCOffsetEdit = ...
-                ws.uiedit('Parent',self.StimulusPanel, ...
-                          'HorizontalAlignment','left');                      
+%             self.StimulusDelayText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','Delay:');
+%             self.StimulusDelayEdit = ...
+%                 ws.uiedit('Parent',self.StimulusPanel, ...
+%                           'HorizontalAlignment','left');
+%             self.StimulusDelayUnitsText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','s');
+%             self.StimulusDurationText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','Duration:');
+%             self.StimulusDurationEdit = ...
+%                 ws.uiedit('Parent',self.StimulusPanel, ...
+%                           'HorizontalAlignment','left');
+%             self.StimulusDurationUnitsText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','s');
+%             self.StimulusAmplitudeText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','Amplitude:');
+%             self.StimulusAmplitudeEdit = ...
+%                 ws.uiedit('Parent',self.StimulusPanel, ...
+%                           'HorizontalAlignment','left');
+%             self.StimulusDCOffsetText = ...
+%                 ws.uicontrol('Parent',self.StimulusPanel, ...
+%                           'Style','text', ...
+%                           'String','DC Offset:');
+%             self.StimulusDCOffsetEdit = ...
+%                 ws.uiedit('Parent',self.StimulusPanel, ...
+%                           'HorizontalAlignment','left');                      
             self.StimulusFunctionText = ...
                 ws.uicontrol('Parent',self.StimulusPanel, ...
                           'Style','text', ...
@@ -565,48 +565,48 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
             heightFromTopToNameEdit=10;
-            editXOffset=90;            
+            editXOffset=100;            
             editWidth=160;
-            heightBetweenNameEditAndNextEdit=20;
-            heightBetweenEdits=8;
+            heightBetweenNameEditAndFunctionPopup=20;
+            %heightBetweenEdits=8;
             popupmenuWidth=160;
             
             % Name edit and label
             editPosition=get(self.StimulusNameEdit,'Position');
             editHeight=editPosition(4);
-            editYOffset=panelHeight-heightOfPanelTitle-heightFromTopToNameEdit-editHeight;
+            nameEditYOffset=panelHeight-heightOfPanelTitle-heightFromTopToNameEdit-editHeight;
             ws.positionEditLabelAndUnitsBang(self.StimulusNameText,self.StimulusNameEdit,[], ....
-                                          editXOffset,editYOffset,editWidth)
+                                             editXOffset,nameEditYOffset,editWidth)
             
-            % other edits
-            editNameList={'Delay' 'Duration' 'Amplitude' 'DCOffset'};            
-            for i=1:length(editNameList) ,
-                editName=editNameList{i};
-                if i==1
-                    editYOffset=editYOffset-heightBetweenNameEditAndNextEdit-editHeight;
-                else
-                    editYOffset=editYOffset-heightBetweenEdits-editHeight;
-                end
-                textPropertyName=sprintf('Stimulus%sText',editName);
-                textGH=self.(textPropertyName);
-                editPropertyName=sprintf('Stimulus%sEdit',editName);
-                editGH=self.(editPropertyName);
-                if isequal(editName,'Delay') || isequal(editName,'Duration') ,
-                    unitsTextPropertyName=sprintf('Stimulus%sUnitsText',editName);
-                    unitsTextGH=self.(unitsTextPropertyName);
-                else
-                    unitsTextGH=[];
-                end
-                ws.positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
-                                              editXOffset,editYOffset,editWidth);
-            end
+%             % other edits
+%             editNameList={'Delay' 'Duration' 'Amplitude' 'DCOffset'};            
+%             for i=1:length(editNameList) ,
+%                 editName=editNameList{i};
+%                 if i==1
+%                     editYOffset=editYOffset-heightBetweenNameEditAndNextEdit-editHeight;
+%                 else
+%                     editYOffset=editYOffset-heightBetweenEdits-editHeight;
+%                 end
+%                 textPropertyName=sprintf('Stimulus%sText',editName);
+%                 textGH=self.(textPropertyName);
+%                 editPropertyName=sprintf('Stimulus%sEdit',editName);
+%                 editGH=self.(editPropertyName);
+%                 if isequal(editName,'Delay') || isequal(editName,'Duration') ,
+%                     unitsTextPropertyName=sprintf('Stimulus%sUnitsText',editName);
+%                     unitsTextGH=self.(unitsTextPropertyName);
+%                 else
+%                     unitsTextGH=[];
+%                 end
+%                 ws.positionEditLabelAndUnitsBang(textGH,editGH,unitsTextGH, ....
+%                                               editXOffset,editYOffset,editWidth);
+%             end
             
             % The stimulus type popup
             popupmenuPosition=get(self.StimulusFunctionPopupmenu,'Position');
             popupmenuHeight=popupmenuPosition(4);
-            popupmenuYOffset=editYOffset-heightBetweenEdits-popupmenuHeight;
+            popupmenuYOffset=nameEditYOffset-heightBetweenNameEditAndFunctionPopup-popupmenuHeight;
             ws.positionPopupmenuAndLabelBang(self.StimulusFunctionText,self.StimulusFunctionPopupmenu, ...
-                                          editXOffset,popupmenuYOffset,popupmenuWidth)
+                                             editXOffset,popupmenuYOffset,popupmenuWidth)
 
         end  % function
     end  % protected methods block
@@ -896,16 +896,16 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             % The name & common parameters
             if isempty(stimulusIndex) ,
                 set(self.StimulusNameEdit,'String','') ;
-                set(self.StimulusDelayEdit,'String','') ;
-                set(self.StimulusDurationEdit,'String','') ;
-                set(self.StimulusAmplitudeEdit,'String','') ;
-                set(self.StimulusDCOffsetEdit,'String','') ;
+%                 set(self.StimulusDelayEdit,'String','') ;
+%                 set(self.StimulusDurationEdit,'String','') ;
+%                 set(self.StimulusAmplitudeEdit,'String','') ;
+%                 set(self.StimulusDCOffsetEdit,'String','') ;
             else
                 set(self.StimulusNameEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Name')) ;
-                set(self.StimulusDelayEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Delay')) ;
-                set(self.StimulusDurationEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Duration')) ;
-                set(self.StimulusAmplitudeEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Amplitude')) ;
-                set(self.StimulusDCOffsetEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'DCOffset')) ;
+%                 set(self.StimulusDelayEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Delay')) ;
+%                 set(self.StimulusDurationEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Duration')) ;
+%                 set(self.StimulusAmplitudeEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'Amplitude')) ;
+%                 set(self.StimulusDCOffsetEdit,'String',model.stimulusLibraryItemProperty('ws.Stimulus', stimulusIndex, 'DCOffset')) ;
             end
             
             % The "Function" popupmenu
@@ -1007,10 +1007,10 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             % The stimulus panel
             isSelectionAStimulus = isSelection && isSelectedItemAStimulus ;
             set(self.StimulusNameEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDelayEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusAmplitudeEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
-            set(self.StimulusDCOffsetEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+%             set(self.StimulusDelayEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+%             set(self.StimulusDurationEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+%             set(self.StimulusAmplitudeEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
+%             set(self.StimulusDCOffsetEdit,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
             set(self.StimulusFunctionPopupmenu,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
             set(self.StimulusAdditionalParametersEdits,'Enable',ws.onIff(isIdle&&isSelectionAStimulus));
         end  % function

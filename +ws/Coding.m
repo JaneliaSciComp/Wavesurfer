@@ -404,6 +404,14 @@ classdef (Abstract) Coding < handle
                                 propertyName = 'ChannelName_' ;      
                             elseif isa(result,'ws.StimulusMap') && isequal(fieldName, 'Multipliers_') ,
                                 propertyName = 'Multiplier_' ;      
+                            elseif isa(result,'ws.Stimulus') && isequal(fieldName, 'Delay_') ,
+                                propertyName = 'LegacyDelay_' ;      
+                            elseif isa(result,'ws.Stimulus') && isequal(fieldName, 'Duration_') ,
+                                propertyName = 'LegacyDuration_' ;      
+                            elseif isa(result,'ws.Stimulus') && isequal(fieldName, 'Amplitude_') ,
+                                propertyName = 'LegacyAmplitude_' ;      
+                            elseif isa(result,'ws.Stimulus') && isequal(fieldName, 'DCOffset_') ,
+                                propertyName = 'LegacyDCOffset_' ;      
                             elseif isa(result,'ws.TestPulser') && isequal(fieldName, 'PulseDurationInMsAsString_') ,
                                 propertyName = 'PulseDuration_' ;      
                             elseif isequal(fieldName, 'Enabled_') ,
@@ -423,7 +431,10 @@ classdef (Abstract) Coding < handle
                             % Only decode if there's a property to receive
                             % it, and that property is one of the
                             % persisted ones.
-                            if isprop(result,propertyName) && ismember(propertyName,persistedPropertyNames) ,  
+                            if isprop(result,propertyName) && ...
+                               (ismember(propertyName,persistedPropertyNames) || ...
+                                   ( isa(result, 'ws.Stimulus') && ...
+                                     ismember(propertyName, {'LegacyDelay_' 'LegacyDuration_' 'LegacyAmplitude_' 'LegacyDCOffset_'}) ) ) ,
                                 subencoding = encoding.(fieldName) ;  % the encoding is a struct, so no worries about access
                                 % Backwards-compatibility hack, convert col
                                 % vectors to row vectors in some cases

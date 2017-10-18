@@ -5,8 +5,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     % independent object that isequal() to the original.
     
     properties (Constant)
-        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','Ramp','Sine','Chirp','Expression','File'}
-        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','Expression','File'}
+        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','SquarePulseLadder', 'Ramp','Sine','Chirp','Expression','File'}
+        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Square Pulse Ladder','Ramp','Sine','Chirp','Expression','File'}
     end
     
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and
@@ -18,14 +18,14 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     
     properties (Dependent=true)
         Name
-        Delay  % this and all below are string sweep expressions, in seconds
-        Duration % s
-            % this is the duration of the "support" of the stimulus.  I.e.
-            % the stim is zero for the delay period, generally nonzero for
-            % the Duration, then zero for some time after, with the total
-            % duration being specified elsewhere.
-        Amplitude
-        DCOffset
+%         Delay  % this and all below are string sweep expressions, in seconds
+%         Duration % s
+%             % this is the duration of the "support" of the stimulus.  I.e.
+%             % the stim is zero for the delay period, generally nonzero for
+%             % the Duration, then zero for some time after, with the total
+%             % duration being specified elsewhere.
+%         Amplitude
+%         DCOffset
         TypeString        
         AdditionalParameterNames
         AdditionalParameterDisplayNames
@@ -35,13 +35,17 @@ classdef Stimulus < ws.Model & ws.ValueComparable
 
     properties (Access=protected)
         Name_ = ''
-        Delay_ = '0.25'  % sec
-        Duration_ = '0.5'  % sec
-        Amplitude_ = '5'
-        DCOffset_ = '0'
         Delegate_
           % Invariant: this is a scalar ws.StimulusDelegate,
           % never empty
+    end
+    
+    properties (Access=protected, Transient=true)
+        % These are for backwards-compatibility with <=0.961 protocol files
+        LegacyDelay_ 
+        LegacyDuration_
+        LegacyAmplitude_ 
+        LegacyDCOffset_ 
     end
     
     properties (Dependent = true, Transient=true)
@@ -52,12 +56,6 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         function self = Stimulus()
             self@ws.Model() ;
             self.Delegate_ = ws.SquarePulseStimulusDelegate();  
-%             pvArgs = ws.filterPVArgs(varargin, {'Name', 'Delay', 'Duration', 'Amplitude', 'DCOffset', 'TypeString'}, {});
-%             prop = pvArgs(1:2:end);
-%             vals = pvArgs(2:2:end);
-%             for idx = 1:length(vals)
-%                 self.(prop{idx}) = vals{idx};
-%             end            
         end
         
         function set.Name(self, newValue)
@@ -69,60 +67,61 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             end
         end
 
-        function set.Delay(self, value)
-            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
-            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
-                % if we get here without error, safe to set
-                self.Delay_ = value ;
-            end                    
-        end  % function
-        
-        function set.Duration(self, value)
-            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
-            if ~isempty(test) && isnumeric(test) && isscalar(test) && isreal(test) && isfinite(test) && test>=0 ,
-                % if we get here without error, safe to set
-                self.Duration_ = value;
-            end                    
-        end  % function
-        
-        function set.Amplitude(self, value)
-            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
-            if ~isempty(test) && (isnumeric(test) || islogical(test)) && isscalar(test) && isfinite(test) && isreal(test) ,
-                % if we get here without error, safe to set
-                self.Amplitude_ = value;
-            end                
-        end
-        
-        function set.DCOffset(self, value)
-            test = ws.Stimulus.evaluateSweepExpression(value,1) ;
-            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
-                % if we get here without error, safe to set
-                self.DCOffset_ = value;
-            end                
-        end
+%         function set.Delay(self, value)
+%             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+%             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 ,
+%                 % if we get here without error, safe to set
+%                 self.Delay_ = value ;
+%             end                    
+%         end  % function
+%         
+%         function set.Duration(self, value)
+%             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+%             if ~isempty(test) && isnumeric(test) && isscalar(test) && isreal(test) && isfinite(test) && test>=0 ,
+%                 % if we get here without error, safe to set
+%                 self.Duration_ = value;
+%             end                    
+%         end  % function
+%         
+%         function set.Amplitude(self, value)
+%             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+%             if ~isempty(test) && (isnumeric(test) || islogical(test)) && isscalar(test) && isfinite(test) && isreal(test) ,
+%                 % if we get here without error, safe to set
+%                 self.Amplitude_ = value;
+%             end                
+%         end
+%         
+%         function set.DCOffset(self, value)
+%             test = ws.Stimulus.evaluateSweepExpression(value,1) ;
+%             if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) ,
+%                 % if we get here without error, safe to set
+%                 self.DCOffset_ = value;
+%             end                
+%         end
         
         function out = get.Name(self)
             out = self.Name_;
         end   % function
 
-        function out = get.Delay(self)
-            out = self.Delay_;
-        end   % function
-
-        function out = get.Duration(self)
-            out = self.Duration_;
-        end   % function
-
-        function out = get.Amplitude(self)
-            out = self.Amplitude_;
-        end   % function
-
-        function out = get.DCOffset(self)
-            out = self.DCOffset_;
-        end   % function
+%         function out = get.Delay(self)
+%             out = self.Delay_;
+%         end   % function
+% 
+%         function out = get.Duration(self)
+%             out = self.Duration_;
+%         end   % function
+% 
+%         function out = get.Amplitude(self)
+%             out = self.Amplitude_;
+%         end   % function
+% 
+%         function out = get.DCOffset(self)
+%             out = self.DCOffset_;
+%         end   % function
         
         function val = get.EndTime(self)
-            val = ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.Stimulus.evaluateSweepExpression(self.Duration,1);
+            val = self.Delegate.EndTime ;
+            %ws.Stimulus.evaluateSweepExpression(self.Delay,1) + ws.Stimulus.evaluateSweepExpression(self.Duration,1) ;
         end
         
         function output = get.Delegate(self)
@@ -155,54 +154,56 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                 sweepIndexWithinSet=1;
             end
                         
-            % Compute the delay from the expression for it
-            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
-            % Screen for illegal values
-            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
-                data=zeros(size(t));
-                return
-            end
+            data = self.Delegate.calculateSignal(t, sweepIndexWithinSet) ;
             
-            % Shift the timeline to account for the delay
-            tShiftedByDelay=t-delay;
-            
-            % Call a likely-overloaded method to generate the raw output data
-            delegate=self.Delegate_;
-            data = delegate.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
-                % data should be same size as t at this point
-            
-            % Compute the amplitude from the expression for it
-            amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
-            % Screen for illegal values
-            if isempty(amplitude) || ~(isnumeric(amplitude)||islogical(amplitude)) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
-                data=zeros(size(t));
-                return
-            end
-
-            % Compute the delay from the expression for it
-            dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
-            % Screen for illegal values
-            if isempty(dcOffset) || ~(isnumeric(dcOffset)||islogical(dcOffset)) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
-                data=zeros(size(t));
-                return
-            end
-            
-            % Scale by the amplitude, and add the DC offset
-            data = amplitude*data + dcOffset;
-
-            % Compute the duration from the expression for it
-            duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
-            % Screen for illegal values
-            if isempty(duration) || ~(isnumeric(duration)||islogical(duration)) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
-                data=zeros(size(t));
-                return
-            end
-            
-            % Zero the data outside the support
-            % Yes, this is supposed to "override" the DC offset outside the
-            % support.
-            isOnSupport=(0<=tShiftedByDelay)&(tShiftedByDelay<duration);
-            data(~isOnSupport,:)=0;
+%             % Compute the delay from the expression for it            
+%             delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+%             
+%             % Shift the timeline to account for the delay
+%             tShiftedByDelay=t-delay;
+%             
+%             % Call a likely-overloaded method to generate the raw output data
+%             delegate=self.Delegate_;
+%             data = delegate.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
+%                 % data should be same size as t at this point
+%             
+%             % Compute the amplitude from the expression for it
+%             amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(amplitude) || ~(isnumeric(amplitude)||islogical(amplitude)) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+% 
+%             % Compute the delay from the expression for it
+%             dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(dcOffset) || ~(isnumeric(dcOffset)||islogical(dcOffset)) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+%             
+%             % Scale by the amplitude, and add the DC offset
+%             data = amplitude*data + dcOffset;
+% 
+%             % Compute the duration from the expression for it
+%             duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
+%             % Screen for illegal values
+%             if isempty(duration) || ~(isnumeric(duration)||islogical(duration)) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
+%                 data=zeros(size(t));
+%                 return
+%             end
+%             
+%             % Zero the data outside the support
+%             % Yes, this is supposed to "override" the DC offset outside the
+%             % support.
+%             isOnSupport=(0<=tShiftedByDelay)&(tShiftedByDelay<duration);
+%             data(~isOnSupport,:)=0;
             
             if size(data,1)>0 ,
                 data(end,:)=0;  % don't want to leave the DACs on when we're done
@@ -210,14 +211,14 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end        
     end  % public methods block
     
-    methods (Access = protected)
-        function data = calculateCoreSignal(self, t, sweepIndexWithinSet) %#ok<INUSD,INUSL>
-            % This calculates a non-time shifted, non-scaled "core"
-            % version of the signal, and is meant to be overridden by
-            % subclasses.
-            data = zeros(size(t));
-        end
-    end
+%     methods (Access = protected)
+%         function data = calculateCoreSignal(self, t, sweepIndexWithinSet) %#ok<INUSD,INUSL>
+%             % This calculates a non-time shifted, non-scaled "core"
+%             % version of the signal, and is meant to be overridden by
+%             % subclasses.
+%             data = zeros(size(t));
+%         end
+%     end
     
     %
     % Implementations of methods needed to be a ws.ValueComparable
@@ -236,7 +237,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             % test
             % Don't need to compare as StimLibraryItem's, b/c only property
             % of that is UUID, which we want to ignore
-            propertyNamesToCompare={'Name' 'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Delegate'};
+            propertyNamesToCompare={'Name' 'Delegate'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end
     end
@@ -389,6 +390,30 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                               {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
         end  % function 
     end  % public methods block    
+    
+    methods (Access=protected)
+        function sanitizePersistedState_(self)
+            % This method should perform any sanity-checking that might be
+            % advisable after loading the persistent state from disk.
+            % This is often useful to provide backwards compatibility
+            if ~isempty(self.LegacyDelay_) && ismember('Delay', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Delay', self.LegacyDelay_) ;
+            end
+            self.LegacyDelay_ = [] ;
+            if ~isempty(self.LegacyDuration_) && ismember('Duration', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Duration', self.LegacyDuration_) ;
+            end
+            self.LegacyDuration_ = [] ;
+            if ~isempty(self.LegacyAmplitude_) && ismember('Amplitude', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('Amplitude', self.LegacyAmplitude_) ;
+            end
+            self.LegacyAmplitude_ = [] ;
+            if ~isempty(self.LegacyDCOffset_) && ismember('DCOffset', self.AdditionalParameterNames) ,
+                self.setAdditionalParameter('DCOffset', self.LegacyDCOffset_) ;
+            end
+            self.LegacyDCOffset_ = [] ;
+        end
+    end  % protected methods block    
     
 end
 
