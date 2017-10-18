@@ -444,3 +444,5 @@ Version History
 
 0.961    Oct 14, 2017    Bug fixes.
 
+0.962    Oct 18, 2017    Added new stimulus type.  Streamlined
+                         handling of stimulus parameters.
