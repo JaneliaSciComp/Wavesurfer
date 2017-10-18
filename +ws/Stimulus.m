@@ -5,8 +5,8 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     % independent object that isequal() to the original.
     
     properties (Constant)
-        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','Ramp','Sine','Chirp','Expression','File'}
-        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Ramp','Sine','Chirp','Expression','File'}
+        AllowedTypeStrings={'SquarePulse','SquarePulseTrain','TwoSquarePulses','SquarePulseLadder', 'Ramp','Sine','Chirp','Expression','File'}
+        AllowedTypeDisplayStrings={'Square Pulse','Square Pulse Train','Two Square Pulses','Square Pulse Ladder','Ramp','Sine','Chirp','Expression','File'}
     end
     
     % Invariant: All the values in Delay, Duration, Amplitude, DCOffset and

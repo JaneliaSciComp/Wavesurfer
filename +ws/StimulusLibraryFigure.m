@@ -565,7 +565,7 @@ classdef StimulusLibraryFigure < ws.MCOSFigure
             %heightOfPanelTitle=14;  % Need to account for this to not overlap with panel title
             heightOfPanelTitle=0;  % Need to account for this to not overlap with panel title
             heightFromTopToNameEdit=10;
-            editXOffset=90;            
+            editXOffset=100;            
             editWidth=160;
             heightBetweenNameEditAndNextEdit=20;
             heightBetweenEdits=8;
