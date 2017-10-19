@@ -93,7 +93,7 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
         
         function set.PulseCount(self, newValue)
             test = ws.Stimulus.evaluateSweepExpression(newValue,1) ;
-            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 && newValue==round(newValue),
+            if ~isempty(test) && isnumeric(test) && isscalar(test) && isfinite(test) && isreal(test) && test>=0 && test==round(test),
                 % if we get here without error, safe to set
                 self.PulseCount_ = newValue;
             end
