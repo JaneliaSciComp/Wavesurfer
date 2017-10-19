@@ -449,3 +449,4 @@ Version History
 
 0.963    Oct 18, 2017    Fixed bug.
 
+0.964    Oct 19, 2017    Fixed bug with two square pulse stimulus.
