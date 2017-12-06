@@ -122,7 +122,7 @@ classdef UserCodeManager < ws.Subsystem
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
-            if self.DoesTheUserObjectMatchTheUserClassName ,
+            if self.getDoesTheObjectMatchClassName_() ,
                 err = self.tryToInstantiateObject_(wsModel) ;
             else
                 err = [] ;
