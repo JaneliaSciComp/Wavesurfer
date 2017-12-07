@@ -53,78 +53,86 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
         % data file is recent enough that there's no problem
     end
     
-    % If needed, use the analog scaling coefficients and scales to convert the
+    %
+    % If needed, use the analog scaling coefficients and scales to convert the    
     % analog scans from counts to experimental units.
-    if strcmpi(formatString,'raw') || dataFileAsStruct.header.NAIChannels==0 ,
-        % User wants raw data and/or there are no AI channels, so nothing to do
-    else
-        try
-            if isfield(dataFileAsStruct.header, 'AIChannelScales') ,
-                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
-                allAnalogChannelScales = dataFileAsStruct.header.AIChannelScales ;
-            else
-                % Fallback for older files
-                allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
-            end
-        catch
-            error('Unable to read channel scale information from file.');
+    %
+    
+    if strcmpi(formatString,'raw') ,
+        % User wants raw data, so nothing more to do
+        return
+    end
+    
+    % Figure out how many AI channels
+    try
+        if isfield(dataFileAsStruct.header, 'NAIChannels') ,
+            % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.NAnalogChannels
+            nAIChannels = dataFileAsStruct.header.NAIChannels ;
+        else
+            % Fallback for older files
+            nAIChannels = dataFileAsStruct.header.Acquisition.NAnalogChannels ;            
         end
-        try
-            if isfield(dataFileAsStruct.header, 'IsAIChannelActive') ,
-                % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
-                isActive = logical(dataFileAsStruct.header.IsAIChannelActive) ;
-            else
-                % Fallback for older files
-                isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
-            end
-        catch
-            error('Unable to read active/inactive channel information from file.');
+    catch
+        error('Unable to read number of AI channels from file.');
+    end
+    if nAIChannels==0 ,
+         % There are no AI channels, so nothing more to do
+        return
+    end
+    
+    % If get here, need to do some non-trivial AI signal scaling, so get
+    % scaling info
+    try
+        if isfield(dataFileAsStruct.header, 'AIChannelScales') ,
+            % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+            allAnalogChannelScales = dataFileAsStruct.header.AIChannelScales ;
+        else
+            % Fallback for older files
+            allAnalogChannelScales=dataFileAsStruct.header.Acquisition.AnalogChannelScales ;
         end
-        analogChannelScales = allAnalogChannelScales(isActive) ;
-        
-        % read the scaling coefficients
-        try
-            if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
-                analogScalingCoefficients = dataFileAsStruct.header.AIScalingCoefficients ;
-            else
-                analogScalingCoefficients = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
-            end
-        catch
-            error('Unable to read channel scaling coefficients from file.');
+    catch
+        error('Unable to read channel scale information from file.');
+    end
+    
+    try
+        if isfield(dataFileAsStruct.header, 'IsAIChannelActive') ,
+            % Newer files have this field, and lack dataFileAsStruct.header.Acquisition.AnalogChannelScales
+            isActive = logical(dataFileAsStruct.header.IsAIChannelActive) ;
+        else
+            % Fallback for older files
+            isActive = logical(dataFileAsStruct.header.Acquisition.IsAnalogChannelActive) ;
         end
-        
-        %inverseAnalogChannelScales=1./analogChannelScales;  % if some channel scales are zero, this will lead to nans and/or infs
-        doesUserWantSingle = strcmpi(formatString,'single') ;
-        %doesUserWantDouble = ~doesUserWantSingle ;
-        fieldNames = fieldnames(dataFileAsStruct);
-        for i=1:length(fieldNames) ,
-            fieldName = fieldNames{i};
-            if length(fieldName)>=5 && (isequal(fieldName(1:5),'sweep') || isequal(fieldName(1:5),'trial')) ,  
-                % We check for "trial" for backward-compatibility with
-                % data files produced by older versions of WS.
-                analogDataAsCounts = dataFileAsStruct.(fieldName).analogScans;
-                if doesUserWantSingle ,
-                    scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
-                else
-                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
-                end
-%                 if isempty(analogDataAsCounts) ,
-%                     if doesUserWantSingle ,
-%                         scaledAnalogData=zeros(size(analogDataAsCounts),'single');
-%                     else                        
-%                         scaledAnalogData=zeros(size(analogDataAsCounts));
-%                     end
-%                 else
-%                     if doesUserWantSingle ,
-%                         analogData = single(analogDataAsCounts) ;
-%                     else
-%                         analogData = double(analogDataAsCounts);
-%                     end
-%                     combinedScaleFactors = 3.0517578125e-4 * inverseAnalogChannelScales;  % counts-> volts at AI, 3.0517578125e-4 == 10/2^(16-1)
-%                     scaledAnalogData=bsxfun(@times,analogData,combinedScaleFactors);                    
-%                 end
-                dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
+    catch
+        error('Unable to read active/inactive channel information from file.');
+    end
+    analogChannelScales = allAnalogChannelScales(isActive) ;
+
+    % read the scaling coefficients
+    try
+        if isfield(dataFileAsStruct.header, 'AIScalingCoefficients') ,
+            analogScalingCoefficients = dataFileAsStruct.header.AIScalingCoefficients ;
+        else
+            analogScalingCoefficients = dataFileAsStruct.header.Acquisition.AnalogScalingCoefficients ;
+        end
+    catch
+        error('Unable to read channel scaling coefficients from file.');
+    end
+
+    % Actually scale the AI signals
+    doesUserWantSingle = strcmpi(formatString,'single') ;
+    fieldNames = fieldnames(dataFileAsStruct);
+    for i=1:length(fieldNames) ,
+        fieldName = fieldNames{i};
+        if length(fieldName)>=5 && (isequal(fieldName(1:5),'sweep') || isequal(fieldName(1:5),'trial')) ,  
+            % We check for "trial" for backward-compatibility with
+            % data files produced by older versions of WS.
+            analogDataAsCounts = dataFileAsStruct.(fieldName).analogScans;
+            if doesUserWantSingle ,
+                scaledAnalogData = ws.scaledSingleDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+            else
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
             end
+            dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
         end
     end
     
