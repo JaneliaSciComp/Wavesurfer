@@ -134,20 +134,6 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % method
         
-%         function set.AbortCallsComplete(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
-%                     valueAsLogical = logical(value>0) ;
-%                     self.AbortCallsComplete_ = valueAsLogical ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'Invalid value for property ''AbortCallsComplete'' supplied.');
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
-
         function startingRun(self) %#ok<MANU>
 %             % Instantiate a user object, if one doesn't already exist
 %             if isempty(self.TheObject_) ,

@@ -403,41 +403,6 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             end
         end  % function
 
-%         function set.SelectedOutputable(self, newSelection)
-%             if ws.isASettableValue(newSelection) ,
-%                 if isempty(newSelection) ,
-%                     self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
-%                 elseif isscalar(newSelection) ,
-%                     isMatch=cellfun(@(item)(item==newSelection),self.Sequences_);
-%                     iMatch = find(isMatch,1) ;
-%                     if ~isempty(iMatch)                    
-%                         self.SelectedOutputableIndex_ = iMatch ;
-%                         self.SelectedOutputableClassName_ = 'ws.StimulusSequence' ;
-%                     else
-%                         isMatch=cellfun(@(item)(item==newSelection),self.Maps_);
-%                         iMatch = find(isMatch,1) ;
-%                         if ~isempty(iMatch)
-%                             self.SelectedOutputableIndex_ = iMatch ;
-%                             self.SelectedOutputableClassName_ = 'ws.StimulusMap' ;
-%                         end
-%                     end
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
-        
-%         function setSelectedOutputableByIndexOld(self, index)
-%             outputables = self.getOutputables() ;
-%             if isempty(index) ,
-%                 self.SelectedOutputable = [] ;  % set to no selection
-%             elseif isnumeric(index) && isscalar(index) && isfinite(index) && round(index)==index && 1<=index && index<=length(outputables) ,
-%                 outputable=outputables{index};
-%                 self.SelectedOutputable=outputable;  % this will broadcast Update
-%             else
-%                 self.broadcast('Update');
-%             end
-%         end  % function
-
         function setSelectedOutputableByIndex(self, outputableIndex)            
             if isempty(outputableIndex) ,
                 self.SelectedOutputableClassName_ = '';  % this makes it so that no item is currently selected
@@ -1958,29 +1923,27 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function        
         
         function setSelectedItemByHandle_(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isempty(newValue) ,
-                    self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
-                elseif isscalar(newValue) ,
-                    isMatch=cellfun(@(item)(item==newValue),self.Sequences_);
+            if isempty(newValue) ,
+                self.SelectedItemClassName_ = '';  % this makes it so that no item is currently selected
+            elseif isscalar(newValue) ,
+                isMatch=cellfun(@(item)(item==newValue),self.Sequences_);
+                iMatch = find(isMatch,1) ;
+                if ~isempty(iMatch)                    
+                    self.SelectedSequenceIndex_ = iMatch ;
+                    self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                else
+                    isMatch=cellfun(@(item)(item==newValue),self.Maps_);
                     iMatch = find(isMatch,1) ;
-                    if ~isempty(iMatch)                    
-                        self.SelectedSequenceIndex_ = iMatch ;
-                        self.SelectedItemClassName_ = 'ws.StimulusSequence' ;
+                    if ~isempty(iMatch)
+                        self.SelectedMapIndex_ = iMatch ;
+                        self.SelectedItemClassName_ = 'ws.StimulusMap' ;
                     else
-                        isMatch=cellfun(@(item)(item==newValue),self.Maps_);
+                        isMatch=cellfun(@(item)(item==newValue),self.Stimuli_);
                         iMatch = find(isMatch,1) ;
                         if ~isempty(iMatch)
-                            self.SelectedMapIndex_ = iMatch ;
-                            self.SelectedItemClassName_ = 'ws.StimulusMap' ;
-                        else
-                            isMatch=cellfun(@(item)(item==newValue),self.Stimuli_);
-                            iMatch = find(isMatch,1) ;
-                            if ~isempty(iMatch)
-                                self.SelectedStimulusIndex_ = iMatch ;
-                                self.SelectedItemClassName_ = 'ws.Stimulus' ;
-                            end                            
-                        end
+                            self.SelectedStimulusIndex_ = iMatch ;
+                            self.SelectedItemClassName_ = 'ws.Stimulus' ;
+                        end                            
                     end
                 end
             end

@@ -776,28 +776,23 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.NSweepsPerRun(self, newValue)
-            % Sometimes want to trigger the listeners without actually
-            % setting, and without throwing an error
-            if ws.isASettableValue(newValue) ,
-                % s.NSweepsPerRun = struct('Attributes',{{'positive' 'integer' 'finite' 'scalar' '>=' 1}});
-                %value=self.validatePropArg('NSweepsPerRun',value);
-                if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && newValue>=1 && (round(newValue)==newValue || isinf(newValue)) ,
-                    % If get here, value is a valid value for this prop
-                    if self.AreSweepsFiniteDuration ,
-                        %self.Triggering_.willSetNSweepsPerRun();
-                        self.NSweepsPerRun_ = double(newValue) ;
-                        self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
-                    else
-                        self.broadcast('Update') ;
-                        error('ws:invalidPropertyValue', ...
-                              'NSweepsPerRun cannot be set when sweeps are continuous') ;
-                        
-                    end
+            if isscalar(newValue) && isnumeric(newValue) && isreal(newValue) && newValue>=1 && ...
+                    (round(newValue)==newValue || isinf(newValue)) ,
+                % If get here, value is a valid value for this prop
+                if self.AreSweepsFiniteDuration ,
+                    %self.Triggering_.willSetNSweepsPerRun();
+                    self.NSweepsPerRun_ = double(newValue) ;
+                    self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
                 else
                     self.broadcast('Update') ;
                     error('ws:invalidPropertyValue', ...
-                          'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
+                          'NSweepsPerRun cannot be set when sweeps are continuous') ;
+
                 end
+            else
+                self.broadcast('Update') ;
+                error('ws:invalidPropertyValue', ...
+                      'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
             end
             self.broadcast('Update');
         end  % function
@@ -808,20 +803,18 @@ classdef WavesurferModel < ws.Model
         
         function set.SweepDurationIfFinite(self, value)
             %fprintf('Acquisition::set.Duration()\n');
-            if ws.isASettableValue(value) , 
-                if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
-                    valueToSet = max(value,0.1);
-                    %self.willSetSweepDurationIfFinite();
-                    self.SweepDurationIfFinite_ = valueToSet;
-                    self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                    self.didSetSweepDurationIfFinite_();
-                else
-                    %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                    %self.didSetSweepDurationIfFinite();
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'SweepDurationIfFinite must be a (scalar) positive finite value');
-                end
+            if isnumeric(value) && isscalar(value) && isfinite(value) && value>0 ,
+                valueToSet = max(value,0.1);
+                %self.willSetSweepDurationIfFinite();
+                self.SweepDurationIfFinite_ = valueToSet;
+                self.overrideOrReleaseStimulusMapDurationAsNeeded_();
+                self.didSetSweepDurationIfFinite_();
+            else
+                %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
+                %self.didSetSweepDurationIfFinite();
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'SweepDurationIfFinite must be a (scalar) positive finite value');
             end
             self.broadcast('Update');
         end  % function
@@ -835,22 +828,19 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.SweepDuration(self, newValue)
-            % Fail quietly if a nonvalue
-            if ws.isASettableValue(newValue),             
-                % Check value and set if valid
-                if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
-                    % If get here, newValue is a valid value for this prop
-                    if isfinite(newValue) ,
-                        self.AreSweepsFiniteDuration = true ;
-                        self.SweepDurationIfFinite = newValue ;
-                    else                        
-                        self.AreSweepsContinuous = true ;
-                    end                        
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'SweepDuration must be a (scalar) positive value');
-                end
+            % Check value and set if valid
+            if isnumeric(newValue) && isscalar(newValue) && ~isnan(newValue) && newValue>0 ,
+                % If get here, newValue is a valid value for this prop
+                if isfinite(newValue) ,
+                    self.AreSweepsFiniteDuration = true ;
+                    self.SweepDurationIfFinite = newValue ;
+                else                        
+                    self.AreSweepsContinuous = true ;
+                end                        
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'SweepDuration must be a (scalar) positive value');
             end
             self.broadcast('Update');
         end  % function
