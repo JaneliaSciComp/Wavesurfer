@@ -130,7 +130,7 @@ function dataFileAsStruct = loadDataFile(filename,formatString)
             if doesUserWantSingle ,
                 scaledAnalogData = ws.scaledSingleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
             else
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
             end
             dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
         end

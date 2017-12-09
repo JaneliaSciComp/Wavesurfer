@@ -4558,7 +4558,7 @@ classdef WavesurferModel < ws.Model
             rawAnalogData = self.Acquisition_.getLatestRawAnalogData() ;
             channelScales = self.AIChannelScales(self.IsAIChannelActive) ;
             scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
         end  % function
         
         function scaledAnalogData = getAIDataFromCache(self)
@@ -4567,7 +4567,7 @@ classdef WavesurferModel < ws.Model
             rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
             channelScales=self.AIChannelScales(self.IsAIChannelActive);
             scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;            
+            scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;            
         end  % function
 
         function scaledData = getSinglePrecisionAIDataFromCache(self)
