@@ -2921,9 +2921,12 @@ classdef WavesurferModel < ws.Model
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
-                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_', 'UserCodeManager_'})) ,
+                if any(strcmp(thisPropertyName,{'Triggering_', 'Acquisition_', 'Stimulation_', 'Display_', 'Ephys_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
+                elseif any(strcmp(thisPropertyName,{'UserCodeManager_'})) ,
+                    %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName), self) ;  % needs root model arg
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else
