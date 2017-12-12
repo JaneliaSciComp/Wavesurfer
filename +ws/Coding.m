@@ -348,7 +348,12 @@ classdef (Abstract) Coding < handle
                         % this is the normal case
                         
                         % Instantiate the object
-                        result = feval(className) ;
+                        if ws.isaByName(className, 'ws.Model')
+                            result = feval(className) ;
+                        else
+                            % Must be a user class
+                            result = feval(className, warningLogger) ;  % the warningLogger is the WSM, so this should work
+                        end
 
                         % Get the list of persistable properties
                         persistedPropertyNames = result.listPropertiesForPersistence() ;

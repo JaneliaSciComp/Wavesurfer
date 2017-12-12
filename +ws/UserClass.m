@@ -20,4 +20,13 @@ classdef UserClass < ws.Coding
         abortingEpisode(self,refiller,eventName)        
     end  % methods
 
+    methods 
+        function other = copy(self, root)
+            %other = self.copyGivenParent([]) ;
+            className = class(self) ;
+            other = feval(className, root) ;
+            other.mimic(self) ;            
+        end  % function                
+    end
+    
 end  % classdef

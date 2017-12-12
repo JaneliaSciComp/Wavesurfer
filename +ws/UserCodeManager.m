@@ -211,7 +211,7 @@ classdef UserCodeManager < ws.Subsystem
 %             self.invoke(self.Parent,'samplesAcquired');
 %        end
 
-        function mimic(self, other)
+        function mimic(self, other, root)
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
@@ -232,7 +232,10 @@ classdef UserCodeManager < ws.Subsystem
                     if isempty(source) ,
                         newUserObject = [] ;
                     else
-                        newUserObject = source.copy() ;
+                        %newUserObject = source.copy(root) ;
+                        className = class(source) ;
+                        newUserObject = feval(className, root) ;  % user objects need the root model in constructor
+                        newUserObject.mimic(self) ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
                 else
