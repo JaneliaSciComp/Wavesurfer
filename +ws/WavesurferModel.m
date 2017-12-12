@@ -156,6 +156,7 @@ classdef WavesurferModel < ws.Model
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
         
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
+        ArePreferencesWritable_ = true
     end   
 
     properties (Dependent = true)
@@ -203,6 +204,7 @@ classdef WavesurferModel < ws.Model
         AcquisitionTriggerIndex  % this is an index into Schemes
         StimulationUsesAcquisitionTrigger  % boolean
         StimulationTriggerIndex  % this is an index into Schemes
+        ArePreferencesWritable
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -2384,7 +2386,9 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
-            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            if self.ArePreferencesWritable , 
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            end
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
             self.changeReadiness_(+1);
@@ -2427,17 +2431,19 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
-            ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            if self.ArePreferencesWritable ,
+                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+            end
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1);            
             self.broadcast('Update');
         end
 
-        function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
-            % This is here for backwards-compatibility
-            self.saveProtocolFileGivenFileName(absoluteFileName) ;
-        end
+%         function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
+%             % This is here for backwards-compatibility
+%             self.saveProtocolFileGivenFileName(absoluteFileName) ;
+%         end
         
     end        
     
@@ -2448,12 +2454,12 @@ classdef WavesurferModel < ws.Model
         end
     end        
 
-    methods
-        function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
-            % Retained for backwards compatibility
-            self.saveUserFileGivenFileName(absoluteFileName) ;
-        end  % function
-    end
+%     methods
+%         function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
+%             % Retained for backwards compatibility
+%             self.saveUserFileGivenFileName(absoluteFileName) ;
+%         end  % function
+%     end
 
     methods
         function openUserFileGivenFileName(self, fileName)
@@ -2473,7 +2479,9 @@ classdef WavesurferModel < ws.Model
             self.mimicUserSettings_(newModel) ;
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+            if self.ArePreferencesWritable ,
+                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+            end
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1) ;            
@@ -2498,7 +2506,9 @@ classdef WavesurferModel < ws.Model
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+            if self.ArePreferencesWritable ,
+                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+            end
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1) ;            
@@ -3314,6 +3324,9 @@ classdef WavesurferModel < ws.Model
                 fastProtocol = self.FastProtocols_{index} ;
                 try 
                     fastProtocol.(propertyName) = newValue ;
+                    if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
+                        ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newValue) ;
+                    end
                 catch exception
                     self.updateFastProtocol() ;
                     rethrow(exception) ;
@@ -6208,6 +6221,20 @@ classdef WavesurferModel < ws.Model
             encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
             encoding.StimulusLibrary = encodingOfPropertyValue ;
         end
+        
+        function result = get.ArePreferencesWritable(self)
+            result = self.ArePreferencesWritable_ ;
+        end
+        
+        function set.ArePreferencesWritable(self, rawNewValue)
+            if (islogical(rawNewValue) || isnumeric(rawNewValue)) && isscalar(rawNewValue) && isfinite(rawNewValue) ,
+                newValue = logical(rawNewValue) ;
+                self.ArePreferencesWritable_ = newValue ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'ArePreferencesWritable must be a scalar, and must be logical or numeric and finite') ;
+            end               
+        end        
     end  % public methods block
     
     methods (Access = protected)

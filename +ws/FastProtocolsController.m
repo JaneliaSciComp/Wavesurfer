@@ -52,11 +52,11 @@ classdef FastProtocolsController < ws.Controller
             newProtocolFileName = fullfile(dirName, filename) ;
             self.Model.do('setSelectedFastProtocolProperty', 'ProtocolFileName', newProtocolFileName) ;
 
-            % If newFileName and startLocationFromPreferences differ, then
-            % save the former as the new LastProtocolFilePath.
-            if ~isequal( ws.canonicalizePath(filePickerInitialFolderFromPreferences) , ws.canonicalizePath(newProtocolFileName) ) ,
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newProtocolFileName);
-            end
+%             % If newProtocolFileName and filePickerInitialFolderFromPreferences differ, then
+%             % save newProtocolFileName as the new LastProtocolFilePath.
+%             if ~isequal( ws.canonicalizePath(filePickerInitialFolderFromPreferences) , ws.canonicalizePath(newProtocolFileName) ) ,
+%                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newProtocolFileName);
+%             end
         end  % function
         
         function TableCellSelected(self, source, event)  %#ok<INUSL>

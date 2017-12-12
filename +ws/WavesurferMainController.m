@@ -90,7 +90,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFolderForFilePicker);            
             if ~isempty(absoluteFileName)
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+                %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
             end
         end
@@ -122,7 +122,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                         isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
             if ~isempty(userSettingsAbsoluteFileName) ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
+                %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
                 self.Model.do('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
             end            
         end
@@ -502,7 +502,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
             if ~isempty(absoluteFileName) ,
                 %self.Model.saveUserFileGivenAbsoluteFileName(absoluteFileName) ;
-                self.Model.do('saveUserFileGivenAbsoluteFileName', absoluteFileName) ;
+                self.Model.do('saveUserFileGivenFileName', absoluteFileName) ;
             end
         end  % method                
 

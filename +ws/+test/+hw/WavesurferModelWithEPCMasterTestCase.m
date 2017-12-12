@@ -119,6 +119,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Create a WavesurferModel
             isITheOneTrueWavesurferModel = true ;
             wsModel = ws.WavesurferModel(isITheOneTrueWavesurferModel) ;
+            wsModel.ArePreferencesWritable = false ;
             %wsModel = wavesurfer('--nogui') ;
             
             % Load configuration file with one Heka EPC electrode
