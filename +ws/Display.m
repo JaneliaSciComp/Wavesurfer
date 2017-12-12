@@ -212,15 +212,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function set.UpdateRate(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
-                    newValue = max(0.1,min(newValue,10)) ;
-                    self.UpdateRate_ = newValue;
-                else
-                    self.broadcast('DidSetUpdateRate');
-                    error('ws:invalidPropertyValue', ...
-                          'UpdateRate must be a scalar finite positive number') ;
-                end
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                newValue = max(0.1,min(newValue,10)) ;
+                self.UpdateRate_ = newValue;
+            else
+                self.broadcast('DidSetUpdateRate');
+                error('ws:invalidPropertyValue', ...
+                      'UpdateRate must be a scalar finite positive number') ;
             end
             self.broadcast('DidSetUpdateRate');
         end
@@ -255,17 +253,15 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
                 
         function set.XOffset(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                    self.XOffset_ = double(newValue);
-                    % for idx = 1:numel(self.Scopes)
-                    %     self.Scopes_{idx}.XOffset = newValue;
-                    % end
-                else
-                    self.broadcast('UpdateXOffset');
-                    error('ws:invalidPropertyValue', ...
-                          'XOffset must be a scalar finite number') ;
-                end
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                self.XOffset_ = double(newValue);
+                % for idx = 1:numel(self.Scopes)
+                %     self.Scopes_{idx}.XOffset = newValue;
+                % end
+            else
+                self.broadcast('UpdateXOffset');
+                error('ws:invalidPropertyValue', ...
+                      'XOffset must be a scalar finite number') ;
             end
             self.broadcast('UpdateXOffset');
         end
@@ -441,14 +437,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function set.IsGridOn(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.IsGridOn_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'IsGridOn must be a scalar, and must be logical, 0, or 1');
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.IsGridOn_ = logical(newValue) ;
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'IsGridOn must be a scalar, and must be logical, 0, or 1');
             end
             self.broadcast('Update');
         end
@@ -458,14 +452,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
             
         function set.AreColorsNormal(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.AreColorsNormal_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.AreColorsNormal_ = logical(newValue) ;
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
             end
             self.broadcast('Update');
         end
@@ -475,14 +467,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
             
         function set.DoShowZoomButtons(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.DoShowZoomButtons_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.DoShowZoomButtons_ = logical(newValue) ;
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
             end
             self.broadcast('Update');
         end
@@ -492,14 +482,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end                    
         
         function set.DoColorTraces(self,newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                    self.DoColorTraces_ = logical(newValue) ;
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'DoColorTraces must be a scalar, and must be logical, 0, or 1');
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.DoColorTraces_ = logical(newValue) ;
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'DoColorTraces must be a scalar, and must be logical, 0, or 1');
             end
             self.broadcast('Update');
         end

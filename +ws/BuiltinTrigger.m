@@ -117,73 +117,7 @@ classdef BuiltinTrigger < ws.Model
         
         function value=get.Edge(self)
             value=self.Edge_;
-        end
-        
-%         function set.DeviceName(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if ws.isString(value) ,
-%                     self.DeviceName_ = value ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'Name must be a string');                  
-%                 end                    
-%             end
-%             self.broadcast('Update');            
-%         end
-        
-%         function set.Name(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if ws.isString(value) && ~isempty(value) ,
-%                     self.Name_ = value ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'Name must be a nonempty string');                  
-%                 end                    
-%             end
-%             self.broadcast('Update');            
-%         end
-        
-%         function set.DeviceName(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if ws.isString(value) ,
-%                     self.DeviceName_ = value ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'DeviceName must be a string');                  
-%                 end                    
-%             end
-%             self.broadcast('Update');            
-%         end
-        
-%         function set.PFIID(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
-%                     value = double(value) ;
-%                     self.PFIID_ = value ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'PFIID must be a (scalar) nonnegative integer');                  
-%                 end                    
-%             end
-%             self.broadcast('Update');            
-%         end
-%         
-%         function set.Edge(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if ws.isAnEdgeType(value) ,
-%                     self.Edge_ = value;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'Edge must be ''rising'' or ''falling''');                  
-%                 end                                        
-%             end
-%             self.broadcast('Update');            
-%         end  % function 
+        end        
     end  % methods
     
     methods (Access=protected)        

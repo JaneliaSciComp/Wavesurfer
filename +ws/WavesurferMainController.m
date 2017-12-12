@@ -380,23 +380,27 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            % Can't use self.Model.do() method, because if only warnings,
-            % still want to set the layout afterwards...
-            self.Model.startLoggingWarnings() ;
-            self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
-%             % Restore the layout...  (This now happens when the model
-%             does a broadcast of LayoutAllWindows in
-%             openProtocolFileGivenFileName(), which results in
-%             self.layoutAllWindows() getting called.
-%             layoutForAllWindows = self.Model.LayoutForAllWindows ;
-%             monitorPositions = ws.Controller.getMonitorPositions() ;
-%             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-            % Now throw if there were any warnings
-            warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
-            if ~isempty(warningExceptionMaybe) ,
-                warningException = warningExceptionMaybe{1} ;
-                throw(warningException) ;
-            end
+            
+%             % Can't use self.Model.do() method, because if only warnings,
+%             % still want to set the layout afterwards...  (I think we
+%             *can* do this now.)
+%             self.Model.startLoggingWarnings() ;
+%             self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
+% %             % Restore the layout...  (This now happens when the model
+% %             does a broadcast of LayoutAllWindows in
+% %             openProtocolFileGivenFileName(), which results in
+% %             self.layoutAllWindows() getting called.
+% %             layoutForAllWindows = self.Model.LayoutForAllWindows ;
+% %             monitorPositions = ws.Controller.getMonitorPositions() ;
+% %             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+%             % Now throw if there were any warnings
+%             warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
+%             if ~isempty(warningExceptionMaybe) ,
+%                 warningException = warningExceptionMaybe{1} ;
+%                 throw(warningException) ;
+%             end
+            
+            self.Model.do('openProtocolFileGivenFileName', absoluteFileName) ;
         end  % function
         
         function saveOrSaveAsProtocolFile_(self, isSaveAs)

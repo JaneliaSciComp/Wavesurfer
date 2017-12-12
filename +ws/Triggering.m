@@ -354,22 +354,18 @@ classdef Triggering < ws.Subsystem
         end  % function
 
         function setStimulationTriggerIndex(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if self.StimulationUsesAcquisitionTriggerScheme ,
-                    error('ws:invalidPropertyValue', ...
-                          'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
+            if self.StimulationUsesAcquisitionTriggerScheme ,
+                error('ws:invalidPropertyValue', ...
+                      'Can''t set StimulationTriggerSchemeIndex when StimulationUsesAcquisitionTriggerScheme is true');                    
+            else
+                nSchemes = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
+                if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
+                    self.StimulationTriggerSchemeIndex_ = double(newValue) ;
                 else
-                    nSchemes = 1 + length(self.CounterTriggers_) + length(self.ExternalTriggers_) ;
-                    if isscalar(newValue) && isnumeric(newValue) && newValue==round(newValue) && 1<=newValue && newValue<=nSchemes ,
-                        self.StimulationTriggerSchemeIndex_ = double(newValue) ;
-                    else
-                        % self.broadcast('Update');
-                        error('ws:invalidPropertyValue', ...
-                              'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
-                    end
+                    error('ws:invalidPropertyValue', ...
+                          'StimulationTriggerSchemeIndex must be a (scalar) index between 1 and the number of triggering schemes');
                 end
             end
-            % self.broadcast('Update');                        
         end
     end  % methods block
     

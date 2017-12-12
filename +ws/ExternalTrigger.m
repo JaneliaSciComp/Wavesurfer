@@ -57,56 +57,31 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         end
         
         function set.Name(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) && ~isempty(value) ,
-                    self.Name_ = value ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'Name must be a nonempty string');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if ws.isString(value) && ~isempty(value) ,
+                self.Name_ = value ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Name must be a nonempty string');                  
+            end                    
         end
         
-%         function set.DeviceName(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if ws.isString(value) ,
-%                     self.DeviceName_ = value ;
-%                 else
-%                     self.Parent.update();
-%                     error('ws:invalidPropertyValue', ...
-%                           'DeviceName must be a string');                  
-%                 end                    
-%             end
-%             self.Parent.update();            
-%         end
-        
         function set.PFIID(self, value)
-            if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
-                    value = double(value) ;
-                    self.PFIID_ = value ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'PFIID must be a (scalar) nonnegative integer');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                value = double(value) ;
+                self.PFIID_ = value ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'PFIID must be a (scalar) nonnegative integer');                  
+            end                    
         end
         
         function set.Edge(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isAnEdgeType(value) ,
-                    self.Edge_ = value;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'Edge must be ''rising'' or ''falling''');                  
-                end                                        
-            end
-            %self.Parent.update();            
+            if ws.isAnEdgeType(value) ,
+                self.Edge_ = value;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Edge must be ''rising'' or ''falling''');                  
+            end                                        
         end  % function 
         
         function value = get.IsMarkedForDeletion(self)
@@ -114,16 +89,12 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         end
 
         function set.IsMarkedForDeletion(self, value)
-            if ws.isASettableValue(value) ,
-                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
-                    self.IsMarkedForDeletion_ = logical(value) ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'IsMarkedForDeletion must be a truthy scalar');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                self.IsMarkedForDeletion_ = logical(value) ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'IsMarkedForDeletion must be a truthy scalar');                  
+            end                    
         end
         
     end  % methods
