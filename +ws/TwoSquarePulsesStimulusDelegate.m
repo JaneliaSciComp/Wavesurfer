@@ -115,7 +115,25 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
             out = self.SecondPulseDuration_ ;
         end
         
-        function data = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet) %#ok<INUSL>
+        function data = calculateSignal(self, t, sweepIndexWithinSet)
+            % Process args
+            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
+                sweepIndexWithinSet=1;
+            end
+                        
+            % Compute the delay from the expression for it
+            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
+            % Screen for illegal values
+            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
+                data=zeros(size(t));
+                return
+            end
+            
+            % Shift the timeline to account for the delay
+            tShiftedByDelay=t-delay;
+            
+            % Call the core method to generate the raw output data
+            %delegate = self ;
             % Compute the first pulse amplitude from the expression for it
             firstPulseAmplitude = ws.Stimulus.evaluateSweepExpression(self.FirstPulseAmplitude,sweepIndexWithinSet) ;
             if isempty(firstPulseAmplitude) || ~isnumeric(firstPulseAmplitude) || ~isscalar(firstPulseAmplitude) || ~isreal(firstPulseAmplitude) || ...
@@ -156,70 +174,17 @@ classdef TwoSquarePulsesStimulusDelegate < ws.StimulusDelegate
                                                 isfinite(secondPulseAmplitude) && isfinite(secondPulseDuration) ,
                 delayToSecondPulse = firstPulseDuration + delayBetweenPulses ;
                 delayToEndOfSecondPulse = delayToSecondPulse + secondPulseDuration ;
-                data = firstPulseAmplitude*double(t<firstPulseDuration) + secondPulseAmplitude*double(delayToSecondPulse<=t & t<delayToEndOfSecondPulse) ;
+                data = firstPulseAmplitude*double(0<=tShiftedByDelay & tShiftedByDelay<firstPulseDuration) + ...
+                       secondPulseAmplitude*double(delayToSecondPulse<=tShiftedByDelay & tShiftedByDelay<delayToEndOfSecondPulse) ;
             else
                 % invalid params causes signal to be all-zero
-                data=zeros(size(t));
+                data=zeros(size(tShiftedByDelay));
             end
-        end                
-        
-        function data = calculateSignal(self, t, sweepIndexWithinSet)
-            % Process args
-            if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
-                sweepIndexWithinSet=1;
-            end
-                        
-            % Compute the delay from the expression for it
-            delay = ws.Stimulus.evaluateSweepExpression(self.Delay,sweepIndexWithinSet) ;
-            % Screen for illegal values
-            if isempty(delay) || ~(isnumeric(delay)||islogical(delay)) || ~isscalar(delay) || ~isreal(delay) || ~isfinite(delay) || delay<0 ,
-                data=zeros(size(t));
-                return
-            end
-            
-            % Shift the timeline to account for the delay
-            tShiftedByDelay=t-delay;
-            
-            % Call the core method to generate the raw output data
-            %delegate = self ;
-            data = self.calculateCoreSignal(self,tShiftedByDelay,sweepIndexWithinSet);
-                % data should be same size as t at this point
-            
-%             % Compute the amplitude from the expression for it
-%             amplitude = ws.Stimulus.evaluateSweepExpression(self.Amplitude,sweepIndexWithinSet) ;
-%             % Screen for illegal values
-%             if isempty(amplitude) || ~(isnumeric(amplitude)||islogical(amplitude)) || ~isscalar(amplitude) || ~isreal(amplitude) || ~isfinite(amplitude) ,
-%                 data=zeros(size(t));
-%                 return
-%             end
-% 
-%             % Compute the delay from the expression for it
-%             dcOffset = ws.Stimulus.evaluateSweepExpression(self.DCOffset,sweepIndexWithinSet) ;
-%             % Screen for illegal values
-%             if isempty(dcOffset) || ~(isnumeric(dcOffset)||islogical(dcOffset)) || ~isscalar(dcOffset) || ~isreal(dcOffset) || ~isfinite(dcOffset) ,
-%                 data=zeros(size(t));
-%                 return
-%             end
-            
-%             % Scale by the amplitude, and add the DC offset
-%             data = amplitude*data + dcOffset;
+            % data should be same size as t at this point
 
-%             % Compute the duration from the expression for it
-%             duration = ws.Stimulus.evaluateSweepExpression(self.Duration,sweepIndexWithinSet) ;
-%             % Screen for illegal values
-%             if isempty(duration) || ~(isnumeric(duration)||islogical(duration)) || ~isscalar(duration) || ~isreal(duration) || ~isfinite(duration) || duration<0 ,
-%                 data=zeros(size(t));
-%                 return
-%             end
-%             
-%             % Zero the data outside the support
-%             % Yes, this is supposed to "override" the DC offset outside the
-%             % support.
-%             isOnSupport=(0<=tShiftedByDelay)&(tShiftedByDelay<duration);
-%             data(~isOnSupport,:)=0;
-            
+            % Zero the last scan, b/c don't want to leave the DACs on when we're done
             if size(data,1)>0 ,
-                data(end,:)=0;  % don't want to leave the DACs on when we're done
+                data(end,:)=0;  % 
             end
         end                
     end  % public methods block

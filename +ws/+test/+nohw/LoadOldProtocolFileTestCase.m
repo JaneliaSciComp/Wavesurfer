@@ -28,6 +28,7 @@ classdef LoadOldProtocolFileTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTest(self)
             [wsModel,wsController] = wavesurfer() ;            
+            wsModel.ArePreferencesWritable = false ;
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'ws-0p961-protocol-file-with-multiple-stimuli.wsp') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;

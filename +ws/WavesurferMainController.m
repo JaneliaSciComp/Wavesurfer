@@ -90,7 +90,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFolderForFilePicker);            
             if ~isempty(absoluteFileName)
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+                %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
             end
         end
@@ -122,7 +122,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
                         isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
             if ~isempty(userSettingsAbsoluteFileName) ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
+                %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
                 self.Model.do('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
             end            
         end
@@ -380,23 +380,27 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            % Can't use self.Model.do() method, because if only warnings,
-            % still want to set the layout afterwards...
-            self.Model.startLoggingWarnings() ;
-            self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
-%             % Restore the layout...  (This now happens when the model
-%             does a broadcast of LayoutAllWindows in
-%             openProtocolFileGivenFileName(), which results in
-%             self.layoutAllWindows() getting called.
-%             layoutForAllWindows = self.Model.LayoutForAllWindows ;
-%             monitorPositions = ws.Controller.getMonitorPositions() ;
-%             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-            % Now throw if there were any warnings
-            warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
-            if ~isempty(warningExceptionMaybe) ,
-                warningException = warningExceptionMaybe{1} ;
-                throw(warningException) ;
-            end
+            
+%             % Can't use self.Model.do() method, because if only warnings,
+%             % still want to set the layout afterwards...  (I think we
+%             *can* do this now.)
+%             self.Model.startLoggingWarnings() ;
+%             self.Model.openProtocolFileGivenFileName(absoluteFileName) ;
+% %             % Restore the layout...  (This now happens when the model
+% %             does a broadcast of LayoutAllWindows in
+% %             openProtocolFileGivenFileName(), which results in
+% %             self.layoutAllWindows() getting called.
+% %             layoutForAllWindows = self.Model.LayoutForAllWindows ;
+% %             monitorPositions = ws.Controller.getMonitorPositions() ;
+% %             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+%             % Now throw if there were any warnings
+%             warningExceptionMaybe = self.Model.stopLoggingWarnings() ;
+%             if ~isempty(warningExceptionMaybe) ,
+%                 warningException = warningExceptionMaybe{1} ;
+%                 throw(warningException) ;
+%             end
+            
+            self.Model.do('openProtocolFileGivenFileName', absoluteFileName) ;
         end  % function
         
         function saveOrSaveAsProtocolFile_(self, isSaveAs)
@@ -498,7 +502,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
 
             if ~isempty(absoluteFileName) ,
                 %self.Model.saveUserFileGivenAbsoluteFileName(absoluteFileName) ;
-                self.Model.do('saveUserFileGivenAbsoluteFileName', absoluteFileName) ;
+                self.Model.do('saveUserFileGivenFileName', absoluteFileName) ;
             end
         end  % method                
 

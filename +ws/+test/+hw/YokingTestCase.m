@@ -46,6 +46,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
 
         function testSavingAndOpeningOfProtocolFromWS(self)
             wsModel = wavesurfer('--nogui') ;
+            wsModel.ArePreferencesWritable = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;  
@@ -60,6 +61,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         
         function testSavingAndOpeningOfUserSettingsFromWS(self)
             wsModel = wavesurfer('--nogui') ;            
+            wsModel.ArePreferencesWritable = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;            
             pause(5) ;  % wait for other process to start            
             userSettingsFilePath = horzcat(tempname(), '.wsu') ;
