@@ -33,6 +33,11 @@ classdef MicroManagerInterface < handle
             result = strcmpi(response.status,'true') ;
         end
         
+        function result = isAcquiring(self)
+            command = sprintf('%s/get/acquisition/', self.baseUrl_()) ;
+            response = self.sendCommand_(command) ;
+            result = strcmpi(response.status,'true') ;
+        end
         
         function runWithoutBlocking(self)
             command = sprintf('%s/run/acquisition/?run&blocking=false', self.baseUrl_()) ;
