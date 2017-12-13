@@ -122,7 +122,7 @@ classdef UserCodeManager < ws.Subsystem
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
-            if self.DoesTheUserObjectMatchTheUserClassName ,
+            if self.getDoesTheObjectMatchClassName_() ,
                 err = self.tryToInstantiateObject_(wsModel) ;
             else
                 err = [] ;
@@ -134,20 +134,6 @@ classdef UserCodeManager < ws.Subsystem
             end
         end  % method
         
-%         function set.AbortCallsComplete(self, value)
-%             if ws.isASettableValue(value) ,
-%                 if isscalar(value) && (islogical(value) || (isnumeric(value) && isreal(value) && isfinite(value))) ,
-%                     valueAsLogical = logical(value>0) ;
-%                     self.AbortCallsComplete_ = valueAsLogical ;
-%                 else
-%                     self.broadcast('Update');
-%                     error('ws:invalidPropertyValue', ...
-%                           'Invalid value for property ''AbortCallsComplete'' supplied.');
-%                 end
-%             end
-%             self.broadcast('Update');
-%         end  % function
-
         function startingRun(self) %#ok<MANU>
 %             % Instantiate a user object, if one doesn't already exist
 %             if isempty(self.TheObject_) ,
@@ -225,7 +211,7 @@ classdef UserCodeManager < ws.Subsystem
 %             self.invoke(self.Parent,'samplesAcquired');
 %        end
 
-        function mimic(self, other)
+        function mimic(self, other, root)
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
@@ -246,7 +232,10 @@ classdef UserCodeManager < ws.Subsystem
                     if isempty(source) ,
                         newUserObject = [] ;
                     else
-                        newUserObject = source.copy() ;
+                        %newUserObject = source.copy(root) ;
+                        className = class(source) ;
+                        newUserObject = feval(className, root) ;  % user objects need the root model in constructor
+                        newUserObject.mimic(self) ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
                 else

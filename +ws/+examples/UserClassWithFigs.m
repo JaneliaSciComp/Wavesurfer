@@ -9,15 +9,10 @@ classdef UserClassWithFigs < ws.UserClass
         Greeting = 'Hello, there!'
     end  % properties
 
-    % Information that you want to stick around between calls to the
-    % functions below, but that only the methods themselves need access to.
-    % (The underscore in the name is to help remind you that it's
-    % protected.)
-    properties (Access=protected)
-        TimeAtStartOfLastRunAsString_ = ''
-    end
-    
+    % Properties that a) You don't want to be persisted in the protocol file,
+    % and b) you don't need access to outside the methods.
     properties (Transient=true, Access=protected)
+        TimeAtStartOfLastRunAsString_ = ''
         FigureGH_
         ButtonGH_
     end

@@ -106,16 +106,12 @@ classdef CounterTrigger < ws.Model
         end
         
         function set.Interval(self, value)
-            if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value>0 ,
-                    self.Interval_ = value ;
-                else
-                    %self.Parent.update() ;
-                    error('ws:invalidPropertyValue', ...
-                          'Interval must be a (scalar) positive integer') ;       
-                end
+            if isnumeric(value) && isscalar(value) && isreal(value) && value>0 ,
+                self.Interval_ = value ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Interval must be a (scalar) positive integer') ;       
             end
-            %self.Parent.update();                
         end
         
         function value=get.CounterID(self)
@@ -142,57 +138,40 @@ classdef CounterTrigger < ws.Model
         end
 
         function set.IsMarkedForDeletion(self, value)
-            if ws.isASettableValue(value) ,
-                if (islogical(value) || isnumeric(value)) && isscalar(value) ,
-                    self.IsMarkedForDeletion_ = logical(value) ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'IsMarkedForDeletion must be a truthy scalar');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if (islogical(value) || isnumeric(value)) && isscalar(value) ,
+                self.IsMarkedForDeletion_ = logical(value) ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'IsMarkedForDeletion must be a truthy scalar');                  
+            end                    
         end
         
         function set.Name(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isString(value) && ~isempty(value) ,
-                    self.Name_ = value ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'Name must be a nonempty string');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if ws.isString(value) && ~isempty(value) ,
+                self.Name_ = value ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Name must be a nonempty string');                  
+            end                    
         end
         
         function set.Edge(self, value)
-            if ws.isASettableValue(value) ,
-                if ws.isAnEdgeType(value) ,
-                    self.Edge_ = value;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'Edge must be ''rising'' or ''falling''');                  
-                end                                        
-            end
-            %self.Parent.update();            
+            if ws.isAnEdgeType(value) ,
+                self.Edge_ = value;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'Edge must be ''rising'' or ''falling''');                  
+            end                                        
         end  % function 
         
         function set.CounterID(self, value)
-            if ws.isASettableValue(value) ,
-                if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
-                    value = double(value) ;
-                    self.CounterID_ = value ;
-                    %self.syncPFIIDToCounterID_() ;
-                else
-                    %self.Parent.update();
-                    error('ws:invalidPropertyValue', ...
-                          'CounterID must be a (scalar) nonnegative integer');                  
-                end                    
-            end
-            %self.Parent.update();            
+            if isnumeric(value) && isscalar(value) && isreal(value) && value==round(value) && value>=0 ,
+                value = double(value) ;
+                self.CounterID_ = value ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'CounterID must be a (scalar) nonnegative integer');                  
+            end                    
         end  % function        
     end  % public methods
     

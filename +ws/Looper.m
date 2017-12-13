@@ -855,7 +855,7 @@ classdef Looper < handle
                 channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
                 
                 scalingCoefficients = self.getAnalogScalingCoefficients_() ;
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
                 
                 % Add data to the user cache
                 isSweepBased = isfinite(self.SweepDuration_) ;

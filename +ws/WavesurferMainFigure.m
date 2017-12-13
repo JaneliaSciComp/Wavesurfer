@@ -608,10 +608,11 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 recordIcon = self.NormalRecordIcon_ ;  % looks OK in either case
                 stopIcon = 1-self.NormalStopIcon_ ;
             end                
-            set(self.PlayButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',playIcon);
-            set(self.RecordButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',recordIcon);
-            set(self.StopButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',stopIcon);
-            set(self.FastProtocolButtons,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor);
+            set(self.PlayButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',playIcon) ;
+            set(self.RecordButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',recordIcon) ;
+            set(self.StopButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor,'CData',stopIcon) ;
+            set(self.FastProtocolButtons,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor) ;
+            set(self.ManageFastProtocolsButton,'ForegroundColor',controlForegroundColor,'BackgroundColor',controlBackgroundColor) ;
             
             % Fast config buttons
             nFastProtocolButtons=length(self.FastProtocolButtons);

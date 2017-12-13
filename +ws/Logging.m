@@ -72,23 +72,21 @@ classdef Logging < ws.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if ws.isString(newValue) ,
-                    if exist(newValue,'dir') ,
-                        originalValue=self.FileLocation_;
-                        self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
-                        % If file name has changed, reset the sweep index
-                        originalFullName = fullfile(originalValue, self.FileBaseName) ;
-                        newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
-                        if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
-                            self.NextSweepIndex = 1 ;
-                        end
+            if ws.isString(newValue) ,
+                if exist(newValue,'dir') ,
+                    originalValue=self.FileLocation_;
+                    self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
+                    % If file name has changed, reset the sweep index
+                    originalFullName = fullfile(originalValue, self.FileBaseName) ;
+                    newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
+                    if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
+                        self.NextSweepIndex = 1 ;
                     end
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'FileLocation must be a string');                    
                 end
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'FileLocation must be a string');                    
             end
             self.broadcast('Update');            
         end
@@ -99,22 +97,20 @@ classdef Logging < ws.Subsystem
         
         function set.FileBaseName(self, newValue)
             %fprintf('Entered set.FileBaseName()\n');            
-            if ws.isASettableValue(newValue), 
-                if ws.isString(newValue) ,
-                    originalValue=self.FileBaseName_;
-                    self.FileBaseName_ = newValue;
-                    % If file name has changed, reset the sweep index
-                    originalFullName=fullfile(self.FileLocation,originalValue);
-                    newFullName=fullfile(self.FileLocation,newValue);
-                    if ~isequal(originalFullName,newFullName) ,
-                        %fprintf('About to reset NextSweepIndex...\n');
-                        self.NextSweepIndex = 1;
-                    end
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'FileBaseName must be a string');                    
+            if ws.isString(newValue) ,
+                originalValue=self.FileBaseName_;
+                self.FileBaseName_ = newValue;
+                % If file name has changed, reset the sweep index
+                originalFullName=fullfile(self.FileLocation,originalValue);
+                newFullName=fullfile(self.FileLocation,newValue);
+                if ~isequal(originalFullName,newFullName) ,
+                    %fprintf('About to reset NextSweepIndex...\n');
+                    self.NextSweepIndex = 1;
                 end
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'FileBaseName must be a string');                    
             end
             self.broadcast('Update');            
         end
@@ -124,15 +120,13 @@ classdef Logging < ws.Subsystem
         end
         
         function set.NextSweepIndex(self, newValue)
-            if ws.isASettableValue(newValue), 
-                if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
-                    newValue=double(newValue) ;
-                    self.NextSweepIndex_ = newValue;
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'NextSweepIndex must be a (scalar) nonnegative integer');
-                end
+            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
+                newValue=double(newValue) ;
+                self.NextSweepIndex_ = newValue;
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'NextSweepIndex must be a (scalar) nonnegative integer');
             end
             self.broadcast('Update');            
         end
@@ -146,14 +140,12 @@ classdef Logging < ws.Subsystem
 %         end
 
         function set.IsOKToOverwrite(self, newValue)
-            if ws.isASettableValue(newValue), 
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
-                    self.IsOKToOverwrite_ = logical(newValue);
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                self.IsOKToOverwrite_ = logical(newValue);
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
             end
             self.broadcast('Update');                        
         end
@@ -163,14 +155,12 @@ classdef Logging < ws.Subsystem
         end
         
         function set.DoIncludeDate(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                    self.DoIncludeDate_ = logical(newValue);
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'DoIncludeDate must be a logical scalar, or convertable to one');                  
-                end
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                self.DoIncludeDate_ = logical(newValue);
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeDate must be a logical scalar, or convertable to one');                  
             end
             self.broadcast('Update');            
         end
@@ -180,20 +170,18 @@ classdef Logging < ws.Subsystem
         end
 
         function set.DoIncludeSessionIndex(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                    originalValue = self.DoIncludeSessionIndex_ ;
-                    newValueForReals = logical(newValue) ;
-                    self.DoIncludeSessionIndex_ = newValueForReals ;
-                    if newValueForReals && ~originalValue ,
-                        self.NextSweepIndex_ = 1 ;
-                        %self.FirstSweepIndexInNextFile_ = 1 ;
-                    end
-                else
-                    self.broadcast('UpdateDoIncludeSessionIndex');
-                    error('ws:invalidPropertyValue', ...
-                          'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                originalValue = self.DoIncludeSessionIndex_ ;
+                newValueForReals = logical(newValue) ;
+                self.DoIncludeSessionIndex_ = newValueForReals ;
+                if newValueForReals && ~originalValue ,
+                    self.NextSweepIndex_ = 1 ;
+                    %self.FirstSweepIndexInNextFile_ = 1 ;
                 end
+            else
+                self.broadcast('UpdateDoIncludeSessionIndex');
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
             end
             self.broadcast('UpdateDoIncludeSessionIndex');            
         end
@@ -203,26 +191,24 @@ classdef Logging < ws.Subsystem
         end
 
         function set.SessionIndex(self, newValue)
-            if ws.isASettableValue(newValue) ,
-                if self.DoIncludeSessionIndex ,
-                    if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
-                        originalValue = self.SessionIndex_ ;
-                        self.SessionIndex_ = newValue;
-                        if newValue ~= originalValue ,
-                            self.NextSweepIndex_ = 1 ;
-                            %self.FirstSweepIndexInNextFile_ = 1 ;
-                        end
-                    else
-                        self.broadcast('Update');
-                        error('ws:invalidPropertyValue', ...
-                              'SessionIndex must be an integer greater than or equal to one');
+            if self.DoIncludeSessionIndex ,
+                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                    originalValue = self.SessionIndex_ ;
+                    self.SessionIndex_ = newValue;
+                    if newValue ~= originalValue ,
+                        self.NextSweepIndex_ = 1 ;
+                        %self.FirstSweepIndexInNextFile_ = 1 ;
                     end
                 else
                     self.broadcast('Update');
                     error('ws:invalidPropertyValue', ...
-                          'Can''t set SessionIndex when DoIncludeSessionIndex is false');
-                    
+                          'SessionIndex must be an integer greater than or equal to one');
                 end
+            else
+                self.broadcast('Update');
+                error('ws:invalidPropertyValue', ...
+                      'Can''t set SessionIndex when DoIncludeSessionIndex is false');
+
             end
             self.broadcast('Update');
         end

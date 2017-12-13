@@ -109,15 +109,13 @@ classdef OnDemandDOTask < handle
         end  % function
         
         function set.ChannelData(self, newValue)
-            if ws.isASettableValue(newValue),
-                nChannels = length(self.TerminalIDs) ;
-                if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
-                    self.ChannelData_ = newValue;
-                    self.syncOutputBufferToChannelData_();
-                else
-                    error('ws:invalidPropertyValue', ...
-                          'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
-                end
+            nChannels = length(self.TerminalIDs) ;
+            if islogical(newValue) && isrow(newValue) && length(newValue)==nChannels ,
+                self.ChannelData_ = newValue;
+                self.syncOutputBufferToChannelData_();
+            else
+                error('ws:invalidPropertyValue', ...
+                      'ChannelData must be an 1x%d matrix, of the appropriate type.',nChannels);
             end
         end  % function        
         
