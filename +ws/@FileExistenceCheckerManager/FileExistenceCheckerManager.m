@@ -72,7 +72,7 @@ classdef FileExistenceCheckerManager < handle
             fecs = self.FileExistenceCheckersStruct_ ;
             self.FileExistenceCheckersStruct_ = horzcat(fecs, fec) ;
             thisUID = self.NextUID_ ;
-            self.NextUID_ = self.NextUID_ + 1 ;
+            self.NextUID_ = thisUID + 1 ;
             self.UIDs_ = horzcat(self.UIDs_, thisUID) ;            
             uid = self.UIDs_(end) ;
             %fprintf('Just added an FEC with UID %d\n', thisUID) ;

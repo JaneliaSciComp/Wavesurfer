@@ -533,7 +533,9 @@ classdef TestPulser < ws.Model
                                  monitorTerminalIDPerTestPulseElectrode, ...
                                  commandChannelScalePerTestPulseElectrode, ...
                                  monitorChannelScalePerTestPulseElectrode, ...
-                                 deviceName)
+                                 deviceName, ...
+                                 primaryDeviceName, ...
+                                 isPrimaryDeviceAPXIDevice)
             % Get the stimulus
             commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode, commandChannelScalePerTestPulseElectrode) ;
             nScans=size(commandsInVolts,1);
@@ -545,6 +547,10 @@ classdef TestPulser < ws.Model
             for i=1:nElectrodes ,
                 self.InputTask_.createAIVoltageChan(deviceName, monitorTerminalIDPerTestPulseElectrode(i));  % defaults to differential
             end
+            [referenceClockSource, referenceClockRate] = ...
+                ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+            set(self.InputTask_, 'refClkSrc', referenceClockSource) ;
+            set(self.InputTask_, 'refClkRate', referenceClockRate) ;            
             %deviceName = self.Parent.Parent.DeviceName ;
             clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
             self.InputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',[],clockString);
@@ -558,6 +564,8 @@ classdef TestPulser < ws.Model
             for i=1:nElectrodes ,
                 self.OutputTask_.createAOVoltageChan(deviceName, commandTerminalIDPerTestPulseElectrode(i));
             end
+            set(self.OutputTask_, 'refClkSrc', referenceClockSource) ;
+            set(self.OutputTask_, 'refClkRate', referenceClockRate) ;            
             self.OutputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',nScans);
 
             % Limit the stimulus to the allowable range

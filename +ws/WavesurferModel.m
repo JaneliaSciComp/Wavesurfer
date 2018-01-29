@@ -4965,7 +4965,8 @@ classdef WavesurferModel < ws.Model
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                %deviceName =self.PrimaryDeviceName ;
+                primaryDeviceName =self.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
                 % Make sure all the channels are on the same device
@@ -4985,6 +4986,8 @@ classdef WavesurferModel < ws.Model
                                                   commandChannelScalePerTestPulseElectrode, ...
                                                   monitorChannelScalePerTestPulseElectrode, ...
                                                   deviceName, ...
+                                                  primaryDeviceName, ...
+                                                  isPrimaryDeviceAPXIDevice, ...
                                                   gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
