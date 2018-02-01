@@ -3062,8 +3062,10 @@ classdef WavesurferModel < ws.Model
             %self.Ephys_.TestPulser.broadcast('Update') ;
             self.Display_.broadcast('ClearData') ;
             self.Display_.broadcast('Update') ;
-            self.Stimulation_.broadcast('Update') ;
-            self.Acquisition_.broadcast('Update') ;            
+            %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
+                                                      % subscribes to this anymore.
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.Acquisition_.broadcast('Update') ;
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
