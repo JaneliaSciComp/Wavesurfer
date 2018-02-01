@@ -455,3 +455,7 @@ Version History
 
 0.966    Jan 29, 2018    Fixed bug with untimed DO during TP not
                          working.
+
+0.967    Feb 1, 2018     Fixed bug with stim library figure not
+                         getting updated after protcol file load.
+                         
