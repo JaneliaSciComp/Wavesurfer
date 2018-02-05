@@ -459,3 +459,5 @@ Version History
 0.967    Feb 1, 2018     Fixed bug with stim library figure not
                          getting updated after protcol file load.
                          
+0.968    Feb 5, 2018     Fixed bugs with user code management.
+                    
