@@ -235,7 +235,7 @@ classdef UserCodeManager < ws.Subsystem
                         %newUserObject = source.copy(root) ;
                         className = class(source) ;
                         newUserObject = feval(className, root) ;  % user objects need the root model in constructor
-                        newUserObject.mimic(self) ;
+                        newUserObject.mimic(source) ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
                 else
