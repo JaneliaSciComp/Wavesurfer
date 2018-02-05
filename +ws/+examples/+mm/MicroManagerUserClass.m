@@ -1,5 +1,16 @@
 classdef MicroManagerUserClass < ws.UserClass
-
+    % To use this, must be using Micro-Manager 2.0.0-beta3 20171203 or later,
+    % and use Karl Bellve's MMrestServer plugin with it
+    % (https://github.com/kbellve/MMrestServer).  This user class communicates
+    % with Micro-Manager via the HTTP server set up by this plugin.  Thanks to
+    % Karl (https://github.com/kbellve) and to MattNeuro
+    % (https://github.com/MattNeuro) for their fine work on this plugin.
+    %
+    % Note that this user class tells MM to start acquiring before WS starts
+    % acquiring a sweep, but if you need precise coordination of the timing of
+    % the WS sweep and the MM frames, you will need to set up MM to wait on a
+    % TTL line before it actually starts acquiring frames.
+    
     properties (Access=private, Transient=true)
         doesInterfaceExist_
         interface_

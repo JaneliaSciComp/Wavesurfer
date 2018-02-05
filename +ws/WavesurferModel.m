@@ -3062,8 +3062,10 @@ classdef WavesurferModel < ws.Model
             %self.Ephys_.TestPulser.broadcast('Update') ;
             self.Display_.broadcast('ClearData') ;
             self.Display_.broadcast('Update') ;
-            self.Stimulation_.broadcast('Update') ;
-            self.Acquisition_.broadcast('Update') ;            
+            %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
+                                                      % subscribes to this anymore.
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.Acquisition_.broadcast('Update') ;
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
@@ -4965,7 +4967,8 @@ classdef WavesurferModel < ws.Model
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                %deviceName =self.PrimaryDeviceName ;
+                primaryDeviceName =self.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
                 % Make sure all the channels are on the same device
@@ -4985,6 +4988,8 @@ classdef WavesurferModel < ws.Model
                                                   commandChannelScalePerTestPulseElectrode, ...
                                                   monitorChannelScalePerTestPulseElectrode, ...
                                                   deviceName, ...
+                                                  primaryDeviceName, ...
+                                                  isPrimaryDeviceAPXIDevice, ...
                                                   gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
