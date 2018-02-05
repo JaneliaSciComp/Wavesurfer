@@ -1949,9 +1949,6 @@ classdef WavesurferModel < ws.Model
                 self.Ephys_.stoppingRun() ;
             end
             
-              
-            
-            
             % Call user method
             self.callUserMethod_('stoppingRun');                
             
@@ -2385,7 +2382,8 @@ classdef WavesurferModel < ws.Model
             end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
+            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
+            self.callUserMethod_('wake');  % wake the user object
             if self.ArePreferencesWritable , 
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             end
@@ -5600,6 +5598,7 @@ classdef WavesurferModel < ws.Model
         
         function set.UserClassName(self, newValue)
             self.UserCodeManager_.setClassName_(newValue, self) ;
+            self.callUserMethod_('wake');  % wake the user object
         end
         
         function result = get.UserClassName(self) 
@@ -5608,6 +5607,7 @@ classdef WavesurferModel < ws.Model
         
         function reinstantiateUserObject(self)
             self.UserCodeManager_.reinstantiateUserObject_(self) ;
+            self.callUserMethod_('wake');  % wake the user object
         end        
         
         function result = get.IsUserClassNameValid(self)

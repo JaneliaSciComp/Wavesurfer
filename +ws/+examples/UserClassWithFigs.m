@@ -18,11 +18,23 @@ classdef UserClassWithFigs < ws.UserClass
     end
     
     methods        
-        function self = UserClassWithFigs(wsModel)
+        function self = UserClassWithFigs()
             % creates the "user object"
             fprintf('%s  Instantiating an instance of UserClassWithFigs.\n', ...
                     self.Greeting);
-            if isa(wsModel, 'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ,                                
+%             if isa(wsModel, 'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ,                                
+%                 self.FigureGH_ = figure() ;
+%                 self.ButtonGH_ = uicontrol('Parent', self.FigureGH_ , ...
+%                                            'Style', 'pushbutton', ...
+%                                            'String', 'Push Me!', ...
+%                                            'Callback', @(source,event)(self.buttonPushed()) ) ;
+%             end
+        end
+        
+        function wake(self, rootModel)
+            fprintf('%s  Waking an instance of UserClassWithFigs.\n', ...
+                    self.Greeting);
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,                                
                 self.FigureGH_ = figure() ;
                 self.ButtonGH_ = uicontrol('Parent', self.FigureGH_ , ...
                                            'Style', 'pushbutton', ...

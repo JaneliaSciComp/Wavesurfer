@@ -23,7 +23,7 @@ classdef RasterTreadMill < ws.UserClass
     
     % protected, transient variables
     properties (Access = protected, Transient = true)
-        RootModel_
+        %RootModel_
         BinWidth_
         BinCenters_
         SampleRate_
@@ -60,10 +60,13 @@ classdef RasterTreadMill < ws.UserClass
     end
     
     methods        
-        function self = RasterTreadMill(wsModel)
+        function self = RasterTreadMill()
             %fprintf('RasterTreadMill::RasterTreadMill()\n') ;
-            self.RootModel_ = wsModel ;
-            self.synchronizeTransientStateToPersistentState_() ;
+            %self.RootModel_ = wsModel ;
+        end
+        
+        function wake(self, rootModel)
+            self.synchronizeTransientStateToPersistentStateAndRootModel_(rootModel) ;
         end
         
         function delete(self)
@@ -80,7 +83,7 @@ classdef RasterTreadMill < ws.UserClass
                 end
                 self.LatencyFig_ = [] ;
             end                
-            self.RootModel_ = [] ;
+            %self.RootModel_ = [] ;
         end
         
         function result = get.SampleRate(self) 
@@ -100,7 +103,7 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         function startingRun(self,wsModel,eventName) %#ok<INUSD>
-            self.synchronizeTransientStateToPersistentState_() ;
+            self.synchronizeTransientStateToPersistentStateAndRootModel_(wsModel) ;
             
             % Initialize the pre-run variables
             self.LapIndex_=1;
@@ -416,8 +419,8 @@ classdef RasterTreadMill < ws.UserClass
     end
     
     methods (Access=protected)
-        function synchronizeTransientStateToPersistentState_(self)
-            rootModel = self.RootModel_ ;
+        function synchronizeTransientStateToPersistentStateAndRootModel_(self, rootModel)
+            %rootModel = self.RootModel_ ;
             if isa(rootModel,'ws.WavesurferModel') ,
                 self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;

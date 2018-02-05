@@ -37,7 +37,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     properties (Transient = true, Access=protected)
         % Generally useful
         ScreenSize_
-        IsUserCodeManagerParentOneTrueWavesurferModel_
+        %IsIInFrontend_
         
         % Useful time and scan information
         FirstOnePercentEndTime_
@@ -134,22 +134,26 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end
     
     methods
-        function self = FlyLocomotionLiveUpdating(wsModel)
+        function self = FlyLocomotionLiveUpdating()
             % Figure out which is the one true Wavesurfer model so that we
             % only create figures in the true Wavesurfer model:
-            if isa(wsModel, 'ws.WavesurferModel')
-                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = wsModel.IsITheOneTrueWavesurferModel;
-            else
-                self.IsUserCodeManagerParentOneTrueWavesurferModel_ = 0;
-            end
+%             if isa(wsModel, 'ws.WavesurferModel')
+%                 self.IsIInFrontend_ = wsModel.IsITheOneTrueWavesurferModel;
+%             else
+%                 self.IsIInFrontend_ = 0 ;
+%             end
             % % Next 2 lines are TESTING
             % filepath = ('C:/Users/taylora/Dropbox/janelia/wavesurfer/informal-tests/');
             % self.FakeInputDataForDebugging_ = load([filepath 'flyLocomotionFirstSweepTruncated.mat']);
             % Set up bar histogram information that will be used by
             % frontend and looper
             self.NumberOfBarPositionHistogramBins_ = 16;
-            self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);
-            if self.IsUserCodeManagerParentOneTrueWavesurferModel_
+            self.BarPositionHistogramBinCenters_  = (2*pi/(2*self.NumberOfBarPositionHistogramBins_): 2*pi/self.NumberOfBarPositionHistogramBins_ : 2*pi);            
+            self.CurrentLEDState_ = 'Off';
+        end
+        
+        function wake(self, rootModel)
+            if isa(rootModel, 'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ,
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
@@ -192,10 +196,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
                 % This will be filled with the numbers of all started
                 % sweeps.
                 self.StartedSweepIndices_ = [];
-                
             end  
-            
-            self.CurrentLEDState_ = 'Off';
         end
         
         function delete(self)
@@ -350,7 +351,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % Wegener. This updates self.BarPositionUnwrappedRecent_,
             % self.BarPositionWrappedRecent_, and
             % self.CumulativeRotationRecent_.
-            self.analyzeFlyLocomotion_(analogData,self.IsUserCodeManagerParentOneTrueWavesurferModel_);
+            self.analyzeFlyLocomotion_(analogData, true);
             
             % Update and store sweep data
             self.StoreSweepTime_(totalScansInSweepPrevious+1:self.TotalScansInSweep_) = self.TimeRecent_;
@@ -476,7 +477,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
        
             % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
-            self.analyzeFlyLocomotion_(analogData, self.IsUserCodeManagerParentOneTrueWavesurferModel_);
+            self.analyzeFlyLocomotion_(analogData, false);  % only called in looper
             
             if self.RunAlreadyStarted_ == false
                 % Then a run just started

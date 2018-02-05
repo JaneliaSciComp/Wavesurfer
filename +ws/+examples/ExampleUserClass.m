@@ -14,9 +14,15 @@ classdef ExampleUserClass < ws.UserClass
     end
     
     methods        
-        function self = ExampleUserClass(parent)
+        function self = ExampleUserClass()
             % creates the "user object"
             fprintf('%s  Instantiating an instance of ExampleUserClass.\n', ...
+                    self.Greeting);
+        end
+        
+        function wake(self, rootModel)  %#ok<INUSD>
+            % creates the "user object"
+            fprintf('%s  Waking an instance of ExampleUserClass.\n', ...
                     self.Greeting);
         end
         
@@ -85,8 +91,9 @@ classdef ExampleUserClass < ws.UserClass
             % has been accumulated from the looper.
             analogData = wsModel.getLatestAIData() ;
             digitalData = wsModel.getLatestDIData() ; 
-            nScans = size(analogData,1);
-            fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
+            nAIScans = size(analogData,1) ;
+            nDIScans = size(digitalData,1) ;            
+            fprintf('%s  Just read %d scans of analog data and %d scans of digital data.\n', self.Greeting, nAIScans, nDIScans) ;
         end
         
         % These methods are called in the looper process

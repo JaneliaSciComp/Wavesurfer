@@ -15,11 +15,15 @@ classdef MimicAnalogInputWithDigitalOutput < ws.UserClass
     end
     
     methods        
-        function self = MimicAnalogInputWithDigitalOutput(wsModel) %#ok<INUSD>
+        function self = MimicAnalogInputWithDigitalOutput()
             % creates the "user object"
             fprintf('Instantiating an instance of MimicAnalogInputWithDigitalOutput.\n');
             %self.Parameter1 = pi ;
             %self.Parameter2 = exp(1) ;            
+        end
+        
+        function wake(self, rootModel)  %#ok<INUSD>
+            fprintf('Waking an instance of MimicAnalogInputWithDigitalOutput.\n');
         end
         
         % These methods are called in the frontend process

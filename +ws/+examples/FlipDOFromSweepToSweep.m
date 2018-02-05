@@ -4,7 +4,10 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
     % from sweep to sweep.
 
     methods        
-        function self = FlipDOFromSweepToSweep(wsModel) %#ok<INUSD>
+        function self = FlipDOFromSweepToSweep()
+        end
+
+        function wake(self, rootModel)  %#ok<MANU>
         end
         
         % These methods are called in the frontend process

@@ -18,10 +18,16 @@ classdef StickShiftBiasUserClass < ws.UserClass
     end
     
     methods
-        function self = StickShiftBiasUserClass(wsModel)
+        function self = StickShiftBiasUserClass()
             fprintf('Creating the BIAS user object\n') ;
-            self.isIInFrontend_ = ( isa(wsModel,'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ) ;
+            %self.isIInFrontend_ = ( isa(wsModel,'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ) ;
         end
+
+        function wake(self, rootModel)
+            fprintf('Waking the BIAS user object\n') ;
+            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ) ;
+        end
+        
         
         function delete(self)            
             fprintf('Deleting the BIAS user object\n') ;

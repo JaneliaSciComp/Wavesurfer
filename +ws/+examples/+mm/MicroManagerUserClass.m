@@ -12,16 +12,19 @@ classdef MicroManagerUserClass < ws.UserClass
     % TTL line before it actually starts acquiring frames.
     
     properties (Access=private, Transient=true)
-        doesInterfaceExist_
+        doesInterfaceExist_ = false
         interface_
         isIInFrontend_ 
     end
     
     methods
-        function self = MicroManagerUserClass(wsModel)
+        function self = MicroManagerUserClass()
             fprintf('Creating the Micro-Manager user object\n') ;
-            self.isIInFrontend_ = ( isa(wsModel,'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ) ;
-            self.doesInterfaceExist_ = false ;
+        end
+        
+        function wake(self, rootModel)
+            fprintf('Waking the Micro-Manager user object\n') ;
+            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ) ;
         end
         
         function delete(self)  %#ok<INUSD>

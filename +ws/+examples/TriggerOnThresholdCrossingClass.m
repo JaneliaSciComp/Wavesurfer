@@ -40,7 +40,7 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
     end
     
     methods
-        function self = TriggerOnThresholdCrossingClass(rootModel) %#ok<INUSD>
+        function self = TriggerOnThresholdCrossingClass()
             % creates the "user object"
             self.IsEnabled = true ;
             self.InputAIChannelIndex = 1 ;
@@ -54,6 +54,9 @@ classdef TriggerOnThresholdCrossingClass < ws.UserClass
             %self.NSweepsCompletedInThisRunAtLastCheck_ = -1 ;  % set to this so always different from the true value on first call to samplesAcquired()
             self.RefractoryPeriod = 0.050 ;  % s
             self.ProbabilityOfSincereSweep = 1 ;
+        end
+        
+        function wake(self, rootModel)   %#ok<INUSD>
         end
         
         function delete(self) %#ok<INUSD>

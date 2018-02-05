@@ -154,7 +154,7 @@ classdef UserCodeManager < ws.Subsystem
 %                 end
                 
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.(eventName)(wsModel, eventName, varargin{:});
+                    self.TheObject_.(eventName)(wsModel, varargin{:});
                 end
 
 %                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
@@ -199,7 +199,7 @@ classdef UserCodeManager < ws.Subsystem
 %             ws.deleteIfValidHandle(self.TheObject_) ;  % manually delete this, to hopefully delete any figures managed by the user object
 %         end
         
-        % You might thing user methods would get invoked inside the
+        % You might think user methods would get invoked inside the
         % UserCodeManager methods startingRun, startingSweep,
         % dataAvailable, etc.  But we don't do it that way, because it
         % doesn't always lead to user methods being called at just the
@@ -234,7 +234,7 @@ classdef UserCodeManager < ws.Subsystem
                     else
                         %newUserObject = source.copy(root) ;
                         className = class(source) ;
-                        newUserObject = feval(className, root) ;  % user objects need the root model in constructor
+                        newUserObject = feval(className) ;
                         newUserObject.mimic(source) ;
                     end
                     self.setPropertyValue_(thisPropertyName, newUserObject) ;
@@ -275,7 +275,7 @@ classdef UserCodeManager < ws.Subsystem
             else
                 % className is non-empty
                 try 
-                    newObject = feval(className, wsModel) ;  % if this fails, self will still be self-consistent
+                    newObject = feval(className) ;  % if this fails, self will still be self-consistent
                     didSucceed = true ;
                 catch exception
                     didSucceed = false ;
