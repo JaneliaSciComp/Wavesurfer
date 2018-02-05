@@ -46,7 +46,7 @@ classdef StickShiftBiasUserClass < ws.UserClass
             end
         end
         
-        function startingRun(self,~,~)
+        function startingRun(self,~)
             fprintf('Starting a run.\n');
             if self.isIInFrontend_ ,
                 if ~self.areCameraInterfacesInitialized_ ,
@@ -125,49 +125,49 @@ classdef StickShiftBiasUserClass < ws.UserClass
             self.completingOrAbortingOrStoppingASweep_();
         end
         
-        function abortingSweep(self,~,~)
+        function abortingSweep(self,~)
             fprintf('Oh noes!  A sweep aborted.\n');
             self.completingOrAbortingOrStoppingASweep_();
         end
         
-        function stoppingSweep(self,~,~)
+        function stoppingSweep(self,~)
             fprintf('A sweep was stopped.\n');
             self.completingOrAbortingOrStoppingASweep_();
         end
         
-        function completingRun(self,~,~) %#ok<INUSD>
+        function completingRun(self,~) %#ok<INUSD>
             % Called just after each set of trials (a.k.a. each
             % "experiment")
             fprintf('Completing a run.\n');
         end
         
-        function abortingRun(self,~,~) %#ok<INUSD>
+        function abortingRun(self,~) %#ok<INUSD>
             % Called if a trial set goes wrong, after the call to
             % trialDidAbort()
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function stoppingRun(self,~,~) %#ok<INUSD>
+        function stoppingRun(self,~) %#ok<INUSD>
             fprintf('A run was stopped.\n');
         end
         
-        function dataAvailable(~,~,~)
+        function dataAvailable(~,~)
         end
 
-        function startingEpisode(~,~,~)
+        function startingEpisode(~,~)
         end
         
-        function completingEpisode(~,~,~)
+        function completingEpisode(~,~)
         end
         
-        function abortingEpisode(~,~,~)
+        function abortingEpisode(~,~)
         end
         
-        function stoppingEpisode(~,~,~)
+        function stoppingEpisode(~,~)
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData)  %#ok<INUSD>
+        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             %nScans = size(analogData,1);

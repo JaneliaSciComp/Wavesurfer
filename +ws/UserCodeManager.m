@@ -56,13 +56,13 @@ classdef UserCodeManager < ws.Subsystem
             result = self.TheObject_;
         end
         
-        function setClassName_(self, value, wsModel)
+        function setClassName_(self, value)
             if ws.isString(value) ,
                 % If it's a string, we'll keep it, but we have to check if
                 % it's a valid class name
                 trimmedValue = strtrim(value) ;
                 self.ClassName_ = trimmedValue ;
-                err = self.tryToInstantiateObject_(wsModel) ;
+                err = self.tryToInstantiateObject_() ;
                 self.broadcast('Update');
                 if ~isempty(err) ,
                   error('wavesurfer:errorWhileInstantiatingUserObject', ...
@@ -118,12 +118,12 @@ classdef UserCodeManager < ws.Subsystem
 %             end
 %         end  % method
 
-        function reinstantiateUserObject_(self, wsModel)
+        function reinstantiateUserObject_(self)
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
             if self.getDoesTheObjectMatchClassName_() ,
-                err = self.tryToInstantiateObject_(wsModel) ;
+                err = self.tryToInstantiateObject_() ;
             else
                 err = [] ;
             end
@@ -144,7 +144,7 @@ classdef UserCodeManager < ws.Subsystem
 %             end            
         end  % function
 
-        function invoke(self, wsModel, eventName, varargin)
+        function invoke(self, rootModel, eventName, varargin)
             try
 %                 if isempty(self.TheObject_) ,
 %                     exception = self.tryToInstantiateObject_() ;
@@ -154,7 +154,7 @@ classdef UserCodeManager < ws.Subsystem
 %                 end
                 
                 if ~isempty(self.TheObject_) ,
-                    self.TheObject_.(eventName)(wsModel, varargin{:});
+                    self.TheObject_.(eventName)(rootModel, varargin{:});
                 end
 
 %                 if self.AbortCallsComplete && strcmp(eventName, 'SweepDidAbort') && ~isempty(self.TheObject_) ,
@@ -168,9 +168,9 @@ classdef UserCodeManager < ws.Subsystem
             catch me
                 %message = [me.message char(10) me.stack(1).file ' at ' num2str(me.stack(1).line)];
                 %warning('wavesurfer:userfunctions:codeerror', strrep(message,'\','\\'));  % downgrade error to a warning
-                wsModel.logWarning('ws:userCodeError', ...
-                                   sprintf('Error in user class method %s',eventName), ...
-                                   me) ;
+                rootModel.logWarning('ws:userCodeError', ...
+                                     sprintf('Error in user class method %s',eventName), ...
+                                     me) ;
                 fprintf('Stack trace for user class method error:\n');
                 display(me.getReport());
             end
@@ -211,7 +211,7 @@ classdef UserCodeManager < ws.Subsystem
 %             self.invoke(self.Parent,'samplesAcquired');
 %        end
 
-        function mimic(self, other, root)
+        function mimic(self, other)
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
@@ -255,7 +255,7 @@ classdef UserCodeManager < ws.Subsystem
     end  % public methods block
        
     methods (Access=protected)
-        function exception = tryToInstantiateObject_(self, wsModel)
+        function exception = tryToInstantiateObject_(self)
             % This method syncs self.TheObject_ given the value of
             % self.ClassName_ . If object creation is attempted and fails,
             % exception will be nonempty, and will be an MException.  But

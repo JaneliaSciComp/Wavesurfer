@@ -1158,7 +1158,7 @@ classdef Looper < handle
             % error-checking.
             try
                 if ~isempty(self.TheUserObject_) ,
-                    self.TheUserObject_.samplesAcquired(rootModel, 'samplesAcquired', scaledAnalogData, rawDigitalData);
+                    self.TheUserObject_.samplesAcquired(rootModel, scaledAnalogData, rawDigitalData);
                 end
             catch exception ,
                 warning('Error in user class method samplesAcquired.  Exception report follows.') ;

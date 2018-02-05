@@ -44,7 +44,7 @@ classdef MicroManagerUserClass < ws.UserClass
 %             end
         end
         
-        function startingRun(self,~,~)
+        function startingRun(self,~)
             fprintf('Starting a run.\n');
             if self.isIInFrontend_ ,
                 if ~self.doesInterfaceExist_ ,
@@ -81,48 +81,48 @@ classdef MicroManagerUserClass < ws.UserClass
                 end                
         end
         
-        function abortingSweep(self,~,~) %#ok<INUSD>
+        function abortingSweep(self,~) %#ok<INUSD>
             fprintf('Oh noes!  A sweep aborted.\n');
         end
         
-        function stoppingSweep(self,~,~) %#ok<INUSD>
+        function stoppingSweep(self,~) %#ok<INUSD>
             fprintf('A sweep was stopped.\n');
         end
         
-        function completingRun(self,~,~) %#ok<INUSD>
+        function completingRun(self,~) %#ok<INUSD>
             % Called just after each set of trials (a.k.a. each
             % "experiment")
             fprintf('Completing a run.\n');
         end
         
-        function abortingRun(self,~,~) %#ok<INUSD>
+        function abortingRun(self,~) %#ok<INUSD>
             % Called if a trial set goes wrong, after the call to
             % trialDidAbort()
             fprintf('Oh noes!  A run aborted.\n');
         end
         
-        function stoppingRun(self,~,~) %#ok<INUSD>
+        function stoppingRun(self,~) %#ok<INUSD>
             fprintf('A run was stopped.\n');
         end
         
-        function dataAvailable(~,~,~)
+        function dataAvailable(~,~)
         end
 
         % These methods are called in the refiller process
-        function startingEpisode(~,~,~)
+        function startingEpisode(~,~)
         end
         
-        function completingEpisode(~,~,~)
+        function completingEpisode(~,~)
         end
         
-        function abortingEpisode(~,~,~)
+        function abortingEpisode(~,~)
         end
         
-        function stoppingEpisode(~,~,~)
+        function stoppingEpisode(~,~)
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData)  %#ok<INUSD>
+        function samplesAcquired(self, looper, eventName, analogData, digitalData)  %#ok<INUSD>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             %nScans = size(analogData,1);

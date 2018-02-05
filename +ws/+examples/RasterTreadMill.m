@@ -90,19 +90,19 @@ classdef RasterTreadMill < ws.UserClass
             result = self.SampleRate_ ;
         end
         
-        function startingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function startingSweep(self,wsModel) %#ok<INUSD>
         end
         
-        function completingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function completingSweep(self,wsModel) %#ok<INUSD>
         end
         
-        function stoppingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingSweep(self,wsModel) %#ok<INUSD>
         end
         
-        function abortingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function abortingSweep(self,wsModel) %#ok<INUSD>
         end
         
-        function startingRun(self,wsModel,eventName) %#ok<INUSD>
+        function startingRun(self,wsModel) 
             self.synchronizeTransientStateToPersistentStateAndRootModel_(wsModel) ;
             
             % Initialize the pre-run variables
@@ -118,16 +118,16 @@ classdef RasterTreadMill < ws.UserClass
             self.LastLEDValue_ = 0 ;
         end
         
-        function completingRun(self,wsModel,eventName) %#ok<INUSD>
+        function completingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function abortingRun(self,wsModel,eventName) %#ok<INUSD>
+        function abortingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
+        function dataAvailable(self,wsModel) 
             % get data
             analogData = wsModel.getLatestAIData();
             digitalData = wsModel.getLatestDIData();
@@ -316,7 +316,7 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         % this one is called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSL,INUSD>
+        function samplesAcquired(self,looper,analogData,digitalData) %#ok<INUSD>
             % output TTL pulse
             %fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
             v = analogData(:,self.ElectrodeChannel) ;
@@ -325,16 +325,16 @@ classdef RasterTreadMill < ws.UserClass
         end
         
         % these are are called in the refiller process
-        function startingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function startingEpisode(self,refiller) %#ok<INUSD>
         end
         
-        function completingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function completingEpisode(self,refiller) %#ok<INUSD>
         end
         
-        function stoppingEpisode(self,refiller,eventName)     %#ok<INUSD>
+        function stoppingEpisode(self,refiller)     %#ok<INUSD>
         end
         
-        function abortingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function abortingEpisode(self,refiller) %#ok<INUSD>
         end        
         
     end  % methods

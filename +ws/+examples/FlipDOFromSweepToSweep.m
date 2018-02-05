@@ -7,68 +7,68 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         function self = FlipDOFromSweepToSweep()
         end
 
-        function wake(self, rootModel)  %#ok<MANU>
+        function wake(self, rootModel)  %#ok<INUSD>
         end
         
         % These methods are called in the frontend process
-        function startingRun(self,wsModel,eventName)  %#ok<INUSD>
+        function startingRun(self,wsModel)  %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")
         end
         
-        function completingRun(self,wsModel,eventName)  %#ok<INUSD>
+        function completingRun(self,wsModel)  %#ok<INUSD>
             % Called just after each set of sweeps (a.k.a. each
             % "run")
         end
         
-        function stoppingRun(self,wsModel,eventName)  %#ok<INUSD>
+        function stoppingRun(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
         end        
         
-        function abortingRun(self,wsModel,eventName)  %#ok<INUSD>
+        function abortingRun(self,wsModel)  %#ok<INUSD>
             % Called if a run goes wrong, after the call to
             % abortingSweep()
         end
         
-        function startingSweep(self,wsModel,eventName) %#ok<INUSD,INUSL>
+        function startingSweep(self,wsModel) %#ok<INUSL>
             wsModel.DOChannelStateIfUntimed(1)= ...
                 mod(wsModel.NSweepsCompletedInThisRun,2);
         end
         
-        function completingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        function completingSweep(self,wsModel)  %#ok<INUSD>
         end
         
-        function stoppingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        function stoppingSweep(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
         end        
         
-        function abortingSweep(self,wsModel,eventName)  %#ok<INUSD>
+        function abortingSweep(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
         end        
                         
-        function dataAvailable(self,wsModel,eventName)  %#ok<INUSD>
+        function dataAvailable(self,wsModel)  %#ok<INUSD>
         end        
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData)  %#ok<INUSD> 
+        function samplesAcquired(self,looper,analogData,digitalData)  %#ok<INUSD> 
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,refiller,eventName)  %#ok<INUSD>
+        function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
         end
         
-        function completingEpisode(self,refiller,eventName)  %#ok<INUSD>
+        function completingEpisode(self,refiller)  %#ok<INUSD>
             % Called after each episode completes
         end
         
-        function stoppingEpisode(self,refiller,eventName)  %#ok<INUSD>
+        function stoppingEpisode(self,refiller)  %#ok<INUSD>
             % Called if a episode goes wrong
         end        
         
-        function abortingEpisode(self,refiller,eventName)  %#ok<INUSD>
+        function abortingEpisode(self,refiller)  %#ok<INUSD>
             % Called if a episode goes wrong
         end
         

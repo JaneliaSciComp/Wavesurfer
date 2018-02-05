@@ -2934,7 +2934,7 @@ classdef WavesurferModel < ws.Model
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName), self) ;  % needs root model arg
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;  % needs root model arg (not anymore...)
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else
@@ -5597,7 +5597,7 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.UserClassName(self, newValue)
-            self.UserCodeManager_.setClassName_(newValue, self) ;
+            self.UserCodeManager_.setClassName_(newValue) ;
             self.callUserMethod_('wake');  % wake the user object
         end
         
@@ -5606,7 +5606,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function reinstantiateUserObject(self)
-            self.UserCodeManager_.reinstantiateUserObject_(self) ;
+            self.UserCodeManager_.reinstantiateUserObject_() ;
             self.callUserMethod_('wake');  % wake the user object
         end        
         

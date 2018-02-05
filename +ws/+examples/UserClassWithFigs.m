@@ -53,7 +53,7 @@ classdef UserClassWithFigs < ws.UserClass
         end
         
         % These methods are called in the frontend process
-        function startingRun(self,wsModel,eventName)
+        function startingRun(self,wsModel) %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")
             self.TimeAtStartOfLastRunAsString_ = datestr( clock() ) ;
@@ -61,61 +61,61 @@ classdef UserClassWithFigs < ws.UserClass
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
-        function completingRun(self,wsModel,eventName)
+        function completingRun(self,wsModel)  %#ok<INUSD>
             % Called just after each set of sweeps (a.k.a. each
             % "run")
             fprintf('%s  Completed a run.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
-        function stoppingRun(self,wsModel,eventName)
+        function stoppingRun(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('%s  User stopped a run.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
-        function abortingRun(self,wsModel,eventName)
+        function abortingRun(self,wsModel)  %#ok<INUSD>
             % Called if a run goes wrong, after the call to
             % abortingSweep()
             fprintf('%s  Oh noes!  A run aborted.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
-        function startingSweep(self,wsModel,eventName)
+        function startingSweep(self,wsModel)  %#ok<INUSD>
             % Called just before each sweep
             fprintf('%s  About to start a sweep.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
-        function completingSweep(self,wsModel,eventName)
+        function completingSweep(self,wsModel)  %#ok<INUSD>
             % Called after each sweep completes
             fprintf('%s  Completed a sweep.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end
         
-        function stoppingSweep(self,wsModel,eventName)
+        function stoppingSweep(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('%s  User stopped a sweep.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
-        function abortingSweep(self,wsModel,eventName)
+        function abortingSweep(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
             fprintf('%s  Oh noes!  A sweep aborted.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
         
-        function dataAvailable(self,wsModel,eventName)
+        function dataAvailable(self,wsModel)
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % has been accumulated from the looper.
             analogData = wsModel.getLatestAIData();
-            digitalData = wsModel.getLatestDIData(); 
+            digitalData = wsModel.getLatestDIData();  %#ok<NASGU>
             nScans = size(analogData,1);
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData) 
+        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD,INUSL>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             nScans = size(analogData,1);
@@ -123,27 +123,27 @@ classdef UserClassWithFigs < ws.UserClass
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,refiller,eventName)
+        function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
             fprintf('%s  About to start an episode.\n',self.Greeting);
         end
         
-        function completingEpisode(self,refiller,eventName)
+        function completingEpisode(self,refiller)  %#ok<INUSD>
             % Called after each episode completes
             fprintf('%s  Completed an episode.\n',self.Greeting);
         end
         
-        function stoppingEpisode(self,refiller,eventName)
+        function stoppingEpisode(self,refiller)  %#ok<INUSD>
             % Called if a episode goes wrong
             fprintf('%s  User stopped an episode.\n',self.Greeting);
         end        
         
-        function abortingEpisode(self,refiller,eventName)
+        function abortingEpisode(self,refiller)  %#ok<INUSD>
             % Called if a episode goes wrong
             fprintf('%s  Oh noes!  An episode aborted.\n',self.Greeting);
         end
         
-        function buttonPushed(self)
+        function buttonPushed(self)  %#ok<MANU>
             fprintf('Button was pushed!\n');            
         end
     end  % methods

@@ -153,7 +153,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         function wake(self, rootModel)
-            if isa(rootModel, 'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ,
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
@@ -228,7 +228,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         % These methods are called in the frontend process
-        function startingRun(self,wsModel,eventName) %#ok<INUSD>
+        function startingRun(self,wsModel) 
             % Called just before each set of sweeps (a.k.a. each "run")
             
             % Calculates the length of the first one percent of the
@@ -264,16 +264,16 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
 %             end
         end
         
-        function completingRun(self,wsModel,eventName) %#ok<INUSD>
+        function completingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function stoppingRun(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function abortingRun(self,wsModel,eventName) %#ok<INUSD>
+        function abortingRun(self,wsModel) %#ok<INUSD>
         end
         
-        function startingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function startingSweep(self,wsModel) 
             % Store only the sweep indices that are started, used to name
             % the figures
             self.StartedSweepIndices_ = [self.StartedSweepIndices_, wsModel.NextSweepIndex];
@@ -310,19 +310,19 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         % When a sweep stops for any reason, we plot all the data to the
         % screen and delete the listener and callback function for zooming:
         % this is in function plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates()
-        function completingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function completingSweep(self,wsModel) %#ok<INUSD>
             self.plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates();
         end
         
-        function stoppingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function stoppingSweep(self,wsModel) %#ok<INUSD>
             self.plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates();
         end
         
-        function abortingSweep(self,wsModel,eventName) %#ok<INUSD>
+        function abortingSweep(self,wsModel) %#ok<INUSD>
             self.plotArenaAndBallRotationWithAllSweepDataWhenSweepTerminates();
         end
         
-        function dataAvailable(self,wsModel,eventName) %#ok<INUSD>
+        function dataAvailable(self,wsModel)
             % Called each time a "chunk" of data (typically 100 ms worth)
             % has been accumulated from the looper.
             
@@ -446,7 +446,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData) %#ok<INUSD,INUSL>
+        function samplesAcquired(self,looper,analogData,digitalData) %#ok<INUSD>
             % This is used to acquire the data, and performs the necessary
             % analysis to trigger an LED
             
@@ -558,16 +558,16 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         % These methods are called in the refiller process
-        function startingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function startingEpisode(self,refiller) %#ok<INUSD>
         end
         
-        function completingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function completingEpisode(self,refiller) %#ok<INUSD>
         end
         
-        function stoppingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function stoppingEpisode(self,refiller) %#ok<INUSD>
         end
         
-        function abortingEpisode(self,refiller,eventName) %#ok<INUSD>
+        function abortingEpisode(self,refiller) %#ok<INUSD>
         end
     end  % methods
     
