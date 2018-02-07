@@ -43,8 +43,11 @@ classdef BiasUserClass < ws.UserClass
     
     methods
         %% User functions    
-        function self = BiasUserClass(userCodeManager)
-            if isa(userCodeManager.Parent,'ws.WavesurferModel') && userCodeManager.Parent.IsITheOneTrueWavesurferModel ,
+        function self = BiasUserClass()
+        end
+        
+        function wake(self, rootModel)
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
                 self.IsIInFrontend = true ;
                 self.initialize();
             else
@@ -58,72 +61,72 @@ classdef BiasUserClass < ws.UserClass
             end
         end
         
-        function startingRun(self,~,~)
+        function startingRun(self,~)
             fprintf('Starting a run.\n');
             self.configure();
             self.start();
         end
         
-        function startingSweep(~,~,~)
+        function startingSweep(~,~)
             % Called just before each trial
             fprintf('Starting a sweep.\n');
         end
         
-        function completingSweep(~,~,~)
+        function completingSweep(~,~)
             %dbstack;
             fprintf('Completing a sweep.\n');
         end
         
-        function abortingSweep(~,~,~)
+        function abortingSweep(~,~)
             %dbstack;
         end
         
-        function stoppingSweep(~,~,~)
+        function stoppingSweep(~,~)
             %dbstack;
         end
         
-        function completingRun(self,~,~)
+        function completingRun(self,~)
             % Called just after each set of trials (a.k.a. each
             % "experiment")
             fprintf('Completing a run.\n');
             self.stop();
         end
         
-        function abortingRun(self,~,~)
+        function abortingRun(self,~)
             % Called if a trial set goes wrong, after the call to
             % trialDidAbort()
             fprintf('Oh noes!  A run aborted.\n');
             self.stop();
         end
         
-        function stoppingRun(self,~,~)
+        function stoppingRun(self,~)
             fprintf('A run was stopped.\n');
             self.stop();
         end
         
-        function dataAvailable(~,~,~)
+        function dataAvailable(~,~)
             %dbstack;
         end
 
-        function startingEpisode(~,~,~)
+        function startingEpisode(~,~)
             % Called just before each trial
             fprintf('About to start a sweep.\n');
         end
         
-        function completingEpisode(~,~,~)
+        function completingEpisode(~,~)
             %dbstack;
         end
         
-        function abortingEpisode(~,~,~)
+        function abortingEpisode(~,~)
             %dbstack;
         end
         
-        function stoppingEpisode(~,~,~)
+        function stoppingEpisode(~,~)
             %dbstack;
         end
         
         % These methods are called in the looper process
-        function samplesAcquired(self,looper,eventName,analogData,digitalData)  %#ok<INUSD>
+        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
             %nScans = size(analogData,1);

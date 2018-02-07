@@ -356,9 +356,12 @@ classdef (Abstract) Coding < handle
                               % The warningLogger is the WSM, so this should work.
                               % But the warningLogger is a WSM with IsITheOneTrueWaveSurferModel set to
                               % true, which causes problems...
-                            result = feval(className, []) ;  
+                            result = feval(className) ;  
                               % This is better.  All the user classes that touch the rootModel check the
                               % class of it first, so this works fine.
+                              % And this is even better.  User objects now have to have a zero-arg
+                              % constuctor, and any initialization requiring knowledge of the root model
+                              % is pushed off to the wake() method.
                         end
 
                         % Get the list of persistable properties
