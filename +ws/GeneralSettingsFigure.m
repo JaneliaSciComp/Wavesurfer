@@ -295,8 +295,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
                           'HorizontalAlignment','right');
             self.FileNameText = ...
                 ws.uicontrol('Parent',self.LoggingPanel, ...
-                          'Style','text', ...
-                          'String','File Name:');
+                             'Style','text', ...
+                             'String','File Name:');
             self.FileNameEdit = ...
                 ws.uiedit('Parent',self.LoggingPanel, ...
                           'HorizontalAlignment','left', ...
@@ -699,8 +699,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             fileNameEditWidth = widthOfBaseNameAndLocationEdits ;
             fileNameEditYOffset = nextSweepEditYOffset - heightBetweenEdits - editHeight ;
             ws.positionEditLabelAndUnitsBang(self.FileNameText,self.FileNameEdit,[], ....
-                                          xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
-                                          fileNameLabelFixedWidth) ;
+                                             xOffsetOfEdits,fileNameEditYOffset,fileNameEditWidth, ...
+                                             fileNameLabelFixedWidth) ;
                                       
             % Overwrite without asking checkbox
             overwriteCheckboxExtent=get(self.OverwriteCheckbox,'Extent');
@@ -795,8 +795,12 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.NextSweepEdit, 'String', sprintf('%d',model.NextSweepIndex));
             if ~isIdle&&model.IsLoggingEnabled ,
                 set(self.FileNameEdit, 'String', model.CurrentRunAbsoluteFileName);
+                set(self.FileNameEdit, 'TooltipString', model.CurrentRunAbsoluteFileName);
+                set(self.FileNameText, 'TooltipString', model.CurrentRunAbsoluteFileName);
             else
                 set(self.FileNameEdit, 'String', model.NextRunAbsoluteFileName);
+                set(self.FileNameEdit, 'TooltipString', model.NextRunAbsoluteFileName);
+                set(self.FileNameText, 'TooltipString', model.NextRunAbsoluteFileName);
             end            
             set(self.OverwriteCheckbox, 'Value', model.IsOKToOverwriteDataFile);
             
@@ -899,15 +903,13 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.BaseNameEdit,'Enable',ws.onIff(isIdle));
             set(self.OverwriteCheckbox,'Enable',ws.onIff(isIdle));
             %set(self.LocationEdit,'Enable',ws.onIff(isIdle && isLoggingEnabled));
-            set(self.ShowLocationButton,'Enable',ws.onIff(isIdle));
+            set(self.ShowLocationButton,'Enable',ws.onIff(isIdle&&logical(exist(model.DataFileLocation,'dir'))));
             set(self.ChangeLocationButton,'Enable',ws.onIff(isIdle));
             set(self.IncludeDateCheckbox,'Enable',ws.onIff(isIdle));
             set(self.SessionIndexCheckbox,'Enable',ws.onIff(isIdle));
             set(self.SessionIndexEdit,'Enable',ws.onIff(isIdle&&doIncludeSessionIndex));
             set(self.IncrementSessionIndexButton,'Enable',ws.onIff(isIdle&&doIncludeSessionIndex));            
             set(self.NextSweepEdit,'Enable',ws.onIff(isIdle));
-            
-            
         end  % function
     end        
     
