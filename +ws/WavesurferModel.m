@@ -1949,9 +1949,6 @@ classdef WavesurferModel < ws.Model
                 self.Ephys_.stoppingRun() ;
             end
             
-              
-            
-            
             % Call user method
             self.callUserMethod_('stoppingRun');                
             
@@ -2385,7 +2382,8 @@ classdef WavesurferModel < ws.Model
             end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems            
+            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
+            self.callUserMethod_('wake');  % wake the user object
             if self.ArePreferencesWritable , 
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             end
@@ -2936,7 +2934,7 @@ classdef WavesurferModel < ws.Model
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;
                 elseif any(strcmp(thisPropertyName,{'UserCodeManager_'})) ,
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
-                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName), self) ;  % needs root model arg
+                    self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;  % needs root model arg (not anymore...)
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
                     % do nothing                   
                 else
@@ -3062,8 +3060,10 @@ classdef WavesurferModel < ws.Model
             %self.Ephys_.TestPulser.broadcast('Update') ;
             self.Display_.broadcast('ClearData') ;
             self.Display_.broadcast('Update') ;
-            self.Stimulation_.broadcast('Update') ;
-            self.Acquisition_.broadcast('Update') ;            
+            %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
+                                                      % subscribes to this anymore.
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.Acquisition_.broadcast('Update') ;
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
@@ -4965,7 +4965,8 @@ classdef WavesurferModel < ws.Model
                 monitorTerminalIDPerTestPulseElectrode = self.getMonitorTerminalIDPerTestPulseElectrode_() ;
                 commandChannelScalePerTestPulseElectrode = self.getCommandChannelScalePerTestPulseElectrode_() ;
                 monitorChannelScalePerTestPulseElectrode = self.getMonitorChannelScalePerTestPulseElectrode_() ;
-                %deviceName =self.PrimaryDeviceName ;
+                primaryDeviceName =self.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
                 gainOrResistanceUnitsPerTestPulseElectrode = self.getGainOrResistanceUnitsPerTestPulseElectrode() ;
                 
                 % Make sure all the channels are on the same device
@@ -4985,6 +4986,8 @@ classdef WavesurferModel < ws.Model
                                                   commandChannelScalePerTestPulseElectrode, ...
                                                   monitorChannelScalePerTestPulseElectrode, ...
                                                   deviceName, ...
+                                                  primaryDeviceName, ...
+                                                  isPrimaryDeviceAPXIDevice, ...
                                                   gainOrResistanceUnitsPerTestPulseElectrode) ;
 
                 % Change our state
@@ -5594,7 +5597,8 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.UserClassName(self, newValue)
-            self.UserCodeManager_.setClassName_(newValue, self) ;
+            self.UserCodeManager_.setClassName_(newValue) ;
+            self.callUserMethod_('wake');  % wake the user object
         end
         
         function result = get.UserClassName(self) 
@@ -5602,7 +5606,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function reinstantiateUserObject(self)
-            self.UserCodeManager_.reinstantiateUserObject_(self) ;
+            self.UserCodeManager_.reinstantiateUserObject_() ;
+            self.callUserMethod_('wake');  % wake the user object
         end        
         
         function result = get.IsUserClassNameValid(self)

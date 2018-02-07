@@ -73,16 +73,18 @@ classdef Logging < ws.Subsystem
         
         function set.FileLocation(self, newValue)
             if ws.isString(newValue) ,
-                if exist(newValue,'dir') ,
-                    originalValue=self.FileLocation_;
-                    self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
-                    % If file name has changed, reset the sweep index
-                    originalFullName = fullfile(originalValue, self.FileBaseName) ;
-                    newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
-                    if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
-                        self.NextSweepIndex = 1 ;
-                    end
+                %if exist(newValue,'dir') ,  % When setting the file location
+                %programmatically, sometimes useful to put off checking that the folder
+                %exists until we actually record.
+                originalValue = self.FileLocation_ ;
+                self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
+                % If file name has changed, reset the sweep index
+                originalFullName = fullfile(originalValue, self.FileBaseName) ;
+                newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
+                if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
+                    self.NextSweepIndex = 1 ;
                 end
+                %end
             else
                 self.broadcast('Update');
                 error('ws:invalidPropertyValue', ...
@@ -273,8 +275,9 @@ classdef Logging < ws.Subsystem
             self.FirstSweepIndex_ = self.NextSweepIndex ;
             
             % If the target dir doesn't exist, create it
-            if ~exist(self.FileLocation, 'dir')
-                mkdir(self.FileLocation);
+            if ~exist(self.FileLocation, 'dir') ,
+                %mkdir(self.FileLocation);
+                ws.ensureFolderExists(self.FileLocation) ;  % like mkdir, but creates all the folders on the path, as needed
             end
             
             % Check for filename collisions, if that's what user wants

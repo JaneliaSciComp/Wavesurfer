@@ -78,8 +78,10 @@ classdef YokingTestCase < matlab.unittest.TestCase
             %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
+            args = System.Environment.GetCommandLineArgs;
+            path_to_exe = char(args(1)) ;
             siMockProcess = System.Diagnostics.Process() ;
-            siMockProcess.StartInfo.FileName = 'matlab.exe' ;
+            siMockProcess.StartInfo.FileName = path_to_exe ;  % want same matlab we're runnning in, not some other installed version
             argumentsString = sprintf('-nojvm -nosplash -r "addpath(''%s''); sim = ws.SIMock(); sim.sendLotsOfMessages(); pause(10); quit();', pathToWavesurferRoot) ;
             siMockProcess.StartInfo.Arguments = argumentsString ;
             %process.StartInfo.WindowStyle = ProcessWindowStyle.Maximized;

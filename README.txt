@@ -71,7 +71,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2017 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2018 by the Howard Hughes Medical 
 Institute.
 
 
@@ -453,3 +453,11 @@ Version History
 
 0.965    Dec 13, 2017    Added Micro-Manager user class.  Fixed bugs.
 
+0.966    Jan 29, 2018    Fixed bug with untimed DO during TP not
+                         working.
+
+0.967    Feb 1, 2018     Fixed bug with stim library figure not
+                         getting updated after protcol file load.
+                         
+0.968    Feb 5, 2018     Fixed bugs with user code management.
+                    

@@ -662,7 +662,7 @@ classdef Refiller < handle
         function callUserMethod_(self, methodName, varargin)
             try
                 if ~isempty(self.TheUserObject_) ,
-                    self.TheUserObject_.(methodName)(self, methodName, varargin{:});
+                    self.TheUserObject_.(methodName)(self, varargin{:});
                 end
             catch exception ,
                 warning('Error in user class method samplesAcquired.  Exception report follows.') ;
