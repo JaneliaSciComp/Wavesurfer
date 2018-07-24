@@ -37,9 +37,10 @@ classdef Refiller < handle
     end
 
     properties (Access=protected, Transient=true)
-        IPCPublisher_
-        IPCSubscriber_  % subscriber for the frontend
-        IPCReplier_  % to reply to frontend rep-req requests
+        Frontend_
+        %IPCPublisher_
+        %IPCSubscriber_  % subscriber for the frontend
+        %IPCReplier_  % to reply to frontend rep-req requests
         DoesFrontendWantToStopRun_        
         DoKeepRunningMainLoop_
         IsPerformingRun_
@@ -57,32 +58,35 @@ classdef Refiller < handle
     end
     
     methods
-        function self = Refiller(refillerIPCPublisherPortNumber, frontendIPCPublisherPortNumber, refillerIPCReplierPortNumber)
+        function self = Refiller(frontend)
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Set up IPC publisher socket to let others know about what's
-            % going on with the Refiller
-            self.IPCPublisher_ = ws.IPCPublisher(refillerIPCPublisherPortNumber) ;
-            self.IPCPublisher_.bind() ;
-
-            % Set up IPC subscriber socket to get messages when stuff
-            % happens in the other processes
-            self.IPCSubscriber_ = ws.IPCSubscriber() ;
-            self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
+            self.Frontend_ = frontend ;
             
-            % Create the replier socket so the frontend can boss us around
-            self.IPCReplier_ = ws.IPCReplier(refillerIPCReplierPortNumber, self) ;
-            self.IPCReplier_.bind() ;            
+%             % Set up IPC publisher socket to let others know about what's
+%             % going on with the Refiller
+%             self.IPCPublisher_ = ws.IPCPublisher(refillerIPCPublisherPortNumber) ;
+%             self.IPCPublisher_.bind() ;
+% 
+%             % Set up IPC subscriber socket to get messages when stuff
+%             % happens in the other processes
+%             self.IPCSubscriber_ = ws.IPCSubscriber() ;
+%             self.IPCSubscriber_.setDelegate(self) ;
+%             self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
+%             
+%             % Create the replier socket so the frontend can boss us around
+%             self.IPCReplier_ = ws.IPCReplier(refillerIPCReplierPortNumber, self) ;
+%             self.IPCReplier_.bind() ;            
         end
         
         function delete(self)
-            self.IPCPublisher_ = [] ;
-            self.IPCSubscriber_ = [] ;
-            self.IPCReplier_ = [] ;
+            self.Frontend_ = [] ;
+%             self.IPCPublisher_ = [] ;
+%             self.IPCSubscriber_ = [] ;
+%             self.IPCReplier_ = [] ;
         end
         
         function debug(self) %#ok<MANU>

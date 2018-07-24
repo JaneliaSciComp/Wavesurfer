@@ -51,9 +51,10 @@ classdef Looper < handle
     end
 
     properties (Access=protected, Transient=true)
-        IPCPublisher_
-        IPCSubscriber_  % subscriber for the frontend
-        IPCReplier_  % to reply to frontend rep-req requests
+        Frontend_        
+        %IPCPublisher_
+        %IPCSubscriber_  % subscriber for the frontend
+        %IPCReplier_  % to reply to frontend rep-req requests
         NSweepsCompletedInThisRun_ = 0
         t_
         NScansAcquiredSoFarThisSweep_
@@ -94,32 +95,34 @@ classdef Looper < handle
     end        
     
     methods
-        function self = Looper(looperIPCPublisherPortNumber, frontendIPCPublisherPortNumber, looperIPCReplierPortNumber)
+        function self = Looper(wsModel)
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            % Set up IPC publisher socket to let others know about what's
-            % going on with the Looper
-            self.IPCPublisher_ = ws.IPCPublisher(looperIPCPublisherPortNumber) ;
-            self.IPCPublisher_.bind() ;
-
-            % Set up IPC subscriber socket to get messages when stuff
-            % happens in the other processes
-            self.IPCSubscriber_ = ws.IPCSubscriber() ;
-            self.IPCSubscriber_.setDelegate(self) ;
-            self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
-            
-            % Create the replier socket so the frontend can boss us around
-            self.IPCReplier_ = ws.IPCReplier(looperIPCReplierPortNumber, self) ;
-            self.IPCReplier_.bind() ;            
+            self.Frontend_ = wsModel ;
+%             % Set up IPC publisher socket to let others know about what's
+%             % going on with the Looper
+%             self.IPCPublisher_ = ws.IPCPublisher(looperIPCPublisherPortNumber) ;
+%             self.IPCPublisher_.bind() ;
+% 
+%             % Set up IPC subscriber socket to get messages when stuff
+%             % happens in the other processes
+%             self.IPCSubscriber_ = ws.IPCSubscriber() ;
+%             self.IPCSubscriber_.setDelegate(self) ;
+%             self.IPCSubscriber_.connect(frontendIPCPublisherPortNumber) ;
+%             
+%             % Create the replier socket so the frontend can boss us around
+%             self.IPCReplier_ = ws.IPCReplier(looperIPCReplierPortNumber, self) ;
+%             self.IPCReplier_.bind() ;            
         end
         
         function delete(self)
-            self.IPCPublisher_ = [] ;
-            self.IPCSubscriber_ = [] ;
-            self.IPCReplier_ = [] ;
+            self.Frontend_ = [] ;
+%             self.IPCPublisher_ = [] ;
+%             self.IPCSubscriber_ = [] ;
+%             self.IPCReplier_ = [] ;
         end
         
         function debug(self) %#ok<MANU>
