@@ -461,3 +461,4 @@ Version History
                          
 0.968    Feb 5, 2018     Fixed bugs with user code management.
                     
+0.97     Feb 7, 2018     Added wake() method to user classes.
