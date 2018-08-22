@@ -165,64 +165,64 @@ classdef Looper < handle
             result = self.SweepDuration_ ;
         end  % function
         
-        function runMainLoop(self)
-            % Put something in the console, so user know's what this funny
-            % window is.
-            fprintf('This is the ''looper'' process.  It is part of WaveSurfer.\n');
-            fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
-            %pause(5);            
-            % Main loop
-            timeSinceSweepStart=nan;  % hack
-            self.DoKeepRunningMainLoop_ = true ;
-            while self.DoKeepRunningMainLoop_ ,
-                %fprintf('\n\n\nLooper: At top of main loop\n');
-                if self.IsPerformingRun_ ,
-                    % Action in a run depends on whether we are also in a
-                    % sweep, or are in-between sweeps
-                    if self.IsPerformingSweep_ ,
-                        %fprintf('Looper: In a sweep\n');
-                        if self.DoesFrontendWantToStopRun_ ,
-                            %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
-                            % When done, clean up after sweep
-                            self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
-                        else
-                            % This is the block that runs time after time
-                            % during an ongoing sweep
-                            self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart) ;
-                        end
-                    else
-                        %fprintf('Looper: In a run, but not a sweep\n');
-                        if self.DoesFrontendWantToStopRun_ ,
-                            self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
-                            self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
-                            %fprintf('About to send "looperStoppedRun"\n')  ;
-                            self.IPCPublisher_.send('looperStoppedRun') ;
-                            %fprintf('Just sent "looperStoppedRun"\n')  ;
-                        else
-                            % Check for messages, but don't block
-                            self.IPCSubscriber_.processMessagesIfAvailable() ;                            
-                            self.IPCReplier_.processMessagesIfAvailable() ;
-                            % no pause here, b/c want to start sweep as
-                            % soon as frontend tells us to
-                        end                        
-                    end
-                else
-                    %fprintf('Looper: Not in a run, about to check for messages\n');
-                    % We're not currently running a sweep
-                    % Check for messages, but don't block
-                    self.IPCSubscriber_.processMessagesIfAvailable() ;
-                    self.IPCReplier_.processMessagesIfAvailable() ;
-                    if self.DoesFrontendWantToStopRun_ ,
-                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        %fprintf('About to send "looperStoppedRun"\n')  ;
-                        self.IPCPublisher_.send('looperStoppedRun') ;  % just do this to keep front-end happy
-                        %fprintf('Just sent "looperStoppedRun"\n')  ;
-                    end                    
-                    %self.frontendIsBeingDeleted();
-                    pause(0.010);  % don't want to peg CPU when not acquiring
-                end
-            end
-        end  % function
+%         function runMainLoop(self)
+%             % Put something in the console, so user know's what this funny
+%             % window is.
+%             fprintf('This is the ''looper'' process.  It is part of WaveSurfer.\n');
+%             fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
+%             %pause(5);            
+%             % Main loop
+%             timeSinceSweepStart=nan;  % hack
+%             self.DoKeepRunningMainLoop_ = true ;
+%             while self.DoKeepRunningMainLoop_ ,
+%                 %fprintf('\n\n\nLooper: At top of main loop\n');
+%                 if self.IsPerformingRun_ ,
+%                     % Action in a run depends on whether we are also in a
+%                     % sweep, or are in-between sweeps
+%                     if self.IsPerformingSweep_ ,
+%                         %fprintf('Looper: In a sweep\n');
+%                         if self.DoesFrontendWantToStopRun_ ,
+%                             %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
+%                             % When done, clean up after sweep
+%                             self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
+%                         else
+%                             % This is the block that runs time after time
+%                             % during an ongoing sweep
+%                             self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart) ;
+%                         end
+%                     else
+%                         %fprintf('Looper: In a run, but not a sweep\n');
+%                         if self.DoesFrontendWantToStopRun_ ,
+%                             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+%                             self.DoesFrontendWantToStopRun_ = false ;  % reset this                            
+%                             %fprintf('About to send "looperStoppedRun"\n')  ;
+%                             self.IPCPublisher_.send('looperStoppedRun') ;
+%                             %fprintf('Just sent "looperStoppedRun"\n')  ;
+%                         else
+%                             % Check for messages, but don't block
+%                             self.IPCSubscriber_.processMessagesIfAvailable() ;                            
+%                             self.IPCReplier_.processMessagesIfAvailable() ;
+%                             % no pause here, b/c want to start sweep as
+%                             % soon as frontend tells us to
+%                         end                        
+%                     end
+%                 else
+%                     %fprintf('Looper: Not in a run, about to check for messages\n');
+%                     % We're not currently running a sweep
+%                     % Check for messages, but don't block
+%                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+%                     self.IPCReplier_.processMessagesIfAvailable() ;
+%                     if self.DoesFrontendWantToStopRun_ ,
+%                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
+%                         %fprintf('About to send "looperStoppedRun"\n')  ;
+%                         self.IPCPublisher_.send('looperStoppedRun') ;  % just do this to keep front-end happy
+%                         %fprintf('Just sent "looperStoppedRun"\n')  ;
+%                     end                    
+%                     %self.frontendIsBeingDeleted();
+%                     pause(0.010);  % don't want to peg CPU when not acquiring
+%                 end
+%             end
+%         end  % function
     end  % public methods block
         
     methods  % RPC methods block
@@ -321,11 +321,11 @@ classdef Looper < handle
             result = [] ;
         end
         
-        function result = areYallAliveQ(self)
-            %fprintf('Looper::areYallAlive()\n') ;
-            self.IPCPublisher_.send('looperIsAlive');
-            result = [] ;
-        end  % function        
+%         function result = areYallAliveQ(self)
+%             %fprintf('Looper::areYallAlive()\n') ;
+%             self.IPCPublisher_.send('looperIsAlive');
+%             result = [] ;
+%         end  % function        
         
 %         function result = releaseTimedHardwareResources(self)
 %             % This is a req-rep method
@@ -482,7 +482,7 @@ classdef Looper < handle
         function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self, timeSinceSweepStart)
             %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
-            self.IPCSubscriber_.processMessagesIfAvailable() ;
+            %self.IPCSubscriber_.processMessagesIfAvailable() ;
             % Don't need to process self.IPCReplier_ messages, b/c no req-rep
             % messages should be arriving during a sweep.
 
@@ -784,7 +784,8 @@ classdef Looper < handle
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             % Notify the front end
-            self.IPCPublisher_.send('looperCompletedSweep') ;            
+            %self.IPCPublisher_.send('looperCompletedSweep') ;            
+            self.Frontend_.looperCompletedSweep() ;
         end  % function
         
         function stopTheOngoingSweep_(self)
@@ -872,12 +873,16 @@ classdef Looper < handle
 
                 % Toss the data to the subscribers
                 %fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
-                self.IPCPublisher_.send('samplesAcquired', ...
-                                        self.NScansAcquiredSoFarThisSweep_, ...
-                                        rawAnalogData, ...
-                                        rawDigitalData, ...
-                                        timeSinceRunStartAtStartOfData ) ;
-                
+%                 self.IPCPublisher_.send('samplesAcquired', ...
+%                                         self.NScansAcquiredSoFarThisSweep_, ...
+%                                         rawAnalogData, ...
+%                                         rawDigitalData, ...
+%                                         timeSinceRunStartAtStartOfData ) ;
+                self.Frontend_.samplesAcquired(self.NScansAcquiredSoFarThisSweep_, ...
+                                               rawAnalogData, ...
+                                               rawDigitalData, ...
+                                               timeSinceRunStartAtStartOfData ) ;
+                                    
                 % Update the number of scans acquired
                 self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
             end

@@ -2,38 +2,38 @@ classdef Refiller < handle
     % The main Refiller model object.
     
     properties (Access = protected)        
-        PrimaryDeviceName_ = ''
-        IsPrimaryDeviceAPXIDevice_ = false
+        %PrimaryDeviceName_ = ''
+        %IsPrimaryDeviceAPXIDevice_ = false
 
         %ReferenceClockSource_ = []
         %ReferenceClockRate_ = []
         
-        NSweepsPerRun_ = 1
-        SweepDuration_ = []
+        %NSweepsPerRun_ = 1
+        %SweepDuration_ = []
 
-        StimulationTrigger_
+        %StimulationTrigger_
         
-        IsStimulationEnabled_ = false
-        StimulationSampleRate_ = []
-        StimulusLibrary_ = []
-        DoRepeatSequence_ = true
-        IsStimulationTriggerIdenticalToAcquistionTrigger_ = []
+        %IsStimulationEnabled_ = false
+        %StimulationSampleRate_ = []
+        %StimulusLibrary_ = []
+        %DoRepeatSequence_ = true
+        %IsStimulationTriggerIdenticalToAcquistionTrigger_ = []
         
-        AOChannelNames_ = cell(1,0)
-        AOChannelScales_ = zeros(1,0)
-        IsAOChannelActive_ = false(1,0)
-        AOChannelDeviceNames_ = cell(1,0)
-        AOChannelTerminalIDs_ = zeros(1,0)
+        %AOChannelNames_ = cell(1,0)
+        %AOChannelScales_ = zeros(1,0)
+        %IsAOChannelActive_ = false(1,0)
+        %AOChannelDeviceNames_ = cell(1,0)
+        %AOChannelTerminalIDs_ = zeros(1,0)
         IsAOChannelTerminalOvercommitted_ = false(1,0) 
         
-        DOChannelNames_ = cell(1,0)
-        IsDOChannelTimed_ = false(1,0)     
+        %DOChannelNames_ = cell(1,0)
+        %IsDOChannelTimed_ = false(1,0)     
         %DOChannelDeviceNames_ = cell(1,0)
-        DOChannelTerminalIDs_ = zeros(1,0)
+        %DOChannelTerminalIDs_ = zeros(1,0)
         IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
-        IsUserCodeManagerEnabled_
-        TheUserObject_        
+        %IsUserCodeManagerEnabled_
+        %TheUserObject_        
     end
 
     properties (Access=protected, Transient=true)
@@ -93,105 +93,105 @@ classdef Refiller < handle
             keyboard
         end  % function        
         
-        function runMainLoop(self)
-            % Put something in the console, so user know's what this funny
-            % window is.
-            fprintf('This is the ''refiller'' process.  It is part of WaveSurfer.\n');
-            fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
-            %dbstop('if','error') ;
-            %pause(5);            
-            % Main loop
-            %timeSinceSweepStart=nan;  % hack
-            self.IsPerformingRun_ = false ;
-            self.IsPerformingEpisode_ = false ;
-            self.AreTasksStarted_ = false ;
-            self.DoKeepRunningMainLoop_ = true ;
-            while self.DoKeepRunningMainLoop_ ,
-                %fprintf('\n\n\nRefiller: At top of main loop\n');
-                if self.IsPerformingRun_ ,
-                    % Action in a run depends on whether we are also in an
-                    % episode, or are in-between episodes
-                    if self.DoesFrontendWantToStopRun_ ,
-                        if self.IsPerformingEpisode_ ,
-                            self.stopTheOngoingEpisode_() ;
-                        end
-                        self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
-                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        %fprintf('About to send "refillerStoppedRun"\n') ;
-                        self.IPCPublisher_.send('refillerStoppedRun') ;
-                        %fprintf('Just sent "refillerStoppedRun"\n') ;
-                    else
-                        % Check the finite outputs, refill them if
-                        % needed.
-                        if self.IsPerformingEpisode_ ,
-                            areTasksDone = self.areTasksDone_() ;
-                            if areTasksDone ,
-                                %fprintf('Tasks are done\n') ;
-                                self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-%                                 % Start a new episode immediately, without
-%                                 % checking for more messages.
-%                                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-%                                     self.startEpisode_() ;  % start another episode
-%                                 end              
-                            else
-                                %fprintf('Tasks are not done\n') ;
-                                % If tasks are not done, do nothing (except
-                                % check messages, below)
-                            end                                                            
-                        else
-                            % If we're not performing an episode, see if
-                            % we need to start one.
-                            if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                                if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
-                                    % do nothing.
-                                    % if they're identical, startEpisode_()
-                                    % is called from the startingSweep()
-                                    % req-rep method.
-                                else
-                                    self.startEpisode_() ;
-                                end
-                            else
-                                % If we get here, the run is ongoing, but
-                                % we've completed the episodes, whether
-                                % we've noted that fact or not.
-                                if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
-                                    % If nothing to do, pause so as not to
-                                    % peg CPU
-                                    pause(0.010) ;
-                                else
-                                    % Notify the frontend
-                                    self.IPCPublisher_.send('refillerCompletedEpisodes') ;
-                                    %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
-                                    self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
-                                    %self.completeTheEpisodes_() ;
-                                end
-                            end
-                        end
-                        
-                        % Check for messages, but don't wait for them
-                        % We do this last, instead of first, because
-                        % processing messages can e.g. change
-                        % self.IsPerformingRun_, etc.
-                        self.IPCSubscriber_.processMessagesIfAvailable() ;
-                        self.IPCReplier_.processMessagesIfAvailable() ;
-                    end
-                else
-                    %fprintf('Refiller: Not in a run, about to check for messages\n');
-                    % We're not currently in a run
-                    % Check for messages, but don't block
-                    self.IPCSubscriber_.processMessagesIfAvailable() ;
-                    self.IPCReplier_.processMessagesIfAvailable() ;
-                    if self.DoesFrontendWantToStopRun_ ,
-                        self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                        %fprintf('About to send "refillerStoppedRun"\n') ;
-                        self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
-                        %fprintf('Just sent "refillerStoppedRun"\n') ;
-                    end
-                    %self.frontendIsBeingDeleted();
-                    pause(0.010);  % don't want to peg CPU when idle
-                end
-            end
-        end  % function
+%         function runMainLoop(self)
+%             % Put something in the console, so user know's what this funny
+%             % window is.
+%             fprintf('This is the ''refiller'' process.  It is part of WaveSurfer.\n');
+%             fprintf('Don''t close this window if you want WaveSurfer to work properly.\n');                        
+%             %dbstop('if','error') ;
+%             %pause(5);            
+%             % Main loop
+%             %timeSinceSweepStart=nan;  % hack
+%             self.IsPerformingRun_ = false ;
+%             self.IsPerformingEpisode_ = false ;
+%             self.AreTasksStarted_ = false ;
+%             self.DoKeepRunningMainLoop_ = true ;
+%             while self.DoKeepRunningMainLoop_ ,
+%                 %fprintf('\n\n\nRefiller: At top of main loop\n');
+%                 if self.IsPerformingRun_ ,
+%                     % Action in a run depends on whether we are also in an
+%                     % episode, or are in-between episodes
+%                     if self.DoesFrontendWantToStopRun_ ,
+%                         if self.IsPerformingEpisode_ ,
+%                             self.stopTheOngoingEpisode_() ;
+%                         end
+%                         self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+%                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
+%                         %fprintf('About to send "refillerStoppedRun"\n') ;
+%                         self.IPCPublisher_.send('refillerStoppedRun') ;
+%                         %fprintf('Just sent "refillerStoppedRun"\n') ;
+%                     else
+%                         % Check the finite outputs, refill them if
+%                         % needed.
+%                         if self.IsPerformingEpisode_ ,
+%                             areTasksDone = self.areTasksDone_() ;
+%                             if areTasksDone ,
+%                                 %fprintf('Tasks are done\n') ;
+%                                 self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+% %                                 % Start a new episode immediately, without
+% %                                 % checking for more messages.
+% %                                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+% %                                     self.startEpisode_() ;  % start another episode
+% %                                 end              
+%                             else
+%                                 %fprintf('Tasks are not done\n') ;
+%                                 % If tasks are not done, do nothing (except
+%                                 % check messages, below)
+%                             end                                                            
+%                         else
+%                             % If we're not performing an episode, see if
+%                             % we need to start one.
+%                             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+%                                 if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
+%                                     % do nothing.
+%                                     % if they're identical, startEpisode_()
+%                                     % is called from the startingSweep()
+%                                     % req-rep method.
+%                                 else
+%                                     self.startEpisode_() ;
+%                                 end
+%                             else
+%                                 % If we get here, the run is ongoing, but
+%                                 % we've completed the episodes, whether
+%                                 % we've noted that fact or not.
+%                                 if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
+%                                     % If nothing to do, pause so as not to
+%                                     % peg CPU
+%                                     pause(0.010) ;
+%                                 else
+%                                     % Notify the frontend
+%                                     self.IPCPublisher_.send('refillerCompletedEpisodes') ;
+%                                     %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
+%                                     self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
+%                                     %self.completeTheEpisodes_() ;
+%                                 end
+%                             end
+%                         end
+%                         
+%                         % Check for messages, but don't wait for them
+%                         % We do this last, instead of first, because
+%                         % processing messages can e.g. change
+%                         % self.IsPerformingRun_, etc.
+%                         self.IPCSubscriber_.processMessagesIfAvailable() ;
+%                         self.IPCReplier_.processMessagesIfAvailable() ;
+%                     end
+%                 else
+%                     %fprintf('Refiller: Not in a run, about to check for messages\n');
+%                     % We're not currently in a run
+%                     % Check for messages, but don't block
+%                     self.IPCSubscriber_.processMessagesIfAvailable() ;
+%                     self.IPCReplier_.processMessagesIfAvailable() ;
+%                     if self.DoesFrontendWantToStopRun_ ,
+%                         self.DoesFrontendWantToStopRun_ = false ;  % reset this
+%                         %fprintf('About to send "refillerStoppedRun"\n') ;
+%                         self.IPCPublisher_.send('refillerStoppedRun') ;  % just do this to keep front-end happy
+%                         %fprintf('Just sent "refillerStoppedRun"\n') ;
+%                     end
+%                     %self.frontendIsBeingDeleted();
+%                     pause(0.010);  % don't want to peg CPU when idle
+%                 end
+%             end
+%         end  % function
     end  % public methods block
         
     methods  % RPC methods block
@@ -329,12 +329,12 @@ classdef Refiller < handle
             result = [] ;
         end
         
-        function result = areYallAliveQ(self)
-            %fprintf('Refiller::areYallAlive()\n') ;            
-            %fprintf('Got message areYallAliveQ\n') ;            
-            self.IPCPublisher_.send('refillerIsAlive');
-            result = [] ;
-        end  % function        
+%         function result = areYallAliveQ(self)
+%             %fprintf('Refiller::areYallAlive()\n') ;            
+%             %fprintf('Got message areYallAliveQ\n') ;            
+%             self.IPCPublisher_.send('refillerIsAlive');
+%             result = [] ;
+%         end  % function        
         
         function result = releaseTimedHardwareResources(self)
             % This is a req-rep method
@@ -1277,54 +1277,56 @@ classdef Refiller < handle
 %             self.startCounterTasks_();
 %         end  % function
         
-        function setRefillerProtocol_(self, protocol)
-            %self.DeviceName_ = protocol.DeviceName ;
-            
-            self.PrimaryDeviceName_ = protocol.PrimaryDeviceName ;
-            self.IsPrimaryDeviceAPXIDevice_ = protocol.IsPrimaryDeviceAPXIDevice ;
-            
-%             self.ReferenceClockSource_ = protocol.ReferenceClockSource ;
-%             self.ReferenceClockRate_ = protocol.ReferenceClockRate ;
-            
-            self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
-            self.SweepDuration_ = protocol.SweepDuration ;
-            self.StimulationSampleRate_ = protocol.StimulationSampleRate ;
-
-            self.AOChannelNames_ = protocol.AOChannelNames ;
-            self.AOChannelScales_ = protocol.AOChannelScales ;
-            self.AOChannelDeviceNames_ = protocol.AOChannelDeviceNames ;
-            self.AOChannelTerminalIDs_ = protocol.AOChannelTerminalIDs ;
-            
-            self.DOChannelNames_ = protocol.DOChannelNames ;
-            self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
-            %self.DOChannelDeviceNames_ = protocol.DOChannelDeviceNames ;
-            self.DOChannelTerminalIDs_ = protocol.DOChannelTerminalIDs ;
-            
-            self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
-            self.StimulationTrigger_ = protocol.StimulationTrigger ;            
-            self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
-            self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
-            self.IsStimulationTriggerIdenticalToAcquistionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ ;
-
-            self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
-            self.TheUserObject_ = protocol.TheUserObject ;
-        end  % method       
+%         function setRefillerProtocol_(self, protocol)
+%             %self.DeviceName_ = protocol.DeviceName ;
+%             
+%             self.PrimaryDeviceName_ = protocol.PrimaryDeviceName ;
+%             self.IsPrimaryDeviceAPXIDevice_ = protocol.IsPrimaryDeviceAPXIDevice ;
+%             
+% %             self.ReferenceClockSource_ = protocol.ReferenceClockSource ;
+% %             self.ReferenceClockRate_ = protocol.ReferenceClockRate ;
+%             
+%             self.NSweepsPerRun_  = protocol.NSweepsPerRun ;
+%             self.SweepDuration_ = protocol.SweepDuration ;
+%             self.StimulationSampleRate_ = protocol.StimulationSampleRate ;
+% 
+%             self.AOChannelNames_ = protocol.AOChannelNames ;
+%             self.AOChannelScales_ = protocol.AOChannelScales ;
+%             self.AOChannelDeviceNames_ = protocol.AOChannelDeviceNames ;
+%             self.AOChannelTerminalIDs_ = protocol.AOChannelTerminalIDs ;
+%             
+%             self.DOChannelNames_ = protocol.DOChannelNames ;
+%             self.IsDOChannelTimed_ = protocol.IsDOChannelTimed ;
+%             %self.DOChannelDeviceNames_ = protocol.DOChannelDeviceNames ;
+%             self.DOChannelTerminalIDs_ = protocol.DOChannelTerminalIDs ;
+%             
+%             self.IsStimulationEnabled_ = protocol.IsStimulationEnabled ;                                    
+%             self.StimulationTrigger_ = protocol.StimulationTrigger ;            
+%             self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
+%             self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
+%             self.IsStimulationTriggerIdenticalToAcquistionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ ;
+% 
+%             self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
+%             self.TheUserObject_ = protocol.TheUserObject ;
+%         end  % method       
         
         function acquireHardwareResourcesStimulation_(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
-                deviceNameForEachAOChannel = self.AOChannelDeviceNames_ ;
+                deviceNameForEachAOChannel = self.Frontend_.AOChannelDeviceNames ;
                 isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted_ ;
                 isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
                 deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
-                terminalIDForEachChannelInAOTask = self.AOChannelTerminalIDs_(isInTaskForEachAOChannel) ;                
-                primaryDeviceName = self.PrimaryDeviceName_ ;
-                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
+                aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
+                terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
+                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice_ ;
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.AOTask('WaveSurfer AO Task', ...
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
                               deviceNameForEachChannelInAOTask, ...
                               terminalIDForEachChannelInAOTask, ...
                               self.StimulationSampleRate_, ...
+                              
                               self.StimulationKeystoneTaskType_, ...
                               self.StimulationKeystoneTaskDeviceName_, ...
                               self.StimulationTrigger_.DeviceName, ...
