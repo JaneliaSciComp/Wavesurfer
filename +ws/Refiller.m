@@ -24,13 +24,13 @@ classdef Refiller < handle
         %IsAOChannelActive_ = false(1,0)
         %AOChannelDeviceNames_ = cell(1,0)
         %AOChannelTerminalIDs_ = zeros(1,0)
-        IsAOChannelTerminalOvercommitted_ = false(1,0) 
+        %IsAOChannelTerminalOvercommitted_ = false(1,0) 
         
         %DOChannelNames_ = cell(1,0)
         %IsDOChannelTimed_ = false(1,0)     
         %DOChannelDeviceNames_ = cell(1,0)
         %DOChannelTerminalIDs_ = zeros(1,0)
-        IsDOChannelTerminalOvercommitted_ = false(1,0)               
+        %IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
         %IsUserCodeManagerEnabled_
         %TheUserObject_        
@@ -260,13 +260,8 @@ classdef Refiller < handle
         end  % function
         
         function result = startingRun(self, ...
-                                      currentFrontendPath, ...                
-                                      currentFrontendPwd, ...
-                                      refillerProtocol, ...
                                       stimulationKeystoneTaskType, ...
-                                      stimulationKeystoneTaskDeviceName, ...
-                                      isTerminalOvercommitedForEachAOChannel, ...
-                                      isTerminalOvercommitedForEachDOChannel)
+                                      stimulationKeystoneTaskDeviceName)
             % Make the refiller settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -274,13 +269,8 @@ classdef Refiller < handle
             %fprintf('Got message startingRun\n') ;
 
             % Prepare for the run
-            result = self.prepareForRun_(currentFrontendPath, ...                
-                                         currentFrontendPwd, ...
-                                         refillerProtocol, ...
-                                         stimulationKeystoneTaskType, ...
-                                         stimulationKeystoneTaskDeviceName, ...
-                                         isTerminalOvercommitedForEachAOChannel, ...
-                                         isTerminalOvercommitedForEachDOChannel) ;
+            result = self.prepareForRun_(stimulationKeystoneTaskType, ...
+                                         stimulationKeystoneTaskDeviceName) ;
         end  % function
 
         function result = completingRun(self)
@@ -432,18 +422,18 @@ classdef Refiller < handle
             result = [] ;
         end  % function
 
-        function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted) %#ok<INUSD>
-            % What it says on the tin.
-            %
-            % This is called via RPC, so must return exactly one return
-            % value, and must not throw.
-
-            % We don't need to do anything, because the refiller doesn't
-            % really do much until a run is started, and we get the
-            % frontend state then
-            %fprintf('Got message frontendJustLoadedProtocol\n') ;                                                                                   
-            result = [] ;
-        end  % function        
+%         function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted) %#ok<INUSD>
+%             % What it says on the tin.
+%             %
+%             % This is called via RPC, so must return exactly one return
+%             % value, and must not throw.
+% 
+%             % We don't need to do anything, because the refiller doesn't
+%             % really do much until a run is started, and we get the
+%             % frontend state then
+%             %fprintf('Got message frontendJustLoadedProtocol\n') ;                                                                                   
+%             result = [] ;
+%         end  % function        
         
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, i, newValue, isDOChannelTerminalOvercommitted)  %#ok<INUSD>
             % We don't need to do anything in response to this message
@@ -478,13 +468,8 @@ classdef Refiller < handle
         end
                 
         function result = prepareForRun_(self, ...
-                                         currentFrontendPath, ...    
-                                         currentFrontendPwd, ...                                         
-                                         refillerProtocol, ...
                                          stimulationKeystoneTaskType, ...
-                                         stimulationKeystoneTaskDeviceName, ...
-                                         isTerminalOvercommitedForEachAOChannel, ...
-                                         isTerminalOvercommitedForEachDOChannel )
+                                         stimulationKeystoneTaskDeviceName)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -496,12 +481,12 @@ classdef Refiller < handle
             
             % Set the path to match that of the frontend (partly so we can
             % find the user class, if specified)
-            path(currentFrontendPath) ;
-            cd(currentFrontendPwd) ;
+            %path(currentFrontendPath) ;
+            %cd(currentFrontendPwd) ;
             
             % Make our own settings mimic those of wavesurferModelSettings
             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
-            self.setRefillerProtocol_(refillerProtocol) ;
+            %self.setRefillerProtocol_(refillerProtocol) ;
             
             % Cache the keystone task for the run
             %self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
@@ -510,9 +495,9 @@ classdef Refiller < handle
             
             % Set the overcommitment arrays
             %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
-            self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+            %self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
             %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
-            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
+            %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per run
             if self.IsStimulationEnabled_ ,
@@ -1291,7 +1276,7 @@ classdef Refiller < handle
         function acquireHardwareResourcesStimulation_(self)
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 deviceNameForEachAOChannel = self.Frontend_.AOChannelDeviceNames ;
-                isTerminalOvercommittedForEachAOChannel = self.IsAOChannelTerminalOvercommitted_ ;
+                isTerminalOvercommittedForEachAOChannel = self.Frontend_.IsAOChannelTerminalOvercommitted ;
                 isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
                 deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
                 aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
@@ -1313,7 +1298,7 @@ classdef Refiller < handle
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
+                isTerminalOvercommittedForEachDOChannel = self.Frontend_.IsDOChannelTerminalOvercommitted ;
                 isTimedForEachDOChannel = self.Frontend_.IsDOChannelTimed ;
                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
                 %deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;

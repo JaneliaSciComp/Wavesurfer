@@ -1,13 +1,13 @@
 classdef Looper < handle
     % The main Looper object.
     
-%     properties  (Dependent=true)   % These are mainly for use in user code.  
+    properties  (Dependent=true)   % These are mainly for use in user code.  
 %         NSweepsCompletedInThisRun
 %         AcquisitionSampleRate
 %         IsDOChannelTimed
-%         DigitalOutputStateIfUntimed
+        DigitalOutputStateIfUntimed
 %         SweepDuration
-%     end
+    end
     
     properties (Access = protected)        
 %         PrimaryDeviceName_ = ''
@@ -39,9 +39,9 @@ classdef Looper < handle
         %DIChannelDeviceNames_ = cell(1,0)
 %         DIChannelTerminalIDs_ = zeros(1,0)
             
-        DataCacheDurationWhenContinuous_ = []
+        %DataCacheDurationWhenContinuous_ = []
         
-        IsDOChannelTerminalOvercommitted_ = false(1,0)
+        %IsDOChannelTerminalOvercommitted_ = false(1,0)
         
 %         AcquisitionTriggerDeviceName_
 %         AcquisitionTriggerPFIID_
@@ -64,12 +64,12 @@ classdef Looper < handle
         NTimesSamplesAcquiredCalledSinceRunStart_ = 0
         TimeOfLastPollInSweep_
         DoesFrontendWantToStopRun_        
-        WasExceptionThrown_
-        ThrownException_
-        DoKeepRunningMainLoop_
-        IsPerformingRun_ = false
-        IsPerformingSweep_ = false
-        IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
+        %WasExceptionThrown_
+        %ThrownException_
+        %DoKeepRunningMainLoop_
+        %IsPerformingRun_ = false
+        %IsPerformingSweep_ = false
+        %IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
         AcquisitionKeystoneTaskTypeCache_
         AcquisitionKeystoneTaskDeviceNameCache_
         IsInUntimedDOTaskForEachUntimedDOChannel_ = false(1,0)  
@@ -92,7 +92,7 @@ classdef Looper < handle
         IndexOfLastScanInCache_
         IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
-        NScansReadThisSweep_        
+        %NScansReadThisSweep_        
     end        
     
     methods
@@ -130,41 +130,33 @@ classdef Looper < handle
             keyboard
         end  % function        
         
-        function result = get.NSweepsCompletedInThisRun(self)
-            result = self.NSweepsCompletedInThisRun_ ;
-        end  % function
-        
-        function result = get.AcquisitionSampleRate(self)
-            result = self.AcquisitionSampleRate_ ;
-        end  % function
-        
-        function result = get.IsDOChannelTimed(self)
-            result = self.IsDOChannelTimed_ ;
-        end  % function
-        
-        function result = get.DigitalOutputStateIfUntimed(self)
-            result = self.DigitalOutputStateIfUntimed_ ;
-        end  % function
+%         function result = get.NSweepsCompletedInThisRun(self)
+%             result = self.NSweepsCompletedInThisRun_ ;
+%         end  % function
+%         
+%         function result = get.AcquisitionSampleRate(self)
+%             result = self.AcquisitionSampleRate_ ;
+%         end  % function
+%         
+%         function result = get.IsDOChannelTimed(self)
+%             result = self.IsDOChannelTimed_ ;
+%         end  % function
+%         
+%         function result = get.DigitalOutputStateIfUntimed(self)
+%             result = self.DigitalOutputStateIfUntimed_ ;
+%         end  % function
         
         function set.DigitalOutputStateIfUntimed(self, newValue)
-            if isequal(size(newValue),size(self.DigitalOutputStateIfUntimed_)) && ...
-                    (islogical(newValue) || (isnumeric(newValue) && ~any(isnan(newValue)))) ,
-                coercedNewValue = logical(newValue) ;
-                self.DigitalOutputStateIfUntimed_ = coercedNewValue ;
-                if ~isempty(self.UntimedDigitalOutputTask_) ,
-                    self.UntimedDigitalOutputTask_.setChannelDataFancy(self.DigitalOutputStateIfUntimed_, ...
-                                                                       self.IsInUntimedDOTaskForEachUntimedDOChannel_,  ...
-                                                                       self.IsDOChannelTimed_) ;
-                end
-            else
-                error('ws:invalidPropertyValue', ...
-                      'DigitalOutputStateIfUntimed must be a logical row vector, or convertable to one, of the proper size');
+            if ~isempty(self.UntimedDigitalOutputTask_) ,
+                self.UntimedDigitalOutputTask_.setChannelDataFancy(newValue, ...
+                                                                   self.IsInUntimedDOTaskForEachUntimedDOChannel_,  ...
+                                                                   self.Frontend_.IsDOChannelTimed) ;
             end
         end  % function
         
-        function result = get.SweepDuration(self)
-            result = self.SweepDuration_ ;
-        end  % function
+%         function result = get.SweepDuration(self)
+%             result = self.SweepDuration_ ;
+%         end  % function
         
 %         function runMainLoop(self)
 %             % Put something in the console, so user know's what this funny
@@ -227,20 +219,17 @@ classdef Looper < handle
     end  % public methods block
         
     methods  % RPC methods block
-        function result = didSetPrimaryDeviceInFrontend(self, ...
-                                                        primaryDeviceName, ...
-                                                        isPrimaryDeviceAPXIDevice, ...
-                                                        isDOChannelTerminalOvercommitted)
+        function result = didSetPrimaryDeviceInFrontend(self)
             % Set stuff
-            self.PrimaryDeviceName_ = primaryDeviceName ;
-            self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
+            %self.PrimaryDeviceName_ = primaryDeviceName ;
+            %self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
             %self.NDIOTerminals_ = nDIOTerminals ;
             %self.NPFITerminals_ = nPFITerminals ;
             %self.NCounters_ = nCounters ;
             %self.NAITerminals_ = nAITerminals ;
             %self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
             %self.NAOTerminals_ = nAOTerminals ;            
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Get a task, if we need one
             self.reacquireOnDemandHardwareResources_() ;  % Need to start the task for on-demand outputs
@@ -249,24 +238,16 @@ classdef Looper < handle
         end  % function
 
         function result = startingRun(self, ...
-                                      currentFrontendPath, ...
-                                      currentFrontendPwd, ...
-                                      looperProtocol, ...
                                       acquisitionKeystoneTaskType, ...
-                                      acquisitionKeystoneTaskDeviceName, ...
-                                      isTerminalOvercommitedForEachDOChannel)
+                                      acquisitionKeystoneTaskDeviceName)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
             % This is called via (rep-req) RPC, so must return exactly one value.
 
             % Prepare for the run
-            result = self.prepareForRun_(currentFrontendPath, ...
-                                         currentFrontendPwd, ...
-                                         looperProtocol, ...
-                                         acquisitionKeystoneTaskType, ...
-                                         acquisitionKeystoneTaskDeviceName, ...
-                                         isTerminalOvercommitedForEachDOChannel) ;
+            result = self.prepareForRun_(acquisitionKeystoneTaskType, ...
+                                         acquisitionKeystoneTaskDeviceName) ;
         end  % function
 
         function result = completingRun(self)
@@ -291,7 +272,7 @@ classdef Looper < handle
             % Called by the WSM when something goes wrong in mid-run
 
             % Cleanup after run
-            if self.IsPerformingRun_ ,
+            if self.Frontend_.IsPerformingRun ,
                 self.abortTheOngoingRun_() ;
             end
             result = [] ;
@@ -310,17 +291,17 @@ classdef Looper < handle
             result = self.prepareForSweep_(indexOfSweepWithinRun) ;
         end  % function
 
-        function result = frontendIsBeingDeleted(self) 
-            % Called by the frontend (i.e. the WSM) in its delete() method
-            
-            % We tell ourselves to stop running the main loop.  This should
-            % cause runMainLoop() to exit, which causes the script that we
-            % run after we create the looper process to fall through to a
-            % line that says "quit()".  So this should causes the looper
-            % process to terminate.
-            self.DoKeepRunningMainLoop_ = false ;
-            result = [] ;
-        end
+%         function result = frontendIsBeingDeleted(self) 
+%             % Called by the frontend (i.e. the WSM) in its delete() method
+%             
+%             % We tell ourselves to stop running the main loop.  This should
+%             % cause runMainLoop() to exit, which causes the script that we
+%             % run after we create the looper process to fall through to a
+%             % line that says "quit()".  So this should causes the looper
+%             % process to terminate.
+%             %self.DoKeepRunningMainLoop_ = false ;
+%             result = [] ;
+%         end
         
 %         function result = areYallAliveQ(self)
 %             %fprintf('Looper::areYallAlive()\n') ;
@@ -336,10 +317,8 @@ classdef Looper < handle
 %         end  % function
 
         function result = singleDigitalOutputTerminalIDWasSetInFrontend(self, ...
-                                                                        i, newValue, ...
-                                                                        isDOChannelTerminalOvercommitted)
+                                                                        i, newValue)
             self.DOChannelTerminalIDs_(i) = newValue ;
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
@@ -356,9 +335,8 @@ classdef Looper < handle
                                                                channelNameForEachDOChannel, ...
                                                                terminalIDForEachDOChannel, ...
                                                                isTimedForEachDOChannel, ...
-                                                               onDemandOutputForEachDOChannel, ...
-                                                               isTerminalOvercommittedForEachDOChannel)
-            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+                                                               onDemandOutputForEachDOChannel)
+            %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
             self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
                                                      terminalIDForEachDOChannel, ...
                                                      isTimedForEachDOChannel, ...
@@ -370,9 +348,8 @@ classdef Looper < handle
                                                                    channelNameForEachDOChannel, ...
                                                                    terminalIDForEachDOChannel, ...
                                                                    isTimedForEachDOChannel, ...
-                                                                   onDemandOutputForEachDOChannel, ...
-                                                                   isTerminalOvercommittedForEachDOChannel)
-            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
+                                                                   onDemandOutputForEachDOChannel)
+            %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
             self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
                                                      terminalIDForEachDOChannel, ...
                                                      isTimedForEachDOChannel, ...
@@ -398,14 +375,13 @@ classdef Looper < handle
             result = [] ;
         end  % function
         
-        function result = singleDigitalInputTerminalIDWasSetInFrontend(self, ...
-                                                                       isDOChannelTerminalOvercommitted)
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+        function result = singleDigitalInputTerminalIDWasSetInFrontend(self)
+            %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
-        function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted)
+        function result = frontendJustLoadedProtocol(self)
             % What it says on the tin.
             %
             % This is called via RPC, so must return exactly one return
@@ -419,10 +395,10 @@ classdef Looper < handle
             
             % Make our own settings mimic those of wavesurferModelSettings
             %wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
-            self.setLooperProtocol_(looperProtocol) ;
+            %self.setLooperProtocol_(looperProtocol) ;
 
             % Set the overcommitment stuff, calculated in the frontend
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+            %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             
             % Want the on-demand DOs to work immediately
             self.acquireOnDemandHardwareResources_() ;
@@ -430,14 +406,14 @@ classdef Looper < handle
             result = [] ;
         end  % function
         
-        function result = didAddDigitalInputChannelInFrontend(self, isDOChannelTerminalOvercommitted)            
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+        function result = didAddDigitalInputChannelInFrontend(self)            
+            %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function
         
-        function result = didDeleteDigitalInputChannelsInFrontend(self, isDOChannelTerminalOvercommitted)
-            self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
+        function result = didDeleteDigitalInputChannelsInFrontend(self)
+            %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately            
             result = [] ;
         end  % function  
@@ -532,19 +508,19 @@ classdef Looper < handle
                 
                 % Get the digital device names and terminal IDs, other
                 % things out of self
-                primaryDeviceName = self.PrimaryDeviceName_ ;
-                deviceNameForEachDOChannel = repmat({primaryDeviceName},size(self.DOChannelTerminalIDs_)) ;
+                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                deviceNameForEachDOChannel = repmat({primaryDeviceName},size(self.Frontend_.DOChannelTerminalIDs)) ;
                 %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
-                terminalIDForEachDOChannel = self.DOChannelTerminalIDs_ ;
+                terminalIDForEachDOChannel = self.Frontend_.DOChannelTerminalIDs ;
                 
-                onDemandOutputStateForEachDOChannel = self.DigitalOutputStateIfUntimed_ ;
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
+                onDemandOutputStateForEachDOChannel = self.Frontend_.DigitalOutputStateIfUntimed ;
+                isTerminalOvercommittedForEachDOChannel = self.Frontend_.IsDOChannelTerminalOvercommitted ;
                   % channels with out-of-range DIO terminal IDs are "overcommitted", too
                 isTerminalUniquelyCommittedForEachDOChannel = ~isTerminalOvercommittedForEachDOChannel ;
                 %nDIOTerminals = self.Parent.NDIOTerminals ;
 
                 % Filter for just the on-demand ones
-                isOnDemandForEachDOChannel = ~self.IsDOChannelTimed_ ;
+                isOnDemandForEachDOChannel = ~self.Frontend_.IsDOChannelTimed ;
                 if any(isOnDemandForEachDOChannel) ,
                     deviceNameForEachOnDemandDOChannel = deviceNameForEachDOChannel ;
                     terminalIDForEachOnDemandDOChannel = terminalIDForEachDOChannel(isOnDemandForEachDOChannel) ;
@@ -566,7 +542,8 @@ classdef Looper < handle
                 terminalIDsInTask = terminalIDForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 self.UntimedDigitalOutputTask_ = ...
                     ws.OnDemandDOTask('WaveSurfer Untimed Digital Output Task', ...
-                                      self.PrimaryDeviceName_, self.IsPrimaryDeviceAPXIDevice_, ...
+                                      self.Frontend_.PrimaryDeviceName_, ...
+                                      self.Frontend_.IsPrimaryDeviceAPXIDevice, ...
                                       deviceNamesInTask, ...
                                       terminalIDsInTask) ;
                 self.IsInUntimedDOTaskForEachUntimedDOChannel_ = isInTaskForEachOnDemandDOChannel ;
@@ -589,12 +566,8 @@ classdef Looper < handle
         end
         
         function coeffsAndClock = prepareForRun_(self, ...
-                                                 currentFrontendPath, ...
-                                                 currentFrontendPwd, ...
-                                                 looperProtocol, ...
                                                  acquisitionKeystoneTaskType, ...
-                                                 acquisitionKeystoneTaskDeviceName, ...
-                                                 isTerminalOvercommitedForEachDOChannel )
+                                                 acquisitionKeystoneTaskDeviceName)
             % Get ready to run, but don't start anything.
 
             %keyboard
@@ -607,12 +580,12 @@ classdef Looper < handle
             
             % Set the path to match that of the frontend (partly so we can
             % find the user class, if specified)
-            path(currentFrontendPath) ;
-            cd(currentFrontendPwd) ;
+            %path(currentFrontendPath) ;
+            %cd(currentFrontendPwd) ;
             
             % Change our own acquisition state if get this far
             self.DoesFrontendWantToStopRun_ = false ;
-            self.NSweepsCompletedInThisRun_ = 0 ;
+            %self.NSweepsCompletedInThisRun_ = 0 ;
             %self.IsUserCodeManagerEnabled_ = self.UserCodeManager_.IsEnabled ;  % cache for speed                             
             self.IsPerformingRun_ = true ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
@@ -620,7 +593,7 @@ classdef Looper < handle
             % Make our own settings mimic those of wavesurferModelSettings
             % Have to do this before decoding properties, or bad things will happen
             self.releaseTimedHardwareResources_() ;           
-            self.setLooperProtocol_(looperProtocol) ;  
+            %self.setLooperProtocol_(looperProtocol) ;  
               % this shouldn't change the on-demand channels, including the on-demand output task, which should already be up-to-date
             
             % Cache the keystone task for the run
@@ -631,7 +604,7 @@ classdef Looper < handle
             %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
             %self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
             %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
-            self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
+            %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Tell all the subsystems to prepare for the run
             try
@@ -692,7 +665,7 @@ classdef Looper < handle
             
             % Dimension the cache that will hold acquired data in main
             % memory
-            nDIChannels = length(self.DIChannelNames_) ;
+            nDIChannels = length(self.Frontend_.DIChannelNames) ;
             if nDIChannels<=8
                 dataType = 'uint8';
             elseif nDIChannels<=16
@@ -700,15 +673,15 @@ classdef Looper < handle
             else %nDIChannels<=32
                 dataType = 'uint32';
             end
-            nActiveAIChannels = sum(self.IsAIChannelActive_);
-            nActiveDIChannels = sum(self.IsDIChannelActive_);
-            if isfinite(self.SweepDuration_)  ,
+            nActiveAIChannels = sum(self.Frontend_.IsAIChannelActive);
+            nActiveDIChannels = sum(self.Frontend_.IsDIChannelActive);
+            if isfinite(self.Frontend_.SweepDuration)  ,
                 %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
-                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.AcquisitionSampleRate_, self.SweepDuration_) ;
+                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.Frontend_.AcquisitionSampleRate, self.Frontend_.SweepDuration) ;
                 self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
                 self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
             else                                
-                nScans = round(self.DataCacheDurationWhenContinuous_ * self.AcquisitionSampleRate_) ;
+                nScans = round(self.Frontend_.DataCacheDurationWhenContinuous * self.Frontend_.AcquisitionSampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
                 self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
             end
@@ -721,7 +694,7 @@ classdef Looper < handle
             %self.TimedDigitalInputTask_.arm();
         end  % function        
         
-        function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
+        function result = prepareForSweep_(self, indexOfSweepWithinRun)  %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but
             % don't pulse the master trigger yet.
             
@@ -772,7 +745,7 @@ classdef Looper < handle
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
-            self.NScansReadThisSweep_ = 0 ;
+            %self.NScansReadThisSweep_ = 0 ;
             self.TimedDigitalInputTask_.start();
             self.TimedAnalogInputTask_.start();
         end  % function
@@ -782,10 +755,10 @@ classdef Looper < handle
             %dbstack
                         
             % Bump the number of completed sweeps
-            self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
+            %self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
         
             %profile off
-            self.IsPerformingSweep_ = false ;
+            %self.IsPerformingSweep_ = false ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             
             % Notify the front end
@@ -804,7 +777,7 @@ classdef Looper < handle
 
             % Note that we are no longer performing a sweep
             %profile off
-            self.IsPerformingSweep_ = false ;
+            %self.IsPerformingSweep_ = false ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
         end  % function
         
@@ -812,19 +785,19 @@ classdef Looper < handle
             % Stop assumes the object is running and completed successfully.  It generates
             % successful end of run event.
             self.completingOrStoppingOrAbortingRun_() ;
-            self.IsPerformingRun_ = false ;       
+            %self.IsPerformingRun_ = false ;       
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function stopTheOngoingRun_(self)            
             self.completingOrStoppingOrAbortingRun_() ;
-            self.IsPerformingRun_ = false ;   
+            %self.IsPerformingRun_ = false ;   
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
         function abortTheOngoingRun_(self)
             self.completingOrStoppingOrAbortingRun_() ;
-            self.IsPerformingRun_ = false ;
+            %self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
@@ -905,46 +878,46 @@ classdef Looper < handle
             %self.broadcast(eventName);
         end  % function                
         
-        function setLooperProtocol_(self, looperProtocol)
-            % Cause self to resemble other, for the purposes of running an
-            % experiment with the settings defined in wsModel.
-            
-            self.PrimaryDeviceName_ = looperProtocol.PrimaryDeviceName ;
-            self.IsPrimaryDeviceAPXIDevice_ = looperProtocol.IsPrimaryDeviceAPXIDevice ;
-            
-%             self.ReferenceClockSource_ = looperProtocol.ReferenceClockSource ;
-%             self.ReferenceClockRate_ = looperProtocol.ReferenceClockRate ;
-        
-            self.NSweepsPerRun_  = looperProtocol.NSweepsPerRun ;
-            self.SweepDuration_ = looperProtocol.SweepDuration ;
-            self.AcquisitionSampleRate_ = looperProtocol.AcquisitionSampleRate ;
-
-            self.AIChannelNames_ = looperProtocol.AIChannelNames ;
-            self.AIChannelScales_ = looperProtocol.AIChannelScales ;
-            self.IsAIChannelActive_ = looperProtocol.IsAIChannelActive ;
-            self.AIChannelDeviceNames_ = looperProtocol.AIChannelDeviceNames ;
-            self.AIChannelTerminalIDs_ = looperProtocol.AIChannelTerminalIDs ;
-            
-            self.DIChannelNames_ = looperProtocol.DIChannelNames ;
-            self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
-            %self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
-            self.DIChannelTerminalIDs_ = looperProtocol.DIChannelTerminalIDs ;
-            
-            self.DOChannelNames_ = looperProtocol.DOChannelNames ;
-            %self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
-            self.DOChannelTerminalIDs_ = looperProtocol.DOChannelTerminalIDs ;
-            self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
-            self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
-            
-            self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
-            
-            self.AcquisitionTriggerDeviceName_ = looperProtocol.AcquisitionTriggerDeviceName ;
-            self.AcquisitionTriggerPFIID_ = looperProtocol.AcquisitionTriggerPFIID ;
-            self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
-            
-            self.IsUserCodeManagerEnabled_ = looperProtocol.IsUserCodeManagerEnabled ;
-            %self.TheUserObject_ = looperProtocol.TheUserObject ;
-        end  % function        
+%         function setLooperProtocol_(self, looperProtocol)
+%             % Cause self to resemble other, for the purposes of running an
+%             % experiment with the settings defined in wsModel.
+%             
+%             self.PrimaryDeviceName_ = looperProtocol.PrimaryDeviceName ;
+%             self.IsPrimaryDeviceAPXIDevice_ = looperProtocol.IsPrimaryDeviceAPXIDevice ;
+%             
+% %             self.ReferenceClockSource_ = looperProtocol.ReferenceClockSource ;
+% %             self.ReferenceClockRate_ = looperProtocol.ReferenceClockRate ;
+%         
+%             self.NSweepsPerRun_  = looperProtocol.NSweepsPerRun ;
+%             self.SweepDuration_ = looperProtocol.SweepDuration ;
+%             self.AcquisitionSampleRate_ = looperProtocol.AcquisitionSampleRate ;
+% 
+%             self.AIChannelNames_ = looperProtocol.AIChannelNames ;
+%             self.AIChannelScales_ = looperProtocol.AIChannelScales ;
+%             self.IsAIChannelActive_ = looperProtocol.IsAIChannelActive ;
+%             self.AIChannelDeviceNames_ = looperProtocol.AIChannelDeviceNames ;
+%             self.AIChannelTerminalIDs_ = looperProtocol.AIChannelTerminalIDs ;
+%             
+%             self.DIChannelNames_ = looperProtocol.DIChannelNames ;
+%             self.IsDIChannelActive_ = looperProtocol.IsDIChannelActive ;
+%             %self.DIChannelDeviceNames_ = looperProtocol.DIChannelDeviceNames ;
+%             self.DIChannelTerminalIDs_ = looperProtocol.DIChannelTerminalIDs ;
+%             
+%             self.DOChannelNames_ = looperProtocol.DOChannelNames ;
+%             %self.DOChannelDeviceNames_ = looperProtocol.DOChannelDeviceNames ;
+%             self.DOChannelTerminalIDs_ = looperProtocol.DOChannelTerminalIDs ;
+%             self.IsDOChannelTimed_ = looperProtocol.IsDOChannelTimed ;
+%             self.DigitalOutputStateIfUntimed_ = looperProtocol.DigitalOutputStateIfUntimed ;
+%             
+%             self.DataCacheDurationWhenContinuous_ = looperProtocol.DataCacheDurationWhenContinuous ;
+%             
+%             self.AcquisitionTriggerDeviceName_ = looperProtocol.AcquisitionTriggerDeviceName ;
+%             self.AcquisitionTriggerPFIID_ = looperProtocol.AcquisitionTriggerPFIID ;
+%             self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
+%             
+%             self.IsUserCodeManagerEnabled_ = looperProtocol.IsUserCodeManagerEnabled ;
+%             %self.TheUserObject_ = looperProtocol.TheUserObject ;
+%         end  % function        
         
         function didAddOrDeleteDOChannelsInFrontend_(self, ...
                                                      channelNameForEachDOChannel, ...
@@ -967,13 +940,13 @@ classdef Looper < handle
             %keyboard
             if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
-                isAIChannelActive = self.IsAIChannelActive_ ;
+                isAIChannelActive = self.Frontend_.IsAIChannelActive ;
                 %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
-                aiDeviceNames = self.AIChannelDeviceNames_ ;                
+                aiDeviceNames = self.Frontend_.AIChannelDeviceNames ;                
                 activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
-                activeAITerminalIDs = self.AIChannelTerminalIDs_(isAIChannelActive) ;
-                primaryDeviceName = self.PrimaryDeviceName_ ;
-                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
+                activeAITerminalIDs = self.Frontend_.AIChannelTerminalIDs(isAIChannelActive) ;
+                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
                 %[referenceClockSource, referenceClockRate] = ...
                 %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
                 self.TimedAnalogInputTask_ = ...
@@ -982,31 +955,31 @@ classdef Looper < handle
                               isPrimaryDeviceAPXIDevice , ...
                               activeAIDeviceNames, ...
                               activeAITerminalIDs, ...
-                              self.AcquisitionSampleRate_, ...
-                              self.SweepDuration_, ...
+                              self.Frontend_.AcquisitionSampleRate, ...
+                              self.Frontend_.SweepDuration, ...
                               self.AcquisitionKeystoneTaskTypeCache_, ...
                               self.AcquisitionKeystoneTaskDeviceNameCache_, ...
-                              self.AcquisitionTriggerDeviceName_, ...
-                              self.AcquisitionTriggerPFIID_, ...
-                              self.AcquisitionTriggerEdge_) ;
+                              self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
+                              self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
+                              self.Frontend_.acquisitionTriggerProperty('Edge')) ;
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
-                primaryDeviceName = self.PrimaryDeviceName_ ;
-                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
-                isDIChannelActive = self.IsDIChannelActive_ ;
-                activeDITerminalIDs = self.DIChannelTerminalIDs_(isDIChannelActive) ;
+                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+                isDIChannelActive = self.Frontend_.IsDIChannelActive ;
+                activeDITerminalIDs = self.Frontend_.DIChannelTerminalIDs(isDIChannelActive) ;
                 self.TimedDigitalInputTask_ = ...
                     ws.DITask('WaveSurfer DI Task', ...
                               primaryDeviceName , ...
                               isPrimaryDeviceAPXIDevice , ...
                               activeDITerminalIDs, ...
-                              self.AcquisitionSampleRate_, ...
-                              self.SweepDuration_, ...
+                              self.Frontend_.AcquisitionSampleRate, ...
+                              self.Frontend_.SweepDuration, ...
                               self.AcquisitionKeystoneTaskTypeCache_, ...
                               self.AcquisitionKeystoneTaskDeviceNameCache_, ...
-                              self.AcquisitionTriggerDeviceName_, ...
-                              self.AcquisitionTriggerPFIID_, ...
-                              self.AcquisitionTriggerEdge_) ;
+                              self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
+                              self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
+                              self.Frontend_.acquisitionTriggerProperty('Edge')) ;
             end
         end  % function
 
@@ -1114,7 +1087,7 @@ classdef Looper < handle
                 error('wavesurfer:ZeroActiveInputChannelsWhileReadingDataFromTasks', ...
                       'Internal error: No active input channels while reading data from tasks') ;
             end
-            self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
+            %self.NScansReadThisSweep_ = self.NScansReadThisSweep_ + nScans ;
         end  % function
         
         function addDataToUserCache_(self, rawAnalogData, rawDigitalData, isSweepBased)

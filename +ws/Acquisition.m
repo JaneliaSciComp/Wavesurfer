@@ -86,7 +86,7 @@ classdef Acquisition < ws.Subsystem
         NScansFromLatestCallback_
         IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
-        NScansReadThisSweep_
+        %NScansReadThisSweep_
         ActiveChannelIndexFromChannelIndex_ = zeros(1,0) ;
     end    
     
@@ -660,7 +660,7 @@ classdef Acquisition < ws.Subsystem
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
-            self.NScansReadThisSweep_ = 0 ;
+            %self.NScansReadThisSweep_ = 0 ;
             %self.AnalogInputTask_.start();
             %self.DigitalInputTask_.start();
         end  % function
@@ -902,9 +902,9 @@ classdef Acquisition < ws.Subsystem
 %     end
     
     methods
-        function result = getNScansReadThisSweep(self)
-            result  = self.NScansReadThisSweep_ ;
-        end        
+%         function result = getNScansReadThisSweep(self)
+%             result  = self.NScansReadThisSweep_ ;
+%         end        
         
         function newChannelIndex = addAnalogChannel_(self, deviceNameForNewChannel, newTerminalID)
             newChannelName = sprintf('AI%d', newTerminalID) ;
