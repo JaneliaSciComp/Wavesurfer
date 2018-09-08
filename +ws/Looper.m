@@ -1,17 +1,17 @@
 classdef Looper < handle
     % The main Looper object.
     
-    properties  (Dependent=true)   % These are mainly for use in user code.  
-        NSweepsCompletedInThisRun
-        AcquisitionSampleRate
-        IsDOChannelTimed
-        DigitalOutputStateIfUntimed
-        SweepDuration
-    end
+%     properties  (Dependent=true)   % These are mainly for use in user code.  
+%         NSweepsCompletedInThisRun
+%         AcquisitionSampleRate
+%         IsDOChannelTimed
+%         DigitalOutputStateIfUntimed
+%         SweepDuration
+%     end
     
     properties (Access = protected)        
-        PrimaryDeviceName_ = ''
-        IsPrimaryDeviceAPXIDevice_ = false
+%         PrimaryDeviceName_ = ''
+%         IsPrimaryDeviceAPXIDevice_ = false
         %ReferenceClockSource_ = []
         %ReferenceClockRate_ = []
         %NDIOTerminals_ = 0
@@ -20,34 +20,34 @@ classdef Looper < handle
         %NAITerminals_ = 0
         %AITerminalIDsOnDevice_ = cell(1,0)
         %NAOTerminals_ = 0 ;            
-        NSweepsPerRun_ = 1
-        SweepDuration_ = [] 
+%         NSweepsPerRun_ = 1
+%         SweepDuration_ = [] 
         %DOChannelDeviceNames_ = cell(1,0)
-        DOChannelTerminalIDs_ = zeros(1,0)
-        DigitalOutputStateIfUntimed_ = false(1,0)
-        IsDOChannelTimed_ = false(1,0)     
-        DOChannelNames_ = cell(1,0)
-        AcquisitionSampleRate_ = []
-        AIChannelNames_ = cell(1,0)
-        AIChannelScales_ = zeros(1,0)
-        IsAIChannelActive_ = false(1,0)
-        AIChannelDeviceNames_ = cell(1,0)
-        AIChannelTerminalIDs_ = zeros(1,0)
+%         DOChannelTerminalIDs_ = zeros(1,0)
+%         DigitalOutputStateIfUntimed_ = false(1,0)
+%         IsDOChannelTimed_ = false(1,0)     
+%         DOChannelNames_ = cell(1,0)
+%         AcquisitionSampleRate_ = []
+%         AIChannelNames_ = cell(1,0)
+%         AIChannelScales_ = zeros(1,0)
+%         IsAIChannelActive_ = false(1,0)
+%         AIChannelDeviceNames_ = cell(1,0)
+%         AIChannelTerminalIDs_ = zeros(1,0)
             
-        DIChannelNames_ = cell(1,0)
-        IsDIChannelActive_ = false(1,0)
+%         DIChannelNames_ = cell(1,0)
+%         IsDIChannelActive_ = false(1,0)
         %DIChannelDeviceNames_ = cell(1,0)
-        DIChannelTerminalIDs_ = zeros(1,0)
+%         DIChannelTerminalIDs_ = zeros(1,0)
             
         DataCacheDurationWhenContinuous_ = []
         
-        IsDOChannelTerminalOvercommitted_ = false(1,0)               
+        IsDOChannelTerminalOvercommitted_ = false(1,0)
         
-        AcquisitionTriggerDeviceName_
-        AcquisitionTriggerPFIID_
-        AcquisitionTriggerEdge_
+%         AcquisitionTriggerDeviceName_
+%         AcquisitionTriggerPFIID_
+%         AcquisitionTriggerEdge_
         
-        TheUserObject_
+        %TheUserObject_
     end
 
     properties (Access=protected, Transient=true)
@@ -55,11 +55,11 @@ classdef Looper < handle
         %IPCPublisher_
         %IPCSubscriber_  % subscriber for the frontend
         %IPCReplier_  % to reply to frontend rep-req requests
-        NSweepsCompletedInThisRun_ = 0
+        %NSweepsCompletedInThisRun_ = 0
         t_
         NScansAcquiredSoFarThisSweep_
-        FromRunStartTicId_  
-        FromSweepStartTicId_
+        %FromRunStartTicId_  
+        %FromSweepStartTicId_
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceRunStart_ = 0
         TimeOfLastPollInSweep_
@@ -73,6 +73,7 @@ classdef Looper < handle
         AcquisitionKeystoneTaskTypeCache_
         AcquisitionKeystoneTaskDeviceNameCache_
         IsInUntimedDOTaskForEachUntimedDOChannel_ = false(1,0)  
+        
         % Tasks
         UntimedDigitalOutputTask_ = []
         TimedAnalogInputTask_ = []
@@ -478,8 +479,10 @@ classdef Looper < handle
                 self.completeTheOngoingSweep_();
             end
         end  % function
+    end  % protected methods block
         
-        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep_(self, timeSinceSweepStart)
+    methods (Access=public)
+        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep(self, timeSinceSweepStart, fromRunStartTicId)
             %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
             % Check for messages, but don't wait for them
             %self.IPCSubscriber_.processMessagesIfAvailable() ;
@@ -488,7 +491,7 @@ classdef Looper < handle
 
             % Acquire data, update soft real-time outputs
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
-                self.pollAcquisition_(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                self.pollAcquisition_(timeSinceSweepStart, fromRunStartTicId) ;
 
             % Deal with the acquired samples
             if didReadFromTasks ,
@@ -504,7 +507,9 @@ classdef Looper < handle
             % We'll use this in a sanity-check
             didAcquireNonzeroScans = (size(rawAnalogData,1)>0) ;
         end
-        
+    end  % public methods block
+    
+    methods (Access=protected)
         function releaseHardwareResources_(self)
             self.releaseOnDemandHardwareResources_() ;
             self.releaseTimedHardwareResources_() ;
@@ -647,8 +652,8 @@ classdef Looper < handle
             
             % Initialize timing variables
             clockAtRunStartTic = clock() ;
-            fromRunStartTicId = tic() ;
-            self.FromRunStartTicId_ = fromRunStartTicId ;            
+            %fromRunStartTicId = tic() ;
+            %self.FromRunStartTicId_ = fromRunStartTicId ;            
             self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
 
             % Return the coeffs and clock
@@ -855,19 +860,19 @@ classdef Looper < handle
                 dt = 1/self.AcquisitionSampleRate_ ;
                 self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
 
-                % Scale the analog data
-                channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
+                % % Scale the analog data
+                % channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
                 
-                scalingCoefficients = self.getAnalogScalingCoefficients_() ;
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
+                %scalingCoefficients = self.getAnalogScalingCoefficients_() ;
+                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
                 
                 % Add data to the user cache
                 isSweepBased = isfinite(self.SweepDuration_) ;
                 self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
                                              
-                if self.IsUserCodeManagerEnabled_ ,
-                    self.invokeSamplesAcquiredUserMethod_(self, scaledAnalogData, rawDigitalData) ;
-                end
+                %if self.IsUserCodeManagerEnabled_ ,
+                %    self.invokeSamplesAcquiredUserMethod_(self, scaledAnalogData, rawDigitalData) ;
+                %end
                 
                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
 
@@ -938,7 +943,7 @@ classdef Looper < handle
             self.AcquisitionTriggerEdge_ = looperProtocol.AcquisitionTriggerEdge ;
             
             self.IsUserCodeManagerEnabled_ = looperProtocol.IsUserCodeManagerEnabled ;
-            self.TheUserObject_ = looperProtocol.TheUserObject ;
+            %self.TheUserObject_ = looperProtocol.TheUserObject ;
         end  % function        
         
         function didAddOrDeleteDOChannelsInFrontend_(self, ...
@@ -1161,17 +1166,17 @@ classdef Looper < handle
             end
         end  % method
         
-        function invokeSamplesAcquiredUserMethod_(self, rootModel, scaledAnalogData, rawDigitalData) 
-            % This method is designed to be fast, at the expense of
-            % error-checking.
-            try
-                if ~isempty(self.TheUserObject_) ,
-                    self.TheUserObject_.samplesAcquired(rootModel, scaledAnalogData, rawDigitalData);
-                end
-            catch exception ,
-                warning('Error in user class method samplesAcquired.  Exception report follows.') ;
-                disp(exception.getReport()) ;
-            end            
-        end  % method        
+%         function invokeSamplesAcquiredUserMethod_(self, rootModel, scaledAnalogData, rawDigitalData) 
+%             % This method is designed to be fast, at the expense of
+%             % error-checking.
+% %             try
+% %                 if ~isempty(self.TheUserObject_) ,
+% %                     self.TheUserObject_.samplesAcquired(rootModel, scaledAnalogData, rawDigitalData);
+% %                 end
+% %             catch exception ,
+% %                 warning('Error in user class method samplesAcquired.  Exception report follows.') ;
+% %                 disp(exception.getReport()) ;
+% %             end            
+%         end  % method        
     end  % protected methods block
 end  % classdef

@@ -157,6 +157,7 @@ classdef WavesurferModel < ws.Model
         
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
         ArePreferencesWritable_ = true
+        TheBigTimer_ = []
     end   
 
     properties (Dependent = true)
@@ -1167,24 +1168,10 @@ classdef WavesurferModel < ws.Model
             % Call the user method, if any
             self.callUserMethod_('startingRun');  
                         
-            % We now do this clock() call in the looper, so that it can be
-            % as close as possible in time to the tic() call that the sweep timestamps are
-            % based on.
-            % % Note the time, b/c the logging subsystem needs it, and we
-            % % want to note it *just* before the start of the run
-            % clockAtRunStart = clock() ;
-            % self.ClockAtRunStart_ = clockAtRunStart ;
-            
             % Tell all the subsystems except the logging subsystem to prepare for the run
             % The logging subsystem has to wait until we obtain the analog
             % scaling coefficients from the Looper.
             try
-%                 for idx = 1: numel(self.Subsystems_) ,
-%                     thisSubsystem = self.Subsystems_{idx} ;
-%                     if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
-%                         thisSubsystem.startingRun();
-%                     end
-%                 end
                 if self.Ephys_.IsEnabled ,
                     if self.DoTrodeUpdateBeforeRun ,
                         self.updateSmartElectrodeGainsAndModes() ;
@@ -1219,30 +1206,6 @@ classdef WavesurferModel < ws.Model
             [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, ...
              stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
                self.determineKeystoneTasks() ;
-            
-            % Tell the Looper & Refiller to prepare for the run
-%             currentFrontendPath = path() ;
-%             currentFrontendPwd = pwd() ;
-%             looperProtocol = self.getLooperProtocol_() ;
-%             refillerProtocol = self.getRefillerProtocol_() ;
-            %wavesurferModelSettings=self.encodeForPersistence();
-            %fprintf('About to send startingRun\n');
-            
-%             self.LooperIPCRequester_.send('startingRun', ...
-%                                           currentFrontendPath, ...
-%                                           currentFrontendPwd, ...
-%                                           looperProtocol, ...
-%                                           acquisitionKeystoneTaskType, ...
-%                                           acquisitionKeystoneTaskDeviceName,  ...
-%                                           self.IsDOChannelTerminalOvercommitted) ;
-%             self.RefillerIPCRequester_.send('startingRun', ...
-%                                             currentFrontendPath, ...
-%                                             currentFrontendPwd, ...
-%                                             refillerProtocol, ...
-%                                             stimulationKeystoneTaskType, ...
-%                                             stimulationKeystoneTaskDeviceName, ...
-%                                             self.IsAOChannelTerminalOvercommitted, ...
-%                                             self.IsDOChannelTerminalOvercommitted ) ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
@@ -1351,6 +1314,13 @@ classdef WavesurferModel < ws.Model
                 end                
             end
             
+            % Create the timer
+            self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+                                      'BusyMode', 'drop', ...
+                                      'Period', 0.1, ...
+                                      'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
+                                      'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;                                      
+            
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
@@ -1380,8 +1350,8 @@ classdef WavesurferModel < ws.Model
             self.IsPerformingRun_ = true ;
             
             % Handle timing stuff
-            self.TimeOfLastWillPerformSweep_=[];
-            self.FromRunStartTicId_=tic();
+            self.TimeOfLastWillPerformSweep_ = [] ;
+            self.FromRunStartTicId_ = tic() ;
             rawUpdateDt = 1/self.Display_.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
             desiredNScansPerUpdate = max(1,round(updateDt*self.AcquisitionSampleRate)) ;  % don't want this to be zero!
@@ -1400,8 +1370,6 @@ classdef WavesurferModel < ws.Model
             % Move on to the main within-run loop
             %
             %self.DidMostRecentSweepComplete_ = true ;  % Set this to true just so the first sweep gets started
-            didThrow = false ;
-            exception = [] ;
             self.DrawnowTicId_ = tic() ;  % Need this for timing between drawnow()'s
             self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;  % we don't really do a a drawnow() here, but need to init
             %didPerformFinalDrawnow = false ;
@@ -1414,82 +1382,9 @@ classdef WavesurferModel < ws.Model
             %self.NSweepsPerformed_ = 0 ;  % in this run
             self.DidAnySweepFailToCompleteSoFar_ = false ;
             %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
-            while ~self.WasRunStopped_ && ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
-                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
-                if self.IsPerformingSweep_ ,
-                    if self.DidLooperCompleteSweep_ ,
-                        try
-                            self.closeSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            didThrow = true ;
-                            exception = me ;
-                        end
-                    else
-                        %fprintf('At top of within-sweep loop...\n') ;
-                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                        end                    
-                    end
-                else
-                    % We are not currently performing a sweep, so check if we need to start one
-                    if self.AreAllSweepsCompleted_ ,
-                        % All sweeps are were performed, but the refiller must not be done yet if we got here
-                        % Keep checking messages so we know when the
-                        % refiller is done.  Also keep listening for looper
-                        % messages, although I'm not sure we need to...
-                        %fprintf('About to check for messages after completing all sweeps\n');
-                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        %fprintf('Check for messages after completing all sweeps\n');
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                        end
-                    else                        
-                        try
-                            self.openSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            didThrow = true ;
-                            exception = me ;
-                        end
-                    end
-                end
-            end
             
-            % At this point, self.IsPerformingRun_ is true
-            % Do post-run clean up
-            if self.AreAllSweepsCompleted_ ,
-                % Wrap up run in which all sweeps completed
-                self.wrapUpRunInWhichAllSweepsCompleted_() ;
-            elseif self.WasRunStopped_ ,
-                if self.IsPerformingSweep_ ,
-                    self.stopTheOngoingSweep_() ;
-                end
-                self.stopTheOngoingRun_();
-            else
-                % Something went wrong
-                self.abortOngoingRun_();
-            end
-            % At this point, self.IsPerformingRun_ is false
-            
-            % If an exception was thrown, re-throw it
-            if didThrow ,
-                rethrow(exception) ;
-            end
-            
-            % Do we need this?  Where should it go, exactly?
-            % If we put it here, stopping a run from WS can get held up b/c
-            % WS is waiting for SI to acknowledge the abort command
-            %self.CommandClient_.sendCommandFileAsString('abort') ;
+            % Finally, start the timer
+            self.TheBigTimer_.start() ;
         end  % run_() function
         
         function openSweep_(self)
@@ -1577,6 +1472,90 @@ classdef WavesurferModel < ws.Model
             %self.DidRefillerCompleteSweep_ = ~self.Stimulation_.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
         end
 
+        function handleTimerTick(self)
+            % Called every so often once data acquition has started            
+            didThrow = false ;
+            exception = [] ;
+            if ~self.WasRunStopped_ && ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                if self.IsPerformingSweep_ ,
+                    if self.DidLooperCompleteSweep_ ,
+                        try
+                            self.closeSweep_() ;
+                        catch me
+                            self.abortTheOngoingSweep_();
+                            didThrow = true ;
+                            exception = me ;
+                        end
+                    else
+                        %fprintf('At top of within-sweep loop...\n') ;
+                        timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
+                        self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                        self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        % do a drawnow() if it's been too long...
+                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow() ;
+                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                        end                    
+                    end
+                else
+                    % We are not currently performing a sweep, so check if we need to start one
+                    if self.AreAllSweepsCompleted_ ,
+                        % All sweeps are were performed, but the refiller must not be done yet if we got here
+                        % Keep checking messages so we know when the
+                        % refiller is done.  Also keep listening for looper
+                        % messages, although I'm not sure we need to...
+                        %fprintf('About to check for messages after completing all sweeps\n');
+                        self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        %fprintf('Check for messages after completing all sweeps\n');
+                        % do a drawnow() if it's been too long...
+                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow() ;
+                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                        end
+                    else                        
+                        try
+                            self.openSweep_() ;
+                        catch me
+                            self.abortTheOngoingSweep_();
+                            didThrow = true ;
+                            exception = me ;
+                        end
+                    end
+                end
+            else
+                % This means we should end the run
+                
+                % At this point, self.IsPerformingRun_ is true
+                % Do post-run clean up
+                if self.AreAllSweepsCompleted_ ,
+                    % Wrap up run in which all sweeps completed
+                    self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                elseif self.WasRunStopped_ ,
+                    if self.IsPerformingSweep_ ,
+                        self.stopTheOngoingSweep_() ;
+                    end
+                    self.stopTheOngoingRun_();
+                else
+                    % Something went wrong
+                    self.abortOngoingRun_();
+                end
+                % At this point, self.IsPerformingRun_ is false
+            end
+            
+            % If an exception was thrown, re-throw it
+            if didThrow ,
+                rethrow(exception) ;
+            end            
+        end  % handleTimerTick()
+
+        function handleTimerError(self, event)
+            event
+            fprintf('The timer had an error\n') ;
+        end  % handleTimerError()
+        
         function closeSweep_(self)
             % End the sweep in the way appropriate, either a "complete",
             % a stop, or an abort.
@@ -1817,7 +1796,7 @@ classdef WavesurferModel < ws.Model
             % Clean up after all sweeps complete successfully.
             
             % Notify other processes
-            self.IPCPublisher_.send('completingRun') ;
+            %self.IPCPublisher_.send('completingRun') ;
             self.Looper_.completingRun() ;
             self.Refiller_.completingRun() ;
 
@@ -1905,7 +1884,7 @@ classdef WavesurferModel < ws.Model
             %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
             % Notify other processes
-            self.IPCPublisher_.send('abortingRun') ;
+            %self.IPCPublisher_.send('abortingRun') ;
             self.Looper_.abortingRun() ;
             self.Refiller_.abortingRun() ;
 
@@ -2541,7 +2520,7 @@ classdef WavesurferModel < ws.Model
             value = self.IsDOChannelTimed ;
             % Notify the refiller first, so that it can release all the DO
             % channels
-            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
+            %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
             self.Looper_.isDigitalOutputTimedWasSetInFrontend(value) ;
             self.Refiller_.isDigitalOutputTimedWasSetInFrontend(value) ;            
         end
@@ -2597,8 +2576,8 @@ classdef WavesurferModel < ws.Model
                 self.Ephys_.didChangeNumberOfInputChannels() ;
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-                self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
-                                        self.IsDOChannelTerminalOvercommitted) ;
+                %self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
+                %                        self.IsDOChannelTerminalOvercommitted) ;
                 self.Looper_.didAddDigitalInputChannelInFrontend(self.IsDOChannelTerminalOvercommitted) ;
                 self.Refiller_.didAddDigitalInputChannelInFrontend(self.IsDOChannelTerminalOvercommitted) ;
             end
@@ -6230,6 +6209,17 @@ classdef WavesurferModel < ws.Model
                       'ArePreferencesWritable must be a scalar, and must be logical or numeric and finite') ;
             end               
         end        
+
+        function [aoData, doData] = getStimulationData(self, indexOfEpisodeWithinRun)
+            % Get the current stimulus map
+            stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
+            %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+
+            % Set the channel data in the tasks
+            aoData = self.getAnalogChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
+            doData = self.getDigitalChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
+        end
+        
     end  % public methods block
     
     methods (Access = protected)
@@ -6265,6 +6255,105 @@ classdef WavesurferModel < ws.Model
                 self.broadcast('UpdateReadiness');
             end            
         end  % function                
+        
+        function [aoDataScaledAndLimited, nScans, nChannelsWithStimulus] = getAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
+            % Get info about which analog channels are in the task
+            isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
+            %isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
+
+            % Calculate the signals
+            if isempty(stimulusMapIndex) ,
+                aoData = zeros(0,nAnalogChannelsInTask) ;
+                nChannelsWithStimulus = 0 ;
+            else
+                channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
+                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+%                 [aoData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                [aoData, nChannelsWithStimulus] = ...
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 channelNamesInTask, ...
+                                                                 isChannelAnalog, ...
+                                                                 episodeIndexWithinSweep) ;  
+                  % each signal of aoData is in native units
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans = size(aoData,1);
+            
+            % If any channel scales are problematic, deal with this
+            analogChannelScales=self.AOChannelScales_(isInTaskForEachAnalogChannel);  % (native units)/V
+            inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
+            sanitizedInverseAnalogChannelScales = ...
+                ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+
+            % scale the data by the channel scales
+            if isempty(aoData) ,
+                aoDataScaled=aoData;
+            else
+                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+            end
+            % all signals in aoDataScaled are in V
+            
+            % limit the data to [-10 V, +10 V]
+            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
+
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 error('Adam is dumb');
+%             else
+%                 self.TheFiniteAnalogOutputTask_.setChannelData(aoDataScaledAndLimited) ;
+%             end
+        end  % function
+
+        function [doDataLimited, nScans, nChannelsWithStimulus] = getDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
+            %import ws.*
+            
+            % % Calculate the episode index
+            % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
+            
+            % Calculate the signals
+            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
+            isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
+            %isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
+            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
+            if isempty(stimulusMapIndex) ,
+                doData=zeros(0,nDigitalChannelsInTask);  
+                nChannelsWithStimulus = 0 ;
+            else
+                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
+                namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
+%                 [doData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
+%                                                  namesOfDigitalChannelsInTask, ...
+%                                                  isChannelAnalogForEachDigitalChannelInTask, ...
+%                                                  episodeIndexWithinRun);
+                [doData, nChannelsWithStimulus] = ...
+                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                                 self.StimulationSampleRate_, ...
+                                                                 namesOfDigitalChannelsInTask, ...
+                                                                 isChannelAnalogForEachDigitalChannelInTask, ...
+                                                                 episodeIndexWithinRun) ;
+            end
+            
+            % Want to return the number of scans in the stimulus data
+            nScans = size(doData,1) ;
+            
+            % limit the data to {false,true}
+            doDataLimited = logical(doData) ;
+
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
+        end  % function        
+
+        function result = isStimulationTriggerIdenticalToAcquistionTrigger(self)
+            result = ...
+                (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
+        end  % function
     end  % protected methods block        
     
 end  % classdef

@@ -192,6 +192,61 @@ classdef Refiller < handle
 %                 end
 %             end
 %         end  % function
+        
+        function performOneIterationDuringOngoingRun(self)
+            % Action in a run depends on whether we are also in an
+            % episode, or are in-between episodes
+            if self.DoesFrontendWantToStopRun_ ,
+                if self.IsPerformingEpisode_ ,
+                    self.stopTheOngoingEpisode_() ;
+                end
+                self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+                self.DoesFrontendWantToStopRun_ = false ;  % reset this
+                %fprintf('About to send "refillerStoppedRun"\n') ;
+                self.Frontend_.refillerStoppedRun() ;
+                %fprintf('Just sent "refillerStoppedRun"\n') ;
+            else
+                % Check the finite outputs, refill them if
+                % needed.
+                if self.IsPerformingEpisode_ ,
+                    areTasksDone = self.areTasksDone_() ;
+                    if areTasksDone ,
+                        %fprintf('Tasks are done\n') ;
+                        self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                    else
+                        %fprintf('Tasks are not done\n') ;
+                        % If tasks are not done, do nothing (except
+                        % check messages, below)
+                    end                                                            
+                else
+                    % If we're not performing an episode, see if
+                    % we need to start one.
+                    if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                        if self.Frontend_.isStimulationTriggerIdenticalToAcquistionTrigger() ,
+                            % do nothing.
+                            % if they're identical, startEpisode_()
+                            % is called from the startingSweep()
+                            % req-rep method.
+                        else
+                            self.startEpisode_() ;
+                        end
+                    else
+                        % If we get here, the run is ongoing, but
+                        % we've completed the episodes, whether
+                        % we've noted that fact or not.
+                        if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
+                            % Do nothing
+                        else
+                            % Notify the frontend
+                            self.Frontend_.refillerCompletedEpisodes() ;
+                            %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
+                            self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
+                            %self.completeTheEpisodes_() ;
+                        end
+                    end
+                end
+            end
+        end  % function        
     end  % public methods block
         
     methods  % RPC methods block
@@ -695,7 +750,7 @@ classdef Refiller < handle
                       'The refiller was asked to arm for an episode when already armed and/or stimulating') ;
             end
             
-            if self.IsStimulationEnabled_ ,
+            if self.Frontend_.IsStimulationEnabled ,
                 self.IsPerformingEpisode_ = true ;
                 %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
                 self.callUserMethod_('startingEpisode') ;
@@ -707,13 +762,14 @@ classdef Refiller < handle
                 % Compute the index for this epsiode
                 indexOfEpisodeWithinRun = self.NEpisodesCompletedSoFarThisRun_+1 ;
 
-                % Get the current stimulus map
-                stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
-                %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+                % % Get the current stimulus map
+                % stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
+                % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
 
                 % Set the channel data in the tasks
-                self.setAnalogChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
-                self.setDigitalChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
+                [aoData, doData] = getStimulationData(self, indexOfEpisodeWithinRun) ;
+                self.setAnalogChannelData_(aoData) ;
+                self.setDigitalChannelData_(doData) ;
 
                 % Note that the tasks have been started, which will be true
                 % soon enough
@@ -735,7 +791,7 @@ classdef Refiller < handle
             % lines make this the case.
 
             % Notify the Stimulation subsystem
-            if self.IsStimulationEnabled_ ,
+            if self.Frontend_.IsStimulationEnabled ,
                 if self.AreTasksStarted_ ,
                     self.TheFiniteAnalogOutputTask_.stop() ;
                     self.TheFiniteDigitalOutputTask_.stop() ;                
@@ -758,7 +814,7 @@ classdef Refiller < handle
         
         function stopTheOngoingEpisode_(self)
             %fprintf('stopTheOngoingEpisode_()\n');
-            if self.IsStimulationEnabled_ ,
+            if self.Frontend_.IsStimulationEnabled ,
                 if self.AreTasksStarted_ ,
                     self.TheFiniteAnalogOutputTask_.stop() ;
                     self.TheFiniteDigitalOutputTask_.stop() ;
@@ -772,7 +828,7 @@ classdef Refiller < handle
         
         function abortTheOngoingEpisode_(self)
             %fprintf('abortTheOngoingEpisode_()\n');
-            if self.IsStimulationEnabled_ ,
+            if self.Frontend_.IsStimulationEnabled ,
                 if self.AreTasksStarted_ ,
                     self.TheFiniteAnalogOutputTask_.stop() ;
                     self.TheFiniteDigitalOutputTask_.stop() ;                
@@ -1118,50 +1174,7 @@ classdef Refiller < handle
 %             end
 %         end  % function
         
-        function [nScans, nChannelsWithStimulus] = setAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
-            % Get info about which analog channels are in the task
-            isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
-            %isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
-            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
-
-            % Calculate the signals
-            if isempty(stimulusMapIndex) ,
-                aoData = zeros(0,nAnalogChannelsInTask) ;
-                nChannelsWithStimulus = 0 ;
-            else
-                channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
-                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
-%                 [aoData, nChannelsWithStimulus] = ...
-%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
-                [aoData, nChannelsWithStimulus] = ...
-                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
-                                                                 self.StimulationSampleRate_, ...
-                                                                 channelNamesInTask, ...
-                                                                 isChannelAnalog, ...
-                                                                 episodeIndexWithinSweep) ;  
-                  % each signal of aoData is in native units
-            end
-            
-            % Want to return the number of scans in the stimulus data
-            nScans = size(aoData,1);
-            
-            % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AOChannelScales_(isInTaskForEachAnalogChannel);  % (native units)/V
-            inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
-            sanitizedInverseAnalogChannelScales = ...
-                ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
-
-            % scale the data by the channel scales
-            if isempty(aoData) ,
-                aoDataScaled=aoData;
-            else
-                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
-            end
-            % all signals in aoDataScaled are in V
-            
-            % limit the data to [-10 V, +10 V]
-            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
-
+        function setAnalogChannelData_(self, aoDataScaledAndLimited)
             % Finally, assign the stimulation data to the the relevant part
             % of the output task
             if isempty(self.TheFiniteAnalogOutputTask_) ,
@@ -1171,42 +1184,7 @@ classdef Refiller < handle
             end
         end  % function
 
-        function [nScans, nChannelsWithStimulus] = setDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
-            %import ws.*
-            
-            % % Calculate the episode index
-            % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
-            
-            % Calculate the signals
-            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
-            isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
-            %isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
-            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
-            if isempty(stimulusMapIndex) ,
-                doData=zeros(0,nDigitalChannelsInTask);  
-                nChannelsWithStimulus = 0 ;
-            else
-                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
-                namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
-%                 [doData, nChannelsWithStimulus] = ...
-%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
-%                                                  namesOfDigitalChannelsInTask, ...
-%                                                  isChannelAnalogForEachDigitalChannelInTask, ...
-%                                                  episodeIndexWithinRun);
-                [doData, nChannelsWithStimulus] = ...
-                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
-                                                                 self.StimulationSampleRate_, ...
-                                                                 namesOfDigitalChannelsInTask, ...
-                                                                 isChannelAnalogForEachDigitalChannelInTask, ...
-                                                                 episodeIndexWithinRun) ;
-            end
-            
-            % Want to return the number of scans in the stimulus data
-            nScans= size(doData,1);
-            
-            % limit the data to {false,true}
-            doDataLimited=logical(doData);
-
+        function setDigitalChannelData_(self, doDataLimited)
             % Finally, assign the stimulation data to the the relevant part
             % of the output task
             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
@@ -1325,36 +1303,36 @@ classdef Refiller < handle
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
                               deviceNameForEachChannelInAOTask, ...
                               terminalIDForEachChannelInAOTask, ...
-                              self.StimulationSampleRate_, ...
-                              
+                              self.Frontend_.StimulationSampleRate, ...
                               self.StimulationKeystoneTaskType_, ...
                               self.StimulationKeystoneTaskDeviceName_, ...
-                              self.StimulationTrigger_.DeviceName, ...
-                              self.StimulationTrigger_.PFIID, ...
-                              self.StimulationTrigger_.Edge) ;
+                              self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
+                              self.Frontend_.stimulationTriggerProperty('PFIID'), ...
+                              self.Frontend_.stimulationTriggerProperty('Edge') ) ;
                 self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted_ ;
-                isTimedForEachDOChannel = self.IsDOChannelTimed_ ;
+                isTimedForEachDOChannel = self.Frontend_.IsDOChannelTimed ;
                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
                 %deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
-                terminalIDForEachChannelInDOTask = self.DOChannelTerminalIDs_(isInTaskForEachDOChannel) ;                
-                primaryDeviceName = self.PrimaryDeviceName_ ;
-                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice_ ;
+                doChannelTerminalIDs = self.Frontend_.DOChannelTerminalIDs ;
+                terminalIDForEachChannelInDOTask = doChannelTerminalIDs(isInTaskForEachDOChannel) ;                
+                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
 %                 [referenceClockSource, referenceClockRate] = ...
 %                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                                
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.DOTask('WaveSurfer DO Task', ...
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
                               terminalIDForEachChannelInDOTask, ...
-                              self.StimulationSampleRate_, ...
+                              self.Frontend_.StimulationSampleRate, ...
                               self.StimulationKeystoneTaskType_, ...
                               self.StimulationKeystoneTaskDeviceName_, ...
-                              self.StimulationTrigger_.DeviceName, ...
-                              self.StimulationTrigger_.PFIID, ...
-                              self.StimulationTrigger_.Edge) ;
+                              self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
+                              self.Frontend_.stimulationTriggerProperty('PFIID'), ...
+                              self.Frontend_.stimulationTriggerProperty('Edge') ) ;
                 %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
                 self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end
