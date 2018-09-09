@@ -63,7 +63,7 @@ classdef Looper < handle
         TimeOfLastSamplesAcquired_
         NTimesSamplesAcquiredCalledSinceRunStart_ = 0
         TimeOfLastPollInSweep_
-        DoesFrontendWantToStopRun_        
+        %DoesFrontendWantToStopRun_        
         %WasExceptionThrown_
         %ThrownException_
         %DoKeepRunningMainLoop_
@@ -264,7 +264,20 @@ classdef Looper < handle
 
             % Actually stop the ongoing run
             %fprintf('Got message "frontendWantsToStopRun"\n') ;
-            self.DoesFrontendWantToStopRun_ = true ;
+            %self.DoesFrontendWantToStopRun_ = true ;
+            if self.Frontend_.IsPerformingRun ,
+                % Action in a run depends on whether we are also in a
+                % sweep, or are in-between sweeps
+                if self.Frontend_.IsPerformingSweep ,
+                    %fprintf('Looper: In a sweep\n');
+                    %fprintf('Looper: self.DoesFrontendWantToStopRun_\n');
+                    % When done, clean up after sweep
+                    self.stopTheOngoingSweep_() ;  % this will set self.IsPerformingSweep to false
+                    %self.Frontend_.looperStoppedRun() ;
+                end
+                self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false                
+            end
+            
             result = [] ;
         end
         
@@ -513,7 +526,7 @@ classdef Looper < handle
                 %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
                 terminalIDForEachDOChannel = self.Frontend_.DOChannelTerminalIDs ;
                 
-                onDemandOutputStateForEachDOChannel = self.Frontend_.DigitalOutputStateIfUntimed ;
+                onDemandOutputStateForEachDOChannel = self.Frontend_.DOChannelStateIfUntimed ;
                 isTerminalOvercommittedForEachDOChannel = self.Frontend_.IsDOChannelTerminalOvercommitted ;
                   % channels with out-of-range DIO terminal IDs are "overcommitted", too
                 isTerminalUniquelyCommittedForEachDOChannel = ~isTerminalOvercommittedForEachDOChannel ;
@@ -542,7 +555,7 @@ classdef Looper < handle
                 terminalIDsInTask = terminalIDForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 self.UntimedDigitalOutputTask_ = ...
                     ws.OnDemandDOTask('WaveSurfer Untimed Digital Output Task', ...
-                                      self.Frontend_.PrimaryDeviceName_, ...
+                                      self.Frontend_.PrimaryDeviceName, ...
                                       self.Frontend_.IsPrimaryDeviceAPXIDevice, ...
                                       deviceNamesInTask, ...
                                       terminalIDsInTask) ;
@@ -573,7 +586,7 @@ classdef Looper < handle
             %keyboard
             
             % If we're already acquiring, error
-            if self.IsPerformingRun_ ,
+            if self.Frontend_.IsPerformingRun ,
                 error('ws:Looper:alreadyPerformingRun', ...
                       'Looper got message to start run while already performing a run!');
             end
@@ -584,10 +597,10 @@ classdef Looper < handle
             %cd(currentFrontendPwd) ;
             
             % Change our own acquisition state if get this far
-            self.DoesFrontendWantToStopRun_ = false ;
+            %self.DoesFrontendWantToStopRun_ = false ;
             %self.NSweepsCompletedInThisRun_ = 0 ;
             %self.IsUserCodeManagerEnabled_ = self.UserCodeManager_.IsEnabled ;  % cache for speed                             
-            self.IsPerformingRun_ = true ;
+            %self.IsPerformingRun_ = true ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             % Make our own settings mimic those of wavesurferModelSettings
@@ -703,7 +716,7 @@ classdef Looper < handle
             % goes wrong
             %err = [] ;
             
-            if ~self.IsPerformingRun_ || self.IsPerformingSweep_ ,
+            if ~self.Frontend_.IsPerformingRun || self.Frontend_.IsPerformingSweep ,
                 % If we're not in the right mode for this message, ignore
                 % it.  This now happens in the normal course of things (b/c
                 % we have two incomming sockets, basically), so we need to
@@ -729,7 +742,7 @@ classdef Looper < handle
             % start.                
                 
             % Final preparations...
-            self.IsPerformingSweep_ = true ;
+            %self.IsPerformingSweep_ = true ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
             %profile on
             
@@ -830,7 +843,7 @@ classdef Looper < handle
                         
             if (nScans>0)
                 % update the current time
-                dt = 1/self.AcquisitionSampleRate_ ;
+                dt = 1/self.Frontend_.AcquisitionSampleRate ;
                 self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                 % % Scale the analog data
@@ -840,7 +853,7 @@ classdef Looper < handle
                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
                 
                 % Add data to the user cache
-                isSweepBased = isfinite(self.SweepDuration_) ;
+                isSweepBased = isfinite(self.Frontend_.SweepDuration) ;
                 self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
                                              
                 %if self.IsUserCodeManagerEnabled_ ,
@@ -1015,7 +1028,7 @@ classdef Looper < handle
             if self.IsArmedOrAcquiring_ ,
                 %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
                 % Check for task doneness
-                if ~isfinite(self.SweepDuration_) ,  
+                if ~isfinite(self.Frontend_.SweepDuration) ,  
                     % if doing continuous acq, no need to check.  This is
                     % an important optimization, b/c the checks can take
                     % 10-20 ms.

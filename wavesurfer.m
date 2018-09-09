@@ -31,11 +31,11 @@ function varargout = wavesurfer(varargin)
     fprintf('Starting WaveSurfer...');
     
     % Process arguments
-    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doRunInDebugMode] = processArguments(varargin) ;
+    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly] = processArguments(varargin) ;
     
     % Create the application (model) object.
     isITheOneTrueWavesurferModel = true ;
-    model = ws.WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode);
+    model = ws.WavesurferModel(isITheOneTrueWavesurferModel);
 
     % Start the controller, if desired
     if isCommandLineOnly ,

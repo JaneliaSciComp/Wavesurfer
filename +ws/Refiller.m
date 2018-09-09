@@ -41,8 +41,8 @@ classdef Refiller < handle
         %IPCPublisher_
         %IPCSubscriber_  % subscriber for the frontend
         %IPCReplier_  % to reply to frontend rep-req requests
-        DoesFrontendWantToStopRun_        
-        DoKeepRunningMainLoop_
+        %DoesFrontendWantToStopRun_        
+        %DoKeepRunningMainLoop_
         IsPerformingRun_
         IsPerformingEpisode_
         AreTasksStarted_
@@ -196,53 +196,42 @@ classdef Refiller < handle
         function performOneIterationDuringOngoingRun(self)
             % Action in a run depends on whether we are also in an
             % episode, or are in-between episodes
-            if self.DoesFrontendWantToStopRun_ ,
-                if self.IsPerformingEpisode_ ,
-                    self.stopTheOngoingEpisode_() ;
-                end
-                self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
-                self.DoesFrontendWantToStopRun_ = false ;  % reset this
-                %fprintf('About to send "refillerStoppedRun"\n') ;
-                self.Frontend_.refillerStoppedRun() ;
-                %fprintf('Just sent "refillerStoppedRun"\n') ;
-            else
-                % Check the finite outputs, refill them if
-                % needed.
-                if self.IsPerformingEpisode_ ,
-                    areTasksDone = self.areTasksDone_() ;
-                    if areTasksDone ,
-                        %fprintf('Tasks are done\n') ;
-                        self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-                    else
-                        %fprintf('Tasks are not done\n') ;
-                        % If tasks are not done, do nothing (except
-                        % check messages, below)
-                    end                                                            
+            % Check the finite outputs, refill them if
+            % needed.
+            if self.IsPerformingEpisode_ ,
+                areTasksDone = self.areTasksDone_() ;
+                if areTasksDone ,
+                    %fprintf('Tasks are done\n') ;
+                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
                 else
-                    % If we're not performing an episode, see if
-                    % we need to start one.
-                    if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                        if self.Frontend_.isStimulationTriggerIdenticalToAcquistionTrigger() ,
-                            % do nothing.
-                            % if they're identical, startEpisode_()
-                            % is called from the startingSweep()
-                            % req-rep method.
-                        else
-                            self.startEpisode_() ;
-                        end
+                    %fprintf('Tasks are not done\n') ;
+                    % If tasks are not done, do nothing (except
+                    % check messages, below)
+                end                                                            
+            else
+                % If we're not performing an episode, see if
+                % we need to start one.
+                if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                    if self.Frontend_.isStimulationTriggerIdenticalToAcquistionTrigger() ,
+                        % do nothing.
+                        % if they're identical, startEpisode_()
+                        % is called from the startingSweep()
+                        % req-rep method.
                     else
-                        % If we get here, the run is ongoing, but
-                        % we've completed the episodes, whether
-                        % we've noted that fact or not.
-                        if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
-                            % Do nothing
-                        else
-                            % Notify the frontend
-                            self.Frontend_.refillerCompletedEpisodes() ;
-                            %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
-                            self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
-                            %self.completeTheEpisodes_() ;
-                        end
+                        self.startEpisode_() ;
+                    end
+                else
+                    % If we get here, the run is ongoing, but
+                    % we've completed the episodes, whether
+                    % we've noted that fact or not.
+                    if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
+                        % Do nothing
+                    else
+                        % Notify the frontend
+                        self.Frontend_.refillerCompletedEpisodes() ;
+                        %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
+                        self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
+                        %self.completeTheEpisodes_() ;
                     end
                 end
             end
@@ -323,7 +312,16 @@ classdef Refiller < handle
 
             % Actually stop the ongoing run
             %fprintf('Got message frontendWantsToStopRun\n') ;            
-            self.DoesFrontendWantToStopRun_ = true ;
+            %self.DoesFrontendWantToStopRun_ = true ;
+            if self.IsPerformingEpisode_ ,
+                self.stopTheOngoingEpisode_() ;
+            end
+            self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
+            %self.DoesFrontendWantToStopRun_ = false ;  % reset this
+            %fprintf('About to send "refillerStoppedRun"\n') ;
+            %self.Frontend_.refillerStoppedRun() ;
+            %fprintf('Just sent "refillerStoppedRun"\n') ;
+
             result = [] ;
         end
         
@@ -360,19 +358,19 @@ classdef Refiller < handle
             result = [] ;
         end  % function
 
-        function result = frontendIsBeingDeleted(self) 
-            % Called by the frontend (i.e. the WSM) in its delete() method
-            %fprintf('Got message frontendIsBeingDeleted\n') ;            
-            
-            % We tell ourselves to stop running the main loop.  This should
-            % cause runMainLoop() to exit, which causes the script that we
-            % run after we create the refiller process to fall through to a
-            % line that says "quit()".  So this should causes the refiller
-            % process to terminate.
-            self.DoKeepRunningMainLoop_ = false ;
-            
-            result = [] ;
-        end
+%         function result = frontendIsBeingDeleted(self)   %#ok<MANU>
+%             % Called by the frontend (i.e. the WSM) in its delete() method
+%             %fprintf('Got message frontendIsBeingDeleted\n') ;            
+%             
+%             % We tell ourselves to stop running the main loop.  This should
+%             % cause runMainLoop() to exit, which causes the script that we
+%             % run after we create the refiller process to fall through to a
+%             % line that says "quit()".  So this should causes the refiller
+%             % process to terminate.
+%             %self.DoKeepRunningMainLoop_ = false ;
+%             
+%             result = [] ;
+%         end
         
 %         function result = areYallAliveQ(self)
 %             %fprintf('Refiller::areYallAlive()\n') ;            
@@ -500,7 +498,7 @@ classdef Refiller < handle
             %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
             
             % Determine episodes per run
-            if self.IsStimulationEnabled_ ,
+            if self.Frontend_.IsStimulationEnabled ,
                 if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
                     self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
                 elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
@@ -541,7 +539,7 @@ classdef Refiller < handle
 %             end
 
             % Change our own acquisition state if get this far
-            self.DoesFrontendWantToStopRun_ = false ;
+            %self.DoesFrontendWantToStopRun_ = false ;
             %self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
             self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
@@ -1282,7 +1280,7 @@ classdef Refiller < handle
                 aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
                 terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
                 primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice_ ;
+                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.AOTask('WaveSurfer AO Task', ...
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...

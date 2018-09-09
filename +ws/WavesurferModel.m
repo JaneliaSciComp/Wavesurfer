@@ -126,6 +126,8 @@ classdef WavesurferModel < ws.Model
         AOChannelTerminalIDs
         DIChannelTerminalIDs
         DOChannelTerminalIDs
+        IsPerformingRun
+        IsPerformingSweep
     end
     
     properties (Access=protected)
@@ -158,6 +160,7 @@ classdef WavesurferModel < ws.Model
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
         ArePreferencesWritable_ = true
         TheBigTimer_ = []
+        AllowTimerCallback_ = true ;
     end   
 
     properties (Dependent = true)
@@ -278,9 +281,9 @@ classdef WavesurferModel < ws.Model
         %DidLooperCompleteSweep_
         DidRefillerCompleteEpisodes_
         DidAnySweepFailToCompleteSoFar_
-        WasRunStopped_        
-        WasRunStoppedInLooper_        
-        WasRunStoppedInRefiller_        
+        %WasRunStopped_        
+        %WasRunStoppedInLooper_        
+        %WasRunStoppedInRefiller_        
         %WasExceptionThrown_
         %ThrownException_
         NSweepsCompletedInThisRun_ = 0
@@ -425,7 +428,7 @@ classdef WavesurferModel < ws.Model
             if self.IsITheOneTrueWavesurferModel_ ,
                 % Signal to others that we are going away
                 %self.Looper_.frontendIsBeingDeleted() ;
-                self.Refiller_.frontendIsBeingDeleted() ;
+                %self.Refiller_.frontendIsBeingDeleted() ;
                 %self.IPCPublisher_.send('frontendIsBeingDeleted') ;
                 
                 % Close the sockets
@@ -484,6 +487,10 @@ classdef WavesurferModel < ws.Model
                 %self.IPCPublisher_.send('frontendWantsToStopRun');  
                 self.Looper_.frontendWantsToStopRun() ;
                 self.Refiller_.frontendWantsToStopRun() ;
+                if self.IsPerformingSweep_ ,
+                    self.stopTheOngoingSweep_() ;
+                end
+                self.stopTheOngoingRun_();
                 
                 %fprintf('Just published "frontendWantsToStopRun"\n') ;
                   % the looper gets this message and stops the run, then
@@ -526,14 +533,21 @@ classdef WavesurferModel < ws.Model
             result = [] ;
         end
         
-        function result = looperStoppedRun(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
-            % run (in response to a frontendWantsToStopRun message)
-            %fprintf('WavesurferModel::looperStoppedRun()\n');
-            self.WasRunStoppedInLooper_ = true ;
-            self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
-            result = [] ;
-        end
+%         function result = looperStoppedRun(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+%             % run (in response to a frontendWantsToStopRun message)
+%             %fprintf('WavesurferModel::looperStoppedRun()\n');
+%             self.WasRunStoppedInLooper_ = true ;
+%             %self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
+%             if self.WasRunStoppedInRefiller_ ,
+%                 if self.IsPerformingSweep_ ,
+%                     self.stopTheOngoingSweep_() ;
+%                 end
+%                 self.stopTheOngoingRun_();
+%             end
+% 
+%             result = [] ;
+%         end
         
 %         function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
 %             % Call by the Looper, via ZMQ pub-sub, when it has finished its
@@ -569,14 +583,21 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end        
         
-        function result = refillerStoppedRun(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
-            % run (in response to a frontendWantsToStopRun message)
-            %fprintf('WavesurferModel::refillerStoppedRun()\n');
-            self.WasRunStoppedInRefiller_ = true ;
-            self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
-            result = [] ;
-        end
+%         function result = refillerStoppedRun(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+%             % run (in response to a frontendWantsToStopRun message)
+%             %fprintf('WavesurferModel::refillerStoppedRun()\n');
+%             self.WasRunStoppedInRefiller_ = true ;
+%             %self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+%             if self.WasRunStoppedInLooper_ ,
+%                 if self.IsPerformingSweep_ ,
+%                     self.stopTheOngoingSweep_() ;
+%                 end
+%                 self.stopTheOngoingRun_();
+%             end
+%             
+%             result = [] ;
+%         end
         
         function result = refillerIsAlive(self)  %#ok<MANU>
             % Doesn't need to do anything
@@ -1373,15 +1394,15 @@ classdef WavesurferModel < ws.Model
             %for iSweep = 1:self.NSweepsPerRun ,
             % Can't use a for loop b/c self.NSweepsPerRun can be Inf
             %while iSweep<=self.NSweepsPerRun && ~self.RefillerCompletedSweep ,            
-            self.WasRunStoppedInLooper_ = false ;
-            self.WasRunStoppedInRefiller_ = false ;
-            self.WasRunStopped_ = false ;
+            %self.WasRunStoppedInLooper_ = false ;
+            %self.WasRunStoppedInRefiller_ = false ;
+            %self.WasRunStopped_ = false ;
             %self.NSweepsPerformed_ = 0 ;  % in this run
             self.DidAnySweepFailToCompleteSoFar_ = false ;
             %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
             
             % Finally, start the timer
-            self.TheBigTimer_.start() ;
+            start(self.TheBigTimer_) ;
         end  % run_() function
         
         function openSweep_(self)
@@ -1471,14 +1492,18 @@ classdef WavesurferModel < ws.Model
 
         function handleTimerTick(self)
             % Called every so often once data acquition has started            
+            if ~self.AllowTimerCallback_ ,
+                return
+            end
             didThrow = false ;
             exception = [] ;
-            if ~self.WasRunStopped_ && ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+            if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
                 %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
                 if self.IsPerformingSweep_ ,
                     if self.DidLooperCompleteSweep_ ,
                         try
-                            self.closeSweep_() ;
+                            self.completeTheOngoingSweep_() ;
+                            %self.closeSweep_() ;
                         catch me
                             self.abortTheOngoingSweep_();
                             didThrow = true ;
@@ -1530,11 +1555,6 @@ classdef WavesurferModel < ws.Model
                 if self.AreAllSweepsCompleted_ ,
                     % Wrap up run in which all sweeps completed
                     self.wrapUpRunInWhichAllSweepsCompleted_() ;
-                elseif self.WasRunStopped_ ,
-                    if self.IsPerformingSweep_ ,
-                        self.stopTheOngoingSweep_() ;
-                    end
-                    self.stopTheOngoingRun_();
                 else
                     % Something went wrong
                     self.abortOngoingRun_();
@@ -1553,26 +1573,26 @@ classdef WavesurferModel < ws.Model
             fprintf('The timer had an error\n') ;
         end  % handleTimerError()
         
-        function closeSweep_(self)
-            % End the sweep in the way appropriate, either a "complete",
-            % a stop, or an abort.
-            % Precondition: self.IsPerformingSweep_ (is true)
-            if self.DidLooperCompleteSweep_ ,
-                self.completeTheOngoingSweep_() ;
-                %didCompleteSweep = true ;
-            elseif self.WasRunStopped_ ,
-                self.stopTheOngoingSweep_() ;
-                %didCompleteSweep = false ;
-            else
-                % Something must have gone wrong...
-                self.abortTheOngoingSweep_() ;
-                %didCompleteSweep = false ;
-            end
-
-            % No errors thrown, so set return values accordingly
-            %didThrow = false ;  
-            %exception = [] ;
-        end  % function
+%         function closeSweep_(self)
+%             % End the sweep in the way appropriate, either a "complete",
+%             % a stop, or an abort.
+%             % Precondition: self.IsPerformingSweep_ (is true)
+%             if self.DidLooperCompleteSweep_ ,
+%                 self.completeTheOngoingSweep_() ;
+%                 %didCompleteSweep = true ;
+%             elseif self.WasRunStopped_ ,
+%                 self.stopTheOngoingSweep_() ;
+%                 %didCompleteSweep = false ;
+%             else
+%                 % Something must have gone wrong...
+%                 self.abortTheOngoingSweep_() ;
+%                 %didCompleteSweep = false ;
+%             end
+% 
+%             % No errors thrown, so set return values accordingly
+%             %didThrow = false ;  
+%             %exception = [] ;
+%         end  % function
         
 %         function performSweep_(self)
 %             % time between subsequent calls to this, etc
@@ -1792,6 +1812,11 @@ classdef WavesurferModel < ws.Model
         function wrapUpRunInWhichAllSweepsCompleted_(self)
             % Clean up after all sweeps complete successfully.
             
+            % Stop, delete the timer
+            stop(self.TheBigTimer_) ;
+            delete(self.TheBigTimer_) ;
+            self.TheBigTimer_ = [] ;
+            
             % Notify other processes
             %self.IPCPublisher_.send('completingRun') ;
             self.Looper_.completingRun() ;
@@ -1827,6 +1852,11 @@ classdef WavesurferModel < ws.Model
         function stopTheOngoingRun_(self)
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.            
+            
+            % Stop, delete the timer
+            stop(self.TheBigTimer_) ;
+            delete(self.TheBigTimer_) ;
+            self.TheBigTimer_ = [] ;            
             
             %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
@@ -1880,6 +1910,11 @@ classdef WavesurferModel < ws.Model
             
             %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
+            % Stop, delete the timer
+            stop(self.TheBigTimer_) ;
+            delete(self.TheBigTimer_) ;
+            self.TheBigTimer_ = [] ;           
+            
             % Notify other processes
             %self.IPCPublisher_.send('abortingRun') ;
             self.Looper_.abortingRun() ;
@@ -3105,6 +3140,7 @@ classdef WavesurferModel < ws.Model
             % warning logging near the beginning of the .do() method, and turn
             % it off near the end.  That way we don't have to do it for
             % each model method, and we only do it once per user command.            
+            self.AllowTimerCallback_ = false ;
             self.startLoggingWarnings() ;
             try
                 self.(methodName)(varargin{:}) ;
@@ -3114,13 +3150,16 @@ classdef WavesurferModel < ws.Model
                 % non-logging state.
                 self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
                 self.resetReadiness_() ;  % Need to do this to make sure we don't stay unready for the rest of the WSM lifetime
+                self.AllowTimerCallback_ = true ;
                 rethrow(exception) ;
             end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
                 warningException = warningExceptionMaybe{1} ;
+                self.AllowTimerCallback_ = true ;
                 throw(warningException) ;
             end
+            self.AllowTimerCallback_ = true ;
         end
 
         function logWarning(self, identifier, message, causeOrEmpty)
@@ -3525,9 +3564,7 @@ classdef WavesurferModel < ws.Model
 %                                                 primaryDeviceName, ...
 %                                                 isPrimaryDeviceAPXIDevice, ...
 %                                                 self.IsDOChannelTerminalOvercommitted) ;
-                        self.Looper_.didSetPrimaryDeviceInFrontend(primaryDeviceName, ...
-                                                                   isPrimaryDeviceAPXIDevice, ...
-                                                                   self.IsDOChannelTerminalOvercommitted) ;
+                        self.Looper_.didSetPrimaryDeviceInFrontend() ;
                         self.Refiller_.didSetPrimaryDeviceInFrontend(primaryDeviceName, ...
                                                                      isPrimaryDeviceAPXIDevice, ...
                                                                      self.IsDOChannelTerminalOvercommitted) ;
@@ -6351,4 +6388,13 @@ classdef WavesurferModel < ws.Model
         end  % function
     end  % protected methods block        
     
+    methods
+        function result = get.IsPerformingRun(self)
+            result = self.IsPerformingRun_ ;
+        end
+        
+        function result = get.IsPerformingSweep(self)
+            result = self.IsPerformingSweep_ ;
+        end
+    end  % public methods block
 end  % classdef
