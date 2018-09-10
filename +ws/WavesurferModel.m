@@ -289,6 +289,7 @@ classdef WavesurferModel < ws.Model
         NSweepsCompletedInThisRun_ = 0
         AreAllSweepsCompleted_
         IsITheOneTrueWavesurferModel_
+        IsHeaded_
         DesiredNScansPerUpdate_        
         NScansPerUpdate_        
         SamplesBuffer_
@@ -345,16 +346,24 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel)
+        function self = WavesurferModel(isITheOneTrueWavesurferModel, isHeaded)
             self@ws.Model();
             
             if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
                 isITheOneTrueWavesurferModel = false ;
             end                       
+            if isITheOneTrueWavesurferModel ,
+                if ~exist('isHeaded','var') || isempty(isHeaded) ,
+                    isHeaded = false ;
+                end
+            else
+                isHeaded = false ;                
+            end         
             %doRunInDebugMode = true ;
             %dbstop('if','error') ;
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            self.IsHeaded_ = isHeaded ;
             
             self.VersionString_ = ws.versionString() ;
             
@@ -1604,6 +1613,13 @@ classdef WavesurferModel < ws.Model
                 end
                 self.abortOngoingRun_() ;
             end
+            exception = MException('messageID', event.Data.messageID, 'message', event.Data.message) ;
+            if self.IsHeaded_ ,
+                self.broadcast('RaiseDialogOnException', exception);
+            else
+                throw(exception) ;
+            end
+
         end  % handleTimerError()
         
 %         function closeSweep_(self)
