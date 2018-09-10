@@ -367,6 +367,13 @@ classdef WavesurferModel < ws.Model
                 self.Looper_ = ws.Looper(self) ;
                 self.Refiller_ = ws.Refiller(self) ;                                
 
+                % Create the timer that runs during a run
+                self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+                                          'BusyMode', 'drop', ...
+                                          'Period', 0.1, ...
+                                          'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
+                                          'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;
+                
                 % Get the list of all device names, and cache it in our own
                 % state
                 self.probeHardwareAndSetAllDeviceNames() ;                
@@ -430,6 +437,12 @@ classdef WavesurferModel < ws.Model
                 %self.Looper_.frontendIsBeingDeleted() ;
                 %self.Refiller_.frontendIsBeingDeleted() ;
                 %self.IPCPublisher_.send('frontendIsBeingDeleted') ;
+                
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                    self.TheBigTimer_ = [] ;
+                end
                 
                 % Close the sockets
                 self.Looper_ = [] ;
@@ -1332,12 +1345,12 @@ classdef WavesurferModel < ws.Model
                 end                
             end
             
-            % Create the timer
-            self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
-                                      'BusyMode', 'drop', ...
-                                      'Period', 0.1, ...
-                                      'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
-                                      'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;                                      
+%             % Create the timer
+%             self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+%                                       'BusyMode', 'drop', ...
+%                                       'Period', 0.1, ...
+%                                       'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
+%                                       'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;                                      
             
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
@@ -1505,15 +1518,25 @@ classdef WavesurferModel < ws.Model
                             self.completeTheOngoingSweep_() ;
                             %self.closeSweep_() ;
                         catch me
+                            keyboard
                             self.abortTheOngoingSweep_();
+                            self.abortOngoingRun_();                            
                             didThrow = true ;
                             exception = me ;
                         end
                     else
                         %fprintf('At top of within-sweep loop...\n') ;
                         timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                        self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
-                        self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        try
+                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        catch me
+                            keyboard
+                            self.abortTheOngoingSweep_();
+                            self.abortOngoingRun_();
+                            didThrow = true ;
+                            exception = me ;
+                        end                            
                         % do a drawnow() if it's been too long...
                         timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
                         if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
@@ -1541,7 +1564,9 @@ classdef WavesurferModel < ws.Model
                         try
                             self.openSweep_() ;
                         catch me
+                            keyboard
                             self.abortTheOngoingSweep_();
+                            self.abortOngoingRun_();
                             didThrow = true ;
                             exception = me ;
                         end
@@ -1568,9 +1593,17 @@ classdef WavesurferModel < ws.Model
             end            
         end  % handleTimerTick()
 
-        function handleTimerError(self, event)  %#ok<INUSL>
+        function handleTimerError(self, event)
+            keyboard
             event  %#ok<NOPRT>
+            event.Data
             fprintf('The timer had an error\n') ;
+            if self.IsPerformingRun_ ,
+                if self.IsPerformingSweep_ ,
+                    self.abortTheOngoingSweep_() ;
+                end
+                self.abortOngoingRun_() ;
+            end
         end  % handleTimerError()
         
 %         function closeSweep_(self)
@@ -1812,10 +1845,8 @@ classdef WavesurferModel < ws.Model
         function wrapUpRunInWhichAllSweepsCompleted_(self)
             % Clean up after all sweeps complete successfully.
             
-            % Stop, delete the timer
+            % Stop the timer
             stop(self.TheBigTimer_) ;
-            delete(self.TheBigTimer_) ;
-            self.TheBigTimer_ = [] ;
             
             % Notify other processes
             %self.IPCPublisher_.send('completingRun') ;
@@ -1853,10 +1884,8 @@ classdef WavesurferModel < ws.Model
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.            
             
-            % Stop, delete the timer
+            % Stop, the timer
             stop(self.TheBigTimer_) ;
-            delete(self.TheBigTimer_) ;
-            self.TheBigTimer_ = [] ;            
             
             %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
@@ -1910,10 +1939,8 @@ classdef WavesurferModel < ws.Model
             
             %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
-            % Stop, delete the timer
+            % Stop the timer
             stop(self.TheBigTimer_) ;
-            delete(self.TheBigTimer_) ;
-            self.TheBigTimer_ = [] ;           
             
             % Notify other processes
             %self.IPCPublisher_.send('abortingRun') ;
@@ -2367,7 +2394,7 @@ classdef WavesurferModel < ws.Model
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
+            end
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
             wavesurferModelSettings=self.encodeForPersistence();
@@ -2632,27 +2659,23 @@ classdef WavesurferModel < ws.Model
                 self.Ephys_.didChangeNumberOfOutputChannels();
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-                channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-                %deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
-                terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-                isTimedForEachDOChannel = self.IsDOChannelTimed ;
-                onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%                 channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+%                 terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+%                 isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%                 onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
+%                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %                 self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
 %                                         channelNameForEachDOChannel, ...
 %                                         terminalIDForEachDOChannel, ...
 %                                         isTimedForEachDOChannel, ...
 %                                         onDemandOutputForEachDOChannel, ...
 %                                         isTerminalOvercommittedForEachDOChannel) ;
-                self.Looper_.didAddDigitalOutputChannelInFrontend(channelNameForEachDOChannel, ...
-                                                                  terminalIDForEachDOChannel, ...
-                                                                  isTimedForEachDOChannel, ...
-                                                                  onDemandOutputForEachDOChannel) ;
-                self.Refiller_.didAddDigitalOutputChannelInFrontend(channelNameForEachDOChannel, ...
-                                                                    terminalIDForEachDOChannel, ...
-                                                                    isTimedForEachDOChannel, ...
-                                                                    onDemandOutputForEachDOChannel, ...
-                                                                    isTerminalOvercommittedForEachDOChannel) ;
+                self.Looper_.didAddDigitalOutputChannelInFrontend() ;
+%                 self.Refiller_.didAddDigitalOutputChannelInFrontend(channelNameForEachDOChannel, ...
+%                                                                     terminalIDForEachDOChannel, ...
+%                                                                     isTimedForEachDOChannel, ...
+%                                                                     onDemandOutputForEachDOChannel, ...
+%                                                                     isTerminalOvercommittedForEachDOChannel) ;
             end
         end        
         
@@ -2710,26 +2733,23 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.IsDOChannelTimed ;
-            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-            isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
 %             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
 %                                     channelNameForEachDOChannel, ...
 %                                     terminalIDForEachDOChannel, ...
 %                                     isTimedForEachDOChannel, ...
 %                                     onDemandOutputForEachDOChannel, ...
 %                                     isTerminalOvercommittedForEachDOChannel) ;
-            self.Looper_.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
-                                                                  terminalIDForEachDOChannel, ...
-                                                                  isTimedForEachDOChannel, ...
-                                                                  onDemandOutputForEachDOChannel) ;
-            self.Refiller_.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
-                                                                    terminalIDForEachDOChannel, ...
-                                                                    isTimedForEachDOChannel, ...
-                                                                    onDemandOutputForEachDOChannel, ...
-                                                                    isTerminalOvercommittedForEachDOChannel) ;
+            self.Looper_.didRemoveDigitalOutputChannelsInFrontend() ;
+%             self.Refiller_.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
+%                                                                     terminalIDForEachDOChannel, ...
+%                                                                     isTimedForEachDOChannel, ...
+%                                                                     onDemandOutputForEachDOChannel, ...
+%                                                                     isTerminalOvercommittedForEachDOChannel) ;
         end        
     end  % public methods block
     
@@ -3477,7 +3497,7 @@ classdef WavesurferModel < ws.Model
               % don't want to preserve the stim lib parent pointer, b/c
               % that leads back to the entire WSM.
             refillerProtocol.DoRepeatSequence = self.DoRepeatStimulusSequence ;
-            refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
+            refillerProtocol.IsStimulationTriggerIdenticalToAcquisitionTrigger_ = ...
                 (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
             
             refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
@@ -6244,7 +6264,7 @@ classdef WavesurferModel < ws.Model
 
         function [aoData, doData] = getStimulationData(self, indexOfEpisodeWithinRun)
             % Get the current stimulus map
-            stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
+            stimulusMapIndex = self.Stimulation_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun) ;
             %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
 
             % Set the channel data in the tasks
@@ -6290,25 +6310,25 @@ classdef WavesurferModel < ws.Model
         
         function [aoDataScaledAndLimited, nScans, nChannelsWithStimulus] = getAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
             % Get info about which analog channels are in the task
-            isInTaskForEachAnalogChannel = self.IsInTaskForEachAOChannel_ ;
+            isInTaskForEachAOChannel = ~self.IsAOChannelTerminalOvercommitted ;
             %isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
-            nAnalogChannelsInTask = sum(isInTaskForEachAnalogChannel) ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAOChannel) ;
 
             % Calculate the signals
             if isempty(stimulusMapIndex) ,
                 aoData = zeros(0,nAnalogChannelsInTask) ;
                 nChannelsWithStimulus = 0 ;
             else
-                channelNamesInTask = self.AOChannelNames_(isInTaskForEachAnalogChannel) ;
+                channelNamesInTask = self.AOChannelNames(isInTaskForEachAOChannel) ;
                 isChannelAnalog = true(1,nAnalogChannelsInTask) ;
 %                 [aoData, nChannelsWithStimulus] = ...
 %                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
                 [aoData, nChannelsWithStimulus] = ...
-                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
-                                                                 self.StimulationSampleRate_, ...
-                                                                 channelNamesInTask, ...
-                                                                 isChannelAnalog, ...
-                                                                 episodeIndexWithinSweep) ;  
+                    self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                             self.StimulationSampleRate, ...
+                                                             channelNamesInTask, ...
+                                                             isChannelAnalog, ...
+                                                             episodeIndexWithinSweep) ;
                   % each signal of aoData is in native units
             end
             
@@ -6316,7 +6336,7 @@ classdef WavesurferModel < ws.Model
             nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
-            analogChannelScales=self.AOChannelScales_(isInTaskForEachAnalogChannel);  % (native units)/V
+            analogChannelScales = self.AOChannelScales(isInTaskForEachAOChannel) ;  % (native units)/V
             inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
             sanitizedInverseAnalogChannelScales = ...
                 ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
@@ -6349,26 +6369,26 @@ classdef WavesurferModel < ws.Model
             
             % Calculate the signals
             %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
-            isInTaskForEachDigitalChannel = self.IsInTaskForEachDOChannel_ ;            
+            isInTaskForEachDOChannel = ~self.IsDOChannelTerminalOvercommitted ;
             %isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
-            nDigitalChannelsInTask = sum(isInTaskForEachDigitalChannel) ;
+            nDigitalChannelsInTask = sum(isInTaskForEachDOChannel) ;
             if isempty(stimulusMapIndex) ,
                 doData=zeros(0,nDigitalChannelsInTask);  
                 nChannelsWithStimulus = 0 ;
             else
                 isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
-                namesOfDigitalChannelsInTask = self.DOChannelNames_(isInTaskForEachDigitalChannel) ;                
+                namesOfDigitalChannelsInTask = self.DOChannelNames(isInTaskForEachDOChannel) ;                
 %                 [doData, nChannelsWithStimulus] = ...
 %                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
 %                                                  namesOfDigitalChannelsInTask, ...
 %                                                  isChannelAnalogForEachDigitalChannelInTask, ...
 %                                                  episodeIndexWithinRun);
                 [doData, nChannelsWithStimulus] = ...
-                    self.StimulusLibrary_.calculateSignalsForMap(stimulusMapIndex, ...
-                                                                 self.StimulationSampleRate_, ...
-                                                                 namesOfDigitalChannelsInTask, ...
-                                                                 isChannelAnalogForEachDigitalChannelInTask, ...
-                                                                 episodeIndexWithinRun) ;
+                    self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                             self.StimulationSampleRate, ...
+                                                             namesOfDigitalChannelsInTask, ...
+                                                             isChannelAnalogForEachDigitalChannelInTask, ...
+                                                             episodeIndexWithinRun) ;
             end
             
             % Want to return the number of scans in the stimulus data
@@ -6381,11 +6401,6 @@ classdef WavesurferModel < ws.Model
 %             % of the output task
 %             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
         end  % function        
-
-        function result = isStimulationTriggerIdenticalToAcquistionTrigger(self)
-            result = ...
-                (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
-        end  % function
     end  % protected methods block        
     
     methods

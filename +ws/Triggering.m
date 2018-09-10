@@ -819,13 +819,21 @@ classdef Triggering < ws.Subsystem
         function result = acquisitionTriggerProperty(self, propertyName)
             triggerIndex = self.NewAcquisitionTriggerSchemeIndex_ ;
             trigger = self.getTriggerByIndex_(triggerIndex) ;
-            result = trigger.(propertyName) ;
+            if isequal(propertyName, 'class') ,
+                result = class(trigger) ;
+            else
+                result = trigger.(propertyName) ;
+            end
         end  % function
         
         function result = stimulationTriggerProperty(self, propertyName)
             triggerIndex = self.StimulationTriggerSchemeIndex ;   % *not* StimulationTriggerSchemeIndex_
             trigger = self.getTriggerByIndex_(triggerIndex) ;
-            result = trigger.(propertyName) ;
+            if isequal(propertyName, 'class') ,
+                result = class(trigger) ;
+            else
+                result = trigger.(propertyName) ;
+            end
         end  % function        
         
         function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)

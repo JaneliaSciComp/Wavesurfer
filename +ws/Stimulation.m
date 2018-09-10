@@ -873,6 +873,18 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function result = get.DigitalDeviceNames(self)
             result = self.DigitalDeviceNames_ ;
         end  % function        
+        
+        function result = getCurrentStimulusMapIndex(self, episodeIndexWithinSweep)
+            doRepeatSequence = self.DoRepeatSequence_ ;
+            result = self.StimulusLibrary_.getCurrentStimulusMapIndex(episodeIndexWithinSweep, doRepeatSequence) ;
+        end        
+        
+        function [data, nChannelsWithStimulus, mapName] = ...
+                calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
+            [data, nChannelsWithStimulus, mapName] = ...
+                self.StimulusLibrary_.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet) ;
+        end
+        
     end  % public methods block    
     
     methods

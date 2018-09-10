@@ -17,7 +17,7 @@ classdef Refiller < handle
         %StimulationSampleRate_ = []
         %StimulusLibrary_ = []
         %DoRepeatSequence_ = true
-        %IsStimulationTriggerIdenticalToAcquistionTrigger_ = []
+        %IsStimulationTriggerIdenticalToAcquisitionTrigger_ = []
         
         %AOChannelNames_ = cell(1,0)
         %AOChannelScales_ = zeros(1,0)
@@ -53,8 +53,8 @@ classdef Refiller < handle
         TheFiniteAnalogOutputTask_
         TheFiniteDigitalOutputTask_
         DidNotifyFrontendThatWeCompletedAllEpisodes_
-        IsInTaskForEachAOChannel_
-        IsInTaskForEachDOChannel_
+        %IsInTaskForEachAOChannel_
+        %IsInTaskForEachDOChannel_
     end
     
     methods
@@ -142,7 +142,7 @@ classdef Refiller < handle
 %                             % If we're not performing an episode, see if
 %                             % we need to start one.
 %                             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-%                                 if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
+%                                 if self.IsStimulationTriggerIdenticalToAcquisitionTrigger_ ,
 %                                     % do nothing.
 %                                     % if they're identical, startEpisode_()
 %                                     % is called from the startingSweep()
@@ -212,7 +212,7 @@ classdef Refiller < handle
                 % If we're not performing an episode, see if
                 % we need to start one.
                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                    if self.Frontend_.isStimulationTriggerIdenticalToAcquistionTrigger() ,
+                    if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
                         % do nothing.
                         % if they're identical, startEpisode_()
                         % is called from the startingSweep()
@@ -400,25 +400,25 @@ classdef Refiller < handle
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, ...
-                                                               channelNameForEachDOChannel, ...
-                                                               terminalIDForEachDOChannel, ...
-                                                               isTimedForEachDOChannel, ...
-                                                               onDemandOutputForEachDOChannel, ...
-                                                               isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
-            %fprintf('Got message didAddDigitalOutputChannelInFrontend\n') ;                                                                       
-            result = [] ;
-        end  % function
-        
-        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
-                                                                   channelNameForEachDOChannel, ...
-                                                                   terminalIDForEachDOChannel, ...
-                                                                   isTimedForEachDOChannel, ...
-                                                                   onDemandOutputForEachDOChannel, ...
-                                                                   isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
-            %fprintf('Got message didRemoveDigitalOutputChannelsInFrontend\n') ;                                                                       
-            result = [] ;
-        end  % function
+%         function result = didAddDigitalOutputChannelInFrontend(self, ...
+%                                                                channelNameForEachDOChannel, ...
+%                                                                terminalIDForEachDOChannel, ...
+%                                                                isTimedForEachDOChannel, ...
+%                                                                onDemandOutputForEachDOChannel, ...
+%                                                                isTerminalOvercommittedForEachDOChannel)  %#ok<INUSD>
+%             %fprintf('Got message didAddDigitalOutputChannelInFrontend\n') ;                                                                       
+%             result = [] ;
+%         end  % function
+%         
+%         function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
+%                                                                    channelNameForEachDOChannel, ...
+%                                                                    terminalIDForEachDOChannel, ...
+%                                                                    isTimedForEachDOChannel, ...
+%                                                                    onDemandOutputForEachDOChannel, ...
+%                                                                    isTerminalOvercommittedForEachDOChannel) %#ok<INUSD>
+%             %fprintf('Got message didRemoveDigitalOutputChannelsInFrontend\n') ;                                                                       
+%             result = [] ;
+%         end  % function
 
 %         function result = frontendJustLoadedProtocol(self, looperProtocol, isDOChannelTerminalOvercommitted) %#ok<INUSD>
 %             % What it says on the tin.
@@ -499,15 +499,16 @@ classdef Refiller < handle
             
             % Determine episodes per run
             if self.Frontend_.IsStimulationEnabled ,
-                if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
-                    self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;                    
-                elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+                stimulationTriggerClass = self.Frontend_.stimulationTriggerProperty('class') ;
+                if isequal(stimulationTriggerClass, 'ws.BuiltinTrigger') ,
+                    self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;                    
+                elseif isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,
                     % stim trigger scheme is a counter trigger
-                    self.NEpisodesPerRun_ = self.StimulationTrigger_.RepeatCount ;
+                    self.NEpisodesPerRun_ = self.Frontend_.stimulationTriggerProperty('RepeatCount') ;
                 else
                     % stim trigger scheme is an external trigger
-                    if self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
-                        self.NEpisodesPerRun_ = self.NSweepsPerRun_ ;
+                    if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+                        self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;
                     else
                         self.NEpisodesPerRun_ = inf ;  % by convention
                     end
@@ -566,7 +567,7 @@ classdef Refiller < handle
             % receive the first stim trigger *before* we tell the frontend
             % that we're ready for the run.
             if self.NEpisodesPerRun_ > 0 ,
-                if ~self.IsStimulationTriggerIdenticalToAcquistionTrigger_ ,
+                if ~self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
                     self.startEpisode_() ;
                 end
             end
@@ -703,8 +704,8 @@ classdef Refiller < handle
         
         function callUserMethod_(self, methodName, varargin)
             try
-                if ~isempty(self.TheUserObject_) ,
-                    self.TheUserObject_.(methodName)(self, varargin{:});
+                if ~isempty(self.Frontend_.TheUserObject) ,
+                    self.Frontend_.TheUserObject.(methodName)(self, varargin{:});
                 end
             catch exception ,
                 warning('Error in user class method samplesAcquired.  Exception report follows.') ;
@@ -750,7 +751,7 @@ classdef Refiller < handle
                 % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
 
                 % Set the channel data in the tasks
-                [aoData, doData] = getStimulationData(self, indexOfEpisodeWithinRun) ;
+                [aoData, doData] = self.Frontend_.getStimulationData(indexOfEpisodeWithinRun) ;
                 self.setAnalogChannelData_(aoData) ;
                 self.setDigitalChannelData_(doData) ;
 
@@ -1265,7 +1266,7 @@ classdef Refiller < handle
 %             self.StimulationTrigger_ = protocol.StimulationTrigger ;            
 %             self.StimulusLibrary_ = protocol.StimulusLibrary ;                        
 %             self.DoRepeatSequence_ = protocol.DoRepeatSequence ;
-%             self.IsStimulationTriggerIdenticalToAcquistionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ ;
+%             self.IsStimulationTriggerIdenticalToAcquisitionTrigger_ = protocol.IsStimulationTriggerIdenticalToAcquisitionTrigger_ ;
 % 
 %             self.IsUserCodeManagerEnabled_ = protocol.IsUserCodeManagerEnabled ;                        
 %             self.TheUserObject_ = protocol.TheUserObject ;
@@ -1292,7 +1293,7 @@ classdef Refiller < handle
                               self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
                               self.Frontend_.stimulationTriggerProperty('PFIID'), ...
                               self.Frontend_.stimulationTriggerProperty('Edge') ) ;
-                self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
+                %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
             end
             if isempty(self.TheFiniteDigitalOutputTask_) ,
                 %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
@@ -1317,7 +1318,7 @@ classdef Refiller < handle
                               self.Frontend_.stimulationTriggerProperty('PFIID'), ...
                               self.Frontend_.stimulationTriggerProperty('Edge') ) ;
                 %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
-                self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
+                %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end
         end  % method
         

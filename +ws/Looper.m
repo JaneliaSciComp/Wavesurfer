@@ -344,29 +344,15 @@ classdef Looper < handle
             result = [] ;
         end  % function
         
-        function result = didAddDigitalOutputChannelInFrontend(self, ...
-                                                               channelNameForEachDOChannel, ...
-                                                               terminalIDForEachDOChannel, ...
-                                                               isTimedForEachDOChannel, ...
-                                                               onDemandOutputForEachDOChannel)
+        function result = didAddDigitalOutputChannelInFrontend(self)
             %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
-            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
-                                                     terminalIDForEachDOChannel, ...
-                                                     isTimedForEachDOChannel, ...
-                                                     onDemandOutputForEachDOChannel) ;
+            self.didAddOrDeleteDOChannelsInFrontend_() ;
             result = [] ;
         end  % function
         
-        function result = didRemoveDigitalOutputChannelsInFrontend(self, ...
-                                                                   channelNameForEachDOChannel, ...
-                                                                   terminalIDForEachDOChannel, ...
-                                                                   isTimedForEachDOChannel, ...
-                                                                   onDemandOutputForEachDOChannel)
+        function result = didRemoveDigitalOutputChannelsInFrontend(self)
             %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommittedForEachDOChannel ;                 
-            self.didAddOrDeleteDOChannelsInFrontend_(channelNameForEachDOChannel, ...
-                                                     terminalIDForEachDOChannel, ...
-                                                     isTimedForEachDOChannel, ...
-                                                     onDemandOutputForEachDOChannel) ;
+            self.didAddOrDeleteDOChannelsInFrontend_() ;
             result = [] ;
         end  % function
         
@@ -481,7 +467,12 @@ classdef Looper < handle
             % Acquire data, update soft real-time outputs
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
                 self.pollAcquisition_(timeSinceSweepStart, fromRunStartTicId) ;
-
+            
+            % DEBUG: This is for debugging purposes only!
+            if timeSinceRunStartAtStartOfData > 5 ,
+                error('Stuff went bad.  Real bad.') ;
+            end
+            
             % Deal with the acquired samples
             if didReadFromTasks ,
                 self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
@@ -932,16 +923,12 @@ classdef Looper < handle
 %             %self.TheUserObject_ = looperProtocol.TheUserObject ;
 %         end  % function        
         
-        function didAddOrDeleteDOChannelsInFrontend_(self, ...
-                                                     channelNameForEachDOChannel, ...
-                                                     terminalIDForEachDOChannel, ...
-                                                     isTimedForEachDOChannel, ...
-                                                     onDemandOutputForEachDOChannel)
-            self.DOChannelNames_ = channelNameForEachDOChannel ;
+        function didAddOrDeleteDOChannelsInFrontend_(self)
+            %self.DOChannelNames_ = channelNameForEachDOChannel ;
             %self.DigitalDeviceNames_ = deviceNameForEachDOChannel ;
-            self.DOChannelTerminalIDs_ = terminalIDForEachDOChannel ;
-            self.IsDOChannelTimed_ = isTimedForEachDOChannel ;
-            self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
+            %self.DOChannelTerminalIDs_ = terminalIDForEachDOChannel ;
+            %self.IsDOChannelTimed_ = isTimedForEachDOChannel ;
+            %self.DigitalOutputStateIfUntimed_ = onDemandOutputForEachDOChannel ;
             self.reacquireOnDemandHardwareResources_() ;
         end
         
