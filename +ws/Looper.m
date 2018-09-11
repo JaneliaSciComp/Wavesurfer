@@ -250,6 +250,14 @@ classdef Looper < handle
                                          acquisitionKeystoneTaskDeviceName) ;
         end  % function
 
+        function result = completingSweep(self)
+            % Called by the WSM when the sweep is completed.
+
+            % Cleanup after run
+            self.completeTheOngoingSweep_() ;
+            result = [] ;
+        end  % function
+        
         function result = completingRun(self)
             % Called by the WSM when the run is completed.
 
@@ -465,7 +473,7 @@ classdef Looper < handle
             % messages should be arriving during a sweep.
 
             % Acquire data, update soft real-time outputs
-            [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+            [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData] = ...
                 self.pollAcquisition_(timeSinceSweepStart, fromRunStartTicId) ;
             
             % DEBUG: This is for debugging purposes only!
@@ -478,10 +486,10 @@ classdef Looper < handle
                 self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
                 self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
-                if areTasksDone ,
-                    self.completeTheOngoingSweep_() ;
-                    %self.acquisitionSweepComplete() ;
-                end
+%                 if areTasksDone ,
+%                     self.completeTheOngoingSweep_() ;
+%                     %self.acquisitionSweepComplete() ;
+%                 end
             end                        
             
             % We'll use this in a sanity-check
@@ -764,6 +772,11 @@ classdef Looper < handle
             %profile off
             %self.IsPerformingSweep_ = false ;
             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
+
+            % Stop the timed input tasks
+            self.TimedAnalogInputTask_.stop() ;
+            self.TimedDigitalInputTask_.stop() ;
+            self.IsArmedOrAcquiring_ = false ;
             
             % Notify the front end
             %self.IPCPublisher_.send('looperCompletedSweep') ;            
@@ -934,13 +947,14 @@ classdef Looper < handle
         
         function acquireTimedHardwareResources_(self)
             % We create and analog InputTask and a digital InputTask, regardless
-            % of whether there are any channels of each type.  Within InputTask,
+            % of whether there are any channels of each type.  Within ws.??Task,
             % it will create a DABS Task only if the number of channels is
-            % greater than zero.  But InputTask hides that detail from us.
+            % greater than zero.  But ws.??Task hides that detail from us.
             %keyboard
+            isAIChannelActive = self.Frontend_.IsAIChannelActive ;
+            nActiveAIChannels = sum(isAIChannelActive) ;
             if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
                 % Only hand the active channels to the AnalogInputTask
-                isAIChannelActive = self.Frontend_.IsAIChannelActive ;
                 %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
                 aiDeviceNames = self.Frontend_.AIChannelDeviceNames ;                
                 activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
@@ -949,6 +963,11 @@ classdef Looper < handle
                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
                 %[referenceClockSource, referenceClockRate] = ...
                 %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
+                sampleRate = self.Frontend_.AcquisitionSampleRate ;
+                doExecuteCallbacks = (nActiveAIChannels>0) ;
+                nScansPerCallback = sampleRate*0.01 ;  % every 10 ms
+                everyNScansCallback = @()(self.everyNScansCallback()) ;
+                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
                 self.TimedAnalogInputTask_ = ...
                     ws.AITask('WaveSurfer AI Task', ...
                               primaryDeviceName , ...
@@ -961,13 +980,21 @@ classdef Looper < handle
                               self.AcquisitionKeystoneTaskDeviceNameCache_, ...
                               self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
                               self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
-                              self.Frontend_.acquisitionTriggerProperty('Edge')) ;
+                              self.Frontend_.acquisitionTriggerProperty('Edge'), ...
+                              doExecuteCallbacks, ...
+                              nScansPerCallback, ...
+                              everyNScansCallback, ...
+                              taskDoneCallback) ;
             end
             if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
                 primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
                 isDIChannelActive = self.Frontend_.IsDIChannelActive ;
                 activeDITerminalIDs = self.Frontend_.DIChannelTerminalIDs(isDIChannelActive) ;
+                doExecuteCallbacks = (nActiveAIChannels==0) ;
+                nScansPerCallback = sampleRate*0.01 ;  % every 10 ms
+                everyNScansCallback = @()(self.everyNScansCallback()) ;
+                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
                 self.TimedDigitalInputTask_ = ...
                     ws.DITask('WaveSurfer DI Task', ...
                               primaryDeviceName , ...
@@ -979,10 +1006,27 @@ classdef Looper < handle
                               self.AcquisitionKeystoneTaskDeviceNameCache_, ...
                               self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
                               self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
-                              self.Frontend_.acquisitionTriggerProperty('Edge')) ;
+                              self.Frontend_.acquisitionTriggerProperty('Edge'), ...
+                              doExecuteCallbacks, ...
+                              nScansPerCallback, ...
+                              everyNScansCallback, ...
+                              taskDoneCallback) ;
             end
         end  % function
 
+        function everyNScansCallback(self)
+            self.Frontend_.everyNScansCallback() ;
+        end
+
+        function primaryTaskDoneCallback(self)
+            self.TimedAnalogInputTask_.waitUntilDone() ;
+            self.TimedDigitalInputTask_.waitUntilDone() ;
+            self.TimedAnalogInputTask_.stop();
+            self.TimedDigitalInputTask_.stop();
+            self.IsArmedOrAcquiring_ = false ;            
+            self.Frontend_.inputTasksDoneCallback() ;
+        end       
+        
         function result = syncUntimedDigitalOutputTaskToDigitalOutputStateIfUntimed_(self, digitalOutputStateIfUntimed)
             if ~isempty(self.UntimedDigitalOutputTask_) ,
                 isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
@@ -1005,7 +1049,7 @@ classdef Looper < handle
             end
         end        
         
-        function [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+        function [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData] = ...
                 pollAcquisition_(self, timeSinceSweepStart, fromRunStartTicId)
             %fprintf('LooperAcquisition::poll()\n') ;
             % Determine the time since the last undropped timer fire
@@ -1015,14 +1059,14 @@ classdef Looper < handle
             if self.IsArmedOrAcquiring_ ,
                 %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
                 % Check for task doneness
-                if ~isfinite(self.Frontend_.SweepDuration) ,  
-                    % if doing continuous acq, no need to check.  This is
-                    % an important optimization, b/c the checks can take
-                    % 10-20 ms.
-                    areTasksDone = false;
-                else                    
-                    areTasksDone = ( self.TimedAnalogInputTask_.isDone() && self.TimedDigitalInputTask_.isDone() ) ;
-                end
+%                 if ~isfinite(self.Frontend_.SweepDuration) ,  
+%                     % if doing continuous acq, no need to check.  This is
+%                     % an important optimization, b/c the checks can take
+%                     % 10-20 ms.
+%                     areTasksDone = false;
+%                 else                    
+%                     areTasksDone = ( self.TimedAnalogInputTask_.isDone() && self.TimedDigitalInputTask_.isDone() ) ;
+%                 end
 %                 if areTasksDone ,
 %                     fprintf('Acquisition tasks are done.\n')
 %                 end
@@ -1032,7 +1076,7 @@ classdef Looper < handle
                 %    fprintf('About to readDataFromTasks_, even though acquisition tasks are done.\n')
                 %end
                 [rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData] = ...
-                    self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId, areTasksDone) ;
+                    self.readDataFromTasks_(timeSinceSweepStart, fromRunStartTicId) ;
                 %nScans = size(rawAnalogData,1) ;
                 %fprintf('Read acq data. nScans: %d\n',nScans)
 
@@ -1040,21 +1084,21 @@ classdef Looper < handle
                 didReadFromTasks = true ;  % we return this, even if zero samples were acquired
                 %self.samplesAcquired_(rawAnalogData,rawDigitalData,timeSinceRunStartAtStartOfData);
 
-                % If we were done before reading the data, act accordingly
-                if areTasksDone ,
-                    % Stop tasks, set flag to reflect that we're no longer
-                    % armed nor acquiring
-                    self.TimedAnalogInputTask_.stop();
-                    self.TimedDigitalInputTask_.stop();
-                    self.IsArmedOrAcquiring_ = false ;
-                end
+%                 % If we were done before reading the data, act accordingly
+%                 if areTasksDone ,
+%                     % Stop tasks, set flag to reflect that we're no longer
+%                     % armed nor acquiring
+%                     self.TimedAnalogInputTask_.stop();
+%                     self.TimedDigitalInputTask_.stop();
+%                     self.IsArmedOrAcquiring_ = false ;
+%                 end
             else
                 %fprintf('~IsArmedOrAcquiring\n') ;
                 didReadFromTasks = false ;
                 rawAnalogData = [] ;
                 rawDigitalData = [] ;
                 timeSinceRunStartAtStartOfData = false ;
-                areTasksDone = [] ;  
+                %areTasksDone = [] ;  
             end
             
             % Prepare for next time            
@@ -1062,7 +1106,7 @@ classdef Looper < handle
         end  % method
         
         function [rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData] = ...
-                readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId, areTasksDone)  %#ok<INUSD>
+                readDataFromTasks_(self, timeSinceSweepStart, fromRunStartTicId)
             % both analog and digital tasks are for-real
             if self.IsAtLeastOneActiveAIChannelCached_ ,
                 [rawAnalogData, timeSinceRunStartAtStartOfData] = ...

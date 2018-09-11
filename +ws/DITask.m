@@ -194,6 +194,23 @@ classdef DITask < handle
             end            
         end
         
+        function waitUntilDone(self)
+            if isempty(self.DabsDaqTask_) ,
+                if isinf(self.DesiredSweepDuration_) ,  % don't want to bother with toc() if we already know the answer...
+                    error('ws:waitUntilDoneCalledOnInfiniteTask', 'waitUntilDone() called on infinite task') ;
+                else
+                    timeNow = toc(self.TicId_) ;
+                    durationSoFar = timeNow-self.TimeAtTaskStart_ ;
+                    timeLeft = self.CachedFinalScanTime_ - durationSoFar ;
+                    if timeLeft>0 ,
+                        pause(timeLeft) ;
+                    end
+                end
+            else
+                self.DabsDaqTask_.waitUntilTaskDone() ;
+            end            
+        end        
+        
         function [data,timeSinceRunStartAtStartOfData] = readData(self, nScansToRead, timeSinceSweepStart, fromRunStartTicId) %#ok<INUSL>
             % If nScansToRead is empty, read all the available scans.  If
             % nScansToRead is nonempty, read that number of scans.

@@ -366,6 +366,23 @@ classdef AOTask < handle
                 result = true ;
             end            
         end  % function
+        
+        function waitUntilDone(self)
+            if isempty(self.DabsDaqTasks_) ,
+                % This means there are no channels
+                % just exit immediately
+                % things work out better if you use the convention that tasks with no
+                % channels are always done
+            else
+                deviceCount = length(self.DabsDaqTasks_) ;
+                for deviceIndex = 1:deviceCount ,
+                    dabsTask = self.DabsDaqTasks_{deviceIndex} ;
+                    dabsTask.waitUntilTaskDone() ;
+                end
+                % if get here, all tasks must be done
+            end            
+        end        
+        
     end  % public methods
     
     methods (Access = protected)

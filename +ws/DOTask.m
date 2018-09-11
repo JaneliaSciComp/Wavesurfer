@@ -290,6 +290,18 @@ classdef DOTask < handle
                 result = self.DabsDaqTask_.isTaskDoneQuiet() ;
             end
         end  % function
+        
+        function waitUntilDone(self)
+            if isempty(self.DabsDaqTask_) ,
+                % This means there are no channels
+                % just exit immediately
+                % things work out better if you use the convention that tasks with no
+                % channels are always done
+            else
+                self.DabsDaqTask_.waitUntilTaskDone() ;
+            end            
+        end  % function       
+        
     end  % public methods
     
     methods (Access = protected)

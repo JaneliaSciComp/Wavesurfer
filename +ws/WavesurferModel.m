@@ -41,6 +41,8 @@ classdef WavesurferModel < ws.Model
         XSpan  % s, the span of time showed in the signal display
         NAIChannels
         NDIChannels
+        NActiveAIChannels
+        NActiveDIChannels
         AOChannelScales
           % A row vector of scale factors to convert each channel from native units to volts on the coax.
           % This is implicitly in units of ChannelUnits per volt (see below)        
@@ -161,6 +163,8 @@ classdef WavesurferModel < ws.Model
         ArePreferencesWritable_ = true
         TheBigTimer_ = []
         AllowTimerCallback_ = true ;
+        InputTasksDoneTimer_ = []
+        OutputTasksDoneTimer_ = []        
     end   
 
     properties (Dependent = true)
@@ -383,7 +387,18 @@ classdef WavesurferModel < ws.Model
                                           'Period', 0.1, ...
                                           'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
                                           'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;
-                
+
+                % Create the timers that allow us to try again when some callback is
+                % already executing when the input tasks or the output tasks finish
+                self.TheInputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
+                                                     'BusyMode', 'drop', ...
+                                                     'StartDelay', 0.1, ...
+                                                     'TimerFcn', @(timerObject, event)(self.inputTasksDoneCallback()) ) ;
+                self.TheOutputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
+                                                      'BusyMode', 'drop', ...
+                                                      'StartDelay', 0.1, ...
+                                                      'TimerFcn', @(timerObject, event)(self.outputTasksDoneCallback()) ) ;
+                                      
                 % Get the list of all device names, and cache it in our own
                 % state
                 self.probeHardwareAndSetAllDeviceNames() ;                
@@ -1589,6 +1604,76 @@ classdef WavesurferModel < ws.Model
             end
         end  % handleTimerError()
         
+        function everyNScansCallback(self)
+            if self.AllowTimerCallback_ ,
+                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+                    %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                    if self.IsPerformingSweep_ ,
+                        %fprintf('At top of within-sweep loop...\n') ;
+                        timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
+                        self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                        % do a drawnow() if it's been too long...
+                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow() ;
+                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                        end
+                    else
+                        % We are not currently performing a sweep, so check if we need to start one
+                        if self.AreAllSweepsCompleted_ ,
+                            % All sweeps are were performed, but the refiller must not be done yet if we got here
+                            % Keep checking messages so we know when the
+                            % refiller is done.  Also keep listening for looper
+                            % messages, although I'm not sure we need to...
+                            %fprintf('About to check for messages after completing all sweeps\n');
+                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                            %fprintf('Check for messages after completing all sweeps\n');
+                            % do a drawnow() if it's been too long...
+                            timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                                drawnow() ;
+                                self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            end
+                        else                        
+                            self.openSweep_() ;
+                        end
+                    end
+                else
+                    % This means we should end the run
+
+                    % At this point, self.IsPerformingRun_ is true
+                    % Do post-run clean up
+                    if self.AreAllSweepsCompleted_ ,
+                        % Wrap up run in which all sweeps completed
+                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                    else
+                        % Something went wrong
+                        self.abortOngoingRun_();
+                    end
+                    % At this point, self.IsPerformingRun_ is false
+                end
+                
+            end
+        end
+        
+        function inputTasksDoneCallback(self)
+            if self.AllowTimerCallback_ ,
+                self.completeTheOngoingSweep_() ;
+            else
+                % Schedule another run in 100 ms
+                start(self.InputTasksDoneTimer_) ;
+            end            
+        end
+
+        function outputTasksDoneCallback(self)
+            if self.AllowTimerCallback_ ,
+                self.Refiller_.performOneIterationDuringOngoingRun() ;
+            else
+                % Schedule another run in 100 ms
+                start(self.OutputTasksDoneTimer_) ;
+            end            
+        end
+        
 %         function closeSweep_(self)
 %             % End the sweep in the way appropriate, either a "complete",
 %             % a stop, or an abort.
@@ -1750,6 +1835,9 @@ classdef WavesurferModel < ws.Model
                 
         function completeTheOngoingSweep_(self)
             %fprintf('WavesurferModel::completeTheOngoingSweep_()\n') ;
+            
+            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+            self.Looper.completingSweep() ;
             
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
@@ -4755,6 +4843,14 @@ classdef WavesurferModel < ws.Model
 
         function result = get.NDIChannels(self)
             result = self.Acquisition_.NDigitalChannels ;
+        end
+        
+        function result = get.NActiveAIChannels(self)
+            result = self.Acquisition_.NActiveAnalogChannels ;
+        end
+
+        function result = get.NActiveDIChannels(self)
+            result = self.Acquisition_.NActiveDigitalChannels ;
         end
         
         function result = get.NAOChannels(self)
