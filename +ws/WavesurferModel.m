@@ -1518,33 +1518,16 @@ classdef WavesurferModel < ws.Model
             if ~self.AllowTimerCallback_ ,
                 return
             end
-            didThrow = false ;
-            exception = [] ;
             if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
                 %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
                 if self.IsPerformingSweep_ ,
                     if self.DidLooperCompleteSweep_ ,
-                        try
-                            self.completeTheOngoingSweep_() ;
-                            %self.closeSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            self.abortOngoingRun_();                            
-                            didThrow = true ;
-                            exception = me ;
-                        end
+                        self.completeTheOngoingSweep_() ;
                     else
                         %fprintf('At top of within-sweep loop...\n') ;
                         timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                        try
-                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
-                            self.Refiller_.performOneIterationDuringOngoingRun() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            self.abortOngoingRun_();
-                            didThrow = true ;
-                            exception = me ;
-                        end                            
+                        self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                        self.Refiller_.performOneIterationDuringOngoingRun() ;
                         % do a drawnow() if it's been too long...
                         timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
                         if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
@@ -1569,14 +1552,7 @@ classdef WavesurferModel < ws.Model
                             self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
                         end
                     else                        
-                        try
-                            self.openSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            self.abortOngoingRun_();
-                            didThrow = true ;
-                            exception = me ;
-                        end
+                        self.openSweep_() ;
                     end
                 end
             else
@@ -1593,11 +1569,6 @@ classdef WavesurferModel < ws.Model
                 end
                 % At this point, self.IsPerformingRun_ is false
             end
-            
-            % If an exception was thrown, re-throw it
-            if didThrow ,
-                rethrow(exception) ;
-            end            
         end  % handleTimerTick()
 
         function handleTimerError(self, event)
