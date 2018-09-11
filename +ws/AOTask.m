@@ -35,7 +35,9 @@ classdef AOTask < handle
         function self = AOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                sampleRate, ...
                                keystoneTaskType, keystoneTaskDeviceName, ...
-                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone, ...
+                               doExecuteCallbacks, ...
+                               taskDoneCallback)
                            
             % Group the channels by device, with the primary device first
             [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = ...
@@ -96,6 +98,12 @@ classdef AOTask < handle
                 end
             else
                 % do nothing
+            end
+            
+            % Set up the callbacks, if called for
+            if doExecuteCallbacks && ~isempty(self.DabsDaqTasks_) ,
+                firstDabsDaqTask = self.DabsDaqTasks_{1} ;
+                firstDabsDaqTask.doneCallback = taskDoneCallback ;
             end
             
             % What used to be "arming"

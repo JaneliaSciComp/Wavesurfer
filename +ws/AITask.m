@@ -47,7 +47,11 @@ classdef AITask < handle
         function self = AITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, deviceNamePerChannel, terminalIDPerChannel, ...
                                sampleRate, desiredSweepDuration, ...
                                keystoneTaskType, keystoneTaskDeviceName, ...
-                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone, ...
+                               doExecuteCallbacks, ...
+                               scanCountPerCallback, ...
+                               everyNScansCallback, ...
+                               taskDoneCallback)
                            
             % Group the channels by device, with the primary device first
             [deviceNamePerDevice, terminalIDsPerDevice, channelIndicesPerDevice] = ...
@@ -146,6 +150,14 @@ classdef AITask < handle
             %self.TriggerDeviceName_ = triggerDeviceNameIfKeystoneAndPrimary ;
             %self.TriggerPFIID_ = triggerPFIIDIfKeystoneAndPrimary ;
             %self.TriggerEdge_ = triggerEdgeIfKeystoneAndPrimary ;
+            
+            % Set up the callbacks, if called for
+            if doExecuteCallbacks && ~isempty(self.DabsDaqTasks_) ,
+                firstDabsDaqTask = self.DabsDaqTasks_{1} ;
+                firstDabsDaqTask.everyNSamples = scanCountPerCallback ;
+                firstDabsDaqTask.everyNSamplesEventCallbacks = everyNScansCallback ;
+                firstDabsDaqTask.doneCallback = taskDoneCallback ;
+            end
             
             % What used to be "arming"
             if ~isempty(self.DabsDaqTasks_) ,

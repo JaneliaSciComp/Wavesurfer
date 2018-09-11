@@ -11,8 +11,10 @@ classdef DOTask < handle
         function self = DOTask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
                                sampleRate, ...
                                keystoneTaskType, keystoneTaskDeviceName, ...
-                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
-                                    
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone, ...
+                               doExecuteCallbacks, ...
+                               taskDoneCallback)
+
             % Create the channels, set the timing mode (has to be done
             % after adding channels)
             nChannels=length(terminalIDs);
@@ -57,6 +59,11 @@ classdef DOTask < handle
                     triggerEdge = [] ;
                 end
                 
+                % Set up the callbacks, if called for
+                if doExecuteCallbacks ,
+                    self.DabsDaqTask_.doneCallback = taskDoneCallback ;
+                end
+                            
                 % Set up triggering
                 if isempty(triggerTerminalName) ,
                     self.DabsDaqTask_.disableStartTrig() ;

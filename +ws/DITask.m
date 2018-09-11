@@ -29,8 +29,12 @@ classdef DITask < handle
         function self = DITask(taskName, primaryDeviceName, isPrimaryDeviceAPXIDevice, terminalIDs, ...
                                sampleRate, desiredSweepDuration, ...
                                keystoneTaskType, keystoneTaskDeviceName, ...
-                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone)
-                           
+                               triggerDeviceNameIfKeystone, triggerPFIIDIfKeystone, triggerEdgeIfKeystone, ...
+                               doExecuteCallbacks, ...
+                               scanCountPerCallback, ...
+                               everyNScansCallback, ...
+                               taskDoneCallback)
+            
             nChannels=length(terminalIDs) ;            
             if nChannels>0 ,
                 % Create the task itself
@@ -87,6 +91,13 @@ classdef DITask < handle
                     triggerEdge = [] ;
                 end
 
+                % Set up the callbacks, if called for
+                if doExecuteCallbacks ,
+                    self.DabsDaqTask_.everyNSamples = scanCountPerCallback ;
+                    self.DabsDaqTask_.everyNSamplesEventCallbacks = everyNScansCallback ;
+                    self.DabsDaqTask_.doneCallback = taskDoneCallback ;
+                end
+            
                 % Do stuff that used to be "arming" the task
                 % Set up timing
                 clockTiming = ws.fif(isinf(desiredSweepDuration), 'DAQmx_Val_ContSamps', 'DAQmx_Val_FiniteSamps' ) ;
