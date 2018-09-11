@@ -35,7 +35,7 @@ function varargout = wavesurfer(varargin)
     
     % Create the application (model) object.
     isITheOneTrueWavesurferModel = true ;
-    model = ws.WavesurferModel(isITheOneTrueWavesurferModel);
+    model = ws.WavesurferModel(isITheOneTrueWavesurferModel, ~isCommandLineOnly);
 
     % Start the controller, if desired
     if isCommandLineOnly ,

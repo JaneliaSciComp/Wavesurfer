@@ -140,6 +140,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
                 model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
                 model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
+                model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
                 %for i = 1:numel(model.FastProtocols) ,
                 %    thisFastProtocol=model.FastProtocols{i};
                 %    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
@@ -1001,7 +1002,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     methods 
         function layoutForAllWindowsRequested(self, varargin)
             self.Controller.layoutForAllWindowsRequested(varargin{:}) ;
-        end
+        end                
         
         function layoutAllWindows(self, varargin)
             self.Controller.layoutAllWindows() ;
@@ -1327,5 +1328,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             yMinAndMax = double([yMin yMax]) ;
         end                
     end  % protected methods block    
+    
+    methods
+        function raiseDialogOnException(self, ~, ~, ~, ~, eventDataWithArgs)  %#ok<INUSL>
+            exception = eventDataWithArgs.Args{1} ;
+            ws.raiseDialogOnException(exception) ;
+        end
+    end  % public methods block   
     
 end  % classdef

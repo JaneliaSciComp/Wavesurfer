@@ -270,7 +270,7 @@ classdef WavesurferModel < ws.Model
         NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_
-        TimeOfLastWillPerformSweep_        
+        TimeOfLastWillPerformSweep_
         %TimeOfLastSamplesAcquired_
         NTimesDataAvailableCalledSinceRunStart_ = 0
         %PollingTimer_
@@ -281,9 +281,9 @@ classdef WavesurferModel < ws.Model
         %DidLooperCompleteSweep_
         DidRefillerCompleteEpisodes_
         DidAnySweepFailToCompleteSoFar_
-        %WasRunStopped_        
-        %WasRunStoppedInLooper_        
-        %WasRunStoppedInRefiller_        
+        %WasRunStopped_
+        %WasRunStoppedInLooper_
+        %WasRunStoppedInRefiller_
         %WasExceptionThrown_
         %ThrownException_
         NSweepsCompletedInThisRun_ = 0
@@ -331,6 +331,7 @@ classdef WavesurferModel < ws.Model
         DidSetStimulationSampleRate
         UpdateElectrodes
         UpdateTestPulser
+        RaiseDialogOnException
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -1527,7 +1528,6 @@ classdef WavesurferModel < ws.Model
                             self.completeTheOngoingSweep_() ;
                             %self.closeSweep_() ;
                         catch me
-                            keyboard
                             self.abortTheOngoingSweep_();
                             self.abortOngoingRun_();                            
                             didThrow = true ;
@@ -1540,7 +1540,6 @@ classdef WavesurferModel < ws.Model
                             self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
                             self.Refiller_.performOneIterationDuringOngoingRun() ;
                         catch me
-                            keyboard
                             self.abortTheOngoingSweep_();
                             self.abortOngoingRun_();
                             didThrow = true ;
@@ -1573,7 +1572,6 @@ classdef WavesurferModel < ws.Model
                         try
                             self.openSweep_() ;
                         catch me
-                            keyboard
                             self.abortTheOngoingSweep_();
                             self.abortOngoingRun_();
                             didThrow = true ;
@@ -1603,23 +1601,21 @@ classdef WavesurferModel < ws.Model
         end  % handleTimerTick()
 
         function handleTimerError(self, event)
-            keyboard
-            event  %#ok<NOPRT>
-            event.Data
-            fprintf('The timer had an error\n') ;
+            %event  %#ok<NOPRT>
+            %event.Data
+            %fprintf('The timer had an error\n') ;
             if self.IsPerformingRun_ ,
                 if self.IsPerformingSweep_ ,
                     self.abortTheOngoingSweep_() ;
                 end
                 self.abortOngoingRun_() ;
             end
-            exception = MException('messageID', event.Data.messageID, 'message', event.Data.message) ;
+            exception = MException(event.Data.messageID, event.Data.message) ;
             if self.IsHeaded_ ,
                 self.broadcast('RaiseDialogOnException', exception);
             else
                 throw(exception) ;
             end
-
         end  % handleTimerError()
         
 %         function closeSweep_(self)

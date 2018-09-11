@@ -470,7 +470,7 @@ classdef Looper < handle
             
             % DEBUG: This is for debugging purposes only!
             if timeSinceRunStartAtStartOfData > 5 ,
-                error('Stuff went bad.  Real bad.') ;
+                error('ws:fakeerror', 'Stuff went bad.  Real bad.') ;
             end
             
             % Deal with the acquired samples

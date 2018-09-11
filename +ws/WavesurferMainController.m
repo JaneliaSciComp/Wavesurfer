@@ -37,7 +37,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             self = self@ws.Controller([],model);  % this controller has no parent
 
             % Create the figure, store a pointer to it
-            fig = ws.WavesurferMainFigure(model,self) ;
+            fig = ws.WavesurferMainFigure(model, self) ;
             self.Figure_ = fig ;
 
             % Update all the controls for the main figure
