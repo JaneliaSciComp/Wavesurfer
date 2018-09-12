@@ -130,6 +130,7 @@ classdef WavesurferModel < ws.Model
         DOChannelTerminalIDs
         IsPerformingRun
         IsPerformingSweep
+        DataCacheDurationWhenContinuous
     end
     
     properties (Access=protected)
@@ -283,8 +284,8 @@ classdef WavesurferModel < ws.Model
         ClockAtRunStart_
         %DoContinuePolling_
         %DidLooperCompleteSweep_
-        DidRefillerCompleteEpisodes_
-        DidAnySweepFailToCompleteSoFar_
+        %DidRefillerCompleteEpisodes_
+        %DidAnySweepFailToCompleteSoFar_
         %WasRunStopped_
         %WasRunStoppedInLooper_
         %WasRunStoppedInRefiller_
@@ -561,15 +562,15 @@ classdef WavesurferModel < ws.Model
             result = [] ;
         end
         
-        function result = refillerCompletedEpisodes(self)
-            % Call by the Refiller, via ZMQ pub-sub, when it has completed
-            % all the episodes in the run
-            %fprintf('WavesurferModel::refillerCompletedRun()\n');            
-            self.DidRefillerCompleteEpisodes_ = true ;
-            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
-            %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
-            result = [] ;
-        end
+%         function result = refillerCompletedEpisodes(self)
+%             % Call by the Refiller, via ZMQ pub-sub, when it has completed
+%             % all the episodes in the run
+%             fprintf('WavesurferModel::refillerCompletedEpisodes()\n');            
+%             %self.DidRefillerCompleteEpisodes_ = true ;
+%             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
+%             %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
+%             result = [] ;
+%         end
         
 %         function result = looperStoppedRun(self)
 %             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
@@ -1221,7 +1222,7 @@ classdef WavesurferModel < ws.Model
             % Initialize the sweep counter, etc.
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
-            self.DidRefillerCompleteEpisodes_ = false ;
+            %self.DidRefillerCompleteEpisodes_ = ~self.Stimulation_.IsEnabled ;
             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
@@ -1436,13 +1437,13 @@ classdef WavesurferModel < ws.Model
             %self.WasRunStoppedInRefiller_ = false ;
             %self.WasRunStopped_ = false ;
             %self.NSweepsPerformed_ = 0 ;  % in this run
-            self.DidAnySweepFailToCompleteSoFar_ = false ;
+            %self.DidAnySweepFailToCompleteSoFar_ = false ;
             %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
             
-            if ~self.DidRefillerCompleteEpisodes_ ,
-                self.Refiller_.performOneIterationDuringOngoingRun() ;
-            end
-
+%             if ~self.DidRefillerCompleteEpisodes_ ,
+%                 self.Refiller_.completeAnyOngoingEpisodeAndPossiblyStartAnother() ;
+%             end
+% 
             if ~self.AreAllSweepsCompleted_ ,
                 self.openSweep_() ;
             end
@@ -1549,7 +1550,7 @@ classdef WavesurferModel < ws.Model
                         %fprintf('At top of within-sweep loop...\n') ;
                         timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
                         self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
-                        self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        self.Refiller_.completeAnyOngoingEpisodeAndPossiblyStartAnother() ;
                         % do a drawnow() if it's been too long...
                         timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
                         if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
@@ -1565,7 +1566,7 @@ classdef WavesurferModel < ws.Model
                         % refiller is done.  Also keep listening for looper
                         % messages, although I'm not sure we need to...
                         %fprintf('About to check for messages after completing all sweeps\n');
-                        self.Refiller_.performOneIterationDuringOngoingRun() ;
+                        self.Refiller_.completeAnyOngoingEpisodeAndPossiblyStartAnother() ;
                         %fprintf('Check for messages after completing all sweeps\n');
                         % do a drawnow() if it's been too long...
                         timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
@@ -1627,38 +1628,41 @@ classdef WavesurferModel < ws.Model
         end
         
         function inputTasksDoneCallback(self)
+            %fprintf('In WSM::inputTasksDoneCallback()\n') ;            
             if self.AllowTimerCallback_ ,
-                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
-                    %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
-                    if self.IsPerformingSweep_ ,
-                        self.completeTheOngoingSweep_() ;
-                        if self.AreAllSweepsCompleted_ ,
-                            % All sweeps are were performed
-                            if self.DidRefillerCompleteEpisodes_ ,
+                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                if self.IsPerformingSweep_ ,
+                    self.completeTheOngoingSweep_() ;
+                    if self.AreAllSweepsCompleted_ ,
+                        % All sweeps are were performed
+                        if self.IsStimulationEnabled ,
+                            if self.Refiller_.didCompleteEpisodes() ,
                                 % This means we should end the run
                                 self.wrapUpRunInWhichAllSweepsCompleted_() ;
                             else                                
                                 % Nothing to do except wait for the refiller to be done
                             end
-                        else       
-                            % open another sweep if called for
+                        else
+                            self.wrapUpRunInWhichAllSweepsCompleted_() ;                            
+                        end
+                    else       
+                        % open another sweep if called for
+                        if self.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+                            if self.Refiller_.IsPerformingEpisode ,
+                                % This means the refiller is still doing its episode, so we do nothing.
+                                % the next sweep will be started when outputTasksDoneCallback() gets called
+                            else
+                                % The refiller is done with its episode, so we (maybe) start another
+                                %self.Refiller_.completeAnyOngoingEpisodeAndPossiblyStartAnother() ;
+                                self.openSweep_() ;
+                            end
+                        else
                             self.openSweep_() ;
                         end
                     end
                 else
-                    % This means we should end the run
-
-                    % At this point, self.IsPerformingRun_ is true
-                    % Do post-run clean up
-                    if self.AreAllSweepsCompleted_ ,
-                        % Wrap up run in which all sweeps completed
-                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
-                    else
-                        % Something went wrong
-                        self.abortOngoingRun_();
-                    end
-                    % At this point, self.IsPerformingRun_ is false
-                end                    
+                    fprintf('Odd: The inputTasksDoneCallback() was fired while not in a sweep.') ;
+                end
             else
                 % If timer callbacks not allowed, 
                 % Schedule another run in 100 ms
@@ -1667,27 +1671,30 @@ classdef WavesurferModel < ws.Model
         end
 
         function outputTasksDoneCallback(self)
-            if self.AllowTimerCallback_ ,
-                if self.DidAnySweepFailToCompleteSoFar_ ,
-                    % This means we should end the run
-
-                    % At this point, self.IsPerformingRun_ is true
-                    % Do post-run clean up
-                    if self.AreAllSweepsCompleted_ ,
-                        % Wrap up run in which all sweeps completed
-                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
+            %fprintf('In WSM::outputTasksDoneCallback()\n') ;            
+            if self.AllowTimerCallback_ ,                    
+                self.Refiller_.completeAnyOngoingEpisode() ;
+                if self.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+                    if self.IsPerformingSweep ,
+                        % This means the the sweep is still ongoing, so we do nothing.
+                        % the next sweep will be started when inputTasksDoneCallback() gets called
                     else
-                        % Something went wrong
-                        self.abortOngoingRun_();
+                        % The looper is done with its sweep, so we (maybe) start another
+                        if self.AreAllSweepsCompleted_ ,
+                            if self.Refiller_.didCompleteEpisodes() ,
+                                self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                            else
+                                self.Refiller_.startEpisode() ;                                
+                            end
+                        else
+                            self.openSweep_() ;
+                        end
                     end
-                    % At this point, self.IsPerformingRun_ is false
                 else
-                    % No sweep has been stopped or aborted yet, so see if we need to load
-                    % another episode.
-                    self.Refiller_.performOneIterationDuringOngoingRun() ;
-                    if self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_ ,
-                        % This means we should end the run
-                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                    if self.Refiller_.didCompleteEpisodes() ,
+                        % nothing to do
+                    else
+                        self.Refiller_.startEpisode() ;
                     end
                 end
             else
@@ -1907,7 +1914,7 @@ classdef WavesurferModel < ws.Model
 
             % As of next line, sweep is officially over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
-            self.DidAnySweepFailToCompleteSoFar_ = true ;
+            %self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = false ;                    
         end  % function
 
@@ -1934,8 +1941,9 @@ classdef WavesurferModel < ws.Model
             
             % declare the sweep over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
-            self.DidAnySweepFailToCompleteSoFar_ = true ;
+            %self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = false ;            
+            self.abortOngoingRun_() ;
         end  % function
                 
         function wrapUpRunInWhichAllSweepsCompleted_(self)
@@ -6514,6 +6522,10 @@ classdef WavesurferModel < ws.Model
         
         function result = get.IsPerformingSweep(self)
             result = self.IsPerformingSweep_ ;
+        end
+        
+        function result = get.DataCacheDurationWhenContinuous(self)
+            result = self.Acquisition_.DataCacheDurationWhenContinuous ;
         end
     end  % public methods block
 end  % classdef

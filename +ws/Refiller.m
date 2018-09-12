@@ -1,6 +1,10 @@
 classdef Refiller < handle
     % The main Refiller model object.
     
+    properties (Dependent=true)
+        IsPerformingEpisode
+    end
+    
     properties (Access = protected)        
         %PrimaryDeviceName_ = ''
         %IsPrimaryDeviceAPXIDevice_ = false
@@ -33,7 +37,7 @@ classdef Refiller < handle
         %IsDOChannelTerminalOvercommitted_ = false(1,0)               
         
         %IsUserCodeManagerEnabled_
-        %TheUserObject_        
+        %TheUserObject_                
     end
 
     properties (Access=protected, Transient=true)
@@ -52,7 +56,7 @@ classdef Refiller < handle
         StimulationKeystoneTaskDeviceName_
         TheFiniteAnalogOutputTask_
         TheFiniteDigitalOutputTask_
-        DidNotifyFrontendThatWeCompletedAllEpisodes_
+        %DidNotifyFrontendThatWeCompletedAllEpisodes_
         %IsInTaskForEachAOChannel_
         %IsInTaskForEachDOChannel_
     end
@@ -131,7 +135,7 @@ classdef Refiller < handle
 % %                                 % Start a new episode immediately, without
 % %                                 % checking for more messages.
 % %                                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-% %                                     self.startEpisode_() ;  % start another episode
+% %                                     self.startEpisode() ;  % start another episode
 % %                                 end              
 %                             else
 %                                 %fprintf('Tasks are not done\n') ;
@@ -144,11 +148,11 @@ classdef Refiller < handle
 %                             if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
 %                                 if self.IsStimulationTriggerIdenticalToAcquisitionTrigger_ ,
 %                                     % do nothing.
-%                                     % if they're identical, startEpisode_()
+%                                     % if they're identical, startEpisode()
 %                                     % is called from the startingSweep()
 %                                     % req-rep method.
 %                                 else
-%                                     self.startEpisode_() ;
+%                                     self.startEpisode() ;
 %                                 end
 %                             else
 %                                 % If we get here, the run is ongoing, but
@@ -192,50 +196,31 @@ classdef Refiller < handle
 %                 end
 %             end
 %         end  % function
-        
-        function performOneIterationDuringOngoingRun(self)
+
+        function completeAnyOngoingEpisode(self)
             % Action in a run depends on whether we are also in an
             % episode, or are in-between episodes
             % Check the finite outputs, refill them if
             % needed.
             if self.IsPerformingEpisode_ ,
-                areTasksDone = self.areTasksDone_() ;
-                if areTasksDone ,
-                    %fprintf('Tasks are done\n') ;
-                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-                else
-                    %fprintf('Tasks are not done\n') ;
-                    % If tasks are not done, do nothing (except
-                    % check messages, below)
-                end                                                            
-            else
-                % If we're not performing an episode, see if
-                % we need to start one.
-                if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                    if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
-                        % do nothing.
-                        % if they're identical, startEpisode_()
-                        % is called from the startingSweep()
-                        % req-rep method.
-                    else
-                        self.startEpisode_() ;
-                    end
-                else
-                    % If we get here, the run is ongoing, but
-                    % we've completed the episodes, whether
-                    % we've noted that fact or not.
-                    if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
-                        % Do nothing
-                    else
-                        % Notify the frontend
-                        self.Frontend_.refillerCompletedEpisodes() ;
-                        %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
-                        self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
-                        %self.completeTheEpisodes_() ;
-                    end
-                end
+                self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+            end            
+        end  % function        
+        
+        function completeAnyOngoingEpisodeAndPossiblyStartAnother(self)
+            % Action in a run depends on whether we are also in an
+            % episode, or are in-between episodes
+            % Check the finite outputs, refill them if
+            % needed.
+            self.completeAnyOngoingEpisode() ;
+            if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+                self.startEpisode() ;
             end
         end  % function        
+        
+        function result = didCompleteEpisodes(self)
+            result = ( self.NEpisodesCompletedSoFarThisRun_ >= self.NEpisodesPerRun_ ) ;
+        end
     end  % public methods block
         
     methods  % RPC methods block
@@ -354,7 +339,7 @@ classdef Refiller < handle
 
             % Prepare for the sweep
             %result = self.prepareForSweep_(indexOfSweepWithinRun) ;
-            self.startEpisode_() ;
+            self.startEpisode() ;
             result = [] ;
         end  % function
 
@@ -547,7 +532,7 @@ classdef Refiller < handle
             %self.DoesFrontendWantToStopRun_ = false ;
             %self.NSweepsCompletedSoFarThisRun_ = 0 ;
             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
-            self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
+            %self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
             self.IsPerformingRun_ = true ;                        
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
 
@@ -572,7 +557,7 @@ classdef Refiller < handle
             % that we're ready for the run.
             if self.NEpisodesPerRun_ > 0 ,
                 if ~self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
-                    self.startEpisode_() ;
+                    self.startEpisode() ;
                 end
             end
             
@@ -611,7 +596,7 @@ classdef Refiller < handle
 %             %fprintf('Just set self.IsPerformingSweep_ to %s\n', ws.fif(self.IsPerformingSweep_, 'true', 'false') ) ;
 % 
 %             % Start an episode
-%             self.startEpisode_() ;
+%             self.startEpisode() ;
 %             
 %             % Nothing to return
 %             result = [] ;
@@ -716,8 +701,10 @@ classdef Refiller < handle
                 disp(exception.getReport()) ;
             end            
         end  % function                
-        
-        function startEpisode_(self)
+    end  % protected methods block
+    
+    methods
+        function startEpisode(self)
             %fprintf('startEpisode_()\n');
             if ~self.IsPerformingRun_ ,
                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
@@ -770,7 +757,9 @@ classdef Refiller < handle
                 self.TheFiniteAnalogOutputTask_.start() ;                
             end
         end
-        
+    end  % public methods block
+    
+    methods (Access=protected)
         function completeTheOngoingEpisode_(self)
             % Called from runMainLoop() when a single episode of stimulation is
             % completed.  
@@ -1333,7 +1322,13 @@ classdef Refiller < handle
                 %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
                 %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
             end
-        end  % method
-        
+        end  % method        
     end  % protected methods block    
+    
+    methods
+        function result = get.IsPerformingEpisode(self)
+            result = self.IsPerformingEpisode_ ;
+        end
+    end  % public methods block
+    
 end  % classdef
