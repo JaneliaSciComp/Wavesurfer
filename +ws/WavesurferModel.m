@@ -163,9 +163,10 @@ classdef WavesurferModel < ws.Model
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
         ArePreferencesWritable_ = true
         %TheBigTimer_ = []
-        AllowTimerCallback_ = true ;
-        InputTasksDoneTimer_ = []
-        OutputTasksDoneTimer_ = []        
+        IsRunningCallback_ = false
+        %InputTasksDoneTimer_ = []
+        %OutputTasksDoneTimer_ = []        
+        %CallbackQueue_ = cell(1,0)
     end   
 
     properties (Dependent = true)
@@ -389,16 +390,16 @@ classdef WavesurferModel < ws.Model
 %                                           'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
 %                                           'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;
 
-                % Create the timers that allow us to try again when some callback is
-                % already executing when the input tasks or the output tasks finish
-                self.InputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
-                                                     'BusyMode', 'drop', ...
-                                                     'StartDelay', 0.1, ...
-                                                     'TimerFcn', @(timerObject, event)(self.inputTasksDoneCallback()) ) ;
-                self.OutputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
-                                                      'BusyMode', 'drop', ...
-                                                      'StartDelay', 0.1, ...
-                                                      'TimerFcn', @(timerObject, event)(self.outputTasksDoneCallback()) ) ;
+%                 % Create the timers that allow us to try again when some callback is
+%                 % already executing when the input tasks or the output tasks finish
+%                 self.InputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
+%                                                      'BusyMode', 'drop', ...
+%                                                      'StartDelay', 0.1, ...
+%                                                      'TimerFcn', @(timerObject, event)(self.inputTasksDoneCallback()) ) ;
+%                 self.OutputTasksDoneTimer_ = timer('ExecutionMode', 'singleShot', ...
+%                                                       'BusyMode', 'drop', ...
+%                                                       'StartDelay', 0.1, ...
+%                                                       'TimerFcn', @(timerObject, event)(self.outputTasksDoneCallback()) ) ;
                                       
                 % Get the list of all device names, and cache it in our own
                 % state
@@ -1538,7 +1539,7 @@ classdef WavesurferModel < ws.Model
     methods (Access=public)
         function handleTimerTick(self)
             % Called every so often once data acquition has started            
-            if ~self.AllowTimerCallback_ ,
+            if self.IsRunningCallback_ ,
                 return
             end
             if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
@@ -1614,7 +1615,7 @@ classdef WavesurferModel < ws.Model
         
         function everyNScansCallback(self)
             %fprintf('In WSM::everyNScansCallback()\n') ;
-            if self.AllowTimerCallback_ ,
+            if ~self.IsRunningCallback_ ,
                 %fprintf('At top of within-sweep loop...\n') ;
                 timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
                 self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
@@ -1629,7 +1630,10 @@ classdef WavesurferModel < ws.Model
         
         function inputTasksDoneCallback(self)
             %fprintf('In WSM::inputTasksDoneCallback()\n') ;            
-            if self.AllowTimerCallback_ ,
+            if self.IsRunningCallback_ ,
+                %self.CallbackQueue_ = horzcat(self.CallbackQueue_, {@()(self.inputTasksDoneCallback())}) ;
+                fprintf('We missed a inputTasksDoneCallback event b/c we were already running a GUI callback\n') ;
+            else
                 %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
                 if self.IsPerformingSweep_ ,
                     self.completeTheOngoingSweep_() ;
@@ -1663,16 +1667,15 @@ classdef WavesurferModel < ws.Model
                 else
                     fprintf('Odd: The inputTasksDoneCallback() was fired while not in a sweep.') ;
                 end
-            else
-                % If timer callbacks not allowed, 
-                % Schedule another run in 100 ms
-                start(self.InputTasksDoneTimer_) ;
             end            
         end
 
         function outputTasksDoneCallback(self)
             %fprintf('In WSM::outputTasksDoneCallback()\n') ;            
-            if self.AllowTimerCallback_ ,                    
+            if self.IsRunningCallback_ ,
+                %self.CallbackQueue_ = horzcat(self.CallbackQueue_, {@()(self.outputTasksDoneCallback())}) ;
+                fprintf('We missed a outputTasksDoneCallback event b/c we were already running a GUI callback\n') ;
+            else
                 self.Refiller_.completeAnyOngoingEpisode() ;
                 if self.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
                     if self.IsPerformingSweep ,
@@ -1697,9 +1700,6 @@ classdef WavesurferModel < ws.Model
                         self.Refiller_.startEpisode() ;
                     end
                 end
-            else
-                % Schedule another run in 100 ms
-                start(self.OutputTasksDoneTimer_) ;
             end            
         end
     end  % public methods block
@@ -3264,7 +3264,7 @@ classdef WavesurferModel < ws.Model
             % warning logging near the beginning of the .do() method, and turn
             % it off near the end.  That way we don't have to do it for
             % each model method, and we only do it once per user command.            
-            self.AllowTimerCallback_ = false ;
+            self.IsRunningCallback_ = true ;
             self.startLoggingWarnings() ;
             try
                 self.(methodName)(varargin{:}) ;
@@ -3274,16 +3274,16 @@ classdef WavesurferModel < ws.Model
                 % non-logging state.
                 self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
                 self.resetReadiness_() ;  % Need to do this to make sure we don't stay unready for the rest of the WSM lifetime
-                self.AllowTimerCallback_ = true ;
+                self.IsRunningCallback_ = false ;
                 rethrow(exception) ;
             end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
                 warningException = warningExceptionMaybe{1} ;
-                self.AllowTimerCallback_ = true ;
+                self.IsRunningCallback_ = false ;
                 throw(warningException) ;
             end
-            self.AllowTimerCallback_ = true ;
+            self.IsRunningCallback_ = false ;
         end
 
         function logWarning(self, identifier, message, causeOrEmpty)
@@ -6513,7 +6513,7 @@ classdef WavesurferModel < ws.Model
 %             % of the output task
 %             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
         end  % function        
-    end  % protected methods block        
+    end  % protected methods block
     
     methods
         function result = get.IsPerformingRun(self)
@@ -6527,5 +6527,22 @@ classdef WavesurferModel < ws.Model
         function result = get.DataCacheDurationWhenContinuous(self)
             result = self.Acquisition_.DataCacheDurationWhenContinuous ;
         end
+        
+        function waitForRunToComplete(self)
+            while self.IsPerformingRun ,
+                pause(0.2) ;
+            end                
+        end
+        
+        function playAndBlock(self)
+            self.play() ;
+            self.waitForRunToComplete() ;
+        end
+        
+        function recordAndBlock(self)
+            self.record() ;
+            self.waitForRunToComplete() ;
+        end
+        
     end  % public methods block
 end  % classdef

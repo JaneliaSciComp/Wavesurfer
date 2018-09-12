@@ -26,6 +26,7 @@ function result = test(varargin)
     % reasons
     test_names = {testSuite.Name} ;
     [unique_test_names, indices_of_unique_tests] = unique(test_names) ; %#ok<ASGLU>
+    unique_test_names'
     testSuiteWithAllUnique = testSuite(indices_of_unique_tests) ;
     if length(testSuiteWithAllUnique) ~= length(testSuite) ,
         warning('Sigh.  There seem to be duplicated tests...') ;

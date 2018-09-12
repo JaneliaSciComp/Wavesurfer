@@ -121,9 +121,9 @@ classdef Looper < handle
         
         function delete(self)
             self.Frontend_ = [] ;
-%             self.IPCPublisher_ = [] ;
-%             self.IPCSubscriber_ = [] ;
-%             self.IPCReplier_ = [] ;
+%             self.UntimedDigitalOutputTask_ = [] ;
+%             self.TimedAnalogInputTask_ = [] ;
+%             self.TimedDigitalInputTask_ = [] ;
         end
         
         function debug(self) %#ok<MANU>

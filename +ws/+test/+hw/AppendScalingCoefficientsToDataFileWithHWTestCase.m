@@ -40,7 +40,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             wsModel.DataFileBaseName = outputFileStem ;
             wsModel.IsOKToOverwriteDataFile = true ;
             newDataFileAbsolutePath = wsModel.NextRunAbsoluteFileName ;
-            wsModel.record() ;  % blocks
+            wsModel.recordAndBlock() ;  % blocks
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1) ;
             wsModel.delete() ; 
             wsModel = [] ;  %#ok<NASGU>
