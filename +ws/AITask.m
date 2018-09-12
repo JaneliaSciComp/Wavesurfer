@@ -154,9 +154,10 @@ classdef AITask < handle
             % Set up the callbacks, if called for
             if doExecuteCallbacks && ~isempty(self.DabsDaqTasks_) ,
                 firstDabsDaqTask = self.DabsDaqTasks_{1} ;
-                firstDabsDaqTask.everyNSamples = scanCountPerCallback ;
-                firstDabsDaqTask.everyNSamplesEventCallbacks = everyNScansCallback ;
-                firstDabsDaqTask.doneCallback = taskDoneCallback ;
+                firstDabsDaqTask.registerEveryNSamplesEvent(everyNScansCallback, scanCountPerCallback) ;
+                %firstDabsDaqTask.everyNSamples = scanCountPerCallback ;
+                %firstDabsDaqTask.everyNSamplesEventCallbacks = everyNScansCallback ;
+                firstDabsDaqTask.registerDoneEvent(taskDoneCallback) ;
             end
             
             % What used to be "arming"

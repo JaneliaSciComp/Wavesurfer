@@ -966,8 +966,8 @@ classdef Looper < handle
                 sampleRate = self.Frontend_.AcquisitionSampleRate ;
                 doExecuteCallbacks = (nActiveAIChannels>0) ;
                 nScansPerCallback = sampleRate*0.01 ;  % every 10 ms
-                everyNScansCallback = @()(self.everyNScansCallback()) ;
-                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
+                everyNScansCallback = @(foo, bar)(self.everyNScansCallback(foo, bar)) ;
+                taskDoneCallback = @(foo, bar)(self.primaryTaskDoneCallback(foo, bar)) ;
                 self.TimedAnalogInputTask_ = ...
                     ws.AITask('WaveSurfer AI Task', ...
                               primaryDeviceName , ...
@@ -1014,11 +1014,11 @@ classdef Looper < handle
             end
         end  % function
 
-        function everyNScansCallback(self)
+        function everyNScansCallback(self, foo, bar)
             self.Frontend_.everyNScansCallback() ;
         end
 
-        function primaryTaskDoneCallback(self)
+        function primaryTaskDoneCallback(self, foo, bar)
             self.TimedAnalogInputTask_.waitUntilDone() ;
             self.TimedDigitalInputTask_.waitUntilDone() ;
             self.TimedAnalogInputTask_.stop();

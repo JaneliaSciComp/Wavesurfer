@@ -103,7 +103,7 @@ classdef AOTask < handle
             % Set up the callbacks, if called for
             if doExecuteCallbacks && ~isempty(self.DabsDaqTasks_) ,
                 firstDabsDaqTask = self.DabsDaqTasks_{1} ;
-                firstDabsDaqTask.doneCallback = taskDoneCallback ;
+                firstDabsDaqTask.registerDoneEvent(taskDoneCallback) ;
             end
             
             % What used to be "arming"

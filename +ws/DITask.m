@@ -95,7 +95,7 @@ classdef DITask < handle
                 if doExecuteCallbacks ,
                     self.DabsDaqTask_.everyNSamples = scanCountPerCallback ;
                     self.DabsDaqTask_.everyNSamplesEventCallbacks = everyNScansCallback ;
-                    self.DabsDaqTask_.doneCallback = taskDoneCallback ;
+                    self.DabsDaqTask_.registerDoneEvent(taskDoneCallback) ;
                 end
             
                 % Do stuff that used to be "arming" the task

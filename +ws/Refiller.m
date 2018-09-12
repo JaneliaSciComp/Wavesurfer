@@ -455,7 +455,7 @@ classdef Refiller < handle
             result = [] ;
         end  % function        
         
-        function primaryTaskDoneCallback(self)
+        function primaryTaskDoneCallback(self, foo, bar)
             self.Frontend_.outputTasksDoneCallback() ;
         end
     end  % RPC methods block
@@ -1277,6 +1277,7 @@ classdef Refiller < handle
 %         end  % method       
         
         function acquireHardwareResourcesStimulation_(self)
+            nAOChannels = self.Frontend_.NAOChannels ;
             if isempty(self.TheFiniteAnalogOutputTask_) ,
                 deviceNameForEachAOChannel = self.Frontend_.AOChannelDeviceNames ;
                 isTerminalOvercommittedForEachAOChannel = self.Frontend_.IsAOChannelTerminalOvercommitted ;
@@ -1286,8 +1287,8 @@ classdef Refiller < handle
                 terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
                 primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
-                doExecuteCallbacks = (nActiveAOChannels>0) ;
-                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
+                doExecuteCallbacks = (nAOChannels>0) ;
+                taskDoneCallback = @(foo, bar)(self.primaryTaskDoneCallback(foo, bar)) ;
                 self.TheFiniteAnalogOutputTask_ = ...
                     ws.AOTask('WaveSurfer AO Task', ...
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
@@ -1315,8 +1316,8 @@ classdef Refiller < handle
                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
 %                 [referenceClockSource, referenceClockRate] = ...
 %                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                                
-                doExecuteCallbacks = (nActiveAOChannels==0) ;
-                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
+                doExecuteCallbacks = (nAOChannels==0) ;
+                taskDoneCallback = @(foo, bar)(self.primaryTaskDoneCallback(foo, bar)) ;
                 self.TheFiniteDigitalOutputTask_ = ...
                     ws.DOTask('WaveSurfer DO Task', ...
                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...

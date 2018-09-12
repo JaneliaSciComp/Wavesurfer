@@ -61,7 +61,7 @@ classdef DOTask < handle
                 
                 % Set up the callbacks, if called for
                 if doExecuteCallbacks ,
-                    self.DabsDaqTask_.doneCallback = taskDoneCallback ;
+                    self.DabsDaqTask_.registerDoneEvent(taskDoneCallback) ;
                 end
                             
                 % Set up triggering
