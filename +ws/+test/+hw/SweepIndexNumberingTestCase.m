@@ -61,7 +61,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
                                           'StartDelay',10, ...
                                           'Period', 20);  % do this repeatedly in case first is missed
             start(timerToStopWavesurfer);
-            wsModel.record();  % this will block
+            wsModel.recordAndBlock();  % this will block
             stop(timerToStopWavesurfer);
             
             % No external trigger was created, so no data should have been

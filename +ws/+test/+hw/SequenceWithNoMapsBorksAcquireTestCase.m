@@ -69,7 +69,7 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();  % this blocks now
+            wsModel.recordAndBlock();  % this blocks now
 
             % Delete the data file
             delete(dataFilePatternAbsolute);

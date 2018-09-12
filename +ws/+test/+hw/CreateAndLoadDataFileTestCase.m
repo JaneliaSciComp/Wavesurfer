@@ -75,7 +75,7 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
             absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
-            wsModel.record();  % blocking, now
+            wsModel.recordAndBlock();  % blocking, now
             pause(0.5);
 
             % Make sure that worked

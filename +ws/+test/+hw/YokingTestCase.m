@@ -37,7 +37,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.DataFileLocation = tempFolderPath ;
             wsModel.DataFileBaseName = tempStem ;
             wsModel.IsOKToOverwriteDataFile = true ;
-            wsModel.record() ;
+            wsModel.recordAndBlock() ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
