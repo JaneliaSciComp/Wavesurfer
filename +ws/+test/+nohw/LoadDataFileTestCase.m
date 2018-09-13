@@ -74,6 +74,119 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             nTimebaseTicksPerStimSample = 100e6/returnedStimSamplingRate ;  % should be exactly 3333
             self.verifyEqual(nTimebaseTicksPerStimSample,3333) ;
         end
+
+        function testLoadingTimeSubset(self)
+            thisDirName=fileparts(mfilename('fullpath'));
+            fileName = fullfile(thisDirName, 'multiple_sweeps_0001-0010.h5') ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw', 0.25, 0.75) ;
+            returnedAcqSamplingRate = dataFileAsStruct.header.AcquisitionSampleRate ;
+            self.verifyEqual(returnedAcqSamplingRate,20e3) ;
+            returnedStimSamplingRate = dataFileAsStruct.header.StimulationSampleRate ;
+            self.verifyEqual(returnedStimSamplingRate,20e3) ;
+            data = dataFileAsStruct.sweep_0001.analogScans ;
+            self.verifyEqual(length(data),10e3) ;
+        end
+
+        function testLoadingSweepSubset(self)
+            thisDirName=fileparts(mfilename('fullpath'));
+            fileName = fullfile(thisDirName, 'multiple_sweeps_0001-0010.h5') ;
+            minSweepIndex = 2 ;
+            maxSweepIndex = 7 ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw', [], [], minSweepIndex, maxSweepIndex) ;
+            returnedAcqSamplingRate = dataFileAsStruct.header.AcquisitionSampleRate ;
+            self.verifyEqual(returnedAcqSamplingRate,20e3) ;
+            returnedStimSamplingRate = dataFileAsStruct.header.StimulationSampleRate ;
+            self.verifyEqual(returnedStimSamplingRate,20e3) ;
+            for sweepIndex = 1:10 ,
+                if minSweepIndex<=sweepIndex && sweepIndex<=maxSweepIndex ,
+                    field_name = sprintf('sweep_%04d', sweepIndex) ;
+                    data = dataFileAsStruct.(field_name).analogScans ;
+                    self.verifyEqual(length(data),20e3) ;
+                else
+                    didThrowExpectedException = false ;
+                    try                    
+                        field_name = sprintf('sweep_%04d', sweepIndex) ;
+                        data = dataFileAsStruct.(field_name).analogScans ;
+                        self.verifyEqual(length(data),20e3) ;
+                    catch me
+                        if isequal(me.identifier, 'MATLAB:nonExistentField') ,
+                            didThrowExpectedException = true ;
+                        else
+                            rethrow(me) ;
+                        end
+                    end
+                    self.verifyTrue(didThrowExpectedException) ;
+                end
+            end
+        end       
+
+        function testLoadingTimeAndSweepSubset(self)
+            thisDirName=fileparts(mfilename('fullpath'));
+            fileName = fullfile(thisDirName, 'multiple_sweeps_0001-0010.h5') ;
+            minSweepIndex = 2 ;
+            maxSweepIndex = 7 ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw', 0.3, 0.7, minSweepIndex, maxSweepIndex) ;
+            returnedAcqSamplingRate = dataFileAsStruct.header.AcquisitionSampleRate ;
+            self.verifyEqual(returnedAcqSamplingRate,20e3) ;
+            returnedStimSamplingRate = dataFileAsStruct.header.StimulationSampleRate ;
+            self.verifyEqual(returnedStimSamplingRate,20e3) ;
+            for sweepIndex = 1:10 ,
+                if minSweepIndex<=sweepIndex && sweepIndex<=maxSweepIndex ,
+                    field_name = sprintf('sweep_%04d', sweepIndex) ;
+                    data = dataFileAsStruct.(field_name).analogScans ;
+                    self.verifyEqual(length(data),8e3) ;
+                else
+                    didThrowExpectedException = false ;
+                    try                    
+                        field_name = sprintf('sweep_%04d', sweepIndex) ;
+                        data = dataFileAsStruct.(field_name).analogScans ;
+                    catch me
+                        if isequal(me.identifier, 'MATLAB:nonExistentField') ,
+                            didThrowExpectedException = true ;
+                        else
+                            rethrow(me) ;
+                        end
+                    end
+                    self.verifyTrue(didThrowExpectedException) ;
+                end
+            end
+        end       
+        
+        function testLoadingTimeAndSweepSubsetWithMultipleChannels(self)
+            thisDirName=fileparts(mfilename('fullpath'));
+            fileName = fullfile(thisDirName, 'multiple_sweeps_multiple_channels_0001-0009.h5') ;
+            tMin = 0.2 ;
+            tMax = 0.6 ;
+            minSweepIndex = 2 ;
+            maxSweepIndex = 6 ;            
+            channelCount = 2 ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw', tMin, tMax, minSweepIndex, maxSweepIndex) ;
+            acqSamplingRate = dataFileAsStruct.header.AcquisitionSampleRate ;
+            self.verifyEqual(acqSamplingRate,1e3) ;
+            stimSampleRate = dataFileAsStruct.header.StimulationSampleRate ;
+            self.verifyEqual(stimSampleRate,1e3) ;
+            for sweepIndex = 1:10 ,
+                if minSweepIndex<=sweepIndex && sweepIndex<=maxSweepIndex ,
+                    field_name = sprintf('sweep_%04d', sweepIndex) ;
+                    data = dataFileAsStruct.(field_name).analogScans ;
+                    self.verifyEqual(size(data), [round(acqSamplingRate*(tMax-tMin)) channelCount]) ;
+                else
+                    didThrowExpectedException = false ;
+                    try                    
+                        field_name = sprintf('sweep_%04d', sweepIndex) ;
+                        data = dataFileAsStruct.(field_name).analogScans ;
+                    catch me
+                        if isequal(me.identifier, 'MATLAB:nonExistentField') ,
+                            didThrowExpectedException = true ;
+                        else
+                            rethrow(me) ;
+                        end
+                    end
+                    self.verifyTrue(didThrowExpectedException) ;
+                end
+            end
+        end       
+        
         
     end  % test methods
 
