@@ -38,7 +38,7 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=1;
             wsModel.SweepDuration=20;  % s, this actually seems to be long enough to cause crash
 
-            wsModel.play();  % this blocks now
+            wsModel.playAndBlock();  % this blocks now
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait = 1.1*wsModel.SweepDuration ;  % s

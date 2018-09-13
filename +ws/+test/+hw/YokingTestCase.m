@@ -20,7 +20,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 

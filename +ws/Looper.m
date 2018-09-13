@@ -344,10 +344,10 @@ classdef Looper < handle
             result = [] ;
         end  % function
         
-        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
+        function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)  %#ok<INUSD>
             % This only gets called if the value in newValue was found to
             % be legal.
-            self.IsDOChannelTimed_ = newValue ;
+            %self.IsDOChannelTimed_ = newValue ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately
             result = [] ;
         end  % function
@@ -993,8 +993,8 @@ classdef Looper < handle
                 activeDITerminalIDs = self.Frontend_.DIChannelTerminalIDs(isDIChannelActive) ;
                 doExecuteCallbacks = (nActiveAIChannels==0) ;
                 nScansPerCallback = sampleRate*0.01 ;  % every 10 ms
-                everyNScansCallback = @()(self.everyNScansCallback()) ;
-                taskDoneCallback = @()(self.primaryTaskDoneCallback()) ;
+                everyNScansCallback = @(foo, bar)(self.everyNScansCallback(foo, bar)) ;
+                taskDoneCallback = @(foo, bar)(self.primaryTaskDoneCallback(foo, bar)) ;
                 self.TimedDigitalInputTask_ = ...
                     ws.DITask('WaveSurfer DI Task', ...
                               primaryDeviceName , ...

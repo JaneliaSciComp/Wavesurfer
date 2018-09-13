@@ -31,7 +31,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             model.setStimulusLibraryItemProperty('ws.Stimulus', 1, 'Amplitude', -20) ;
 
             % attempt to output
-            model.play();
+            model.playAndBlock();
             
             % this is successful if no exceptions are thrown            
             self.verifyTrue(true);                        

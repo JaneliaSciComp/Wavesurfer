@@ -39,7 +39,7 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
             wsModel.NSweepsPerRun=nSweeps;
             wsModel.SweepDuration=1;  % s
 
-            wsModel.play();  % This now blocks...
+            wsModel.playAndBlock();  % This now blocks...
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function

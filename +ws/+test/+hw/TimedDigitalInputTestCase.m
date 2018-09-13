@@ -54,7 +54,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
 %             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=1.1*wsModel.SweepDuration*nSweeps;  % s

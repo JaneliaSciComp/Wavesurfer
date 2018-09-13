@@ -29,7 +29,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
             wsModel.IsAIChannelMarkedForDeletion(3) = true ;
             wsModel.deleteMarkedAIChannels() ;
 
-            wsModel.play() ;  % this blocks
+            wsModel.playAndBlock() ;  % this blocks
             
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
             try

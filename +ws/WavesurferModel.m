@@ -1629,7 +1629,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function inputTasksDoneCallback(self)
-            %fprintf('In WSM::inputTasksDoneCallback()\n') ;            
+            fprintf('In WSM::inputTasksDoneCallback()\n') ;            
             if self.IsRunningCallback_ ,
                 %self.CallbackQueue_ = horzcat(self.CallbackQueue_, {@()(self.inputTasksDoneCallback())}) ;
                 fprintf('We missed a inputTasksDoneCallback event b/c we were already running a GUI callback\n') ;
@@ -1671,7 +1671,7 @@ classdef WavesurferModel < ws.Model
         end
 
         function outputTasksDoneCallback(self)
-            %fprintf('In WSM::outputTasksDoneCallback()\n') ;            
+            fprintf('In WSM::outputTasksDoneCallback()\n') ;            
             if self.IsRunningCallback_ ,
                 %self.CallbackQueue_ = horzcat(self.CallbackQueue_, {@()(self.outputTasksDoneCallback())}) ;
                 fprintf('We missed a outputTasksDoneCallback event b/c we were already running a GUI callback\n') ;

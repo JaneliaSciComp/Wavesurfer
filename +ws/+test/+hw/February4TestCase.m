@@ -21,7 +21,7 @@ classdef February4TestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.addDOChannel() ;
             wsModel.IsDOChannelTimed(2) = false ;
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
         end  % function
 

@@ -40,8 +40,7 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             wsModel.IsStimulationEnabled = true ;
 
-            wsModel.play() ;
-            wsModel.waitForRunToComplete() ;
+            wsModel.playAndBlock() ;
             
             x = wsModel.getAIDataFromCache() ;
 

@@ -42,7 +42,7 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
 %                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
             
 %             start(aTimer) ;
-            wsModel.play() ;  % this will block
+            wsModel.playAndBlock() ;  % this will block
 %             stop(aTimer) ;
 %             delete(aTimer) ;
 

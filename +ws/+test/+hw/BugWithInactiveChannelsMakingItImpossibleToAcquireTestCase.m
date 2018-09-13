@@ -40,17 +40,17 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.NSweepsPerRun=nSweeps;
 
             pause(0.1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nSweeps;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
             
