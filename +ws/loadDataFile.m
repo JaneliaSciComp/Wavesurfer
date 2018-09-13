@@ -61,7 +61,15 @@ function dataFileAsStruct = loadDataFile(filename, formatString, tMin, tMax, min
     if do_subset_in_time ,
         % Read the sampling rate, so we can convert the tMin and tMax to a start
         % and a count
-        sampleRate = h5read(filename, '/header/AcquisitionSampleRate') ;
+        try
+            sampleRate = h5read(filename, '/header/AcquisitionSampleRate') ;
+        catch me
+            if isequal(me.identifier, 'MATLAB:imagesci:h5read:libraryError') ,
+                sampleRate = h5read(filename, '/header/Acquisition/SampleRate') ;
+            else
+                rethrow(me) ;
+            end               
+        end
         firstScanIndex = round(tMin*sampleRate + 1) ;  % this is a one-based index
         scanCount = round((tMax-tMin)*sampleRate) ;
     else

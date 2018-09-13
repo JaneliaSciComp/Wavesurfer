@@ -87,6 +87,18 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             self.verifyEqual(length(data),10e3) ;
         end
 
+        function testLoadingTimeSubsetOnOlderFile(self)
+            thisDirName=fileparts(mfilename('fullpath'));
+            fileName = fullfile(thisDirName, '30_kHz_sampling_rate_0p913_0001.h5') ;
+            dataFileAsStruct = ws.loadDataFile(fileName, 'raw', 0.25, 0.75) ;
+            returnedAcqSamplingRate = dataFileAsStruct.header.Acquisition.SampleRate ;
+            self.verifyEqual(returnedAcqSamplingRate,100e6/3333) ;
+            returnedStimSamplingRate = dataFileAsStruct.header.Stimulation.SampleRate ;
+            self.verifyEqual(returnedStimSamplingRate,100e6/3333) ;
+            data = dataFileAsStruct.sweep_0001.analogScans ;
+            self.verifyEqual(length(data), round(returnedAcqSamplingRate/2)) ;
+        end
+
         function testLoadingSweepSubset(self)
             thisDirName=fileparts(mfilename('fullpath'));
             fileName = fullfile(thisDirName, 'multiple_sweeps_0001-0010.h5') ;
@@ -139,7 +151,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
                     didThrowExpectedException = false ;
                     try                    
                         field_name = sprintf('sweep_%04d', sweepIndex) ;
-                        data = dataFileAsStruct.(field_name).analogScans ;
+                        ignoredData = dataFileAsStruct.(field_name).analogScans ;  %#ok<NASGU>
                     catch me
                         if isequal(me.identifier, 'MATLAB:nonExistentField') ,
                             didThrowExpectedException = true ;
@@ -174,7 +186,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
                     didThrowExpectedException = false ;
                     try                    
                         field_name = sprintf('sweep_%04d', sweepIndex) ;
-                        data = dataFileAsStruct.(field_name).analogScans ;
+                        ignoredData = dataFileAsStruct.(field_name).analogScans ;  %#ok<NASGU>
                     catch me
                         if isequal(me.identifier, 'MATLAB:nonExistentField') ,
                             didThrowExpectedException = true ;
