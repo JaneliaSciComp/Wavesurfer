@@ -234,7 +234,7 @@ classdef DITask < handle
                 end
             else       
                 if isempty(nScansToRead) ,
-                    dataAsRead = self.queryUntilEnoughThenRead_();
+                    dataAsRead = self.justReadWhatIsAvailable_();
                 else
                     dataAsRead = self.DabsDaqTask_.readDigitalUn('uint32', nScansToRead) ;
                 end
@@ -253,24 +253,29 @@ classdef DITask < handle
         end  % function        
     end
     
-    methods (Access=protected)
-        function data = queryUntilEnoughThenRead_(self)
-            % self.DabsDaqTask_ cannot be empty when this is called
-            timeNow = toc(self.TicId_) ;
-            nScansExpected = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;
-            nChecksMax = 10 ;
-            nScansPerCheck = nan(1,nChecksMax);
-            for iCheck = 1:nChecksMax ,
-                nScansAvailable = self.DabsDaqTask_.getReadAvailSampPerChan() ;
-                nScansPerCheck(iCheck) = nScansAvailable ;
-                if nScansAvailable>=nScansExpected ,
-                    break
-                end
-            end
-            %nScansPerCheck
+    methods (Access=protected)        
+        function data = justReadWhatIsAvailable_(self)
             data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
+        
+%         function data = queryUntilEnoughThenRead_(self)
+%             % self.DabsDaqTask_ cannot be empty when this is called
+%             timeNow = toc(self.TicId_) ;
+%             nScansExpected = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;
+%             nChecksMax = 10 ;
+%             nScansPerCheck = nan(1,nChecksMax);
+%             for iCheck = 1:nChecksMax ,
+%                 nScansAvailable = self.DabsDaqTask_.getReadAvailSampPerChan() ;
+%                 nScansPerCheck(iCheck) = nScansAvailable ;
+%                 if nScansAvailable>=nScansExpected ,
+%                     break
+%                 end
+%             end
+%             %nScansPerCheck
+%             data = self.DabsDaqTask_.readDigitalUn('uint32', []) ;
+%             self.TimeAtLastRead_ = toc(self.TicId_) ;
+%         end  % function
     end  % protected methods block
     
     methods

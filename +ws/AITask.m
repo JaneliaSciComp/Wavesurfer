@@ -324,7 +324,7 @@ classdef AITask < handle
                 end
             else
                 if isempty(nScansToRead) ,
-                    data = self.queryUntilEnoughThenRead_();
+                    data = self.justReadWhatIsAvailable_();
                 else
                     %data = self.DabsDaqTask_.readAnalogData(nScansToRead, 'native') ;  % rawData is int16
                     channelCount = length(self.TerminalIDs_) ;
@@ -353,25 +353,33 @@ classdef AITask < handle
 %             end
 %         end
         
-        function data = queryUntilEnoughThenRead_(self)
+        function data = justReadWhatIsAvailable_(self)
             % self.DabsDaqTask_ cannot be empty when this is called
-            timeNow = toc(self.TicId_) ;
-            nScansExpected = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;
-            nChecksMax = 10 ;
-            nScansPerCheck = nan(1,nChecksMax);
-            for iCheck = 1:nChecksMax ,
-                nScansAvailable = ws.AITask.getScanCountAvailable(self.DabsDaqTasks_) ;
-                nScansPerCheck(iCheck) = nScansAvailable ;
-                if nScansAvailable>=nScansExpected ,
-                    break
-                end
-            end
-            %nScansPerCheck
-            %data = self.DabsDaqTask_.readAnalogData([],'native') ;
+            nScansAvailable = ws.AITask.getScanCountAvailable(self.DabsDaqTasks_) ;
             channelCount = self.ChannelCount_ ;        
             data = ws.AITask.readScanCountFromDABSTasks(nScansAvailable, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
+        
+%         function data = queryUntilEnoughThenRead_(self)
+%             % self.DabsDaqTask_ cannot be empty when this is called
+%             timeNow = toc(self.TicId_) ;
+%             nScansExpected = round((timeNow-self.TimeAtLastRead_)*self.SampleRate_) ;
+%             nChecksMax = 10 ;
+%             nScansPerCheck = nan(1,nChecksMax);
+%             for iCheck = 1:nChecksMax ,
+%                 nScansAvailable = ws.AITask.getScanCountAvailable(self.DabsDaqTasks_) ;
+%                 nScansPerCheck(iCheck) = nScansAvailable ;
+%                 if nScansAvailable>=nScansExpected ,
+%                     break
+%                 end
+%             end
+%             %nScansPerCheck
+%             %data = self.DabsDaqTask_.readAnalogData([],'native') ;
+%             channelCount = self.ChannelCount_ ;        
+%             data = ws.AITask.readScanCountFromDABSTasks(nScansAvailable, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
+%             self.TimeAtLastRead_ = toc(self.TicId_) ;
+%         end  % function
     end  % protected methods block
     
     methods

@@ -750,7 +750,7 @@ classdef Refiller < handle
                 % soon enough
                 self.AreTasksStarted_ = true ;
 
-                pause(5)
+                % pause(5)
                 
                 % Start the digital task (which will then wait for a trigger)
                 self.TheFiniteDigitalOutputTask_.start() ; 
