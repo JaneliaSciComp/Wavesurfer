@@ -39,7 +39,7 @@ classdef CounterTriggerHangTestCase < matlab.unittest.TestCase
                                           'StartDelay',20, ...
                                           'Period', 20);  % do this repeatedly in case first is missed
             start(timerToStopWavesurfer) ;
-            wsModel.play() ;  % this hangs at present, but if things work properly, this should return after ~ 3 seconds
+            wsModel.playAndBlock() ;  % this hangs at present, but if things work properly, this should return after ~ 3 seconds
             stop(timerToStopWavesurfer) ;  % stop the timer
             delete(timerToStopWavesurfer) ;            
             self.verifyFalse(didTimerCallbackFire) ;

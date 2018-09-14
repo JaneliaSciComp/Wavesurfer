@@ -37,7 +37,7 @@ classdef MultiDeviceScalingCoeffsTestCase < matlab.unittest.TestCase
             wsModel.setSingleAIChannelTerminalID(5, 2) ;
             
             % Play, so the scaling coeffs get set
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
             
             % Get the scaling coeffs
             scalingCoefficients = wsModel.AIScalingCoefficients ;

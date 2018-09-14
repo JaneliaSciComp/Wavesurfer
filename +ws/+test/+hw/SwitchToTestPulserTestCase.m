@@ -70,7 +70,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=2.5*nSweeps;  % s

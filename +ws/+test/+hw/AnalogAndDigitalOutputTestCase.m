@@ -65,7 +65,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();  % this now blocks...            
+            wsModel.recordAndBlock();  % this now blocks...            
 
             % Delete the data file
             delete(dataFilePatternAbsolute);
@@ -142,7 +142,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=2.5*nSweeps;  % s
@@ -214,7 +214,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
             % Delete the data file
             delete(dataFilePatternAbsolute);

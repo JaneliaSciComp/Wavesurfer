@@ -45,8 +45,7 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
             
             start(aTimer) ;
             wsModel.play() ;
-            stop(aTimer) ;
-            delete(aTimer) ;
+            pause(40) ;
 
             wsController.quit() ;
             wsController = [] ;  %#ok<NASGU>

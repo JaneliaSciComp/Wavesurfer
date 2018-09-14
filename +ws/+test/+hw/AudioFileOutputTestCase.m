@@ -78,17 +78,17 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=1.1*wsModel.SweepDuration;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
@@ -156,17 +156,17 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
-            wsModel.play();  % this should *not* throw an error
+            wsModel.playAndBlock();  % this should *not* throw an error
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=1.1*wsModel.SweepDuration;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
@@ -214,17 +214,17 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
             
             pause(1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=1.1*wsModel.SweepDuration;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=1.1*wsModel.SweepDuration;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function

@@ -33,7 +33,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
 
             % Play, logging warnings
             wsModel.startLoggingWarnings() ;
-            wsModel.play() ;  % blocks
+            wsModel.playAndBlock() ;  % blocks
             exceptionMaybe = wsModel.stopLoggingWarnings() ;
             
             % If there were warnings, print them now
@@ -53,7 +53,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             wsModel.delete() ;
             wsModel = [] ;  %#ok<NASGU>    
             
-            self.verifyEmpty(exceptionMaybe, 'wsModel.play() threw one or more warnings') ;
+            self.verifyEmpty(exceptionMaybe, 'wsModel.playAndBlock() threw one or more warnings') ;
         end  % function
     end  % test methods
 

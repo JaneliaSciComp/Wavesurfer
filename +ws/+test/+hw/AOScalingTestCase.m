@@ -36,7 +36,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
             wsModel.IsStimulationEnabled = true ;
 
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
 
             x = wsModel.getAIDataFromCache() ;
 
