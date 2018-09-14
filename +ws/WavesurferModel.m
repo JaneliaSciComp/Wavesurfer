@@ -128,6 +128,7 @@ classdef WavesurferModel < ws.Model
         DOChannelTerminalIDs
         IsPerformingRun
         IsPerformingSweep
+        DataCacheDurationWhenContinuous
     end
     
     properties (Access=protected)
@@ -6407,5 +6408,26 @@ classdef WavesurferModel < ws.Model
         function result = get.IsPerformingSweep(self)
             result = self.IsPerformingSweep_ ;
         end
+        
+        function result = get.DataCacheDurationWhenContinuous(self)
+            result = self.Acquisition_.DataCacheDurationWhenContinuous ;
+        end
+        
+        function waitForRunToComplete(self)
+            while self.IsPerformingRun ,
+                pause(0.2) ;
+            end                
+        end
+        
+        function playAndBlock(self)
+            self.play() ;
+            self.waitForRunToComplete() ;
+        end
+        
+        function recordAndBlock(self)
+            self.record() ;
+            self.waitForRunToComplete() ;
+        end        
+        
     end  % public methods block
 end  % classdef
