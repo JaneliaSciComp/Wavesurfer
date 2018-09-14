@@ -468,10 +468,10 @@ classdef Looper < handle
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
                 self.pollAcquisition_(timeSinceSweepStart, fromRunStartTicId) ;
             
-            % DEBUG: This is for debugging purposes only!
-            if timeSinceRunStartAtStartOfData > 5 ,
-                error('ws:fakeerror', 'Stuff went bad.  Real bad.') ;
-            end
+%             % DEBUG: This is for debugging purposes only!
+%             if timeSinceRunStartAtStartOfData > 5 ,
+%                 error('ws:fakeerror', 'Stuff went bad.  Real bad.') ;
+%             end
             
             % Deal with the acquired samples
             if didReadFromTasks ,
