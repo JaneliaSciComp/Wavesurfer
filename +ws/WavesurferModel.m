@@ -381,8 +381,7 @@ classdef WavesurferModel < ws.Model
                 self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
                                           'BusyMode', 'drop', ...
                                           'Period', 0.1, ...
-                                          'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
-                                          'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;
+                                          'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
                 
                 % Get the list of all device names, and cache it in our own
                 % state
@@ -1518,76 +1517,90 @@ classdef WavesurferModel < ws.Model
             if ~self.AllowTimerCallback_ ,
                 return
             end
-            if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
-                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
-                if self.IsPerformingSweep_ ,
-                    if self.DidLooperCompleteSweep_ ,
-                        self.completeTheOngoingSweep_() ;
-                    else
-                        %fprintf('At top of within-sweep loop...\n') ;
-                        timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                        self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
-                        self.Refiller_.performOneIterationDuringOngoingRun() ;
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                        end                    
-                    end
-                else
-                    % We are not currently performing a sweep, so check if we need to start one
-                    if self.AreAllSweepsCompleted_ ,
-                        % All sweeps are were performed, but the refiller must not be done yet if we got here
-                        % Keep checking messages so we know when the
-                        % refiller is done.  Also keep listening for looper
-                        % messages, although I'm not sure we need to...
-                        %fprintf('About to check for messages after completing all sweeps\n');
-                        self.Refiller_.performOneIterationDuringOngoingRun() ;
-                        %fprintf('Check for messages after completing all sweeps\n');
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+            try
+                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+                    %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                    if self.IsPerformingSweep_ ,
+                        if self.DidLooperCompleteSweep_ ,
+                            self.completeTheOngoingSweep_() ;
+                        else
+                            %fprintf('At top of within-sweep loop...\n') ;
+                            timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
+                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                            % do a drawnow() if it's been too long...
+                            timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                                drawnow() ;
+                                self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            end                    
                         end
-                    else                        
-                        self.openSweep_() ;
+                    else
+                        % We are not currently performing a sweep, so check if we need to start one
+                        if self.AreAllSweepsCompleted_ ,
+                            % All sweeps are were performed, but the refiller must not be done yet if we got here
+                            % Keep checking messages so we know when the
+                            % refiller is done.  Also keep listening for looper
+                            % messages, although I'm not sure we need to...
+                            %fprintf('About to check for messages after completing all sweeps\n');
+                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                            %fprintf('Check for messages after completing all sweeps\n');
+                            % do a drawnow() if it's been too long...
+                            timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                                drawnow() ;
+                                self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            end
+                        else                        
+                            self.openSweep_() ;
+                        end
                     end
-                end
-            else
-                % This means we should end the run
-                
-                % At this point, self.IsPerformingRun_ is true
-                % Do post-run clean up
-                if self.AreAllSweepsCompleted_ ,
-                    % Wrap up run in which all sweeps completed
-                    self.wrapUpRunInWhichAllSweepsCompleted_() ;
                 else
-                    % Something went wrong
-                    self.abortOngoingRun_();
+                    % This means we should end the run
+
+                    % At this point, self.IsPerformingRun_ is true
+                    % Do post-run clean up
+                    if self.AreAllSweepsCompleted_ ,
+                        % Wrap up run in which all sweeps completed
+                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                    else
+                        % Something went wrong
+                        self.abortOngoingRun_();
+                    end
+                    % At this point, self.IsPerformingRun_ is false
                 end
-                % At this point, self.IsPerformingRun_ is false
-            end
+            catch exception
+                if self.IsPerformingRun_ ,
+                    if self.IsPerformingSweep_ ,
+                        self.abortTheOngoingSweep_() ;
+                    end
+                    self.abortOngoingRun_() ;
+                end
+                if self.IsHeaded_ ,
+                    self.broadcast('RaiseDialogOnException', exception);
+                else
+                    throw(exception) ;
+                end
+            end                
         end  % handleTimerTick()
 
-        function handleTimerError(self, event)
-            %event  %#ok<NOPRT>
-            %event.Data
-            %fprintf('The timer had an error\n') ;
-            if self.IsPerformingRun_ ,
-                if self.IsPerformingSweep_ ,
-                    self.abortTheOngoingSweep_() ;
-                end
-                self.abortOngoingRun_() ;
-            end
-            exception = MException(event.Data.messageID, event.Data.message) ;
-            if self.IsHeaded_ ,
-                self.broadcast('RaiseDialogOnException', exception);
-            else
-                throw(exception) ;
-            end
-        end  % handleTimerError()
+%         function handleTimerError(self, event)
+% %             %event  %#ok<NOPRT>
+% %             %event.Data
+% %             %fprintf('The timer had an error\n') ;
+% %             if self.IsPerformingRun_ ,
+% %                 if self.IsPerformingSweep_ ,
+% %                     self.abortTheOngoingSweep_() ;
+% %                 end
+% %                 self.abortOngoingRun_() ;
+% %             end
+% %             exception = MException(event.Data.messageID, event.Data.message) ;
+% %             if self.IsHeaded_ ,
+% %                 self.broadcast('RaiseDialogOnException', exception);
+% %             else
+% %                 throw(exception) ;
+% %             end
+%         end  % handleTimerError()
         
 %         function closeSweep_(self)
 %             % End the sweep in the way appropriate, either a "complete",
