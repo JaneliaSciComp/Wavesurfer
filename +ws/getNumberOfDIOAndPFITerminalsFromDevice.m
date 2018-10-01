@@ -20,15 +20,19 @@ function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOAndPFITerminalsF
                 rethrow(exception) ;
             end
         end
-        channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+        if isempty(strtrim(commaSeparatedListOfChannelNames)) ,
+            channelNames = cell(1,0) ;
+        else
+            channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;
+        end
             % cellstring, each element of the form '<device name>/port<port ID>/line<line ID>'
         % We only want to count the port0 lines, since those are
         % the only ones that can be used for timed operations.
         splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
         lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
         if any(lengthOfEachSplit<2) ,
-            numberOfDIOChannels = nan ;  % should we throw an error here instead?
-            numberOfPFILines = nan ;
+            numberOfDIOChannels = 0 ;  % should we throw an error here instead?
+            numberOfPFILines = 0 ;
         else
             portNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
             isAPort0Channel = strcmp(portNames,'port0') ;

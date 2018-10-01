@@ -15,8 +15,12 @@ function result = getNumberOfAOTerminalsFromDevice(deviceName)
                 rethrow(exception) ;
             end
         end
-        channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
-            % cellstring, each element of the form '<device name>/ao<channel ID>'
+        if isempty(strtrim(commaSeparatedListOfChannelNames)) ,
+            channelNames = cell(1,0) ;
+        else
+            channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;
+        end
+        % channelNames a cellstring, each element of the form '<device name>/ao<channel ID>'
         result = length(channelNames) ;  % the number of channels available
     end
 end
