@@ -395,7 +395,7 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             % Layout parameters
             topAreaHeight = 60 ;
             deviceNamePopupXOffset = 100 ;
-            deviceNamePopupWidth = 80 ;
+            deviceNamePopupWidth = 120 ;
             referenceClockPanelWidth = 340 ;
             referenceClockPanelHeight = 50 ;
 %             referenceClockSourcePopupXOffset = 60 ;
@@ -1573,13 +1573,14 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
-            nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels ;
-            areFewerDigitalChannelsThanDIOTerminals = (nDigitalChannels<nDIOTerminals) ;
+            isAtLeastOneFreeDIOTerminal = ~isempty(wsModel.nextFreeDIOTerminal()) ;
+            %nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
+            %nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels ;
+            %areFewerDigitalChannelsThanDIOTerminals = (nDigitalChannels<nDIOTerminals) ;
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDIChannelMarkedForDeletion = wsModel.IsDIChannelMarkedForDeletion ;
             isAnyDIChannelMarkedForDeletion = any(isDIChannelMarkedForDeletion) ;
-            set(self.AddDIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals)) ;
+            set(self.AddDIChannelButton, 'Enable', ws.onIff(isWavesurferIdle && isAtLeastOneFreeDIOTerminal)) ;
             set(self.DeleteDIChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDIChannelMarkedForDeletion)) ;            
         end  % function        
        
@@ -1618,13 +1619,14 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
             end            
             
             % Deal with enablement of add/delete buttons
-            nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
-            nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels;
-            areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
+            isAtLeastOneFreeDIOTerminal = ~isempty(wsModel.nextFreeDIOTerminal()) ;
+            %nDIOTerminals = sum(wsModel.NDIOTerminalsPerDevice) ;   
+            %nDigitalChannels = wsModel.NDIChannels + wsModel.NDOChannels;
+            %areFewerDigitalChannelsThanDIOTerminals =  (nDigitalChannels<nDIOTerminals) ;            
             %areAnyFreeDIOTerminals =  ~isempty(model.freeDigitalTerminalIDs()) ;
             isDOChannelMarkedForDeletion = wsModel.IsDOChannelMarkedForDeletion ;
             isAnyDOChannelMarkedForDeletion = any(isDOChannelMarkedForDeletion) ;
-            set(self.AddDOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && areFewerDigitalChannelsThanDIOTerminals) ) ;
+            set(self.AddDOChannelButton, 'Enable', ws.onIff(isWavesurferIdle && isAtLeastOneFreeDIOTerminal) ) ;
             set(self.DeleteDOChannelsButton, 'Enable', ws.onIff(isWavesurferIdle && isAnyDOChannelMarkedForDeletion) ) ;                        
         end  % function        
        
