@@ -1,65 +1,30 @@
 classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     % Represents a "socket" for talking to one or more Axon Multiclamp
     % Commander instances.
-    
-    %%
-    properties (SetAccess=protected, Hidden=true)
-        %ModeDetents={'vc' 'cc' 'i_equals_zero'}';
-%         CurrentMonitorNominalGainDetents= 1e-3*[ ...
-%             0.005 ...
-%             0.010 ...
-%             0.020 ...
-%             0.050 ...
-%             0.100 ...
-%             0.200 ...
-%             0.5 ...
-%             1.0 ...
-%             2.0 ...
-%             5.0 ...
-%             10 ...
-%             20 ...
-%             50 ...
-%             100 ...
-%             200 ...
-%             500 ...
-%             1000 ...
-%             2000 ]';  % V/pA
-%         VoltageMonitorGainDetents= [ ...
-%             0.010 0.100]';  % V/mV
-%         CurrentCommandGainDetents= [ ...
-%             100 1000 10e3 100e3]';  % pA/V
-%         VoltageCommandGainDetents= [ ...
-%             0 10 20]';  % mV/V (the hardware allows for a (largely) arbitrary setting, but these are convenient values for testing)
-    end
-    
+        
     properties (Dependent=true, SetAccess=immutable)
         IsOpen  % true iff a connection to the Multiclamp Commander program(s) have been established, and hasn't failed yet       
     end
     
-    %%
     properties (Dependent=true, SetAccess=immutable)
         %IsOpen  % true iff a connection to the EpcMaster program has been established, and hasn't failed yet        
         NElectrodes
     end
 
-    %%
     properties  (Access=protected)
         ElectrodeIDs_ = zeros(0,1)
     end
     
     methods
-        %%
         function self = MulticlampCommanderSocket()
             self@ws.Model() ;
             %self.IsOpen_=false;
         end  % function
         
-        %%
         function delete(self)
             self.close();
         end
         
-        %%
         function err=open(self)
             % Attempt to get MCC (the application) into a state where
             % it's ready to communicate.
@@ -82,20 +47,17 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             % If get here, all is well
         end
         
-        %%
         function self=close(self)
             ws.dabs.axon.MulticlampTelegraph('stop');
             self.ElectrodeIDs_ = zeros(0,1) ;
         end  % function
         
-        %%
         function self=reopen(self)
             % Close the connection, then open it.
             self.close();
             self.open();
         end
         
-        %%
         function mimic(self,other)
             % Disable broadcasts for speed
             %self.disableBroadcasts();
@@ -125,13 +87,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             value=self.(methodName)(electrodeIndex);
         end
         
-%         %%
-%         function self=setElectrodeParameter(self,electrodeIndex,parameterName,newValue)
-%             methodName=sprintf('set%s',parameterName);
-%             self.(methodName)(electrodeIndex,newValue);
-%         end
-
-        %%
         function [electrodeState,err]=getElectrodeState(self,electrodeIndex)
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);                        
             if isempty(err) ,
@@ -153,7 +108,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end               
         end
 
-        %%
         function [mode,err]=getMode(self,electrodeIndex)
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);
             if isempty(err) ,
@@ -168,46 +122,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
 
-%         %%
-%         function self=setMode(self,electrodeIndex,newMode)
-%             %import ws.*
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~(isequal(newMode,'vc') || isequal(newMode,'cc')) ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-%             newModeIndex=fif(isequal(newMode,'cc'),4,3);
-%               % 4 == Current clamp
-%               % 3 == Whole cell
-%             commandString2=sprintf('Set E Mode %d',newModeIndex);
-%             responseString2=self.issueCommandAndGetResponse(commandString2); %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-%             %sleep(0.1);  % wait a bit for that to go through (50 ms is too short for it to work reliably)
-%             
-%             % Check that that worked
-%             newModeCheck=self.getMode(electrodeIndex);
-%             if ~isequal(newMode,newModeCheck) ,
-%                 errorId='MulticlampCommanderSocket:SettingModeDidntStick';
-%                 errorMessage='Setting amplifier mode didn''t stick, for unknown reason';
-%                 error(errorId,errorMessage);
-%             end
-%         end  % function            
-
-        %%
         function [value,err]=getCurrentMonitorNominalGain(self,electrodeIndex)
             % Returns the nominal current monitor gain, in V/pA
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);
@@ -223,49 +137,11 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end               
         end  % function
 
-        %%
         function [value,err]=getCurrentMonitorRealizedGain(self,electrodeIndex)            
             % Returns the realized current monitor gain, in V/pA
             [value,err]=self.getCurrentMonitorNominalGain(electrodeIndex);  % no distinction between nominal and real current monitor gain in Axon
         end  % function            
 
-%         %%
-%         function self=setCurrentMonitorNominalGain(self,electrodeIndex,newWantedValue)
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if newWantedValue<=0 ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-%             [newValueDetent,iDetent]= ...
-%                 ws.MulticlampCommanderSocket.findClosestDetent(newWantedValue,self.CurrentMonitorNominalGainDetentsWithSpaceHolders); %#ok<ASGLU>
-%             commandString2=sprintf('Set E Gain %d',iDetent-1);  % needs to be zero-based
-%             responseString2=self.issueCommandAndGetResponse(commandString2);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-%             
-% %             % Check that that worked
-% %             newValueDetentCheck=self.getCurrentMonitorNominalGain(electrodeIndex);
-% %             if abs(newValueDetentCheck./newValueDetent-1)>0.001 ,
-% %                 errorId='MulticlampCommanderSocket:SettingModeDidntStick';
-% %                 errorMessage='Setting amplifier current monitor gain didn''t stick, for unknown reason';
-% %                 error(errorId,errorMessage);
-% %             end
-%         end  % function            
-
-        %%
         function [value,err]=getVoltageMonitorGain(self,electrodeIndex)
             % Returns the current voltage gain, in V/mV
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);
@@ -281,42 +157,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
 
-%         %%
-%         function self=setVoltageMonitorGain(self,electrodeIndex,newWantedValue)
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if newWantedValue<=0 ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-%             [newValueDetent,iDetent]=ws.MulticlampCommanderSocket.findClosestDetent(newWantedValue,self.VoltageMonitorGainDetents); %#ok<ASGLU>
-%             commandString2=sprintf('Set E VmonX100 %d',iDetent-1);  % needs to be zero-based
-%             responseString2=self.issueCommandAndGetResponse(commandString2);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-%             
-% %             % Check that that worked
-% %             newValueDetentCheck=self.getVoltageMonitorGain(electrodeIndex);
-% %             if abs(newValueDetentCheck./newValueDetent-1)>0.001 ,
-% %                 errorId='MulticlampCommanderSocket:SettingModeDidntStick';
-% %                 errorMessage='Setting amplifier voltage monitor gain didn''t stick, for unknown reason';
-% %                 error(errorId,errorMessage);
-% %             end
-%         end  % function            
-
-        %%
         function [value,err]=getIsCommandEnabled(self,electrodeIndex)
             % Returns whether the external command is enabled.  If the
             % hardware doesn't support setting this, returns true.  Returns
@@ -335,42 +175,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function            
 
-%         %%
-%         function self=setIsCommandEnabled(self,electrodeIndex,newWantedValue)
-%             %import ws.*
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if ~isscalar(newWantedValue) ,
-%                 return
-%             end
-%             if isnumeric(newWantedValue) ,
-%                 newWantedValue=logical(newWantedValue>0);
-%             end
-%             if ~islogical(newWantedValue) ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-%             % For some models, have to explicitly turn on/off the external
-%             % command
-%             if self.HasCommandOnOffSwitch_ ,
-%                 selectionIndex=fif(newWantedValue==0,0,2);
-%                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
-%                 responseString2=self.issueCommandAndGetResponse(commandString2); %#ok<NASGU>
-%             end              
-%         end  % function            
-
-        %%
         function [value,err]=getCurrentCommandGain(self,electrodeIndex)
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);
             if isempty(err) ,
@@ -385,52 +189,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function            
 
-%         %%
-%         function self=setCurrentCommandGain(self,electrodeIndex,newWantedValue)
-%             %import ws.*
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             if newWantedValue<=0 ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-% %             % For some models, have to explicitly turn on/off the external
-% %             % command
-% %             if self.HasCommandOnOffSwitch_ ,
-% %                 selectionIndex=fif(newWantedValue==0,0,2);
-% %                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
-% %                 responseString2=self.issueCommandAndGetResponse(commandString2); %#ok<NASGU>
-% %             end
-%               
-%             % Set the value
-%             [newValueDetent,iDetent]=ws.MulticlampCommanderSocket.findClosestDetent(newWantedValue,self.CurrentCommandGainDetents); %#ok<ASGLU>
-%             commandString2=sprintf('Set E CCGain %d',iDetent-1);  % needs to be zero-based
-%             responseString2=self.issueCommandAndGetResponse(commandString2);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-%             
-% %             % Check that that worked
-% %             newValueDetentCheck=self.getCurrentCommandGain(electrodeIndex);
-% %             if abs(newValueDetentCheck./newValueDetent-1)>0.001 ,
-% %                 errorId='MulticlampCommanderSocket:SettingModeDidntStick';
-% %                 errorMessage='Setting amplifier current monitor gain didn''t stick, for unknown reason';
-% %                 error(errorId,errorMessage);
-% %             end
-%         end  % function            
-
-        %%
         function [value,err]=getVoltageCommandGain(self,electrodeIndex)
             % Returns the command voltage gain, in mV/V
             err=self.checkIfOpenAndValidElectrodeIndex_(electrodeIndex);
@@ -445,291 +203,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 value=nan;
             end                
         end  % function
-
-%         %%
-%         function self=setVoltageCommandGain(self,electrodeIndex,newValue)
-%             %import ws.*
-%             % newValue should be in mV/V
-%             if ~exist('electrodeIndex','var') || isempty(electrodeIndex) ,
-%                 electrodeIndex=1;
-%             end
-%             % Unlike the others, can set this to zero, meaning "turn off
-%             % external voltage command"
-%             % can also make it negative
-% %             if ~isscalar(newValue) ,
-% %                 return
-% %             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t set mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             commandString1=sprintf('Set E Ampl%d TRUE',electrodeIndex);
-%             responseString1=self.issueCommandAndGetResponse(commandString1);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-% 
-%             % For some models, have to explicitly turn on/off the external
-%             % command
-%             if self.HasCommandOnOffSwitch_ ,
-%                 selectionIndex=fif(newValue==0,0,2);
-%                 commandString2=sprintf('Set E TestDacToStim%d %d',electrodeIndex,selectionIndex);
-%                 responseString2=self.issueCommandAndGetResponse(commandString2); %#ok<NASGU>
-%             end
-%             
-%             newValueNativeUnits=1e-3*newValue;  % mV/V => mV/mV
-%             commandString3=sprintf('Set E ExtScale %g',newValueNativeUnits);
-%             responseString3=self.issueCommandAndGetResponse(commandString3);   %#ok<NASGU>
-%               % Don't really need the response, but this ensures that we at
-%               % least wait long enough for it to emerge before giving
-%               % another command
-%             
-% %             % Check that that worked
-% %             newValueCheck=self.getVoltageCommandGain(electrodeIndex);
-% %             if ((newValue==0) && (newValueCheck~=0)) || abs(newValue./newValueCheck-1)>0.001 ,
-% %                 errorId='MulticlampCommanderSocket:SettingModeDidntStick';
-% %                 errorMessage='Setting amplifier current monitor gain didn''t stick, for unknown reason';
-% %                 error(errorId,errorMessage);
-% %             end
-%         end  % function            
-
-%         %%
-%         function setUIEnablement(self,newValueRaw)
-%             % Set whether the EPCMaster UI is enabled.  true==enabled.
-%             %import ws.*
-%             newValue=logical(newValueRaw);
-%             if ~isscalar(newValue) ,
-%                 return
-%             end
-%             if ~self.IsOpen ,
-%                 errorId='MulticlampCommanderSocket:SocketNotOpen';
-%                 errorMessage='Couldn''t get mode because MulticlampCommanderSocket not open.';
-%                 error(errorId,errorMessage);
-%             end
-%             %commandIndex=self.issueCommand('GetEpcParams-1 RealGain');
-%             commandString=fif(newValue,'EnableUserActions','DisableUserActions');
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex); %#ok<NASGU>
-%               % this last is mainly just to throw an exception if it
-%               % definitely failed.
-%         end  % function            
-
-%         %%
-%         function responseString=issueCommandAndGetResponse(self,commandString)
-%             commandIndex=self.issueCommand(commandString);
-%             responseString=self.getResponseString(commandIndex);
-%         end
-            
-%         %%
-%         function commandIndex=issueCommand(self,commandString)
-%             % Open the command file, and clear the current contents (if
-%             % any)
-%             commandFileId=fopen(self.CommandFileName_,'w+');  % open for writing.  Create if doesn't exist, discard contents if already exists.
-%             if commandFileId<0 ,
-%                 % Couldn't open command file
-%                 errorId='MulticlampCommanderSocket:CouldNotOpenCommandFile';
-%                 errorMessage='Could not open command file';
-%                 error(errorId,errorMessage);
-%             end            
-%             commandIndex=self.NextCommandIndex_;
-%             self.NextCommandIndex_=self.NextCommandIndex_+1;
-%             %fprintf('About to issue command "%s" with command index %d\n',commandString,commandIndex);
-%             fprintf(commandFileId,'-%08d\n',commandIndex);
-%             fprintf(commandFileId,'%s\n\n',commandString);
-%             % Overwrite the initial - with a +
-%             fseek(commandFileId,0,'bof');
-%             fprintf(commandFileId,'+');              
-%             fclose(commandFileId);
-%         end
-%     
-%         %%
-%         function commandIndex=issueCommands(self,commandStrings)
-%             % Open the command file, and clear the current contents (if
-%             % any)
-%             commandFileId=fopen(self.CommandFileName_,'w+');  % open for writing.  Create if doesn't exist, discard contents if already exists.
-%             if commandFileId<0 ,
-%                 % Couldn't open command file
-%                 errorId='MulticlampCommanderSocket:CouldNotOpenCommandFile';
-%                 errorMessage='Could not open command file';
-%                 error(errorId,errorMessage);
-%             end            
-%             commandIndex=self.NextCommandIndex_;
-%             self.NextCommandIndex_=self.NextCommandIndex_+1;
-%             fprintf(commandFileId,'-%08d\n',commandIndex);
-%             for i=1:length(commandStrings)
-%                 fprintf(commandFileId,'%s\n',commandStrings{i});
-%             end
-%             fprintf(commandFileId,'\n');            
-%             % Overwrite the initial - with a +
-%             fseek(commandFileId,0,'bof');
-%             fprintf(commandFileId,'+');              
-%             fclose(commandFileId);
-%         end
-%     
-%         %%
-%         function responseString=getResponseString(self,commandIndex)
-%             %import ws.*
-%             responseFileId=fopen(self.ResponseFileName_,'r');
-%             if responseFileId<0 ,
-%                 % Couldn't open response file
-%                 errorId='MulticlampCommanderSocket:CouldNotOpenResponseFile';
-%                 errorMessage='Couldn''t get response because couldn''t open reponse file';
-%                 error(errorId,errorMessage);
-%             end
-%             
-%             maximumWaitTime=1;  % s
-%             dt=0.005;
-%             nIterations=round(maximumWaitTime/dt);
-%             wasResponseGenerated=false;
-%             for i=1:nIterations ,
-%                 try
-%                     responseIndex=ws.MulticlampCommanderSocket.getResponseIndex_(responseFileId);
-%                     success=true;
-%                 catch me
-%                     id=me.identifier;
-%                     if isequal(id,'MulticlampCommanderSocket:UnableToReadResponseFileToGetResponseIndex') || ...
-%                        isequal(id,'MulticlampCommanderSocket:InvalidIndexInResponse') ,
-%                         % this was a failure, but one that will perhaps
-%                         % resolve itself later
-%                         success=false;
-%                     else
-%                         % this seems like a "real" error
-%                         rethrow(me);
-%                     end
-%                 end
-%                 if success ,
-%                     % We used to do a special check for
-%                     % responseIndex>commandIndex and throw if that
-%                     % happened, but that turned out to be
-%                     % counterproductive.  Sometimes you read an old
-%                     % response file from a previous MulticlampCommanderSocket
-%                     % session, just because EPCMaster hasn't yet written
-%                     % the response to your latest command.  With the old
-%                     % code, that would throw.  With the new code, we just
-%                     % wait longer to see if the response file appears.
-%                     if responseIndex==commandIndex ,
-%                         wasResponseGenerated=true;
-%                         break
-%                     else
-%                         % wait longer
-%                         sleep(dt);
-% %                     else
-% %                         % the response index is somehow greater than the
-% %                         % command index we're looking for
-% %                         fclose(responseFileId);
-% %                         errorId='MulticlampCommanderSocket:ResponseIndexTooHigh';
-% %                         errorMessage='The response index is greater than the command index already';
-% %                         error(errorId,errorMessage);
-%                     end
-%                 else
-%                     sleep(dt);
-%                 end
-%             end
-%             
-%             if ~wasResponseGenerated ,
-%                 fclose(responseFileId);
-%                 errorId='MulticlampCommanderSocket:NoReponse';
-%                 errorMessage='EPCMaster did not respond to a command within the timeout interval';
-%                 error(errorId,errorMessage);
-%             end
-%             
-%             responseString=fgetl(responseFileId);
-%             fclose(responseFileId);
-%             if isnumeric(responseString) ,
-%                 responseString='';  % Some commands don't have a response beyond just generating a reponse file with the line containging the response index
-%                 % errorId='MulticlampCommanderSocket:UnableToReadResponseFileToGetResponseString';
-%                 % errorMessage='Unable to read EPCMaster response file to get response string';
-%                 % error(errorId,errorMessage);
-%             end
-%         end  % function
-% 
-%         %%
-%         function responseStrings=getResponseStrings(self,commandIndex)
-%             %import ws.*
-%             %fprintf('Just entered getResponseStrings()\n');
-%             %commandIndex
-%             responseFileId=fopen(self.ResponseFileName_,'r');
-%             if responseFileId<0 ,
-%                 % Couldn't open response file
-%                 errorId='MulticlampCommanderSocket:CouldNotOpenResponseFile';
-%                 errorMessage='Couldn''t get response because couldn''t open reponse file';
-%                 error(errorId,errorMessage);
-%             end
-%             
-%             %tStart=tic();
-%             maximumWaitTime=1;  % s
-%             dt=0.005;
-%             nIterations=round(maximumWaitTime/dt);
-%             wasResponseGenerated=false;
-%             for i=1:nIterations ,
-%                 try
-%                     responseIndex=ws.MulticlampCommanderSocket.getResponseIndex_(responseFileId);
-%                     success=true;
-%                 catch me
-%                     id=me.identifier;
-%                     if isequal(id,'MulticlampCommanderSocket:UnableToReadResponseFileToGetResponseIndex') || ...
-%                        isequal(id,'MulticlampCommanderSocket:InvalidIndexInResponse') ,
-%                         % this was a failure, but one that will perhaps
-%                         % resolve itself later
-%                         success=false;
-%                     else
-%                         % this seems like a "real" error
-%                         rethrow(me);
-%                     end
-%                 end
-%                 % success
-%                 if success ,
-%                     if responseIndex==commandIndex ,
-%                         wasResponseGenerated=true;
-%                         break
-%                     else
-%                         % wait longer
-%                         sleep(dt);
-%                     end
-% %                     elseif responseIndex==commandIndex ,
-% %                     else
-% %                         % the response index is somehow greater than the
-% %                         % command index we're looking for
-% %                         fclose(responseFileId);
-% %                         errorId='MulticlampCommanderSocket:ResponseIndexTooHigh';
-% %                         errorMessage='The response index is greater than the command index already';
-% %                         error(errorId,errorMessage);
-% %                     end
-%                 else
-%                     sleep(dt);
-%                 end
-%             end
-%             % toc(tStart)
-%             
-%             if ~wasResponseGenerated ,
-%                 fclose(responseFileId);
-%                 errorId='MulticlampCommanderSocket:NoReponse';
-%                 errorMessage='EPCMaster did not respond to a command within the timeout interval';
-%                 error(errorId,errorMessage);
-%             end
-%             
-%             %tStart=tic();
-%             responseStrings=cell(1,0);
-%             i=1;
-%             atEndOfFile=false;
-%             while ~atEndOfFile ,
-%                 thisLine=fgetl(responseFileId);
-%                 if isnumeric(thisLine)
-%                     atEndOfFile=true;
-%                 else
-%                     responseStrings{1,i}=thisLine;
-%                     i=i+1;
-%                 end
-%             end                
-%             %toc(tStart)
-%             %tStart=tic();
-%             fclose(responseFileId);
-%             %toc(tStart)
-%             %fprintf('About to exit getResponseStrings()\n');
-%         end  % function
-
-        %%
+        
         function [overallError,perElectrodeErrors,modes,currentMonitorGains,voltageMonitorGains,currentCommandGains,voltageCommandGains,isCommandEnabled]=...
             getModeAndGainsAndIsCommandEnabled(self,electrodeIndices)
         
@@ -792,7 +266,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     end  % public methods
 
     methods (Access=protected)
-        %%
         function updateElectrodeList_(self)
             % Update the list of electrode IDs that we know about
             electrodeIDs=ws.dabs.axon.MulticlampTelegraph('getAllElectrodeIDs');
@@ -803,194 +276,12 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     end  % protected methods
     
     methods (Static=true)  % public class methods
-%         %%
-%         function mode=parseModeResponse(responseString)
-%             % The response should look like 'V-Clamp', 'I-Clamp', or 
-%             % 'I = 0'
-%             % Returns either 'vc','cc', or 'i_equals_zero'
-%             switch responseString ,
-%                 case 'V-Clamp' ,
-%                     mode='vc';
-%                 case 'I-Clamp' ,
-%                     mode='cc';
-%                 case 'I = 0' ,
-%                     mode='i_equals_zero';
-%                 otherwise
-%                     mode='vc';  % fallback
-% %                     errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-% %                     errorMessage='Unable to parse mode response string';
-% %                     error(errorId,errorMessage);
-%             end
-%         end  % function                
-% 
-%         %%
-%         function gain=parseCurrentMonitorRealizedGainResponse(responseString)
-%             % The response should look like 'GetEpcParams-1 1.00000E+10',
-%             % with that gain in V/A.  We convert to V/pA.
-%             % TODO_ALT: Deal with possibility that user wants to use nA, or
-%             % whatever.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end
-%             gainAsString=responseStringTokens{2};
-%             gainInOhms=str2double(gainAsString);  % V/A
-%             if ~isfinite(gainInOhms) ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end            
-%             gain=1e-12*gainInOhms;  % V/A -> V/pA            
-%         end  % function                
-% 
-%         %%
-%         function gain=parseCurrentMonitorNominalGainResponse(responseString)
-%             % The response should look like 'GetEpcParams-1 0.020mV/pA',
-%             % with that gain in mV/pA (obviously).  We convert to V/pA.
-%             % TODO_ALT: Deal with possibility that user wants to use nA, or
-%             % whatever.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end
-%             gainWithUnitsAsString=responseStringTokens{2};
-%             gainAsString=gainWithUnitsAsString(1:end-5);            
-%             gainInNativeUnits=str2double(gainAsString);  % mV/pA
-%             if ~isfinite(gainInNativeUnits) ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end            
-%             gain=1e-3*gainInNativeUnits;  % mV/pA -> V/pA            
-%         end  % function                
-% 
-%         %%
-%         function gain=parseVoltageMonitorGainResponse(responseString)
-%             % The response should look like 'GetEpcParams-1 VmonX10' or 'GetEpcParams-1 VmonX100',
-%             % with that gain in mV/mV.  We convert to V/mV.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end
-%             gainAsVmonXString=responseStringTokens{2};
-%             gainAsString=gainAsVmonXString(6:end);
-%             gainPure=str2double(gainAsString);  % mV/mV
-%             if ~isfinite(gainPure) ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end            
-%             gain=1e-3*gainPure;  % mV/mV -> V/mV 
-%         end  % function
-% 
-%         %%
-%         function gain=parseCurrentCommandGainResponse(responseString)
-%             % The response should look like 'GetEpcParams-1 CC0.1pA' [sic], 
-%             % with that gain in pA/mV.  We convert to pA/V.
-%             % TODO_ALT: Deal with possibility that user wants to use nA, or
-%             % whatever.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end
-%             gainAsCCString=responseStringTokens{2};
-%             gainAsString=gainAsCCString(3:end-2);
-%             gainRaw=str2double(gainAsString);  % pA/mV
-%             if ~isfinite(gainRaw) ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end            
-%             gain=1e3*gainRaw;  % pA/mV -> pA/V
-%         end  % function                
-%         
-%         %%
-%         function gain=parseVoltageCommandGainResponse(responseString)
-%             % The response should look like 'GetEpcParams-1 0.100',
-%             % with that gain in mV/mV.  We convert to mV/V.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end
-%             gainPureAsString=responseStringTokens{2};
-%             gainPure=str2double(gainPureAsString);  % mV/mV
-%             if ~isfinite(gainPure) ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseModeResponseString';
-%                 errorMessage='Unable to parse mode response string';
-%                 error(errorId,errorMessage);
-%             end            
-%             gain=1e3*gainPure;  % mV/mV -> mV/V
-%         end  % function                        
-% 
-%         %%
-%         function value=parseIsCommandEnabledResponse(responseString)
-%             % The response should end in either 'ON' or 'OFF'.
-%             responseStringTokens=strsplit(responseString);
-%             if length(responseStringTokens)<2 ,
-%                 errorId='MulticlampCommanderSocket:UnableToParseIsCommandEnabledResponseString';
-%                 errorMessage='Unable to parse external command response string';
-%                 error(errorId,errorMessage);
-%             end
-%             isCommandEnabledAsString=responseStringTokens{end};
-%             if strcmp(isCommandEnabledAsString,'ON') ,
-%                 value=true;
-%             elseif strcmp(isCommandEnabledAsString,'OFF') ,
-%                 value=false;
-%             else
-%                 errorId='MulticlampCommanderSocket:UnableToParseIsCommandEnabledResponseString';
-%                 errorMessage='Unable to parse external command response string';
-%                 error(errorId,errorMessage);
-%             end
-%         end  % function                        
-
-%         %%
-%         function [xDetent,iDetent]=findClosestDetent(x,detents)
-%             [~,iDetent]=min(abs(x-detents));
-%             xDetent=detents(iDetent);
-%         end  % function
-        
-        %%
         function units=unitsFromUnitsString(unitsAsString)
             % Convert a units string of the kind produced by
             % ws.dabs.axon.MulticlampTelegraph().
             units=unitsAsString ;
-%             topAndBottomUnits=strsplit(unitsAsString,'/');
-%             if isempty(topAndBottomUnits) ,
-%                 units=ws.SIUnit();  % pure (why not?)
-%             elseif length(topAndBottomUnits)==1 ,
-%                 units=ws.SIUnit(topAndBottomUnits{1});
-%             else
-%                 units=ws.SIUnit(topAndBottomUnits{1})/ws.SIUnit(topAndBottomUnits{2}) ;
-%             end                
         end  % function
 
-%         %%
-%         function [targetNumber,err]=numberForTargetUnits(targetUnits,sourceNumber,sourceUnits)
-%             % Convert a dimensional quantity equal to
-%             % sourceNumber*sourceUnits to the targetUnits.  sourceUnits
-%             % and targetUnits must be commensurable.            
-%             if areSummable(targetUnits,sourceUnits) ,
-%                 targetNumber=sourceNumber.*multiplier(sourceUnits/targetUnits);
-%                 err=[];
-%             else
-%                 targetNumber=NaN;
-%                 errorId='MulticlampCommanderSocket:unableToConvertToTargetUnits';
-%                 errorMessage='Unable to convert source quantity to target units.';
-%                 err=MException(errorId,errorMessage);
-%             end
-%         end  % function
-    
-        %%
         function [targetNumber,err]=convertToVoltsPerPicoamp(sourceNumber,sourceUnits)
             err = [] ;
             switch sourceUnits ,
@@ -1013,7 +304,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             targetNumber = scale * sourceNumber ;
         end  % function
 
-        %%
         function [targetNumber,err]=convertToVoltsPerMillivolt(sourceNumber,sourceUnits)
             err = [] ;
             switch sourceUnits ,
@@ -1032,7 +322,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             targetNumber = scale * sourceNumber ;
         end  % function
 
-        %%
         function [value,err]=modeFromElectrodeState(electrodeState)
             % Returns the current mode as a string
             operatingModeString=electrodeState.OperatingMode;
@@ -1055,7 +344,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
         
-        %%
         function [value,err]=currentMonitorGainFromElectrodeState(electrodeState)
             % Returns the current monitor gain, in V/pA
             if isequal(electrodeState.OperatingMode,'V-Clamp') ,
@@ -1077,7 +365,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
         
-        %%
         function [value,err]=voltageMonitorGainFromElectrodeState(electrodeState)
             % Returns the current monitor gain, in V/mV
             if isequal(electrodeState.OperatingMode,'I-Clamp') || isequal(electrodeState.OperatingMode,'I = 0') ,
@@ -1100,7 +387,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
         
-        %%
         function [value,err]=currentCommandGainFromElectrodeState(electrodeState)
             % Returns the current command gain, in pA/V
             % This one doesn't really need an error output, but we'll leave
@@ -1118,7 +404,6 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             end
         end  % function
         
-        %%
         function [value,err]=voltageCommandGainFromElectrodeState(electrodeState)
             % Returns the voltage command gain, in mV/V
             % This one doesn't really need an error output, but we'll leave
@@ -1228,14 +513,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             comPortID={sorted.comPortID};
             comPortID=cellfun(@(c)(ws.fif(isempty(c),+inf,c)),comPortID);  % 700Bs have comPortID == inf, so they are left on right end
             [~,i]=sort(comPortID);
-            sorted=sorted(i);
-            
-            % Think this should already be good
-%             % Sort by A-or-B
-%             is700B=double(strcmp({sorted.aOrB},'B'));            
-%             [~,i]=sort(is700B);
-%             sorted=sorted(i);
-            
+            sorted=sorted(i);            
         end  % function
         
         function sortedElectrodeIDs=sortElectrodeIDs(electrodeIDs)
@@ -1283,25 +561,4 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end        
     end  % protected methods
     
-    methods (Static=true, Access=protected)  % protected class methods
-        %%
-        function responseIndex=getResponseIndex_(responseFileId)
-            % If successful, leaves the file pointer at the start of the
-            % second line of the response file
-            fseek(responseFileId,0,'bof');
-            firstLine=fgetl(responseFileId);
-            if isnumeric(firstLine) ,
-                errorId='MulticlampCommanderSocket:UnableToReadResponseFileToGetResponseIndex';
-                errorMessage='Unable to read response file to get response index';
-                error(errorId,errorMessage);
-            end
-            responseIndex=str2double(firstLine);
-            if ~isreal(responseIndex) || ~isfinite(responseIndex) || responseIndex~=round(responseIndex) ,
-                errorId='MulticlampCommanderSocket:InvalidIndexInResponse';
-                errorMessage='Response file had an invalid index';
-                error(errorId,errorMessage);
-            end
-        end  % function                    
-    end  % protected class methods
-
 end  % classdef
