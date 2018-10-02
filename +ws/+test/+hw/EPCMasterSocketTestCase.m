@@ -17,9 +17,9 @@ classdef EPCMasterSocketTestCase < matlab.unittest.TestCase
         function testReopening(self)
             ems=ws.EPCMasterSocket();
             self.verifyFalse(ems.IsOpen);
-            err1 = ems.open() ;
+            ems.open() ;
             self.verifyTrue(ems.IsOpen);            
-            err2 = ems.reopen() ;
+            ems.reopen() ;
             self.verifyTrue(ems.IsOpen);
             ems.close();
             self.verifyFalse(ems.IsOpen);
