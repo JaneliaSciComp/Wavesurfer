@@ -4,13 +4,13 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
@@ -49,7 +49,8 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             delete(newDataFileAbsolutePath) ;
             realCoefficientsAsRead = newDataFileAsStruct.header.AIScalingCoefficients ;
             % Verify that the shape of the coeffs array is correct
-            self.verifyEqual( size(realCoefficientsAsRead), [nCoeffs nActiveAIChannels] ) ;
+            self.verifyEqual( size(realCoefficientsAsRead,2), nActiveAIChannels ) ;
+            nCoeffs = size(realCoefficientsAsRead, 1) ;
 
             % For every board I've ever tested the coeffs are the same
             % across channels.  This is likely because all the boards I've

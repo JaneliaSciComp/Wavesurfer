@@ -2,14 +2,14 @@ classdef SaveAndLoadProtocolWithUserClassTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 

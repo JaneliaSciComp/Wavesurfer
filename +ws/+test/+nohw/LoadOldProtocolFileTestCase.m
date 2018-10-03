@@ -13,15 +13,15 @@ classdef LoadOldProtocolFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
-            ws.clear() ;
+            %ws.reset() ;
+            %ws.clear() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
-            ws.clear() ;
+            %%ws.reset() ;
+            %ws.clear() ;
         end
     end
 

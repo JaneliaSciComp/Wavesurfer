@@ -13,14 +13,14 @@ classdef Loadv08ProtocolFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Type','Figure')) ;
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 

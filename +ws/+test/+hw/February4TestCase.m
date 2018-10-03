@@ -3,13 +3,15 @@ classdef February4TestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
+            delete(timerfindall())
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
+            delete(timerfindall())
         end
     end
 
@@ -22,7 +24,8 @@ classdef February4TestCase < matlab.unittest.TestCase
             wsModel.addDOChannel() ;
             wsModel.IsDOChannelTimed(2) = false ;
             wsModel.playAndBlock() ;
-            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);            
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1);         
+            delete(wsModel);  % delete manually to clear out timer
         end  % function
 
     end  % test methods

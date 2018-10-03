@@ -339,7 +339,7 @@ classdef Looper < handle
         function result = isDigitalOutputTimedWasSetInFrontend(self, newValue)
             % This only gets called if the value in newValue was found to
             % be legal.
-            self.IsDOChannelTimed_ = newValue ;
+            %self.IsDOChannelTimed_ = newValue ;
             self.reacquireOnDemandHardwareResources_() ;  % this clears the existing task, makes a new task, and sets everything appropriately
             result = [] ;
         end  % function
@@ -357,7 +357,7 @@ classdef Looper < handle
         end  % function
         
         function result = digitalOutputStateIfUntimedWasSetInFrontend(self, newValue)
-            self.DigitalOutputStateIfUntimed_ = newValue ;
+            %self.DigitalOutputStateIfUntimed_ = newValue ;
             if ~isempty(self.UntimedDigitalOutputTask_) ,                
 %                 isInUntimedDOTaskForEachUntimedDOChannel = self.IsInUntimedDOTaskForEachUntimedDOChannel_ ;
 %                 isDOChannelUntimed = ~self.IsDOChannelTimed_ ;
@@ -367,9 +367,9 @@ classdef Looper < handle
 %                 if ~isempty(outputStateForEachChannelInUntimedDOTask) ,  % protects us against differently-dimensioned empties
 %                     self.UntimedDigitalOutputTask_.ChannelData = outputStateForEachChannelInUntimedDOTask ;
 %                 end
-                self.UntimedDigitalOutputTask_.setChannelDataFancy(self.DigitalOutputStateIfUntimed_, ...
+                self.UntimedDigitalOutputTask_.setChannelDataFancy(newValue, ...
                                                                    self.IsInUntimedDOTaskForEachUntimedDOChannel_,  ...
-                                                                   self.IsDOChannelTimed_) ;
+                                                                   self.Frontend_.IsDOChannelTimed) ;
             end            
             result = [] ;
         end  % function

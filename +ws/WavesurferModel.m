@@ -2992,21 +2992,17 @@ classdef WavesurferModel < ws.Model
             % on-demand
             %keyboard
             if self.IsITheOneTrueWavesurferModel_ ,
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
+                %isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
 %                 self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
 %                                         primaryDeviceName, ...
 %                                         isPrimaryDeviceAPXIDevice, ...
 %                                         isTerminalOvercommittedForEachDOChannel) ;
-                self.Looper_.didSetPrimaryDeviceInFrontend(primaryDeviceName, ...
-                                                           isPrimaryDeviceAPXIDevice, ...
-                                                           isTerminalOvercommittedForEachDOChannel) ;
-                self.Refiller_.didSetPrimaryDeviceInFrontend(primaryDeviceName, ...
-                                                             isPrimaryDeviceAPXIDevice, ...
-                                                             isTerminalOvercommittedForEachDOChannel) ;
+                self.Looper_.didSetPrimaryDeviceInFrontend() ;
+                self.Refiller_.didSetPrimaryDeviceInFrontend() ;
                 %looperProtocol = self.getLooperProtocol_() ;
                 %self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
                 self.Looper_.frontendJustLoadedProtocol() ;
-                self.Refiller_.frontendJustLoadedProtocol(isTerminalOvercommittedForEachDOChannel) ;                
+                %self.Refiller_.frontendJustLoadedProtocol(isTerminalOvercommittedForEachDOChannel) ;                
             end
         end  % function
     end  % protected methods block

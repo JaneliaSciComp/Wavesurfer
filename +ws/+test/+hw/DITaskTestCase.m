@@ -3,13 +3,13 @@ classdef DITaskTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.clear() ;
+            %ws.clear() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.clear() ;
+            %ws.clear() ;
         end
     end
     

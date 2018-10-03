@@ -5,13 +5,13 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
