@@ -467,3 +467,4 @@ Version History
 
 0.981    Oct 1, 2018     Bug fixes.
 
+0.982    Oct 2, 2018     Fixed bug with finding NI DAQmx .h file.
