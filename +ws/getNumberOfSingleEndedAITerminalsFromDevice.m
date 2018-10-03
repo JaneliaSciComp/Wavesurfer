@@ -16,7 +16,11 @@ function result = getNumberOfSingleEndedAITerminalsFromDevice(deviceName)
                 rethrow(exception) ;
             end
         end
-        aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;  
+        if isempty(strtrim(commaSeparatedListOfAIChannels)) ,
+            aiChannelNames = cell(1,0) ;
+        else
+            aiChannelNames = strtrim(strsplit(commaSeparatedListOfAIChannels,',')) ;
+        end
             % cellstring, each element of the form '<device name>/ai<channel ID>'
         result = length(aiChannelNames) ;  % the number of channels available if you used them all in single-ended mode                
     end

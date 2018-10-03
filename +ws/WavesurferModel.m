@@ -2144,8 +2144,8 @@ classdef WavesurferModel < ws.Model
             
             self.addAIChannel() ;
             aoChannelIndex = self.addAOChannel() ;
-            aoChannelName = self.AOChannelNames{aoChannelIndex} ;
-            if ~isempty(aoChannelName) ,
+            if ~isempty(aoChannelIndex) ,
+                aoChannelName = self.AOChannelNames{aoChannelIndex} ;
                 self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
                 self.broadcast('UpdateStimulusLibrary') ;
             end
@@ -6094,7 +6094,7 @@ classdef WavesurferModel < ws.Model
 %             self.broadcast('UpdateChannels') ;
 %         end  % function
 
-        function result = getPrimaryDeviceIndex(self)
+        function result = getPrimaryDeviceIndexMaybe(self)
             % The index of self.PrimaryDeviceName in self.AllDeviceNames.  Returns empty if
             % self.PrimaryDeviceName is not in self.AllDeviceNames.
             result = self.getDeviceIndexFromName(self.PrimaryDeviceName) ;
@@ -6195,37 +6195,45 @@ classdef WavesurferModel < ws.Model
             % Tries to find a free DIO terminal, and returns it in a scalar struct with
             % fields deviceName and terminalID if found.  Otherwise, returns an empty
             % struct.  This is normally called when adding a DI or DO channel.
-            deviceNameForEachDIChannel = self.DIChannelDeviceNames ;
+            deviceNameForEachDIChannel = self.DIChannelDeviceNames ;  % all elements should be equal to the primary device name
             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
-            deviceNameForEachDOChannel = self.DOChannelDeviceNames ;
+            deviceNameForEachDOChannel = self.DOChannelDeviceNames ;  % all elements should be equal to the primary device name
             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-            deviceNameForEachDIOChannel = horzcat(deviceNameForEachDIChannel, deviceNameForEachDOChannel) ;
+            deviceNameForEachDIOChannel = horzcat(deviceNameForEachDIChannel, deviceNameForEachDOChannel) ;  
+                % all elements should be equal to the primary device name
             terminalIDForEachDIOChannel = horzcat(terminalIDForEachDIChannel, terminalIDForEachDOChannel) ;
-            allDeviceNames = self.AllDeviceNames ;
+            %allDeviceNames = self.AllDeviceNames ;
             nDIOTerminalsPerDevice = self.NDIOTerminalsPerDevice ;
+            primaryDeviceName = self.PrimaryDeviceName ;
             
             nDIOChannels = length(deviceNameForEachDIOChannel) ;
-            nDevices = length(allDeviceNames) ;
-            for iDevice = 1:nDevices ,
-                deviceName = allDeviceNames{iDevice} ;
-                nDIOTerminals = nDIOTerminalsPerDevice(iDevice) ;
-                for terminalID = 0:(nDIOTerminals-1) ,
-                    isTerminalFree = true ;  % optimism!
-                    for iChannel = 1:nDIOChannels ,
-                        channelDeviceName = deviceNameForEachDIOChannel{iChannel} ;
-                        channelTerminalID = terminalIDForEachDIOChannel(iChannel) ;
-                        if isequal(deviceName, channelDeviceName) && isequal(terminalID, channelTerminalID) ,
-                            isTerminalFree = false ;
-                            break
-                        end
-                    end
-                    if isTerminalFree ,
-                        result = struct('deviceName', {deviceName}, ...
-                                        'terminalID', {terminalID} ) ;
-                        return
+            %nDevices = length(allDeviceNames) ;
+            %for iDevice = 1:nDevices ,
+            %deviceName = primaryDeviceName ;
+            primaryDeviceIndexMaybe = self.getPrimaryDeviceIndexMaybe() ;
+            if isempty(primaryDeviceIndexMaybe) ,
+                nDIOTerminals = 0 ;
+            else
+                primaryDeviceIndex = primaryDeviceIndexMaybe(1) ;
+                nDIOTerminals = nDIOTerminalsPerDevice(primaryDeviceIndex) ;
+            end
+            for terminalID = 0:(nDIOTerminals-1) ,
+                isTerminalFree = true ;  % optimism!
+                for iChannel = 1:nDIOChannels ,
+                    channelDeviceName = deviceNameForEachDIOChannel{iChannel} ;
+                    channelTerminalID = terminalIDForEachDIOChannel(iChannel) ;
+                    if isequal(primaryDeviceName, channelDeviceName) && isequal(terminalID, channelTerminalID) ,
+                        isTerminalFree = false ;
+                        break
                     end
                 end
+                if isTerminalFree ,
+                    result = struct('deviceName', {primaryDeviceName}, ...
+                                    'terminalID', {terminalID} ) ;
+                    return
+                end
             end
+            %end
             % if get here, no free terminal
             result = struct('deviceName', cell(1,0), ...
                             'terminalID', cell(1,0) ) ;

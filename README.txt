@@ -464,3 +464,7 @@ Version History
 0.97     Feb 7, 2018     Added wake() method to user classes.
 
 0.98     Sep 13, 2018    Improvements to ws.loadDataFile().
+
+0.981    Oct 1, 2018     Bug fixes.
+
+0.982    Oct 2, 2018     Fixed bug with finding NI DAQmx .h file.

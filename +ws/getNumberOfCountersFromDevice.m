@@ -15,7 +15,11 @@ function result = getNumberOfCountersFromDevice(deviceName)
                 rethrow(exception) ;
             end
         end
-        channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;  
+        if isempty(strtrim(commaSeparatedListOfChannelNames)) ,
+            channelNames = cell(1,0) ;
+        else
+            channelNames = strtrim(strsplit(commaSeparatedListOfChannelNames,',')) ;
+        end
             % cellstring, each element of the form '<device
             % name>/<counter name>', where a <counter name> is of
             % the form 'ctr<n>' or 'freqout'.
@@ -24,7 +28,7 @@ function result = getNumberOfCountersFromDevice(deviceName)
         splitChannelNames = cellfun(@(string)(strsplit(string,'/')), channelNames, 'UniformOutput', false) ;
         lengthOfEachSplit = cellfun(@(cellstring)(length(cellstring)), splitChannelNames) ;
         if any(lengthOfEachSplit<2) ,
-            result = nan ;  % should we throw an error here instead?
+            result = 0 ;  % should we throw an error here instead?
         else
             counterOutputNames = cellfun(@(cellstring)(cellstring{2}), splitChannelNames, 'UniformOutput', false) ;  % extract the port name for each channel
             isAGeneralPurposeCounterOutput = strncmp(counterOutputNames,'ctr',3) ;
