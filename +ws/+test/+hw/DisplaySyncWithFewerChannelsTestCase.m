@@ -4,17 +4,13 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
-            delete(timerfindall())            
-            delete(findall(0,'Type','Figure')) ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(0,'Type','Figure')) ;
-            delete(timerfindall())
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
     

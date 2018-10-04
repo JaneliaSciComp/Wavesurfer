@@ -5,13 +5,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 

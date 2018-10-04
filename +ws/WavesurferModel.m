@@ -466,9 +466,10 @@ classdef WavesurferModel < ws.Model
                 % If yoked, tell SI that we're quitting
                 try
                     self.notifyScanImageThatWavesurferIsQuittingIfYoked_() ;
-                catch exception  %#ok<NASGU>
+                catch exception  
                     % If something goes wrong, just ignore it, since this is delete() method   
-                    fprintf('notifyScanImageThatWavesurferIsQuittingIfYoked_() threw in the WSM delete() method\n') ;                    
+                    fprintf('notifyScanImageThatWavesurferIsQuittingIfYoked_() threw in the WSM delete() method, with the error message:\n') ;
+                    fprintf('%s', exception.message) ;                    
                 end                    
             end
             % Delete CommandServer_, client

@@ -25,7 +25,14 @@ function result = test(varargin)
     % Deal with duplicate tests, which happens sometimes, for unknown
     % reasons
     test_names = {testSuite.Name} ;
-    [unique_test_names, indices_of_unique_tests] = unique(test_names) ; %#ok<ASGLU>
+    [unique_test_names, indices_of_unique_tests] = unique(test_names) ;  %#ok<ASGLU>
+%     %index_subset_range = 67:69 ;  % passes
+%     %index_subset_range = 66:69 ; 
+%     %index_subset_range = 64:69 ; 
+%     %index_subset_range = 60:69 ; % passes
+%     index_subset_range = 30:69 ;  
+%     unique_test_names = unique_test_names(index_subset_range)  %#ok<NASGU>
+%     indices_of_unique_tests = indices_of_unique_tests(index_subset_range) ;
     testSuiteWithAllUnique = testSuite(indices_of_unique_tests) ;
     if length(testSuiteWithAllUnique) ~= length(testSuite) ,
         warning('Sigh.  There seem to be duplicated tests...') ;

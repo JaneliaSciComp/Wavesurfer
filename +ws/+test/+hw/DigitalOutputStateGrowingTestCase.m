@@ -2,17 +2,13 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            delete(findall(0,'Type','figure')) ;
-            delete(timerfindall())
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(timerfindall())
-            delete(findall(0,'Type','figure')) ;            
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 

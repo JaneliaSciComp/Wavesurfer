@@ -5,13 +5,13 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -60,6 +60,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
 
             % Re-enable the softpanel
             wsModel.IsInControlOfSoftpanelModeAndGains=false;
+            delete(wsModel) ;
         end
         
         function testTestPulseModeChangeWithMultipleElectrodes(self)
@@ -113,6 +114,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
 
             % Re-enable the softpanel
             wsModel.IsInControlOfSoftpanelModeAndGains=false;
+            delete(wsModel) ;
         end
         
         function testUpdateBeforeRunCheckbox(self)
@@ -151,6 +153,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
             self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, wsModel, electrodeIndex, newEPCMasterSocket);
             %self.verifyTrue(all(runShouldAllBeTrue));        
+            delete(wsModel) ;
         end  % function
     end
 

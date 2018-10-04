@@ -30,7 +30,9 @@ function clean()
     delete(fullfile(absoluteDirNameOfMostPrivate,'*.mat'));
 
     % delete any ongoing daq tasks
-    ws.reset() ;
+    ws.FileExistenceCheckerManager.getShared().removeAll() ;
+    daqSystem = ws.dabs.ni.daqmx.System();
+    ws.deleteIfValidHandle(daqSystem.tasks);
 end  % function
 
 % function localMakeBackup(filename)

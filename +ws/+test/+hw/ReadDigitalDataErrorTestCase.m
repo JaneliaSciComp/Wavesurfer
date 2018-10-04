@@ -4,16 +4,15 @@ classdef ReadDigitalDataErrorTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests
         end
     end
-
     methods (Test)
         function theTest(self)
             isCommandLineOnly='--nogui';
