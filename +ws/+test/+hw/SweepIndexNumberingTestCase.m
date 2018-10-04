@@ -5,6 +5,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             %ws.reset() ;
+            delete(timerfindall()) ;
         end
     end
 
@@ -12,6 +13,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
         function teardown(self) %#ok<MANU>
             delete(findall(groot,'Type','Figure')) ;
             %ws.reset() ;
+            delete(timerfindall()) ;
         end
     end
 
@@ -56,10 +58,11 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Create timer so Wavesurfer will be stopped 5 seconds after
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
+            delayUntilManualStop = 10 ;  % s
             timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
                                           'TimerFcn',@(~,~)(wsModel.stop()), ...
-                                          'StartDelay',10, ...
-                                          'Period', 20);  % do this repeatedly in case first is missed
+                                          'StartDelay',delayUntilManualStop, ...
+                                          'Period', 2*delayUntilManualStop);  % do this repeatedly in case first is missed
             start(timerToStopWavesurfer);
             wsModel.recordAndBlock();  % this will block
             stop(timerToStopWavesurfer);
@@ -86,6 +89,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Start timer so Wavesurfer is stopped after 5 seconds
             start(timerToStopWavesurfer);
             wsModel.record();
+            pause(2*delayUntilManualStop) ;
             stop(timerToStopWavesurfer);
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = (length(filesCreated)==1) ;
@@ -112,6 +116,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             
             % Since data was collected, sweep index should be incremented.
             self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
+            delete(wsModel) ;
         end  % function
     end  % test methods
 

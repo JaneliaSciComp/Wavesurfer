@@ -6369,8 +6369,8 @@ classdef WavesurferModel < ws.Model
             % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
             
             % Calculate the signals
-            %isTimedForEachDigitalChannel = self.IsDigitalChannelTimed ;
-            isInTaskForEachDOChannel = ~self.IsDOChannelTerminalOvercommitted ;
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
+            isInTaskForEachDOChannel = isTimedForEachDOChannel & ~self.IsDOChannelTerminalOvercommitted ;
             %isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
             nDigitalChannelsInTask = sum(isInTaskForEachDOChannel) ;
             if isempty(stimulusMapIndex) ,
