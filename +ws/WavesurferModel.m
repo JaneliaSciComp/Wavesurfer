@@ -939,7 +939,7 @@ classdef WavesurferModel < ws.Model
             if wasSet ,
                 %value = self.Acquisition_.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
                 self.Looper_.singleDigitalInputTerminalIDWasSetInFrontend() ;
-                self.Refiller_.singleDigitalInputTerminalIDWasSetInFrontend(self.IsDOChannelTerminalOvercommitte) ;                
+                self.Refiller_.singleDigitalInputTerminalIDWasSetInFrontend(self.IsDOChannelTerminalOvercommitted) ;                
                 %self.IPCPublisher_.send('singleDigitalInputTerminalIDWasSetInFrontend', ...
                 %                        self.IsDOChannelTerminalOvercommitted ) ;
             end            
