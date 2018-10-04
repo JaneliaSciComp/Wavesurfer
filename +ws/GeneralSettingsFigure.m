@@ -765,7 +765,8 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             end
             
             % Get the idle state once
-            isIdle = isequal(model.State,'idle');
+            %isIdle = isequal(model.State,'idle');
+            isRunning = isequal(model.State,'running');
 
             % Acquisition panel
             set(self.SweepBasedRadiobutton,'Value',model.AreSweepsFiniteDuration);
@@ -791,9 +792,9 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
             set(self.IncludeDateCheckbox, 'Value', model.DoIncludeDateInDataFileName);
             set(self.SessionIndexCheckbox, 'Value', model.DoIncludeSessionIndexInDataFileName);
             set(self.SessionIndexEdit, 'String', sprintf('%d',model.SessionIndex));
-            set(self.NextSweepText, 'String', ws.fif(~isIdle&&model.IsLoggingEnabled,'Current Sweep:','Next Sweep:'));
+            set(self.NextSweepText, 'String', ws.fif(isRunning && model.IsLoggingEnabled,'Current Sweep:','Next Sweep:'));
             set(self.NextSweepEdit, 'String', sprintf('%d',model.NextSweepIndex));
-            if ~isIdle&&model.IsLoggingEnabled ,
+            if isRunning && model.IsLoggingEnabled ,
                 set(self.FileNameEdit, 'String', model.CurrentRunAbsoluteFileName);
                 set(self.FileNameEdit, 'TooltipString', model.CurrentRunAbsoluteFileName);
                 set(self.FileNameText, 'TooltipString', model.CurrentRunAbsoluteFileName);
