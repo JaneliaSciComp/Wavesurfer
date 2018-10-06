@@ -378,11 +378,11 @@ classdef WavesurferModel < ws.Model
                 self.Looper_ = ws.Looper(self) ;
                 self.Refiller_ = ws.Refiller(self) ;                                
 
-                % Create the timer that runs during a run
-                self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
-                                          'BusyMode', 'drop', ...
-                                          'Period', 0.1, ...
-                                          'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
+%                 % Create the timer that runs during a run
+%                 self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+%                                           'BusyMode', 'drop', ...
+%                                           'Period', 0.1, ...
+%                                           'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
                 
                 % Get the list of all device names, and cache it in our own
                 % state
@@ -448,10 +448,17 @@ classdef WavesurferModel < ws.Model
                 %self.Refiller_.frontendIsBeingDeleted() ;
                 %self.IPCPublisher_.send('frontendIsBeingDeleted') ;
                 
-                if isvalid(self.TheBigTimer_) ,
-                    stop(self.TheBigTimer_) ;
-                    delete(self.TheBigTimer_) ;
-                    self.TheBigTimer_ = [] ;
+                try
+                    % Stop, delete the timer
+                    if ~isempty(self.TheBigTimer_)
+                        if isvalid(self.TheBigTimer_) ,
+                            stop(self.TheBigTimer_) ;
+                            delete(self.TheBigTimer_) ;
+                        end
+                        self.TheBigTimer_ = [] ;
+                    end                        
+                catch me
+                    fprintf('Unable to delete the timer in WSM delete() method.  Error was: %s', me.message) ;
                 end
                 
                 % Close the sockets
@@ -1425,6 +1432,12 @@ classdef WavesurferModel < ws.Model
             self.DidAnySweepFailToCompleteSoFar_ = false ;
             %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
             
+            % Create the timer that runs during a run
+            self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+                                      'BusyMode', 'drop', ...
+                                      'Period', 0.1, ...
+                                      'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
+            
             % Finally, start the timer
             start(self.TheBigTimer_) ;
         end  % run_() function
@@ -1843,9 +1856,15 @@ classdef WavesurferModel < ws.Model
         function wrapUpRunInWhichAllSweepsCompleted_(self)
             % Clean up after all sweeps complete successfully.
             
-            % Stop the timer
-            stop(self.TheBigTimer_) ;
-            
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                end
+                self.TheBigTimer_ = [] ;
+            end                
+                                    
             % Notify other processes
             %self.IPCPublisher_.send('completingRun') ;
             self.Looper_.completingRun() ;
@@ -1882,9 +1901,15 @@ classdef WavesurferModel < ws.Model
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.            
             
-            % Stop, the timer
-            stop(self.TheBigTimer_) ;
-            
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                end
+                self.TheBigTimer_ = [] ;
+            end                
+                                    
             %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
             % Notify other processes --- or not, we don't currently need
@@ -1937,9 +1962,15 @@ classdef WavesurferModel < ws.Model
             
             %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
-            % Stop the timer
-            stop(self.TheBigTimer_) ;
-            
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                end
+                self.TheBigTimer_ = [] ;
+            end                
+                        
             % Notify other processes
             %self.IPCPublisher_.send('abortingRun') ;
             self.Looper_.abortingRun() ;
