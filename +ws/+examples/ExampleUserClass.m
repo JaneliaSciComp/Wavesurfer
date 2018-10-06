@@ -96,16 +96,6 @@ classdef ExampleUserClass < ws.UserClass
             fprintf('%s  Just read %d scans of analog data and %d scans of digital data.\n', self.Greeting, nAIScans, nDIScans) ;
         end
         
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSL>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            nAIScans = size(analogData,1);
-            nDIScans = size(digitalData,1);            
-            fprintf('%s  Just acquired %d scans of analog data, %d scans of digital data.\n',self.Greeting,nAIScans,nDIScans);                                    
-        end
-        
-        % These methods are called in the refiller process
         function startingEpisode(self, refiller)  %#ok<INUSD>
             % Called just before each episode
             fprintf('%s  About to start an episode.\n',self.Greeting);

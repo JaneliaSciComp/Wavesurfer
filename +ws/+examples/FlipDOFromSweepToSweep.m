@@ -49,13 +49,6 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         function dataAvailable(self,wsModel)  %#ok<INUSD>
         end        
         
-        % These methods are called in the looper process
-        function samplesAcquired(self,looper,analogData,digitalData)  %#ok<INUSD> 
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-        end
-        
-        % These methods are called in the refiller process
         function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
         end

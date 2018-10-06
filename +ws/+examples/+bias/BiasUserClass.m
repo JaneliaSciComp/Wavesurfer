@@ -123,15 +123,7 @@ classdef BiasUserClass < ws.UserClass
         
         function stoppingEpisode(~,~)
             %dbstack;
-        end
-        
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            %nScans = size(analogData,1);
-            %fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
-        end
+        end        
     end  % methods
 
 

@@ -108,7 +108,6 @@ classdef MicroManagerUserClass < ws.UserClass
         function dataAvailable(~,~)
         end
 
-        % These methods are called in the refiller process
         function startingEpisode(~,~)
         end
         
@@ -119,14 +118,6 @@ classdef MicroManagerUserClass < ws.UserClass
         end
         
         function stoppingEpisode(~,~)
-        end
-        
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, eventName, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            %nScans = size(analogData,1);
-            %fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
         end        
     end  % public methods
 end  % classdef

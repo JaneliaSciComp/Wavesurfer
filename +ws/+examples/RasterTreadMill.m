@@ -315,16 +315,6 @@ classdef RasterTreadMill < ws.UserClass
             self.LastLEDValue_ = led(end) ;
         end
         
-        % this one is called in the looper process
-        function samplesAcquired(self,looper,analogData,digitalData) %#ok<INUSD>
-            % output TTL pulse
-            %fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
-            v = analogData(:,self.ElectrodeChannel) ;
-            newValue = any(v>=self.SpikeThreshold) ;
-            looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
-        end
-        
-        % these are are called in the refiller process
         function startingEpisode(self,refiller) %#ok<INUSD>
         end
         
