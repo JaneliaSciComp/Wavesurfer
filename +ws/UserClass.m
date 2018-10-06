@@ -19,7 +19,6 @@ classdef UserClass < ws.Coding
     
 
     methods (Abstract=true)
-        % this one is called in all processes
         wake(self, rootModel)
           % Called once after the user object is created, reinstantiated, or loaded from a
           % protocol file.  Note that when a protocol file is loaded, a user object
@@ -31,7 +30,6 @@ classdef UserClass < ws.Coding
           % be set to sensible values.  If needed, the wake() method should set
           % the transient values to preserve any user object invarients.
           
-        % these are called in the frontend process
         startingRun(self, wsModel)
         completingRun(self, wsModel)
         stoppingRun(self, wsModel)
@@ -42,10 +40,6 @@ classdef UserClass < ws.Coding
         abortingSweep(self, wsModel)
         dataAvailable(self, wsModel)
         
-        % this one is called in the looper process
-        samplesAcquired(self, looper, analogData, digitalData) 
-        
-        % these are are called in the refiller process
         startingEpisode(self, refiller)        
         completingEpisode(self, refiller)      
         stoppingEpisode(self, refiller)      
