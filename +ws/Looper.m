@@ -7,6 +7,7 @@ classdef Looper < handle
 %         IsDOChannelTimed
 %        DigitalOutputStateIfUntimed
 %         SweepDuration
+        DidCompleteSweep
     end
     
     properties (Access = protected)        
@@ -52,6 +53,7 @@ classdef Looper < handle
 
     properties (Access=protected, Transient=true)
         Frontend_        
+        DidCompleteSweep_
         %IPCPublisher_
         %IPCSubscriber_  % subscriber for the frontend
         %IPCReplier_  % to reply to frontend rep-req requests
@@ -130,6 +132,9 @@ classdef Looper < handle
             keyboard
         end  % function        
         
+        function result = get.DidCompleteSweep(self)
+            result = self.DidCompleteSweep_ ;
+        end
 %         function result = get.NSweepsCompletedInThisRun(self)
 %             result = self.NSweepsCompletedInThisRun_ ;
 %         end  % function
@@ -250,7 +255,12 @@ classdef Looper < handle
 
         function result = startingRun(self, ...
                                       acquisitionKeystoneTaskType, ...
-                                      acquisitionKeystoneTaskDeviceName)
+                                      acquisitionKeystoneTaskDeviceName, ...
+                                      isAIChannelActive, ...
+                                      isDIChannelActive, ...
+                                      acquisitionSampleRate, ...
+                                      sweepDuration, ...
+                                      dataCacheDurationWhenContinuous)
             % Make the looper settings look like the
             % wavesurferModelSettings, set everything else up for a run.
             %
@@ -258,7 +268,12 @@ classdef Looper < handle
 
             % Prepare for the run
             result = self.prepareForRun_(acquisitionKeystoneTaskType, ...
-                                         acquisitionKeystoneTaskDeviceName) ;
+                                         acquisitionKeystoneTaskDeviceName, ...
+                                         isAIChannelActive, ...
+                                         isDIChannelActive, ...
+                                         acquisitionSampleRate, ...
+                                         sweepDuration, ...
+                                         dataCacheDurationWhenContinuous) ;
         end  % function
 
         function result = completingRun(self)
@@ -340,7 +355,7 @@ classdef Looper < handle
                                                                         isDOChannelTimed, ...
                                                                         doChannelStateIfUntimed, ...
                                                                         isDOChannelTerminalOvercommitted)
-            self.DOChannelTerminalIDs_ = doChannelTerminalIDs ;
+            %self.DOChannelTerminalIDs_ = doChannelTerminalIDs ;
             self.reacquireOnDemandHardwareResources_(primaryDeviceName, ...
                                                      isPrimaryDeviceAPXIDevice, ...
                                                      doChannelTerminalIDs, ...
@@ -427,12 +442,14 @@ classdef Looper < handle
                                                                        primaryDeviceName, ...
                                                                        isPrimaryDeviceAPXIDevice, ...
                                                                        doChannelTerminalIDs, ...
+                                                                       isDOChannelTimed, ...
                                                                        doChannelStateIfUntimed, ...
                                                                        isDOChannelTerminalOvercommitted)
             %self.IsDOChannelTerminalOvercommitted_ = isDOChannelTerminalOvercommitted ;
             self.reacquireOnDemandHardwareResources_(primaryDeviceName, ...
                                                      isPrimaryDeviceAPXIDevice, ...
                                                      doChannelTerminalIDs, ...
+                                                     isDOChannelTimed, ...
                                                      doChannelStateIfUntimed, ...
                                                      isDOChannelTerminalOvercommitted) ;  % this clears the existing task, makes a new task, and sets everything appropriately
             result = [] ;
@@ -548,13 +565,11 @@ classdef Looper < handle
     end  % protected methods block
         
     methods (Access=public)
-        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep(self, timeSinceSweepStart, fromRunStartTicId)
-            %fprintf('Looper::performOneIterationDuringOngoingSweep_()\n');
-            % Check for messages, but don't wait for them
-            %self.IPCSubscriber_.processMessagesIfAvailable() ;
-            % Don't need to process self.IPCReplier_ messages, b/c no req-rep
-            % messages should be arriving during a sweep.
-
+        function didAcquireNonzeroScans = performOneIterationDuringOngoingSweep(self, ...
+                                                                                timeSinceSweepStart, ...
+                                                                                fromRunStartTicId, ...
+                                                                                acquisitionSampleRate, ...
+                                                                                sweepDuration)
             % Acquire data, update soft real-time outputs
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
                 self.pollAcquisition_(timeSinceSweepStart, fromRunStartTicId) ;
@@ -568,7 +583,27 @@ classdef Looper < handle
             if didReadFromTasks ,
                 self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
                 self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
-                self.samplesAcquired_(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;                            
+                nScans=size(rawAnalogData,1);
+                %nChannels=size(data,2);
+                %assert(nChannels == numel(expectedChannelNames));
+
+                if (nScans>0)
+                    % update the current time
+                    dt = 1/acquisitionSampleRate ;
+                    self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
+
+                    % Add data to the user cache
+                    isSweepBased = isfinite(sweepDuration) ;
+                    self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
+                    self.Frontend_.samplesAcquired(self.NScansAcquiredSoFarThisSweep_, ...
+                                                   rawAnalogData, ...
+                                                   rawDigitalData, ...
+                                                   timeSinceRunStartAtStartOfData ) ;
+
+                    % Update the number of scans acquired
+                    self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
+                end
+                
                 if areTasksDone ,
                     self.completeTheOngoingSweep_() ;
                     %self.acquisitionSweepComplete() ;
@@ -680,16 +715,21 @@ classdef Looper < handle
         
         function coeffsAndClock = prepareForRun_(self, ...
                                                  acquisitionKeystoneTaskType, ...
-                                                 acquisitionKeystoneTaskDeviceName)
+                                                 acquisitionKeystoneTaskDeviceName, ...
+                                                 isAIChannelActive, ...
+                                                 isDIChannelActive, ...
+                                                 acquisitionSampleRate, ...
+                                                 sweepDuration, ...
+                                                 dataCacheDurationWhenContinuous)
             % Get ready to run, but don't start anything.
 
             %keyboard
             
-            % If we're already acquiring, error
-            if self.Frontend_.IsPerformingRun ,
-                error('ws:Looper:alreadyPerformingRun', ...
-                      'Looper got message to start run while already performing a run!');
-            end
+%             % If we're already acquiring, error
+%             if self.Frontend_.IsPerformingRun ,
+%                 error('ws:Looper:alreadyPerformingRun', ...
+%                       'Looper got message to start run while already performing a run!');
+%             end
             
             % Set the path to match that of the frontend (partly so we can
             % find the user class, if specified)
@@ -721,7 +761,11 @@ classdef Looper < handle
             
             % Tell all the subsystems to prepare for the run
             try
-                self.startingRunAcquisition_() ;
+                self.startingRunAcquisition_(isAIChannelActive, ...
+                                             isDIChannelActive, ...
+                                             acquisitionSampleRate, ...
+                                             sweepDuration, ...
+                                             dataCacheDurationWhenContinuous) ;
                 %self.startingRunStimulation_() ;
                 %self.startingRunTriggering_() ;
                 %self.startingRunUserCodeManager_() ;
@@ -746,55 +790,34 @@ classdef Looper < handle
             coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
         end  % function
         
-        function startingRunAcquisition_(self)
+        function startingRunAcquisition_(self, ...
+                                         isAIChannelActive, ...
+                                         isDIChannelActive, ...
+                                         acquisitionSampleRate, ...
+                                         sweepDuration, ...
+                                         dataCacheDurationWhenContinuous)
+                                     
             % Make the NI daq task, if don't have it already
             self.acquireTimedHardwareResources_() ;
 
-            % Set up the task triggering for DI channels
-%             acquisitionKeystoneTask = self.AcquisitionKeystoneTaskTypeCache_ ;
-%             self.TimedAnalogInputTask_.setTrigger(self.AcquisitionKeystoneTaskTypeCache_, ...
-%                                                   self.AcquisitionTriggerDeviceName_, ...
-%                                                   self.AcquisitionTriggerPFIID_, ...
-%                                                   self.AcquisitionTriggerEdge_) ;
-%             if isequal(acquisitionKeystoneTask,'ai') ,
-%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
-%                 %self.TimedAnalogInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TimedDigitalInputTask_.TriggerEdge = 'rising' ;
-%             elseif isequal(acquisitionKeystoneTask,'di') ,
-%                 %self.TimedAnalogInputTask_.TriggerTerminalName = sprintf('/%/di/StartTrigger', self.PrimaryDeviceName_) ;
-%                 %self.TimedAnalogInputTask_.TriggerEdge = 'rising' ;                
-%                 self.TimedDigitalInputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.AcquisitionTriggerDeviceName_, self.AcquisitionTriggerPFIID_) ;
-%                 self.TimedDigitalInputTask_.TriggerEdge = self.AcquisitionTriggerEdge_ ;
-%             else
-%                 % Getting here means there was a programmer error
-%                 error('ws:InternalError', ...
-%                       'Adam is a dum-dum, and the magic number is 92834797');
-%             end
-            
-%             % Set for finite-duration vs. continous acquisition
-%             %self.TimedAnalogInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
-%             self.TimedDigitalInputTask_.DesiredAcquisitionDuration = self.SweepDuration_ ;
-            
             % Dimension the cache that will hold acquired data in main
             % memory
-            nDIChannels = length(self.Frontend_.DIChannelNames) ;
-            if nDIChannels<=8
+            nActiveAIChannels = sum(isAIChannelActive);
+            nActiveDIChannels = sum(isDIChannelActive);
+            if nActiveDIChannels<=8
                 dataType = 'uint8';
-            elseif nDIChannels<=16
+            elseif nActiveDIChannels<=16
                 dataType = 'uint16';
             else %nDIChannels<=32
                 dataType = 'uint32';
             end
-            nActiveAIChannels = sum(self.Frontend_.IsAIChannelActive);
-            nActiveDIChannels = sum(self.Frontend_.IsDIChannelActive);
-            if isfinite(self.Frontend_.SweepDuration)  ,
+            if isfinite(sweepDuration)  ,
                 %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
-                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.Frontend_.AcquisitionSampleRate, self.Frontend_.SweepDuration) ;
+                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
                 self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
                 self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
             else                                
-                nScans = round(self.Frontend_.DataCacheDurationWhenContinuous * self.Frontend_.AcquisitionSampleRate) ;
+                nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
                 self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
                 self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
             end
@@ -816,14 +839,14 @@ classdef Looper < handle
             % goes wrong
             %err = [] ;
             
-            if ~self.Frontend_.IsPerformingRun || self.Frontend_.IsPerformingSweep ,
-                % If we're not in the right mode for this message, ignore
-                % it.  This now happens in the normal course of things (b/c
-                % we have two incomming sockets, basically), so we need to
-                % just ignore the message quietly.
-                result = [] ;
-                return
-            end
+%             if ~self.Frontend_.IsPerformingRun || self.Frontend_.IsPerformingSweep ,
+%                 % If we're not in the right mode for this message, ignore
+%                 % it.  This now happens in the normal course of things (b/c
+%                 % we have two incomming sockets, basically), so we need to
+%                 % just ignore the message quietly.
+%                 result = [] ;
+%                 return
+%             end
             
             % Reset the sample count for the sweep
             %fprintf('Looper:prepareForSweep_::About to reset NScansAcquiredSoFarThisSweep_...\n');
@@ -859,6 +882,7 @@ classdef Looper < handle
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             %self.NScansReadThisSweep_ = 0 ;
+            self.DidCompleteSweep_ = false ;
             self.TimedDigitalInputTask_.start();
             self.TimedAnalogInputTask_.start();
         end  % function
@@ -876,7 +900,8 @@ classdef Looper < handle
             
             % Notify the front end
             %self.IPCPublisher_.send('looperCompletedSweep') ;            
-            self.Frontend_.looperCompletedSweep() ;
+            %self.Frontend_.looperCompletedSweep() ;
+            self.DidCompleteSweep_ = true ;
         end  % function
         
         function stopTheOngoingSweep_(self)
@@ -934,50 +959,50 @@ classdef Looper < handle
             self.IsArmedOrAcquiring_ = false;            
         end  % function
         
-        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
-            % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
-            nScans=size(rawAnalogData,1);
-            %nChannels=size(data,2);
-            %assert(nChannels == numel(expectedChannelNames));
-                        
-            if (nScans>0)
-                % update the current time
-                dt = 1/self.Frontend_.AcquisitionSampleRate ;
-                self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
-
-                % % Scale the analog data
-                % channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
-                
-                %scalingCoefficients = self.getAnalogScalingCoefficients_() ;
-                %scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
-                
-                % Add data to the user cache
-                isSweepBased = isfinite(self.Frontend_.SweepDuration) ;
-                self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
-                                             
-                %if self.IsUserCodeManagerEnabled_ ,
-                %    self.invokeSamplesAcquiredUserMethod_(self, scaledAnalogData, rawDigitalData) ;
-                %end
-                
-                %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
-
-                % Toss the data to the subscribers
-                %fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
-%                 self.IPCPublisher_.send('samplesAcquired', ...
-%                                         self.NScansAcquiredSoFarThisSweep_, ...
-%                                         rawAnalogData, ...
-%                                         rawDigitalData, ...
-%                                         timeSinceRunStartAtStartOfData ) ;
-                self.Frontend_.samplesAcquired(self.NScansAcquiredSoFarThisSweep_, ...
-                                               rawAnalogData, ...
-                                               rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData ) ;
-                                    
-                % Update the number of scans acquired
-                self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
-            end
-        end  % function
+%         function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, acquisitionSampleRate, sweepDuration)
+%             % The central method for handling incoming data.  Called by WavesurferModel::samplesAcquired().
+%             % Calls the dataAvailable() method on all the subsystems, which handle display, logging, etc.
+%             nScans=size(rawAnalogData,1);
+%             %nChannels=size(data,2);
+%             %assert(nChannels == numel(expectedChannelNames));
+%                         
+%             if (nScans>0)
+%                 % update the current time
+%                 dt = 1/acquisitionSampleRate ;
+%                 self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
+% 
+%                 % % Scale the analog data
+%                 % channelScales = self.AIChannelScales_(self.IsAIChannelActive_) ;
+%                 
+%                 %scalingCoefficients = self.getAnalogScalingCoefficients_() ;
+%                 %scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
+%                 
+%                 % Add data to the user cache
+%                 isSweepBased = isfinite(sweepDuration) ;
+%                 self.addDataToUserCache_(rawAnalogData, rawDigitalData, isSweepBased) ;
+%                                              
+%                 %if self.IsUserCodeManagerEnabled_ ,
+%                 %    self.invokeSamplesAcquiredUserMethod_(self, scaledAnalogData, rawDigitalData) ;
+%                 %end
+%                 
+%                 %fprintf('Subsystem times: %20g %20g %20g %20g %20g %20g %20g\n',T);
+% 
+%                 % Toss the data to the subscribers
+%                 %fprintf('Sending acquire starting at scan index %d to frontend.\n',self.NScansAcquiredSoFarThisSweep_);
+% %                 self.IPCPublisher_.send('samplesAcquired', ...
+% %                                         self.NScansAcquiredSoFarThisSweep_, ...
+% %                                         rawAnalogData, ...
+% %                                         rawDigitalData, ...
+% %                                         timeSinceRunStartAtStartOfData ) ;
+%                 self.Frontend_.samplesAcquired(self.NScansAcquiredSoFarThisSweep_, ...
+%                                                rawAnalogData, ...
+%                                                rawDigitalData, ...
+%                                                timeSinceRunStartAtStartOfData ) ;
+%                                     
+%                 % Update the number of scans acquired
+%                 self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans;
+%             end
+%         end  % function
         
         function callUserMethod_(self, eventName, varargin)
             % Handle user functions.  It would be possible to just make the UserCodeManager

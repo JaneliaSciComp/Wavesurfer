@@ -305,7 +305,7 @@ classdef WavesurferModel < ws.Model
         %LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
         DrawnowTicId_
         TimeOfLastDrawnow_
-        DidLooperCompleteSweep_
+        %DidLooperCompleteSweep_
         %SICommandPollTimer_
         %SICommandFileExistenceChecker_
         CommandClient_
@@ -546,13 +546,13 @@ classdef WavesurferModel < ws.Model
             result = [] ;
         end  % function
         
-        function result = looperCompletedSweep(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
-            %fprintf('WavesurferModel::looperCompletedSweep()\n');
-            %self.DidLooperCompleteSweep_ = true ;
-            self.DidLooperCompleteSweep_ = true ;
-            result = [] ;
-        end
+%         function result = looperCompletedSweep(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
+%             %fprintf('WavesurferModel::looperCompletedSweep()\n');
+%             %self.DidLooperCompleteSweep_ = true ;
+%             self.DidLooperCompleteSweep_ = true ;
+%             result = [] ;
+%         end
         
         function result = refillerCompletedEpisodes(self)
             % Call by the Refiller, via ZMQ pub-sub, when it has completed
@@ -1275,7 +1275,12 @@ classdef WavesurferModel < ws.Model
             try
                looperResponse = ...
                     self.Looper_.startingRun(acquisitionKeystoneTaskType, ...
-                                             acquisitionKeystoneTaskDeviceName) ;
+                                             acquisitionKeystoneTaskDeviceName, ...
+                                             self.IsAIChannelActive, ...
+                                             self.IsDIChannelActive, ...
+                                             self.AcquisitionSampleRate, ...
+                                             self.SweepDuration, ...
+                                             self.DataCacheDurationWhenContinuous) ;
                err = [] ;                          
             catch err
             end            
@@ -1518,7 +1523,7 @@ classdef WavesurferModel < ws.Model
 
             % Pulse the master trigger to start the sweep!
             %fprintf('About to pulse the master trigger!\n');
-            self.DidLooperCompleteSweep_ = false ;
+            %self.DidLooperCompleteSweep_ = false ;
             %self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = true ;  
                 % have to wait until now to set this true, so that old
@@ -1541,12 +1546,15 @@ classdef WavesurferModel < ws.Model
                 if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
                     %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
                     if self.IsPerformingSweep_ ,
-                        if self.DidLooperCompleteSweep_ ,
+                        if self.Looper_.DidCompleteSweep ,
                             self.completeTheOngoingSweep_() ;
                         else
                             %fprintf('At top of within-sweep loop...\n') ;
                             timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, self.FromRunStartTicId_) ;
+                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, ...
+                                                                               self.FromRunStartTicId_, ...
+                                                                               self.AcquisitionSampleRate, ...
+                                                                               self.SweepDuration) ;
                             self.Refiller_.performOneIterationDuringOngoingRun() ;
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
