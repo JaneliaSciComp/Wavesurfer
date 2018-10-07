@@ -268,7 +268,7 @@ classdef WavesurferModel < ws.Model
         State_ = 'uninitialized'
         Subsystems_
         t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
-        NScansAcquiredSoFarThisSweep_
+        %NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_
         TimeOfLastWillPerformSweep_
@@ -533,18 +533,18 @@ classdef WavesurferModel < ws.Model
     end
     
     methods  % These are all the methods that get called in response to ZMQ messages
-        function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
-            
-            % If we are not performing sweeps, just ignore.  This can
-            % happen after stopping a run and then starting another, where some old messages from the last run are
-            % still in the queue
-            if self.IsPerformingSweep_ ,
-                %fprintf('About to call samplesAcquired_()\n') ;
-                self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
-            end
-            result = [] ;
-        end  % function
+%         function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+%             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
+%             
+%             % If we are not performing sweeps, just ignore.  This can
+%             % happen after stopping a run and then starting another, where some old messages from the last run are
+%             % still in the queue
+%             if self.IsPerformingSweep_ ,
+%                 %fprintf('About to call samplesAcquired_()\n') ;
+%                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+%             end
+%             result = [] ;
+%         end  % function
         
 %         function result = looperCompletedSweep(self)
 %             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
@@ -1461,7 +1461,7 @@ classdef WavesurferModel < ws.Model
             %self.TimeOfLastSamplesAcquired_=[];            
             
             % Reset the sample count for the sweep
-            self.NScansAcquiredSoFarThisSweep_ = 0;
+            %self.NScansAcquiredSoFarThisSweep_ = 0;
             
             % update the current time
             self.t_=0;            
@@ -1551,10 +1551,9 @@ classdef WavesurferModel < ws.Model
                         else
                             %fprintf('At top of within-sweep loop...\n') ;
                             timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                            self.Looper_.performOneIterationDuringOngoingSweep(timeSinceSweepStart, ...
-                                                                               self.FromRunStartTicId_, ...
-                                                                               self.AcquisitionSampleRate, ...
-                                                                               self.SweepDuration) ;
+                            self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart, ...
+                                                                        self.FromRunStartTicId_, ...
+                                                                        self.SweepDuration) ;
                             self.Refiller_.performOneIterationDuringOngoingRun() ;
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
@@ -2035,30 +2034,15 @@ classdef WavesurferModel < ws.Model
             
         end  % function
         
-        function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % Record the time
             %self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
             
-            % Get the number of scans
-            nScans = size(rawAnalogData,1) ;
+            % % Get the number of scans
+            % nScans = size(rawAnalogData,1) ;
 
-            % Check that we didn't miss any data
-            if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
-                nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
-                %fprintf('About to error in samplesAcquired_()\n');
-                %keyboard
-                error('We apparently missed %d scans: the index of the first scan in this acquire is %d, but we''ve only seen %d scans.', ...
-                      nScansMissed, ...
-                      scanIndex, ...
-                      self.NScansAcquiredSoFarThisSweep_ );
-            elseif scanIndex<self.NScansAcquiredSoFarThisSweep_ ,
-                %fprintf('About to error in samplesAcquired_()\n');
-                %keyboard
-                error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.NScansAcquiredSoFarThisSweep_);
-            else
-                % All is well, so just update self.NScansAcquiredSoFarThisSweep_
-                self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
-            end
+            % % Update the number of scans acquired
+            % self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
 
             % Add the new data to the storage buffer
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
@@ -6494,6 +6478,52 @@ classdef WavesurferModel < ws.Model
 %             % of the output task
 %             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
         end  % function        
+        
+        function performOneIterationDuringOngoingSweep_(self, ...
+                                                        timeSinceSweepStart, ...
+                                                        fromRunStartTicId, ...
+                                                        sweepDuration)
+                                                    
+            % Acquire data, update soft real-time outputs
+            [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+                self.Looper_.pollAcquisition(timeSinceSweepStart, fromRunStartTicId) ;
+            
+%             % DEBUG: This is for debugging purposes only!
+%             if timeSinceRunStartAtStartOfData > 5 ,
+%                 error('ws:fakeerror', 'Stuff went bad.  Real bad.') ;
+%             end
+            
+            % Deal with the acquired samples
+            if didReadFromTasks ,
+                %self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+                %self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+                nScans=size(rawAnalogData,1);
+                %nChannels=size(data,2);
+                %assert(nChannels == numel(expectedChannelNames));
+
+                if (nScans>0)
+                    % update the current time
+                    %dt = 1/acquisitionSampleRate ;
+                    %self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
+
+                    % Add data to the user cache
+                    isSweepBased = isfinite(sweepDuration) ;
+                    self.Looper_.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
+                    self.samplesAcquired_(rawAnalogData, ...
+                                          rawDigitalData, ...
+                                          timeSinceRunStartAtStartOfData ) ;
+                end
+                
+                if areTasksDone ,
+                    self.Looper_.completeTheOngoingSweep() ;
+                    %self.acquisitionSweepComplete() ;
+                end
+            end                        
+            
+%             % We'll use this in a sanity-check
+%             didAcquireNonzeroScans = (size(rawAnalogData,1)>0) ;
+        end  % function
+        
     end  % protected methods block        
     
     methods
