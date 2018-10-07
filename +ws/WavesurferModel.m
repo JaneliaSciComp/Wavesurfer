@@ -280,7 +280,7 @@ classdef WavesurferModel < ws.Model
         ClockAtRunStart_
         %DoContinuePolling_
         %DidLooperCompleteSweep_
-        DidRefillerCompleteEpisodes_
+        %DidRefillerCompleteEpisodes_
         DidAnySweepFailToCompleteSoFar_
         %WasRunStopped_
         %WasRunStoppedInLooper_
@@ -376,7 +376,7 @@ classdef WavesurferModel < ws.Model
             if isITheOneTrueWavesurferModel ,
                 % Create the looper, refiller
                 self.Looper_ = ws.Looper() ;
-                self.Refiller_ = ws.Refiller(self) ;                                
+                self.Refiller_ = ws.Refiller() ;                                
 
 %                 % Create the timer that runs during a run
 %                 self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
@@ -517,7 +517,7 @@ classdef WavesurferModel < ws.Model
                 %fprintf('About to publish "frontendWantsToStopRun"\n') ;
                 %self.IPCPublisher_.send('frontendWantsToStopRun');  
                 self.Looper_.frontendWantsToStopRun(self.IsPerformingSweep) ;
-                self.Refiller_.frontendWantsToStopRun() ;
+                self.Refiller_.frontendWantsToStopRun(self) ;
                 if self.IsPerformingSweep_ ,
                     self.stopTheOngoingSweep_() ;
                 end
@@ -554,15 +554,15 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end
         
-        function result = refillerCompletedEpisodes(self)
-            % Call by the Refiller, via ZMQ pub-sub, when it has completed
-            % all the episodes in the run
-            %fprintf('WavesurferModel::refillerCompletedRun()\n');            
-            self.DidRefillerCompleteEpisodes_ = true ;
-            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
-            %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
-            result = [] ;
-        end
+%         function result = refillerCompletedEpisodes(self)
+%             % Call by the Refiller, via ZMQ pub-sub, when it has completed
+%             % all the episodes in the run
+%             %fprintf('WavesurferModel::refillerCompletedRun()\n');            
+%             self.DidRefillerCompleteEpisodes_ = true ;
+%             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
+%             %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
+%             result = [] ;
+%         end
         
 %         function result = looperStoppedRun(self)
 %             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
@@ -1219,7 +1219,7 @@ classdef WavesurferModel < ws.Model
             % Initialize the sweep counter, etc.
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
-            self.DidRefillerCompleteEpisodes_ = false ;
+            %self.DidRefillerCompleteEpisodes_ = false ;
             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
@@ -1330,9 +1330,32 @@ classdef WavesurferModel < ws.Model
             
             % Wait for the refiller to respond that it is ready
             try
-                refillerError = ...
-                    self.Refiller_.startingRun(stimulationKeystoneTaskType, ...
-                                               stimulationKeystoneTaskDeviceName) ;
+                stimulationTriggerClass = self.stimulationTriggerProperty('class') ;
+                stimulationTriggerRepeatCount = self.stimulationTriggerProperty('RepeatCount') ;                
+                stimulationTriggerDeviceName = self.stimulationTriggerProperty('DeviceName') ;
+                stimulationTriggerPFIID = self.stimulationTriggerProperty('PFIID') ;
+                stimulationTriggerEdge = self.stimulationTriggerProperty('Edge') ;
+                self.Refiller_.startingRun(stimulationKeystoneTaskType, ...
+                                           stimulationKeystoneTaskDeviceName, ...
+                                           self.IsStimulationEnabled, ...
+                                           stimulationTriggerClass, ...
+                                           self.NSweepsPerRun, ...
+                                           stimulationTriggerRepeatCount, ...
+                                           self.isStimulationTriggerIdenticalToAcquisitionTrigger(), ...
+                                           self.AOChannelDeviceNames, ...
+                                           self.IsAOChannelTerminalOvercommitted, ...
+                                           self.AOChannelTerminalIDs, ...
+                                           self.PrimaryDeviceName, ...
+                                           self.IsPrimaryDeviceAPXIDevice, ...
+                                           self.IsDOChannelTerminalOvercommitted, ...
+                                           self.IsDOChannelTimed, ...
+                                           self.DOChannelTerminalIDs, ...
+                                           self.StimulationSampleRate, ...
+                                           stimulationTriggerDeviceName, ...
+                                           stimulationTriggerPFIID, ...
+                                           stimulationTriggerEdge, ...
+                                           self ) ;
+                refillerError = [] ;
                 err = [] ;
             catch err
             end            
@@ -1495,7 +1518,7 @@ classdef WavesurferModel < ws.Model
             % Notify the refiller that we're starting a sweep, wait for the refiller to respond
             if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
                 try
-                    self.Refiller_.startingSweep(self.NSweepsCompletedInThisRun_+1) ;
+                    self.Refiller_.startingSweep(self.NSweepsCompletedInThisRun_+1, self) ;
                     err = [] ;
                 catch err
                 end
@@ -1551,7 +1574,7 @@ classdef WavesurferModel < ws.Model
                 return
             end
             try
-                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
+                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.Refiller_.DidCompleteEpisodes) ,
                     %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
                     if self.IsPerformingSweep_ ,
                         if self.Looper_.DidCompleteSweep ,
@@ -1559,10 +1582,11 @@ classdef WavesurferModel < ws.Model
                         else
                             %fprintf('At top of within-sweep loop...\n') ;
                             timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
-                            self.performOneIterationDuringOngoingSweep_(timeSinceSweepStart, ...
-                                                                        self.FromRunStartTicId_, ...
-                                                                        self.SweepDuration) ;
-                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                            self.performOneLooperIterationDuringOngoingSweep_(timeSinceSweepStart, ...
+                                                                              self.FromRunStartTicId_, ...
+                                                                              self.SweepDuration) ;
+                            isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                            self.Refiller_.performOneIterationDuringOngoingRun(isStimulationTriggerIdenticalToAcquisitionTrigger, self) ;
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
                             if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
@@ -1578,7 +1602,8 @@ classdef WavesurferModel < ws.Model
                             % refiller is done.  Also keep listening for looper
                             % messages, although I'm not sure we need to...
                             %fprintf('About to check for messages after completing all sweeps\n');
-                            self.Refiller_.performOneIterationDuringOngoingRun() ;
+                            isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                            self.Refiller_.performOneIterationDuringOngoingRun(isStimulationTriggerIdenticalToAcquisitionTrigger, self) ;                            
                             %fprintf('Check for messages after completing all sweeps\n');
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
@@ -1888,7 +1913,7 @@ classdef WavesurferModel < ws.Model
             % Notify other processes
             %self.IPCPublisher_.send('completingRun') ;
             self.Looper_.completingRun() ;
-            self.Refiller_.completingRun() ;
+            self.Refiller_.completingRun(self) ;
 
             % Notify subsystems
             for idx = 1: numel(self.Subsystems_) ,
@@ -1994,7 +2019,7 @@ classdef WavesurferModel < ws.Model
             % Notify other processes
             %self.IPCPublisher_.send('abortingRun') ;
             self.Looper_.abortingRun() ;
-            self.Refiller_.abortingRun() ;
+            self.Refiller_.abortingRun(self) ;
 
             % Notify subsystems, in reverse of starting order
 %             for idx = numel(self.Subsystems_):-1:1 ,
@@ -2188,6 +2213,11 @@ classdef WavesurferModel < ws.Model
             end
             self.Display_.IsEnabled = true ;
         end
+        
+        function callUserMethod(self, eventName, varargin)
+            self.callUserMethod_(eventName, varargin{:}) ;
+        end  % function                
+        
     end  % methods block
     
     methods (Access = protected)        
@@ -6487,10 +6517,10 @@ classdef WavesurferModel < ws.Model
 %             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
         end  % function        
         
-        function performOneIterationDuringOngoingSweep_(self, ...
-                                                        timeSinceSweepStart, ...
-                                                        fromRunStartTicId, ...
-                                                        sweepDuration)
+        function performOneLooperIterationDuringOngoingSweep_(self, ...
+                                                              timeSinceSweepStart, ...
+                                                              fromRunStartTicId, ...
+                                                              sweepDuration)
                                                     
             % Acquire data, update soft real-time outputs
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...

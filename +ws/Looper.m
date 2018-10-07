@@ -52,7 +52,7 @@ classdef Looper < handle
     end
 
     properties (Access=protected, Transient=true)
-        Frontend_        
+        %Frontend_        
         DidCompleteSweep_
         %IPCPublisher_
         %IPCSubscriber_  % subscriber for the frontend
@@ -1088,17 +1088,17 @@ classdef Looper < handle
 %             end
 %         end  % function
         
-        function callUserMethod_(self, eventName, varargin)
-            % Handle user functions.  It would be possible to just make the UserCodeManager
-            % subsystem a regular listener of these events.  Handling it
-            % directly removes at 
-            % least one layer of function calls and allows for user functions for 'events'
-            % that are not formally events on the model.
-            self.UserCodeManager_.invoke(self, eventName, varargin{:});
-            
-            % Handle as standard event if applicable.
-            %self.broadcast(eventName);
-        end  % function                
+%         function callUserMethod_(self, eventName, varargin)
+%             % Handle user functions.  It would be possible to just make the UserCodeManager
+%             % subsystem a regular listener of these events.  Handling it
+%             % directly removes at 
+%             % least one layer of function calls and allows for user functions for 'events'
+%             % that are not formally events on the model.
+%             self.UserCodeManager_.invoke(self, eventName, varargin{:});
+%             
+%             % Handle as standard event if applicable.
+%             %self.broadcast(eventName);
+%         end  % function                
         
 %         function setLooperProtocol_(self, looperProtocol)
 %             % Cause self to resemble other, for the purposes of running an

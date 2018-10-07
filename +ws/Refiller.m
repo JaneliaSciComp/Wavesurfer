@@ -37,34 +37,35 @@ classdef Refiller < handle
     end
 
     properties (Access=protected, Transient=true)
-        Frontend_
+        %Frontend_
         %IPCPublisher_
         %IPCSubscriber_  % subscriber for the frontend
         %IPCReplier_  % to reply to frontend rep-req requests
         %DoesFrontendWantToStopRun_        
         %DoKeepRunningMainLoop_
-        IsPerformingRun_
+        %IsPerformingRun_
         IsPerformingEpisode_
         AreTasksStarted_
         NEpisodesPerRun_
         NEpisodesCompletedSoFarThisRun_
-        StimulationKeystoneTaskType_
-        StimulationKeystoneTaskDeviceName_
+        %StimulationKeystoneTaskType_
+        %StimulationKeystoneTaskDeviceName_
         TheFiniteAnalogOutputTask_
         TheFiniteDigitalOutputTask_
-        DidNotifyFrontendThatWeCompletedAllEpisodes_
+        %DidNotifyFrontendThatWeCompletedAllEpisodes_
         %IsInTaskForEachAOChannel_
         %IsInTaskForEachDOChannel_
+        %DidCompleteEpisodes_
     end
     
     methods
-        function self = Refiller(frontend)
+        function self = Refiller()
             % This is the main object that resides in the Refiller process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            self.Frontend_ = frontend ;
+            %self.Frontend_ = frontend ;
             
 %             % Set up IPC publisher socket to let others know about what's
 %             % going on with the Refiller
@@ -82,8 +83,8 @@ classdef Refiller < handle
 %             self.IPCReplier_.bind() ;            
         end
         
-        function delete(self)
-            self.Frontend_ = [] ;
+        function delete(self)  %#ok<INUSD>
+            %self.Frontend_ = [] ;
 %             self.IPCPublisher_ = [] ;
 %             self.IPCSubscriber_ = [] ;
 %             self.IPCReplier_ = [] ;
@@ -193,7 +194,7 @@ classdef Refiller < handle
 %             end
 %         end  % function
         
-        function performOneIterationDuringOngoingRun(self)
+        function performOneIterationDuringOngoingRun(self, isStimulationTriggerIdenticalToAcquisitionTrigger, frontend)
             % Action in a run depends on whether we are also in an
             % episode, or are in-between episodes
             % Check the finite outputs, refill them if
@@ -202,7 +203,33 @@ classdef Refiller < handle
                 areTasksDone = self.areTasksDone_() ;
                 if areTasksDone ,
                     %fprintf('Tasks are done\n') ;
-                    self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                    %self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                    % Called from runMainLoop() when a single episode of stimulation is
+                    % completed.  
+                    %fprintf('completeTheOngoingEpisode_()\n');
+                    % We only want this method to do anything once per episode, and the next three
+                    % lines make this the case.
+
+                    % Notify the Stimulation subsystem
+                    %if self.Frontend_.IsStimulationEnabled ,
+                    if self.AreTasksStarted_ ,
+                        self.TheFiniteAnalogOutputTask_.stop() ;
+                        self.TheFiniteDigitalOutputTask_.stop() ;                
+                        self.AreTasksStarted_ = false ;
+                    end
+                    %end
+
+                    % Call user method
+                    self.callUserMethod_('completingEpisode');                        
+
+                    % Update state
+                    self.IsPerformingEpisode_ = false;
+                    %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+                    self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
+                    %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
+
+                    %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+                    %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);                    
                 else
                     %fprintf('Tasks are not done\n') ;
                     % If tasks are not done, do nothing (except
@@ -212,26 +239,14 @@ classdef Refiller < handle
                 % If we're not performing an episode, see if
                 % we need to start one.
                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                    if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+                    %isStimulationTriggerIdenticalToAcquisitionTrigger = self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                    if isStimulationTriggerIdenticalToAcquisitionTrigger ,
                         % do nothing.
                         % if they're identical, startEpisode_()
                         % is called from the startingSweep()
                         % req-rep method.
                     else
-                        self.startEpisode_() ;
-                    end
-                else
-                    % If we get here, the run is ongoing, but
-                    % we've completed the episodes, whether
-                    % we've noted that fact or not.
-                    if self.DidNotifyFrontendThatWeCompletedAllEpisodes_ ,
-                        % Do nothing
-                    else
-                        % Notify the frontend
-                        self.Frontend_.refillerCompletedEpisodes() ;
-                        %fprintf('Just notified frontend that refillerCompletedEpisodes\n') ;
-                        self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = true ;
-                        %self.completeTheEpisodes_() ;
+                        self.startEpisode_(frontend) ;
                     end
                 end
             end
@@ -248,21 +263,126 @@ classdef Refiller < handle
             result = [] ;
         end  % function
         
-        function result = startingRun(self, ...
-                                      stimulationKeystoneTaskType, ...
-                                      stimulationKeystoneTaskDeviceName)
-            % Make the refiller settings look like the
-            % wavesurferModelSettings, set everything else up for a run.
-            %
-            % This is called via (req-req) RPC, so must return exactly one value.
-            %fprintf('Got message startingRun\n') ;
+        function startingRun(self, ...
+                             stimulationKeystoneTaskType, ...
+                             stimulationKeystoneTaskDeviceName, ...
+                             isStimulationEnabled, ...
+                             stimulationTriggerClass, ...
+                             nSweepsPerRun, ...
+                             stimulationTriggerRepeatCount, ...
+                             isStimulationTriggerIdenticalToAcquisitionTrigger, ...
+                             aoChannelDeviceNames, ...
+                             isAOChannelTerminalOvercommitted, ...
+                             aoChannelTerminalIDs, ...
+                             primaryDeviceName, ...
+                             isPrimaryDeviceAPXIDevice, ...
+                             isDOChannelTerminalOvercommitted, ...
+                             isDOChannelTimed, ...
+                             doChannelTerminalIDs, ...
+                             stimulationSampleRate, ...
+                             stimulationTriggerDeviceName, ...
+                             stimulationTriggerPFIID, ...
+                             stimulationTriggerEdge, ...
+                             frontend)
+                                     
+            %% Cache the keystone task for the run
+            %self.StimulationKeystoneTaskType_ = stimulationKeystoneTaskType ;            
+            %self.StimulationKeystoneTaskDeviceName_ = stimulationKeystoneTaskDeviceName ;            
+            
+            % Determine episodes per run
+            if isStimulationEnabled ,
+                if isequal(stimulationTriggerClass, 'ws.BuiltinTrigger') ,
+                    %nSweepsPerRun = self.Frontend_.NSweepsPerRun ;
+                    self.NEpisodesPerRun_ = nSweepsPerRun ;                    
+                elseif isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,
+                    % stim trigger scheme is a counter trigger
+                    self.NEpisodesPerRun_ = stimulationTriggerRepeatCount ;
+                else
+                    % stim trigger scheme is an external trigger
+                    if isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                        self.NEpisodesPerRun_ = nSweepsPerRun ;
+                    else
+                        self.NEpisodesPerRun_ = inf ;  % by convention
+                    end
+                end
+            else
+                self.NEpisodesPerRun_ = 0 ;
+            end
+            
+            % Change our own acquisition state if get this far
+            self.NEpisodesCompletedSoFarThisRun_ = 0 ;
+            %self.DidCompleteEpisodes_ = false ;
+            %self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
+            %self.IsPerformingRun_ = true ;                        
+            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
 
-            % Prepare for the run
-            result = self.prepareForRun_(stimulationKeystoneTaskType, ...
-                                         stimulationKeystoneTaskDeviceName) ;
+            % Set up the triggering of the output tasks
+            try
+                %self.setupTasks_() ;                
+                %stimulationTriggerDeviceName = self.Frontend_.stimulationTriggerProperty('DeviceName') ;
+                %stimulationTriggerPFIID = self.Frontend_.stimulationTriggerProperty('PFIID') ;
+                %stimulationTriggerEdge = self.Frontend_.stimulationTriggerProperty('Edge') ;
+                if isempty(self.TheFiniteAnalogOutputTask_) ,
+                    %aoChannelDeviceNames = self.Frontend_.AOChannelDeviceNames ;
+                    %isAOChannelTerminalOvercommitted = self.Frontend_.IsAOChannelTerminalOvercommitted ;
+                    isInTaskForEachAOChannel = ~isAOChannelTerminalOvercommitted ;
+                    deviceNameForEachChannelInAOTask = aoChannelDeviceNames(isInTaskForEachAOChannel) ;
+                    %aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
+                    terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
+                    %primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                    %isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+                    self.TheFiniteAnalogOutputTask_ = ...
+                        ws.AOTask('WaveSurfer AO Task', ...
+                                  primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
+                                  deviceNameForEachChannelInAOTask, ...
+                                  terminalIDForEachChannelInAOTask, ...
+                                  stimulationSampleRate, ...
+                                  stimulationKeystoneTaskType, ...
+                                  stimulationKeystoneTaskDeviceName, ...
+                                  stimulationTriggerDeviceName, ...
+                                  stimulationTriggerPFIID, ...
+                                  stimulationTriggerEdge ) ;
+                end
+                if isempty(self.TheFiniteDigitalOutputTask_) ,
+                    %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
+                    %isDOChannelTerminalOvercommitted = self.Frontend_.IsDOChannelTerminalOvercommitted ;
+                    %isDOChannelTimed = self.Frontend_.IsDOChannelTimed ;
+                    isInTaskForEachDOChannel = isDOChannelTimed & ~isDOChannelTerminalOvercommitted ;
+                    %deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
+                    %doChannelTerminalIDs = self.Frontend_.DOChannelTerminalIDs ;
+                    terminalIDForEachChannelInDOTask = doChannelTerminalIDs(isInTaskForEachDOChannel) ;                
+                    %primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                    %isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+                    self.TheFiniteDigitalOutputTask_ = ...
+                        ws.DOTask('WaveSurfer DO Task', ...
+                                  primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
+                                  terminalIDForEachChannelInDOTask, ...
+                                  stimulationSampleRate, ...
+                                  stimulationKeystoneTaskType, ...
+                                  stimulationKeystoneTaskDeviceName, ...
+                                  stimulationTriggerDeviceName, ...
+                                  stimulationTriggerPFIID, ...
+                                  stimulationTriggerEdge) ;
+                end                
+            catch me
+                % Something went wrong
+                self.abortTheOngoingRun_() ;
+                me.rethrow() ;
+            end
+            
+            % (Maybe) start an episode, which will wait for a trigger to *really*
+            % start.
+            % It's important to do this here, so that we get ready to
+            % receive the first stim trigger *before* we tell the frontend
+            % that we're ready for the run.
+            if self.NEpisodesPerRun_ > 0 ,
+                if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                    self.startEpisode_(frontend) ;
+                end
+            end
         end  % function
 
-        function result = completingRun(self)
+        function result = completingRun(self, frontend)
             %fprintf('Got message completingRun\n') ;
             
             % Called by the WSM when the run is completed.
@@ -272,7 +392,7 @@ classdef Refiller < handle
             % If this happens, need to terminate the episode.
             %
             if self.IsPerformingEpisode_ ,
-                self.stopTheOngoingEpisode_() ;
+                self.stopTheOngoingEpisode_(frontend) ;
                 
                 % Set all outputs to zero
                 self.makeSureAllOutputsAreZero_() ;            
@@ -297,7 +417,7 @@ classdef Refiller < handle
             %
             % Note that we are done with the run
             %
-            self.IsPerformingRun_ = false ;
+            %self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
             
             %
@@ -306,7 +426,7 @@ classdef Refiller < handle
             result = [] ;
         end  % function
         
-        function result = frontendWantsToStopRun(self)
+        function result = frontendWantsToStopRun(self, frontend)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
@@ -314,7 +434,7 @@ classdef Refiller < handle
             %fprintf('Got message frontendWantsToStopRun\n') ;            
             %self.DoesFrontendWantToStopRun_ = true ;
             if self.IsPerformingEpisode_ ,
-                self.stopTheOngoingEpisode_() ;
+                self.stopTheOngoingEpisode_(frontend) ;
             end
             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
             %self.DoesFrontendWantToStopRun_ = false ;  % reset this
@@ -325,26 +445,27 @@ classdef Refiller < handle
             result = [] ;
         end
         
-        function result = abortingRun(self)
+        function result = abortingRun(self, frontend)
             % Called by the WSM when something goes wrong in mid-run
-            %fprintf('Got message abortingRun\n') ;            
-
+            
             if self.IsPerformingEpisode_ ,
-                self.abortTheOngoingEpisode_() ;
+                %if self.Frontend_.IsStimulationEnabled ,
+                if self.AreTasksStarted_ ,
+                    self.TheFiniteAnalogOutputTask_.stop() ;
+                    self.TheFiniteDigitalOutputTask_.stop() ;                
+                    self.AreTasksStarted_ = false ;
+                end
+                %end
+                frontend.callUserMethod('abortingEpisode');            
+                self.IsPerformingEpisode_ = false ;            
             end
             
-%             if self.IsPerformingSweep_ ,
-%                 self.abortTheOngoingSweep_() ;
-%             end
-            
-            if self.IsPerformingRun_ ,
-                self.abortTheOngoingRun_() ;
-            end
+            self.abortTheOngoingRun_() ;
             
             result = [] ;
         end  % function        
         
-        function result = startingSweep(self, indexOfSweepWithinRun) %#ok<INUSD>
+        function result = startingSweep(self, indexOfSweepWithinRun, frontend)  %#ok<INUSL>
             % Sent by the wavesurferModel iff the stim and acq systems are
             % using the identical trigger.  Prompts the Refiller to prepare
             % to run an episode.  But the sweep/episode doesn't start
@@ -354,7 +475,7 @@ classdef Refiller < handle
 
             % Prepare for the sweep
             %result = self.prepareForSweep_(indexOfSweepWithinRun) ;
-            self.startEpisode_() ;
+            self.startEpisode_(frontend) ;
             result = [] ;
         end  % function
 
@@ -465,116 +586,117 @@ classdef Refiller < handle
             %self.teardownCounterTriggers_();            
         end
                 
-        function result = prepareForRun_(self, ...
-                                         stimulationKeystoneTaskType, ...
-                                         stimulationKeystoneTaskDeviceName)
-            % Get ready to run, but don't start anything.
-
-            %keyboard
-            
-            % If we're already acquiring, just ignore the message
-            if self.IsPerformingRun_ ,
-                return
-            end
-            
-            % Set the path to match that of the frontend (partly so we can
-            % find the user class, if specified)
-            %path(currentFrontendPath) ;
-            %cd(currentFrontendPwd) ;
-            
-            % Make our own settings mimic those of wavesurferModelSettings
-            %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
-            %self.setRefillerProtocol_(refillerProtocol) ;
-            
-            % Cache the keystone task for the run
-            %self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
-            self.StimulationKeystoneTaskType_ = stimulationKeystoneTaskType ;            
-            self.StimulationKeystoneTaskDeviceName_ = stimulationKeystoneTaskDeviceName ;            
-            
-            % Set the overcommitment arrays
-            %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
-            %self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
-            %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
-            %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
-            
-            % Determine episodes per run
-            if self.Frontend_.IsStimulationEnabled ,
-                stimulationTriggerClass = self.Frontend_.stimulationTriggerProperty('class') ;
-                if isequal(stimulationTriggerClass, 'ws.BuiltinTrigger') ,
-                    self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;                    
-                elseif isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,
-                    % stim trigger scheme is a counter trigger
-                    self.NEpisodesPerRun_ = self.Frontend_.stimulationTriggerProperty('RepeatCount') ;
-                else
-                    % stim trigger scheme is an external trigger
-                    if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
-                        self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;
-                    else
-                        self.NEpisodesPerRun_ = inf ;  % by convention
-                    end
-                end
-            else
-                self.NEpisodesPerRun_ = 0 ;
-            end
-            %nEpisodesPerRun = self.NEpisodesPerRun_ 
-            
-%             % Determine episodes per sweep
-%             if self.IsStimulationEnabled_ ,
-%                 if isfinite(self.SweepDuration_) ,
-%                     % This means one episode per sweep, always
-%                     self.NEpisodesPerSweep_ = 1 ;
+%         function result = prepareForRun_(self, ...
+%                                          stimulationKeystoneTaskType, ...
+%                                          stimulationKeystoneTaskDeviceName)
+%             % Get ready to run, but don't start anything.
+% 
+%             %keyboard
+%             
+%             % If we're already acquiring, just ignore the message
+%             if self.IsPerformingRun_ ,
+%                 return
+%             end
+%             
+%             % Set the path to match that of the frontend (partly so we can
+%             % find the user class, if specified)
+%             %path(currentFrontendPath) ;
+%             %cd(currentFrontendPwd) ;
+%             
+%             % Make our own settings mimic those of wavesurferModelSettings
+%             %self.setCoreSettingsToMatchPackagedOnes(wavesurferModelSettings);
+%             %self.setRefillerProtocol_(refillerProtocol) ;
+%             
+%             % Cache the keystone task for the run
+%             %self.AcquisitionKeystoneTaskCache_ = acquisitionKeystoneTask ;            
+%             self.StimulationKeystoneTaskType_ = stimulationKeystoneTaskType ;            
+%             self.StimulationKeystoneTaskDeviceName_ = stimulationKeystoneTaskDeviceName ;            
+%             
+%             % Set the overcommitment arrays
+%             %self.IsAIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAIChannel ;
+%             %self.IsAOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachAOChannel ;
+%             %self.IsDIChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDIChannel ;
+%             %self.IsDOChannelTerminalOvercommitted_ = isTerminalOvercommitedForEachDOChannel ;
+%             
+%             % Determine episodes per run
+%             if self.Frontend_.IsStimulationEnabled ,
+%                 stimulationTriggerClass = self.Frontend_.stimulationTriggerProperty('class') ;
+%                 if isequal(stimulationTriggerClass, 'ws.BuiltinTrigger') ,
+%                     self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;                    
+%                 elseif isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,
+%                     % stim trigger scheme is a counter trigger
+%                     self.NEpisodesPerRun_ = self.Frontend_.stimulationTriggerProperty('RepeatCount') ;
 %                 else
-%                     % Means continuous acq, so need to consult stim trigger
-%                     if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
-%                         self.NEpisodesPerSweep_ = 1 ;                    
-%                     elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
-%                         % stim trigger scheme is a counter trigger
-%                         self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
+%                     % stim trigger scheme is an external trigger
+%                     if self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+%                         self.NEpisodesPerRun_ = self.Frontend_.NSweepsPerRun ;
 %                     else
-%                         % stim trigger scheme is an external trigger
-%                         self.NEpisodesPerSweep_ = inf ;  % by convention
+%                         self.NEpisodesPerRun_ = inf ;  % by convention
 %                     end
 %                 end
 %             else
-%                 self.NEpisodesPerSweep_ = 0 ;
+%                 self.NEpisodesPerRun_ = 0 ;
 %             end
-
-            % Change our own acquisition state if get this far
-            %self.DoesFrontendWantToStopRun_ = false ;
-            %self.NSweepsCompletedSoFarThisRun_ = 0 ;
-            self.NEpisodesCompletedSoFarThisRun_ = 0 ;
-            self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
-            self.IsPerformingRun_ = true ;                        
-            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
-
-            % Set up the triggering of the output tasks
-            try
-                %self.startingRunTriggering_() ;
-                self.setupTasks_() ;                
-            catch me
-                % Something went wrong
-                self.abortTheOngoingRun_() ;
-                me.rethrow() ;
-            end
-            
-            % Initialize timing variables
-            %self.FromRunStartTicId_ = tic() ;
-            %self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
-
-            % (Maybe) start an episode, which will wait for a trigger to *really*
-            % start.
-            % It's important to do this here, so that we get ready to
-            % receive the first stim trigger *before* we tell the frontend
-            % that we're ready for the run.
-            if self.NEpisodesPerRun_ > 0 ,
-                if ~self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
-                    self.startEpisode_() ;
-                end
-            end
-            
-            % Return empty
-            result = [] ;
-        end  % function
+%             %nEpisodesPerRun = self.NEpisodesPerRun_ 
+%             
+% %             % Determine episodes per sweep
+% %             if self.IsStimulationEnabled_ ,
+% %                 if isfinite(self.SweepDuration_) ,
+% %                     % This means one episode per sweep, always
+% %                     self.NEpisodesPerSweep_ = 1 ;
+% %                 else
+% %                     % Means continuous acq, so need to consult stim trigger
+% %                     if isa(self.StimulationTrigger_, 'ws.BuiltinTrigger') ,
+% %                         self.NEpisodesPerSweep_ = 1 ;                    
+% %                     elseif isa(self.StimulationTrigger_, 'ws.CounterTrigger') ,
+% %                         % stim trigger scheme is a counter trigger
+% %                         self.NEpisodesPerSweep_ = self.StimulationTrigger_.RepeatCount ;
+% %                     else
+% %                         % stim trigger scheme is an external trigger
+% %                         self.NEpisodesPerSweep_ = inf ;  % by convention
+% %                     end
+% %                 end
+% %             else
+% %                 self.NEpisodesPerSweep_ = 0 ;
+% %             end
+% 
+%             % Change our own acquisition state if get this far
+%             %self.DoesFrontendWantToStopRun_ = false ;
+%             %self.NSweepsCompletedSoFarThisRun_ = 0 ;
+%             self.NEpisodesCompletedSoFarThisRun_ = 0 ;
+%             self.DidCompleteEpisodes_ = false ;
+%             self.DidNotifyFrontendThatWeCompletedAllEpisodes_ = false ;
+%             self.IsPerformingRun_ = true ;                        
+%             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
+% 
+%             % Set up the triggering of the output tasks
+%             try
+%                 %self.startingRunTriggering_() ;
+%                 self.setupTasks_() ;                
+%             catch me
+%                 % Something went wrong
+%                 self.abortTheOngoingRun_() ;
+%                 me.rethrow() ;
+%             end
+%             
+%             % Initialize timing variables
+%             %self.FromRunStartTicId_ = tic() ;
+%             %self.NTimesSamplesAcquiredCalledSinceRunStart_ = 0 ;
+% 
+%             % (Maybe) start an episode, which will wait for a trigger to *really*
+%             % start.
+%             % It's important to do this here, so that we get ready to
+%             % receive the first stim trigger *before* we tell the frontend
+%             % that we're ready for the run.
+%             if self.NEpisodesPerRun_ > 0 ,
+%                 if ~self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ,
+%                     self.startEpisode_() ;
+%                 end
+%             end
+%             
+%             % Return empty
+%             result = [] ;
+%         end  % function
         
 %         function result = prepareForSweep_(self,indexOfSweepWithinRun) %#ok<INUSD>
 %             % Get everything set up for the Refiller to run a sweep, but
@@ -684,7 +806,7 @@ classdef Refiller < handle
             self.TheFiniteDigitalOutputTask_ = [] ;            
 
             % Update our internal state
-            self.IsPerformingRun_ = false ;
+            %self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
@@ -698,27 +820,27 @@ classdef Refiller < handle
 
             self.abortingRunStimulation_() ;
             
-            self.IsPerformingRun_ = false ;
+            %self.IsPerformingRun_ = false ;
             %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
         end  % function
         
-        function callUserMethod_(self, methodName, varargin)
-            try
-                if ~isempty(self.Frontend_.TheUserObject) ,
-                    self.Frontend_.TheUserObject.(methodName)(self, varargin{:});
-                end
-            catch exception ,
-                warning('Error in user class method samplesAcquired.  Exception report follows.') ;
-                disp(exception.getReport()) ;
-            end            
-        end  % function                
+%         function callUserMethod_(self, methodName, varargin)
+%             try
+%                 if ~isempty(self.Frontend_.TheUserObject) ,
+%                     self.Frontend_.TheUserObject.(methodName)(self, varargin{:});
+%                 end
+%             catch exception ,
+%                 warning('Error in user class method samplesAcquired.  Exception report follows.') ;
+%                 disp(exception.getReport()) ;
+%             end            
+%         end  % function                
         
-        function startEpisode_(self)
+        function startEpisode_(self, frontend)
             %fprintf('startEpisode_()\n');
-            if ~self.IsPerformingRun_ ,
-                error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
-                      'The refiller was asked to start an episode while not in a run') ;
-            end
+%             if ~self.IsPerformingRun_ ,
+%                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
+%                       'The refiller was asked to start an episode while not in a run') ;
+%             end
 %             if ~self.IsPerformingSweep_ ,
 %                 error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
 %                       'The refiller was asked to start an episode while not in a sweep') ;
@@ -734,10 +856,10 @@ classdef Refiller < handle
                       'The refiller was asked to arm for an episode when already armed and/or stimulating') ;
             end
             
-            if self.Frontend_.IsStimulationEnabled ,
+            if frontend.IsStimulationEnabled ,
                 self.IsPerformingEpisode_ = true ;
                 %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-                self.callUserMethod_('startingEpisode') ;
+                frontend.callUserMethod_('startingEpisode') ;
                 
                 %
                 % Fill the output buffers and start the tasks
@@ -751,7 +873,7 @@ classdef Refiller < handle
                 % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
 
                 % Set the channel data in the tasks
-                [aoData, doData] = self.Frontend_.getStimulationData(indexOfEpisodeWithinRun) ;
+                [aoData, doData] = frontend.getStimulationData(indexOfEpisodeWithinRun) ;
                 self.setAnalogChannelData_(aoData) ;
                 self.setDigitalChannelData_(doData) ;
 
@@ -767,62 +889,62 @@ classdef Refiller < handle
             end
         end
         
-        function completeTheOngoingEpisode_(self)
-            % Called from runMainLoop() when a single episode of stimulation is
-            % completed.  
-            %fprintf('completeTheOngoingEpisode_()\n');
-            % We only want this method to do anything once per episode, and the next three
-            % lines make this the case.
-
-            % Notify the Stimulation subsystem
-            if self.Frontend_.IsStimulationEnabled ,
-                if self.AreTasksStarted_ ,
-                    self.TheFiniteAnalogOutputTask_.stop() ;
-                    self.TheFiniteDigitalOutputTask_.stop() ;                
-                    self.AreTasksStarted_ = false ;
-                end
-            end
-            
-            % Call user method
-            self.callUserMethod_('completingEpisode');                        
-
-            % Update state
-            self.IsPerformingEpisode_ = false;
-            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-            self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
-            %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
-            
-            %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
-            %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
-        end  % function
+%         function completeTheOngoingEpisode_(self)
+%             % Called from runMainLoop() when a single episode of stimulation is
+%             % completed.  
+%             %fprintf('completeTheOngoingEpisode_()\n');
+%             % We only want this method to do anything once per episode, and the next three
+%             % lines make this the case.
+% 
+%             % Notify the Stimulation subsystem
+%             if self.Frontend_.IsStimulationEnabled ,
+%                 if self.AreTasksStarted_ ,
+%                     self.TheFiniteAnalogOutputTask_.stop() ;
+%                     self.TheFiniteDigitalOutputTask_.stop() ;                
+%                     self.AreTasksStarted_ = false ;
+%                 end
+%             end
+%             
+%             % Call user method
+%             self.callUserMethod_('completingEpisode');                        
+% 
+%             % Update state
+%             self.IsPerformingEpisode_ = false;
+%             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+%             self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
+%             %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
+%             
+%             %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+%             %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
+%         end  % function
         
-        function stopTheOngoingEpisode_(self)
+        function stopTheOngoingEpisode_(self, frontend)
             %fprintf('stopTheOngoingEpisode_()\n');
-            if self.Frontend_.IsStimulationEnabled ,
-                if self.AreTasksStarted_ ,
-                    self.TheFiniteAnalogOutputTask_.stop() ;
-                    self.TheFiniteDigitalOutputTask_.stop() ;
-                    self.AreTasksStarted_ = false ;
-                end
+            %if self.Frontend_.IsStimulationEnabled ,
+            if self.AreTasksStarted_ ,
+                self.TheFiniteAnalogOutputTask_.stop() ;
+                self.TheFiniteDigitalOutputTask_.stop() ;
+                self.AreTasksStarted_ = false ;
             end
-            self.callUserMethod_('stoppingEpisode');            
+            %end
+            frontend.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
         
-        function abortTheOngoingEpisode_(self)
-            %fprintf('abortTheOngoingEpisode_()\n');
-            if self.Frontend_.IsStimulationEnabled ,
-                if self.AreTasksStarted_ ,
-                    self.TheFiniteAnalogOutputTask_.stop() ;
-                    self.TheFiniteDigitalOutputTask_.stop() ;                
-                    self.AreTasksStarted_ = false ;
-                end
-            end
-            self.callUserMethod_('abortingEpisode');            
-            self.IsPerformingEpisode_ = false ;            
-            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-        end  % function
+%         function abortTheOngoingEpisode_(self)
+%             %fprintf('abortTheOngoingEpisode_()\n');
+%             if self.Frontend_.IsStimulationEnabled ,
+%                 if self.AreTasksStarted_ ,
+%                     self.TheFiniteAnalogOutputTask_.stop() ;
+%                     self.TheFiniteDigitalOutputTask_.stop() ;                
+%                     self.AreTasksStarted_ = false ;
+%                 end
+%             end
+%             self.callUserMethod_('abortingEpisode');            
+%             self.IsPerformingEpisode_ = false ;            
+%             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+%         end  % function
                 
         function result = areTasksDone_(self)
             % Check if the tasks are done.  This doesn't change the object
@@ -1193,46 +1315,10 @@ classdef Refiller < handle
 %             end
 %         end  % function        
         
-        function setupTasks_(self)
-            % Make the NI daq tasks, if don't have already
-            self.acquireHardwareResourcesStimulation_() ;
-                        
-%             % Set up the task triggering
-%             stimulationKeystoneTask = self.StimulationKeystoneTaskType_ ;
-%             if isequal(stimulationKeystoneTask,'ai') ,
-%                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/ai/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-%             elseif isequal(stimulationKeystoneTask,'di') ,
-%                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/di/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
-%                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/di/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-%             elseif isequal(stimulationKeystoneTask,'ao') ,
-%                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
-%                 self.TheFiniteAnalogOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/ao/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerEdge = 'rising' ;
-%             elseif isequal(stimulationKeystoneTask,'do') ,
-%                 self.TheFiniteAnalogOutputTask_.TriggerTerminalName = sprintf('/%s/do/StartTrigger', self.PrimaryDeviceName_) ;
-%                 self.TheFiniteAnalogOutputTask_.TriggerEdge = 'rising' ;                
-%                 self.TheFiniteDigitalOutputTask_.TriggerTerminalName = sprintf('/%s/PFI%d',self.StimulationTrigger_.DeviceName,self.StimulationTrigger_.PFIID) ;
-%                 self.TheFiniteDigitalOutputTask_.TriggerEdge = self.StimulationTrigger_.Edge ;
-%             else
-%                 % Getting here means there was a programmer error
-%                 error('ws:InternalError', ...
-%                       'Adam is a dum-dum, and the magic number is 8347875');
-%             end
-%             
-%             % Clear out any pre-existing output waveforms
-%             self.TheFiniteAnalogOutputTask_.clearChannelData() ;
-%             self.TheFiniteDigitalOutputTask_.clearChannelData() ;
-% 
-%             % Arm the tasks
-%             self.TheFiniteAnalogOutputTask_.arm() ;
-%             self.TheFiniteDigitalOutputTask_.arm() ;            
-        end  % function        
+%         function setupTasks_(self)
+%             % Make the NI daq tasks, if don't have already
+%             self.acquireHardwareResourcesStimulation_() ;                        
+%         end  % function        
         
 %         function startingSweepTriggering_(self)
 %             %fprintf('RefillerTriggering::startingSweep()\n');
@@ -1272,55 +1358,55 @@ classdef Refiller < handle
 %             self.TheUserObject_ = protocol.TheUserObject ;
 %         end  % method       
         
-        function acquireHardwareResourcesStimulation_(self)
-            if isempty(self.TheFiniteAnalogOutputTask_) ,
-                deviceNameForEachAOChannel = self.Frontend_.AOChannelDeviceNames ;
-                isTerminalOvercommittedForEachAOChannel = self.Frontend_.IsAOChannelTerminalOvercommitted ;
-                isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
-                deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
-                aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
-                terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
-                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
-                self.TheFiniteAnalogOutputTask_ = ...
-                    ws.AOTask('WaveSurfer AO Task', ...
-                              primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
-                              deviceNameForEachChannelInAOTask, ...
-                              terminalIDForEachChannelInAOTask, ...
-                              self.Frontend_.StimulationSampleRate, ...
-                              self.StimulationKeystoneTaskType_, ...
-                              self.StimulationKeystoneTaskDeviceName_, ...
-                              self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
-                              self.Frontend_.stimulationTriggerProperty('PFIID'), ...
-                              self.Frontend_.stimulationTriggerProperty('Edge') ) ;
-                %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
-            end
-            if isempty(self.TheFiniteDigitalOutputTask_) ,
-                %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
-                isTerminalOvercommittedForEachDOChannel = self.Frontend_.IsDOChannelTerminalOvercommitted ;
-                isTimedForEachDOChannel = self.Frontend_.IsDOChannelTimed ;
-                isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
-                %deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
-                doChannelTerminalIDs = self.Frontend_.DOChannelTerminalIDs ;
-                terminalIDForEachChannelInDOTask = doChannelTerminalIDs(isInTaskForEachDOChannel) ;                
-                primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
-%                 [referenceClockSource, referenceClockRate] = ...
-%                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                                
-                self.TheFiniteDigitalOutputTask_ = ...
-                    ws.DOTask('WaveSurfer DO Task', ...
-                              primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
-                              terminalIDForEachChannelInDOTask, ...
-                              self.Frontend_.StimulationSampleRate, ...
-                              self.StimulationKeystoneTaskType_, ...
-                              self.StimulationKeystoneTaskDeviceName_, ...
-                              self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
-                              self.Frontend_.stimulationTriggerProperty('PFIID'), ...
-                              self.Frontend_.stimulationTriggerProperty('Edge') ) ;
-                %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
-                %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
-            end
-        end  % method
+%         function setupTasks_(self)
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 deviceNameForEachAOChannel = self.Frontend_.AOChannelDeviceNames ;
+%                 isTerminalOvercommittedForEachAOChannel = self.Frontend_.IsAOChannelTerminalOvercommitted ;
+%                 isInTaskForEachAOChannel = ~isTerminalOvercommittedForEachAOChannel ;
+%                 deviceNameForEachChannelInAOTask = deviceNameForEachAOChannel(isInTaskForEachAOChannel) ;
+%                 aoChannelTerminalIDs = self.Frontend_.AOChannelTerminalIDs ;
+%                 terminalIDForEachChannelInAOTask = aoChannelTerminalIDs(isInTaskForEachAOChannel) ;                
+%                 primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+%                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+%                 self.TheFiniteAnalogOutputTask_ = ...
+%                     ws.AOTask('WaveSurfer AO Task', ...
+%                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
+%                               deviceNameForEachChannelInAOTask, ...
+%                               terminalIDForEachChannelInAOTask, ...
+%                               self.Frontend_.StimulationSampleRate, ...
+%                               self.StimulationKeystoneTaskType_, ...
+%                               self.StimulationKeystoneTaskDeviceName_, ...
+%                               self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
+%                               self.Frontend_.stimulationTriggerProperty('PFIID'), ...
+%                               self.Frontend_.stimulationTriggerProperty('Edge') ) ;
+%                 %self.IsInTaskForEachAOChannel_ = isInTaskForEachAOChannel ;
+%             end
+%             if isempty(self.TheFiniteDigitalOutputTask_) ,
+%                 %deviceNameForEachDOChannel = repmat({self.PrimaryDeviceName_}, size(self.DOChannelNames_)) ;
+%                 isTerminalOvercommittedForEachDOChannel = self.Frontend_.IsDOChannelTerminalOvercommitted ;
+%                 isTimedForEachDOChannel = self.Frontend_.IsDOChannelTimed ;
+%                 isInTaskForEachDOChannel = isTimedForEachDOChannel & ~isTerminalOvercommittedForEachDOChannel ;
+%                 %deviceNameForEachChannelInDOTask = deviceNameForEachDOChannel(isInTaskForEachDOChannel) ;
+%                 doChannelTerminalIDs = self.Frontend_.DOChannelTerminalIDs ;
+%                 terminalIDForEachChannelInDOTask = doChannelTerminalIDs(isInTaskForEachDOChannel) ;                
+%                 primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+%                 isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+% %                 [referenceClockSource, referenceClockRate] = ...
+% %                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                                
+%                 self.TheFiniteDigitalOutputTask_ = ...
+%                     ws.DOTask('WaveSurfer DO Task', ...
+%                               primaryDeviceName, isPrimaryDeviceAPXIDevice, ...
+%                               terminalIDForEachChannelInDOTask, ...
+%                               self.Frontend_.StimulationSampleRate, ...
+%                               self.StimulationKeystoneTaskType_, ...
+%                               self.StimulationKeystoneTaskDeviceName_, ...
+%                               self.Frontend_.stimulationTriggerProperty('DeviceName'), ...
+%                               self.Frontend_.stimulationTriggerProperty('PFIID'), ...
+%                               self.Frontend_.stimulationTriggerProperty('Edge') ) ;
+%                 %self.TheFiniteDigitalOutputTask_.SampleRate = self.SampleRate ;
+%                 %self.IsInTaskForEachDOChannel_ = isInTaskForEachDOChannel ;
+%             end
+%         end  % method
         
     end  % protected methods block    
 end  % classdef
