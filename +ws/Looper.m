@@ -72,8 +72,8 @@ classdef Looper < handle
         %IsPerformingRun_ = false
         %IsPerformingSweep_ = false
         %IsUserCodeManagerEnabled_  % a cache, for lower latency while doing real-time control
-        AcquisitionKeystoneTaskTypeCache_
-        AcquisitionKeystoneTaskDeviceNameCache_
+        %AcquisitionKeystoneTaskTypeCache_
+        %AcquisitionKeystoneTaskDeviceNameCache_
         IsInUntimedDOTaskForEachUntimedDOChannel_ = false(1,0)  
         
         % Tasks
@@ -98,13 +98,13 @@ classdef Looper < handle
     end        
     
     methods
-        function self = Looper(wsModel)
+        function self = Looper()
             % This is the main object that resides in the Looper process.
             % It contains the main input tasks, and during a sweep is
             % responsible for reading data and updating the on-demand
             % outputs as far as possible.
             
-            self.Frontend_ = wsModel ;
+            %self.Frontend_ = wsModel ;
 %             % Set up IPC publisher socket to let others know about what's
 %             % going on with the Looper
 %             self.IPCPublisher_ = ws.IPCPublisher(looperIPCPublisherPortNumber) ;
@@ -121,8 +121,8 @@ classdef Looper < handle
 %             self.IPCReplier_.bind() ;            
         end
         
-        function delete(self)
-            self.Frontend_ = [] ;
+        function delete(self)  %#ok<INUSD>
+            %self.Frontend_ = [] ;
 %             self.IPCPublisher_ = [] ;
 %             self.IPCSubscriber_ = [] ;
 %             self.IPCReplier_ = [] ;
@@ -253,27 +253,120 @@ classdef Looper < handle
             result = [] ;
         end  % function
 
-        function result = startingRun(self, ...
-                                      acquisitionKeystoneTaskType, ...
-                                      acquisitionKeystoneTaskDeviceName, ...
-                                      isAIChannelActive, ...
-                                      isDIChannelActive, ...
-                                      acquisitionSampleRate, ...
-                                      sweepDuration, ...
-                                      dataCacheDurationWhenContinuous)
-            % Make the looper settings look like the
-            % wavesurferModelSettings, set everything else up for a run.
-            %
-            % This is called via (rep-req) RPC, so must return exactly one value.
+        function coeffsAndClock = ...
+                startingRun(self, ...
+                            acquisitionKeystoneTaskType, ...
+                            acquisitionKeystoneTaskDeviceName, ...
+                            isAIChannelActive, ...
+                            isDIChannelActive, ...
+                            acquisitionSampleRate, ...
+                            sweepDuration, ...
+                            dataCacheDurationWhenContinuous, ...
+                            aiChannelDeviceNames, ...
+                            aiChannelTerminalIDs, ...
+                            primaryDeviceName, ...
+                            isPrimaryDeviceAPXIDevice, ...
+                            acquisitionTriggerDeviceName, ...
+                            acquisitionTriggerPFIID, ...
+                            acquisitionTriggerEdge, ...
+                            diChannelTerminalIDs)
+                        
+            % release the the timed hardware resources, so that we can
+            % reacquire the ones we really need.
+            self.releaseTimedHardwareResources_() ;           
+            
+            % Cache the keystone task for the run
+            %self.AcquisitionKeystoneTaskTypeCache_ = acquisitionKeystoneTaskType ;
+            %self.AcquisitionKeystoneTaskDeviceNameCache_ = acquisitionKeystoneTaskDeviceName ;
+            
+            % Tell all the tasks and such to prepare for the run
+            try
+                % Make the NI daq task, if don't have it already
+                %primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+                %isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+                %acquisitionTriggerDeviceName = self.Frontend_.acquisitionTriggerProperty('DeviceName') ;
+                %acquisitionTriggerPFIID = self.Frontend_.acquisitionTriggerProperty('PFIID') ;
+                %acquisitionTriggerEdge = self.Frontend_.acquisitionTriggerProperty('Edge') ;
+                if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
+                    % Only hand the active channels to the AnalogInputTask
+                    %isAIChannelActive = self.Frontend_.IsAIChannelActive ;
+                    %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+                    %aiChannelDeviceNames = self.Frontend_.AIChannelDeviceNames ;                
+                    activeAIDeviceNames = aiChannelDeviceNames(isAIChannelActive) ;
+                    %aiChannelTerminalIDs = self.Frontend_.AIChannelTerminalIDs ; 
+                    activeAITerminalIDs = aiChannelTerminalIDs(isAIChannelActive) ;
+                    %[referenceClockSource, referenceClockRate] = ...
+                    %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
+                    self.TimedAnalogInputTask_ = ...
+                        ws.AITask('WaveSurfer AI Task', ...
+                                  primaryDeviceName , ...
+                                  isPrimaryDeviceAPXIDevice , ...
+                                  activeAIDeviceNames, ...
+                                  activeAITerminalIDs, ...
+                                  acquisitionSampleRate, ...
+                                  sweepDuration, ...
+                                  acquisitionKeystoneTaskType, ...
+                                  acquisitionKeystoneTaskDeviceName, ...
+                                  acquisitionTriggerDeviceName, ...
+                                  acquisitionTriggerPFIID, ...
+                                  acquisitionTriggerEdge) ;
+                end
+                if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
+                    %isDIChannelActive = self.Frontend_.IsDIChannelActive ;
+                    %diChannelTerminalIDs = self.Frontend_.DIChannelTerminalIDs ;
+                    activeDITerminalIDs = diChannelTerminalIDs(isDIChannelActive) ;
+                    self.TimedDigitalInputTask_ = ...
+                        ws.DITask('WaveSurfer DI Task', ...
+                                  primaryDeviceName , ...
+                                  isPrimaryDeviceAPXIDevice , ...
+                                  activeDITerminalIDs, ...
+                                  acquisitionSampleRate, ...
+                                  sweepDuration, ...
+                                  acquisitionKeystoneTaskType, ...
+                                  acquisitionKeystoneTaskDeviceName, ...
+                                  acquisitionTriggerDeviceName, ...
+                                  acquisitionTriggerPFIID, ...
+                                  acquisitionTriggerEdge) ;
+                end
 
-            % Prepare for the run
-            result = self.prepareForRun_(acquisitionKeystoneTaskType, ...
-                                         acquisitionKeystoneTaskDeviceName, ...
-                                         isAIChannelActive, ...
-                                         isDIChannelActive, ...
-                                         acquisitionSampleRate, ...
-                                         sweepDuration, ...
-                                         dataCacheDurationWhenContinuous) ;
+                % Dimension the cache that will hold acquired data in main
+                % memory
+                nActiveAIChannels = sum(isAIChannelActive);
+                nActiveDIChannels = sum(isDIChannelActive);
+                if nActiveDIChannels<=8
+                    dataType = 'uint8';
+                elseif nActiveDIChannels<=16
+                    dataType = 'uint16';
+                else %nDIChannels<=32
+                    dataType = 'uint32';
+                end
+                if isfinite(sweepDuration)  ,
+                    %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+                    expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
+                    self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
+                    self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
+                else                                
+                    nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
+                    self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
+                    self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
+                end
+
+                self.IsAtLeastOneActiveAIChannelCached_ = (nActiveAIChannels>0) ;
+                self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
+            catch me
+                % Something went wrong
+                self.abortTheOngoingRun_() ;
+                me.rethrow() ;
+            end
+            
+            % Get the analog input scaling coeffcients
+            scalingCoefficients = self.getAnalogScalingCoefficients_() ;
+            
+            % Initialize timing variables
+            clockAtRunStartTic = clock() ;
+
+            % Return the coeffs and clock
+            coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;                                     
         end  % function
 
         function result = completingRun(self)
@@ -559,7 +652,7 @@ classdef Looper < handle
                 % do nothing
             else
                 %self.cleanUpAfterSweepAndDaisyChainNextAction_();
-                self.completeTheOngoingSweep_();
+                self.completeTheOngoingSweep();
             end
         end  % function
     end  % protected methods block
@@ -712,110 +805,110 @@ classdef Looper < handle
                                                    isDOChannelTerminalOvercommitted) ;
         end
         
-        function coeffsAndClock = prepareForRun_(self, ...
-                                                 acquisitionKeystoneTaskType, ...
-                                                 acquisitionKeystoneTaskDeviceName, ...
-                                                 isAIChannelActive, ...
-                                                 isDIChannelActive, ...
-                                                 acquisitionSampleRate, ...
-                                                 sweepDuration, ...
-                                                 dataCacheDurationWhenContinuous)
-            % Get ready to run, but don't start anything.
-            
-            % release the the timed hardware resources, so that we can
-            % reacquire the ones we really need.
-            self.releaseTimedHardwareResources_() ;           
-            
-            % Cache the keystone task for the run
-            self.AcquisitionKeystoneTaskTypeCache_ = acquisitionKeystoneTaskType ;
-            self.AcquisitionKeystoneTaskDeviceNameCache_ = acquisitionKeystoneTaskDeviceName ;
-            
-            % Tell all the tasks and such to prepare for the run
-            try
-                % Make the NI daq task, if don't have it already
-                if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
-                    % Only hand the active channels to the AnalogInputTask
-                    %isAIChannelActive = self.Frontend_.IsAIChannelActive ;
-                    %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
-                    aiDeviceNames = self.Frontend_.AIChannelDeviceNames ;                
-                    activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
-                    activeAITerminalIDs = self.Frontend_.AIChannelTerminalIDs(isAIChannelActive) ;
-                    primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                    isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
-                    %[referenceClockSource, referenceClockRate] = ...
-                    %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
-                    self.TimedAnalogInputTask_ = ...
-                        ws.AITask('WaveSurfer AI Task', ...
-                                  primaryDeviceName , ...
-                                  isPrimaryDeviceAPXIDevice , ...
-                                  activeAIDeviceNames, ...
-                                  activeAITerminalIDs, ...
-                                  acquisitionSampleRate, ...
-                                  sweepDuration, ...
-                                  self.AcquisitionKeystoneTaskTypeCache_, ...
-                                  self.AcquisitionKeystoneTaskDeviceNameCache_, ...
-                                  self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
-                                  self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
-                                  self.Frontend_.acquisitionTriggerProperty('Edge')) ;
-                end
-                if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
-                    primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                    isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
-                    %isDIChannelActive = self.Frontend_.IsDIChannelActive ;
-                    activeDITerminalIDs = self.Frontend_.DIChannelTerminalIDs(isDIChannelActive) ;
-                    self.TimedDigitalInputTask_ = ...
-                        ws.DITask('WaveSurfer DI Task', ...
-                                  primaryDeviceName , ...
-                                  isPrimaryDeviceAPXIDevice , ...
-                                  activeDITerminalIDs, ...
-                                  acquisitionSampleRate, ...
-                                  sweepDuration, ...
-                                  self.AcquisitionKeystoneTaskTypeCache_, ...
-                                  self.AcquisitionKeystoneTaskDeviceNameCache_, ...
-                                  self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
-                                  self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
-                                  self.Frontend_.acquisitionTriggerProperty('Edge')) ;
-                end
-
-                % Dimension the cache that will hold acquired data in main
-                % memory
-                nActiveAIChannels = sum(isAIChannelActive);
-                nActiveDIChannels = sum(isDIChannelActive);
-                if nActiveDIChannels<=8
-                    dataType = 'uint8';
-                elseif nActiveDIChannels<=16
-                    dataType = 'uint16';
-                else %nDIChannels<=32
-                    dataType = 'uint32';
-                end
-                if isfinite(sweepDuration)  ,
-                    %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
-                    expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
-                    self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
-                    self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
-                else                                
-                    nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
-                    self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
-                    self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
-                end
-
-                self.IsAtLeastOneActiveAIChannelCached_ = (nActiveAIChannels>0) ;
-                self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
-            catch me
-                % Something went wrong
-                self.abortTheOngoingRun_() ;
-                me.rethrow() ;
-            end
-            
-            % Get the analog input scaling coeffcients
-            scalingCoefficients = self.getAnalogScalingCoefficients_() ;
-            
-            % Initialize timing variables
-            clockAtRunStartTic = clock() ;
-
-            % Return the coeffs and clock
-            coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
-        end  % function
+%         function coeffsAndClock = prepareForRun_(self, ...
+%                                                  acquisitionKeystoneTaskType, ...
+%                                                  acquisitionKeystoneTaskDeviceName, ...
+%                                                  isAIChannelActive, ...
+%                                                  isDIChannelActive, ...
+%                                                  acquisitionSampleRate, ...
+%                                                  sweepDuration, ...
+%                                                  dataCacheDurationWhenContinuous)
+%             % Get ready to run, but don't start anything.
+%             
+%             % release the the timed hardware resources, so that we can
+%             % reacquire the ones we really need.
+%             self.releaseTimedHardwareResources_() ;           
+%             
+%             % Cache the keystone task for the run
+%             self.AcquisitionKeystoneTaskTypeCache_ = acquisitionKeystoneTaskType ;
+%             self.AcquisitionKeystoneTaskDeviceNameCache_ = acquisitionKeystoneTaskDeviceName ;
+%             
+%             % Tell all the tasks and such to prepare for the run
+%             try
+%                 % Make the NI daq task, if don't have it already
+%                 if isempty(self.TimedAnalogInputTask_) ,  % && self.NAIChannels>0 ,
+%                     % Only hand the active channels to the AnalogInputTask
+%                     %isAIChannelActive = self.Frontend_.IsAIChannelActive ;
+%                     %aiDeviceNames = repmat({self.DeviceName_}, size(isAIChannelActive)) ;
+%                     aiDeviceNames = self.Frontend_.AIChannelDeviceNames ;                
+%                     activeAIDeviceNames = aiDeviceNames(isAIChannelActive) ;
+%                     activeAITerminalIDs = self.Frontend_.AIChannelTerminalIDs(isAIChannelActive) ;
+%                     primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+%                     isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+%                     %[referenceClockSource, referenceClockRate] = ...
+%                     %    ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
+%                     self.TimedAnalogInputTask_ = ...
+%                         ws.AITask('WaveSurfer AI Task', ...
+%                                   primaryDeviceName , ...
+%                                   isPrimaryDeviceAPXIDevice , ...
+%                                   activeAIDeviceNames, ...
+%                                   activeAITerminalIDs, ...
+%                                   acquisitionSampleRate, ...
+%                                   sweepDuration, ...
+%                                   self.AcquisitionKeystoneTaskTypeCache_, ...
+%                                   self.AcquisitionKeystoneTaskDeviceNameCache_, ...
+%                                   self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
+%                                   self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
+%                                   self.Frontend_.acquisitionTriggerProperty('Edge')) ;
+%                 end
+%                 if isempty(self.TimedDigitalInputTask_) , % && self.NDIChannels>0,
+%                     primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
+%                     isPrimaryDeviceAPXIDevice = self.Frontend_.IsPrimaryDeviceAPXIDevice ;
+%                     %isDIChannelActive = self.Frontend_.IsDIChannelActive ;
+%                     activeDITerminalIDs = self.Frontend_.DIChannelTerminalIDs(isDIChannelActive) ;
+%                     self.TimedDigitalInputTask_ = ...
+%                         ws.DITask('WaveSurfer DI Task', ...
+%                                   primaryDeviceName , ...
+%                                   isPrimaryDeviceAPXIDevice , ...
+%                                   activeDITerminalIDs, ...
+%                                   acquisitionSampleRate, ...
+%                                   sweepDuration, ...
+%                                   self.AcquisitionKeystoneTaskTypeCache_, ...
+%                                   self.AcquisitionKeystoneTaskDeviceNameCache_, ...
+%                                   self.Frontend_.acquisitionTriggerProperty('DeviceName'), ...
+%                                   self.Frontend_.acquisitionTriggerProperty('PFIID'), ...
+%                                   self.Frontend_.acquisitionTriggerProperty('Edge')) ;
+%                 end
+% 
+%                 % Dimension the cache that will hold acquired data in main
+%                 % memory
+%                 nActiveAIChannels = sum(isAIChannelActive);
+%                 nActiveDIChannels = sum(isDIChannelActive);
+%                 if nActiveDIChannels<=8
+%                     dataType = 'uint8';
+%                 elseif nActiveDIChannels<=16
+%                     dataType = 'uint16';
+%                 else %nDIChannels<=32
+%                     dataType = 'uint32';
+%                 end
+%                 if isfinite(sweepDuration)  ,
+%                     %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+%                     expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
+%                     self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
+%                     self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
+%                 else                                
+%                     nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
+%                     self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
+%                     self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
+%                 end
+% 
+%                 self.IsAtLeastOneActiveAIChannelCached_ = (nActiveAIChannels>0) ;
+%                 self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
+%             catch me
+%                 % Something went wrong
+%                 self.abortTheOngoingRun_() ;
+%                 me.rethrow() ;
+%             end
+%             
+%             % Get the analog input scaling coeffcients
+%             scalingCoefficients = self.getAnalogScalingCoefficients_() ;
+%             
+%             % Initialize timing variables
+%             clockAtRunStartTic = clock() ;
+% 
+%             % Return the coeffs and clock
+%             coeffsAndClock = struct('ScalingCoefficients',scalingCoefficients, 'ClockAtRunStartTic', clockAtRunStartTic) ;
+%         end  % function
         
         function result = prepareForSweep_(self, indexOfSweepWithinRun)  %#ok<INUSD>
             % Get everything set up for the Looper to run a sweep, but
@@ -1094,7 +1187,7 @@ classdef Looper < handle
         
     methods
         function [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
-                pollAcquisition(self, timeSinceSweepStart, fromRunStartTicId)
+                pollAcquisition(self, timeSinceSweepStart, fromRunStartTicId, sweepDuration)
             %fprintf('LooperAcquisition::poll()\n') ;
             % Determine the time since the last undropped timer fire
             timeSinceLastPollingTimerFire = timeSinceSweepStart - self.TimeOfLastPollingTimerFire_ ;  %#ok<NASGU>
@@ -1103,7 +1196,7 @@ classdef Looper < handle
             if self.IsArmedOrAcquiring_ ,
                 %fprintf('LooperAcquisition::poll(): In self.IsArmedOrAcquiring_==true branch\n') ;
                 % Check for task doneness
-                if ~isfinite(self.Frontend_.SweepDuration) ,  
+                if ~isfinite(sweepDuration) ,  
                     % if doing continuous acq, no need to check.  This is
                     % an important optimization, b/c the checks can take
                     % 10-20 ms.
