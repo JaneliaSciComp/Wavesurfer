@@ -516,10 +516,13 @@ classdef WavesurferModel < ws.Model
                 %self.WasRunStoppedByUser_ = true ;
                 %fprintf('About to publish "frontendWantsToStopRun"\n') ;
                 %self.IPCPublisher_.send('frontendWantsToStopRun');  
-                self.Looper_.frontendWantsToStopRun(self.IsPerformingSweep) ;
-                self.Refiller_.frontendWantsToStopRun(self) ;
+                self.Looper_.stoppingRun(self.IsPerformingSweep) ;
+                didStopEpisode = self.Refiller_.stoppingRun() ;
                 if self.IsPerformingSweep_ ,
                     self.stopTheOngoingSweep_() ;
+                end
+                if didStopEpisode ,
+                    self.callUserMethod_('stoppingEpisode') ;
                 end
                 self.stopTheOngoingRun_();
                 
@@ -1331,17 +1334,22 @@ classdef WavesurferModel < ws.Model
             % Wait for the refiller to respond that it is ready
             try
                 stimulationTriggerClass = self.stimulationTriggerProperty('class') ;
-                stimulationTriggerRepeatCount = self.stimulationTriggerProperty('RepeatCount') ;                
+                if isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,                    
+                    stimulationTriggerRepeatCount = self.stimulationTriggerProperty('RepeatCount') ;
+                else
+                    stimulationTriggerRepeatCount = nan ;
+                end                    
                 stimulationTriggerDeviceName = self.stimulationTriggerProperty('DeviceName') ;
                 stimulationTriggerPFIID = self.stimulationTriggerProperty('PFIID') ;
                 stimulationTriggerEdge = self.stimulationTriggerProperty('Edge') ;
+                isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
                 self.Refiller_.startingRun(stimulationKeystoneTaskType, ...
                                            stimulationKeystoneTaskDeviceName, ...
                                            self.IsStimulationEnabled, ...
                                            stimulationTriggerClass, ...
                                            self.NSweepsPerRun, ...
                                            stimulationTriggerRepeatCount, ...
-                                           self.isStimulationTriggerIdenticalToAcquisitionTrigger(), ...
+                                           isStimulationTriggerIdenticalToAcquisitionTrigger, ...
                                            self.AOChannelDeviceNames, ...
                                            self.IsAOChannelTerminalOvercommitted, ...
                                            self.AOChannelTerminalIDs, ...
@@ -1353,8 +1361,20 @@ classdef WavesurferModel < ws.Model
                                            self.StimulationSampleRate, ...
                                            stimulationTriggerDeviceName, ...
                                            stimulationTriggerPFIID, ...
-                                           stimulationTriggerEdge, ...
-                                           self ) ;
+                                           stimulationTriggerEdge) ;
+                % (Maybe) start an episode, which will wait for a trigger to *really*
+                % start.
+                % It's important to do this here, so that we get ready to
+                % receive the first stim trigger *before* we tell the frontend
+                % that we're ready for the run.
+                if self.Refiller_.NEpisodesPerRun > 0 ,
+                    if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                        self.callUserMethod('startingEpisode') ;
+                        [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;                        
+                        self.Refiller_.startEpisode(aoData, doData) ;
+                    end
+                end
+                                       
                 refillerError = [] ;
                 err = [] ;
             catch err
@@ -1518,7 +1538,9 @@ classdef WavesurferModel < ws.Model
             % Notify the refiller that we're starting a sweep, wait for the refiller to respond
             if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
                 try
-                    self.Refiller_.startingSweep(self.NSweepsCompletedInThisRun_+1, self) ;
+                    self.callUserMethod('startingEpisode') ;
+                    [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
+                    self.Refiller_.startEpisode(aoData, doData) ;
                     err = [] ;
                 catch err
                 end
@@ -1586,7 +1608,7 @@ classdef WavesurferModel < ws.Model
                                                                               self.FromRunStartTicId_, ...
                                                                               self.SweepDuration) ;
                             isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
-                            self.Refiller_.performOneIterationDuringOngoingRun(isStimulationTriggerIdenticalToAcquisitionTrigger, self) ;
+                            self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
                             if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
@@ -1603,7 +1625,7 @@ classdef WavesurferModel < ws.Model
                             % messages, although I'm not sure we need to...
                             %fprintf('About to check for messages after completing all sweeps\n');
                             isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
-                            self.Refiller_.performOneIterationDuringOngoingRun(isStimulationTriggerIdenticalToAcquisitionTrigger, self) ;                            
+                            self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;                            
                             %fprintf('Check for messages after completing all sweeps\n');
                             % do a drawnow() if it's been too long...
                             timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
@@ -1913,8 +1935,11 @@ classdef WavesurferModel < ws.Model
             % Notify other processes
             %self.IPCPublisher_.send('completingRun') ;
             self.Looper_.completingRun() ;
-            self.Refiller_.completingRun(self) ;
-
+            didStopEpisode = self.Refiller_.completingRun() ;
+            if didStopEpisode ,
+                self.callUserMethod_('stoppingEpisode');
+            end            
+            
             % Notify subsystems
             for idx = 1: numel(self.Subsystems_) ,
                 if self.Subsystems_{idx}.IsEnabled ,
@@ -2019,8 +2044,11 @@ classdef WavesurferModel < ws.Model
             % Notify other processes
             %self.IPCPublisher_.send('abortingRun') ;
             self.Looper_.abortingRun() ;
-            self.Refiller_.abortingRun(self) ;
-
+            didAbortEpisode = self.Refiller_.abortingRun() ;
+            if didAbortEpisode ,
+                self.callUserMethod_('abortingEpisode');
+            end                                
+            
             % Notify subsystems, in reverse of starting order
 %             for idx = numel(self.Subsystems_):-1:1 ,
 %                 if self.Subsystems_{idx}.IsEnabled ,
@@ -3105,12 +3133,12 @@ classdef WavesurferModel < ws.Model
                 self.Refiller_.didSetPrimaryDeviceInFrontend() ;
                 %looperProtocol = self.getLooperProtocol_() ;
                 %self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
-                self.Looper_.frontendJustLoadedProtocol(self.PrimaryDeviceName, ...
-                                                        self.IsPrimaryDeviceAPXIDevice, ...
-                                                        self.DOChannelTerminalIDs, ...
-                                                        self.IsDOChannelTimed, ...
-                                                        self.DOChannelStateIfUntimed, ...
-                                                        self.IsDOChannelTerminalOvercommitted) ;
+                self.Looper_.loadingProtocol(self.PrimaryDeviceName, ...
+                                             self.IsPrimaryDeviceAPXIDevice, ...
+                                             self.DOChannelTerminalIDs, ...
+                                             self.IsDOChannelTimed, ...
+                                             self.DOChannelStateIfUntimed, ...
+                                             self.IsDOChannelTerminalOvercommitted) ;
                 %self.Refiller_.frontendJustLoadedProtocol(isTerminalOvercommittedForEachDOChannel) ;                
             end
         end  % function
@@ -6561,6 +6589,42 @@ classdef WavesurferModel < ws.Model
 %             % We'll use this in a sanity-check
 %             didAcquireNonzeroScans = (size(rawAnalogData,1)>0) ;
         end  % function
+        
+        function performOneRefillerIterationDuringOngoingRun_(self, isStimulationTriggerIdenticalToAcquisitionTrigger)
+            % Action in a run depends on whether we are also in an
+            % episode, or are in-between episodes
+            % Check the finite outputs, refill them if
+            % needed.
+            if self.Refiller_.IsPerformingEpisode ,
+                didCompleteEpisode = self.Refiller_.checkIfTasksAreDoneAndEndEpisodeIfSo() ;
+                if didCompleteEpisode ,
+                    self.callUserMethod('completingEpisode');           
+                end
+            else
+                % If we're not performing an episode, see if
+                % we need to start one.
+                if self.Refiller_.NEpisodesCompletedSoFarThisRun < self.Refiller_.NEpisodesPerRun ,
+                    %isStimulationTriggerIdenticalToAcquisitionTrigger = self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                    if isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                        % do nothing.
+                        % if they're identical, startEpisode_()
+                        % is called from the startingSweep()
+                        % req-rep method.
+                    else
+                        try
+                            self.callUserMethod('startingEpisode') ;
+                            [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
+                            self.Refiller_.startEpisode(aoData, doData) ;
+                        catch err
+                            % Something went wrong
+                            self.abortOngoingRun_();
+                            self.changeReadiness_(+1);
+                            rethrow(err);
+                        end
+                    end
+                end
+            end
+        end  % function        
         
     end  % protected methods block        
     

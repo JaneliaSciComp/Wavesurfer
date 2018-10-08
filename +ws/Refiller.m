@@ -34,6 +34,7 @@ classdef Refiller < handle
         
         %IsUserCodeManagerEnabled_
         %TheUserObject_        
+        NEpisodesCompletedSoFarThisRun
     end
 
     properties (Access=protected, Transient=true)
@@ -194,63 +195,100 @@ classdef Refiller < handle
 %             end
 %         end  % function
         
-        function performOneIterationDuringOngoingRun(self, isStimulationTriggerIdenticalToAcquisitionTrigger, frontend)
-            % Action in a run depends on whether we are also in an
-            % episode, or are in-between episodes
-            % Check the finite outputs, refill them if
-            % needed.
-            if self.IsPerformingEpisode_ ,
-                areTasksDone = self.areTasksDone_() ;
-                if areTasksDone ,
-                    %fprintf('Tasks are done\n') ;
-                    %self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
-                    % Called from runMainLoop() when a single episode of stimulation is
-                    % completed.  
-                    %fprintf('completeTheOngoingEpisode_()\n');
-                    % We only want this method to do anything once per episode, and the next three
-                    % lines make this the case.
+%         function performOneIterationDuringOngoingRun(self, isStimulationTriggerIdenticalToAcquisitionTrigger, frontend)
+%             % Action in a run depends on whether we are also in an
+%             % episode, or are in-between episodes
+%             % Check the finite outputs, refill them if
+%             % needed.
+%             if self.IsPerformingEpisode_ ,
+%                 areTasksDone = self.areTasksDone_() ;
+%                 if areTasksDone ,
+%                     %fprintf('Tasks are done\n') ;
+%                     %self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+%                     % Called from runMainLoop() when a single episode of stimulation is
+%                     % completed.  
+%                     %fprintf('completeTheOngoingEpisode_()\n');
+%                     % We only want this method to do anything once per episode, and the next three
+%                     % lines make this the case.
+% 
+%                     % Notify the Stimulation subsystem
+%                     %if self.Frontend_.IsStimulationEnabled ,
+%                     if self.AreTasksStarted_ ,
+%                         self.TheFiniteAnalogOutputTask_.stop() ;
+%                         self.TheFiniteDigitalOutputTask_.stop() ;                
+%                         self.AreTasksStarted_ = false ;
+%                     end
+%                     %end
+% 
+%                     % Call user method
+%                     frontend.callUserMethod('completingEpisode');                        
+% 
+%                     % Update state
+%                     self.IsPerformingEpisode_ = false;
+%                     %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+%                     self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
+%                     %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
+% 
+%                     %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+%                     %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);                    
+%                 else
+%                     %fprintf('Tasks are not done\n') ;
+%                     % If tasks are not done, do nothing (except
+%                     % check messages, below)
+%                 end                                                            
+%             else
+%                 % If we're not performing an episode, see if
+%                 % we need to start one.
+%                 if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
+%                     %isStimulationTriggerIdenticalToAcquisitionTrigger = self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+%                     if isStimulationTriggerIdenticalToAcquisitionTrigger ,
+%                         % do nothing.
+%                         % if they're identical, startEpisode_()
+%                         % is called from the startingSweep()
+%                         % req-rep method.
+%                     else
+%                         self.startEpisode_(frontend) ;
+%                     end
+%                 end
+%             end
+%         end  % function        
+        
+        function didCompleteEpisode = checkIfTasksAreDoneAndEndEpisodeIfSo(self)
+            areTasksDone = self.areTasksDone_() ;
+            if areTasksDone ,
+                %fprintf('Tasks are done\n') ;
+                %self.completeTheOngoingEpisode_() ;  % this calls completingEpisode user method
+                % Called from runMainLoop() when a single episode of stimulation is
+                % completed.  
+                %fprintf('completeTheOngoingEpisode_()\n');
+                % We only want this method to do anything once per episode, and the next three
+                % lines make this the case.
 
-                    % Notify the Stimulation subsystem
-                    %if self.Frontend_.IsStimulationEnabled ,
-                    if self.AreTasksStarted_ ,
-                        self.TheFiniteAnalogOutputTask_.stop() ;
-                        self.TheFiniteDigitalOutputTask_.stop() ;                
-                        self.AreTasksStarted_ = false ;
-                    end
-                    %end
-
-                    % Call user method
-                    self.callUserMethod_('completingEpisode');                        
-
-                    % Update state
-                    self.IsPerformingEpisode_ = false;
-                    %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-                    self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
-                    %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
-
-                    %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
-                    %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);                    
-                else
-                    %fprintf('Tasks are not done\n') ;
-                    % If tasks are not done, do nothing (except
-                    % check messages, below)
-                end                                                            
-            else
-                % If we're not performing an episode, see if
-                % we need to start one.
-                if self.NEpisodesCompletedSoFarThisRun_ < self.NEpisodesPerRun_ ,
-                    %isStimulationTriggerIdenticalToAcquisitionTrigger = self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
-                    if isStimulationTriggerIdenticalToAcquisitionTrigger ,
-                        % do nothing.
-                        % if they're identical, startEpisode_()
-                        % is called from the startingSweep()
-                        % req-rep method.
-                    else
-                        self.startEpisode_(frontend) ;
-                    end
+                % Notify the Stimulation subsystem
+                %if self.Frontend_.IsStimulationEnabled ,
+                if self.AreTasksStarted_ ,
+                    self.TheFiniteAnalogOutputTask_.stop() ;
+                    self.TheFiniteDigitalOutputTask_.stop() ;                
+                    self.AreTasksStarted_ = false ;
                 end
+                %end
+
+%                 % Call user method
+%                 frontend.callUserMethod('completingEpisode');                        
+
+                % Update state
+                self.IsPerformingEpisode_ = false;
+                %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+                self.NEpisodesCompletedSoFarThisRun_ = self.NEpisodesCompletedSoFarThisRun_ + 1 ;
+                %nEpisodesCompletedSoFarThisRun = self.NEpisodesCompletedSoFarThisRun_
+
+                %fprintf('About to exit Refiller::completeTheOngoingEpisode_()\n');
+                %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);                    
+                didCompleteEpisode = true ;
+            else
+                didCompleteEpisode = false ;                
             end
-        end  % function        
+        end  % method
     end  % public methods block
         
     methods  % RPC methods block
@@ -282,10 +320,9 @@ classdef Refiller < handle
                              stimulationSampleRate, ...
                              stimulationTriggerDeviceName, ...
                              stimulationTriggerPFIID, ...
-                             stimulationTriggerEdge, ...
-                             frontend)
+                             stimulationTriggerEdge)
                                      
-            %% Cache the keystone task for the run
+            % % Cache the keystone task for the run
             %self.StimulationKeystoneTaskType_ = stimulationKeystoneTaskType ;            
             %self.StimulationKeystoneTaskDeviceName_ = stimulationKeystoneTaskDeviceName ;            
             
@@ -370,19 +407,19 @@ classdef Refiller < handle
                 me.rethrow() ;
             end
             
-            % (Maybe) start an episode, which will wait for a trigger to *really*
-            % start.
-            % It's important to do this here, so that we get ready to
-            % receive the first stim trigger *before* we tell the frontend
-            % that we're ready for the run.
-            if self.NEpisodesPerRun_ > 0 ,
-                if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
-                    self.startEpisode_(frontend) ;
-                end
-            end
+%             % (Maybe) start an episode, which will wait for a trigger to *really*
+%             % start.
+%             % It's important to do this here, so that we get ready to
+%             % receive the first stim trigger *before* we tell the frontend
+%             % that we're ready for the run.
+%             if self.NEpisodesPerRun_ > 0 ,
+%                 if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
+%                     self.startEpisode_(frontend) ;
+%                 end
+%             end
         end  % function
 
-        function result = completingRun(self, frontend)
+        function didStopEpisode = completingRun(self)
             %fprintf('Got message completingRun\n') ;
             
             % Called by the WSM when the run is completed.
@@ -392,41 +429,25 @@ classdef Refiller < handle
             % If this happens, need to terminate the episode.
             %
             if self.IsPerformingEpisode_ ,
-                self.stopTheOngoingEpisode_(frontend) ;
+                self.stopTheOngoingEpisode_() ;
                 
                 % Set all outputs to zero
                 self.makeSureAllOutputsAreZero_() ;            
+                didStopEpisode = true ;
+            else
+                didStopEpisode = false ;                
             end
             
             %
             % Cleanup after run            
             %
             
-%             % Disarm the tasks
-%             if ~isempty(self.TheFiniteAnalogOutputTask_) ,
-%                 self.TheFiniteAnalogOutputTask_.disarm();
-%             end
-%             if ~isempty(self.TheFiniteDigitalOutputTask_) ,
-%                 self.TheFiniteDigitalOutputTask_.disarm();
-%             end
-            
             % Clear the output tasks
             self.TheFiniteAnalogOutputTask_ = [] ;            
             self.TheFiniteDigitalOutputTask_ = [] ;            
-            
-            %
-            % Note that we are done with the run
-            %
-            %self.IsPerformingRun_ = false ;
-            %fprintf('Just set self.IsPerformingRun_ to %s\n', ws.fif(self.IsPerformingRun_, 'true', 'false') ) ;
-            
-            %
-            % Set the result, b/c we have to return *some* result
-            %
-            result = [] ;
         end  % function
         
-        function result = frontendWantsToStopRun(self, frontend)
+        function didStopEpisode = stoppingRun(self)
             % Called when you press the "Stop" button in the UI, for
             % instance.  Stops the current sweep and run, if any.
 
@@ -434,18 +455,19 @@ classdef Refiller < handle
             %fprintf('Got message frontendWantsToStopRun\n') ;            
             %self.DoesFrontendWantToStopRun_ = true ;
             if self.IsPerformingEpisode_ ,
-                self.stopTheOngoingEpisode_(frontend) ;
+                self.stopTheOngoingEpisode_() ;
+                didStopEpisode = true ;
+            else
+                didStopEpisode = false ;                
             end
             self.stopTheOngoingRun_() ;   % this will set self.IsPerformingRun to false
             %self.DoesFrontendWantToStopRun_ = false ;  % reset this
             %fprintf('About to send "refillerStoppedRun"\n') ;
             %self.Frontend_.refillerStoppedRun() ;
             %fprintf('Just sent "refillerStoppedRun"\n') ;
-
-            result = [] ;
         end
         
-        function result = abortingRun(self, frontend)
+        function didAbortEpisode = abortingRun(self)
             % Called by the WSM when something goes wrong in mid-run
             
             if self.IsPerformingEpisode_ ,
@@ -456,27 +478,46 @@ classdef Refiller < handle
                     self.AreTasksStarted_ = false ;
                 end
                 %end
-                frontend.callUserMethod('abortingEpisode');            
+                %frontend.callUserMethod('abortingEpisode');                            
                 self.IsPerformingEpisode_ = false ;            
+                didAbortEpisode = true ;
+            else
+                didAbortEpisode = false ;                
             end
             
             self.abortTheOngoingRun_() ;
-            
-            result = [] ;
         end  % function        
         
-        function result = startingSweep(self, indexOfSweepWithinRun, frontend)  %#ok<INUSL>
-            % Sent by the wavesurferModel iff the stim and acq systems are
-            % using the identical trigger.  Prompts the Refiller to prepare
-            % to run an episode.  But the sweep/episode doesn't start
-            % until later.
+        function startEpisode(self, aoData, doData)
+            self.IsPerformingEpisode_ = true ;
+            %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+            %frontend.callUserMethod_('startingEpisode') ;
+            
             %
-            % This is called via rep-req.
-
-            % Prepare for the sweep
-            %result = self.prepareForSweep_(indexOfSweepWithinRun) ;
-            self.startEpisode_(frontend) ;
-            result = [] ;
+            % Fill the output buffers and start the tasks
+            %
+            
+            % Compute the index for this epsiode
+            %indexOfEpisodeWithinRun = self.NEpisodesCompletedSoFarThisRun_+1 ;
+            
+            % % Get the current stimulus map
+            % stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
+            % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+            
+            % Set the channel data in the tasks
+            %[aoData, doData] = frontend.getStimulationData(indexOfEpisodeWithinRun) ;
+            self.setAnalogChannelData_(aoData) ;
+            self.setDigitalChannelData_(doData) ;
+            
+            % Note that the tasks have been started, which will be true
+            % soon enough
+            self.AreTasksStarted_ = true ;
+            
+            % Start the digital task (which will then wait for a trigger)
+            self.TheFiniteDigitalOutputTask_.start() ;
+            
+            % Start the analog task (which will then wait for a trigger)
+            self.TheFiniteAnalogOutputTask_.start() ;
         end  % function
 
 %         function result = frontendIsBeingDeleted(self)   %#ok<MANU>
@@ -835,59 +876,59 @@ classdef Refiller < handle
 %             end            
 %         end  % function                
         
-        function startEpisode_(self, frontend)
-            %fprintf('startEpisode_()\n');
-%             if ~self.IsPerformingRun_ ,
-%                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
-%                       'The refiller was asked to start an episode while not in a run') ;
+%         function startEpisode_(self, frontend)
+%             %fprintf('startEpisode_()\n');
+% %             if ~self.IsPerformingRun_ ,
+% %                 error('ws:Refiller:askedToStartEpisodeWhileNotInRun', ...
+% %                       'The refiller was asked to start an episode while not in a run') ;
+% %             end
+% %             if ~self.IsPerformingSweep_ ,
+% %                 error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
+% %                       'The refiller was asked to start an episode while not in a sweep') ;
+% %             end
+%             if self.IsPerformingEpisode_ ,
+%                 error('ws:Refiller:askedToStartEpisodeWhileInEpisode', ...
+%                       'The refiller was asked to start an episode while already in an epsiode') ;
 %             end
-%             if ~self.IsPerformingSweep_ ,
-%                 error('ws:Refiller:askedToStartEpisodeWhileNotInSweep', ...
-%                       'The refiller was asked to start an episode while not in a sweep') ;
+%             if self.AreTasksStarted_ ,
+%                 % probably an error to call this method when
+%                 % self.AreTasksStarted_ is true
+%                 error('ws:Refiller:askedToArmWhenAlreadyArmed', ...
+%                       'The refiller was asked to arm for an episode when already armed and/or stimulating') ;
 %             end
-            if self.IsPerformingEpisode_ ,
-                error('ws:Refiller:askedToStartEpisodeWhileInEpisode', ...
-                      'The refiller was asked to start an episode while already in an epsiode') ;
-            end
-            if self.AreTasksStarted_ ,
-                % probably an error to call this method when
-                % self.AreTasksStarted_ is true
-                error('ws:Refiller:askedToArmWhenAlreadyArmed', ...
-                      'The refiller was asked to arm for an episode when already armed and/or stimulating') ;
-            end
-            
-            if frontend.IsStimulationEnabled ,
-                self.IsPerformingEpisode_ = true ;
-                %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
-                frontend.callUserMethod_('startingEpisode') ;
-                
-                %
-                % Fill the output buffers and start the tasks
-                %
-                
-                % Compute the index for this epsiode
-                indexOfEpisodeWithinRun = self.NEpisodesCompletedSoFarThisRun_+1 ;
-
-                % % Get the current stimulus map
-                % stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
-                % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
-
-                % Set the channel data in the tasks
-                [aoData, doData] = frontend.getStimulationData(indexOfEpisodeWithinRun) ;
-                self.setAnalogChannelData_(aoData) ;
-                self.setDigitalChannelData_(doData) ;
-
-                % Note that the tasks have been started, which will be true
-                % soon enough
-                self.AreTasksStarted_ = true ;
-                
-                % Start the digital task (which will then wait for a trigger)
-                self.TheFiniteDigitalOutputTask_.start() ; 
-
-                % Start the analog task (which will then wait for a trigger)
-                self.TheFiniteAnalogOutputTask_.start() ;                
-            end
-        end
+%             
+%             if frontend.IsStimulationEnabled ,
+%                 self.IsPerformingEpisode_ = true ;
+%                 %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
+%                 frontend.callUserMethod_('startingEpisode') ;
+%                 
+%                 %
+%                 % Fill the output buffers and start the tasks
+%                 %
+%                 
+%                 % Compute the index for this epsiode
+%                 indexOfEpisodeWithinRun = self.NEpisodesCompletedSoFarThisRun_+1 ;
+% 
+%                 % % Get the current stimulus map
+%                 % stimulusMapIndex = self.StimulusLibrary_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun, self.DoRepeatSequence_) ;
+%                 % %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+% 
+%                 % Set the channel data in the tasks
+%                 [aoData, doData] = frontend.getStimulationData(indexOfEpisodeWithinRun) ;
+%                 self.setAnalogChannelData_(aoData) ;
+%                 self.setDigitalChannelData_(doData) ;
+% 
+%                 % Note that the tasks have been started, which will be true
+%                 % soon enough
+%                 self.AreTasksStarted_ = true ;
+%                 
+%                 % Start the digital task (which will then wait for a trigger)
+%                 self.TheFiniteDigitalOutputTask_.start() ; 
+% 
+%                 % Start the analog task (which will then wait for a trigger)
+%                 self.TheFiniteAnalogOutputTask_.start() ;                
+%             end
+%         end
         
 %         function completeTheOngoingEpisode_(self)
 %             % Called from runMainLoop() when a single episode of stimulation is
@@ -918,7 +959,7 @@ classdef Refiller < handle
 %             %fprintf('    self.NEpisodesCompletedSoFarThisSweep_: %d\n',self.NEpisodesCompletedSoFarThisSweep_);
 %         end  % function
         
-        function stopTheOngoingEpisode_(self, frontend)
+        function stopTheOngoingEpisode_(self)
             %fprintf('stopTheOngoingEpisode_()\n');
             %if self.Frontend_.IsStimulationEnabled ,
             if self.AreTasksStarted_ ,
@@ -927,7 +968,7 @@ classdef Refiller < handle
                 self.AreTasksStarted_ = false ;
             end
             %end
-            frontend.callUserMethod_('stoppingEpisode');            
+            %frontend.callUserMethod_('stoppingEpisode');            
             self.IsPerformingEpisode_ = false ;            
             %fprintf('Just set self.IsPerformingEpisode_ to %s\n', ws.fif(self.IsPerformingEpisode_, 'true', 'false') ) ;
         end  % function
