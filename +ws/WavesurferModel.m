@@ -264,6 +264,7 @@ classdef WavesurferModel < ws.Model
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
         HasUserSpecifiedUserSettingsFileName_ = false
+        DoesProtocolNeedSave_ = false 
         AbsoluteUserSettingsFileName_ = ''
         IndexOfSelectedFastProtocol_ = 1  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         State_ = 'uninitialized'
@@ -432,6 +433,31 @@ classdef WavesurferModel < ws.Model
             % correctly.
             self.overrideOrReleaseStimulusMapDurationAsNeeded_();            
             
+            % Set the file name
+            if isAwake ,
+                lastProtocolFilePath = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
+                lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
+                if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
+                    protocolFileFolderPath = pwd() ;
+                else
+                    protocolFileFolderPath = lastProtocolFileFolderPath ;
+                end                    
+                index = 1 ;
+                didFindGoodFileName = false ;
+                while ~didFindGoodFileName ,
+                    if index==1 ,
+                        putativeGoodFileName = 'untitled.wsp' ;
+                    else
+                        putativeGoodFileName = sprintf('untitled-%d.wsp', index) ;
+                    end
+                    putativeGoodFilePath = fullfile(protocolFileFolderPath, putativeGoodFileName) ;
+                    didFindGoodFileName = ~exist(putativeGoodFilePath, 'file') ;
+                end                
+                self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
+                self.HasUserSpecifiedProtocolFileName_ = false ;
+                self.DoesProtocolNeedSave_ = false ;
+            end
+            
             % Lastly (I guess...) create a command connector (which will
             % remain disabled for now)
             self.CommandServer_ = ws.CommandServer(self) ;
@@ -598,11 +624,11 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end        
         
-        function result = looperIsAlive(self)  %#ok<MANU>
-            % Doesn't need to do anything
-            %fprintf('WavesurferModel::looperIsAlive()\n');
-            result = [] ;
-        end
+%         function result = looperIsAlive(self)  %#ok<MANU>
+%             % Doesn't need to do anything
+%             %fprintf('WavesurferModel::looperIsAlive()\n');
+%             result = [] ;
+%         end
         
 %         function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
 %             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
@@ -634,11 +660,11 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end
         
-        function result = refillerIsAlive(self)  %#ok<MANU>
-            % Doesn't need to do anything
-            %fprintf('WavesurferModel::refillerIsAlive()\n');
-            result = [] ;
-        end
+%         function result = refillerIsAlive(self)  %#ok<MANU>
+%             % Doesn't need to do anything
+%             %fprintf('WavesurferModel::refillerIsAlive()\n');
+%             result = [] ;
+%         end
         
 %         function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
 %             result = [] ;
@@ -648,9 +674,9 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end       
         
-        function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
-            result = [] ;
-        end       
+%         function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
+%             result = [] ;
+%         end       
     end  % ZMQ methods block
     
     methods
@@ -750,6 +776,7 @@ classdef WavesurferModel < ws.Model
                     %self.Triggering_.willSetNSweepsPerRun();
                     self.NSweepsPerRun_ = double(newValue) ;
                     self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 else
                     self.broadcast('Update') ;
                     error('ws:invalidPropertyValue', ...
@@ -776,6 +803,7 @@ classdef WavesurferModel < ws.Model
                 self.SweepDurationIfFinite_ = valueToSet;
                 self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                 self.didSetSweepDurationIfFinite_();
+                self.DoesProtocolNeedSave_ = true ;
             else
                 %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                 %self.didSetSweepDurationIfFinite();
@@ -804,6 +832,7 @@ classdef WavesurferModel < ws.Model
                 else                        
                     self.AreSweepsContinuous = true ;
                 end                        
+                self.DoesProtocolNeedSave_ = true ;
             else
                 self.broadcast('Update');
                 error('ws:invalidPropertyValue', ...
@@ -826,6 +855,7 @@ classdef WavesurferModel < ws.Model
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
+                self.DoesProtocolNeedSave_ = true ;                
                 self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                 self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_);
             end
@@ -932,6 +962,7 @@ classdef WavesurferModel < ws.Model
 
         function setSingleAIChannelTerminalID(self, i, newValue)
             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.Display_.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
@@ -944,6 +975,7 @@ classdef WavesurferModel < ws.Model
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
@@ -961,22 +993,22 @@ classdef WavesurferModel < ws.Model
             end            
         end
         
-        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            display=self.Display_;
-            if ~isempty(display)
-                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
-            end            
-            ephys=self.Ephys_;
-            if ~isempty(ephys)
-                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
-            end            
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+%             display=self.Display_;
+%             if ~isempty(display)
+%                 display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+%             ephys=self.Ephys_;
+%             if ~isempty(ephys)
+%                 ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+%             self.broadcast('UpdateChannels') ;
+%         end
         
-        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
-            self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+%             self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             self.broadcast('UpdateChannels') ;
+%         end
         
 %         function didSetAnalogOutputTerminalID(self)
 %             self.syncIsAOChannelTerminalOvercommitted_() ;
@@ -2694,24 +2726,21 @@ classdef WavesurferModel < ws.Model
             self.Refiller_.isDigitalOutputTimedWasSetInFrontend(value) ;            
         end
         
-        function didAddAnalogInputChannel(self)
-            self.syncIsAIChannelTerminalOvercommitted_() ;
-            self.Display_.didAddAnalogInputChannel() ;
-            self.Ephys_.didChangeNumberOfInputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-        end
-        
         function newChannelIndex = addAIChannel(self)
             nextFreeDeviceNameAndTerminalIDMaybe = self.nextFreeAITerminal() ;
             if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
                 % No free AI terminals
                 newChannelIndex = [] ;
-            else            
+            else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Acquisition_.addAnalogChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                       nextFreeDeviceNameAndTerminalID.terminalID) ;
-                self.didAddAnalogInputChannel() ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
+                self.syncIsAIChannelTerminalOvercommitted_() ;
+                self.Display_.didAddAnalogInputChannel() ;
+                self.Ephys_.didChangeNumberOfInputChannels();
+                self.broadcast('UpdateChannels');  % causes channels figure to update
+                self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
             end
         end  % function
         
@@ -2723,6 +2752,7 @@ classdef WavesurferModel < ws.Model
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Stimulation_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAOChannelTerminalOvercommitted_() ;
                 self.Ephys_.didChangeNumberOfOutputChannels() ;
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
@@ -2736,17 +2766,14 @@ classdef WavesurferModel < ws.Model
                 channelIndex = [] ;
             else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
-                %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-                %allDeviceNames = self.AllDeviceNames ;
                 channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
                 self.Ephys_.didChangeNumberOfInputChannels() ;
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-                %self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
-                %                        self.IsDOChannelTerminalOvercommitted) ;
                 self.Looper_.didAddDigitalInputChannelInFrontend(self.PrimaryDeviceName, ...
                                                                  self.IsPrimaryDeviceAPXIDevice, ...
                                                                  self.DOChannelTerminalIDs, ...
@@ -2768,6 +2795,7 @@ classdef WavesurferModel < ws.Model
                 newChannelIndex = self.Stimulation_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                        nextFreeDeviceNameAndTerminalID.terminalID) ;
                 %self.Display_.didAddDigitalOutputChannel() ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
@@ -4825,13 +4853,22 @@ classdef WavesurferModel < ws.Model
         function setSingleAIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
             [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName_(i, newValue, allChannelNames) ;
-            self.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
+            display=self.Display_;
+            if ~isempty(display)
+                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            ephys=self.Ephys_;
+            if ~isempty(ephys)
+                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+            end            
+            self.broadcast('UpdateChannels') ;
         end
         
         function setSingleDIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
             [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
-            self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
+            self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+            self.broadcast('UpdateChannels') ;
         end
         
         function set.AcquisitionSampleRate(self, newValue)

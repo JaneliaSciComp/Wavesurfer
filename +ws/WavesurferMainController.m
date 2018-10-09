@@ -85,10 +85,10 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
                 
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            initialFolderForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
+            initialFilePathForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFolderForFilePicker);            
+                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
             if ~isempty(absoluteFileName)
                 %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
                 self.openProtocolFileGivenFileName_(absoluteFileName) ;
