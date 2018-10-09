@@ -415,7 +415,7 @@ classdef RasterTreadMill < ws.UserClass
                 self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;
                 self.BinCenters_ = self.BinWidth_/2 : self.BinWidth_ : self.TreadMillLength;
-                if rootModel.IsITheOneTrueWavesurferModel ,
+                if rootModel.IsAwake ,
                     self.syncRasterFigAndAxes_(rootModel) ;
                     self.syncLatencyFigAndAxes_() ;
                 end

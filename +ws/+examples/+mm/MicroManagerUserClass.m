@@ -24,7 +24,7 @@ classdef MicroManagerUserClass < ws.UserClass
         
         function wake(self, rootModel)
             fprintf('Waking the Micro-Manager user object\n') ;
-            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ) ;
+            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsAwake ) ;
         end
         
         function delete(self)  %#ok<INUSD>

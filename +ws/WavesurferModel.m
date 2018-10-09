@@ -193,7 +193,8 @@ classdef WavesurferModel < ws.Model
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
-        IsITheOneTrueWavesurferModel
+        IsITheOneTrueWavesurferModel  % deprecated, same as IsAwake
+        IsAwake
         %WarningLog
         LayoutForAllWindows
        
@@ -289,7 +290,7 @@ classdef WavesurferModel < ws.Model
         %ThrownException_
         NSweepsCompletedInThisRun_ = 0
         AreAllSweepsCompleted_
-        IsITheOneTrueWavesurferModel_
+        IsAwake_
         IsHeaded_
         DesiredNScansPerUpdate_        
         NScansPerUpdate_        
@@ -348,13 +349,13 @@ classdef WavesurferModel < ws.Model
     end
     
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel, isHeaded)
+        function self = WavesurferModel(isAwake, isHeaded)
             self@ws.Model();
             
-            if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
-                isITheOneTrueWavesurferModel = false ;
+            if ~exist('isAwake','var') || isempty(isAwake) ,
+                isAwake = false ;
             end                       
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 if ~exist('isHeaded','var') || isempty(isHeaded) ,
                     isHeaded = false ;
                 end
@@ -364,7 +365,7 @@ classdef WavesurferModel < ws.Model
             %doRunInDebugMode = true ;
             %dbstop('if','error') ;
             
-            self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            self.IsAwake_ = isAwake ;
             self.IsHeaded_ = isHeaded ;
             
             self.VersionString_ = ws.versionString() ;
@@ -373,7 +374,7 @@ classdef WavesurferModel < ws.Model
             % WavesurferModel, and not some blasted pretender!
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 % Create the looper, refiller
                 self.Looper_ = ws.Looper() ;
                 self.Refiller_ = ws.Refiller() ;                                
@@ -419,7 +420,7 @@ classdef WavesurferModel < ws.Model
             
             % Finally, set the device name to the first device name, if
             % there is one (and if we are the one true wavesurfer object)
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 % Set the device name to the first device
                 allDeviceNames = self.AllDeviceNames ;
                 if ~isempty(allDeviceNames) ,
@@ -435,14 +436,14 @@ classdef WavesurferModel < ws.Model
             % remain disabled for now)
             self.CommandServer_ = ws.CommandServer(self) ;
             self.CommandClient_ = ws.CommandClient(self) ;
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 self.CommandServer_.IsEnabled = true ;
             end            
         end  % function
         
         function delete(self)            
             %fprintf('WavesurferModel::delete()\n');
-            if self.IsITheOneTrueWavesurferModel_ ,
+            if self.IsAwake_ ,
                 % Signal to others that we are going away
                 %self.Looper_.frontendIsBeingDeleted() ;
                 %self.Refiller_.frontendIsBeingDeleted() ;
@@ -1062,7 +1063,7 @@ classdef WavesurferModel < ws.Model
             % Set the value by enabling/disabling the command connector
             if islogical(newValue) && isscalar(newValue) ,
                 try
-                    self.CommandClient_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
+                    self.CommandClient_.IsEnabled = (self.IsAwake_ && newValue) ;
                 catch me
                     err = me ;
                 end                
@@ -1089,7 +1090,12 @@ classdef WavesurferModel < ws.Model
         end  % function        
         
         function value=get.IsITheOneTrueWavesurferModel(self)
-            value = self.IsITheOneTrueWavesurferModel_ ;
+            % This is deprecated
+            value = self.IsAwake_ ;
+        end  % function        
+        
+        function value=get.IsAwake(self)
+            value = self.IsAwake_ ;
         end  % function        
         
 %         function willPerformTestPulse(self)
@@ -3118,7 +3124,7 @@ classdef WavesurferModel < ws.Model
             % Make sure the looper knows which output channels are timed vs
             % on-demand
             %keyboard
-            if self.IsITheOneTrueWavesurferModel_ ,
+            if self.IsAwake_ ,
                 %isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
 %                 self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
 %                                         primaryDeviceName, ...
@@ -3709,7 +3715,7 @@ classdef WavesurferModel < ws.Model
                     %nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
                     %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
                     %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
-                    if self.IsITheOneTrueWavesurferModel_ ,
+                    if self.IsAwake_ ,
 %                         self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
 %                                                 primaryDeviceName, ...
 %                                                 isPrimaryDeviceAPXIDevice, ...
@@ -4117,8 +4123,8 @@ classdef WavesurferModel < ws.Model
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             % Need something here for yoking...
-            %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
-            %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
+            %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
             
             self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
         end  % method

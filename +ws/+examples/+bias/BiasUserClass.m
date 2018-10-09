@@ -47,7 +47,7 @@ classdef BiasUserClass < ws.UserClass
         end
         
         function wake(self, rootModel)
-            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsAwake ,
                 self.IsIInFrontend = true ;
                 self.initialize();
             else

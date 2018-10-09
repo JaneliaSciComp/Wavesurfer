@@ -153,7 +153,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         function wake(self, rootModel)
-            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsAwake ,
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
@@ -652,7 +652,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
         end
         
-        function analyzeFlyLocomotion_(self, data, isITheOneTrueWavesurferModel)
+        function analyzeFlyLocomotion_(self, data, isAwake)
             % This function quantifies the locomotor activity of the fly
             % and updates the key parameters used by the subsequent
             % functions. It was provided by Stephanie Wegener, but has been
@@ -690,7 +690,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
             self.BarPositionWrappedRecent_ = self.circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
-            if isITheOneTrueWavesurferModel % do not need to do this in looper, helps save time
+            if isAwake % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
                 self.RotationalDisplacementRecent_ = (inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2

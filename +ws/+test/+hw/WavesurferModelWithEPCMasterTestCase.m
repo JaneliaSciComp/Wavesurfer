@@ -66,8 +66,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         function testTestPulseModeChangeWithMultipleElectrodes(self)
             % Create an WavesurferModel
             %thisDirName=fileparts(mfilename('fullpath'));
-            isITheOneTrueWavesurferModel = true ;
-            wsModel=ws.WavesurferModel(isITheOneTrueWavesurferModel);
+            isAwake = true ;
+            wsModel=ws.WavesurferModel(isAwake);
             %model.initializeFromMDFFileName(fullfile(thisDirName,'Machine_Data_File_WS_Test.m'));           
             
             wsModel.addAIChannel() ;
@@ -119,8 +119,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         
         function testUpdateBeforeRunCheckbox(self)
             % Create a WavesurferModel
-            isITheOneTrueWavesurferModel = true ;
-            wsModel = ws.WavesurferModel(isITheOneTrueWavesurferModel) ;
+            isAwake = true ;
+            wsModel = ws.WavesurferModel(isAwake) ;
             wsModel.ArePreferencesWritable = false ;
             %wsModel = wavesurfer('--nogui') ;
             
