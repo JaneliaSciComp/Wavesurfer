@@ -1,62 +1,20 @@
 classdef Refiller < handle
     % The main Refiller model object.
     
-    properties (Access = protected)        
-        %PrimaryDeviceName_ = ''
-        %IsPrimaryDeviceAPXIDevice_ = false
-
-        %ReferenceClockSource_ = []
-        %ReferenceClockRate_ = []
-        
-        %NSweepsPerRun_ = 1
-        %SweepDuration_ = []
-
-        %StimulationTrigger_
-        
-        %IsStimulationEnabled_ = false
-        %StimulationSampleRate_ = []
-        %StimulusLibrary_ = []
-        %DoRepeatSequence_ = true
-        %IsStimulationTriggerIdenticalToAcquisitionTrigger_ = []
-        
-        %AOChannelNames_ = cell(1,0)
-        %AOChannelScales_ = zeros(1,0)
-        %IsAOChannelActive_ = false(1,0)
-        %AOChannelDeviceNames_ = cell(1,0)
-        %AOChannelTerminalIDs_ = zeros(1,0)
-        %IsAOChannelTerminalOvercommitted_ = false(1,0) 
-        
-        %DOChannelNames_ = cell(1,0)
-        %IsDOChannelTimed_ = false(1,0)     
-        %DOChannelDeviceNames_ = cell(1,0)
-        %DOChannelTerminalIDs_ = zeros(1,0)
-        %IsDOChannelTerminalOvercommitted_ = false(1,0)               
-        
-        %IsUserCodeManagerEnabled_
-        %TheUserObject_        
+    properties (Dependent)        
         NEpisodesCompletedSoFarThisRun
+        NEpisodesPerRun
+        IsPerformingEpisode
+        DidCompleteEpisodes
     end
 
     properties (Access=protected, Transient=true)
-        %Frontend_
-        %IPCPublisher_
-        %IPCSubscriber_  % subscriber for the frontend
-        %IPCReplier_  % to reply to frontend rep-req requests
-        %DoesFrontendWantToStopRun_        
-        %DoKeepRunningMainLoop_
-        %IsPerformingRun_
         IsPerformingEpisode_
         AreTasksStarted_
         NEpisodesPerRun_
         NEpisodesCompletedSoFarThisRun_
-        %StimulationKeystoneTaskType_
-        %StimulationKeystoneTaskDeviceName_
         TheFiniteAnalogOutputTask_
         TheFiniteDigitalOutputTask_
-        %DidNotifyFrontendThatWeCompletedAllEpisodes_
-        %IsInTaskForEachAOChannel_
-        %IsInTaskForEachDOChannel_
-        %DidCompleteEpisodes_
     end
     
     methods
@@ -94,6 +52,22 @@ classdef Refiller < handle
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        
+        
+        function result = get.NEpisodesPerRun(self)
+            result = self.NEpisodesPerRun_ ;
+        end
+        
+        function result = get.NEpisodesCompletedSoFarThisRun(self)
+            result = self.NEpisodesCompletedSoFarThisRun_ ;
+        end
+        
+        function result = get.IsPerformingEpisode(self)
+            result = self.IsPerformingEpisode_ ;
+        end
+        
+        function result = get.DidCompleteEpisodes(self)
+            result = (self.NEpisodesCompletedSoFarThisRun_ >= self.NEpisodesPerRun_) ;
+        end        
         
 %         function runMainLoop(self)
 %             % Put something in the console, so user know's what this funny
