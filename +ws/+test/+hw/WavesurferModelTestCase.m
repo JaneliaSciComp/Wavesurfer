@@ -109,9 +109,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.clearStimulusLibrary();
 
             % Populate the Wavesurfer Stim library
-            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
-            wsModel.mimicStimulusLibrary_(stimulusLibrary);
-            clear stimulusLibrary
+            wsModel.populateStimulusLibraryForTesting();
 
             % Enable the stimulation subsystem
             wsModel.IsStimulationEnabled = true ;
@@ -146,9 +144,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.clearStimulusLibrary() ;
 
             % Populate the Wavesurfer Stim library
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
-            wsModel.mimicStimulusLibrary_(stimulusLibrary) ;
-            clear stimulusLibrary
+            wsModel.populateStimulusLibraryForTesting();
 
             % Enable the stimulation subsystem
             wsModel.IsStimulationEnabled=true;

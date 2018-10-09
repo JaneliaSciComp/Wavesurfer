@@ -858,9 +858,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.StimulusLibrary_.populateForTesting() ;
         end  % function
         
-        function mimicStimulusLibrary_(self, newValue) 
-            self.StimulusLibrary_.mimic(newValue) ;
-        end
+%         function mimicStimulusLibrary_(self, newValue) 
+%             self.StimulusLibrary_.mimic(newValue) ;
+%         end
         
         function result = isStimulusLibrarySelfConsistent(self)
             result = self.StimulusLibrary_.isSelfConsistent() ;

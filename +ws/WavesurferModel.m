@@ -388,7 +388,8 @@ classdef WavesurferModel < ws.Model
                 
                 % Get the list of all device names, and cache it in our own
                 % state
-                self.probeHardwareAndSetAllDeviceNames() ;                
+                self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
+                self.syncDeviceResourceCountsFromDeviceNames_() ;
             end  % if isITheOneTrueWavesurfer
             
             % Initialize the fast protocols
@@ -1068,22 +1069,22 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateStimulusLibrary') ;
             self.broadcast('UpdateChannels') ;            
         end  % function 
+    end  % public methods block
+       
+    methods (Access=protected)
+        function didSetIsDigitalOutputTimed_(self)
+            self.Ephys_.didSetIsDigitalOutputTimed() ;
+            self.broadcast('UpdateChannels') ;            
+        end        
         
-        function didSetIsInputChannelMarkedForDeletion(self) 
+        function didSetDigitalOutputStateIfUntimed_(self)
+            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
+        end
+        
+        function didSetIsInputChannelMarkedForDeletion_(self) 
             self.broadcast('UpdateChannels') ;
         end
         
-        function didSetIsDigitalOutputTimed(self)
-            self.Ephys_.didSetIsDigitalOutputTimed() ;
-            self.broadcast('UpdateChannels') ;            
-        end
-        
-        function didSetDigitalOutputStateIfUntimed(self)
-            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
-        end
-    end
-       
-    methods (Access=protected)
         function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
             self.Ephys_.didSetIsInputChannelActive() ;
             self.Display_.didSetIsInputChannelActive() ;
@@ -1208,17 +1209,6 @@ classdef WavesurferModel < ws.Model
         end  % function        
     end
     
-    methods
-%         function result=get.FastProtocols(self)
-%             result = self.FastProtocols_ ;
-%         end
-        
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys_ ;
-            ephys.didSetAcquisitionSampleRate(newValue) ;
-        end        
-    end  % methods
-    
     methods (Access = protected)
         function setState_(self,newValue)
             self.broadcast('WillSetState');
@@ -1303,7 +1293,7 @@ classdef WavesurferModel < ws.Model
             % Determine the keystone tasks for acq and stim
             [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, ...
              stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
-               self.determineKeystoneTasks() ;
+               self.determineKeystoneTasks_() ;
             
             % Isn't the code below a race condition?  What if the refiller
             % responds first?  No, it's not a race, because one is waiting
@@ -2494,6 +2484,7 @@ classdef WavesurferModel < ws.Model
             end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
+            self.DoesProtocolNeedSave_ = false ;
             self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
             self.callUserMethod_('wake');  % wake the user object
             if self.ArePreferencesWritable , 
@@ -2829,6 +2820,7 @@ classdef WavesurferModel < ws.Model
         
         function deleteMarkedAIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels_() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels();
@@ -2838,6 +2830,7 @@ classdef WavesurferModel < ws.Model
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels() ;
@@ -2856,6 +2849,7 @@ classdef WavesurferModel < ws.Model
         
         function deleteMarkedAOChannels(self)
             self.Stimulation_.deleteMarkedAnalogChannels_() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys_.didChangeNumberOfOutputChannels();
@@ -2882,6 +2876,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
             
             % Do all the things that need doing after that
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys_.didChangeNumberOfOutputChannels();
@@ -2921,29 +2916,6 @@ classdef WavesurferModel < ws.Model
 %         end  % function
 %     end
     
-    methods (Access=protected)        
-%         function poll_(self)
-%             %fprintf('\n\n\nWavesurferModel::poll()\n');
-%             timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-%             self.Acquisition_.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-%             self.Stimulation_.poll(timeSinceSweepStart);
-%             self.Triggering_.poll(timeSinceSweepStart);
-%             %self.Display_.poll(timeSinceSweepStart);
-%             %self.Logging_.poll(timeSinceSweepStart);
-%             %self.UserCodeManager_.poll(timeSinceSweepStart);
-%             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
-%         end
-        
-%         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
-%             %fprintf('WavesurferModel::pollTimerErrored()\n');
-%             %eventData
-%             %eventData.Data            
-%             self.abortSweepAndRun_('problem');  % Put an end to the run
-%             error('waversurfer:pollingTimerError',...
-%                   'The polling timer had a problem.  Acquisition aborted.');
-%         end        
-    end  % protected methods block
-    
     methods
         function mimic(self, other)
             % Cause self to resemble other.
@@ -2974,11 +2946,17 @@ classdef WavesurferModel < ws.Model
             % Broadcast update
             self.broadcast('Update');
         end  % function
+        
+        function propNames = listPropertiesForCheckingIndependence(self)
+            % Define a helper function
+            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
+            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
+        end
     end  % public methods block
 
-    methods
+    methods (Access=protected)
         function [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
-                determineKeystoneTasks(self)
+                determineKeystoneTasks_(self)
             % The acq and stim subsystems each have a "keystone" task.  This task is
             % identified by its type (one of "ai", "di", "ao", and "do") and its device
             % name (the name of one of the devices in use).  In some cases, the
@@ -3064,14 +3042,6 @@ classdef WavesurferModel < ws.Model
 %             fprintf('  stimulationKeystoneDevice: %s\n', stimulationKeystoneTaskDeviceName) ;            
         end
         
-        function propNames = listPropertiesForCheckingIndependence(self)
-            % Define a helper function
-            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
-            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
-        end
-    end  % public methods block
-    
-    methods (Access=protected) 
         function mimicProtocolThatWasJustLoaded_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
 
@@ -3245,54 +3215,53 @@ classdef WavesurferModel < ws.Model
     end  % protected methods block
     
     methods (Static)
-        function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()
+        function pathToRepoRoot = pathNamesThatNeedToBeOnSearchPath()
             % Allow user to invoke Wavesurfer from the Matlab command line, for
-            % this Matlab session only.  Modifies the user's Matlab path, but does
-            % not safe the modified path.
+            % this Matlab session only.
 
             pathToWavesurferModel = mfilename('fullpath') ;
             pathToWsModulerFolder = fileparts(pathToWavesurferModel) ;  % should be +ws folder
             pathToRepoRoot = fileparts(pathToWsModulerFolder) ;  % should be repo root
-            pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
+            %pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
             
             %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
         end
         
-        function portNumbers = getFreeEphemeralPortNumbers(nPorts)
-            % Determine which three free ports to use:
-            % First bind to three free ports to get their addresses
-            freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
-            for i=1:nPorts ,
-                %freePorts(i).context = zmq.core.ctx_new();
-                freePorts(i).context = zmq.Context();
-                %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
-                freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
-                address = 'tcp://127.0.0.1:*';
-                %zmq.core.bind(freePorts(i).socket, address);
-                freePorts(i).socket.bind(address);
-                %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
-                %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
-                %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
-                freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
-                splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
-                freePorts(i).portNumber = str2double(splitString{2});
-            end
-
-            % Unbind the ports to free them up for the actual
-            % processes. Doing it in this way (rather than
-            % binding/unbinding each port sequentially) will minimize amount of
-            % time between a port being unbound and bound by a process.
-            for i=1:nPorts ,
-                %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
-                %zmq.core.close(freePorts(i).socket);
-                %zmq.core.ctx_shutdown(freePorts(i).context);
-                %zmq.core.ctx_term(freePorts(i).context);
-                freePorts(i).socket = [] ;
-                freePorts(i).context = [] ;
-            end
-
-            portNumbers = [ freePorts(:).portNumber ] ;            
-        end
+%         function portNumbers = getFreeEphemeralPortNumbers(nPorts)
+%             % Determine which three free ports to use:
+%             % First bind to three free ports to get their addresses
+%             freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
+%             for i=1:nPorts ,
+%                 %freePorts(i).context = zmq.core.ctx_new();
+%                 freePorts(i).context = zmq.Context();
+%                 %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
+%                 freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
+%                 address = 'tcp://127.0.0.1:*';
+%                 %zmq.core.bind(freePorts(i).socket, address);
+%                 freePorts(i).socket.bind(address);
+%                 %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+%                 %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+%                 %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+%                 freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
+%                 splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+%                 freePorts(i).portNumber = str2double(splitString{2});
+%             end
+% 
+%             % Unbind the ports to free them up for the actual
+%             % processes. Doing it in this way (rather than
+%             % binding/unbinding each port sequentially) will minimize amount of
+%             % time between a port being unbound and bound by a process.
+%             for i=1:nPorts ,
+%                 %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+%                 %zmq.core.close(freePorts(i).socket);
+%                 %zmq.core.ctx_shutdown(freePorts(i).context);
+%                 %zmq.core.ctx_term(freePorts(i).context);
+%                 freePorts(i).socket = [] ;
+%                 freePorts(i).context = [] ;
+%             end
+% 
+%             portNumbers = [ freePorts(:).portNumber ] ;            
+%         end
     end  % static methods block
     
     methods
@@ -3520,41 +3489,20 @@ classdef WavesurferModel < ws.Model
             self.updateFastProtocol() ;
         end  % method        
                 
-%         function setFastProtocolAutoStartType(self, index, newValue)
-%             % newFileName should be an absolute file path
-%             if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
-%                 if ws.isAStartType(newValue) ,
-%                     fastProtocol = self.FastProtocols_{index} ;
-%                     fastProtocol.AutoStartType = newValue ;
-%                 else
-%                     self.updateFastProtocol() ;                    
-%                     error('ws:invalidPropertyValue', ...
-%                           'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
-%                 end
-%             else
-%                 self.updateFastProtocol() ;
-%                 error('ws:invalidPropertyValue', ...
-%                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
-%             end                
-%             self.updateFastProtocol() ;
-%         end  % method        
-        
-%         function setSubsystemProperty(self, subsystemName, propertyName, newValue)
-%             self.(subsystemName).(propertyName) = newValue ;
-%         end
-        
         function incrementSessionIndex(self)
             self.Logging_.incrementSessionIndex() ;
         end
         
         function setSelectedOutputableByIndex(self, index)            
             self.Stimulation_.setSelectedOutputableByIndex(index) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
             self.broadcast('Update') ;
         end  % method
 
         function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
             self.Stimulation_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
         end  % method        
         
@@ -3587,89 +3535,7 @@ classdef WavesurferModel < ws.Model
         function result = get.LayoutForAllWindows(self)
             result = self.LayoutForAllWindows_ ;
         end
-    end  % public methods block
-    
-    methods (Access=protected)
-%         function looperProtocol = getLooperProtocol_(self)
-%             looperProtocol = struct() ;
-% 
-%             looperProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
-%             looperProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-%             
-% %             looperProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-% %             looperProtocol.ReferenceClockRate = self.ReferenceClockRate ;
-%             
-%             looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
-%             looperProtocol.SweepDuration = self.SweepDuration ;
-%             looperProtocol.AcquisitionSampleRate = self.AcquisitionSampleRate ;
-% 
-%             looperProtocol.AIChannelNames = self.AIChannelNames ;
-%             looperProtocol.AIChannelScales = self.AIChannelScales ;
-%             looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
-%             looperProtocol.AIChannelDeviceNames = self.AIChannelDeviceNames ;
-%             looperProtocol.AIChannelTerminalIDs = self.AIChannelTerminalIDs ;
-%             
-%             looperProtocol.DIChannelNames = self.DIChannelNames ;
-%             looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-%             %looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
-%             looperProtocol.DIChannelTerminalIDs = self.DIChannelTerminalIDs ;
-%             
-%             looperProtocol.DOChannelNames = self.DOChannelNames ;
-%             %looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
-%             looperProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
-%             looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-%             looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
-%             
-%             looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
-%             
-%             looperProtocol.AcquisitionTriggerDeviceName = self.Triggering_.getAcquisitionTriggerProperty('DeviceName') ;
-%             looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.getAcquisitionTriggerProperty('PFIID') ;
-%             looperProtocol.AcquisitionTriggerEdge = self.Triggering_.getAcquisitionTriggerProperty('Edge') ;
-%             
-%             looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
-%             looperProtocol.TheUserObject = self.TheUserObject ;
-%         end  % method
         
-        function refillerProtocol = getRefillerProtocol_(self)
-            refillerProtocol = struct() ;
-            
-            refillerProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
-            refillerProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-            
-%             %refillerProtocol.DeviceName = self.DeviceName ;
-%             refillerProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-%             refillerProtocol.ReferenceClockRate = self.ReferenceClockRate ;
-
-            refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
-            refillerProtocol.SweepDuration = self.SweepDuration ;
-            refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
-
-            refillerProtocol.AOChannelNames = self.Stimulation_.AnalogChannelNames ;
-            refillerProtocol.AOChannelScales = self.AOChannelScales ;
-            refillerProtocol.AOChannelDeviceNames = self.AOChannelDeviceNames ;
-            refillerProtocol.AOChannelTerminalIDs = self.AOChannelTerminalIDs ;
-            
-            refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
-            refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            %refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
-            refillerProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
-            
-            refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
-            refillerProtocol.StimulationTrigger = self.Triggering_.getStimulationTriggerCopy() ;            
-            refillerProtocol.StimulusLibrary = self.Stimulation_.getStimulusLibraryCopy() ;  
-              % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
-              % don't want to preserve the stim lib parent pointer, b/c
-              % that leads back to the entire WSM.
-            refillerProtocol.DoRepeatSequence = self.DoRepeatStimulusSequence ;
-            refillerProtocol.IsStimulationTriggerIdenticalToAcquisitionTrigger_ = ...
-                (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
-            
-            refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
-            refillerProtocol.TheUserObject = self.TheUserObject ;
-        end  % method        
-    end  % protected methods block
-    
-    methods
         function value = get.AllDeviceNames(self)
             value = self.AllDeviceNames_ ;
         end  % function
@@ -3682,30 +3548,6 @@ classdef WavesurferModel < ws.Model
             value = self.IsPrimaryDeviceAPXIDevice_ ;
         end  % function
         
-%         function value = get.AvailableReferenceClockSources(self)
-%             value = self.AvailableReferenceClockSources_ ;
-%         end  % function
-% 
-%         function value = get.ReferenceClockSource(self)
-%             value = self.ReferenceClockSource_ ;
-%         end  % function
-
-%         function value = get.OnboardClockReferenceClockRate(self)
-%             value = self.OnboardClockReferenceClockRate_ ;
-%         end  % function
-        
-%         function value = get.ReferenceClockRate(self)
-%             clockSource = self.ReferenceClockSource_ ;
-%             if isequal(clockSource, '100MHzTimebase') ,
-%                 value = 100e6 ;  % Hz
-%             elseif isequal(clockSource, 'PXI_CLK10') ,
-%                 value = 10e6 ;  % Hz, the 10 means 10 MHz
-%             else
-%                 % don't think should ever get here right now
-%                 error('Internal error 948509345876905') ;
-%             end            
-%         end  % function
-
         function set.PrimaryDeviceName(self, newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,
                 allDeviceNames = self.AllDeviceNames ;
@@ -3715,13 +3557,9 @@ classdef WavesurferModel < ws.Model
                     primaryDeviceName = allDeviceNames{iMatch} ;
                     self.PrimaryDeviceName_ = primaryDeviceName ;
                     isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
-                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
-
-                    % Probe the device to find out its capabilities
-                    %self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                    %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
-                    %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
-
+                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;                    
+                    self.DoesProtocolNeedSave_ = true ;
+                    
                     % Tell the subsystems that we've changed the device
                     % name
                     nCounters = self.NCountersPerDevice_(iMatch) ;
@@ -3739,15 +3577,7 @@ classdef WavesurferModel < ws.Model
                     % device
                     self.setState_('idle') ;
 
-                    % Notify the satellites
-                    %nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
-                    %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
-                    %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
                     if self.IsAwake_ ,
-%                         self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
-%                                                 primaryDeviceName, ...
-%                                                 isPrimaryDeviceAPXIDevice, ...
-%                                                 self.IsDOChannelTerminalOvercommitted) ;
                         self.Looper_.didSetPrimaryDeviceInFrontend(self.PrimaryDeviceName, ...
                                                                    self.IsPrimaryDeviceAPXIDevice, ...
                                                                    self.DOChannelTerminalIDs, ...
@@ -3776,11 +3606,6 @@ classdef WavesurferModel < ws.Model
     end  % public methods block
     
     methods
-        function probeHardwareAndSetAllDeviceNames(self)
-            self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
-            self.syncDeviceResourceCountsFromDeviceNames_() ;
-        end
-        
         function result = get.NAITerminalsPerDevice(self)
             % The number of AI channels available, if you used them all in
             % differential mode, which is what we do.
@@ -3894,29 +3719,7 @@ classdef WavesurferModel < ws.Model
         end        
     end  % public methods block
         
-    methods
-        function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
-        end
-    end  % public methods block
-    
     methods (Access=protected)
-%         function syncDeviceResourceCountsFromDeviceName_(self)
-% %             % Probe the devices to find out their capabilities
-% %             deviceName = self.DeviceName ;
-% % %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-% % %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
-% % %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-% % %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-% %             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
-% % %             self.NDIOTerminals_ = nDIOTerminals ;
-% % %             self.NPFITerminals_ = nPFITerminals ;
-% % %             self.NCounters_ = nCounters ;
-% % %             self.NAITerminals_ = nAITerminals ;
-% % %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-% % %             self.NAOTerminals_ = nAOTerminals ;
-% %             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
-%         end  % function
-
         function syncDeviceResourceCountsFromDeviceNames_(self)
             % Probe the devices to find out their capabilities
             allDeviceNames = self.AllDeviceNames ;
@@ -3950,41 +3753,6 @@ classdef WavesurferModel < ws.Model
             self.AITerminalIDsOnEachDevice_ = aiTerminalIDsOnEachDevice ;
         end  % function     
         
-%         function syncAvailableReferenceClockSourcesFromDeviceName_(self)
-%             deviceName = self.DeviceName ;
-%             availableReferenceClockSources = ws.getAvailableReferenceClockSourcesFromDevice(deviceName) ;
-%             self.AvailableReferenceClockSources_ = availableReferenceClockSources ;
-%         end
-        
-%         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
-%             deviceName = self.DeviceName ;
-%             availableTimebaseSources = self.AvailableTimebaseSources ;
-%             timebaseSource = self.TimebaseSource ;
-%             if ismember(timebaseSource, availableTimebaseSources) ,
-%                 rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
-%             else
-%                 % Likely a bad timebaseSource for the given deviceName, so we
-%                 % guess about the clock rate
-%                 if isequal(timebaseSource, 'OnboardClock') ,
-%                     rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
-%                 elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-%                     rate = 10e6;  % Hz, PXI backplace rate
-%                 else
-%                     rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
-%                 end
-%             end
-%             self.TimebaseRate_ = rate ;
-%         end
-        
-%         function syncIsDIOChannelTerminalOvercommitted_(self)
-%             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
-%             nDIOTerminals = self.NDIOTerminals ;
-%             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
-%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-%             self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
-%             self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
-%         end  % function
-
         function syncIsAIChannelTerminalOvercommitted_(self)            
             % For each channel, determines if the terminal ID for that
             % channel is "overcommited".  I.e. if two channels specify the
@@ -4050,7 +3818,6 @@ classdef WavesurferModel < ws.Model
             self.IsDIChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDIChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDIChannel ;
             self.IsDOChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDOChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDOChannel ;
         end  % function
-
     end  % protected methods block
     
     methods
@@ -4073,55 +3840,6 @@ classdef WavesurferModel < ws.Model
             nDIChannels = length(terminalIDForEachDIChannel) ;
             nOccurencesOfDeviceAndTerminalForEachDIChannel = nOccurencesOfDeviceAndTerminal(1:nDIChannels) ;
             nOccurencesOfDeviceAndTerminalForEachDOChannel = nOccurencesOfDeviceAndTerminal(nDIChannels+1:end) ;
-        end
-        
-        function [sampleFrequency, referenceClockRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
-            % Make sure desiredSampleFrequency is a scalar
-            defaultSampleFrequency  = 20000 ;
-            if isempty(desiredSampleFrequency) ,
-                temp1 = defaultSampleFrequency ;  % the default value
-            else
-                temp1 = desiredSampleFrequency(1) ;  % make it a scalar
-            end
-            
-            % Make sure a double
-            if isnumeric(temp1) ,
-                temp2 = double(temp1) ;
-            else
-                temp2 = defaultSampleFrequency ;  % the default value
-            end
-            
-            % Make sure finite
-            if isfinite(temp2) ,
-                sanitizedDesiredSampleFrequency = temp2 ;
-            else
-                sanitizedDesiredSampleFrequency = defaultSampleFrequency ;  % the default value
-            end
-            
-            % Limit to the allowed range of sampling frequencies
-            primaryDeviceName = self.PrimaryDeviceName ;
-            isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
-                % the rate only depends on the primary device
-            %referenceClockRate = self.ReferenceClockRate ;  % Hz
-            desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
-            integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
-            maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
-            minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
-              % See here:
-              % http://digital.ni.com/public.nsf/allkb/4BBE1409700F6CE686256E9200652F6B
-              % Entitled "What Sample Rates Is my DAQ Board Actually
-              % Capable of Achieving?"
-              %
-            actualTimebaseTicksPerSample = ...
-                ws.limit(minimumTimebaseTicksPerSample, integralTimebaseTicksPerSample, maximumTimebaseTicksPerSample) ;  % enforce min, max
-              % Note that if actualTimebaseTicksPerSample is 1, then the
-              % sampleFrequency is equal to the timebaseFrequency.  You can
-              % set it to this in the hardware, and the board will try to
-              % do it, but it will generally fail to keep up once the sweep
-              % starts, because for instance the default timebase for X series cards is
-              % 100 MHz.
-            sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
         end
         
         function result = get.IsProcessingIncomingCommand(self)
@@ -4179,6 +3897,7 @@ classdef WavesurferModel < ws.Model
         function set.AcquisitionTriggerIndex(self, newValue)
             try
                 self.Triggering_.setAcquisitionTriggerIndex(newValue, self.NSweepsPerRun) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4193,6 +3912,7 @@ classdef WavesurferModel < ws.Model
         function set.StimulationTriggerIndex(self, newValue)
             try
                 self.Triggering_.setStimulationTriggerIndex(newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4207,6 +3927,7 @@ classdef WavesurferModel < ws.Model
         function set.StimulationUsesAcquisitionTrigger(self, newValue)
             try
                 self.Triggering_.StimulationUsesAcquisitionTriggerScheme = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4222,6 +3943,7 @@ classdef WavesurferModel < ws.Model
         function addCounterTrigger(self)    
             try
                 self.Triggering_.addCounterTrigger(self.PrimaryDeviceName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4232,6 +3954,7 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedCounterTriggers(self)
             try
                 self.Triggering_.deleteMarkedCounterTriggers() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4242,6 +3965,7 @@ classdef WavesurferModel < ws.Model
         function addExternalTrigger(self)    
             try
                 self.Triggering_.addExternalTrigger(self.PrimaryDeviceName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4252,6 +3976,7 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedExternalTriggers(self)
             try
                 self.Triggering_.deleteMarkedExternalTriggers() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4262,6 +3987,7 @@ classdef WavesurferModel < ws.Model
         function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
             try
                 self.Triggering_.setTriggerProperty(triggerType, triggerIndexWithinType, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4322,6 +4048,7 @@ classdef WavesurferModel < ws.Model
         function clearStimulusLibrary(self)
             try
                 self.Stimulation_.clearStimulusLibrary() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('Update') ;
@@ -4334,6 +4061,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemByClassNameAndIndex(className, index) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4344,6 +4072,7 @@ classdef WavesurferModel < ws.Model
         function index = addNewStimulusSequence(self)
             try
                 index = self.Stimulation_.addNewStimulusSequence() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4355,6 +4084,7 @@ classdef WavesurferModel < ws.Model
         function duplicateSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.duplicateSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4365,6 +4095,7 @@ classdef WavesurferModel < ws.Model
         function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
             try
                 bindingIndex = self.Stimulation_.addBindingToSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4375,6 +4106,7 @@ classdef WavesurferModel < ws.Model
         function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
             try
                 bindingIndex = self.Stimulation_.addBindingToStimulusLibraryItem(className, itemIndex) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4385,6 +4117,7 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedBindingsFromSequence(self)
             try
                 self.Stimulation_.deleteMarkedBindingsFromSequence() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4395,6 +4128,7 @@ classdef WavesurferModel < ws.Model
         function index = addNewStimulusMap(self)
             try
                 index = self.Stimulation_.addNewStimulusMap() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4416,6 +4150,7 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.deleteMarkedChannelsFromSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4426,6 +4161,7 @@ classdef WavesurferModel < ws.Model
         function stimulusIndex = addNewStimulus(self)
             try
                 stimulusIndex = self.Stimulation_.addNewStimulus() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4440,6 +4176,7 @@ classdef WavesurferModel < ws.Model
         function deleteSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.deleteSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4459,6 +4196,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
             try
                 didSetOutputableName = self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4472,6 +4210,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
             try
                 self.Stimulation_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4482,6 +4221,7 @@ classdef WavesurferModel < ws.Model
         function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
             try
                 self.Stimulation_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4502,6 +4242,7 @@ classdef WavesurferModel < ws.Model
         function setBindingOfSelectedMapToNamedStimulus(self, indexOfBindingWithinMap, newStimulusName)
             try
                 self.Stimulation_.setBindingOfSelectedMapToNamedStimulus(indexOfBindingWithinMap, newStimulusName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4516,6 +4257,7 @@ classdef WavesurferModel < ws.Model
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
             try
                 self.Stimulation_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4606,6 +4348,7 @@ classdef WavesurferModel < ws.Model
         function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
             try
                 didSetOutputableName = self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4620,6 +4363,7 @@ classdef WavesurferModel < ws.Model
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
             try
                 self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4634,6 +4378,7 @@ classdef WavesurferModel < ws.Model
         function deleteStimulusLibraryItem(self, className, itemIndex)
             try
                 self.Stimulation_.deleteStimulusLibraryItem(className, itemIndex) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4645,6 +4390,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4655,6 +4401,7 @@ classdef WavesurferModel < ws.Model
         function populateStimulusLibraryForTesting(self)
             try
                 self.Stimulation_.populateStimulusLibraryForTesting() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('Update') ;
@@ -4702,6 +4449,7 @@ classdef WavesurferModel < ws.Model
         function set.AIChannelUnits(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelUnits_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelUnits_())) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4709,6 +4457,7 @@ classdef WavesurferModel < ws.Model
         function set.AIChannelScales(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelScales_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelScales_())) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4718,6 +4467,7 @@ classdef WavesurferModel < ws.Model
             newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
             self.Acquisition_.setAnalogChannelUnits_( ws.fif(isChangeable, newUnits, self.Acquisition_.getAnalogChannelUnits_()) ) ;
             self.Acquisition_.setAnalogChannelScales_( ws.fif(isChangeable, newScales, self.Acquisition_.getAnalogChannelScales_()) ) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4728,6 +4478,7 @@ classdef WavesurferModel < ws.Model
             if isChangeable , 
                 newValue = strtrim(newValueRaw) ;
                 self.Acquisition_.setSingleAnalogChannelUnits_(i, newValue) ;                
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
@@ -4738,6 +4489,7 @@ classdef WavesurferModel < ws.Model
             isChangeable = isChangeableFull(i);
             if isChangeable ,
                 self.Acquisition_.setSingleAnalogChannelScale_(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
@@ -4751,6 +4503,7 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
             self.broadcast('UpdateChannels') ;
         end    
@@ -4790,6 +4543,7 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
             self.broadcast('UpdateChannels') ;
         end    
@@ -4834,7 +4588,8 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.didSetIsInputChannelMarkedForDeletion_() ;
         end
         
         function result=get.IsDIChannelMarkedForDeletion(self)
@@ -4847,12 +4602,16 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.didSetIsInputChannelMarkedForDeletion_() ;
         end
         
         function setSingleAIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
             [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName_(i, newValue, allChannelNames) ;
+            if didSucceed, 
+                self.DoesProtocolNeedSave_ = true ;
+            end
             display=self.Display_;
             if ~isempty(display)
                 display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
@@ -4867,6 +4626,9 @@ classdef WavesurferModel < ws.Model
         function setSingleDIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
             [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
+            if didSucceed, 
+                self.DoesProtocolNeedSave_ = true ;
+            end
             self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
             self.broadcast('UpdateChannels') ;
         end
@@ -4876,9 +4638,10 @@ classdef WavesurferModel < ws.Model
                 % Constrain value appropriately
                 isValueValid = true ;
                 newValue = double(newValue) ;
-                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                sampleRate = ws.WavesurferModel.coerceSampleFrequencyToAllowedValue(self.PrimaryDeviceName, self.IsPrimaryDeviceAPXIDevice, newValue) ;
                 self.Acquisition_.setSampleRate_(sampleRate) ;
-                self.didSetAcquisitionSampleRate(sampleRate);
+                self.Ephys_.didSetAcquisitionSampleRate(newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             else
                 isValueValid = false ;
             end
@@ -4905,8 +4668,9 @@ classdef WavesurferModel < ws.Model
             end
         end  % function
         
-        function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
+        function set.IsXSpanSlavedToAcquistionDuration(self, newValue)
             self.Display_.setIsXSpanSlavedToAcquistionDuration_(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
@@ -4924,16 +4688,19 @@ classdef WavesurferModel < ws.Model
         
         function set.XSpan(self, newValue)            
             self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
             nAIChannels = self.NAIChannels ;
             self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function toggleIsDIChannelDisplayed(self, diChannelIndex) 
             nDIChannels = self.NDIChannels ;
             self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function result = get.IsAIChannelDisplayed(self)
@@ -4996,6 +4763,7 @@ classdef WavesurferModel < ws.Model
             isChangeable= isChangeableFull(i);
             if isChangeable ,
                 self.Stimulation_.setSingleAnalogChannelUnits_(i, strtrim(newValue)) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();            
             self.broadcast('UpdateChannels') ;
@@ -5006,6 +4774,7 @@ classdef WavesurferModel < ws.Model
             isChangeable = isChangeableFull(i) ;
             if isChangeable && isfinite(newValue) && newValue>0 ,
                 self.Stimulation_.setSingleAnalogChannelScale_(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_() ;
             self.broadcast('UpdateChannels') ;
@@ -5016,6 +4785,7 @@ classdef WavesurferModel < ws.Model
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
                     self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 end
             end
             self.syncIsAOChannelTerminalOvercommitted_() ;
@@ -5026,12 +4796,13 @@ classdef WavesurferModel < ws.Model
             try
                 wasSet = self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
             catch exception
-                self.didSetIsDigitalOutputTimed() ;
+                self.didSetIsDigitalOutputTimed_() ;
                 rethrow(exception) ;
             end            
-            self.didSetIsDigitalOutputTimed() ;            
+            self.didSetIsDigitalOutputTimed_() ;            
             if wasSet ,
                 self.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
+                self.DoesProtocolNeedSave_ = true ;
             end
         end
         
@@ -5043,10 +4814,11 @@ classdef WavesurferModel < ws.Model
             try
                 self.Stimulation_.setDigitalOutputStateIfUntimed_(newValue) ;
             catch exception
-                self.didSetDigitalOutputStateIfUntimed() ;
+                self.didSetDigitalOutputStateIfUntimed_() ;
                 rethrow(exception) ;
             end
-            self.didSetDigitalOutputStateIfUntimed() ;            
+            self.didSetDigitalOutputStateIfUntimed_() ;            
+            self.DoesProtocolNeedSave_ = true ;
             self.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
         end  % function
         
@@ -5063,9 +4835,10 @@ classdef WavesurferModel < ws.Model
                 % Constrain value appropriately
                 isValueValid = true ;
                 newValue = double(newValue) ;
-                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                sampleRate = ws.WavesurferModel.coerceSampleFrequencyToAllowedValue(self.PrimaryDeviceName, self.IsPrimaryDeviceAPXIDevice, newValue) ;
                 self.Stimulation_.setSampleRate_(sampleRate) ;
-                self.didSetAcquisitionSampleRate(sampleRate);
+                self.DoesProtocolNeedSave_ = true ;
+                %self.didSetAcquisitionSampleRate(sampleRate);
             else
                 isValueValid = false ;
             end
@@ -5082,7 +4855,8 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.didSetIsInputChannelMarkedForDeletion_() ;
         end
         
         function result=get.IsDOChannelMarkedForDeletion(self)
@@ -5091,7 +4865,8 @@ classdef WavesurferModel < ws.Model
         
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.didSetIsInputChannelMarkedForDeletion_() ;
         end
         
         function result=aoChannelUnitsFromName(self,channelName)
@@ -5264,10 +5039,12 @@ classdef WavesurferModel < ws.Model
         
         function set.DoSubtractBaselineInTestPulseView(self, newValue)            
             self.Ephys_.setDoSubtractBaselineInTestPulseView_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
        
         function toggleIsGridOn(self)
             self.Display_.toggleIsGridOn_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end
 
         function result = get.IsGridOn(self)
@@ -5276,6 +5053,7 @@ classdef WavesurferModel < ws.Model
         
         function toggleAreColorsNormal(self)
             self.Display_.toggleAreColorsNormal_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end
 
         function result = get.AreColorsNormal(self)
@@ -5284,6 +5062,7 @@ classdef WavesurferModel < ws.Model
         
         function toggleDoShowZoomButtons(self)
             self.Display_.toggleDoShowZoomButtons_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function result = get.DoShowZoomButtons(self)
@@ -5292,6 +5071,7 @@ classdef WavesurferModel < ws.Model
         
         function toggleDoColorTraces(self)
             self.Display_.toggleDoColorTraces_() ;       
+            self.DoesProtocolNeedSave_ = true ;
         end        
         
         function result = get.DoColorTraces(self)
@@ -5300,6 +5080,7 @@ classdef WavesurferModel < ws.Model
         
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
 
         function result = getTestPulseElectrodeCommandUnits(self)
@@ -5314,6 +5095,7 @@ classdef WavesurferModel < ws.Model
 
         function set.TestPulseYLimits(self, newValue)
             self.Ephys_.setTestPulseYLimits_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function result = get.TestPulseYLimits(self)
@@ -5521,18 +5303,22 @@ classdef WavesurferModel < ws.Model
     methods
         function zoomInTestPulseView(self)
             self.Ephys_.zoomInTestPulseView_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function zoomOutTestPulseView(self)
             self.Ephys_.zoomOutTestPulseView_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function scrollUpTestPulseView(self)
             self.Ephys_.scrollUpTestPulseView_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function scrollDownTestPulseView(self)
             self.Ephys_.scrollDownTestPulseView_() ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function result = get.TestPulseDuration(self) 
@@ -5541,6 +5327,7 @@ classdef WavesurferModel < ws.Model
         
         function set.TestPulseDuration(self, newValue) 
             self.Ephys_.setTestPulseDuration_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function result = get.IsAutoYInTestPulseView(self) 
@@ -5549,6 +5336,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYInTestPulseView_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
        
         function result = get.IsAutoYRepeatingInTestPulseView(self) 
@@ -5557,6 +5345,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYRepeatingInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYRepeatingInTestPulseView_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function value = getUpdateRateInTestPulseView(self)
@@ -5576,12 +5365,15 @@ classdef WavesurferModel < ws.Model
             switch propertyName ,
                 case 'Type' ,
                     self.setElectrodeType_(electrodeIndex, newValue) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 case 'IndexWithinType' ,
                     self.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 otherwise ,
                     % the common case
                     try
                         self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+                        self.DoesProtocolNeedSave_ = true ;
                     catch exception
                         % deal with EPCMasterSocket exceptions,
                         % otherwise rethrow
@@ -5616,6 +5408,7 @@ classdef WavesurferModel < ws.Model
                                                      newCurrentCommandScaling, ...
                                                      newVoltageCommandScaling,...
                                                      newIsCommandEnabled) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.electrodeMayHaveChanged_(electrodeIndex, '') ;
         end  % function
         
@@ -5701,11 +5494,13 @@ classdef WavesurferModel < ws.Model
         function toggleIsInControlOfSoftpanelModeAndGains(self)
             currentValue = self.IsInControlOfSoftpanelModeAndGains ;
             self.IsInControlOfSoftpanelModeAndGains = ~currentValue ;
+            self.DoesProtocolNeedSave_ = true ;
         end        
         
         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
             if self.areAnyElectrodesCommandable() ,
                 doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
                 if doUpdateSmartElectrodeGainsAndModes ,
                     self.updateSmartElectrodeGainsAndModes() ;
                 end
@@ -5714,16 +5509,19 @@ classdef WavesurferModel < ws.Model
         
         function electrodeIndex = addNewElectrode(self)
             electrodeIndex = self.Ephys_.addNewElectrode() ;
+            self.DoesProtocolNeedSave_ = true ;
         end
        
         function removeMarkedElectrodes(self)
             self.Ephys_.removeMarkedElectrodes_() ;
             self.Display_.didRemoveElectrodes() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
         function set.DoTrodeUpdateBeforeRun(self, newValue)
             self.Ephys_.setDoTrodeUpdateBeforeRun_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end        
        
         function result = get.DoTrodeUpdateBeforeRun(self)
@@ -5766,6 +5564,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsElectrodeMarkedForRemoval(self, newValue)
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateElectrodes') ;
         end        
         
@@ -5775,12 +5574,14 @@ classdef WavesurferModel < ws.Model
 
         function set.TestPulseElectrodeIndex(self, newValue)
             self.Ephys_.TestPulseElectrodeIndex = newValue ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             if ~isempty(testPulseElectrodeIndex) ,
                 self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
         end
         
@@ -5794,6 +5595,7 @@ classdef WavesurferModel < ws.Model
         
         function set.UserClassName(self, newValue)
             self.UserCodeManager_.setClassName_(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.callUserMethod_('wake');  % wake the user object
         end
         
@@ -5803,6 +5605,7 @@ classdef WavesurferModel < ws.Model
         
         function reinstantiateUserObject(self)
             self.UserCodeManager_.reinstantiateUserObject_() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.callUserMethod_('wake');  % wake the user object
         end        
         
@@ -5882,9 +5685,9 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.getTestPulseElectrodeNames() ;
         end
         
-        function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
             self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
@@ -5920,6 +5723,7 @@ classdef WavesurferModel < ws.Model
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateTestPulser');
         end
         
@@ -5934,6 +5738,7 @@ classdef WavesurferModel < ws.Model
         function set.IsStimulationEnabled(self, newValue)
             try
                 self.Stimulation_.IsEnabled = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch me
                 self.broadcast('UpdateGeneralSettings') ;
                 rethrow(me) ;
@@ -5951,6 +5756,7 @@ classdef WavesurferModel < ws.Model
 
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
+            self.DoesProtocolNeedSave_ = true ;
         end
 
         function result = getNActiveAIChannels(self)
@@ -6007,11 +5813,12 @@ classdef WavesurferModel < ws.Model
         
         function set.DisplayUpdateRate(self, newValue)
             self.Display_.UpdateRate = newValue ;
+            self.DoesProtocolNeedSave_ = true ;
         end
         
-        function mimicStimulusLibrary_(self, newValue) 
-            self.Stimulation_.mimicStimulusLibrary_(newValue) ;
-        end
+%         function mimicStimulusLibrary_(self, newValue) 
+%             self.Stimulation_.mimicStimulusLibrary_(newValue) ;
+%         end
         
         function result = get.AIScalingCoefficients(self)
             result = self.Acquisition_.AnalogScalingCoefficients ;
@@ -6106,6 +5913,7 @@ classdef WavesurferModel < ws.Model
         function set.DoRepeatStimulusSequence(self, newValue)
             try
                 self.Stimulation_.DoRepeatSequence = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch me
                 self.broadcast('UpdateGeneralSettings') ;
                 rethrow(me) ;
@@ -6115,22 +5923,27 @@ classdef WavesurferModel < ws.Model
         
         function setYLimitsForSingleAIChannel(self, i, newValue)
             self.Display_.setYLimitsForSingleAnalogChannel(i, newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
         end
 
         function scrollUp(self, plotIndex)  % works on analog channels only
             self.Display_.scrollUp(plotIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
         
         function scrollDown(self, plotIndex)  % works on analog channels only
             self.Display_.scrollDown(plotIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
                 
         function zoomIn(self, plotIndex)  % works on analog channels only
             self.Display_.zoomIn(plotIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
         end  % function
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
             self.Display_.zoomOut(plotIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
         end        
         
         function result = get.DoIncludeDateInDataFileName(self)
@@ -6157,10 +5970,10 @@ classdef WavesurferModel < ws.Model
             self.Logging_.SessionIndex = newValue ;
         end
 
-        function result = stimulusLibrary(self)
-            % Note that this returns a *copy* of the internal stimulus library
-            result = self.Stimulation_.getStimulusLibraryCopy() ;
-        end
+%         function result = stimulusLibrary(self)
+%             % Note that this returns a *copy* of the internal stimulus library
+%             result = self.Stimulation_.getStimulusLibraryCopy() ;
+%         end
         
         function result = get.CurrentRunAbsoluteFileName(self)
             result = self.Logging_.CurrentRunAbsoluteFileName ;
@@ -6226,6 +6039,7 @@ classdef WavesurferModel < ws.Model
         function setSingleAIChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
                 self.Acquisition_.setSingleAnalogDeviceName(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
                 self.syncIsAIChannelTerminalOvercommitted_() ;
             else
                 self.broadcast('UpdateChannels') ;
@@ -6252,6 +6066,7 @@ classdef WavesurferModel < ws.Model
         function setSingleAOChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
                 self.Stimulation_.setSingleAnalogDeviceName(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
                 self.syncIsAOChannelTerminalOvercommitted_() ;
             else                
                 self.broadcast('UpdateChannels') ;
@@ -6698,7 +6513,58 @@ classdef WavesurferModel < ws.Model
         function recordAndBlock(self)
             self.record() ;
             self.waitForRunToComplete() ;
-        end        
-        
+        end                
     end  % public methods block
+    
+    methods (Static)
+        function [sampleFrequency, referenceClockRate] = ...
+                coerceSampleFrequencyToAllowedValue(primaryDeviceName, isPrimaryDeviceAPXIDevice, desiredSampleFrequency)
+            % Make sure desiredSampleFrequency is a scalar
+            defaultSampleFrequency  = 20000 ;
+            if isempty(desiredSampleFrequency) ,
+                temp1 = defaultSampleFrequency ;  % the default value
+            else
+                temp1 = desiredSampleFrequency(1) ;  % make it a scalar
+            end
+            
+            % Make sure a double
+            if isnumeric(temp1) ,
+                temp2 = double(temp1) ;
+            else
+                temp2 = defaultSampleFrequency ;  % the default value
+            end
+            
+            % Make sure finite
+            if isfinite(temp2) ,
+                sanitizedDesiredSampleFrequency = temp2 ;
+            else
+                sanitizedDesiredSampleFrequency = defaultSampleFrequency ;  % the default value
+            end
+            
+            % Limit to the allowed range of sampling frequencies
+            %primaryDeviceName = self.PrimaryDeviceName ;
+            %isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
+                % the rate only depends on the primary device
+            %referenceClockRate = self.ReferenceClockRate ;  % Hz
+            desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
+            integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
+            maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
+            minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
+              % See here:
+              % http://digital.ni.com/public.nsf/allkb/4BBE1409700F6CE686256E9200652F6B
+              % Entitled "What Sample Rates Is my DAQ Board Actually
+              % Capable of Achieving?"
+              %
+            actualTimebaseTicksPerSample = ...
+                ws.limit(minimumTimebaseTicksPerSample, integralTimebaseTicksPerSample, maximumTimebaseTicksPerSample) ;  % enforce min, max
+              % Note that if actualTimebaseTicksPerSample is 1, then the
+              % sampleFrequency is equal to the timebaseFrequency.  You can
+              % set it to this in the hardware, and the board will try to
+              % do it, but it will generally fail to keep up once the sweep
+              % starts, because for instance the default timebase for X series cards is
+              % 100 MHz.
+            sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
+        end  % method        
+    end  % static methods block
 end  % classdef
