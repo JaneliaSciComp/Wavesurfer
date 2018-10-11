@@ -34,8 +34,8 @@ function varargout = wavesurfer(varargin)
     [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly] = processArguments(varargin) ;
     
     % Create the application (model) object.
-    isITheOneTrueWavesurferModel = true ;
-    model = ws.WavesurferModel(isITheOneTrueWavesurferModel, ~isCommandLineOnly);
+    isAwake = true ;
+    model = ws.WavesurferModel(isAwake, ~isCommandLineOnly);
 
     % Start the controller, if desired
     if isCommandLineOnly ,

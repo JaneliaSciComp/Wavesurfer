@@ -237,7 +237,6 @@ classdef Controller < handle
             if isempty(model) || ~isvalid(model) ,
                 shouldStayPut = false ;
             else
-                %shouldStayPut = ~model.isRootIdleSensuLato() ;
                 shouldStayPut = ~model.isIdleSensuLato() ;
             end
         end  % function

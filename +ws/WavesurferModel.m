@@ -211,6 +211,7 @@ classdef WavesurferModel < ws.Model
         StimulationUsesAcquisitionTrigger  % boolean
         StimulationTriggerIndex  % this is an index into Schemes
         ArePreferencesWritable
+        DoesProtocolNeedSave
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -443,9 +444,10 @@ classdef WavesurferModel < ws.Model
                 else
                     protocolFileFolderPath = lastProtocolFileFolderPath ;
                 end                    
-                index = 1 ;
+                index = 0 ;
                 didFindGoodFileName = false ;
                 while ~didFindGoodFileName ,
+                    index = index + 1 ;
                     if index==1 ,
                         putativeGoodFileName = 'untitled.wsp' ;
                     else
@@ -6513,7 +6515,11 @@ classdef WavesurferModel < ws.Model
         function recordAndBlock(self)
             self.record() ;
             self.waitForRunToComplete() ;
-        end                
+        end            
+        
+        function result = get.DoesProtocolNeedSave(self)
+            result = self.DoesProtocolNeedSave_ ;
+        end
     end  % public methods block
     
     methods (Static)
