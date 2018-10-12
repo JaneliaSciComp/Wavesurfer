@@ -322,15 +322,17 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % See if we should stay put despite the request to close
             model = self.Model ;
             if isempty(model) || ~isvalid(model) ,
-                shouldStayPut = false ;
+                isOKToQuit = true ;
             else
-                shouldStayPut = ~model.isIdleSensuLato() ;
+                %shouldStayPut = ~model.isIdleSensuLato() ;
+                isOKToQuit = self.checkIfOKToQuit_() ;
             end
             
-            if shouldStayPut ,
-                % Do nothing
-            else
+            % delete ourselves, if called for
+            if isOKToQuit ,
                 delete(self) ;
+            else
+                % do nothing
             end
         end  % function        
     end  % Control actuation methods block
@@ -423,23 +425,13 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             else
                 % this is a plain-old save
                 if self.Model.HasUserSpecifiedProtocolFileName ,
-                    % this means that the user has already specified a
-                    % config file name
-                    isFileNameKnown=true;
-                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
-                    fileName=self.Model.AbsoluteProtocolFileName;
-                    fileChooserInitialFileName = '';  % not used
+                    isFileNameKnown = true ;
+                    fileName = self.Model.AbsoluteProtocolFileName ;
+                    fileChooserInitialFileName = '' ;  % not used
                 else
-                    % This means that the user has not yet specified a
-                    % config file name
-                    isFileNameKnown=false;
-                    fileName='';  % not used
-                    lastProtocolFileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
-                    if isempty(lastProtocolFileName)
-                        fileChooserInitialFileName = fullfile(pwd(),'untitled.wsp');
-                    else
-                        fileChooserInitialFileName = lastProtocolFileName;
-                    end
+                    isFileNameKnown = false ;
+                    fileName = '' ;  % not used
+                    fileChooserInitialFileName = self.Model.AbsoluteProtocolFileName ;
                 end
             end
 
@@ -596,26 +588,39 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end    
         end  % function       
         
-%         function isOKToQuit = isOKToQuitWavesurfer_(self)
-%             isOKToQuit = true;
-%             
-%             % If acquisition is happening, ignore the close window request
-%             wavesurferModel=self.Model;
-%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-%                 isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-%                 if ~isIdle ,
-%                     isOKToQuit=false;
-%                     return
-%                 end
-%             end
-%             
-%             % Currently the only tool/window that should be consulted before closing is the
-%             % StimulusLibrary Editor.  It may prompt the user to save changed and the user
-%             % may decide to cancel out once prompted.
-%             if ~isempty(self.StimulusLibraryController)
-%                 isOKToQuit = self.StimulusLibraryController.safeClose();
-%             end
-%         end  % function
+        function isOKToQuit = checkIfOKToQuit_(self)
+            % If acquisition or test pulsing is happening, ignore the close window request
+            model = self.Model ;
+            isIdle = model.isIdleSensuLato() ;
+            if ~isIdle ,
+                isOKToQuit = false ;
+                return
+            end
+            
+            % Check to see if the protocol has been saved
+            if model.DoesProtocolNeedSave ,
+                absoluteProtocolFileName = model.AbsoluteProtocolFileName ;
+                protocolFileName = ws.baseFileNameFromPath(absoluteProtocolFileName) ;
+                
+                choice = ws.questdlg(sprintf('Do you want to save changes to %s?', protocolFileName), ...
+                                     'Protocol Has Unsaved Changes', ...
+                                     'Save', 'Don''t Save', 'Cancel', 'Save');
+
+                if isequal(choice, 'Save') ,
+                    isSaveAs = false ;
+                    self.saveOrSaveAsProtocolFile_(isSaveAs) ;
+                    isOKToQuit = ~model.DoesProtocolNeedSave ;  % Check that the file got saved successfully
+                elseif isequal(choice, 'Don''t Save') ,
+                    isOKToQuit = true ;
+                else
+                    % Must have clicked on Cancel
+                    isOKToQuit = false ;                    
+                end               
+            else
+                % protocol doesn't need to be saved, so OK to quit
+                isOKToQuit = true ;
+            end
+        end  % function
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;

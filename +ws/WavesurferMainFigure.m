@@ -141,6 +141,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
                 model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
                 model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
+                model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
                 %for i = 1:numel(model.FastProtocols) ,
                 %    thisFastProtocol=model.FastProtocols{i};
                 %    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
@@ -648,8 +649,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
             set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(wsModel.IsYokedToScanImage));
             
             % The save menu items
-            self.updateSaveProtocolMenuItem_();
             self.updateSaveUserSettingsMenuItem_();
+            
+            % Finally, the window title
+            self.updateWindowTitle_();
         end
         
         function updateDisplayControlPropertiesImplementation_(self)
@@ -1019,18 +1022,18 @@ classdef WavesurferMainFigure < ws.MCOSFigure
     end    
     
     methods (Access=protected)
-        function updateSaveProtocolMenuItem_(self)
+        function updateWindowTitle_(self)
             absoluteProtocolFileName=self.Model.AbsoluteProtocolFileName;
             if ~isempty(absoluteProtocolFileName) ,
                 [~, name, ext] = fileparts(absoluteProtocolFileName);
                 relativeFileName=[name ext];
-                menuItemHG=self.SaveProtocolMenuItem;
-                set(menuItemHG,'Label',sprintf('Save %s',relativeFileName));
+                doesProtocolNeedSave = self.Model.DoesProtocolNeedSave ;
+                asteriskOrEmpty = ws.fif(doesProtocolNeedSave, '*', '') ;
+                set(self.FigureGH, 'Name', sprintf('WaveSurfer %s - %s%s', ws.versionString(), relativeFileName, asteriskOrEmpty)) ;                
             else
-                menuItemHG=self.SaveProtocolMenuItem;
-                set(menuItemHG,'Label','Save Protocol');
-            end                
-        end        
+                set(self.FigureGH, 'Name', sprintf('WaveSurfer %s', ws.versionString())) ;                
+            end
+        end    
     end
     
     methods (Access=protected)
@@ -1333,6 +1336,10 @@ classdef WavesurferMainFigure < ws.MCOSFigure
         function raiseDialogOnException(self, ~, ~, ~, ~, eventDataWithArgs)  %#ok<INUSL>
             exception = eventDataWithArgs.Args{1} ;
             ws.raiseDialogOnException(exception) ;
+        end
+        
+        function didMaybeChangeProtocol(self, ~, ~, ~, ~, ~)
+            self.updateWindowTitle_() ;
         end
     end  % public methods block   
     

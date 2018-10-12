@@ -336,6 +336,7 @@ classdef WavesurferModel < ws.Model
         UpdateElectrodes
         UpdateTestPulser
         RaiseDialogOnException
+        DidMaybeChangeProtocol
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -437,6 +438,8 @@ classdef WavesurferModel < ws.Model
             
             % Set the file name
             if isAwake ,
+                %self.addStarterChannelsAndStimulusLibrary() ;
+                
                 lastProtocolFilePath = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
@@ -969,6 +972,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsAIChannelTerminalOvercommitted_() ;
             self.Display_.didSetAnalogInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function setSingleDIChannelTerminalName(self, iChannel, terminalName)
@@ -982,6 +986,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didSetDigitalInputTerminalID_() ;
             self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
             if wasSet ,
                 %value = self.Acquisition_.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
                 self.Looper_.singleDigitalInputTerminalIDWasSetInFrontend(self.PrimaryDeviceName, ...
@@ -1024,6 +1029,7 @@ classdef WavesurferModel < ws.Model
                 oldValue = self.Stimulation_.AnalogChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
                      self.Stimulation_.setSingleAnalogChannelName(channelIndex, newValue) ;
+                     self.DoesProtocolNeedSave_ = true ;
                      didSucceed = true ;
                 else
                     didSucceed = false;
@@ -1036,7 +1042,8 @@ classdef WavesurferModel < ws.Model
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
             end            
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateChannels') ;            
+            self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function 
         
 %         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
@@ -1057,6 +1064,7 @@ classdef WavesurferModel < ws.Model
                 %oldValue = self.Stimuluation_.DigitalChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
                      self.Stimulation_.setSingleDigitalChannelName(channelIndex, newValue) ;
+                     self.DoesProtocolNeedSave_ = true ;
                      %didSucceed = true ;
                 else
                     %didSucceed = false;
@@ -1069,7 +1077,8 @@ classdef WavesurferModel < ws.Model
 %                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
 %             end            
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateChannels') ;            
+            self.broadcast('UpdateChannels') ;          
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end  % function 
     end  % public methods block
        
@@ -1078,14 +1087,6 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.didSetIsDigitalOutputTimed() ;
             self.broadcast('UpdateChannels') ;            
         end        
-        
-        function didSetDigitalOutputStateIfUntimed_(self)
-            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
-        end
-        
-        function didSetIsInputChannelMarkedForDeletion_(self) 
-            self.broadcast('UpdateChannels') ;
-        end
         
         function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
             self.Ephys_.didSetIsInputChannelActive() ;
@@ -2261,15 +2262,22 @@ classdef WavesurferModel < ws.Model
             % map in the stim library, and sets the current outputable to
             % the newly-created map.  This is intended to be run on a
             % "virgin" wavesurferModel.
-            
-            self.addAIChannel() ;
-            aoChannelIndex = self.addAOChannel() ;
-            if ~isempty(aoChannelIndex) ,
-                aoChannelName = self.AOChannelNames{aoChannelIndex} ;
-                self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
-                self.broadcast('UpdateStimulusLibrary') ;
+        
+            if self.DoesProtocolNeedSave || self.NAIChannels>0 || self.NAOChannels>0 || ~self.isStimulusLibraryEmpty() ,
+                % do nothing
+            else
+                self.disableBroadcasts() ;
+                self.addAIChannel() ;
+                aoChannelIndex = self.addAOChannel() ;
+                if ~isempty(aoChannelIndex) ,
+                    aoChannelName = self.AOChannelNames{aoChannelIndex} ;
+                    self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+                end
+                self.Display_.IsEnabled = true ;
+                self.DoesProtocolNeedSave_ = false ;  % this is a special case
+                self.enableBroadcastsMaybe() ;            
+                self.broadcast('Update') ;
             end
-            self.Display_.IsEnabled = true ;
         end
         
         function callUserMethod(self, eventName, varargin)
@@ -2534,6 +2542,7 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
+            self.DoesProtocolNeedSave_ = false ;
             if self.ArePreferencesWritable ,
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
             end
@@ -2698,12 +2707,11 @@ classdef WavesurferModel < ws.Model
 %                                     i, value, self.IsDOChannelTerminalOvercommitted ) ;
 %         end
 
-        function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
-            value = self.DOChannelStateIfUntimed ;
-            %self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
-            self.Looper_.digitalOutputStateIfUntimedWasSetInFrontend(value, self.IsDOChannelTimed) ;
-            self.Refiller_.digitalOutputStateIfUntimedWasSetInFrontend(value) ;
-        end
+%         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
+%             value = self.DOChannelStateIfUntimed ;
+%             self.Looper_.digitalOutputStateIfUntimedWasSetInFrontend(value, self.IsDOChannelTimed) ;
+%             self.Refiller_.digitalOutputStateIfUntimedWasSetInFrontend(value) ;
+%         end
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
             value = self.IsDOChannelTimed ;
@@ -2733,7 +2741,7 @@ classdef WavesurferModel < ws.Model
                 self.Display_.didAddAnalogInputChannel() ;
                 self.Ephys_.didChangeNumberOfInputChannels();
                 self.broadcast('UpdateChannels');  % causes channels figure to update
-                self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+                self.broadcast('DidChangeNumberOfInputChannels');
             end
         end  % function
         
@@ -2827,7 +2835,7 @@ classdef WavesurferModel < ws.Model
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            self.broadcast('DidChangeNumberOfInputChannels');  
         end
         
         function deleteMarkedDIChannels(self)
@@ -2837,7 +2845,8 @@ classdef WavesurferModel < ws.Model
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
+            self.broadcast('DidChangeNumberOfInputChannels') ;  
+            %self.broadcast('DidMaybeChangeProtocol') ;
 %             self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
 %                                     self.IsDOChannelTerminalOvercommitted) ;
             self.Looper_.didDeleteDigitalInputChannelsInFrontend(self.PrimaryDeviceName, ...
@@ -3506,6 +3515,7 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % method        
         
         function openFastProtocolByIndex(self, index)
@@ -3904,7 +3914,8 @@ classdef WavesurferModel < ws.Model
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
-            self.broadcast('UpdateTriggering');                        
+            self.broadcast('UpdateTriggering');         
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
                 
         function result = get.StimulationTriggerIndex(self)            
@@ -3920,6 +3931,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering');                        
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function value = get.StimulationUsesAcquisitionTrigger(self)
@@ -3936,6 +3948,7 @@ classdef WavesurferModel < ws.Model
             end
             self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
 
         function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)
@@ -3951,6 +3964,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function deleteMarkedCounterTriggers(self)
@@ -3962,6 +3976,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function addExternalTrigger(self)    
@@ -3973,6 +3988,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function deleteMarkedExternalTriggers(self)
@@ -3984,6 +4000,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
@@ -3995,6 +4012,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function result = get.TriggerCount(self)
@@ -4069,6 +4087,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function index = addNewStimulusSequence(self)
@@ -4092,6 +4111,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
@@ -4103,6 +4123,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
@@ -4114,6 +4135,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function deleteMarkedBindingsFromSequence(self)
@@ -4125,6 +4147,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function index = addNewStimulusMap(self)
@@ -4158,6 +4181,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function stimulusIndex = addNewStimulus(self)
@@ -4169,6 +4193,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function result = isSelectedStimulusLibraryItemInUse(self)
@@ -4207,6 +4232,7 @@ classdef WavesurferModel < ws.Model
                 self.broadcast('Update') ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function       
         
         function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
@@ -4218,6 +4244,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
         function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
@@ -4229,6 +4256,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
             
 %         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
@@ -4250,6 +4278,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
 %         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
@@ -4265,6 +4294,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function plotSelectedStimulusLibraryItem(self, figureGH)
@@ -4358,6 +4388,8 @@ classdef WavesurferModel < ws.Model
             % Special case to deal with renaming an outputable
             if didSetOutputableName ,
                 self.broadcast('Update') ;
+            else
+                self.broadcast('DidMaybeChangeProtocol') ;                
             end
             self.broadcast('UpdateStimulusLibrary') ;                
         end        
@@ -4371,6 +4403,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                        
         
         function result = isStimulusLibraryItemInUse(self, className, itemIndex)
@@ -4398,6 +4431,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function populateStimulusLibraryForTesting(self)
@@ -4591,7 +4625,7 @@ classdef WavesurferModel < ws.Model
             % active.
             self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
-            self.didSetIsInputChannelMarkedForDeletion_() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=get.IsDIChannelMarkedForDeletion(self)
@@ -4605,7 +4639,7 @@ classdef WavesurferModel < ws.Model
             % active.
             self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
-            self.didSetIsInputChannelMarkedForDeletion_() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function setSingleAIChannelName(self, i, newValue)
@@ -4648,6 +4682,7 @@ classdef WavesurferModel < ws.Model
                 isValueValid = false ;
             end
             self.broadcast('DidSetAcquisitionSampleRate');
+            self.broadcast('DidMaybeChangeProtocol');
             if ~isValueValid ,
                 error('ws:invalidPropertyValue', ...
                       'AcquisitionSampleRate must be a positive finite numeric scalar');
@@ -4691,18 +4726,21 @@ classdef WavesurferModel < ws.Model
         function set.XSpan(self, newValue)            
             self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
             nAIChannels = self.NAIChannels ;
             self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function toggleIsDIChannelDisplayed(self, diChannelIndex) 
             nDIChannels = self.NDIChannels ;
             self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.IsAIChannelDisplayed(self)
@@ -4816,12 +4854,14 @@ classdef WavesurferModel < ws.Model
             try
                 self.Stimulation_.setDigitalOutputStateIfUntimed_(newValue) ;
             catch exception
-                self.didSetDigitalOutputStateIfUntimed_() ;
+                self.broadcast('UpdateDigitalOutputStateIfUntimed') ;
                 rethrow(exception) ;
             end
-            self.didSetDigitalOutputStateIfUntimed_() ;            
             self.DoesProtocolNeedSave_ = true ;
-            self.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
+            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
+            self.Looper_.digitalOutputStateIfUntimedWasSetInFrontend(self.DOChannelStateIfUntimed, self.IsDOChannelTimed) ;
+            self.Refiller_.digitalOutputStateIfUntimedWasSetInFrontend(self.DOChannelStateIfUntimed) ;
         end  % function
         
         function out = get.DOChannelStateIfUntimed(self)
@@ -4845,6 +4885,7 @@ classdef WavesurferModel < ws.Model
                 isValueValid = false ;
             end
             self.broadcast('DidSetStimulationSampleRate');
+            self.broadcast('DidMaybeChangeProtocol') ;            
             if ~isValueValid ,
                 error('ws:invalidPropertyValue', ...
                       'StimulationSampleRate must be a positive finite numeric scalar');
@@ -4858,7 +4899,7 @@ classdef WavesurferModel < ws.Model
         function set.IsAOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
-            self.didSetIsInputChannelMarkedForDeletion_() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=get.IsDOChannelMarkedForDeletion(self)
@@ -4868,7 +4909,7 @@ classdef WavesurferModel < ws.Model
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
-            self.didSetIsInputChannelMarkedForDeletion_() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=aoChannelUnitsFromName(self,channelName)
@@ -5042,11 +5083,13 @@ classdef WavesurferModel < ws.Model
         function set.DoSubtractBaselineInTestPulseView(self, newValue)            
             self.Ephys_.setDoSubtractBaselineInTestPulseView_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
        
         function toggleIsGridOn(self)
             self.Display_.toggleIsGridOn_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
 
         function result = get.IsGridOn(self)
@@ -5056,6 +5099,7 @@ classdef WavesurferModel < ws.Model
         function toggleAreColorsNormal(self)
             self.Display_.toggleAreColorsNormal_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
 
         function result = get.AreColorsNormal(self)
@@ -5065,6 +5109,7 @@ classdef WavesurferModel < ws.Model
         function toggleDoShowZoomButtons(self)
             self.Display_.toggleDoShowZoomButtons_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
         
         function result = get.DoShowZoomButtons(self)
@@ -5074,6 +5119,7 @@ classdef WavesurferModel < ws.Model
         function toggleDoColorTraces(self)
             self.Display_.toggleDoColorTraces_() ;       
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end        
         
         function result = get.DoColorTraces(self)
@@ -5083,6 +5129,7 @@ classdef WavesurferModel < ws.Model
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
 
         function result = getTestPulseElectrodeCommandUnits(self)
@@ -5098,6 +5145,7 @@ classdef WavesurferModel < ws.Model
         function set.TestPulseYLimits(self, newValue)
             self.Ephys_.setTestPulseYLimits_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
         
         function result = get.TestPulseYLimits(self)
@@ -5306,21 +5354,25 @@ classdef WavesurferModel < ws.Model
         function zoomInTestPulseView(self)
             self.Ephys_.zoomInTestPulseView_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function zoomOutTestPulseView(self)
             self.Ephys_.zoomOutTestPulseView_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollUpTestPulseView(self)
             self.Ephys_.scrollUpTestPulseView_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDownTestPulseView(self)
             self.Ephys_.scrollDownTestPulseView_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function result = get.TestPulseDuration(self) 
@@ -5330,6 +5382,7 @@ classdef WavesurferModel < ws.Model
         function set.TestPulseDuration(self, newValue) 
             self.Ephys_.setTestPulseDuration_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.IsAutoYInTestPulseView(self) 
@@ -5339,6 +5392,7 @@ classdef WavesurferModel < ws.Model
         function set.IsAutoYInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYInTestPulseView_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
        
         function result = get.IsAutoYRepeatingInTestPulseView(self) 
@@ -5348,6 +5402,7 @@ classdef WavesurferModel < ws.Model
         function set.IsAutoYRepeatingInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYRepeatingInTestPulseView_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function value = getUpdateRateInTestPulseView(self)
@@ -5368,9 +5423,11 @@ classdef WavesurferModel < ws.Model
                 case 'Type' ,
                     self.setElectrodeType_(electrodeIndex, newValue) ;
                     self.DoesProtocolNeedSave_ = true ;
+                    self.broadcast('DidMaybeChangeProtocol') ;
                 case 'IndexWithinType' ,
                     self.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
                     self.DoesProtocolNeedSave_ = true ;
+                    self.broadcast('DidMaybeChangeProtocol') ;
                 otherwise ,
                     % the common case
                     try
@@ -5497,12 +5554,14 @@ classdef WavesurferModel < ws.Model
             currentValue = self.IsInControlOfSoftpanelModeAndGains ;
             self.IsInControlOfSoftpanelModeAndGains = ~currentValue ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
             if self.areAnyElectrodesCommandable() ,
                 doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
                 self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
                 if doUpdateSmartElectrodeGainsAndModes ,
                     self.updateSmartElectrodeGainsAndModes() ;
                 end
@@ -5512,6 +5571,7 @@ classdef WavesurferModel < ws.Model
         function electrodeIndex = addNewElectrode(self)
             electrodeIndex = self.Ephys_.addNewElectrode() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
        
         function removeMarkedElectrodes(self)
@@ -5524,6 +5584,7 @@ classdef WavesurferModel < ws.Model
         function set.DoTrodeUpdateBeforeRun(self, newValue)
             self.Ephys_.setDoTrodeUpdateBeforeRun_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
        
         function result = get.DoTrodeUpdateBeforeRun(self)
@@ -5568,6 +5629,7 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateElectrodes') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
@@ -5577,6 +5639,7 @@ classdef WavesurferModel < ws.Model
         function set.TestPulseElectrodeIndex(self, newValue)
             self.Ephys_.TestPulseElectrodeIndex = newValue ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
@@ -5584,6 +5647,7 @@ classdef WavesurferModel < ws.Model
             if ~isempty(testPulseElectrodeIndex) ,
                 self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
                 self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
             end
         end
         
@@ -5598,6 +5662,7 @@ classdef WavesurferModel < ws.Model
         function set.UserClassName(self, newValue)
             self.UserCodeManager_.setClassName_(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
             self.callUserMethod_('wake');  % wake the user object
         end
         
@@ -5608,6 +5673,7 @@ classdef WavesurferModel < ws.Model
         function reinstantiateUserObject(self)
             self.UserCodeManager_.reinstantiateUserObject_() ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
             self.callUserMethod_('wake');  % wake the user object
         end        
         
@@ -5727,6 +5793,7 @@ classdef WavesurferModel < ws.Model
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateTestPulser');
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = getTestPulseElectrodeProperty(self, propertyName)
@@ -5746,6 +5813,7 @@ classdef WavesurferModel < ws.Model
                 rethrow(me) ;
             end                
             self.broadcast('UpdateGeneralSettings') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function result = get.IsLoggingEnabled(self)
@@ -5759,6 +5827,7 @@ classdef WavesurferModel < ws.Model
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function result = getNActiveAIChannels(self)
@@ -5816,6 +5885,7 @@ classdef WavesurferModel < ws.Model
         function set.DisplayUpdateRate(self, newValue)
             self.Display_.UpdateRate = newValue ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
 %         function mimicStimulusLibrary_(self, newValue) 
@@ -5921,31 +5991,37 @@ classdef WavesurferModel < ws.Model
                 rethrow(me) ;
             end
             self.broadcast('UpdateGeneralSettings') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function setYLimitsForSingleAIChannel(self, i, newValue)
             self.Display_.setYLimitsForSingleAnalogChannel(i, newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function scrollUp(self, plotIndex)  % works on analog channels only
             self.Display_.scrollUp(plotIndex) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDown(self, plotIndex)  % works on analog channels only
             self.Display_.scrollDown(plotIndex) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomIn(self, plotIndex)  % works on analog channels only
             self.Display_.zoomIn(plotIndex) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
             self.Display_.zoomOut(plotIndex) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function result = get.DoIncludeDateInDataFileName(self)
