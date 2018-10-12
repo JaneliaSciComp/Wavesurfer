@@ -147,20 +147,5 @@ classdef TestPulserController < ws.Controller
             %ephys = self.Model.Ephys ;
             self.Model.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
         end  % function
-    end  % methods
-    
-    methods (Access=protected)
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This is called after the user indicates she wants to close
-            % the window.  Returns true if the window should _not_ close,
-            % false if it should go ahead and close.
-            model = self.Model ;
-            if isempty(model) || ~isvalid(model) ,
-                shouldStayPut = false ;
-            else
-                shouldStayPut = ~model.isIdleSensuLato() || model.isTestPulsing() ;
-            end
-        end
-    end % protected methods block    
-    
+    end  % methods    
 end  % classdef

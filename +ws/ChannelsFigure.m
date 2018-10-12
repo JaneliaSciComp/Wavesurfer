@@ -2009,19 +2009,6 @@ classdef ChannelsFigure < ws.MCOSFigureWithSelfControl
         end  % function
                 
         function closeRequested_(self, source, event)  %#ok<INUSD>
-            % Frameworks that windows with close boxes or similar decorations should set the
-            % callback to this method when they take control of the window.  For example,
-            % the CloseRequestFcn for HG windows, or the Closing event in WPF.
-            %
-            % It is also likely the right choice for callbacks/actions associated with close
-            % or quit menu items, etc.
-            
-            % This method uses three methods that should be overriden by framework specific
-            % subclasses to perform either the hide or a true close.  A fourth method
-            % (shouldWindowStayPutQ) is a hook for application specific controllers to
-            % intercept the close (or hide) attempt and cancel it.  By default it simply
-            % returns false to continue.
-
             wsModel = self.Model_ ;
             
             if isempty(wsModel) || ~isvalid(wsModel) ,

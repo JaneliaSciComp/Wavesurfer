@@ -196,22 +196,16 @@ classdef Controller < handle
     end
     
     methods
-        function windowCloseRequested(self, source, event)
-            % Frameworks that windows with close boxes or similar decorations should set the
-            % callback to this method when they take control of the window.  For example,
-            % the CloseRequestFcn for HG windows, or the Closing event in WPF.
-            %
-            % It is also likely the right choice for callbacks/actions associated with close
-            % or quit menu items, etc.
+        function windowCloseRequested(self, source, event)  %#ok<INUSD>
+            % See if we should stay put despite the request to close
+            model = self.Model ;
+            if isempty(model) || ~isvalid(model) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~model.isIdleSensuLato() ;
+            end
             
-            % This method uses three methods that should be overriden by framework specific
-            % subclasses to perform either the hide or a true close.  A fourth method
-            % (shouldWindowStayPutQ) is a hook for application specific controllers to
-            % intercept the close (or hide) attempt and cancel it.  By default it simply
-            % returns false to continue.
-            
-            shouldStayPut = self.shouldWindowStayPutQ(source, event);
-            
+            % Hide the controlled figure, if called for
             if shouldStayPut ,
                 % Do nothing
             else
@@ -220,70 +214,6 @@ classdef Controller < handle
         end
     end
 
-    % This method is expected to be overriden by actual application controller implementations.
-    methods (Access = protected)
-%         function out = shouldWindowStayPutQ(self, source, event) %#ok<INUSD>
-%             % This method is a hook for application specific controllers to intercept the
-%             % close (or hide) attempt and cancel it.  Controllers should return false to
-%             % continue the close/hide or true to cancel.
-%             out = false;
-%         end
-        
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This is called after the user indicates she wants to close
-            % the window.  Returns true if the window should _not_ close,
-            % false if it should go ahead and close.
-            model = self.Model ;
-            if isempty(model) || ~isvalid(model) ,
-                shouldStayPut = false ;
-            else
-                shouldStayPut = ~model.isIdleSensuLato() ;
-            end
-        end  % function
-        
-    end
-    
-    methods (Access = protected)
-        % These protected methods will generally only be overriden by implementations
-        % for specific frameworks, such as an HG Controller base class.  It is not
-        % expected that application controllers that further subclass for a specific
-        % window in an application will ever need to modify these methods, and they
-        % should generally me marked as (Sealed = true) in the framework specific
-        % controllers such as the HG controller.
-        
-%         function createWindows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
-%             % Framework specific implementations should load a fig file or create a WPF
-%             % window or whatever is appropriate.  A controller base class that does not use
-%             % windows (e.g., one specifically for WPF user controls rather than windows -
-%             % though it does not exist currently) may do nothing here.
-%         end
-        
-%         function out = get_main_window(self) %#ok<MANU>
-%             % Framework specific subclasses can implement this method to return a "primary"
-%             % window. This may simply be the first window or the only window.  The reason it
-%             % is left to the framework specific subclasses is that they may store references
-%             % to their list of windows differently, such as array vs. cell array, depending
-%             % on their requirements.
-%             out = [];
-%         end
-        
-%         function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
-%             % Perform any action required to cancel a window close event.  May be a no-op
-%             % (e.g., for an HG controller) or require modification of the event object (see
-%             % the WPF controller for an example).
-%         end
-        
-%         function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
-%             % Perform any action required to hide a window rather than close it.
-%         end
-        
-%         function deleteWindows(self) %#ok<MANU>
-%             % Should actually release/delete any handles or objects that define the window
-%             % object.  This is essentially for the framework specific delete() method code
-%             % for windows and associated resources.
-%         end
-    end  % protected methods that are designed to be optionally overridden
-    
     methods
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)            
             % The gateway for all UI-initiated commands.  exceptionMaybe is
@@ -489,7 +419,7 @@ classdef Controller < handle
                 layoutMaybe = {} ;
                 for i = 1:length(multiWindowLayoutFieldNames) ,
                     fieldName = multiWindowLayoutFieldNames{i} ;
-                    doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
+                    doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ; %#ok<STREMP>
                     if doesFieldNameContainCoreName ,
                         layoutMaybe = {multiWindowLayout.(fieldName)} ;
                         break

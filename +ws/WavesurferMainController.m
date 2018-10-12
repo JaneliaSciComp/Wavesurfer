@@ -313,12 +313,19 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method        
         
-        function windowCloseRequested(self, source, event)
+        function windowCloseRequested(self, source, event)  %#ok<INUSD>
             % This is target method for pressing the close button in the
             % upper-right of the window.
             % TODO: Put in some checks here so that user doesn't quit
             % by being slightly clumsy.
-            shouldStayPut = self.shouldWindowStayPutQ(source, event);
+            
+            % See if we should stay put despite the request to close
+            model = self.Model ;
+            if isempty(model) || ~isvalid(model) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~model.isIdleSensuLato() ;
+            end
             
             if shouldStayPut ,
                 % Do nothing
@@ -589,26 +596,26 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             end    
         end  % function       
         
-        function isOKToQuit = isOKToQuitWavesurfer_(self)
-            isOKToQuit = true;
-            
-            % If acquisition is happening, ignore the close window request
-            wavesurferModel=self.Model;
-            if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
-                isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
-                if ~isIdle ,
-                    isOKToQuit=false;
-                    return
-                end
-            end
-            
-            % Currently the only tool/window that should be consulted before closing is the
-            % StimulusLibrary Editor.  It may prompt the user to save changed and the user
-            % may decide to cancel out once prompted.
-            if ~isempty(self.StimulusLibraryController)
-                isOKToQuit = self.StimulusLibraryController.safeClose();
-            end
-        end  % function
+%         function isOKToQuit = isOKToQuitWavesurfer_(self)
+%             isOKToQuit = true;
+%             
+%             % If acquisition is happening, ignore the close window request
+%             wavesurferModel=self.Model;
+%             if ~isempty(wavesurferModel) && isvalid(wavesurferModel) ,
+%                 isIdle=isequal(wavesurferModel.State,'idle')||isequal(wavesurferModel.State,'no_device');
+%                 if ~isIdle ,
+%                     isOKToQuit=false;
+%                     return
+%                 end
+%             end
+%             
+%             % Currently the only tool/window that should be consulted before closing is the
+%             % StimulusLibrary Editor.  It may prompt the user to save changed and the user
+%             % may decide to cancel out once prompted.
+%             if ~isempty(self.StimulusLibraryController)
+%                 isOKToQuit = self.StimulusLibraryController.safeClose();
+%             end
+%         end  % function
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
@@ -621,12 +628,12 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 controller.showFigure();
                 controller.raiseFigure();
             else
+                % is a MCOSFigureWithSelfControl
                 if didCreate ,
                     % no need to update
                 else
                     controller.update();  % figure might be out-of-date
                 end
-                % is a MCOSFigureWithSelfControl
                 controller.show() ;
                 controller.raise() ;
             end
