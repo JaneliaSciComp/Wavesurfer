@@ -245,7 +245,14 @@ classdef WavesurferModel < ws.Model
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
         LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
-        VersionString_
+%         IsGeneralFigureVisible_
+%         IsChannelsFigureVisible_
+%         IsStimulusLibraryFigureVisible_
+%         IsTriggersFigureVisible_
+%         IsUserCodeFigureVisible_
+%         IsElectodeManagerFigureVisible_
+%         IsTestPulseFigureVisible_
+%         VersionString_
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
