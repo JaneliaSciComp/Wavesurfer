@@ -69,14 +69,14 @@ classdef Acquisition < ws.Subsystem
             % Store for the current AnalogChannelUnits values, but values may be "masked" by ElectrodeManager
         IsAnalogChannelActive_ = true(1,0)
         IsDigitalChannelActive_ = true(1,0)
-        IsAnalogChannelMarkedForDeletion_ = false(1,0)
-        IsDigitalChannelMarkedForDeletion_ = false(1,0)
         DataCacheDurationWhenContinuous_ = 10  % s
         %IsAnalogChannelTerminalOvercommitted_ = false(1,0)
         %IsDigitalChannelTerminalOvercommitted_ =false(1,0)
     end
 
     properties (Access = protected, Transient=true)
+        IsAnalogChannelMarkedForDeletion_ = false(1,0)
+        IsDigitalChannelMarkedForDeletion_ = false(1,0)
         %LatestAnalogData_ = [] ;
         LatestRawAnalogData_ = [] ;
         LatestRawDigitalData_ = [] ;

@@ -25,6 +25,9 @@ classdef CounterTrigger < ws.Model
         CounterID_
         Edge_
         DeviceName_
+    end
+
+    properties (Access=protected, Transient=true)
         IsMarkedForDeletion_
     end
 

@@ -49,9 +49,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         DigitalOutputStateIfUntimed_ = false(1,0)
         AnalogTerminalIDs_ = zeros(1,0)
         DigitalTerminalIDs_ = zeros(1,0)
-        IsAnalogChannelMarkedForDeletion_ = false(1,0)
-        IsDigitalChannelMarkedForDeletion_ = false(1,0)
     end
+    
+    properties (Access = protected, Transient=true)
+        IsAnalogChannelMarkedForDeletion_ = false(1,0)
+        IsDigitalChannelMarkedForDeletion_ = false(1,0)        
+    end    
     
     events 
         DidSetDoRepeatSequence

@@ -29,7 +29,6 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     properties (Access = protected)
         Electrodes_ = cell(1,0);  % row vector of electrodes
         %IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
-        IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
         LargestElectrodeIndexUsed_ = -inf
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
@@ -38,6 +37,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end
 
     properties (Access = protected, Transient = true)
+        IsElectrodeMarkedForRemoval_ = false(1,0)  % boolean row vector, same length as Electrodes_
         EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
 

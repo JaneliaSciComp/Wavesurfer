@@ -298,7 +298,7 @@ classdef UserCodeManagerFigure < ws.MCOSFigure
 %             model.subscribeMe(self,'PostSet','RunDidAbort','update');           
 %             model.subscribeMe(self,'PostSet','AbortCallsComplete','update');
             wsModel.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
-            
+            wsModel.subscribeMe(self,'DidMaybeSetUserClassName','','update');            
             wsModel.subscribeMe(self,'DidSetState','','updateControlEnablement');
         end  % function                
     end

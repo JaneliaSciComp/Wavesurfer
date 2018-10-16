@@ -142,20 +142,16 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                 model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
                 model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
                 model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
-                %for i = 1:numel(model.FastProtocols) ,
-                %    thisFastProtocol=model.FastProtocols{i};
-                %    thisFastProtocol.subscribeMe(self,'Update','','updateControlEnablement');
-                %end
+                model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
                 
-               % Subscribe to events from the Display subsystem 
-               model.subscribeMeToDisplayEvent(self,'Update','','update') ;
-               %model.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update') ;
-               model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties') ;
-               model.subscribeMeToDisplayEvent(self,'UpdateXOffset','','updateXAxisLimits') ;
-               model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateXAxisLimits') ;
-               model.subscribeMeToDisplayEvent(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
-               model.subscribeMeToDisplayEvent(self,'ClearData','','clearData') ;
-               model.subscribeMeToDisplayEvent(self, 'AddData', '', 'addData') ;
+                % Subscribe to events from the Display subsystem 
+                model.subscribeMeToDisplayEvent(self,'Update','','update') ;
+                model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties') ;
+                model.subscribeMeToDisplayEvent(self,'UpdateXOffset','','updateXAxisLimits') ;
+                model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateXAxisLimits') ;
+                model.subscribeMeToDisplayEvent(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+                model.subscribeMeToDisplayEvent(self,'ClearData','','clearData') ;
+                model.subscribeMeToDisplayEvent(self, 'AddData', '', 'addData') ;
             end
             
             % Make the figure visible
@@ -221,10 +217,12 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                                  'Label','File');
             self.OpenProtocolMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
+                       'Accelerator', 'o', ...
                        'Label','Open Protocol...');
             self.SaveProtocolMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
-                       'Label','Save Protocol');
+                       'Label','Save Protocol', ...
+                       'Accelerator', 's');
             self.SaveProtocolAsMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
                        'Label','Save Protocol As...');
@@ -233,6 +231,7 @@ classdef WavesurferMainFigure < ws.MCOSFigure
                        'Label','Export Model and Controller to Workspace');
             self.QuitMenuItem = ...
                 uimenu('Parent',self.FileMenu, ...
+                       'Accelerator', 'q', ...
                        'Label','Quit');
 
             % Protocol menu

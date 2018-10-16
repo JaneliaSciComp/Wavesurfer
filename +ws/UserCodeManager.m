@@ -56,23 +56,9 @@ classdef UserCodeManager < ws.Subsystem
             result = self.TheObject_;
         end
         
-        function setClassName_(self, value)
-            if ws.isString(value) ,
-                % If it's a string, we'll keep it, but we have to check if
-                % it's a valid class name
-                trimmedValue = strtrim(value) ;
-                self.ClassName_ = trimmedValue ;
-                err = self.tryToInstantiateObject_() ;
-                self.broadcast('Update');
-                if ~isempty(err) ,
-                  error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                        'Unable to instantiate user object: %s.',err.message);
-                end
-            else
-                self.broadcast('Update');  % replace the bad value with the old value in the view
-                error('ws:invalidPropertyValue', ...
-                      'Invalid value for property ''ClassName'' supplied.');
-            end
+        function err = setClassName_(self, value)
+            self.ClassName_ = value ;
+            err = self.tryToInstantiateObject_() ;
         end  % function
         
         % We have separate methods for instantiation and reinstantiation

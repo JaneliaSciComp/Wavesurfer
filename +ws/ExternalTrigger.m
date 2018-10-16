@@ -23,6 +23,9 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         DeviceName_
         PFIID_
         Edge_
+    end
+    
+    properties (Access=protected, Transient=true)
         IsMarkedForDeletion_
     end
     

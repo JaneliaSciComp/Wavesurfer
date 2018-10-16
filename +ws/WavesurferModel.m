@@ -337,6 +337,7 @@ classdef WavesurferModel < ws.Model
         UpdateTestPulser
         RaiseDialogOnException
         DidMaybeChangeProtocol
+        DidMaybeSetUserClassName
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -913,28 +914,6 @@ classdef WavesurferModel < ws.Model
             end 
             self.broadcast('UpdateStimulusLibrary') ;
         end  
-
-        function electrodeMayHaveChanged_(self, electrodeIndex, propertyName)  %#ok<INUSL>
-            % Notify other systems that an electrode may have changed in the Ephys
-            % subsystem.
-            %self.Ephys_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
-              % Ephys subsystem should already know...
-            isModeOrChannelNameOrScale = ...
-                isempty(propertyName) || ...
-                ismember(propertyName, ...
-                         {'Mode' ...
-                          'CommandChannelName' 'CommandScaling' ...
-                          'MonitorChannelName' 'MonitorScaling' ...
-                          'VoltageCommandChannelName' 'VoltageCommandScaling' ...
-                          'CurrentCommandChannelName' 'CurrentCommandScaling' ...
-                          'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
-                          'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
-            if isModeOrChannelNameOrScale ,
-                self.Display_.didSetAnalogChannelUnitsOrScales() ;
-                %self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
-                self.broadcast('UpdateChannels') ;
-            end            
-        end  % function
         
         function notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_(self)
             % Called after setting an analog channel unit or scale (directly), to
@@ -4006,7 +3985,7 @@ classdef WavesurferModel < ws.Model
         function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
             try
                 self.Triggering_.setTriggerProperty(triggerType, triggerIndexWithinType, propertyName, newValue) ;
-                self.DoesProtocolNeedSave_ = true ;
+                self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || ~isequal(propertyName, 'IsMarkedForDeletion');
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
@@ -4425,7 +4404,7 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
-                self.DoesProtocolNeedSave_ = true ;
+                self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || ~isequal(propertyName, 'IsMarkedForDeletion') ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 rethrow(exception) ;
@@ -4624,7 +4603,6 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -4638,7 +4616,6 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -4898,7 +4875,6 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -4908,7 +4884,6 @@ classdef WavesurferModel < ws.Model
         
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -5448,28 +5423,45 @@ classdef WavesurferModel < ws.Model
                             rethrow(exception);
                         end
                     end                                        
-                    self.electrodeMayHaveChanged_(electrodeIndex, propertyName) ;
+                    % Notify other systems that an electrode may have changed in the Ephys
+                    % subsystem.
+                    isModeOrChannelNameOrScale = ...
+                        isempty(propertyName) || ...
+                        ismember(propertyName, ...
+                                 {'Mode' ...
+                                  'CommandChannelName' 'CommandScaling' ...
+                                  'MonitorChannelName' 'MonitorScaling' ...
+                                  'VoltageCommandChannelName' 'VoltageCommandScaling' ...
+                                  'CurrentCommandChannelName' 'CurrentCommandScaling' ...
+                                  'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
+                                  'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
+                    if isModeOrChannelNameOrScale ,
+                        self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                        self.broadcast('UpdateChannels') ;
+                    end                                
+                    self.broadcast('DidMaybeChangeProtocol') ;
             end
         end
         
-        function setElectrodeModeAndScalings(self,...
-                                             electrodeIndex, ...
-                                             newMode, ...
-                                             newCurrentMonitorScaling, ...
-                                             newVoltageMonitorScaling, ...
-                                             newCurrentCommandScaling, ...
-                                             newVoltageCommandScaling,...
-                                             newIsCommandEnabled)
-            self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
-                                                     newMode, ...
-                                                     newCurrentMonitorScaling, ...
-                                                     newVoltageMonitorScaling, ...
-                                                     newCurrentCommandScaling, ...
-                                                     newVoltageCommandScaling,...
-                                                     newIsCommandEnabled) ;
-            self.DoesProtocolNeedSave_ = true ;
-            self.electrodeMayHaveChanged_(electrodeIndex, '') ;
-        end  % function
+%         function setElectrodeModeAndScalings(self,...
+%                                              electrodeIndex, ...
+%                                              newMode, ...
+%                                              newCurrentMonitorScaling, ...
+%                                              newVoltageMonitorScaling, ...
+%                                              newCurrentCommandScaling, ...
+%                                              newVoltageCommandScaling,...
+%                                              newIsCommandEnabled)
+%             self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
+%                                                      newMode, ...
+%                                                      newCurrentMonitorScaling, ...
+%                                                      newVoltageMonitorScaling, ...
+%                                                      newCurrentCommandScaling, ...
+%                                                      newVoltageCommandScaling,...
+%                                                      newIsCommandEnabled) ;
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.Display_.didSetAnalogChannelUnitsOrScales() ;
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
         
         function result = areTestPulseElectrodeChannelsValid(self)
             aiChannelNames = self.AIChannelNames ;
@@ -5483,6 +5475,7 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness_(-1) ;
             % Get the current mode and scaling from any smart electrodes
             smartElectrodeTypes = setdiff(ws.Electrode.Types,{'Manual'}) ;
+            didSetSomething = false ;
             for k = 1:length(smartElectrodeTypes) , 
                 smartElectrodeType = smartElectrodeTypes{k} ;                
                 [areAnyOfThisType, ...
@@ -5500,15 +5493,31 @@ classdef WavesurferModel < ws.Model
                         % and no new info could be gathered, those ones
                         % should just be nan's or empty's, which
                         % setModeAndScalings() knows to ignore.
-                        self.setElectrodeModeAndScalings(electrodeIndex, ...
-                                                         modes{j}, ...
-                                                         currentMonitorScalings(j), ...
-                                                         voltageMonitorScalings(j), ...
-                                                         currentCommandScalings(j), ...
-                                                         voltageCommandScalings(j), ...
-                                                         isCommandEnabled{j}) ;
+%                         self.setElectrodeModeAndScalings(electrodeIndex, ...
+%                                                          modes{j}, ...
+%                                                          currentMonitorScalings(j), ...
+%                                                          voltageMonitorScalings(j), ...
+%                                                          currentCommandScalings(j), ...
+%                                                          voltageCommandScalings(j), ...
+%                                                          isCommandEnabled{j}) ;
+                        self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
+                                                                 modes{j}, ...
+                                                                 currentMonitorScalings(j), ...
+                                                                 voltageMonitorScalings(j), ...
+                                                                 currentCommandScalings(j), ...
+                                                                 voltageCommandScalings(j), ...
+                                                                 isCommandEnabled{j}) ;
+                        didSetSomething = true ;
                     end
                 end
+            end
+            if didSetSomething ,
+                %self.DoesProtocolNeedSave_ = true ;
+                % Should maybe be smarter about this, but it's annoying to
+                % have the protocol think it needs saving after each
+                % press of the Update button.
+                self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                self.broadcast('UpdateChannels') ;
             end
             self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodes') ;
@@ -5627,9 +5636,9 @@ classdef WavesurferModel < ws.Model
         
         function set.IsElectrodeMarkedForRemoval(self, newValue)
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
+            %self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateElectrodes') ;
-            self.broadcast('DidMaybeChangeProtocol') ;
+            %self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
@@ -5660,10 +5669,25 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.UserClassName(self, newValue)
-            self.UserCodeManager_.setClassName_(newValue) ;
-            self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('DidMaybeChangeProtocol') ;
-            self.callUserMethod_('wake');  % wake the user object
+            if ws.isString(newValue) ,
+                % If it's a string, we'll keep it, but we have to check if
+                % it's a valid class name
+                trimmedValue = strtrim(newValue) ;
+                err = self.UserCodeManager_.setClassName_(trimmedValue) ;
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeSetUserClassName');
+                self.broadcast('DidMaybeChangeProtocol') ;
+                if isempty(err) ,
+                    self.callUserMethod_('wake');  % wake the user object
+                else
+                  error('wavesurfer:errorWhileInstantiatingUserObject', ...
+                        'Unable to instantiate user object: %s.',err.message);
+                end
+            else
+                self.broadcast('DidMaybeSetUserClassName');  % replace the bad value with the old value in the view
+                error('ws:invalidPropertyValue', ...
+                      'Invalid value for property ''ClassName'' supplied.');
+            end
         end
         
         function result = get.UserClassName(self) 
