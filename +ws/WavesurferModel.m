@@ -252,7 +252,7 @@ classdef WavesurferModel < ws.Model
 %         IsUserCodeFigureVisible_
 %         IsElectodeManagerFigureVisible_
 %         IsTestPulseFigureVisible_
-%         VersionString_
+          VersionString_
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
