@@ -1,4 +1,4 @@
-classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
+classdef WavesurferMainController < ws.Controller
     % The controller for the main wavesurfer window.
     
     properties (Access = public)  % these are protected by gentleman's agreement
@@ -653,6 +653,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                     controller = feval(fullControllerClassName, self.Model) ;
                 elseif isequal(fullControllerClassName, 'ws.TriggersFigure') ,
                     controller = feval(fullControllerClassName, self.Model) ;
+                elseif isequal(fullControllerClassName, 'ws.ElectrodeManagerController') ,
+                    controller = feval(fullControllerClassName, self.Model, self) ;
                 else
                     controller = feval(fullControllerClassName, self, self.Model) ;
                 end

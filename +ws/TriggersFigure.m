@@ -58,12 +58,12 @@ classdef TriggersFigure < ws.MCOSFigureWithSelfControl
         end  % constructor
     end
     
-    methods (Access=protected)
-        function didSetModel_(self)
-            self.updateSubscriptionsToModelEvents_();
-            didSetModel_@ws.MCOSFigure(self);
-        end
-    end
+%     methods (Access=protected)
+%         function didSetModel_(self)
+%             self.updateSubscriptionsToModelEvents_();
+%             didSetModel_@ws.MCOSFigure(self);
+%         end
+%     end
     
     methods (Access = protected)
         function createFixedControls_(self)
@@ -541,13 +541,13 @@ classdef TriggersFigure < ws.MCOSFigureWithSelfControl
     end  % methods
     
     methods (Access=protected)
-        function updateSubscriptionsToModelEvents_(self)
-            wsm = self.Model_ ;  % a WSM
-            if ~isempty(wsm) && isvalid(wsm) ,
-                wsm.subscribeMe(self,'DidSetState','','updateControlEnablement');
-                wsm.subscribeMe(self,'UpdateTriggering','','update');
-            end
-        end
+%         function updateSubscriptionsToModelEvents_(self)
+%             wsm = self.Model_ ;  % a WSM
+%             if ~isempty(wsm) && isvalid(wsm) ,
+%                 wsm.subscribeMe(self,'DidSetState','','updateControlEnablement');
+%                 wsm.subscribeMe(self,'UpdateTriggering','','update');
+%             end
+%         end
         
         function closeRequested_(self, source, event)  %#ok<INUSD>
             wsModel = self.Model_ ;
