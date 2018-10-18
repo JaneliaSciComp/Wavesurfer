@@ -3861,6 +3861,9 @@ classdef WavesurferModel < ws.Model
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
+            self.Acquisition_.synchronizeTransientStateToPersistedStateHelper() ;
+            self.Stimulation_.synchronizeTransientStateToPersistedStateHelper() ;
+            
             %self.syncDeviceResourceCountsFromDeviceName_() ;
             %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
@@ -3870,7 +3873,7 @@ classdef WavesurferModel < ws.Model
             %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
             %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
             
-            self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
+            self.Display_.synchronizeTransientStateToPersistedStateHelper() ;
         end  % method
         
         function informSubsystemsThatWeAreSettingPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
@@ -6353,7 +6356,7 @@ classdef WavesurferModel < ws.Model
             encoding = encodeForHeader@ws.Model(self) ;            
             
             % Add custom field
-            thisPropertyValue = self.stimulusLibrary() ;
+            thisPropertyValue = self.getStimulusLibraryCopy() ;
             encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
             encoding.StimulusLibrary = encodingOfPropertyValue ;
         end

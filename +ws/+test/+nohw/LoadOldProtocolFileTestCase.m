@@ -32,7 +32,7 @@ classdef LoadOldProtocolFileTestCase < matlab.unittest.TestCase
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
             didWarningsOccur = ...
                 ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
-            self.verifyFalse(didWarningsOccur) ;
+            self.verifyTrue(didWarningsOccur) ;
             self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;            
             
             self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'TypeString'), 'SquarePulse') ;

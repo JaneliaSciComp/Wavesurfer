@@ -186,7 +186,7 @@ classdef CounterTrigger < ws.Model
         % Allows access to protected and protected variables from ws.Coding.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
-        end  % function
+        end  % function        
     end  % protected methods block
     
     methods (Static)

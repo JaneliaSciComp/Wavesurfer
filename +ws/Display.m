@@ -959,7 +959,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 ws.Display.sanitizeRowIndices(self.RowIndexFromAnalogChannelIndex_, self.RowIndexFromDigitalChannelIndex_, nAIChannels, nDIChannels) ;
         end
         
-        function synchronizeTransientStateToPersistedStateHelper_(self)
+        function synchronizeTransientStateToPersistedStateHelper(self)
             self.updateMappingsFromPlotIndices_() ;            
             %self.clearData_() ;  % This will ensure that the size of YData is appropriate
             %self.broadcast('ClearData') ;

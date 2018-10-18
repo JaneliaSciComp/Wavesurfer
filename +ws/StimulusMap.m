@@ -7,12 +7,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         IndexOfEachStimulusInLibrary
         %Stimuli  % a cell array, with [] for missing stimuli
         Multiplier  % a double array
-    end
-    
-    properties (Dependent = true, Transient=true)
         IsMarkedForDeletion  % a logical array
     end
-
+    
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         %IsDurationFree
         NBindings
@@ -26,9 +23,12 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         ChannelName_ = {}
         IndexOfEachStimulusInLibrary_ = {}  % for each binding, the index of the stimulus (in the library) for that binding, or empty if unspecified
         Multiplier_ = []
-        IsMarkedForDeletion_ = logical([])
     end
-    
+
+    properties (Access = protected, Transient=true)
+        IsMarkedForDeletion_ = logical([])        
+    end
+
     methods
         function self = StimulusMap()
             self@ws.Model();
@@ -388,6 +388,11 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
     end
     
     methods (Access=protected)
+        function synchronizeTransientStateToPersistedState_(self)
+            nBindings = length(self.ChannelName_) ;
+            self.IsMarkedForDeletion_ = false(1, nBindings) ;
+        end
+        
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -398,7 +403,6 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             % length of things should equal nBindings
             self.IndexOfEachStimulusInLibrary_ = ws.sanitizeRowVectorLength(self.IndexOfEachStimulusInLibrary_, nBindings, {[]}) ;
             self.Multiplier_ = ws.sanitizeRowVectorLength(self.Multiplier_, nBindings, 1) ;
-            self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
         end
     end  % protected methods block    
 end

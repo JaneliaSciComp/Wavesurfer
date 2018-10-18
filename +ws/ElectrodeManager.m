@@ -1087,7 +1087,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 end
             end
             %self.broadcast('Update') ;
-        end                
+        end            
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            electrodeCount = length(self.Electrodes_) ;
+            self.IsElectrodeMarkedForRemoval_ = false(1, electrodeCount) ; 
+        end  % function                
     end  % protected methods block
         
     methods (Access=public)        

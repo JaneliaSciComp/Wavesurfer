@@ -1003,6 +1003,14 @@ classdef Acquisition < ws.Subsystem
         function setSingleDigitalDeviceName(self, i, newValue)
             % Checking done by parent
             self.DigitalDeviceNames_{i} = newValue ;
-        end  % function                
+        end  % function            
+        
+        function synchronizeTransientStateToPersistedStateHelper(self)
+            nAnalogChannels = length(self.AnalogChannelNames_) ;
+            self.IsAnalogChannelMarkedForDeletion_ = false(1, nAnalogChannels) ;
+            nDigitalChannels = length(self.DigitalChannelNames_) ;
+            self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
+        end                
+
     end  % public methods block
 end  % classdef

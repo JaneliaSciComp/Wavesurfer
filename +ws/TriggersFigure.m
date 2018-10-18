@@ -1,4 +1,4 @@
-classdef TriggersFigure < ws.MCOSFigure
+classdef TriggersFigure < ws.MCOSFigureWithSelfControl
     properties
         AcquisitionPanel
         AcquisitionSchemeText
@@ -21,21 +21,18 @@ classdef TriggersFigure < ws.MCOSFigure
     end  % properties
     
     methods
-        function self=TriggersFigure(model,controller)
-            self = self@ws.MCOSFigure(model,controller);            
-            set(self.FigureGH, ...
-                'Tag','triggersFigureWrapper', ...
+        function self = TriggersFigure(model)
+            self = self@ws.MCOSFigureWithSelfControl(model) ;                        
+            
+            set(self.FigureGH_, ...
+                'Tag','TriggersFigure', ...
                 'Units','Pixels', ...
                 'Resize','off', ...
                 'Name','Triggers', ...
                 'MenuBar','none', ...
                 'DockControls','off', ...
                 'NumberTitle','off', ...
-                'Visible','off', ...
-                'CloseRequestFcn',@(source,event)(self.closeRequested(source,event)));
-               % CloseRequestFcn will get overwritten by the ws.most.Controller constructor, but
-               % we re-set it in the ws.TriggersController
-               % constructor.
+                'Visible','off');
            
            % Create the fixed controls (which for this figure is all of them)
            self.createFixedControls_();          
@@ -45,13 +42,19 @@ classdef TriggersFigure < ws.MCOSFigure
            
            % Layout the figure and set the position
            self.layout_();
-           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH,[30 30+40]);
-           
-           % Initialize the guidata
-           self.updateGuidata_();
+           ws.positionFigureOnRootRelativeToUpperLeftBang(self.FigureGH_,[30 30+40]);
            
            % Sync to the model
            self.update();
+
+           % Add subscriptions to model events
+           if ~isempty(model) ,
+               model.subscribeMe(self, 'DidSetState', '', 'updateControlEnablement');
+               model.subscribeMe(self, 'UpdateTriggering', '', 'update');
+           end
+           
+           % make the figure visible
+           set(self.FigureGH_,'Visible','on');                                   
         end  % constructor
     end
     
@@ -69,7 +72,7 @@ classdef TriggersFigure < ws.MCOSFigure
             
             % Acquisition Panel
             self.AcquisitionPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
@@ -84,7 +87,7 @@ classdef TriggersFigure < ws.MCOSFigure
                           
             % Stimulation Panel
             self.StimulationPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
@@ -103,7 +106,7 @@ classdef TriggersFigure < ws.MCOSFigure
 
             % Trigger Sources Panel
             self.CounterTriggersPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
@@ -126,7 +129,7 @@ classdef TriggersFigure < ws.MCOSFigure
                     
             % Trigger Destinations Panel
             self.ExternalTriggersPanel = ...
-                ws.uipanel('Parent',self.FigureGH, ...
+                ws.uipanel('Parent',self.FigureGH_, ...
                         'Units','pixels', ...
                         'BorderType','none', ...
                         'FontWeight','bold', ...
@@ -166,7 +169,7 @@ classdef TriggersFigure < ws.MCOSFigure
                     
                     % Set Callback
                     if isequal(get(propertyThing,'Type'),'uimenu') ,
-                        if get(propertyThing,'Parent')==self.FigureGH ,
+                        if get(propertyThing,'Parent')==self.FigureGH_ ,
                             % do nothing for top-level menus
                         else
                             set(propertyThing,'Callback',@(source,event)(self.controlActuated(propertyName,source,event)));
@@ -424,7 +427,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self, varargin)
-            if isempty(self.Model) ,
+            if isempty(self.Model_) ,
                 return
             end            
             self.updateAcquisitionTriggerControls() ;
@@ -436,7 +439,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateControlEnablementImplementation_(self)
-            wsModel = self.Model ;  % this is the WavesurferModel
+            wsModel = self.Model_ ;  % this is the WavesurferModel
             if isempty(wsModel) || ~isvalid(wsModel) ,
                 return
             end            
@@ -467,7 +470,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateAcquisitionTriggerControls(self, varargin)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 return
             end
@@ -481,7 +484,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateStimulationTriggerControls(self, varargin)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 return
             end
@@ -496,7 +499,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateCounterTriggersTable(self, varargin)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 return
             end
@@ -519,7 +522,7 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods
         function updateExternalTriggersTable(self, varargin)
-            wsModel = self.Model ;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 return
             end
@@ -539,12 +542,144 @@ classdef TriggersFigure < ws.MCOSFigure
     
     methods (Access=protected)
         function updateSubscriptionsToModelEvents_(self)
-            wsm = self.Model ;  % a WSM
+            wsm = self.Model_ ;  % a WSM
             if ~isempty(wsm) && isvalid(wsm) ,
                 wsm.subscribeMe(self,'DidSetState','','updateControlEnablement');
                 wsm.subscribeMe(self,'UpdateTriggering','','update');
             end
         end
+        
+        function closeRequested_(self, source, event)  %#ok<INUSD>
+            wsModel = self.Model_ ;
+            
+            if isempty(wsModel) || ~isvalid(wsModel) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~wsModel.isIdleSensuLato() ;
+            end
+           
+            if shouldStayPut ,
+                % Do nothing
+            else
+                self.hide() ;
+            end
+        end        
     end  % protected methods block
+    
+    methods
+        function AcquisitionSchemePopupmenuActuated(self, source, event)  %#ok<INUSD>
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model.AcquisitionTriggerScheme);
+            selectionIndex = get(source,'Value') ;
+            %self.Model.AcquisitionTriggerSchemeIndex = selectionIndex ;
+            self.Model_.do('set', 'AcquisitionTriggerIndex', selectionIndex) ;            
+        end  % function
+        
+        function UseAcquisitionTriggerCheckboxActuated(self,source,event)  %#ok<INUSD>
+            newValue = logical(get(source,'Value')) ;
+            %self.Model_.StimulationUsesAcquisitionTriggerScheme=value;
+            self.Model_.do('set', 'StimulationUsesAcquisitionTrigger', newValue) ;
+        end  % function
+
+        function StimulationSchemePopupmenuActuated(self, source, event) %#ok<INUSD>
+            %acquisitionSchemePopupmenuActuated_(self, source, self.Model_.StimulationTriggerScheme);
+            selectionIndex = get(source,'Value') ;
+            %self.Model_.StimulationTriggerSchemeIndex = selectionIndex ;
+            self.Model_.do('set', 'StimulationTriggerIndex', selectionIndex) ;
+        end  % function
+        
+        function CounterTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
+            % Called when a cell of CounterTriggersTable is edited
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            triggerIndex = rowIndex ;
+            %theTrigger = self.Model_.CounterTriggers{triggerIndex} ;
+            % 'Name' 'Device' 'CTR' 'Repeats' 'Interval (s)' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                newValue = newThang ;
+                %ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the device name this way, at least not right
+                % now
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'CounterID', newValue) ;                
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'CounterID', newValue) ;
+            elseif (columnIndex==4) ,
+                % this is the Repeats column
+                newValue = str2double(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'RepeatCount', newValue) ;
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'RepeatCount', newValue) ;
+            elseif (columnIndex==5) ,
+                % this is the Interval column
+                newValue = str2double(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'Interval', newValue) ;
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'Interval', newValue) ;
+            elseif (columnIndex==6) ,
+                % Can't change PFI
+            elseif (columnIndex==7) ,
+                newValue = lower(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'Edge', newValue) ;
+            elseif (columnIndex==8) ,
+                % this is the Delete? column
+                newValue = logical(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
+                self.Model_.do('setTriggerProperty', 'counter', triggerIndex, 'IsMarkedForDeletion', newValue) ;
+            end
+        end  % function
+        
+        function AddCounterTriggerButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model_.addCounterTrigger() ;
+            self.Model_.do('addCounterTrigger') ;
+        end
+
+        function DeleteCounterTriggersButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model_.deleteMarkedCounterTriggers() ;
+            self.Model_.do('deleteMarkedCounterTriggers') ;
+        end
+        
+        function ExternalTriggersTableCellEdited(self, source, event)  %#ok<INUSL>
+            % Called when a cell of CounterTriggersTable is edited
+            indices = event.Indices ;
+            newThang = event.EditData ;
+            rowIndex = indices(1) ;
+            columnIndex = indices(2) ;
+            triggerIndex = rowIndex ;
+            %theTrigger = self.Model_.ExternalTriggers{sourceIndex} ;
+            % 'Name' 'Device' 'PFI' 'Edge' 'Delete?'
+            if (columnIndex==1) ,
+                newValue = newThang ;
+                %ws.Controller.setWithBenefits(theTrigger, 'Name', newValue) ;
+                self.Model_.do('setTriggerProperty', 'external', triggerIndex, 'Name', newValue) ;
+            elseif (columnIndex==2) ,
+                % Can't change the dev name this way at present
+            elseif (columnIndex==3) ,
+                newValue = str2double(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'PFIID', newValue) ;                
+                self.Model_.do('setTriggerProperty', 'external', triggerIndex, 'PFIID', newValue) ;
+            elseif (columnIndex==4) ,
+                newValue = lower(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'Edge', newValue) ;                
+                self.Model_.do('setTriggerProperty', 'external', triggerIndex, 'Edge', newValue) ;
+            elseif (columnIndex==5) ,
+                newValue = logical(newThang) ;
+                %ws.Controller.setWithBenefits(theTrigger, 'IsMarkedForDeletion', newValue) ;
+                self.Model_.do('setTriggerProperty', 'external', triggerIndex, 'IsMarkedForDeletion', newValue) ;
+            end
+        end  % function
+
+        function AddExternalTriggerButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model_.addExternalTrigger() ;
+            self.Model_.do('addExternalTrigger') ;
+        end
+
+        function DeleteExternalTriggersButtonActuated(self, source, event)  %#ok<INUSD>
+            %self.Model_.deleteMarkedExternalTriggers() ;
+            self.Model_.do('deleteMarkedExternalTriggers') ;
+        end        
+    end  % methods block    
     
 end  % classdef

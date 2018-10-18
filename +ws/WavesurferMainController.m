@@ -4,7 +4,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
         %DisplayController = [];
-        TriggersController = [];
+        TriggersFigure = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
         UserCodeManagerController = [];
@@ -160,7 +160,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TriggersController') ;
+            self.showAndRaiseChildFigure_('TriggersFigure') ;
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -529,7 +529,7 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
             % have layout information.  For each, take the appropriate
             % action to make the current layout match that in
             % multiWindowLayout.
-            controllerNames = { 'TriggersController' ...
+            controllerNames = { 'TriggersFigure' ...
                                 'StimulusLibraryController' ...
                                 'FastProtocolsController' ...
                                 'UserCodeManagerController' ...
@@ -650,6 +650,8 @@ classdef WavesurferMainController < ws.Controller & ws.EventSubscriber
                 if isequal(fullControllerClassName, 'ws.GeneralSettingsFigure') ,
                     controller = feval(fullControllerClassName, self.Model, self.Figure.getPositionInPixels() ) ;
                 elseif isequal(fullControllerClassName, 'ws.ChannelsFigure') ,
+                    controller = feval(fullControllerClassName, self.Model) ;
+                elseif isequal(fullControllerClassName, 'ws.TriggersFigure') ,
                     controller = feval(fullControllerClassName, self.Model) ;
                 else
                     controller = feval(fullControllerClassName, self, self.Model) ;

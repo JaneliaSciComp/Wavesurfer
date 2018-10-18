@@ -624,6 +624,13 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
 %             self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
 %         end  % function
+
+        function synchronizeTransientStateToPersistedStateHelper(self)
+            nAnalogChannels = length(self.AnalogChannelNames_) ;
+            self.IsAnalogChannelMarkedForDeletion_ = false(1, nAnalogChannels) ;
+            nDigitalChannels = length(self.DigitalChannelNames_) ;
+            self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
+        end                
     end
 
     methods (Access=protected)
