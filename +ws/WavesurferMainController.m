@@ -655,6 +655,8 @@ classdef WavesurferMainController < ws.Controller
                     controller = feval(fullControllerClassName, self.Model) ;
                 elseif isequal(fullControllerClassName, 'ws.ElectrodeManagerController') ,
                     controller = feval(fullControllerClassName, self.Model, self) ;
+                elseif isequal(fullControllerClassName, 'ws.FastProtocolsController') ,
+                    controller = feval(fullControllerClassName, self.Model) ;
                 else
                     controller = feval(fullControllerClassName, self, self.Model) ;
                 end
