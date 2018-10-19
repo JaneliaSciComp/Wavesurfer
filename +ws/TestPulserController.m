@@ -56,10 +56,10 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
                               'Visible','off');
             
             % Create the controls that will persist throughout the lifetime of the window              
-            self.createFixedControls();
+            self.createFixedControls_();
             
             % Set the initial figure position
-            self.setInitialFigurePosition();
+            self.setInitialFigurePosition_();
 
             % Sync with the model
             self.update();            
@@ -168,9 +168,9 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
             % Syncs self with model, making no prior assumptions about what
             % might have changed or not changed in the model.
             %fprintf('update!\n');
-            self.updateControlsInExistance();
+            self.updateControlsInExistance_();
             self.updateControlPropertiesImplementation_();
-            self.layout();
+            self.layout_();
             % update readiness, without the drawnow()
             wsModel = self.Model_ ;
             if isempty(wsModel) ,
@@ -305,7 +305,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
     end  % protected methods block
     
     methods (Access=protected)
-        function createFixedControls(self)
+        function createFixedControls_(self)
             
             % Start/stop button
             self.StartStopButton= ...
@@ -468,7 +468,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
                           'Callback',@(src,evt)(self.controlActuated('YLimitsButton',src,evt)));
         end  % function
         
-        function setInitialFigurePosition(self)
+        function setInitialFigurePosition_(self)
             % set the initial figure size and position, then layout the
             % figure like normal
 
@@ -489,7 +489,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
             %self.layout();
         end  % function
         
-        function layout(self)
+        function layout_(self)
             % lays out the figure widgets, given the current figure size
             %fprintf('Inside layout()...\n');
 
@@ -884,8 +884,8 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
 %             end
         end
 
-        function updateControlsInExistance(self)
-            %fprintf('updateControlsInExistance!\n');
+        function updateControlsInExistance_(self)
+            %fprintf('updateControlsInExistance_!\n');
             % Makes sure the controls that exist match what controls _should_
             % exist, given the current model state.
 
