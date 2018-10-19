@@ -1,4 +1,4 @@
-classdef TriggersFigure < ws.MCOSFigureWithSelfControl
+classdef TriggersFigure < ws.Controller
     properties
         AcquisitionPanel
         AcquisitionSchemeText
@@ -22,7 +22,7 @@ classdef TriggersFigure < ws.MCOSFigureWithSelfControl
     
     methods
         function self = TriggersFigure(model)
-            self = self@ws.MCOSFigureWithSelfControl(model) ;                        
+            self = self@ws.Controller(model) ;                        
             
             set(self.FigureGH_, ...
                 'Tag','TriggersFigure', ...

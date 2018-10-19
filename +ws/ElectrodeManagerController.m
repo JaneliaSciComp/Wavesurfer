@@ -1,4 +1,4 @@
-classdef ElectrodeManagerController < ws.MCOSFigureWithSelfControl
+classdef ElectrodeManagerController < ws.Controller
     properties  % these are protected by gentleman's agreement
         % GH Handles of controls that persist for the lifetime of the
         % window
@@ -51,7 +51,7 @@ classdef ElectrodeManagerController < ws.MCOSFigureWithSelfControl
     
     methods
         function self = ElectrodeManagerController(wsModel, wsController)
-            self = self@ws.MCOSFigureWithSelfControl(wsModel) ;                        
+            self = self@ws.Controller(wsModel) ;                        
             
             self.ParentController_ = wsController ;
             
@@ -1115,7 +1115,7 @@ classdef ElectrodeManagerController < ws.MCOSFigureWithSelfControl
     methods
         function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)
             self.ParentController_.setAreUpdatesEnabledForAllFigures(false) ;
-            exceptionMaybe = controlActuated@ws.MCOSFigureWithSelfControl(self, controlName, source, event, varargin{:}) ;
+            exceptionMaybe = controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
             self.ParentController_.setAreUpdatesEnabledForAllFigures(true) ;
         end  % method
         

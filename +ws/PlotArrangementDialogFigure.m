@@ -1,4 +1,4 @@
-classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
+classdef PlotArrangementDialogFigure < ws.Controller
     properties (Access=protected)
         % The various HG objects in the figure
         IsDisplayedRowTitle_
@@ -24,7 +24,7 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
         function self = PlotArrangementDialogFigure(model, parentFigurePosition, channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
                                                     callbackFunction)
             % Call the super-class consructor
-            self = self@ws.MCOSFigureWithSelfControl(model) ;
+            self = self@ws.Controller(model) ;
             
             % Initialize some properties
             self.ChannelNames_ = channelNames ;
@@ -268,11 +268,11 @@ classdef PlotArrangementDialogFigure < ws.MCOSFigureWithSelfControl
     
     methods        
 %         function controlActuated(self, methodNameStem, source, event, varargin)
-%             controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+%             controlActuated@ws.Controller(self, methodNameStem, source, event, varargin{:}) ;
 % %             if isequal(source, self.YMaxEdit_) || isequal(source, self.YMinEdit_) ,
 % %                 self.syncOKButtonEnablementFromEditContents_() ;
 % %             else
-% %                 controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+% %                 controlActuated@ws.Controller(self, methodNameStem, source, event, varargin{:}) ;
 % %             end
 %         end  % function
        

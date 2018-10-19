@@ -1,7 +1,7 @@
-classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
+classdef (Abstract) Controller < ws.EventSubscriber
     % This is a base class that wraps a handle graphics figure in a proper
     % MCOS object, but does not have a separate controller.  All methods
-    % fired by UI actions are methods of the MCOSFigureWithSelfControl
+    % fired by UI actions are methods of the Controller
     % subclass.
     
     properties (Access=protected, Transient=true)
@@ -33,7 +33,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
     end  % properties    
     
     methods
-        function self = MCOSFigureWithSelfControl(model)
+        function self = Controller(model)
             backgroundColor = ws.getDefaultUIControlBackgroundColor() ;
             self.FigureGH_=figure('Units','Pixels', ...
                                   'Color',backgroundColor, ...
@@ -127,25 +127,25 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
         
         function update(self, varargin)
             % Sometimes outsiders need to prompt an update.  Methods of the 
-            % MCOSFigureWithSelfControl should generally call update_() directly.
+            % Controller should generally call update_() directly.
             self.update_(varargin{:}) ;
         end
         
         function updateControlProperties(self, varargin)
             % Sometimes outsiders need to prompt an update.  Methods of the 
-            % MCOSFigureWithSelfControl should generally call update_() directly.
+            % Controller should generally call update_() directly.
             self.updateControlProperties_(varargin{:}) ;
         end
 
         function updateControlEnablement(self, varargin)
             % Sometimes outsiders need to prompt an update.  Methods of the 
-            % MCOSFigureWithSelfControl should generally call update_() directly.
+            % Controller should generally call update_() directly.
             self.updateControlEnablement_(varargin{:}) ;
         end
         
         function updateReadiness(self, varargin)
             % Sometimes outsiders need to prompt an update.  Methods of the 
-            % MCOSFigureWithSelfControl should generally call update_() directly.
+            % Controller should generally call update_() directly.
             self.updateReadiness_(varargin{:}) ;
         end
         

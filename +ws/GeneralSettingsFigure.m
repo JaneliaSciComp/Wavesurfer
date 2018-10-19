@@ -1,4 +1,4 @@
-classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
+classdef GeneralSettingsFigure < ws.Controller
 %     properties (Constant)
 %         NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
 %         WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
@@ -58,7 +58,7 @@ classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
     
     methods
         function self = GeneralSettingsFigure(wsModel, mainFigurePosition)
-            self = self@ws.MCOSFigureWithSelfControl(wsModel) ;            
+            self = self@ws.Controller(wsModel) ;            
             set(self.FigureGH_, ...
                 'Tag','GeneralSetingsFigure', ...
                 'Units','Pixels', ...

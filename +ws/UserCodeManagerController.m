@@ -1,4 +1,4 @@
-classdef UserCodeManagerController < ws.MCOSFigureWithSelfControl
+classdef UserCodeManagerController < ws.Controller
     properties
         ClassNameText
         ClassNameEdit        
@@ -8,7 +8,7 @@ classdef UserCodeManagerController < ws.MCOSFigureWithSelfControl
         
     methods
         function self = UserCodeManagerController(model)
-            self = self@ws.MCOSFigureWithSelfControl(model);
+            self = self@ws.Controller(model);
 
             % Create the figure
             set(self.FigureGH_, ...

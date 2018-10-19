@@ -1,4 +1,4 @@
-classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
+classdef WavesurferMainController < ws.Controller
     % The controller for the main wavesurfer window.
     
 %     properties (Constant)
@@ -110,7 +110,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
     methods
         function self = WavesurferMainController(model)
             % Call the superclass constructor
-            self = self@ws.MCOSFigureWithSelfControl(model);            
+            self = self@ws.Controller(model);            
             
             % Set up XData_ and YData_
             self.clearXDataAndYData_() ;
@@ -1931,7 +1931,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
-            % is a MCOSFigureWithSelfControl
+            % is a Controller
             if didCreate ,
                 % no need to update
             else

@@ -1,4 +1,4 @@
-classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
+classdef YLimDialogFigure < ws.Controller
     properties (Access=protected)
         % The various HG objects in the figure
         YMaxText_
@@ -19,7 +19,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
     methods
         function self=YLimDialogFigure(model, parentFigurePosition, yLimits, yUnits, callbackFunction)
             % Call the super-class consructor
-            self = self@ws.MCOSFigureWithSelfControl(model) ;
+            self = self@ws.Controller(model) ;
             
             % Initialize some properties
             self.YLimits_ = yLimits ;
@@ -193,7 +193,7 @@ classdef YLimDialogFigure < ws.MCOSFigureWithSelfControl
     
     methods        
 %         function controlActuated(self, methodNameStem, source, event, varargin)
-%             controlActuated@ws.MCOSFigureWithSelfControl(self, methodNameStem, source, event, varargin{:}) ;
+%             controlActuated@ws.Controller(self, methodNameStem, source, event, varargin{:}) ;
 %         end  % function
        
         function keyPressedOnEdit(self, methodNameStem, source, event) %#ok<INUSL>

@@ -1,4 +1,4 @@
-classdef StimulusLibraryController < ws.MCOSFigureWithSelfControl
+classdef StimulusLibraryController < ws.Controller
     properties  % these are protected by gentleman's agreement
         FileMenu
         ClearLibraryMenuItem
@@ -75,7 +75,7 @@ classdef StimulusLibraryController < ws.MCOSFigureWithSelfControl
     
     methods
         function self = StimulusLibraryController(model, wavesurferMainFigureGH)
-            self = self@ws.MCOSFigureWithSelfControl(model) ;            
+            self = self@ws.Controller(model) ;            
             
             set(self.FigureGH_, ...
                 'Tag','StimulusLibraryFigure', ...
@@ -1046,7 +1046,7 @@ classdef StimulusLibraryController < ws.MCOSFigureWithSelfControl
                 end
                 self.PlotFigureGH_ = [] ;
             end
-            delete@ws.MCOSFigureWithSelfControl(self) ;
+            delete@ws.Controller(self) ;
         end
         
         function debug(self) %#ok<MANU>

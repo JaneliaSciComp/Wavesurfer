@@ -1,4 +1,4 @@
-classdef TestPulserController < ws.MCOSFigureWithSelfControl
+classdef TestPulserController < ws.Controller
     properties  (SetAccess=protected)
         StartStopButton
         ElectrodePopupMenuLabelText
@@ -42,7 +42,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
     
     methods
         function self = TestPulserController(wsModel)
-            self = self@ws.MCOSFigureWithSelfControl(wsModel);
+            self = self@ws.Controller(wsModel);
             
             % Create the widgets (except figure, created in superclass
             % constructor)
@@ -82,7 +82,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
             if ~isempty(self.MyYLimDialogFigure) && ishandle(self.MyYLimDialogFigure) ,
                 delete(self.MyYLimDialogFigure) ;
             end
-            delete@ws.MCOSFigureWithSelfControl(self) ;
+            delete@ws.Controller(self) ;
         end  % function
         
         function updateTrace(self,varargin)
@@ -1012,7 +1012,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
                     end
                     
                     % Act on the control
-                    exceptionMaybe = controlActuated@ws.MCOSFigureWithSelfControl(self, controlName, source, event, varargin{:}) ;
+                    exceptionMaybe = controlActuated@ws.Controller(self, controlName, source, event, varargin{:}) ;
                     % if exceptionMaybe is nonempty, a dialog has already
                     % been shown to the user.
 

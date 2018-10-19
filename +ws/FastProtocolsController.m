@@ -1,4 +1,4 @@
-classdef FastProtocolsController < ws.MCOSFigureWithSelfControl
+classdef FastProtocolsController < ws.Controller
     properties
         Table        
         ClearRowButton
@@ -7,7 +7,7 @@ classdef FastProtocolsController < ws.MCOSFigureWithSelfControl
     
     methods
         function self = FastProtocolsController(model)
-            self = self@ws.MCOSFigureWithSelfControl(model) ;
+            self = self@ws.Controller(model) ;
             
             set(self.FigureGH_, ...
                 'Tag','FastProtocolsFigure', ...
