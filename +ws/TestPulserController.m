@@ -82,6 +82,7 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
             if ~isempty(self.MyYLimDialogFigure) && ishandle(self.MyYLimDialogFigure) ,
                 delete(self.MyYLimDialogFigure) ;
             end
+            delete@ws.MCOSFigureWithSelfControl(self) ;
         end  % function
         
         function updateTrace(self,varargin)
@@ -1129,4 +1130,22 @@ classdef TestPulserController < ws.MCOSFigureWithSelfControl
             self.Model_.do('setTestPulseElectrodeProperty', 'Mode', 'cc') ;
         end  % function
     end  % methods    
+
+    methods (Access=protected)
+        function closeRequested_(self, source, event)  %#ok<INUSD>
+            wsModel = self.Model_ ;
+            
+            if isempty(wsModel) || ~isvalid(wsModel) ,
+                shouldStayPut = false ;
+            else
+                shouldStayPut = ~wsModel.isIdleSensuLato() ;
+            end
+           
+            if shouldStayPut ,
+                % Do nothing
+            else
+                self.hide() ;
+            end
+        end        
+    end  % protected methods block    
 end  % classdef

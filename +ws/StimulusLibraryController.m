@@ -1046,6 +1046,7 @@ classdef StimulusLibraryController < ws.MCOSFigureWithSelfControl
                 end
                 self.PlotFigureGH_ = [] ;
             end
+            delete@ws.MCOSFigureWithSelfControl(self) ;
         end
         
         function debug(self) %#ok<MANU>

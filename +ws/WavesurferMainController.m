@@ -661,6 +661,8 @@ classdef WavesurferMainController < ws.Controller
                     controller = feval(fullControllerClassName, self.Model, self.Figure_) ;
                 elseif isequal(fullControllerClassName, 'ws.TestPulserController') ,
                     controller = feval(fullControllerClassName, self.Model) ;
+                elseif isequal(fullControllerClassName, 'ws.UserCodeManagerController') ,
+                    controller = feval(fullControllerClassName, self.Model) ;
                 else
                     controller = feval(fullControllerClassName, self, self.Model) ;
                 end
