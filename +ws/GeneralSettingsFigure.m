@@ -1,8 +1,8 @@
 classdef GeneralSettingsFigure < ws.MCOSFigureWithSelfControl
-    properties (Constant)
-        NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
-        WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
-    end
+%     properties (Constant)
+%         NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
+%         WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
+%     end
     
     properties        
         AcquisitionPanel

@@ -130,8 +130,8 @@ classdef ElectrodeManagerController < ws.MCOSFigureWithSelfControl
             
             % Specify common parameters for channel popups
             alwaysShowUnspecifiedAsMenuItem=true;
-            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
-            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;            
+            normalBackgroundColor = ws.normalBackgroundColor() ;
+            warningBackgroundColor = ws.warningBackgroundColor() ;
             
             % Get the connection status for all electrodes
             didLastElectrodeUpdateWork = wsModel.DidLastElectrodeUpdateWork;

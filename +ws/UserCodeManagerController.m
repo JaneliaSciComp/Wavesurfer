@@ -44,12 +44,12 @@ classdef UserCodeManagerController < ws.MCOSFigureWithSelfControl
         end  % constructor
     end
     
-    methods (Access=protected)
-        function didSetModel_(self)
-            self.updateSubscriptionsToModelEvents_();
-            didSetModel_@ws.MCOSFigure(self);
-        end
-    end
+%     methods (Access=protected)
+%         function didSetModel_(self)
+%             self.updateSubscriptionsToModelEvents_();
+%             didSetModel_@ws.MCOSFigure(self);
+%         end
+%     end
     
     methods (Access = protected)
         function createFixedControls_(self)
@@ -241,8 +241,8 @@ classdef UserCodeManagerController < ws.MCOSFigureWithSelfControl
                 return
             end
 
-            normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
-            warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
+            normalBackgroundColor = ws.normalBackgroundColor() ;
+            warningBackgroundColor = ws.warningBackgroundColor() ;
             isClassNameValid = wsModel.IsUserClassNameValid ;
             backgroundColor = ws.fif(isClassNameValid,normalBackgroundColor,warningBackgroundColor) ;
             set(self.ClassNameEdit, ...

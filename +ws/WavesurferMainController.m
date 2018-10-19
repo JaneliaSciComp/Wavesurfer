@@ -1,10 +1,10 @@
 classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
     % The controller for the main wavesurfer window.
     
-    properties (Constant)
-        NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
-        WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
-    end
+%     properties (Constant)
+%         NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
+%         WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
+%     end
     
     properties
         FileMenu
@@ -1473,7 +1473,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
         end
         
         function QuitMenuItemActuated(self,source,event)
-            self.windowCloseRequested(source, event);  % piggyback on the existing method for handling the upper-left window close button
+            self.closeRequested_(source, event);  % piggyback on the existing method for handling the upper-left window close button
         end
         
         % Tools menu
@@ -1641,30 +1641,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
             callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSingleAIChannel', aiChannelIndex, newYLimits)) ;
             self.MyYLimDialogFigure = ...
                 ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
-        end  % method        
-        
-        function windowCloseRequested(self, source, event)  %#ok<INUSD>
-            % This is target method for pressing the close button in the
-            % upper-right of the window.
-            % TODO: Put in some checks here so that user doesn't quit
-            % by being slightly clumsy.
-            
-            % See if we should stay put despite the request to close
-            model = self.Model_ ;
-            if isempty(model) || ~isvalid(model) ,
-                isOKToQuit = true ;
-            else
-                %shouldStayPut = ~model.isIdleSensuLato() ;
-                isOKToQuit = self.checkIfOKToQuit_() ;
-            end
-            
-            % delete ourselves, if called for
-            if isOKToQuit ,
-                delete(self) ;
-            else
-                % do nothing
-            end
-        end  % function        
+        end  % method                
     end  % Control actuation methods block
     
     methods  % these are convenience methods that mimic the effects of actuating controls, but have shorter names
@@ -1702,9 +1679,9 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
             self.Model_.setLayoutForAllWindows_(layoutForAllWindows) ;
         end        
         
-        function layoutAllWindows(self)
+        function layoutAllWindows(self, varargin)
             layoutForAllWindows = self.Model_.LayoutForAllWindows ;
-            monitorPositions = ws.Controller.getMonitorPositions() ;
+            monitorPositions = ws.getMonitorPositions() ;
             self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;            
         end        
     end  % public methods block             
@@ -1875,7 +1852,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
                     %windowTypeName=self.ControllerSpecifications_.(controllerName).controlName;
                     controllerClassName = ['ws.' controllerName] ;
                     %layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
-                    layoutMaybe = ws.Controller.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) ;
+                    layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) ;
                     
                     % If the controller does not exist, check whether the configuration indicates
                     % that it should visible.  If so, create it, otherwise it can remain empty until
@@ -1954,24 +1931,14 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
         
         function showAndRaiseChildFigure_(self, className, varargin)
             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
-            if isa(controller, 'ws.Controller') ,
-                if didCreate ,
-                    % no need to update
-                else
-                    controller.updateFigure();  % figure might be out-of-date
-                end
-                controller.showFigure();
-                controller.raiseFigure();
+            % is a MCOSFigureWithSelfControl
+            if didCreate ,
+                % no need to update
             else
-                % is a MCOSFigureWithSelfControl
-                if didCreate ,
-                    % no need to update
-                else
-                    controller.update();  % figure might be out-of-date
-                end
-                controller.show() ;
-                controller.raise() ;
+                controller.update();  % figure might be out-of-date
             end
+            controller.show() ;
+            controller.raise() ;
         end  % function
         
         function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerClassName, varargin)
@@ -1988,7 +1955,7 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
                 elseif isequal(fullControllerClassName, 'ws.FastProtocolsController') ,
                     controller = feval(fullControllerClassName, self.Model_) ;
                 elseif isequal(fullControllerClassName, 'ws.StimulusLibraryController') ,
-                    controller = feval(fullControllerClassName, self.Model_, self.Figure_) ;
+                    controller = feval(fullControllerClassName, self.Model_, self.FigureGH_) ;
                 elseif isequal(fullControllerClassName, 'ws.TestPulserController') ,
                     controller = feval(fullControllerClassName, self.Model_) ;
                 elseif isequal(fullControllerClassName, 'ws.UserCodeManagerController') ,
@@ -2107,6 +2074,46 @@ classdef WavesurferMainController < ws.MCOSFigureWithSelfControl
             position = get(figureGH,'position') ;
             set(figureGH,'units',originalUnits);            
         end
+    end
+    
+    methods (Access=protected)
+        function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
+            % Find a layout that applies to whatever subclass of controller
+            % self happens to be (if any), and use it to position self's
+            % figure's window.            
+            if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
+                layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
+                if ~isempty(layoutMaybe) ,
+                    layoutForThisClass = layoutMaybe{1} ;
+                    self.decodeWindowLayout(layoutForThisClass, monitorPositions);
+                end
+            end
+        end  % function        
+    end
+    
+    methods (Access=protected)
+        function closeRequested_(self, source, event)  %#ok<INUSD>
+            % This is target method for pressing the close button in the
+            % upper-right of the window.
+            % TODO: Put in some checks here so that user doesn't quit
+            % by being slightly clumsy.
+            
+            % See if we should stay put despite the request to close
+            model = self.Model_ ;
+            if isempty(model) || ~isvalid(model) ,
+                isOKToQuit = true ;
+            else
+                %shouldStayPut = ~model.isIdleSensuLato() ;
+                isOKToQuit = self.checkIfOKToQuit_() ;
+            end
+            
+            % delete ourselves, if called for
+            if isOKToQuit ,
+                delete(self) ;
+            else
+                % do nothing
+            end
+        end  % function        
     end
     
 end  % classdef

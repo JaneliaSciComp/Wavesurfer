@@ -585,7 +585,7 @@ classdef (Abstract) MCOSFigureWithSelfControl < ws.EventSubscriber
             % Framework specific transformation.
             thisWindowLayout = self.encodeWindowLayout_();
             
-            layoutVarNameForClass = ws.Controller.layoutVariableNameFromControllerClassName(class(self));
+            layoutVarNameForClass = ws.layoutVariableNameFromControllerClassName(class(self));
             layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
         end
     end
