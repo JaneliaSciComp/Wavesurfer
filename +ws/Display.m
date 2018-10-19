@@ -639,7 +639,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end
         
         function setPlotHeightsAndOrder_(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
-            % Typically called by ws.PlotArrangementDialogFigure after OK
+            % Typically called by ws.PlotArrangementDialogController after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
             % Set properties

@@ -246,9 +246,9 @@ classdef WavesurferModel < ws.Model
         SweepDurationIfFinite_ = 1  % s
         LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
 %         IsGeneralFigureVisible_
-%         IsChannelsFigureVisible_
+%         IsChannelsControllerVisible_
 %         IsStimulusLibraryFigureVisible_
-%         IsTriggersFigureVisible_
+%         IsTriggersControllerVisible_
 %         IsUserCodeFigureVisible_
 %         IsElectodeManagerFigureVisible_
 %         IsTestPulseFigureVisible_

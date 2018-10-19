@@ -80,14 +80,14 @@ classdef WavesurferMainController < ws.Controller
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
         %DisplayController = [];
-        TriggersFigure = [];
+        TriggersController = [];
         StimulusLibraryController = [];
         FastProtocolsController = [];
         UserCodeManagerController = [];
-        ChannelsFigure = [];
+        ChannelsController = [];
         TestPulserController = [];
         ElectrodeManagerController= [];        
-        GeneralSettingsFigure = [] ;
+        GeneralSettingsController = [] ;
     end    
     
     properties (Access=protected, Transient)
@@ -100,11 +100,11 @@ classdef WavesurferMainController < ws.Controller
     end
     
     properties
-        MyYLimDialogFigure=[]
+        MyYLimDialogController=[]
     end
 
     properties (Access=protected)
-        PlotArrangementDialogFigure_ = []
+        PlotArrangementDialogController_ = []
     end
     
     methods
@@ -1482,15 +1482,15 @@ classdef WavesurferMainController < ws.Controller
 %         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ChannelsFigure') ;
+            self.showAndRaiseChildFigure_('ChannelsController') ;
         end
         
         function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('GeneralSettingsFigure') ;
+            self.showAndRaiseChildFigure_('GeneralSettingsController') ;
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TriggersFigure') ;
+            self.showAndRaiseChildFigure_('TriggersController') ;
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
@@ -1579,7 +1579,7 @@ classdef WavesurferMainController < ws.Controller
         end  % method        
 
         function arrangementMenuItemActuated(self, varargin)
-            self.PlotArrangementDialogFigure_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            self.PlotArrangementDialogController_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
             plotArrangementDialogModel = [] ;
             parentFigurePosition = get(self.FigureGH_,'Position') ;
             wsModel = self.Model_ ;
@@ -1592,8 +1592,8 @@ classdef WavesurferMainController < ws.Controller
             %    @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(self.Model_.setPlotHeightsAndOrder(isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
             callbackFunction = ...
                 @(isDisplayed,plotHeights,rowIndexFromChannelIndex)(wsModel.do('setPlotHeightsAndOrder',isDisplayed,plotHeights,rowIndexFromChannelIndex)) ;
-            self.PlotArrangementDialogFigure_ = ...
-                ws.PlotArrangementDialogFigure(plotArrangementDialogModel, ...
+            self.PlotArrangementDialogController_ = ...
+                ws.PlotArrangementDialogController(plotArrangementDialogModel, ...
                                                parentFigurePosition, ...
                                                channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
                                                callbackFunction) ;
@@ -1629,7 +1629,7 @@ classdef WavesurferMainController < ws.Controller
         end  % method       
 
         function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
-            self.MyYLimDialogFigure=[] ;  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogController=[] ;  % if not first call, this should cause the old controller to be garbage collectable
             myYLimDialogModel = [] ;
             parentFigurePosition = get(self.FigureGH_,'Position') ;
             wsModel = self.Model_ ;
@@ -1639,8 +1639,8 @@ classdef WavesurferMainController < ws.Controller
             yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
             callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSingleAIChannel', aiChannelIndex, newYLimits)) ;
-            self.MyYLimDialogFigure = ...
-                ws.YLimDialogFigure(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
+            self.MyYLimDialogController = ...
+                ws.YLimDialogController(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method                
     end  % Control actuation methods block
     
@@ -1836,14 +1836,14 @@ classdef WavesurferMainController < ws.Controller
             % have layout information.  For each, take the appropriate
             % action to make the current layout match that in
             % multiWindowLayout.
-            controllerNames = { 'TriggersFigure' ...
+            controllerNames = { 'TriggersController' ...
                                 'StimulusLibraryController' ...
                                 'FastProtocolsController' ...
                                 'UserCodeManagerController' ...
-                                'ChannelsFigure' ...
+                                'ChannelsController' ...
                                 'TestPulserController' ...
                                 'ElectrodeManagerController' ...
-                                'GeneralSettingsFigure' } ;
+                                'GeneralSettingsController' } ;
             for i=1:length(controllerNames) ,
                 controllerName = controllerNames{i} ;
                 if isprop(self, controllerName) ,  
@@ -1944,24 +1944,14 @@ classdef WavesurferMainController < ws.Controller
         function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerClassName, varargin)
             if isempty(self.(controllerClassName)) ,
                 fullControllerClassName=['ws.' controllerClassName];
-                if isequal(fullControllerClassName, 'ws.GeneralSettingsFigure') ,
+                if isequal(fullControllerClassName, 'ws.GeneralSettingsController') ,
                     controller = feval(fullControllerClassName, self.Model_, self.getPositionInPixels_() ) ;
-                elseif isequal(fullControllerClassName, 'ws.ChannelsFigure') ,
-                    controller = feval(fullControllerClassName, self.Model_) ;
-                elseif isequal(fullControllerClassName, 'ws.TriggersFigure') ,
-                    controller = feval(fullControllerClassName, self.Model_) ;
                 elseif isequal(fullControllerClassName, 'ws.ElectrodeManagerController') ,
                     controller = feval(fullControllerClassName, self.Model_, self) ;
-                elseif isequal(fullControllerClassName, 'ws.FastProtocolsController') ,
-                    controller = feval(fullControllerClassName, self.Model_) ;
                 elseif isequal(fullControllerClassName, 'ws.StimulusLibraryController') ,
                     controller = feval(fullControllerClassName, self.Model_, self.FigureGH_) ;
-                elseif isequal(fullControllerClassName, 'ws.TestPulserController') ,
-                    controller = feval(fullControllerClassName, self.Model_) ;
-                elseif isequal(fullControllerClassName, 'ws.UserCodeManagerController') ,
-                    controller = feval(fullControllerClassName, self.Model_) ;
                 else
-                    controller = feval(fullControllerClassName, self, self.Model_) ;
+                    controller = feval(fullControllerClassName, self.Model_) ;
                 end
                 self.ChildControllers_{end+1}=controller;
                 self.(controllerClassName)=controller;

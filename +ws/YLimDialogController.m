@@ -1,4 +1,4 @@
-classdef YLimDialogFigure < ws.Controller
+classdef YLimDialogController < ws.Controller
     properties (Access=protected)
         % The various HG objects in the figure
         YMaxText_
@@ -17,7 +17,7 @@ classdef YLimDialogFigure < ws.Controller
     end
     
     methods
-        function self=YLimDialogFigure(model, parentFigurePosition, yLimits, yUnits, callbackFunction)
+        function self=YLimDialogController(model, parentFigurePosition, yLimits, yUnits, callbackFunction)
             % Call the super-class consructor
             self = self@ws.Controller(model) ;
             
@@ -25,10 +25,10 @@ classdef YLimDialogFigure < ws.Controller
             self.YLimits_ = yLimits ;
             self.YUnits_ = yUnits ;
             self.CallbackFunction_ = callbackFunction ;
-            self.AreYLimitsAcceptable_ = ws.YLimDialogFigure.areYLimitsAcceptable(yLimits) ;
+            self.AreYLimitsAcceptable_ = ws.YLimDialogController.areYLimitsAcceptable(yLimits) ;
             
             % Set the relevant properties of the figure itself
-            set(self.FigureGH_, 'Tag', 'YLimDialogFigure', ...
+            set(self.FigureGH_, 'Tag', 'YLimDialogController', ...
                                 'Units', 'pixels', ...
                                 'Resize', 'off', ...
                                 'Name', 'Y Limits...', ...
@@ -229,7 +229,7 @@ classdef YLimDialogFigure < ws.Controller
 
     methods (Access=protected)
         function syncAreYLimitsAcceptableGivenYLimits_(self)
-            self.AreYLimitsAcceptable_ = ws.YLimDialogFigure.areYLimitsAcceptable(self.YLimits_) ;
+            self.AreYLimitsAcceptable_ = ws.YLimDialogController.areYLimitsAcceptable(self.YLimits_) ;
         end
         
         function setYLimitsGivenEditContents_(self)

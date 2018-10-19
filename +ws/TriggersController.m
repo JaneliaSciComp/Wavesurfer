@@ -1,4 +1,4 @@
-classdef TriggersFigure < ws.Controller
+classdef TriggersController < ws.Controller
     properties
         AcquisitionPanel
         AcquisitionSchemeText
@@ -21,11 +21,11 @@ classdef TriggersFigure < ws.Controller
     end  % properties
     
     methods
-        function self = TriggersFigure(model)
+        function self = TriggersController(model)
             self = self@ws.Controller(model) ;                        
             
             set(self.FigureGH_, ...
-                'Tag','TriggersFigure', ...
+                'Tag','TriggersController', ...
                 'Units','Pixels', ...
                 'Resize','off', ...
                 'Name','Triggers', ...

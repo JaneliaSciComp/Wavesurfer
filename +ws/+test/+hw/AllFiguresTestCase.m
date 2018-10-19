@@ -29,7 +29,7 @@ classdef AllFiguresTestCase < matlab.unittest.TestCase
             wsController.TestPulseMenuItemActuated([],[]) ;        
             wsController.ManageFastProtocolsButtonActuated([],[]) ;
             
-            generalSettingsFigure = wsController.GeneralSettingsFigure ;
+            generalSettingsFigure = wsController.GeneralSettingsController ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'ContinuousRadiobutton') ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'SweepBasedRadiobutton') ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'OverwriteCheckbox', true) ;

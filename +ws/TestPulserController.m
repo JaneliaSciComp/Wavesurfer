@@ -37,7 +37,7 @@ classdef TestPulserController < ws.Controller
     end
     
     properties
-        MyYLimDialogFigure=[]
+        MyYLimDialogController=[]
     end
     
     methods
@@ -79,8 +79,8 @@ classdef TestPulserController < ws.Controller
         end  % constructor
         
         function delete(self)
-            if ~isempty(self.MyYLimDialogFigure) && ishandle(self.MyYLimDialogFigure) ,
-                delete(self.MyYLimDialogFigure) ;
+            if ~isempty(self.MyYLimDialogController) && ishandle(self.MyYLimDialogController) ,
+                delete(self.MyYLimDialogController) ;
             end
             delete@ws.Controller(self) ;
         end  % function
@@ -1085,7 +1085,7 @@ classdef TestPulserController < ws.Controller
         end
         
         function YLimitsButtonActuated(self, source, event, varargin)  %#ok<INUSD>
-            self.MyYLimDialogFigure = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            self.MyYLimDialogController = [] ;  % if not first call, this should cause the old controller to be garbage collectable
             
             wsModel = self.Model_ ;
             
@@ -1094,8 +1094,8 @@ classdef TestPulserController < ws.Controller
 %                 wsModel.do('set', 'TestPulseYLimits', newYLimits) ;
 %             end
             
-            self.MyYLimDialogFigure = ...
-                ws.YLimDialogFigure([], ...
+            self.MyYLimDialogController = ...
+                ws.YLimDialogController([], ...
                                     get(self.FigureGH_,'Position'), ...
                                     wsModel.TestPulseYLimits, ...
                                     wsModel.getTestPulseElectrodeMonitorUnits(), ...

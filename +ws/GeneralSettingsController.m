@@ -1,4 +1,4 @@
-classdef GeneralSettingsFigure < ws.Controller
+classdef GeneralSettingsController < ws.Controller
 %     properties (Constant)
 %         NormalBackgroundColor = [1 1 1] ;  % White: For edits and popups, when value is a-ok
 %         WarningBackgroundColor = [1 0.8 0.8] ;  % Pink: For edits and popups, when value is problematic
@@ -57,7 +57,7 @@ classdef GeneralSettingsFigure < ws.Controller
     end  % properties
     
     methods
-        function self = GeneralSettingsFigure(wsModel, mainFigurePosition)
+        function self = GeneralSettingsController(wsModel, mainFigurePosition)
             self = self@ws.Controller(wsModel) ;            
             set(self.FigureGH_, ...
                 'Tag','GeneralSetingsFigure', ...

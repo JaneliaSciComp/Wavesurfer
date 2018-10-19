@@ -1,4 +1,4 @@
-classdef PlotArrangementDialogFigure < ws.Controller
+classdef PlotArrangementDialogController < ws.Controller
     properties (Access=protected)
         % The various HG objects in the figure
         IsDisplayedRowTitle_
@@ -21,7 +21,7 @@ classdef PlotArrangementDialogFigure < ws.Controller
     end
     
     methods
-        function self = PlotArrangementDialogFigure(model, parentFigurePosition, channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
+        function self = PlotArrangementDialogController(model, parentFigurePosition, channelNames, isDisplayed, plotHeights, rowIndexFromChannelIndex, ...
                                                     callbackFunction)
             % Call the super-class consructor
             self = self@ws.Controller(model) ;
@@ -35,7 +35,7 @@ classdef PlotArrangementDialogFigure < ws.Controller
             self.CallbackFunction_ = callbackFunction ;
             
             % Set the relevant properties of the figure itself
-            set(self.FigureGH_, 'Tag', 'PlotArrangementDialogFigure', ...
+            set(self.FigureGH_, 'Tag', 'PlotArrangementDialogController', ...
                                 'Units', 'pixels', ...
                                 'Resize', 'off', ...
                                 'Name', 'Plot Arrangement...', ...

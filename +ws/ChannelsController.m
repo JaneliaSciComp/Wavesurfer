@@ -1,4 +1,4 @@
-classdef ChannelsFigure < ws.Controller
+classdef ChannelsController < ws.Controller
     properties  % protected by gentleman's agreement
         DeviceNamePopupLabelText
         DeviceNamePopup
@@ -79,12 +79,12 @@ classdef ChannelsFigure < ws.Controller
     end  % properties
     
     methods
-        function self = ChannelsFigure(wsModel)
+        function self = ChannelsController(wsModel)
             self = self@ws.Controller(wsModel) ;                        
             %self = self@ws.MCOSFigure(model,controller);
             
             % Set the relevant properties of the figure itself
-            set(self.FigureGH_,'Tag','ChannelsFigure', ...
+            set(self.FigureGH_,'Tag','ChannelsController', ...
                               'Units','pixels', ...
                               'Resize','off', ...
                               'Name','Devices & Channels', ...
