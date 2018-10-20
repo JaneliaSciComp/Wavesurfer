@@ -79,15 +79,14 @@ classdef WavesurferMainController < ws.Controller
         
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
-        %DisplayController = [];
-        TriggersController = [];
-        StimulusLibraryController = [];
-        FastProtocolsController = [];
-        UserCodeManagerController = [];
-        ChannelsController = [];
-        TestPulserController = [];
-        ElectrodeManagerController= [];        
         GeneralSettingsController = [] ;
+        ChannelsController = [];
+        StimulusLibraryController = [];
+        TriggersController = [];
+        UserCodeManagerController = [];
+        ElectrodeManagerController= [];        
+        TestPulserController = [];
+        FastProtocolsController = [];
     end    
     
     properties (Access=protected, Transient)
@@ -96,7 +95,7 @@ classdef WavesurferMainController < ws.Controller
         %ControllerSpecifications_
 
         % An array of all the child controllers, which is sometimes handy
-        ChildControllers_ = {}
+        %ChildControllers_ = {}
     end
     
     properties
@@ -111,6 +110,16 @@ classdef WavesurferMainController < ws.Controller
         function self = WavesurferMainController(model)
             % Call the superclass constructor
             self = self@ws.Controller(model);            
+            
+            % Create all the child controllers
+            self.GeneralSettingsController = ws.GeneralSettingsController(model) ;
+            self.ChannelsController = ws.ChannelsController(model) ;
+            self.StimulusLibraryController = ws.StimulusLibraryController(model) ;
+            self.TriggersController = ws.TriggersController(model) ;
+            self.UserCodeManagerController = ws.UserCodeManagerController(model) ;
+            self.ElectrodeManagerController = ws.ElectrodeManagerController(model) ;
+            self.TestPulserController = ws.TestPulserController(model) ;
+            self.FastProtocolsController = ws.FastProtocolsController(model) ;
             
             % Set up XData_ and YData_
             self.clearXDataAndYData_() ;
@@ -160,7 +169,7 @@ classdef WavesurferMainController < ws.Controller
             
             % Do an update to sync with model  (this will do layout)
             self.update();
-           
+            
             % Subscribe to stuff
             if ~isempty(model) ,
                 model.subscribeMe(self,'Update','','update');
@@ -296,27 +305,34 @@ classdef WavesurferMainController < ws.Controller
                                      'Label','Protocol');
             self.GeneralSettingsMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','General...');
             self.ChannelsMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','Devices & Channels...');
             self.StimulusLibraryMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','Stimulus Library...');
             self.TriggersMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','Triggers...');
 %             self.DisplayMenuItem = ...
 %                 uimenu('Parent',self.ProtocolMenu, ...
 %                        'Label','Display...');
             self.UserCodeManagerMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','User Code...');
             self.ElectrodesMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','Electrodes...');
             self.TestPulseMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
                        'Label','Test Pulse...');
             self.YokeToScanimageMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
@@ -647,7 +663,7 @@ classdef WavesurferMainController < ws.Controller
             % exist, do exist.
             
             % Check for a valid model
-            wsModel=self.Model_;
+            wsModel = self.Model_ ;
             if isempty(wsModel) ,
                 return
             end            
@@ -700,8 +716,15 @@ classdef WavesurferMainController < ws.Controller
             % Progress bar
             self.updateProgressBarProperties_();
             
-            % Update whether the "Yoke to ScanImage" menu item is checked,
-            % based on the model state
+            % Menu checkboxes            
+            set(self.GeneralSettingsMenuItem, 'Checked', ws.onIff(wsModel.IsGeneralSettingsFigureVisible));
+            set(self.ChannelsMenuItem, 'Checked', ws.onIff(wsModel.IsChannelsFigureVisible));
+            set(self.StimulusLibraryMenuItem, 'Checked', ws.onIff(wsModel.IsStimulusLibraryFigureVisible));
+            set(self.TriggersMenuItem, 'Checked', ws.onIff(wsModel.IsTriggersFigureVisible));
+            set(self.UserCodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsUserCodeManagerFigureVisible));
+            set(self.ElectrodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsElectrodeManagerFigureVisible));
+            set(self.TestPulserMenuItem, 'Checked', ws.onIff(wsModel.IsTestPulserFigureVisible));
+
             set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(wsModel.IsYokedToScanImage));
             
             % The save menu items
@@ -1482,31 +1505,38 @@ classdef WavesurferMainController < ws.Controller
 %         end        
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ChannelsController') ;
+            %self.showAndRaiseChildFigure_('ChannelsController') ;
+            self.Model_.IsChannelsFigureVisible = true ;
         end
         
         function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('GeneralSettingsController') ;
+            %self.showAndRaiseChildFigure_('GeneralSettingsController') ;
+            self.Model_.IsGeneralSettingsFigureVisible = true ;
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TriggersController') ;
+            %self.showAndRaiseChildFigure_('TriggersController') ;
+            self.Model_.IsTriggersFigureVisible = true ;
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('StimulusLibraryController') ;
+            %self.showAndRaiseChildFigure_('StimulusLibraryController') ;
+            self.Model_.IsStimulusLibraryFigureVisible = true ;
         end
         
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('UserCodeManagerController') ;
+            %self.showAndRaiseChildFigure_('UserCodeManagerController') ;
+            self.Model_.IsUserCodeManagerFigureVisible = true ;
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('ElectrodeManagerController') ;
+            %self.showAndRaiseChildFigure_('ElectrodeManagerController') ;
+            self.Model_.IsElectrodeManagerFigureVisible = true ;
         end
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
-            self.showAndRaiseChildFigure_('TestPulserController') ;
+            %self.showAndRaiseChildFigure_('TestPulserController') ;
+            self.Model_.IsTestPulserFigureVisible = true ;
         end
         
 %         function DisplayMenuItemActuated(self, source, event)  %#ok<INUSD>
@@ -1836,14 +1866,14 @@ classdef WavesurferMainController < ws.Controller
             % have layout information.  For each, take the appropriate
             % action to make the current layout match that in
             % multiWindowLayout.
-            controllerNames = { 'TriggersController' ...
+            controllerNames = { 'GeneralSettingsController' ...
+                                'ChannelsController' ...
+                                'TriggersController' ...
                                 'StimulusLibraryController' ...
                                 'FastProtocolsController' ...
                                 'UserCodeManagerController' ...
-                                'ChannelsController' ...
                                 'TestPulserController' ...
-                                'ElectrodeManagerController' ...
-                                'GeneralSettingsController' } ;
+                                'ElectrodeManagerController'} ;
             for i=1:length(controllerNames) ,
                 controllerName = controllerNames{i} ;
                 if isprop(self, controllerName) ,  
@@ -1941,7 +1971,8 @@ classdef WavesurferMainController < ws.Controller
             controller.raise() ;
         end  % function
         
-        function [controller, didCreate] = createChildControllerIfNonexistant_(self, controllerClassName, varargin)
+        function [controller, didCreate] = createChildControllerIfNonexistant_(self, figureName, varargin)
+            controllerClassName = sprintf('%sController', figureName) ;
             if isempty(self.(controllerClassName)) ,
                 fullControllerClassName=['ws.' controllerClassName];
                 if isequal(fullControllerClassName, 'ws.GeneralSettingsController') ,
@@ -2106,4 +2137,9 @@ classdef WavesurferMainController < ws.Controller
         end  % function        
     end
     
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', 'on') ;
+        end        
+    end    
 end  % classdef

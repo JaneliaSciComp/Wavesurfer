@@ -111,6 +111,7 @@ classdef ChannelsController < ws.Controller
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties');
                 wsModel.subscribeMe(self,'UpdateChannels','','update');         
                 wsModel.subscribeMe(self,'UpdateDigitalOutputStateIfUntimed','','updateControlProperties');
+                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
             end
             
             % make the figure visible
@@ -2309,5 +2310,11 @@ classdef ChannelsController < ws.Controller
             self.Model_.do('deleteMarkedDOChannels') ;
         end       
     end  % public methods block
-    
+
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsChannelsFigureVisible)) ;
+        end        
+    end
+
 end  % classdef

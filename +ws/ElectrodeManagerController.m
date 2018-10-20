@@ -83,6 +83,7 @@ classdef ElectrodeManagerController < ws.Controller
                 wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
                 wsModel.subscribeMe(self,'DidSetState','','update');
                 wsModel.subscribeMe(self,'UpdateElectrodes','','update');
+                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
             end
             
             % make the figure visible
@@ -1340,4 +1341,10 @@ classdef ElectrodeManagerController < ws.Controller
 
     end  % methods
 
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsElectrodeManagerFigureVisible)) ;
+        end        
+    end
+    
 end  % classdef

@@ -38,6 +38,7 @@ classdef UserCodeManagerController < ws.Controller
            model.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
            model.subscribeMe(self,'DidMaybeSetUserClassName','','update');            
            model.subscribeMe(self,'DidSetState','','updateControlEnablement');
+           model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
            
            % Make figure visible
            set(self.FigureGH_, 'Visible', 'on') ;           
@@ -374,4 +375,9 @@ classdef UserCodeManagerController < ws.Controller
         end        
     end  % protected methods block
     
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsUserCodeManagerFigureVisible)) ;
+        end        
+    end
 end

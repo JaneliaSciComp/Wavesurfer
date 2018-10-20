@@ -72,6 +72,7 @@ classdef TestPulserController < ws.Controller
                 wsModel.subscribeMeToTestPulserEvent(self,'Update','','update') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'UpdateTrace','','updateTrace') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'DidSetIsInputChannelActive','','update') ;
+                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
             end
             
             % Make visible
@@ -1148,4 +1149,11 @@ classdef TestPulserController < ws.Controller
             end
         end        
     end  % protected methods block    
+    
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsTestPulserFigureVisible)) ;
+        end        
+    end
+    
 end  % classdef

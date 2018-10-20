@@ -109,6 +109,7 @@ classdef StimulusLibraryController < ws.Controller
            % Subscribe to model event(s)
            model.subscribeMe(self,'UpdateStimulusLibrary','','update');
            model.subscribeMe(self,'DidSetState','','updateControlEnablement');
+           model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
            
            % Make visible
            set(self.FigureGH_, 'Visible', 'on') ;
@@ -1296,5 +1297,12 @@ classdef StimulusLibraryController < ws.Controller
             self.Model_.do('setSelectedStimulusLibraryItemProperty', 'Name', newName) ;
         end  % function
     end  % protected methods block
+    
+    methods (Access=protected)
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsStimulusLibraryFigureVisible)) ;
+        end        
+    end
+    
 end  % classdef
 

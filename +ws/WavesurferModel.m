@@ -212,6 +212,25 @@ classdef WavesurferModel < ws.Model
         StimulationTriggerIndex  % this is an index into Schemes
         ArePreferencesWritable
         DoesProtocolNeedSave
+        
+        IsGeneralSettingsFigureVisible
+        IsChannelsFigureVisible
+        IsStimulusLibraryFigureVisible
+        IsTriggersFigureVisible
+        IsUserCodeManagerFigureVisible
+        IsElectrodeManagerFigureVisible
+        IsTestPulserFigureVisible        
+        IsFastProtocolsFigureVisible
+
+        MainFigurePosition
+        GeneralSettingsFigurePosition
+        ChannelsFigurePosition
+        StimulusLibraryFigurePosition
+        TriggersFigurePosition
+        UserCodeManagerFigurePosition
+        ElectrodeManagerFigurePosition
+        TestPulserFigurePosition        
+        FastProtocolsFigurePosition        
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -244,15 +263,26 @@ classdef WavesurferModel < ws.Model
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
+        VersionString_
+        
         LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
-%         IsGeneralFigureVisible_
-%         IsChannelsControllerVisible_
-%         IsStimulusLibraryFigureVisible_
-%         IsTriggersControllerVisible_
-%         IsUserCodeFigureVisible_
-%         IsElectodeManagerFigureVisible_
-%         IsTestPulseFigureVisible_
-          VersionString_
+        
+        IsGeneralSettingsFigureVisible_ = false
+        IsChannelsFigureVisible_ = false
+        IsStimulusLibraryFigureVisible_ = false
+        IsTriggersFigureVisible_ = false
+        IsUserCodeManagerFigureVisible_ = false
+        IsElectrodeManagerFigureVisible_ = false
+        IsTestPulserFigureVisible_ = false
+        
+        MainFigurePosition_ = []
+        GeneralSettingsFigurePosition_ = []
+        ChannelsFigurePosition_ = []
+        StimulusLibraryFigurePosition_ = []
+        TriggersFigurePosition_ = []
+        UserCodeManagerFigurePosition_ = []
+        ElectrodeManagerFigurePosition_ = []
+        TestPulserFigurePosition_ = []
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
@@ -318,6 +348,8 @@ classdef WavesurferModel < ws.Model
         %DidLooperCompleteSweep_
         %SICommandPollTimer_
         %SICommandFileExistenceChecker_
+        IsFastProtocolsFigureVisible_ = false
+        FastProtocolsFigurePosition_ = []
         CommandClient_
         CommandServer_
     end
@@ -345,6 +377,7 @@ classdef WavesurferModel < ws.Model
         RaiseDialogOnException
         DidMaybeChangeProtocol
         DidMaybeSetUserClassName
+        UpdateVisibilityOfAllFigures
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -6683,4 +6716,115 @@ classdef WavesurferModel < ws.Model
             sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
         end  % method        
     end  % static methods block
+    
+    methods
+        function result = get.IsGeneralSettingsFigureVisible(self)
+            result = self.IsGeneralSettingsFigureVisible_ ;
+        end
+        
+        function result = get.IsChannelsFigureVisible(self)
+            result = self.IsChannelsFigureVisible_ ;
+        end
+        
+        function result = get.IsStimulusLibraryFigureVisible(self)
+            result = self.IsStimulusLibraryFigureVisible_ ;
+        end
+        
+        function result = get.IsTriggersFigureVisible(self)
+            result = self.IsTriggersFigureVisible_ ;
+        end
+        
+        function result = get.IsUserCodeManagerFigureVisible(self)
+            result = self.IsUserCodeManagerFigureVisible_ ;
+        end
+        
+        function result = get.IsElectrodeManagerFigureVisible(self)
+            result = self.IsElectrodeManagerFigureVisible_ ;
+        end
+        
+        function result = get.IsTestPulserFigureVisible(self)
+            result = self.IsTestPulserFigureVisible_ ;
+        end
+        
+        function result = get.IsFastProtocolsFigureVisible(self)
+            result = self.IsFastProtocolsFigureVisible_ ;
+        end
+        
+        function set.IsGeneralSettingsFigureVisible(self, newValue)
+            self.IsGeneralSettingsFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsChannelsFigureVisible(self, newValue)
+            self.IsChannelsFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsStimulusLibraryFigureVisible(self, newValue)
+            self.IsStimulusLibraryFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsTriggersFigureVisible(self, newValue)
+            self.IsTriggersFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsUserCodeManagerFigureVisible(self, newValue)
+            self.IsUserCodeManagerFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsElectrodeManagerFigureVisible(self, newValue)
+            self.IsElectrodeManagerFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsTestPulserFigureVisible(self, newValue)
+            self.IsTestPulserFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function set.IsFastProtocolsFigureVisible(self, newValue)
+            self.IsFastProtocolsFigureVisible_ = newValue ;
+            self.broadcast('UpdateVisibilityOfAllFigures') ;
+        end
+        
+        function result = get.MainFigurePosition(self)
+            result = self.MainFigurePosition_ ;
+        end
+        
+        function result = get.GeneralSettingsFigurePosition(self)
+            result = self.GeneralSettingsFigurePosition_ ;
+        end
+        
+        function result = get.ChannelsFigurePosition(self)
+            result = self.ChannelsFigurePosition_ ;
+        end
+        
+        function result = get.StimulusLibraryFigurePosition(self)
+            result = self.StimulusLibraryFigurePosition_ ;
+        end
+        
+        function result = get.TriggersFigurePosition(self)
+            result = self.TriggersFigurePosition_ ;
+        end
+        
+        function result = get.UserCodeManagerFigurePosition(self)
+            result = self.UserCodeManagerFigurePosition_ ;
+        end
+        
+        function result = get.ElectrodeManagerFigurePosition(self)
+            result = self.ElectrodeManagerFigurePosition_ ;
+        end
+        
+        function result = get.TestPulserFigurePosition(self)
+            result = self.TestPulserFigurePosition_ ;
+        end
+        
+        function result = get.FastProtocolsFigurePosition(self)
+            result = self.FastProtocolsFigurePosition_ ;
+        end        
+        
+    end
 end  % classdef

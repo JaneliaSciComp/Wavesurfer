@@ -19,14 +19,8 @@ classdef (Abstract) Controller < ws.EventSubscriber
     
     properties (Dependent=true, Transient=true)
         AreUpdatesEnabled   % logical scalar; if false, changes in the model should not be reflected in the UI
-        %IsReady  % true <=> figure is showing the normal (as opposed to waiting) cursor
     end
     
-%     properties (Dependent=true, SetAccess=immutable)
-%         FigureGH  % the figure graphics handle
-%         Model  % the model        
-%     end  % properties
-
     properties (Access=protected)
         FigureGH_  % the figure graphics handle
         Model_  % the model        
@@ -54,51 +48,21 @@ classdef (Abstract) Controller < ws.EventSubscriber
         
         function delete(self)
             self.deleteFigureGH_();
-            %self.Controller_=[];
-            %self.setModel_([]);
             self.Model_ = [] ;
-            %fprintf('here i am doing something\n');
         end
         
         function set.AreUpdatesEnabled(self,newValue)
-            %import ws.*
-
-            %fprintf('MCOSFigure::set.AreUpdatesEnabled()\n');
-            %fprintf('  class of self: %s\n',class(self));
-            %newValue
-            
             if ~( islogical(newValue) && isscalar(newValue) ) ,
                 return
-            end
-        
-%             if isa(self,'ws.TestPulserFigure') ,
-%                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): At start, self.DegreeOfEnablement_ = %d\n' , ...
-%                         self.DegreeOfEnablement_);
-%                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): newValue = %d\n' , ...
-%                         newValue);
-%             end
-            
-            netValueBefore=self.AreUpdatesEnabled;
-            
+            end        
+            netValueBefore=self.AreUpdatesEnabled;            
             newValueAsSign=2*double(newValue)-1;  % [0,1] -> [-1,+1]
             newDegreeOfEnablementRaw=self.DegreeOfEnablement_+newValueAsSign;
             self.DegreeOfEnablement_ = ...
                     ws.fif(newDegreeOfEnablementRaw<=1, ...
                            newDegreeOfEnablementRaw, ...
                            1);
-                        
-%             if isa(self,'ws.TestPulserFigure') ,
-%                 fprintf('MCOSFigure:set.AreUpdatesEnabled(): After update, self.DegreeOfEnablement_ = %d\n' , ...
-%                         self.DegreeOfEnablement_);
-%             end
-            
             netValueAfter=self.AreUpdatesEnabled;
-            
-%             if isa(self,'ws.TestPulserFigure') ,
-%                 fprintf('MCOSFigure.update(): self.DegreeOfEnablement_= %d\n',self.DegreeOfEnablement_);
-%             end
-
-            
             if netValueAfter && ~netValueBefore ,
                 % Updates have just been enabled
                 if self.NCallsToUpdateWhileDisabled_>0
@@ -148,6 +112,12 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % Controller should generally call update_() directly.
             self.updateReadiness_(varargin{:}) ;
         end
+
+        function updateVisibility(self, varargin)           
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % Controller should generally call update_() directly.
+            self.updateVisibility_(varargin{:}) ;
+        end        
         
         function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
             fieldNames = fieldnames(layoutOfWindowsInClass) ;
@@ -166,11 +136,11 @@ classdef (Abstract) Controller < ws.EventSubscriber
             end
             if isfield(layoutOfThisWindow, 'Position') ,
                 rawPosition = layoutOfThisWindow.Position ;
-                set(self, 'Position', rawPosition);
+                set(self.FigureGH_, 'Position', rawPosition);
                 self.constrainPositionToMonitors(monitorPositions) ;
             end
             if isfield(layoutOfThisWindow, isVisibleFieldName) ,
-                set(self, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
+                set(self.FigureGH_, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
             end
         end        
     end  % public methods block
@@ -268,7 +238,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             end
         end
         
-        function positionUpperLeftRelativeToOtherUpperRight_(self, referenceFigurePosition, offset)
+        function newPosition = positionUpperLeftRelativeToOtherUpperRight_(self, referenceFigurePosition, offset)
             % Positions the upper left corner of the figure relative to the upper
             % *right* corner of the other figure.  offset is 2x1, with the 1st
             % element the number of pixels from the right side of the other figure,
@@ -297,11 +267,14 @@ classdef (Abstract) Controller < ws.EventSubscriber
             figureHeight=figureSize(2);
             newOffset = [ origin(1) + offset(1) ...
                           origin(2) + offset(2) - figureHeight ] ;
+            
+            % Get the new position
+            newPosition = [newOffset figureSize] ;
 
             % Set figure position, using the new offset but the same size as before
             originalUnits=get(figureGH,'units');
             set(figureGH,'units','pixels');
-            set(figureGH,'position',[newOffset figureSize]);
+            set(figureGH,'position',newPosition);
             set(figureGH,'units',originalUnits);            
         end
         
@@ -384,6 +357,10 @@ classdef (Abstract) Controller < ws.EventSubscriber
             %fprintf('drawnow(''update'')\n');
             drawnow('update');
         end
+        
+        updateVisibility_(self)
+            % In subclass, this should update the figure visibility based
+            % on the state of the application model
     end
     
     methods (Access=protected)

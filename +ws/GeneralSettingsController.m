@@ -92,22 +92,23 @@ classdef GeneralSettingsController < ws.Controller
            
            % Subscribe to stuff
            if ~isempty(wsModel) ,
-               wsModel.subscribeMe(self,'Update','','update');
-               wsModel.subscribeMe(self,'UpdateGeneralSettings','','update');
-               wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
-               wsModel.subscribeMe(self,'DidSetState','','didSetModelState');           
-               wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');               
-               %wsModel.subscribeMeToStimulationEvent(self,'Update','','update');               
-               wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');               
-               %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
-               %wsModel.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');               
-               wsModel.subscribeMeToDisplayEvent(self,'Update','','update');
-               %wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
-               wsModel.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
-               wsModel.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
-               wsModel.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
-               wsModel.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
-               wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+                wsModel.subscribeMe(self,'Update','','update');
+                wsModel.subscribeMe(self,'UpdateGeneralSettings','','update');
+                wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
+                wsModel.subscribeMe(self,'DidSetState','','didSetModelState');
+                wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');
+                %wsModel.subscribeMeToStimulationEvent(self,'Update','','update');
+                wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');
+                %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
+                %wsModel.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');
+                wsModel.subscribeMeToDisplayEvent(self,'Update','','update');
+                %wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
+                wsModel.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
+                wsModel.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
+                wsModel.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
+                wsModel.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
+                wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
+                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
            end
            
            % Make the figure visible
@@ -899,6 +900,10 @@ classdef GeneralSettingsController < ws.Controller
             set(self.IncrementSessionIndexButton,'Enable',ws.onIff(isIdle&&doIncludeSessionIndex));            
             set(self.NextSweepEdit,'Enable',ws.onIff(isIdle));
         end  % function
+        
+        function updateVisibility_(self)
+            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsGeneralSettingsFigureVisible)) ;
+        end        
     end        
     
     methods
