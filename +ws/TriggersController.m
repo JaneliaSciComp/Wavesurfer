@@ -51,7 +51,7 @@ classdef TriggersController < ws.Controller
            if ~isempty(model) ,
                model.subscribeMe(self, 'DidSetState', '', 'updateControlEnablement');
                model.subscribeMe(self, 'UpdateTriggering', '', 'update');
-               model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+               model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            end
            
            % make the figure visible

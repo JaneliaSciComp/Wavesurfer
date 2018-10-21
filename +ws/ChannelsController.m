@@ -111,7 +111,7 @@ classdef ChannelsController < ws.Controller
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties');
                 wsModel.subscribeMe(self,'UpdateChannels','','update');         
                 wsModel.subscribeMe(self,'UpdateDigitalOutputStateIfUntimed','','updateControlProperties');
-                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+                wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
             end
             
             % make the figure visible
@@ -1411,7 +1411,7 @@ classdef ChannelsController < ws.Controller
             self.updateAIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateAOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
             self.updateDIPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;
-            self.updateDOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;            
+            self.updateDOPanelControlPropertiesImplementation_(normalBackgroundColor, warningBackgroundColor) ;                        
         end  % function        
 
         function updateReferenceClockPanelControlPropertiesImplementation_(self)

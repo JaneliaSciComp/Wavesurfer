@@ -72,7 +72,7 @@ classdef TestPulserController < ws.Controller
                 wsModel.subscribeMeToTestPulserEvent(self,'Update','','update') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'UpdateTrace','','updateTrace') ;
                 wsModel.subscribeMeToTestPulserEvent(self,'DidSetIsInputChannelActive','','update') ;
-                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+                wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
             end
             
             % Make visible

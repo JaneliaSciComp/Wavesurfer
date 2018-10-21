@@ -38,7 +38,7 @@ classdef UserCodeManagerController < ws.Controller
            model.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
            model.subscribeMe(self,'DidMaybeSetUserClassName','','update');            
            model.subscribeMe(self,'DidSetState','','updateControlEnablement');
-           model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+           model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            
            % Make figure visible
            %set(self.FigureGH_, 'Visible', 'on') ;           

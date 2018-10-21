@@ -108,7 +108,7 @@ classdef GeneralSettingsController < ws.Controller
                 wsModel.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
                 wsModel.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
                 wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-                wsModel.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+                wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            end
            
            % Make the figure visible

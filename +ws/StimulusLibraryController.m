@@ -109,7 +109,7 @@ classdef StimulusLibraryController < ws.Controller
            % Subscribe to model event(s)
            model.subscribeMe(self,'UpdateStimulusLibrary','','update');
            model.subscribeMe(self,'DidSetState','','updateControlEnablement');
-           model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+           model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            
            % Make visible
            %set(self.FigureGH_, 'Visible', 'on') ;

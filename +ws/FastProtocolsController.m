@@ -36,7 +36,7 @@ classdef FastProtocolsController < ws.Controller
            if ~isempty(model) ,
                model.subscribeMe(self,'UpdateFastProtocols','','update');                        
                model.subscribeMe(self,'DidSetState','','updateControlEnablement');
-               model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
+               model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            end
            
            % Make visible

@@ -377,7 +377,7 @@ classdef WavesurferModel < ws.Model
         RaiseDialogOnException
         DidMaybeChangeProtocol
         DidMaybeSetUserClassName
-        UpdateVisibilityOfAllFigures
+        DidSetSingleFigureVisibility
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -3241,7 +3241,7 @@ classdef WavesurferModel < ws.Model
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
-            %self.broadcast('UpdateVisibilityOfAllFigures') ;
+            %self.broadcast('DidSetSingleFigureVisibility') ;
         end
     end  % protected methods block
     
@@ -6755,7 +6755,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsGeneralSettingsFigureVisible_ ;
             self.IsGeneralSettingsFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'GeneralSettings', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'GeneralSettings', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6763,7 +6763,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsChannelsFigureVisible_ ;
             self.IsChannelsFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'Channels', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'Channels', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6771,7 +6771,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsStimulusLibraryFigureVisible_ ;
             self.IsStimulusLibraryFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'StimulusLibrary', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'StimulusLibrary', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6779,7 +6779,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsTriggersFigureVisible_ ;
             self.IsTriggersFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'Triggers', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'Triggers', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6787,7 +6787,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsUserCodeManagerFigureVisible_ ;
             self.IsUserCodeManagerFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'UserCodeManager', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'UserCodeManager', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6795,7 +6795,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsElectrodeManagerFigureVisible_ ;
             self.IsElectrodeManagerFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'ElectrodeManager', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'ElectrodeManager', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6803,7 +6803,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsTestPulserFigureVisible_ ;
             self.IsTestPulserFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'TestPulser', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'TestPulser', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6811,7 +6811,7 @@ classdef WavesurferModel < ws.Model
             oldValue = self.IsFastProtocolsFigureVisible_ ;
             self.IsFastProtocolsFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
-            self.broadcast('UpdateVisibilityOfAllFigures', 'FastProtocols', oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'FastProtocols', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         

@@ -183,7 +183,7 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
                 model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
                 model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
-                model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateFigureVisibilityMenuChecks') ;
+                model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;
                 
                 % Subscribe to events from the Display subsystem 
                 model.subscribeMeToDisplayEvent(self,'Update','','update') ;
