@@ -6751,43 +6751,67 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.IsGeneralSettingsFigureVisible(self, newValue)
+            oldValue = self.IsGeneralSettingsFigureVisible_ ;
             self.IsGeneralSettingsFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'GeneralSettings', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsChannelsFigureVisible(self, newValue)
+            oldValue = self.IsChannelsFigureVisible_ ;
             self.IsChannelsFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'Channels', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsStimulusLibraryFigureVisible(self, newValue)
+            oldValue = self.IsStimulusLibraryFigureVisible_ ;
             self.IsStimulusLibraryFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'StimulusLibrary', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsTriggersFigureVisible(self, newValue)
+            oldValue = self.IsTriggersFigureVisible_ ;
             self.IsTriggersFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'Triggers', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsUserCodeManagerFigureVisible(self, newValue)
+            oldValue = self.IsUserCodeManagerFigureVisible_ ;
             self.IsUserCodeManagerFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'UserCodeManager', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsElectrodeManagerFigureVisible(self, newValue)
+            oldValue = self.IsElectrodeManagerFigureVisible_ ;
             self.IsElectrodeManagerFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'ElectrodeManager', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsTestPulserFigureVisible(self, newValue)
+            oldValue = self.IsTestPulserFigureVisible_ ;
             self.IsTestPulserFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'TestPulser', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function set.IsFastProtocolsFigureVisible(self, newValue)
+            oldValue = self.IsFastProtocolsFigureVisible_ ;
             self.IsFastProtocolsFigureVisible_ = newValue ;
-            self.broadcast('UpdateVisibilityOfAllFigures') ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('UpdateVisibilityOfAllFigures', 'FastProtocols', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.MainFigurePosition(self)
@@ -6824,6 +6848,42 @@ classdef WavesurferModel < ws.Model
         
         function result = get.FastProtocolsFigurePosition(self)
             result = self.FastProtocolsFigurePosition_ ;
+        end        
+        
+        function set.MainFigurePosition(self, newValue)
+            self.MainFigurePosition_ = newValue ;
+        end
+        
+        function set.GeneralSettingsFigurePosition(self, newValue)
+            self.GeneralSettingsFigurePosition_ = newValue ;
+        end
+        
+        function set.ChannelsFigurePosition(self, newValue)
+            self.ChannelsFigurePosition_ = newValue ;
+        end
+        
+        function set.StimulusLibraryFigurePosition(self, newValue)
+            self.StimulusLibraryFigurePosition_ = newValue ;
+        end
+        
+        function set.TriggersFigurePosition(self, newValue)
+            self.TriggersFigurePosition_ = newValue ;
+        end
+        
+        function set.UserCodeManagerFigurePosition(self, newValue)
+            self.UserCodeManagerFigurePosition_ = newValue ;
+        end
+        
+        function set.ElectrodeManagerFigurePosition(self, newValue)
+            self.ElectrodeManagerFigurePosition_ = newValue ;
+        end
+        
+        function set.TestPulserFigurePosition(self, newValue)
+            self.TestPulserFigurePosition_ = newValue ;
+        end
+        
+        function set.FastProtocolsFigurePosition(self, newValue)
+            self.FastProtocolsFigurePosition_ = newValue ;
         end        
         
     end

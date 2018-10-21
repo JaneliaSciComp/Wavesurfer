@@ -74,7 +74,7 @@ classdef StimulusLibraryController < ws.Controller
     end
     
     methods
-        function self = StimulusLibraryController(model, wavesurferMainFigureGH)
+        function self = StimulusLibraryController(model)
             self = self@ws.Controller(model) ;            
             
             set(self.FigureGH_, ...
@@ -95,13 +95,13 @@ classdef StimulusLibraryController < ws.Controller
            
            % Layout the figure and set the size
            self.layout_();
-           if isempty(wavesurferMainFigureGH) ,
-               ws.centerFigureOnRootBang(self.FigureGH_);
-           else
-               ws.positionFigureUpperLeftRelativeToParentUpperLeftBang(self.FigureGH_, ...
-                                                                       wavesurferMainFigureGH, ...
-                                                                       50*[1 1])
-           end
+           %if isempty(wavesurferMainFigureGH) ,
+           %    ws.centerFigureOnRootBang(self.FigureGH_);
+           %else
+           %    ws.positionFigureUpperLeftRelativeToParentUpperLeftBang(self.FigureGH_, ...
+           %                                                            wavesurferMainFigureGH, ...
+           %                                                            50*[1 1])
+           %end
            
            % Sync up with the model
            self.update();
@@ -112,7 +112,7 @@ classdef StimulusLibraryController < ws.Controller
            model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
            
            % Make visible
-           set(self.FigureGH_, 'Visible', 'on') ;
+           %set(self.FigureGH_, 'Visible', 'on') ;
         end  % constructor
     end
     
@@ -895,7 +895,8 @@ classdef StimulusLibraryController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                %self.hide() ;
+                wsModel.IsStimulusLibraryFigureVisible = false ;                
             end
         end        
     end  % protected methods block
@@ -1299,9 +1300,20 @@ classdef StimulusLibraryController < ws.Controller
     end  % protected methods block
     
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsStimulusLibraryFigureVisible)) ;
-        end        
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'StimulusLibrary') ,
+                newValue = self.Model_.IsStimulusLibraryFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
+        end                
     end
     
 end  % classdef

@@ -57,7 +57,7 @@ classdef GeneralSettingsController < ws.Controller
     end  % properties
     
     methods
-        function self = GeneralSettingsController(wsModel, mainFigurePosition)
+        function self = GeneralSettingsController(wsModel)
             self = self@ws.Controller(wsModel) ;            
             set(self.FigureGH_, ...
                 'Tag','GeneralSetingsFigure', ...
@@ -83,9 +83,9 @@ classdef GeneralSettingsController < ws.Controller
            self.layout_();
            % position next to main window
            
-           if ~isempty(mainFigurePosition) ,
-               self.positionUpperLeftRelativeToOtherUpperRight_(mainFigurePosition, [40 0]) ;
-           end
+           %if ~isempty(mainFigurePosition) ,
+           %    self.positionUpperLeftRelativeToOtherUpperRight_(mainFigurePosition, [40 0]) ;
+           %end
            
            % Do an update to sync with model
            self.update_();
@@ -112,7 +112,7 @@ classdef GeneralSettingsController < ws.Controller
            end
            
            % Make the figure visible
-           set(self.FigureGH_,'Visible','on');
+           %set(self.FigureGH_,'Visible','on');
         end  % constructor
     end
     
@@ -736,7 +736,8 @@ classdef GeneralSettingsController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                wsModel.IsGeneralSettingsFigureVisible = false ;
+                %self.hide() ;
             end
         end
         
@@ -901,8 +902,19 @@ classdef GeneralSettingsController < ws.Controller
             set(self.NextSweepEdit,'Enable',ws.onIff(isIdle));
         end  % function
         
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsGeneralSettingsFigureVisible)) ;
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'GeneralSettings') ,
+                newValue = self.Model_.IsGeneralSettingsFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
         end        
     end        
     

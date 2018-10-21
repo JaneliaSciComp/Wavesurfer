@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster  % & matlab.mixin.SetGet
+classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
     events
         Update  % Means that any dependent views need to update themselves
     end

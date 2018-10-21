@@ -115,7 +115,7 @@ classdef ChannelsController < ws.Controller
             end
             
             % make the figure visible
-            set(self.FigureGH_,'Visible','on');                        
+            %set(self.FigureGH_,'Visible','on');                        
         end
     end  % public methods block
         
@@ -2021,7 +2021,8 @@ classdef ChannelsController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                %self.hide() ;
+                wsModel.IsChannelsFigureVisible = false ;
             end
         end
         
@@ -2312,9 +2313,20 @@ classdef ChannelsController < ws.Controller
     end  % public methods block
 
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsChannelsFigureVisible)) ;
-        end        
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'Channels') ,
+                newValue = self.Model_.IsChannelsFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
+        end                
     end
 
 end  % classdef

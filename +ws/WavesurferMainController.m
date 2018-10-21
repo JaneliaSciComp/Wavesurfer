@@ -117,7 +117,7 @@ classdef WavesurferMainController < ws.Controller
             self.StimulusLibraryController = ws.StimulusLibraryController(model) ;
             self.TriggersController = ws.TriggersController(model) ;
             self.UserCodeManagerController = ws.UserCodeManagerController(model) ;
-            self.ElectrodeManagerController = ws.ElectrodeManagerController(model) ;
+            self.ElectrodeManagerController = ws.ElectrodeManagerController(model, self) ;
             self.TestPulserController = ws.TestPulserController(model) ;
             self.FastProtocolsController = ws.FastProtocolsController(model) ;
             
@@ -183,6 +183,7 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
                 model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
                 model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
+                model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateFigureVisibilityMenuChecks') ;
                 
                 % Subscribe to events from the Display subsystem 
                 model.subscribeMeToDisplayEvent(self,'Update','','update') ;
@@ -203,13 +204,14 @@ classdef WavesurferMainController < ws.Controller
             % upper-right close button.
 
             % Delete the figure GHs for all the child controllers
-            for i=1:length(self.ChildControllers_) ,
-                thisChildController = self.ChildControllers_{i} ;
-                if isvalid(thisChildController) ,
-                    delete(thisChildController) ;
-                    self.ChildControllers_{i} = [] ;  % NB: Not changing the number of elements of self.ChildControllers_
-                end
-            end
+            ws.deleteIfValidHandle(self.GeneralSettingsController) ;
+            ws.deleteIfValidHandle(self.ChannelsController) ;
+            ws.deleteIfValidHandle(self.StimulusLibraryController) ;
+            ws.deleteIfValidHandle(self.TriggersController) ;
+            ws.deleteIfValidHandle(self.UserCodeManagerController) ;
+            ws.deleteIfValidHandle(self.ElectrodeManagerController) ;
+            ws.deleteIfValidHandle(self.TestPulserController) ;
+            ws.deleteIfValidHandle(self.FastProtocolsController) ;            
 
             % Remove ref to the scope plots
             self.ScopePlots_ = [] ;  % not really necessary
@@ -717,14 +719,7 @@ classdef WavesurferMainController < ws.Controller
             self.updateProgressBarProperties_();
             
             % Menu checkboxes            
-            set(self.GeneralSettingsMenuItem, 'Checked', ws.onIff(wsModel.IsGeneralSettingsFigureVisible));
-            set(self.ChannelsMenuItem, 'Checked', ws.onIff(wsModel.IsChannelsFigureVisible));
-            set(self.StimulusLibraryMenuItem, 'Checked', ws.onIff(wsModel.IsStimulusLibraryFigureVisible));
-            set(self.TriggersMenuItem, 'Checked', ws.onIff(wsModel.IsTriggersFigureVisible));
-            set(self.UserCodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsUserCodeManagerFigureVisible));
-            set(self.ElectrodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsElectrodeManagerFigureVisible));
-            set(self.TestPulserMenuItem, 'Checked', ws.onIff(wsModel.IsTestPulserFigureVisible));
-
+            self.updateFigureVisibilityMenuChecks() ;
             set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(wsModel.IsYokedToScanImage));
             
             % The save menu items
@@ -733,7 +728,22 @@ classdef WavesurferMainController < ws.Controller
             % Finally, the window title
             self.updateWindowTitle_();
         end
-        
+    end  % protected methods block
+    
+    methods
+        function updateFigureVisibilityMenuChecks(self, varargin)
+            wsModel = self.Model_ ;
+            set(self.GeneralSettingsMenuItem, 'Checked', ws.onIff(wsModel.IsGeneralSettingsFigureVisible));
+            set(self.ChannelsMenuItem, 'Checked', ws.onIff(wsModel.IsChannelsFigureVisible));
+            set(self.StimulusLibraryMenuItem, 'Checked', ws.onIff(wsModel.IsStimulusLibraryFigureVisible));
+            set(self.TriggersMenuItem, 'Checked', ws.onIff(wsModel.IsTriggersFigureVisible));
+            set(self.UserCodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsUserCodeManagerFigureVisible));
+            set(self.ElectrodesMenuItem, 'Checked', ws.onIff(wsModel.IsElectrodeManagerFigureVisible));
+            set(self.TestPulseMenuItem, 'Checked', ws.onIff(wsModel.IsTestPulserFigureVisible));            
+        end
+    end
+    
+    methods (Access=protected)    
         function updateDisplayControlPropertiesImplementation_(self)
             % If there are issues with the model, just return
             wsModel=self.Model_;
@@ -864,9 +874,7 @@ classdef WavesurferMainController < ws.Controller
             % speed is an issue...
             self.syncLineXDataAndYData_();
         end  % function        
-    end
-    
-    methods (Access = protected)
+        
         function updateControlEnablementImplementation_(self) 
             % In subclass, this should make sure the Enable property of
             % each control is in-sync with the model.  It can assume that
@@ -1587,7 +1595,8 @@ classdef WavesurferMainController < ws.Controller
         end  % method
 
         function ManageFastProtocolsButtonActuated(self, source, event)  %#ok<INUSD>
-            self.showAndRaiseChildFigure_('FastProtocolsController') ;
+            %self.showAndRaiseChildFigure_('FastProtocols') ;
+            self.Model_.IsFastProtocolsFigureVisible = true ;
         end  % method
         
         % View menu        
@@ -1705,8 +1714,7 @@ classdef WavesurferMainController < ws.Controller
         end
         
         function layoutForAllWindowsRequested(self, varargin)
-            layoutForAllWindows = self.encodeAllWindowLayouts_() ;
-            self.Model_.setLayoutForAllWindows_(layoutForAllWindows) ;
+            self.copyAllFigurePositionsToModel_() ;
         end        
         
         function layoutAllWindows(self, varargin)
@@ -1842,20 +1850,21 @@ classdef WavesurferMainController < ws.Controller
             end
         end  % method                
 
-        function layoutForAllWindows = encodeAllWindowLayouts_(self)
-            % Save the layouts of all windows to the named file.
-
-            % Init the struct
-            layoutForAllWindows=struct();
+        function copyAllFigurePositionsToModel_(self)
+            % Save the layouts of all windows to the model state
             
             % Add the main window layout
-            layoutForAllWindows=self.addThisWindowLayoutToLayout(layoutForAllWindows);
+            self.setFigurePositionInModel() ;
             
-            % Add the child window layouts
-            for i=1:length(self.ChildControllers_) ,
-                childController=self.ChildControllers_{i};
-                layoutForAllWindows=childController.addThisWindowLayoutToLayout(layoutForAllWindows);
-            end
+            % Add the child window layouts            
+            self.GeneralSettingsController.setFigurePositionInModel() ;
+            self.ChannelsController.setFigurePositionInModel() ;
+            self.TriggersController.setFigurePositionInModel() ;
+            self.StimulusLibraryController.setFigurePositionInModel() ;
+            self.FastProtocolsController.setFigurePositionInModel() ;
+            self.UserCodeManagerController.setFigurePositionInModel() ;
+            self.TestPulserController.setFigurePositionInModel() ;
+            self.ElectrodeManagerController.setFigurePositionInModel() ;
         end  % function
         
         function decodeMultiWindowLayout_(self, multiWindowLayout, monitorPositions)
@@ -2138,8 +2147,9 @@ classdef WavesurferMainController < ws.Controller
     end
     
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', 'on') ;
-        end        
+        function updateVisibility_(self, varargin)
+            set(self.FigureGH_, 'Visible', 'on') ;
+        end                
     end    
+    
 end  % classdef

@@ -41,7 +41,7 @@ classdef UserCodeManagerController < ws.Controller
            model.subscribeMe(self, 'UpdateVisibilityOfAllFigures', '', 'updateVisibility') ;
            
            % Make figure visible
-           set(self.FigureGH_, 'Visible', 'on') ;           
+           %set(self.FigureGH_, 'Visible', 'on') ;           
         end  % constructor
     end
     
@@ -370,14 +370,26 @@ classdef UserCodeManagerController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                %self.hide() ;
+                wsModel.IsUserCodeManagerFigureVisible = false ;                
             end
         end        
     end  % protected methods block
     
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsUserCodeManagerFigureVisible)) ;
-        end        
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'UserCodeManager') ,
+                newValue = self.Model_.IsUserCodeManagerFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
+        end                
     end
 end

@@ -358,7 +358,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             drawnow('update');
         end
         
-        updateVisibility_(self)
+        updateVisibility_(self, varargin)
             % In subclass, this should update the figure visibility based
             % on the state of the application model
     end
@@ -554,33 +554,19 @@ classdef (Abstract) Controller < ws.EventSubscriber
     end  % public methods block
     
     methods (Sealed = true)
-        function layoutForAllWindows = addThisWindowLayoutToLayout(self, layoutForAllWindows)
+        function setFigurePositionInModel(self)
             % Add layout info for this window (just this one window) to
             % a struct representing the layout of all windows in the app
             % session.
            
             % Framework specific transformation.
-            thisWindowLayout = self.encodeWindowLayout_();
-            
-            layoutVarNameForClass = ws.layoutVariableNameFromControllerClassName(class(self));
-            layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
-        end
-    end
-    
-    methods (Access = protected)
-        function layout = encodeWindowLayout_(self)
             fig = self.FigureGH_ ;
             position = get(fig, 'Position') ;
-            visible = get(fig, 'Visible') ;
-            if ischar(visible) ,
-                isVisible = strcmpi(visible,'on') ;
-            else
-                isVisible = visible ;
-            end
-            layout = struct('Position', {position}, 'IsVisible', {isVisible}) ;
+            modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
+            self.Model_.(modelPropertyName) = position ;
         end
     end
-    
+        
 %     methods (Static)
 %         function result = methodNameStemFromControlName(controlName)
 %             % We want to translate typical control names like

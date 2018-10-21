@@ -76,7 +76,7 @@ classdef TestPulserController < ws.Controller
             end
             
             % Make visible
-            set(self.FigureGH_, 'Visible', 'on') ;
+            %set(self.FigureGH_, 'Visible', 'on') ;
         end  % constructor
         
         function delete(self)
@@ -1145,15 +1145,27 @@ classdef TestPulserController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                %self.hide() ;
+                wsModel.IsTestPulserFigureVisible = false ;
             end
         end        
     end  % protected methods block    
     
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsTestPulserFigureVisible)) ;
-        end        
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'TestPulser') ,
+                newValue = self.Model_.IsTestPulserFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
+        end                
     end
     
 end  % classdef

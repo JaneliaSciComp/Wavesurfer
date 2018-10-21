@@ -87,7 +87,7 @@ classdef ElectrodeManagerController < ws.Controller
             end
             
             % make the figure visible
-            set(self.FigureGH_,'Visible','on');            
+            %set(self.FigureGH_,'Visible','on');            
         end  % constructor
         
         function delete(self)
@@ -1108,7 +1108,8 @@ classdef ElectrodeManagerController < ws.Controller
             if shouldStayPut ,
                 % Do nothing
             else
-                self.hide() ;
+                %self.hide() ;
+                wsModel.IsElectrodeManagerFigureVisible = false ;
             end
         end        
     end  % protected methods block
@@ -1342,9 +1343,20 @@ classdef ElectrodeManagerController < ws.Controller
     end  % methods
 
     methods (Access=protected)
-        function updateVisibility_(self)
-            set(self.FigureGH_, 'IsVisible', ws.onIff(self.Model_.IsElectrodeManagerFigureVisible)) ;
-        end        
+        function updateVisibility_(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            oldValue = event.Args{2} ;            
+            if isequal(figureName, 'ElectrodeManager') ,
+                newValue = self.Model_.IsElectrodeManagerFigureVisible ;
+                if oldValue && newValue , 
+                    % Do this to raise the figure
+                    set(self.FigureGH_, 'Visible', 'off') ;
+                    set(self.FigureGH_, 'Visible', 'on') ;
+                else
+                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+                end                    
+            end
+        end                        
     end
     
 end  % classdef
