@@ -1718,9 +1718,15 @@ classdef WavesurferMainController < ws.Controller
         end        
         
         function layoutAllWindows(self, varargin)
-            layoutForAllWindows = self.Model_.LayoutForAllWindows ;
             monitorPositions = ws.getMonitorPositions() ;
-            self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;            
+            self.decodeWindowLayout(monitorPositions) ;            
+            self.GeneralSettingsController.decodeWindowLayout(monitorPositions) ;            
+            self.ChannelsController.decodeWindowLayout(monitorPositions) ;            
+            self.StimulusLibraryController.decodeWindowLayout(monitorPositions) ;            
+            self.TriggersController.decodeWindowLayout(monitorPositions) ;            
+            self.UserCodeManagerController.decodeWindowLayout(monitorPositions) ;            
+            self.ElectrodeManagerController.decodeWindowLayout(monitorPositions) ;            
+            self.TestPulserController.decodeWindowLayout(monitorPositions) ;                        
         end        
     end  % public methods block             
     
@@ -1867,72 +1873,72 @@ classdef WavesurferMainController < ws.Controller
             self.ElectrodeManagerController.setFigurePositionInModel() ;
         end  % function
         
-        function decodeMultiWindowLayout_(self, multiWindowLayout, monitorPositions)
-            % load the layout of the main window
-            self.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
-                        
-            % Go through the list of possible controller types, see if any
-            % have layout information.  For each, take the appropriate
-            % action to make the current layout match that in
-            % multiWindowLayout.
-            controllerNames = { 'GeneralSettingsController' ...
-                                'ChannelsController' ...
-                                'TriggersController' ...
-                                'StimulusLibraryController' ...
-                                'FastProtocolsController' ...
-                                'UserCodeManagerController' ...
-                                'TestPulserController' ...
-                                'ElectrodeManagerController'} ;
-            for i=1:length(controllerNames) ,
-                controllerName = controllerNames{i} ;
-                if isprop(self, controllerName) ,  
-                    % This should always be true now
-                    controller = self.(controllerName) ;
-                    %windowTypeName=self.ControllerSpecifications_.(controllerName).controlName;
-                    controllerClassName = ['ws.' controllerName] ;
-                    %layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
-                    layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) ;
-                    
-                    % If the controller does not exist, check whether the configuration indicates
-                    % that it should visible.  If so, create it, otherwise it can remain empty until
-                    % needed.
-                    if isempty(controller) ,
-                        % The controller does not exist.  Check if it needs
-                        % to.
-                        if ~isempty(layoutMaybe) ,
-                            % The controller does not exist, but there's layout info in the multiWindowLayout.  So we
-                            % create the controller and then decode the
-                            % layout.
-                            controller = self.createChildControllerIfNonexistant_(controllerName) ;
-                            %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
-                            layout = layoutMaybe{1} ;
-                            controller.decodeWindowLayout(layout, monitorPositions);
-                        else
-                            % The controller doesn't exist, but there's no
-                            % layout info for it, so all is well.
-                        end                        
-                    else
-                        % The controller does exist.
-                        if ~isempty(layoutMaybe) ,
-                            % The controller exists, and there's layout
-                            % info for it, so lay it out
-                            %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
-                            layout = layoutMaybe{1} ;
-                            controller.decodeWindowLayout(layout, monitorPositions);
-                        else
-                            % The controller exists, but there's no layout
-                            % info for it in the multiWindowLayout.  This
-                            % means that the controller did not exist when
-                            % the layout was saved.  Maybe we should delete
-                            % the controller, but for now we just make it
-                            % invisible.
-                            figureObject=controller.Figure;
-                            figureObject.hide();
-                        end                        
-                    end
-                end
-            end    
-        end  % function       
+%         function decodeMultiWindowLayout_(self, multiWindowLayout, monitorPositions)
+%             % load the layout of the main window
+%             self.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);
+%                         
+%             % Go through the list of possible controller types, see if any
+%             % have layout information.  For each, take the appropriate
+%             % action to make the current layout match that in
+%             % multiWindowLayout.
+%             controllerNames = { 'GeneralSettingsController' ...
+%                                 'ChannelsController' ...
+%                                 'TriggersController' ...
+%                                 'StimulusLibraryController' ...
+%                                 'FastProtocolsController' ...
+%                                 'UserCodeManagerController' ...
+%                                 'TestPulserController' ...
+%                                 'ElectrodeManagerController'} ;
+%             for i=1:length(controllerNames) ,
+%                 controllerName = controllerNames{i} ;
+%                 if isprop(self, controllerName) ,  
+%                     % This should always be true now
+%                     controller = self.(controllerName) ;
+%                     %windowTypeName=self.ControllerSpecifications_.(controllerName).controlName;
+%                     controllerClassName = ['ws.' controllerName] ;
+%                     %layoutVarName = self.getLayoutVariableNameForClass(controllerClassName);
+%                     layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) ;
+%                     
+%                     % If the controller does not exist, check whether the configuration indicates
+%                     % that it should visible.  If so, create it, otherwise it can remain empty until
+%                     % needed.
+%                     if isempty(controller) ,
+%                         % The controller does not exist.  Check if it needs
+%                         % to.
+%                         if ~isempty(layoutMaybe) ,
+%                             % The controller does not exist, but there's layout info in the multiWindowLayout.  So we
+%                             % create the controller and then decode the
+%                             % layout.
+%                             controller = self.createChildControllerIfNonexistant_(controllerName) ;
+%                             %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+%                             layout = layoutMaybe{1} ;
+%                             controller.decodeWindowLayout(layout, monitorPositions);
+%                         else
+%                             % The controller doesn't exist, but there's no
+%                             % layout info for it, so all is well.
+%                         end                        
+%                     else
+%                         % The controller does exist.
+%                         if ~isempty(layoutMaybe) ,
+%                             % The controller exists, and there's layout
+%                             % info for it, so lay it out
+%                             %controller.extractAndDecodeLayoutFromMultipleWindowLayout_(multiWindowLayout, monitorPositions);                            
+%                             layout = layoutMaybe{1} ;
+%                             controller.decodeWindowLayout(layout, monitorPositions);
+%                         else
+%                             % The controller exists, but there's no layout
+%                             % info for it in the multiWindowLayout.  This
+%                             % means that the controller did not exist when
+%                             % the layout was saved.  Maybe we should delete
+%                             % the controller, but for now we just make it
+%                             % invisible.
+%                             figureObject=controller.Figure;
+%                             figureObject.hide();
+%                         end                        
+%                     end
+%                 end
+%             end    
+%         end  % function       
         
         function isOKToQuit = checkIfOKToQuit_(self)
             % If acquisition or test pulsing is happening, ignore the close window request
@@ -1968,39 +1974,39 @@ classdef WavesurferMainController < ws.Controller
             end
         end  % function
         
-        function showAndRaiseChildFigure_(self, className, varargin)
-            [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
-            % is a Controller
-            if didCreate ,
-                % no need to update
-            else
-                controller.update();  % figure might be out-of-date
-            end
-            controller.show() ;
-            controller.raise() ;
-        end  % function
+%         function showAndRaiseChildFigure_(self, className, varargin)
+%             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
+%             % is a Controller
+%             if didCreate ,
+%                 % no need to update
+%             else
+%                 controller.update();  % figure might be out-of-date
+%             end
+%             controller.show() ;
+%             controller.raise() ;
+%         end  % function
         
-        function [controller, didCreate] = createChildControllerIfNonexistant_(self, figureName, varargin)
-            controllerClassName = sprintf('%sController', figureName) ;
-            if isempty(self.(controllerClassName)) ,
-                fullControllerClassName=['ws.' controllerClassName];
-                if isequal(fullControllerClassName, 'ws.GeneralSettingsController') ,
-                    controller = feval(fullControllerClassName, self.Model_, self.getPositionInPixels_() ) ;
-                elseif isequal(fullControllerClassName, 'ws.ElectrodeManagerController') ,
-                    controller = feval(fullControllerClassName, self.Model_, self) ;
-                elseif isequal(fullControllerClassName, 'ws.StimulusLibraryController') ,
-                    controller = feval(fullControllerClassName, self.Model_, self.FigureGH_) ;
-                else
-                    controller = feval(fullControllerClassName, self.Model_) ;
-                end
-                self.ChildControllers_{end+1}=controller;
-                self.(controllerClassName)=controller;
-                didCreate = true ;
-            else
-                controller = self.(controllerClassName);
-                didCreate = false ;
-            end
-        end  % function
+%         function [controller, didCreate] = createChildControllerIfNonexistant_(self, figureName, varargin)
+%             controllerClassName = sprintf('%sController', figureName) ;
+%             if isempty(self.(controllerClassName)) ,
+%                 fullControllerClassName=['ws.' controllerClassName];
+%                 if isequal(fullControllerClassName, 'ws.GeneralSettingsController') ,
+%                     controller = feval(fullControllerClassName, self.Model_, self.getPositionInPixels_() ) ;
+%                 elseif isequal(fullControllerClassName, 'ws.ElectrodeManagerController') ,
+%                     controller = feval(fullControllerClassName, self.Model_, self) ;
+%                 elseif isequal(fullControllerClassName, 'ws.StimulusLibraryController') ,
+%                     controller = feval(fullControllerClassName, self.Model_, self.FigureGH_) ;
+%                 else
+%                     controller = feval(fullControllerClassName, self.Model_) ;
+%                 end
+%                 self.ChildControllers_{end+1}=controller;
+%                 self.(controllerClassName)=controller;
+%                 didCreate = true ;
+%             else
+%                 controller = self.(controllerClassName);
+%                 didCreate = false ;
+%             end
+%         end  % function
     end  % protected methods
     
     methods (Access = protected)
@@ -2106,20 +2112,20 @@ classdef WavesurferMainController < ws.Controller
         end
     end
     
-    methods (Access=protected)
-        function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
-            % Find a layout that applies to whatever subclass of controller
-            % self happens to be (if any), and use it to position self's
-            % figure's window.            
-            if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
-                layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
-                if ~isempty(layoutMaybe) ,
-                    layoutForThisClass = layoutMaybe{1} ;
-                    self.decodeWindowLayout(layoutForThisClass, monitorPositions);
-                end
-            end
-        end  % function        
-    end
+%     methods (Access=protected)
+%         function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
+%             % Find a layout that applies to whatever subclass of controller
+%             % self happens to be (if any), and use it to position self's
+%             % figure's window.            
+%             if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
+%                 layoutMaybe = ws.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
+%                 if ~isempty(layoutMaybe) ,
+%                     layoutForThisClass = layoutMaybe{1} ;
+%                     self.decodeWindowLayout(layoutForThisClass, monitorPositions);
+%                 end
+%             end
+%         end  % function        
+%     end
     
     methods (Access=protected)
         function closeRequested_(self, source, event)  %#ok<INUSD>

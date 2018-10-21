@@ -265,7 +265,7 @@ classdef WavesurferModel < ws.Model
         SweepDurationIfFinite_ = 1  % s
         VersionString_
         
-        LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
+        %LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
         
         IsGeneralSettingsFigureVisible_ = false
         IsChannelsFigureVisible_ = false
@@ -2508,9 +2508,9 @@ classdef WavesurferModel < ws.Model
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
             newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
-            if isfield(saveStruct, 'layoutForAllWindows') ,
-                self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
-            end
+            %if isfield(saveStruct, 'layoutForAllWindows') ,
+            %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
+            %end
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
@@ -2525,11 +2525,11 @@ classdef WavesurferModel < ws.Model
         end  % function
     end
     
-    methods
-        function setLayoutForAllWindows_(self, layoutForAllWindows)
-            self.LayoutForAllWindows_ = layoutForAllWindows ;
-        end
-    end
+%     methods
+%         function setLayoutForAllWindows_(self, layoutForAllWindows)
+%             self.LayoutForAllWindows_ = layoutForAllWindows ;
+%         end
+%     end
     
     methods
 %         function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self, absoluteFileName, layoutForAllWindows)
@@ -3241,6 +3241,7 @@ classdef WavesurferModel < ws.Model
             self.Triggering_.broadcast('Update') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
+            %self.broadcast('UpdateVisibilityOfAllFigures') ;
         end
     end  % protected methods block
     
@@ -3563,9 +3564,9 @@ classdef WavesurferModel < ws.Model
             end
         end  % method        
         
-        function result = get.LayoutForAllWindows(self)
-            result = self.LayoutForAllWindows_ ;
-        end
+%         function result = get.LayoutForAllWindows(self)
+%             result = self.LayoutForAllWindows_ ;
+%         end
         
         function value = get.AllDeviceNames(self)
             value = self.AllDeviceNames_ ;

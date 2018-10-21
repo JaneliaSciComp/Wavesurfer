@@ -119,30 +119,12 @@ classdef (Abstract) Controller < ws.EventSubscriber
             self.updateVisibility_(varargin{:}) ;
         end        
         
-        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
-            fieldNames = fieldnames(layoutOfWindowsInClass) ;
-            if isscalar(fieldNames) ,
-                % This means it's an older protocol file, with the layout
-                % stored in a single field with a sometimes-weird name.
-                % But the name doesn't really matter.
-                fieldName = fieldNames{1} ;
-                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
-                isVisibleFieldName = 'Visible' ;
-            else
-                % This means it's a newer protocol file, with (hopefully)
-                % two fields, Position and IsVisible.
-                layoutOfThisWindow = layoutOfWindowsInClass ;
-                isVisibleFieldName = 'IsVisible' ;
-            end
-            if isfield(layoutOfThisWindow, 'Position') ,
-                rawPosition = layoutOfThisWindow.Position ;
-                set(self.FigureGH_, 'Position', rawPosition);
-                self.constrainPositionToMonitors(monitorPositions) ;
-            end
-            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
-                set(self.FigureGH_, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
-            end
-        end        
+        function decodeWindowLayout(self, monitorPositions)
+            modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
+            rawPosition = self.Model_.(modelPropertyName) ;
+            set(self.FigureGH_, 'Position', rawPosition);
+            self.constrainPositionToMonitors(monitorPositions) ;
+        end
     end  % public methods block
     
     methods (Access=protected)
