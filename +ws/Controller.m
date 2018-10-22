@@ -51,7 +51,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             self.Model_ = [] ;
         end
         
-        function set.AreUpdatesEnabled(self,newValue)
+        function set.AreUpdatesEnabled(self, newValue)
             if ~( islogical(newValue) && isscalar(newValue) ) ,
                 return
             end        
@@ -62,7 +62,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
                     ws.fif(newDegreeOfEnablementRaw<=1, ...
                            newDegreeOfEnablementRaw, ...
                            1);
-            netValueAfter=self.AreUpdatesEnabled;
+            netValueAfter = self.AreUpdatesEnabled ;
             if netValueAfter && ~netValueBefore ,
                 % Updates have just been enabled
                 if self.NCallsToUpdateWhileDisabled_>0
@@ -113,13 +113,18 @@ classdef (Abstract) Controller < ws.EventSubscriber
             self.updateReadiness_(varargin{:}) ;
         end
 
-        function updateVisibility(self, varargin)           
-            % Sometimes outsiders need to prompt an update.  Methods of the 
-            % Controller should generally call update_() directly.
-            self.updateVisibility_(varargin{:}) ;
-        end        
-        
-        function decodeWindowLayout(self, monitorPositions)
+        function updateVisibility(self, ~, ~, ~, ~, event)
+            figureName = event.Args{1} ;
+            %oldValue = event.Args{2} ;
+            myFigureName = ws.figureNameFromControllerClassName(class(self)) ;
+            if isequal(figureName, myFigureName) ,
+                isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                newValue = self.Model_.(isVisiblePropertyName) ;
+                set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+            end
+        end                
+
+        function syncFigurePositionFromModel(self, monitorPositions)
             modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
             rawPosition = self.Model_.(modelPropertyName) ;
             set(self.FigureGH_, 'Position', rawPosition);
@@ -128,23 +133,23 @@ classdef (Abstract) Controller < ws.EventSubscriber
     end  % public methods block
     
     methods (Access=protected)
-        function set(self,propName,value)
-            if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
-                % special case to deal with Visible, which seems to
-                % sometimes be a boolean
-                if value,
-                    set(self.FigureGH_,'Visible','on');
-                else
-                    set(self.FigureGH_,'Visible','off');
-                end
-            else
-                set(self.FigureGH_,propName,value);
-            end
-        end
-        
-        function value=get(self,propName)
-            value=get(self.FigureGH_,propName);
-        end
+%         function set(self, propName, value)
+%             if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
+%                 % special case to deal with Visible, which seems to
+%                 % sometimes be a boolean
+%                 if value,
+%                     set(self.FigureGH_,'Visible','on');
+%                 else
+%                     set(self.FigureGH_,'Visible','off');
+%                 end
+%             else
+%                 set(self.FigureGH_,propName,value);
+%             end
+%         end
+%         
+%         function value=get(self,propName)
+%             value=get(self.FigureGH_,propName);
+%         end
         
         function update_(self,varargin)
             % Called when the caller wants the figure to fully re-sync with the
@@ -154,7 +159,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             if self.AreUpdatesEnabled ,
                 self.updateImplementation_();
             else
-                self.NCallsToUpdateWhileDisabled_=self.NCallsToUpdateWhileDisabled_+1;
+                self.NCallsToUpdateWhileDisabled_ = self.NCallsToUpdateWhileDisabled_ + 1 ;
             end
         end
         
@@ -164,7 +169,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             if self.AreUpdatesEnabled ,
                 self.updateControlPropertiesImplementation_();
             else
-                self.NCallsToUpdateControlPropertiesWhileDisabled_=self.NCallsToUpdateControlPropertiesWhileDisabled_+1;
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = self.NCallsToUpdateControlPropertiesWhileDisabled_ + 1 ;
             end
         end
         
@@ -172,9 +177,9 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % Called when caller only needs to update the
             % enablement/disablment of the controls, given the model state.
             if self.AreUpdatesEnabled ,
-                self.updateControlEnablementImplementation_();
+                self.updateControlEnablementImplementation_() ;
             else
-                self.NCallsToUpdateControlEnablementWhileDisabled_=self.NCallsToUpdateControlEnablementWhileDisabled_+1;
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = self.NCallsToUpdateControlEnablementWhileDisabled_ + 1 ;
             end            
         end
         
@@ -284,16 +289,16 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % each control is in-sync with the model.  It can assume that
             % all the controls that should exist, do exist.
         
-        figureSize=layoutFixedControls_(self) 
+        figureSize = layoutFixedControls_(self) 
             % In subclass, this should make sure all the positions of the
             % fixed controls are appropriate given the current model state.
         
-        function figureSizeModified=layoutNonfixedControls_(self,figureSize)  %#ok<INUSL>
+        function figureSizeModified = layoutNonfixedControls_(self, figureSize)  %#ok<INUSL>
             % In subclass, this should make sure all the positions of the
             % non-fixed controls are appropriate given the current model state.
             % It can safely assume that all the non-fixed controls already
             % exist
-            figureSizeModified=figureSize;  % this is appropriate if there are no nonfixed controls
+            figureSizeModified = figureSize ;  % this is appropriate if there are no nonfixed controls
         end
         
         function layout_(self)
@@ -302,9 +307,9 @@ classdef (Abstract) Controller < ws.EventSubscriber
             
             % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
-            figureSize=self.layoutFixedControls_();
-            figureSizeModified=self.layoutNonfixedControls_(figureSize);
-            ws.resizeLeavingUpperLeftFixedBang(self.FigureGH_,figureSizeModified);            
+            figureSize = self.layoutFixedControls_() ;
+            figureSizeModified = self.layoutNonfixedControls_(figureSize) ;
+            ws.resizeLeavingUpperLeftFixedBang(self.FigureGH_, figureSizeModified) ;
         end
         
         function updateImplementation_(self)
@@ -315,10 +320,11 @@ classdef (Abstract) Controller < ws.EventSubscriber
 
             % This implementation should work in most cases, but can be overridden by
             % subclasses if needed.
-            self.updateControlsInExistance_();
-            self.updateControlPropertiesImplementation_();
-            self.updateControlEnablementImplementation_();
-            self.layout_();
+            self.updateControlsInExistance_() ;
+            self.updateControlPropertiesImplementation_() ;
+            self.updateControlEnablementImplementation_() ;
+            self.layout_() ;
+            self.updateVisibility() ;
         end
         
         function updateReadinessImplementation_(self)
@@ -339,10 +345,6 @@ classdef (Abstract) Controller < ws.EventSubscriber
             %fprintf('drawnow(''update'')\n');
             drawnow('update');
         end
-        
-        updateVisibility_(self, varargin)
-            % In subclass, this should update the figure visibility based
-            % on the state of the application model
     end
     
     methods (Access=protected)
@@ -592,7 +594,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
 %     end
     
     methods
-        function setAreUpdatesEnabledForFigure(self,newValue)
+        function setAreUpdatesEnabledForFigure(self, newValue)
             self.AreUpdatesEnabled = newValue ;
         end        
     end

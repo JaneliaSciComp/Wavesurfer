@@ -172,6 +172,7 @@ classdef TestPulserController < ws.Controller
             self.updateControlsInExistance_();
             self.updateControlPropertiesImplementation_();
             self.layout_();
+            self.updateVisibility() ;
             % update readiness, without the drawnow()
             wsModel = self.Model_ ;
             if isempty(wsModel) ,
@@ -1151,21 +1152,21 @@ classdef TestPulserController < ws.Controller
         end        
     end  % protected methods block    
     
-    methods (Access=protected)
-        function updateVisibility_(self, ~, ~, ~, ~, event)
-            figureName = event.Args{1} ;
-            oldValue = event.Args{2} ;            
-            if isequal(figureName, 'TestPulser') ,
-                newValue = self.Model_.IsTestPulserFigureVisible ;
-                if oldValue && newValue , 
-                    % Do this to raise the figure
-                    set(self.FigureGH_, 'Visible', 'off') ;
-                    set(self.FigureGH_, 'Visible', 'on') ;
-                else
-                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
-                end                    
-            end
-        end                
-    end
+%     methods (Access=protected)
+%         function updateVisibility_(self, ~, ~, ~, ~, event)
+%             figureName = event.Args{1} ;
+%             oldValue = event.Args{2} ;            
+%             if isequal(figureName, 'TestPulser') ,
+%                 newValue = self.Model_.IsTestPulserFigureVisible ;
+%                 if oldValue && newValue , 
+%                     % Do this to raise the figure
+%                     set(self.FigureGH_, 'Visible', 'off') ;
+%                     set(self.FigureGH_, 'Visible', 'on') ;
+%                 else
+%                     set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+%                 end                    
+%             end
+%         end                
+%     end
     
 end  % classdef

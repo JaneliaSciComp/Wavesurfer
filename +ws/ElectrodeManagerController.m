@@ -1342,22 +1342,22 @@ classdef ElectrodeManagerController < ws.Controller
 
     end  % methods
 
-    methods (Access=protected)
-        function updateVisibility_(self, ~, ~, ~, ~, event)
-            args = event.Args ;
-            figureName = args{1} ;
-            oldValue = args{2} ;
-            if isequal(figureName, 'ElectrodeManager') ,
-                newValue = self.Model_.IsElectrodeManagerFigureVisible ;
-                if oldValue && newValue ,
-                    % Do this to raise the figure
-                    set(self.FigureGH_, 'Visible', 'off') ;
-                    set(self.FigureGH_, 'Visible', 'on') ;
-                else
-                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
-                end
-            end
-        end                        
-    end
+%     methods (Access=protected)
+%         function updateVisibility_(self, ~, ~, ~, ~, event)
+%             args = event.Args ;
+%             figureName = args{1} ;
+%             oldValue = args{2} ;
+%             if isequal(figureName, 'ElectrodeManager') ,
+%                 newValue = self.Model_.IsElectrodeManagerFigureVisible ;
+%                 if oldValue && newValue ,
+%                     % Do this to raise the figure
+%                     set(self.FigureGH_, 'Visible', 'off') ;
+%                     set(self.FigureGH_, 'Visible', 'on') ;
+%                 else
+%                     set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+%                 end
+%             end
+%         end                        
+%     end
     
 end  % classdef

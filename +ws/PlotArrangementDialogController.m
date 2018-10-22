@@ -365,13 +365,6 @@ classdef PlotArrangementDialogController < ws.Controller
     end  % methods
 
     methods (Access=protected)
-%         function self=updateImplementation_(self,varargin)
-%             % Syncs self with model, making no prior assumptions about what
-%             % might have changed or not changed in the model.
-%             self.updateControlPropertiesImplementation_();
-%             %self.layout();
-%         end
-        
         function updateControlPropertiesImplementation_(self, varargin)
             % Get props out of self
             channelNames = self.ChannelNames_ ;

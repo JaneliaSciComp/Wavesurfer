@@ -215,25 +215,6 @@ classdef UserCodeManagerController < ws.Controller
         end  % function
     end
     
-%     methods (Access=protected)
-%         function updateImplementation_(self,varargin)
-%             model=self.Model_;
-%             if isempty(model) ,
-%                 return
-%             end
-% 
-%             set(self.SweepStartEdit,'String',model.SweepWillStart);
-%             set(self.SweepCompleteEdit,'String',model.SweepDidComplete);
-%             set(self.SweepAbortEdit,'String',model.SweepDidAbort);            
-%             set(self.RunStartEdit,'String',model.RunWillStart);
-%             set(self.RunCompleteEdit,'String',model.RunDidComplete);
-%             set(self.RunAbortEdit,'String',model.RunDidAbort);            
-%             set(self.AbortCallsCompleteCheckbox,'Value',model.AbortCallsComplete);
-%             
-%             updateControlEnablementImplementation_();
-%         end  % function       
-%     end  % methods
-
     methods (Access=protected)
         function updateControlPropertiesImplementation_(self)
             %fprintf('UserCodeManagerFigure::updateControlPropertiesImplementation_\n');
@@ -376,20 +357,20 @@ classdef UserCodeManagerController < ws.Controller
         end        
     end  % protected methods block
     
-    methods (Access=protected)
-        function updateVisibility_(self, ~, ~, ~, ~, event)
-            figureName = event.Args{1} ;
-            oldValue = event.Args{2} ;            
-            if isequal(figureName, 'UserCodeManager') ,
-                newValue = self.Model_.IsUserCodeManagerFigureVisible ;
-                if oldValue && newValue , 
-                    % Do this to raise the figure
-                    set(self.FigureGH_, 'Visible', 'off') ;
-                    set(self.FigureGH_, 'Visible', 'on') ;
-                else
-                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
-                end                    
-            end
-        end                
-    end
+%     methods (Access=protected)
+%         function updateVisibility_(self, ~, ~, ~, ~, event)
+%             figureName = event.Args{1} ;
+%             oldValue = event.Args{2} ;            
+%             if isequal(figureName, 'UserCodeManager') ,
+%                 newValue = self.Model_.IsUserCodeManagerFigureVisible ;
+%                 if oldValue && newValue , 
+%                     % Do this to raise the figure
+%                     set(self.FigureGH_, 'Visible', 'off') ;
+%                     set(self.FigureGH_, 'Visible', 'on') ;
+%                 else
+%                     set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+%                 end                    
+%             end
+%         end                
+%     end
 end

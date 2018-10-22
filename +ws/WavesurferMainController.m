@@ -1514,36 +1514,43 @@ classdef WavesurferMainController < ws.Controller
         
         function ChannelsMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('ChannelsController') ;
+            self.Model_.IsChannelsFigureVisible = false ;  % do this to make it raise to top
             self.Model_.IsChannelsFigureVisible = true ;
         end
         
         function GeneralSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('GeneralSettingsController') ;
+            self.Model_.IsGeneralSettingsFigureVisible = false ;
             self.Model_.IsGeneralSettingsFigureVisible = true ;
         end
         
         function TriggersMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('TriggersController') ;
+            self.Model_.IsTriggersFigureVisible = false ;
             self.Model_.IsTriggersFigureVisible = true ;
         end
         
         function StimulusLibraryMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('StimulusLibraryController') ;
+            self.Model_.IsStimulusLibraryFigureVisible = false ;
             self.Model_.IsStimulusLibraryFigureVisible = true ;
         end
         
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('UserCodeManagerController') ;
+            self.Model_.IsUserCodeManagerFigureVisible = false ;
             self.Model_.IsUserCodeManagerFigureVisible = true ;
         end
         
         function ElectrodesMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('ElectrodeManagerController') ;
+            self.Model_.IsElectrodeManagerFigureVisible = false ;
             self.Model_.IsElectrodeManagerFigureVisible = true ;
         end
         
         function TestPulseMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('TestPulserController') ;
+            self.Model_.IsTestPulserFigureVisible = false ;
             self.Model_.IsTestPulserFigureVisible = true ;
         end
         
@@ -1719,14 +1726,14 @@ classdef WavesurferMainController < ws.Controller
         
         function layoutAllWindows(self, varargin)
             monitorPositions = ws.getMonitorPositions() ;
-            self.decodeWindowLayout(monitorPositions) ;            
-            self.GeneralSettingsController.decodeWindowLayout(monitorPositions) ;            
-            self.ChannelsController.decodeWindowLayout(monitorPositions) ;            
-            self.StimulusLibraryController.decodeWindowLayout(monitorPositions) ;            
-            self.TriggersController.decodeWindowLayout(monitorPositions) ;            
-            self.UserCodeManagerController.decodeWindowLayout(monitorPositions) ;            
-            self.ElectrodeManagerController.decodeWindowLayout(monitorPositions) ;            
-            self.TestPulserController.decodeWindowLayout(monitorPositions) ;                        
+            self.syncFigurePositionFromModel(monitorPositions) ;            
+            self.GeneralSettingsController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.ChannelsController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.StimulusLibraryController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.TriggersController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.UserCodeManagerController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.ElectrodeManagerController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.TestPulserController.syncFigurePositionFromModel(monitorPositions) ;                        
         end        
     end  % public methods block             
     
@@ -2152,10 +2159,10 @@ classdef WavesurferMainController < ws.Controller
         end  % function        
     end
     
-    methods (Access=protected)
-        function updateVisibility_(self, varargin)
-            set(self.FigureGH_, 'Visible', 'on') ;
-        end                
-    end    
+%     methods (Access=protected)
+%         function updateVisibility_(self, varargin)
+%             set(self.FigureGH_, 'Visible', 'on') ;
+%         end                
+%     end    
     
 end  % classdef

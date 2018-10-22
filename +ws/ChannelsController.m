@@ -1374,6 +1374,7 @@ classdef ChannelsController < ws.Controller
             %self.updateControlEnablementImplementation_();
             %  we update the enablement in updateControlPropertiesImplementation_
             self.layout_();
+            self.updateVisibility() ;
         end
         
 %         function updateImplementation_(self,varargin)
@@ -2312,8 +2313,8 @@ classdef ChannelsController < ws.Controller
         end       
     end  % public methods block
 
-    methods (Access=protected)
-        function updateVisibility_(self, ~, ~, ~, ~, event)
+    methods 
+        function updateVisibility(self, ~, ~, ~, ~, event)
             figureName = event.Args{1} ;
             oldValue = event.Args{2} ;            
             if isequal(figureName, 'Channels') ,

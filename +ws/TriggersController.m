@@ -684,20 +684,20 @@ classdef TriggersController < ws.Controller
         end        
     end  % methods block    
     
-    methods (Access=protected)
-        function updateVisibility_(self, ~, ~, ~, ~, event)
-            figureName = event.Args{1} ;
-            oldValue = event.Args{2} ;            
-            if isequal(figureName, 'Triggers') ,
-                newValue = self.Model_.IsTriggersFigureVisible ;
-                if oldValue && newValue , 
-                    % Do this to raise the figure
-                    set(self.FigureGH_, 'Visible', 'off') ;
-                    set(self.FigureGH_, 'Visible', 'on') ;
-                else
-                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
-                end                    
-            end
-        end                
-    end
+%     methods (Access=protected)
+%         function updateVisibility_(self, ~, ~, ~, ~, event)
+%             figureName = event.Args{1} ;
+%             oldValue = event.Args{2} ;            
+%             if isequal(figureName, 'Triggers') ,
+%                 newValue = self.Model_.IsTriggersFigureVisible ;
+%                 if oldValue && newValue , 
+%                     % Do this to raise the figure
+%                     set(self.FigureGH_, 'Visible', 'off') ;
+%                     set(self.FigureGH_, 'Visible', 'on') ;
+%                 else
+%                     set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+%                 end                    
+%             end
+%         end                
+%     end
 end  % classdef
