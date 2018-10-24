@@ -104,7 +104,7 @@ classdef UserCodeManager < ws.Subsystem
 %             end
 %         end  % method
 
-        function reinstantiateUserObject_(self)
+        function result = reinstantiateUserObject(self)
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
@@ -113,10 +113,12 @@ classdef UserCodeManager < ws.Subsystem
             else
                 err = [] ;
             end
-            self.broadcast('Update');
-            if ~isempty(err) ,
-                error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                      'Unable to reinstantiate user object: %s.',err.message);
+            %self.broadcast('Update');
+            if isempty(err) ,
+                result = [] ;
+            else
+                result = MException('wavesurfer:errorWhileInstantiatingUserObject', ...
+                                    'Unable to reinstantiate user object: %s.',err.message) ;
             end
         end  % method
         
@@ -236,7 +238,7 @@ classdef UserCodeManager < ws.Subsystem
             self.enableBroadcastsMaybe();
             
             % Broadcast update
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function        
     end  % public methods block
        

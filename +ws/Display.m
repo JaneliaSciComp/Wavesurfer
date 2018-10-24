@@ -63,6 +63,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     end
     
     events
+        Update
         DidSetUpdateRate
         UpdateXSpan
         UpdateXOffset

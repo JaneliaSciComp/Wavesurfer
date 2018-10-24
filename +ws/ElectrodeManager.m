@@ -42,6 +42,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     end
 
     events
+        Update
         DidSetIsInputChannelActive
         DidSetIsDigitalOutputTimed
         DidChangeNumberOfInputChannels

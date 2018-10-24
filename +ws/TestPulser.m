@@ -59,6 +59,7 @@ classdef TestPulser < ws.Model
     end    
     
     events
+        Update
         DidSetIsInputChannelActive
         UpdateTrace
     end

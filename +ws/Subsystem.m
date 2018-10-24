@@ -127,7 +127,7 @@ classdef (Abstract) Subsystem < ws.Model
             else
                 didSucceed = false ;
             end
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
             if ~didSucceed ,
                 error('ws:invalidPropertyValue', ...
                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;

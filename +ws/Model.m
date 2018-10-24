@@ -1,7 +1,7 @@
 classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
-    events
-        Update  % Means that any dependent views need to update themselves
-    end
+%     events
+%         Update  % Means that any dependent views need to update themselves
+%     end
     
     methods
         function self = Model()
@@ -22,7 +22,7 @@ classdef (Abstract) Model < ws.Coding & ws.EventBroadcaster
             self.enableBroadcastsMaybe();
             
             % Broadcast update
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
 
         function propNames = listPropertiesForHeader(self)

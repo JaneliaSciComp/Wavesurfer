@@ -355,12 +355,15 @@ classdef WavesurferModel < ws.Model
     end
     
     events
+        Update
         UpdateMain
         UpdateGeneralSettings
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
         UpdateFastProtocols
+        UpdateLogging
+        UpdateUserCodeManager
         UpdateForNewData
         UpdateIsYokedToScanImage
         WillSetState
@@ -2335,9 +2338,9 @@ classdef WavesurferModel < ws.Model
                 case 'set-number-of-sweeps-in-run'
                     self.NSweepsPerRun = str2double(parameters{1}) ;
                 case 'set-data-file-folder-path'
-                    self.Logging_.FileLocation = parameters{1} ;
+                    self.DataFileLocation = parameters{1} ;
                 case 'set-data-file-base-name'
-                    self.Logging_.FileBaseName = parameters{1} ;
+                    self.DataFileBaseName = parameters{1} ;
                 case 'set-data-file-session-index'
                     self.Logging_.SessionIndex = str2double(parameters{1}) ;
                 case 'set-is-session-number-included-in-data-file-name'
@@ -3227,8 +3230,10 @@ classdef WavesurferModel < ws.Model
         end
         
         function updateEverythingAfterProtocolFileOpen_(self)
-            self.Logging_.broadcast('Update') ;                        
-            self.UserCodeManager_.broadcast('Update') ;
+            %self.Logging_.broadcast('Update') ;        
+            self.broadcast('UpdateLogging') ;
+            %self.UserCodeManager_.broadcast('Update') ;
+            self.broadcast('UpdateUserCodeManager') ;
             self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
             %self.Ephys_.ElectrodeManager.broadcast('Update') ;
             %self.Ephys_.TestPulser.broadcast('Update') ;
@@ -5739,8 +5744,13 @@ classdef WavesurferModel < ws.Model
         end
         
         function reinstantiateUserObject(self)
-            self.UserCodeManager_.reinstantiateUserObject_() ;
+            err = self.UserCodeManager_.reinstantiateUserObject() ;
+            if ~isempty(err) ,
+                self.broadcast('UpdateUserCodeManager');
+                throw(err) ;
+            end
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateUserCodeManager');
             self.broadcast('DidMaybeChangeProtocol') ;
             self.callUserMethod_('wake');  % wake the user object
         end        
@@ -5911,7 +5921,14 @@ classdef WavesurferModel < ws.Model
         end
 
         function set.DataFileLocation(self, newValue)
-            self.Logging_.FileLocation = newValue ;
+            if ws.isString(newValue) ,
+                self.Logging_.FileLocation = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'DataFileLocation must be a string');                    
+            end
+            self.broadcast('UpdateLogging');            
         end
         
         function result = get.DataFileBaseName(self)
@@ -5919,7 +5936,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DataFileBaseName(self, newValue)
-            self.Logging_.FileBaseName = newValue ;
+            if ws.isString(newValue) ,
+                self.Logging_.FileBaseName = newValue ;
+            else
+                self.broadcast('UpdateLogging') ;
+                error('ws:invalidPropertyValue', ...
+                      'DataFileBaseName must be a string');                    
+            end
+            self.broadcast('UpdateLogging');                        
         end
                 
         function result = get.IsOKToOverwriteDataFile(self)
