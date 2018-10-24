@@ -1714,10 +1714,14 @@ classdef WavesurferMainController < ws.Controller
             % diable all the figure updates while it does certain things, 
             % to eliminate a lot of redundant figure updates.  This is a
             % hack.
-            childControllers = self.ChildControllers_ ;
-            for i=1:length(childControllers) ,
-                childControllers{i}.setAreUpdatesEnabledForFigure(newValue) ;
-            end
+            self.GeneralSettingsController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.ChannelsController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.StimulusLibraryController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.TriggersController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.UserCodeManagerController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.ElectrodeManagerController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.TestPulserController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.FastProtocolsController.setAreUpdatesEnabledForFigure(newValue) ;
         end
         
         function layoutForAllWindowsRequested(self, varargin)
@@ -2159,10 +2163,10 @@ classdef WavesurferMainController < ws.Controller
         end  % function        
     end
     
-%     methods (Access=protected)
-%         function updateVisibility_(self, varargin)
-%             set(self.FigureGH_, 'Visible', 'on') ;
-%         end                
-%     end    
+    methods
+        function updateVisibility(self, varargin)  %#ok<INUSD>
+            % ignore, for the main figure is always visible
+        end                
+    end    
     
 end  % classdef

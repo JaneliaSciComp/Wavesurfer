@@ -107,10 +107,10 @@ classdef ChannelsController < ws.Controller
             % Subscribe to model events
             %wsModel=self.Model;  % this is the root model
             if ~isempty(wsModel) ,
-                wsModel.subscribeMe(self,'Update','','update');                
-                wsModel.subscribeMe(self,'DidSetState','','updateControlProperties');
-                wsModel.subscribeMe(self,'UpdateChannels','','update');         
-                wsModel.subscribeMe(self,'UpdateDigitalOutputStateIfUntimed','','updateControlProperties');
+                wsModel.subscribeMe(self, 'Update', '', 'update');                
+                wsModel.subscribeMe(self, 'DidSetState', '', 'updateControlProperties');
+                wsModel.subscribeMe(self, 'UpdateChannels', '', 'update');         
+                wsModel.subscribeMe(self, 'UpdateDigitalOutputStateIfUntimed', '', 'updateControlProperties');
                 wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
             end
             
@@ -2313,21 +2313,21 @@ classdef ChannelsController < ws.Controller
         end       
     end  % public methods block
 
-    methods 
-        function updateVisibility(self, ~, ~, ~, ~, event)
-            figureName = event.Args{1} ;
-            oldValue = event.Args{2} ;            
-            if isequal(figureName, 'Channels') ,
-                newValue = self.Model_.IsChannelsFigureVisible ;
-                if oldValue && newValue , 
-                    % Do this to raise the figure
-                    set(self.FigureGH_, 'Visible', 'off') ;
-                    set(self.FigureGH_, 'Visible', 'on') ;
-                else
-                    set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
-                end                    
-            end
-        end                
-    end
+%     methods 
+%         function updateVisibility(self, ~, ~, ~, ~, event)
+%             figureName = event.Args{1} ;
+%             oldValue = event.Args{2} ;            
+%             if isequal(figureName, 'Channels') ,
+%                 newValue = self.Model_.IsChannelsFigureVisible ;
+%                 if oldValue && newValue , 
+%                     % Do this to raise the figure
+%                     set(self.FigureGH_, 'Visible', 'off') ;
+%                     set(self.FigureGH_, 'Visible', 'on') ;
+%                 else
+%                     set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+%                 end                    
+%             end
+%         end                
+%     end
 
 end  % classdef

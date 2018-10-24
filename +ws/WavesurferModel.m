@@ -196,7 +196,7 @@ classdef WavesurferModel < ws.Model
         IsITheOneTrueWavesurferModel  % deprecated, same as IsAwake
         IsAwake
         %WarningLog
-        LayoutForAllWindows
+        %LayoutForAllWindows
        
         AIChannelNames
         DIChannelNames
@@ -3237,8 +3237,8 @@ classdef WavesurferModel < ws.Model
             %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
                                                       % subscribes to this anymore.
             self.broadcast('UpdateStimulusLibrary') ;
-            self.Acquisition_.broadcast('Update') ;
-            self.Triggering_.broadcast('Update') ;
+            %self.Acquisition_.broadcast('Update') ;
+            self.broadcast('UpdateTriggering') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
             %self.broadcast('DidSetSingleFigureVisibility') ;
@@ -6810,9 +6810,9 @@ classdef WavesurferModel < ws.Model
         function set.IsFastProtocolsFigureVisible(self, newValue)
             oldValue = self.IsFastProtocolsFigureVisible_ ;
             self.IsFastProtocolsFigureVisible_ = newValue ;
-            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            %self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'FastProtocols', oldValue) ;
-            self.broadcast('DidMaybeChangeProtocol') ;
+            %self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.MainFigurePosition(self)

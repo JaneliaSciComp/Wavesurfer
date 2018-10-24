@@ -113,11 +113,17 @@ classdef (Abstract) Controller < ws.EventSubscriber
             self.updateReadiness_(varargin{:}) ;
         end
 
-        function updateVisibility(self, ~, ~, ~, ~, event)
-            figureName = event.Args{1} ;
-            %oldValue = event.Args{2} ;
-            myFigureName = ws.figureNameFromControllerClassName(class(self)) ;
-            if isequal(figureName, myFigureName) ,
+        function updateVisibility(self, varargin)
+            if length(varargin)>=5 ,
+                event = varargin{5} ;                
+                figureName = event.Args{1} ;
+                %oldValue = event.Args{2} ;
+                myFigureName = ws.figureNameFromControllerClassName(class(self)) ;
+                isMatch = isequal(figureName, myFigureName) ;
+            else
+                isMatch = true ;
+            end
+            if isMatch ,
                 isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
                 newValue = self.Model_.(isVisiblePropertyName) ;
                 set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
