@@ -1,4 +1,4 @@
-classdef WavesurferModel < ws.Model
+classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     % The main Wavesurfer model object.
     
     properties (Constant = true, Transient=true)
@@ -363,6 +363,7 @@ classdef WavesurferModel < ws.Model
         UpdateStimulusLibrary
         UpdateFastProtocols
         UpdateLogging
+        UpdateElectrodeManager
         UpdateUserCodeManager
         UpdateForNewData
         UpdateIsYokedToScanImage
@@ -384,6 +385,19 @@ classdef WavesurferModel < ws.Model
         UpdateDoIncludeSessionIndexInDataFileName
         TPDidSetIsInputChannelActive
         TPUpdateTrace
+        
+        EMDidSetIsInputChannelActive
+        EMDidSetIsDigitalOutputTimed
+        EMDidChangeNumberOfInputChannels
+        EMDidChangeNumberOfOutputChannels
+        
+        UpdateDisplay
+        DidSetUpdateRate
+        UpdateXSpan
+        UpdateXOffset
+        UpdateYAxisLimits
+        ClearData
+        AddData
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -965,8 +979,10 @@ classdef WavesurferModel < ws.Model
             % Called after setting an analog channel unit or scale (directly), to
             % notify other systems of the change.  Here "other" means "other than the
             % Acquisition or Stimulation subsystem where the change was made".
-            self.Display_.didSetAnalogChannelUnitsOrScales() ;
+            %self.Display_.didSetAnalogChannelUnitsOrScales() ;
             self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;
             self.broadcast('UpdateTestPulser') ;
         end
 
@@ -996,7 +1012,8 @@ classdef WavesurferModel < ws.Model
             self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
-            self.Display_.didSetAnalogInputTerminalID_() ;
+            %self.Display_.didSetAnalogInputTerminalID() ;
+            self.broadcast('ClearData') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -1010,7 +1027,7 @@ classdef WavesurferModel < ws.Model
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
-            self.Display_.didSetDigitalInputTerminalID_() ;
+            self.broadcast('ClearData') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
             if wasSet ,
@@ -1120,7 +1137,9 @@ classdef WavesurferModel < ws.Model
             %self.Ephys_.didSetIsInputChannelActive() ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
-            self.Display_.didSetIsInputChannelActive() ;
+            %self.Display_.didSetIsInputChannelActive() ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;            
         end
         
         function setIsYokedToScanImage_(self, newValue)
@@ -1206,13 +1225,19 @@ classdef WavesurferModel < ws.Model
 
         function didSetSweepDurationIfFinite_(self)
             %self.Triggering_.didSetSweepDurationIfFinite() ;
-            self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
+            %self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                self.broadcast('ClearData') ;
+            end                
+            self.broadcast('UpdateXSpan') ;
         end        
         
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
             self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
             self.broadcast('UpdateTriggering') ;
-            self.Display_.didSetAreSweepsFiniteDuration();
+            %self.Display_.didSetAreSweepsFiniteDuration();
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateXSpan') ;
         end        
 
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
@@ -1306,7 +1331,9 @@ classdef WavesurferModel < ws.Model
                     self.Stimulation_.startingRun() ;
                 end
                 if self.Display_.IsEnabled ,
+                    self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
+                    self.broadcast('ClearData') ;
                 end
                 if self.Triggering_.IsEnabled ,
                     primaryDeviceName = self.PrimaryDeviceName ;
@@ -2246,13 +2273,21 @@ classdef WavesurferModel < ws.Model
                                                expectedSweepScanCount);
                 end
                 if self.Display_.IsEnabled ,
-                    self.Display_.dataAvailable(isSweepBased, ...
-                                               t, ...
-                                               scaledAnalogData, ...
-                                               rawAnalogData, ...
-                                               rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData, ...
-                                               self.XSpan);
+                    [doesNeedClear, doesNeedUpdateXOffset] = ...
+                        self.Display_.dataAvailable(isSweepBased, ...
+                                                    t, ...
+                                                    scaledAnalogData, ...
+                                                    rawAnalogData, ...
+                                                    rawDigitalData, ...
+                                                    timeSinceRunStartAtStartOfData, ...
+                                                    self.XSpan);
+                    if doesNeedClear ,
+                        self.broadcast('ClearData') ;
+                    end
+                    if doesNeedUpdateXOffset ,
+                        self.broadcast('UpdateXOffset') ;
+                    end
+                    self.broadcast('AddData', t, scaledAnalogData, rawDigitalData) ;                                           
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
@@ -2303,7 +2338,7 @@ classdef WavesurferModel < ws.Model
                     aoChannelName = self.AOChannelNames{aoChannelIndex} ;
                     self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
                 end
-                self.Display_.IsEnabled = true ;
+                self.IsDisplayEnabled = true ;
                 self.DoesProtocolNeedSave_ = false ;  % this is a special case
                 self.enableBroadcastsMaybe() ;            
                 self.broadcast('Update') ;
@@ -2769,6 +2804,8 @@ classdef WavesurferModel < ws.Model
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
+                self.broadcast('ClearData') ;
+                self.broadcast('UpdateDisplay') ;
                 %self.Ephys_.didChangeNumberOfInputChannels();
                 self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateTestPulser');
@@ -2806,6 +2843,8 @@ classdef WavesurferModel < ws.Model
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
+                self.broadcast('ClearData') ;
+                self.broadcast('UpdateDisplay') ;
                 %self.Ephys_.didChangeNumberOfInputChannels() ;                
                 self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateTestPulser');
@@ -2871,6 +2910,8 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;            
             %self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateTestPulser');
@@ -2883,6 +2924,8 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;            
             %self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateTestPulser');
@@ -3009,6 +3052,12 @@ classdef WavesurferModel < ws.Model
             propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
             propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
         end
+        
+        function propNames = listPropertiesForHeader(self)
+            propNamesRaw = listPropertiesForHeader@ws.Coding(self) ;            
+            propNames=setdiff(propNamesRaw, ...
+                              {'IsReady'}) ;
+        end  % function                 
     end  % public methods block
 
     methods (Access=protected)
@@ -4702,7 +4751,9 @@ classdef WavesurferModel < ws.Model
             end
             display=self.Display_;
             if ~isempty(display)
-                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+                %display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+                self.broadcast('ClearData') ;
+                self.broadcast('UpdateDisplay') ;
             end            
             ephys=self.Ephys_;
             if ~isempty(ephys)
@@ -4714,11 +4765,13 @@ classdef WavesurferModel < ws.Model
         
         function setSingleDIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
-            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
+            didSucceed = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
             if didSucceed, 
                 self.DoesProtocolNeedSave_ = true ;
             end
-            self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+            %self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;            
             self.broadcast('UpdateChannels') ;
         end
         
@@ -4759,8 +4812,27 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.IsXSpanSlavedToAcquistionDuration(self, newValue)
-            self.Display_.setIsXSpanSlavedToAcquistionDuration_(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
+            if self.IsXSpanSlavedToAcquistionDurationSettable ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                    isNewValueAllowed = true ;
+                    self.Display_.IsXSpanSlavedToAcquistionDuration = logical(newValue) ;
+                    %self.clearData_() ; 
+                    self.broadcast('ClearData');
+                else
+                    isNewValueAllowed = false ;
+                end
+            else
+                isNewValueAllowed = true ;  % sort of in a trivial sense...
+            end
+            self.broadcast('UpdateDisplay');            
+            if ~isNewValueAllowed ,
+                error('ws:invalidPropertyValue', ...
+                      'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+            end                            
+            
+            %self.Display_.setIsXSpanSlavedToAcquistionDuration(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol');
         end
         
         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
@@ -4772,12 +4844,31 @@ classdef WavesurferModel < ws.Model
                 sweepDuration = self.SweepDuration ;
                 value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
             else
-                value = self.Display_.getXSpan_() ;
+                value = self.Display_.getXSpan() ;
             end
         end
         
         function set.XSpan(self, newValue)            
-            self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                % don't set anything
+                didSucceed = true ;  % this is by convention
+            else
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    %self.XSpan_ = double(newValue);
+                    self.Display_.setXSpan(double(newValue)) ;
+                    %self.clearData_() ;
+                    self.broadcast('ClearData') ;
+                    didSucceed = true ;
+                else
+                    didSucceed = false ;
+                end
+            end
+            self.broadcast('UpdateXSpan');
+            if ~didSucceed ,
+                error('ws:invalidPropertyValue', ...
+                      'XSpan must be a scalar finite positive number') ;
+            end                                      
+            %self.Display_.setXSpan(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
@@ -4797,7 +4888,13 @@ classdef WavesurferModel < ws.Model
         
         function toggleIsDIChannelDisplayed(self, diChannelIndex) 
             nDIChannels = self.NDIChannels ;
-            self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+            try
+                self.Display_.toggleIsDigitalChannelDisplayed(diChannelIndex, nDIChannels) ;
+            catch err
+                self.broadcast('UpdateDisplay') ;
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateDisplay') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5151,47 +5248,107 @@ classdef WavesurferModel < ws.Model
         end
        
         function toggleIsGridOn(self)
-            self.Display_.toggleIsGridOn_() ;
+            self.IsGridOn = ~(self.IsGridOn) ;
+        end
+
+        function set.IsGridOn(self, newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.IsGridOn = logical(newValue) ;
+            else
+                self.broadcast('UpdateDisplay');
+                error('ws:invalidPropertyValue', ...
+                      'IsGridOn must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateDisplay');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
-
+        
         function result = get.IsGridOn(self)
             result = self.Display_.IsGridOn ;
         end
         
         function toggleAreColorsNormal(self)
-            self.Display_.toggleAreColorsNormal_() ;
+            self.AreColorsNormal = ~(self.AreColorsNormal) ;
+        end
+
+        function set.AreColorsNormal(self,newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.AreColorsNormal = logical(newValue) ;
+            else
+                self.broadcast('UpdateDisplay');
+                error('ws:invalidPropertyValue', ...
+                      'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateDisplay');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
-
+        
         function result = get.AreColorsNormal(self)
             result = self.Display_.AreColorsNormal ;
         end
         
         function toggleDoShowZoomButtons(self)
-            self.Display_.toggleDoShowZoomButtons_() ;
-            self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('DidMaybeChangeProtocol') ;            
+            self.DoShowZoomButtons = ~(self.DoShowZoomButtons) ;
         end
+        
+        function set.DoShowZoomButtons(self, newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.DoShowZoomButtons = logical(newValue) ;
+            else
+                self.broadcast('UpdateDisplay');
+                error('ws:invalidPropertyValue', ...
+                      'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateDisplay');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function toggleDoColorTraces(self)
+            self.DoColorTraces = ~(self.DoColorTraces) ;
+        end        
+        
+%         function toggleDoShowZoomButtons(self)
+%             self.Display_.toggleDoShowZoomButtons_() ;
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.broadcast('DidMaybeChangeProtocol') ;            
+%         end
         
         function result = get.DoShowZoomButtons(self)
             result = self.Display_.DoShowZoomButtons ;
         end
         
-        function toggleDoColorTraces(self)
-            self.Display_.toggleDoColorTraces_() ;       
-            self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('DidMaybeChangeProtocol') ;            
-        end        
+%         function toggleDoColorTraces(self)
+%             self.Display_.toggleDoColorTraces_() ;       
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.broadcast('DidMaybeChangeProtocol') ;            
+%         end        
         
         function result = get.DoColorTraces(self)
             result = self.Display_.DoColorTraces ;
         end
         
+        function set.DoColorTraces(self,newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.DoColorTraces = logical(newValue) ;
+            else
+                self.broadcast('UpdateDisplay');
+                error('ws:invalidPropertyValue', ...
+                      'DoColorTraces must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateDisplay');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
-            self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            doNeedToClearData = self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            if doNeedToClearData ,
+                self.broadcast('ClearData') ;
+            end
+            self.broadcast('UpdateDisplay') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5536,7 +5693,9 @@ classdef WavesurferModel < ws.Model
                                   'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
                                   'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
                     if isModeOrChannelNameOrScale ,
-                        self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                        %self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                        self.broadcast('ClearData') ;
+                        self.broadcast('UpdateDisplay') ;
                         self.broadcast('UpdateChannels') ;
                     end                                
                     self.broadcast('DidMaybeChangeProtocol') ;
@@ -5618,7 +5777,8 @@ classdef WavesurferModel < ws.Model
                 % press of the Update button.
                 self.broadcast('UpdateElectrodeManager') ;
                 self.broadcast('UpdateTestPulser') ;
-                self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                self.broadcast('ClearData') ;
+                self.broadcast('UpdateDisplay') ;
                 self.broadcast('UpdateChannels') ;
             end
             self.changeReadiness_(+1) ;
@@ -5710,7 +5870,9 @@ classdef WavesurferModel < ws.Model
             end
             self.broadcast('UpdateElectrodeManager');            
             self.broadcast('UpdateTestPulser') ;
-            self.Display_.didRemoveElectrodes() ;
+            %self.Display_.didRemoveElectrodes() ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
@@ -5916,9 +6078,9 @@ classdef WavesurferModel < ws.Model
 %             self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
 %         end
         
-        function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.TestPulseElectrodesCount(self)
             result = self.Ephys_.TestPulseElectrodesCount ;
@@ -5982,6 +6144,8 @@ classdef WavesurferModel < ws.Model
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
 
@@ -6066,7 +6230,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DisplayUpdateRate(self, newValue)
-            self.Display_.UpdateRate = newValue ;
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                self.Display_.UpdateRate = max(0.1,min(newValue,10)) ;
+            else
+                self.broadcast('DidSetUpdateRate');
+                error('ws:invalidPropertyValue', ...
+                      'UpdateRate must be a scalar finite positive number') ;
+            end
+            self.broadcast('DidSetUpdateRate');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -6082,7 +6253,18 @@ classdef WavesurferModel < ws.Model
         function value = get.XOffset(self)
             value = self.Display_.XOffset ;
         end
-                
+           
+        function set.XOffset(self, newValue)
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                self.Display_.XOffset = double(newValue);
+            else
+                self.broadcast('UpdateXOffset');
+                error('ws:invalidPropertyValue', ...
+                      'XOffset must be a scalar finite number') ;
+            end
+            self.broadcast('UpdateXOffset');
+        end
+        
         function value = get.YLimitsPerAIChannel(self)
             value = self.Display_.YLimitsPerAnalogChannel ;
         end
@@ -6111,9 +6293,9 @@ classdef WavesurferModel < ws.Model
             result = self.Display_.PlotHeightFromPlotIndex ;
         end
         
-        function subscribeMeToDisplayEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToDisplayEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
 %         function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
 %             self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
@@ -6132,10 +6314,10 @@ classdef WavesurferModel < ws.Model
             self.Display_.setAreYLimitsLockedTightToDataForSingleChannel_(aiChannelIndex, newValue) ;
         end        
         
-        function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
-            % Underscore b/c doesn't trigger an update
-            self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
-        end
+%         function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
+%             % Underscore b/c doesn't trigger an update
+%             self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
+%         end
 
 %         function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
 %             self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
@@ -6178,31 +6360,45 @@ classdef WavesurferModel < ws.Model
         end
         
         function setYLimitsForSingleAIChannel(self, i, newValue)
-            self.Display_.setYLimitsForSingleAnalogChannel(i, newValue) ;
+            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
+                self.Display_.setYLimitsForSingleAnalogChannel(i, double(newValue')) ;
+                wasSet = true ;
+            else
+                wasSet = false ;
+            end
+            self.broadcast('UpdateDisplay') ;
+            if ~wasSet ,
+                error('ws:invalidPropertyValue', ...
+                      'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
+            end            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function scrollUp(self, plotIndex)  % works on analog channels only
-            self.Display_.scrollUp(plotIndex) ;
+            channelIndex = self.Display_.scrollUp(plotIndex) ;
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDown(self, plotIndex)  % works on analog channels only
-            self.Display_.scrollDown(plotIndex) ;
+            channelIndex = self.Display_.scrollDown(plotIndex) ;
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomIn(self, plotIndex)  % works on analog channels only
-            self.Display_.zoomIn(plotIndex) ;
+            channelIndex = self.Display_.zoomIn(plotIndex) ;
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
-            self.Display_.zoomOut(plotIndex) ;
+            channelIndex = self.Display_.zoomOut(plotIndex) ;
+            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end        

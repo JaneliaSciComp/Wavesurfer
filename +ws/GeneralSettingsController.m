@@ -101,10 +101,10 @@ classdef GeneralSettingsController < ws.Controller
                 wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');
                 %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                 %wsModel.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');
-                wsModel.subscribeMeToDisplayEvent(self,'Update','','update');
+                wsModel.subscribeMe(self,'UpdateDisplay','','update');
                 %wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
-                wsModel.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
-                wsModel.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
+                wsModel.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
+                wsModel.subscribeMe(self,'UpdateXSpan','','updateControlProperties');
                 wsModel.subscribeMe(self,'UpdateLogging','','updateControlProperties');
                 wsModel.subscribeMe(self,'UpdateDoIncludeSessionIndexInDataFileName','','update');
                 wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');

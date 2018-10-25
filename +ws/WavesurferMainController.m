@@ -185,14 +185,13 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
                 model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;
                 
-                % Subscribe to events from the Display subsystem 
-                model.subscribeMeToDisplayEvent(self,'Update','','update') ;
-                model.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties') ;
-                model.subscribeMeToDisplayEvent(self,'UpdateXOffset','','updateXAxisLimits') ;
-                model.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateXAxisLimits') ;
-                model.subscribeMeToDisplayEvent(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
-                model.subscribeMeToDisplayEvent(self,'ClearData','','clearData') ;
-                model.subscribeMeToDisplayEvent(self, 'AddData', '', 'addData') ;
+                model.subscribeMe(self,'UpdateDisplay','','update') ;
+                model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
+                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
+                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits') ;
+                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+                model.subscribeMe(self,'ClearData','','clearData') ;
+                model.subscribeMe(self, 'AddData', '', 'addData') ;
             end
             
             % Make the figure visible

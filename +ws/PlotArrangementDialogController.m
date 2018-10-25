@@ -57,7 +57,8 @@ classdef PlotArrangementDialogController < ws.Controller
             
             % Do stuff specific to dialog boxes
             self.centerOnParentPosition_(parentFigurePosition) ;
-            self.show() ;
+            %self.show() ;
+            set(self.FigureGH_, 'Visible', 'on') ;
         end  % constructor
     end
     
@@ -263,18 +264,12 @@ classdef PlotArrangementDialogController < ws.Controller
             newOffset=parentOffset+(parentSize-size)/2;
             newPosition=[newOffset size];
             set(self.FigureGH_,'Position',newPosition);
-        end        
+        end                
     end % protected methods block
     
     methods        
-%         function controlActuated(self, methodNameStem, source, event, varargin)
-%             controlActuated@ws.Controller(self, methodNameStem, source, event, varargin{:}) ;
-% %             if isequal(source, self.YMaxEdit_) || isequal(source, self.YMinEdit_) ,
-% %                 self.syncOKButtonEnablementFromEditContents_() ;
-% %             else
-% %                 controlActuated@ws.Controller(self, methodNameStem, source, event, varargin{:}) ;
-% %             end
-%         end  % function
+        function updateVisibility(self, varargin)  %#ok<INUSD>
+        end                        
        
         function keyPressedOnButton(self, methodNameStem, source, event)
             % This makes it so the user can press "Enter" when a button has keyboard focus to "press" the button.
@@ -284,17 +279,6 @@ classdef PlotArrangementDialogController < ws.Controller
         end  % function
     end  % public methods block
     
-%     methods (Access=protected)
-%         function syncOKButtonEnablementFromEditContents_(self)
-%             yMaxAsString=get(self.YMaxEdit_,'String');
-%             yMinAsString=get(self.YMinEdit_,'String');
-%             yMax=str2double(yMaxAsString);
-%             yMin=str2double(yMinAsString);
-%             isEnabled= isfinite(yMax) && isfinite(yMin) && (yMin~=yMax);
-%             set(self.OKButton_,'Enable',ws.onIff(isEnabled));
-%         end
-%     end 
-        
     methods
         function isDisplayedCheckboxActuated(self, source, event, rowIndex)  %#ok<INUSL>            
             channelIndex = self.ChannelIndexFromRowIndex_(rowIndex) ;

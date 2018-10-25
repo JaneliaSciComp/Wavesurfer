@@ -798,9 +798,9 @@ classdef Ephys < ws.Subsystem
 %             self.ElectrodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
 %         end
         
-        function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
-            self.TestPulser_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.TestPulser_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
     end  % public methods block
 
