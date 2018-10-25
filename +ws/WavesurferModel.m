@@ -965,6 +965,7 @@ classdef WavesurferModel < ws.Model
             % Acquisition or Stimulation subsystem where the change was made".
             self.Display_.didSetAnalogChannelUnitsOrScales() ;
             self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
+            self.broadcast('UpdateTestPulser') ;
         end
 
     end  % protected methods block
@@ -1114,8 +1115,9 @@ classdef WavesurferModel < ws.Model
         end        
         
         function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
-            self.Ephys_.didSetIsInputChannelActive() ;
+            %self.Ephys_.didSetIsInputChannelActive() ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
+            self.broadcast('TPDidSetIsInputChannelActive') ;
             self.Display_.didSetIsInputChannelActive() ;
         end
         
@@ -2765,8 +2767,9 @@ classdef WavesurferModel < ws.Model
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
-                self.Ephys_.didChangeNumberOfInputChannels();
+                %self.Ephys_.didChangeNumberOfInputChannels();
                 self.broadcast('EMDidChangeNumberOfInputChannels');
+                self.broadcast('UpdateTestPulser');
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');
             end
@@ -2782,8 +2785,9 @@ classdef WavesurferModel < ws.Model
                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAOChannelTerminalOvercommitted_() ;
-                self.Ephys_.didChangeNumberOfOutputChannels() ;
+                %self.Ephys_.didChangeNumberOfOutputChannels() ;                
                 self.broadcast('EMDidChangeNumberOfOutputChannels');
+                self.broadcast('UpdateTestPulser') ;                
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('UpdateStimulusLibrary') ;
             end
@@ -2800,8 +2804,9 @@ classdef WavesurferModel < ws.Model
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
-                self.Ephys_.didChangeNumberOfInputChannels() ;
+                %self.Ephys_.didChangeNumberOfInputChannels() ;                
                 self.broadcast('EMDidChangeNumberOfInputChannels');
+                self.broadcast('UpdateTestPulser');
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
                 self.Looper_.didAddDigitalInputChannelInFrontend(self.PrimaryDeviceName, ...
@@ -2829,8 +2834,9 @@ classdef WavesurferModel < ws.Model
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
-                self.Ephys_.didChangeNumberOfOutputChannels();
+                %self.Ephys_.didChangeNumberOfOutputChannels();
                 self.broadcast('EMDidChangeNumberOfOutputChannels');
+                self.broadcast('UpdateTestPulser') ;                                
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
 %                 channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
@@ -2863,8 +2869,9 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.Ephys_.didChangeNumberOfInputChannels();
+            %self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('EMDidChangeNumberOfInputChannels');
+            self.broadcast('UpdateTestPulser');
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  
         end
@@ -2874,8 +2881,9 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.Ephys_.didChangeNumberOfInputChannels() ;
+            %self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
+            self.broadcast('UpdateTestPulser');
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  
             %self.broadcast('DidMaybeChangeProtocol') ;
@@ -2895,8 +2903,9 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
-            self.Ephys_.didChangeNumberOfOutputChannels();
+            %self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('EMDidChangeNumberOfOutputChannels');
+            self.broadcast('UpdateTestPulser') ;            
 %             self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
 %               % we might be able to call this from within
 %               % self.Stimulation_.deleteMarkedAnalogChannels, and that would
@@ -2923,8 +2932,9 @@ classdef WavesurferModel < ws.Model
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
-            self.Ephys_.didChangeNumberOfOutputChannels();
+            %self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('EMDidChangeNumberOfOutputChannels');            
+            self.broadcast('UpdateTestPulser') ;            
             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
 %             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
@@ -5041,7 +5051,8 @@ classdef WavesurferModel < ws.Model
                                                   deviceName, ...
                                                   primaryDeviceName, ...
                                                   isPrimaryDeviceAPXIDevice, ...
-                                                  gainOrResistanceUnitsPerTestPulseElectrode) ;
+                                                  gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                                  self) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -5079,6 +5090,11 @@ classdef WavesurferModel < ws.Model
                 rethrow(exception) ;                                
             end            
         end  % function    
+        
+        function completingTestPulserSweep(self, source, event)
+            self.Ephys_.completingTestPulserSweep(source, event) ;
+            self.broadcast('TPUpdateTrace');
+        end
     end
     
     methods (Access=protected)
@@ -5120,7 +5136,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DoSubtractBaselineInTestPulseView(self, newValue)            
-            self.Ephys_.setDoSubtractBaselineInTestPulseView_(newValue) ;
+            self.Ephys_.setDoSubtractBaselineInTestPulseView(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5182,7 +5199,8 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function set.TestPulseYLimits(self, newValue)
-            self.Ephys_.setTestPulseYLimits_(newValue) ;
+            self.Ephys_.setTestPulseYLimits(newValue) ;
+            self.broadcast('UpdateTestPulser') ;                        
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5391,25 +5409,29 @@ classdef WavesurferModel < ws.Model
     
     methods
         function zoomInTestPulseView(self)
-            self.Ephys_.zoomInTestPulseView_() ;
+            self.Ephys_.zoomInTestPulseView() ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function zoomOutTestPulseView(self)
             self.Ephys_.zoomOutTestPulseView_() ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollUpTestPulseView(self)
             self.Ephys_.scrollUpTestPulseView_() ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDownTestPulseView(self)
             self.Ephys_.scrollDownTestPulseView_() ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
@@ -5419,7 +5441,8 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.TestPulseDuration(self, newValue) 
-            self.Ephys_.setTestPulseDuration_(newValue) ;
+            self.Ephys_.setTestPulseDuration(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5430,6 +5453,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYInTestPulseView_(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5440,6 +5464,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYRepeatingInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYRepeatingInTestPulseView_(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5473,6 +5498,7 @@ classdef WavesurferModel < ws.Model
                     try
                         self.Ephys_.setElectrodeProperty(electrodeIndex, propertyName, newValue) ;
                         self.broadcast('UpdateElectrodeManager') ;
+                        self.broadcast('UpdateTestPulser') ;
                         self.DoesProtocolNeedSave_ = true ;
                     catch exception
                         % deal with EPCMasterSocket exceptions,
@@ -5583,6 +5609,7 @@ classdef WavesurferModel < ws.Model
                 % have the protocol think it needs saving after each
                 % press of the Update button.
                 self.broadcast('UpdateElectrodeManager') ;
+                self.broadcast('UpdateTestPulser') ;
                 self.Display_.didSetAnalogChannelUnitsOrScales() ;
                 self.broadcast('UpdateChannels') ;
             end
@@ -5656,10 +5683,12 @@ classdef WavesurferModel < ws.Model
                 electrodeIndex = self.Ephys_.addNewElectrode() ;
             catch err
                 self.broadcast('UpdateElectrodeManager') ;
+                self.broadcast('UpdateTestPulser') ;
                 rethrow(err) ;
             end
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateTestPulser') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
        
@@ -5668,9 +5697,11 @@ classdef WavesurferModel < ws.Model
                 self.Ephys_.removeMarkedElectrodes() ;
             catch err
                 self.broadcast('UpdateElectrodeManager');
+                self.broadcast('UpdateTestPulser') ;
                 rethrow(err) ;
             end
             self.broadcast('UpdateElectrodeManager');            
+            self.broadcast('UpdateTestPulser') ;
             self.Display_.didRemoveElectrodes() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;

@@ -56,15 +56,15 @@ classdef Ephys < ws.Subsystem
 %             out=self.ElectrodeManager_;
 %         end
         
-        function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
-            % Called by the ElectrodeManager to notify that the electrode
-            % may have changed.
-            % Currently, tells TestPulser about the change, and the parent
-            % WavesurferModel.
-            self.ElectrodeManager_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
-            self.TestPulser_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
-            %self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
-        end
+%         function electrodeMayHaveChanged(self, electrodeIndex, propertyName)
+%             % Called by the ElectrodeManager to notify that the electrode
+%             % may have changed.
+%             % Currently, tells TestPulser about the change, and the parent
+%             % WavesurferModel.
+%             self.ElectrodeManager_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+%             self.TestPulser_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+%             %self.Parent.electrodeMayHaveChanged(electrodeIndex,propertyName);
+%         end
 
 %         function electrodeWasAdded(self,electrode)
 %             % Called by the ElectrodeManager when an electrode is added.
@@ -109,24 +109,24 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.didSetAcquisitionSampleRate(newValue) ;
         end        
         
-        function didSetIsInputChannelActive(self) 
-            %self.ElectrodeManager_.didSetIsInputChannelActive() ;
-            self.TestPulser_.didSetIsInputChannelActive() ;
-        end
+%         function didSetIsInputChannelActive(self) 
+%             %self.ElectrodeManager_.didSetIsInputChannelActive() ;
+%             %self.TestPulser_.didSetIsInputChannelActive() ;
+%         end
         
 %         function didSetIsDigitalOutputTimed(self)
 %             %self.ElectrodeManager_.didSetIsDigitalOutputTimed() ;
 %         end
         
-        function didChangeNumberOfInputChannels(self)
-            %self.ElectrodeManager_.didChangeNumberOfInputChannels();
-            self.TestPulser_.didChangeNumberOfInputChannels();
-        end        
+%         function didChangeNumberOfInputChannels(self)
+%             %self.ElectrodeManager_.didChangeNumberOfInputChannels();
+%             %self.TestPulser_.didChangeNumberOfInputChannels();
+%         end        
         
-        function didChangeNumberOfOutputChannels(self)
-            %self.ElectrodeManager_.didChangeNumberOfOutputChannels();
-            self.TestPulser_.didChangeNumberOfOutputChannels();
-        end        
+%         function didChangeNumberOfOutputChannels(self)
+%             %self.ElectrodeManager_.didChangeNumberOfOutputChannels();
+%             self.TestPulser_.didChangeNumberOfOutputChannels();
+%         end        
 
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             self.ElectrodeManager_.didSetAnalogInputChannelName(didSucceed, oldValue, newValue) ;
@@ -377,7 +377,8 @@ classdef Ephys < ws.Subsystem
                                        deviceName, ...
                                        primaryDeviceName, ...
                                        isPrimaryDeviceAPXIDevice, ...
-                                       gainOrResistanceUnitsPerTestPulseElectrode)
+                                       gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                       wsModel)
 %             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
 %             indexOfTestPulseElectrodeWithinTestPulseElectrodes = ...
 %                 self.ElectrodeManager_.indexWithinTestPulseElectrodesFromElectrodeIndex(testPulseElectrodeIndex) ;
@@ -398,7 +399,8 @@ classdef Ephys < ws.Subsystem
                                              monitorChannelScalePerTestPulseElectrode, ...
                                              deviceName, ...
                                              primaryDeviceName, ...
-                                             isPrimaryDeviceAPXIDevice ) ;
+                                             isPrimaryDeviceAPXIDevice, ...
+                                             wsModel) ;
         end
 
         function startTestPulsing(self)
@@ -413,6 +415,10 @@ classdef Ephys < ws.Subsystem
             self.TestPulser_.abort_() ;
         end
         
+        function completingTestPulserSweep(self, source, event)
+            self.TestPulser_.completingSweep(source, event) ;
+        end
+
         function result = isTestPulsing(self)
             result = self.TestPulser_.getIsRunning_() ;
         end
@@ -460,8 +466,8 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.getDoSubtractBaseline_() ;
         end        
         
-        function setDoSubtractBaselineInTestPulseView_(self, newValue)            
-            self.TestPulser_.setDoSubtractBaseline_(newValue) ;
+        function setDoSubtractBaselineInTestPulseView(self, newValue)            
+            self.TestPulser_.setDoSubtractBaseline(newValue) ;
         end    
         
 %         function result = get.TestPulseElectrodeName(self)
@@ -513,8 +519,8 @@ classdef Ephys < ws.Subsystem
             end
         end
         
-        function setTestPulseYLimits_(self, newValue)
-            self.TestPulser_.setYLimits_(newValue) ;
+        function setTestPulseYLimits(self, newValue)
+            self.TestPulser_.setYLimits(newValue) ;
         end
         
         function result = getTestPulseYLimits_(self)
@@ -529,28 +535,28 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_.getGainOrResistanceUnitsPerTestPulseElectrodeCached_() ;
         end                
         
-        function zoomInTestPulseView_(self)
-            self.TestPulser_.zoomIn_() ;
+        function zoomInTestPulseView(self)
+            self.TestPulser_.zoomIn() ;
         end  % function
         
-        function zoomOutTestPulseView_(self)
-            self.TestPulser_.zoomOut_() ;
+        function zoomOutTestPulseView(self)
+            self.TestPulser_.zoomOut() ;
         end  % function
         
-        function scrollUpTestPulseView_(self)
-            self.TestPulser_.scrollUp_() ;
+        function scrollUpTestPulseView(self)
+            self.TestPulser_.scrollUp() ;
         end  % function
         
-        function scrollDownTestPulseView_(self)
-            self.TestPulser_.scrollDown_() ;
+        function scrollDownTestPulseView(self)
+            self.TestPulser_.scrollDown() ;
         end  % function
         
         function result = getTestPulseDuration_(self) 
             result = self.TestPulser_.getPulseDuration_() ;
         end
         
-        function setTestPulseDuration_(self, newValue) 
-            self.TestPulser_.setPulseDuration_(newValue) ;
+        function setTestPulseDuration(self, newValue) 
+            self.TestPulser_.setPulseDuration(newValue) ;
         end        
         
         function result = getIsAutoYInTestPulseView_(self) 
@@ -583,7 +589,7 @@ classdef Ephys < ws.Subsystem
             
         function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
             self.ElectrodeManager_.setElectrodeProperty(electrodeIndex, propertyName, newValue) ;
-            self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
+            %self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
         end
         
         function setElectrodeModeAndScalings(self,...
@@ -601,7 +607,7 @@ classdef Ephys < ws.Subsystem
                                                                newCurrentCommandScaling, ...
                                                                newVoltageCommandScaling,...
                                                                newIsCommandEnabled) ;
-            self.electrodeMayHaveChanged(electrodeIndex, '') ;
+            %self.electrodeMayHaveChanged(electrodeIndex, '') ;
         end  % function
 
 %         function result = getTestPulseElectrodeIndex(self)
@@ -662,7 +668,7 @@ classdef Ephys < ws.Subsystem
         function removeMarkedElectrodes(self)
             wasRemoved = self.ElectrodeManager_.removeMarkedElectrodes() ;
             electrodeCountAfter = self.ElectrodeManager_.getElectrodeCount() ;
-            self.TestPulser_.electrodesRemoved_(wasRemoved, electrodeCountAfter) ;
+            self.TestPulser_.electrodesRemoved(wasRemoved, electrodeCountAfter) ;
         end
 
         function setDoTrodeUpdateBeforeRun(self, newValue)

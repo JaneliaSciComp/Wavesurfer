@@ -455,17 +455,17 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             electrode.MonitorChannelName = newValue ;
 %         end
         
-        function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSD>
-            % Called by the child electrodes when they may have changed.
-            % Currently, broadcasts that self has changed, and notifies the
-            % parent Ephys object.
-            
-%             % propagate the notifications up the chain of command
-%             self.Parent_.electrodeMayHaveChanged(electrode,propertyName);
-            
-            % notify the view(s)
-            %self.broadcast('Update');
-        end  % function
+%         function electrodeMayHaveChanged(self, electrode, propertyName)  %#ok<INUSD>
+%             % Called by the child electrodes when they may have changed.
+%             % Currently, broadcasts that self has changed, and notifies the
+%             % parent Ephys object.
+%             
+% %             % propagate the notifications up the chain of command
+% %             self.Parent_.electrodeMayHaveChanged(electrode,propertyName);
+%             
+%             % notify the view(s)
+%             %self.broadcast('Update');
+%         end  % function
         
 %         function set.Electrodes(self,newElectrodes)
 %             % Way to set all the electrodes.  This uses only property

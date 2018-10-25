@@ -115,16 +115,16 @@ classdef TestPulser < ws.Model
         
         function didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent_();
-            self.broadcast('Update');            
+            %self.broadcast('Update');            
         end
            
-        function didChangeNumberOfInputChannels(self)
-            self.broadcast('Update');
-        end
+%         function didChangeNumberOfInputChannels(self)
+%             %self.broadcast('Update');
+%         end
         
-        function didChangeNumberOfOutputChannels(self)
-            self.broadcast('Update');
-        end
+%         function didChangeNumberOfOutputChannels(self)
+%             self.broadcast('Update');
+%         end
         
         function result = getElectrodeIndex(self)
             result = self.ElectrodeIndex_ ;
@@ -156,12 +156,12 @@ classdef TestPulser < ws.Model
             value = self.PulseDuration_ ;
         end
         
-        function setPulseDuration_(self, newValue)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
+        function setPulseDuration(self, newValue)  % the duration of the pulse, in seconds.  The sweep duration is twice this.
             if isscalar(newValue) && isreal(newValue) && isfinite(newValue) ,
                 self.PulseDuration_ = max(5e-3, min(double(newValue), 500e-3)) ;
                 self.clearExistingSweepIfPresent_() ;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
 
         function commands = getCommandPerElectrode(self, fs, amplitudePerElectrode)  
@@ -190,12 +190,12 @@ classdef TestPulser < ws.Model
             value=self.DoSubtractBaseline_;
         end
         
-        function setDoSubtractBaseline_(self, newValue)
+        function setDoSubtractBaseline(self, newValue)
             if islogical(newValue) ,
                 self.DoSubtractBaseline_ = newValue ;
                 self.clearExistingSweepIfPresent_();
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function value=getIsAutoY_(self)
@@ -212,7 +212,7 @@ classdef TestPulser < ws.Model
                     end
                 end
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function value=getIsAutoYRepeating_(self)
@@ -223,7 +223,7 @@ classdef TestPulser < ws.Model
             if islogical(newValue) && isscalar(newValue) ,
                 self.IsAutoYRepeating_=newValue;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
               
         function value = getTime_(self, fs)  % s
@@ -447,11 +447,11 @@ classdef TestPulser < ws.Model
             end
         end  % function
 
-        function setYLimits_(self, newValue)
+        function setYLimits(self, newValue)
             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && all(isfinite(newValue)) && newValue(1)<newValue(2),
                 self.YLimits_=newValue;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end
         
         function result = getYLimits_(self)
@@ -467,10 +467,10 @@ classdef TestPulser < ws.Model
             if isempty(self.ElectrodeIndex_) && electrodeCountAfter>=1 ,
                 self.setElectrodeIndex(1) ;
             end
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end
 
-        function electrodesRemoved_(self, wasRemoved, electrodeCountAfter)
+        function electrodesRemoved(self, wasRemoved, electrodeCountAfter)
             % Called by the parent Ephys when one or more electrodes are
             % removed.
             electrodeIndexBefore = self.ElectrodeIndex_ ;
@@ -503,17 +503,17 @@ classdef TestPulser < ws.Model
                 end
             end
             
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end  % function
         
-        function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
-            % Called by the parent Ephys to notify the TestPulser of a
-            % change.
-%             if (self.Electrode == electrode) ,  % pointer comparison, essentially
-%                 self.Electrode=electrode;  % call the setter to change everything that should change
-%             end
-            self.broadcast('Update') ;
-        end  % function
+%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
+%             % Called by the parent Ephys to notify the TestPulser of a
+%             % change.
+% %             if (self.Electrode == electrode) ,  % pointer comparison, essentially
+% %                 self.Electrode=electrode;  % call the setter to change everything that should change
+% %             end
+%             self.broadcast('Update') ;
+%         end  % function
         
 %         function settingElectrodeIndex_(self, electrodeCount)
 %             % Redimension MonitorPerElectrode_ appropriately, etc.
@@ -536,7 +536,8 @@ classdef TestPulser < ws.Model
                                  monitorChannelScalePerTestPulseElectrode, ...
                                  deviceName, ...
                                  primaryDeviceName, ...
-                                 isPrimaryDeviceAPXIDevice)
+                                 isPrimaryDeviceAPXIDevice, ...
+                                 wsModel)
             % Get the stimulus
             commandsInVolts = self.getCommandInVoltsPerElectrode(fs, amplitudePerTestPulseElectrode, commandChannelScalePerTestPulseElectrode) ;
             nScans=size(commandsInVolts,1);
@@ -578,7 +579,7 @@ classdef TestPulser < ws.Model
             % Set up the input task callback
             %nSamplesPerSweep=nScans*nElectrodes;
             self.InputTask_.everyNSamples = nScans ;
-            self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(self.completingSweep()) ;
+            self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(wsModel.completingTestPulserSweep()) ;
 
             % Cache some things for speed during sweeps
             self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
@@ -814,46 +815,46 @@ classdef TestPulser < ws.Model
             end
             self.LastToc_=thisToc;
             
-            self.broadcast('UpdateTrace');
+            %self.broadcast('UpdateTrace');
             %fprintf('About to exit TestPulser::completingSweep()\n');            
         end  % function
         
-        function zoomIn_(self)
+        function zoomIn(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             yRadius=0.5*diff(yLimits);
             newYLimits=yMiddle+0.5*yRadius*[-1 +1];
             self.YLimits_ = newYLimits;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
-        function zoomOut_(self)
+        function zoomOut(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             yRadius=0.5*diff(yLimits);
             newYLimits=yMiddle+2*yRadius*[-1 +1];
             self.YLimits_ = newYLimits ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
-        function scrollUp_(self)
+        function scrollUp(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             ySpan=diff(yLimits);
             yRadius=0.5*ySpan;
             newYLimits=(yMiddle+0.1*ySpan)+yRadius*[-1 +1];
             self.YLimits_ = newYLimits ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
-        function scrollDown_(self)
+        function scrollDown(self)
             yLimits=self.YLimits_;
             yMiddle=mean(yLimits);
             ySpan=diff(yLimits);
             yRadius=0.5*ySpan;
             newYLimits=(yMiddle-0.1*ySpan)+yRadius*[-1 +1];
             self.YLimits_ = newYLimits ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
                 
         function didSetAcquisitionSampleRate(self, newValue)  %#ok<INUSD>
@@ -862,9 +863,9 @@ classdef TestPulser < ws.Model
             self.clearExistingSweepIfPresent_() ;        
         end       
         
-        function didSetIsInputChannelActive(self) 
-            self.broadcast('DidSetIsInputChannelActive');
-        end
+%         function didSetIsInputChannelActive(self) 
+%             %self.broadcast('DidSetIsInputChannelActive');
+%         end
     end  % methods
         
     methods (Access=protected)                
