@@ -71,12 +71,13 @@ classdef (Abstract=true) EventSubscriber < handle
             
             % We used to do this in a while loop, but this at least
             % prevents an infinite loop if something goes wrong...
-            n = length(self.IncomingSubscriptions) ;
-            for i=1:n ,
-%                 if i==9 ,
-%                     keyboard
-%                 end
-                self.unsubscribe(1);  % each time we call this, the subscription list gets shorter by 1
+            %self
+            %if isequal(class(self), 'ws.TestPulserController') ,
+            %    keyboard
+            %end
+            %n = length(self.IncomingSubscriptions) ;
+            while ~isempty(self.IncomingSubscriptions) ,
+                self.unsubscribe(1);  % each time we call this, the subscription list gets shorter by 1 (or sometimes more than one if there are duplicate subs)
             end
         end
     end

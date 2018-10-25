@@ -69,7 +69,6 @@ classdef TestPulserController < ws.Controller
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
                 wsModel.subscribeMe(self,'UpdateTestPulser','','update') ;
                 wsModel.subscribeMe(self,'UpdateElectrodeManager','','update') ;
-                wsModel.subscribeMe(self,'UpdateTestPulser','','update') ;
                 wsModel.subscribeMe(self,'TPUpdateTrace','','updateTrace') ;
                 wsModel.subscribeMe(self,'TPDidSetIsInputChannelActive','','update') ;
                 wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
