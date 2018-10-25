@@ -6061,9 +6061,9 @@ classdef WavesurferModel < ws.Model
             self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
         end
 
-        function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
-            self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.AIChannelTerminalNames(self)
             result = self.Acquisition_.AnalogTerminalNames ;
