@@ -1064,6 +1064,7 @@ classdef WavesurferModel < ws.Model
             if ~isempty(ephys) ,
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
             end            
+            self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('UpdateStimulusLibrary') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
@@ -1107,12 +1108,14 @@ classdef WavesurferModel < ws.Model
        
     methods (Access=protected)
         function didSetIsDigitalOutputTimed_(self)
-            self.Ephys_.didSetIsDigitalOutputTimed() ;
+            %self.Ephys_.didSetIsDigitalOutputTimed() ;
+            self.broadcast('EMDidSetIsDigitalOutputTimed') ;
             self.broadcast('UpdateChannels') ;            
         end        
         
         function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
             self.Ephys_.didSetIsInputChannelActive() ;
+            self.broadcast('EMDidSetIsInputChannelActive') ;
             self.Display_.didSetIsInputChannelActive() ;
         end
         
@@ -2763,6 +2766,7 @@ classdef WavesurferModel < ws.Model
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
                 self.Ephys_.didChangeNumberOfInputChannels();
+                self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');
             end
@@ -2779,6 +2783,7 @@ classdef WavesurferModel < ws.Model
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAOChannelTerminalOvercommitted_() ;
                 self.Ephys_.didChangeNumberOfOutputChannels() ;
+                self.broadcast('EMDidChangeNumberOfOutputChannels');
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('UpdateStimulusLibrary') ;
             end
@@ -2796,6 +2801,7 @@ classdef WavesurferModel < ws.Model
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
                 self.Ephys_.didChangeNumberOfInputChannels() ;
+                self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
                 self.Looper_.didAddDigitalInputChannelInFrontend(self.PrimaryDeviceName, ...
@@ -2824,6 +2830,7 @@ classdef WavesurferModel < ws.Model
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
                 self.Ephys_.didChangeNumberOfOutputChannels();
+                self.broadcast('EMDidChangeNumberOfOutputChannels');
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
 %                 channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
@@ -2857,6 +2864,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels();
+            self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateChannels');  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels');  
         end
@@ -2867,6 +2875,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
             self.Ephys_.didChangeNumberOfInputChannels() ;
+            self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
             self.broadcast('DidChangeNumberOfInputChannels') ;  
             %self.broadcast('DidMaybeChangeProtocol') ;
@@ -2887,6 +2896,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
             self.Ephys_.didChangeNumberOfOutputChannels();
+            self.broadcast('EMDidChangeNumberOfOutputChannels');
 %             self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
 %               % we might be able to call this from within
 %               % self.Stimulation_.deleteMarkedAnalogChannels, and that would
@@ -2914,6 +2924,7 @@ classdef WavesurferModel < ws.Model
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
             self.Ephys_.didChangeNumberOfOutputChannels();
+            self.broadcast('EMDidChangeNumberOfOutputChannels');            
             self.broadcast('UpdateChannels');  % causes channels figure to update
 %             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
 %             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
@@ -3235,7 +3246,9 @@ classdef WavesurferModel < ws.Model
             self.broadcast('UpdateLogging') ;
             %self.UserCodeManager_.broadcast('Update') ;
             self.broadcast('UpdateUserCodeManager') ;
-            self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
+            %self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
+            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateTestPulser') ;            
             %self.Ephys_.ElectrodeManager.broadcast('Update') ;
             %self.Ephys_.TestPulser.broadcast('Update') ;
             self.Display_.broadcast('ClearData') ;
@@ -4682,6 +4695,7 @@ classdef WavesurferModel < ws.Model
             ephys=self.Ephys_;
             if ~isempty(ephys)
                 ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+                self.broadcast('UpdateElectrodeManager') ;
             end            
             self.broadcast('UpdateChannels') ;
         end
@@ -5451,12 +5465,14 @@ classdef WavesurferModel < ws.Model
                     self.broadcast('DidMaybeChangeProtocol') ;
                 case 'IndexWithinType' ,
                     self.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+                    self.broadcast('UpdateElectrodeManager') ;
                     self.DoesProtocolNeedSave_ = true ;
                     self.broadcast('DidMaybeChangeProtocol') ;
                 otherwise ,
                     % the common case
                     try
-                        self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+                        self.Ephys_.setElectrodeProperty(electrodeIndex, propertyName, newValue) ;
+                        self.broadcast('UpdateElectrodeManager') ;
                         self.DoesProtocolNeedSave_ = true ;
                     catch exception
                         % deal with EPCMasterSocket exceptions,
@@ -5550,13 +5566,13 @@ classdef WavesurferModel < ws.Model
 %                                                          currentCommandScalings(j), ...
 %                                                          voltageCommandScalings(j), ...
 %                                                          isCommandEnabled{j}) ;
-                        self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
-                                                                 modes{j}, ...
-                                                                 currentMonitorScalings(j), ...
-                                                                 voltageMonitorScalings(j), ...
-                                                                 currentCommandScalings(j), ...
-                                                                 voltageCommandScalings(j), ...
-                                                                 isCommandEnabled{j}) ;
+                        self.Ephys_.setElectrodeModeAndScalings(electrodeIndex, ...
+                                                                modes{j}, ...
+                                                                currentMonitorScalings(j), ...
+                                                                voltageMonitorScalings(j), ...
+                                                                currentCommandScalings(j), ...
+                                                                voltageCommandScalings(j), ...
+                                                                isCommandEnabled{j}) ;                                                            
                         didSetSomething = true ;
                     end
                 end
@@ -5566,6 +5582,7 @@ classdef WavesurferModel < ws.Model
                 % Should maybe be smarter about this, but it's annoying to
                 % have the protocol think it needs saving after each
                 % press of the Update button.
+                self.broadcast('UpdateElectrodeManager') ;
                 self.Display_.didSetAnalogChannelUnitsOrScales() ;
                 self.broadcast('UpdateChannels') ;
             end
@@ -5593,7 +5610,8 @@ classdef WavesurferModel < ws.Model
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
             self.changeReadiness_(-1);  % may have to establish contact with the softpanel, which can take a little while
-            doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
+            doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType(electrodeIndex, newValue) ;
+            self.broadcast('UpdateElectrodeManager') ;            
             if doNeedToUpdateGainsAndModes, 
                 self.updateSmartElectrodeGainsAndModes() ;
             end
@@ -5601,7 +5619,7 @@ classdef WavesurferModel < ws.Model
         end  % function
        
         function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
-            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType(electrodeIndex, newValue) ;
             if doUpdateSmartElectrodeGainsAndModes ,
                 self.updateSmartElectrodeGainsAndModes() ;
             end
@@ -5618,7 +5636,13 @@ classdef WavesurferModel < ws.Model
         
         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
             if self.areAnyElectrodesCommandable() ,
-                doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+                try
+                    doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains(newValue) ;
+                catch err
+                    self.broadcast('UpdateElectrodeManager') ;
+                    rethrow(err) ;
+                end
+                self.broadcast('UpdateElectrodeManager') ;
                 self.DoesProtocolNeedSave_ = true ;
                 self.broadcast('DidMaybeChangeProtocol') ;
                 if doUpdateSmartElectrodeGainsAndModes ,
@@ -5628,26 +5652,39 @@ classdef WavesurferModel < ws.Model
         end
         
         function electrodeIndex = addNewElectrode(self)
-            electrodeIndex = self.Ephys_.addNewElectrode() ;
+            try 
+                electrodeIndex = self.Ephys_.addNewElectrode() ;
+            catch err
+                self.broadcast('UpdateElectrodeManager') ;
+                rethrow(err) ;
+            end
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
        
         function removeMarkedElectrodes(self)
-            self.Ephys_.removeMarkedElectrodes_() ;
+            try
+                self.Ephys_.removeMarkedElectrodes() ;
+            catch err
+                self.broadcast('UpdateElectrodeManager');
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateElectrodeManager');            
             self.Display_.didRemoveElectrodes() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
         function set.DoTrodeUpdateBeforeRun(self, newValue)
-            self.Ephys_.setDoTrodeUpdateBeforeRun_(newValue) ;
+            self.Ephys_.setDoTrodeUpdateBeforeRun(newValue) ;
             self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end        
        
         function result = get.DoTrodeUpdateBeforeRun(self)
-            result = self.Ephys_.getDoTrodeUpdateBeforeRun_() ;
+            result = self.Ephys_.getDoTrodeUpdateBeforeRun() ;
         end
 
 %         function setElectrodeModeOrScaling(self, electrodeIndex, propertyName, newValue)
@@ -5836,9 +5873,9 @@ classdef WavesurferModel < ws.Model
 %             self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
 %         end
         
-        function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
             self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;

@@ -76,11 +76,12 @@ classdef ElectrodeManagerController < ws.Controller
             % Subscribe to model events
             if ~isempty(wsModel) ,
                 %electrodeManager = wsModel.Ephys.getElectrodeManagerReference_() ;
-                wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update');
-                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidSetIsInputChannelActive','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidSetIsDigitalOutputTimed','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfInputChannels','','updateControlProperties');
-                wsModel.subscribeMeToElectrodeManagerEvent(self,'DidChangeNumberOfOutputChannels','','updateControlProperties');
+                %wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update');
+                wsModel.subscribeMe(self,'UpdateElectrodeManager','','update');
+                wsModel.subscribeMe(self,'EMDidSetIsInputChannelActive','','updateControlProperties');
+                wsModel.subscribeMe(self,'EMDidSetIsDigitalOutputTimed','','updateControlProperties');
+                wsModel.subscribeMe(self,'EMDidChangeNumberOfInputChannels','','updateControlProperties');
+                wsModel.subscribeMe(self,'EMDidChangeNumberOfOutputChannels','','updateControlProperties');
                 wsModel.subscribeMe(self,'DidSetState','','update');
                 wsModel.subscribeMe(self,'UpdateElectrodes','','update');
                 wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;

@@ -41,13 +41,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         EPCMasterSocket_  % A 'socket' for communicating with the EPCMaster application
     end
 
-    events
-        Update
-        DidSetIsInputChannelActive
-        DidSetIsDigitalOutputTimed
-        DidChangeNumberOfInputChannels
-        DidChangeNumberOfOutputChannels
-    end
+%     events
+%         Update
+%         DidSetIsInputChannelActive
+%         DidSetIsDigitalOutputTimed
+%         DidChangeNumberOfInputChannels
+%         DidChangeNumberOfOutputChannels
+%     end
     
     methods
         function self = ElectrodeManager()
@@ -173,7 +173,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             self.broadcast('Update');
 %         end
         
-        function result = getDoTrodeUpdateBeforeRun_(self)
+        function result = getDoTrodeUpdateBeforeRun(self)
             if self.IsDoTrodeUpdateBeforeRunSensible
                 result = self.DoTrodeUpdateBeforeRunWhenSensible_;
             else
@@ -181,13 +181,13 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end
         end 
         
-        function setDoTrodeUpdateBeforeRun_(self, newValue)
+        function setDoTrodeUpdateBeforeRun(self, newValue)
             if self.IsDoTrodeUpdateBeforeRunSensible ,
                self.DoTrodeUpdateBeforeRunWhenSensible_ = newValue; 
             else
                 % Do nothing
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end        
         
         function result = get.IsDoTrodeUpdateBeforeRunSensible(self)
@@ -209,12 +209,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             result = self.AreSoftpanelsEnabled_ ;
         end
 
-        function set.AreSoftpanelsEnabled(self, newValue)
-            if islogical(newValue) && isscalar(newValue) ,
-                self.AreSoftpanelsEnabled_=newValue;
-            end
-            self.broadcast('Update');            
-        end
+%         function set.AreSoftpanelsEnabled(self, newValue)
+%             if islogical(newValue) && isscalar(newValue) ,
+%                 self.AreSoftpanelsEnabled_=newValue;
+%             end
+%             self.broadcast('Update');            
+%         end
         
         function result = getIsInControlOfSoftpanelModeAndGains_(self)
             result = ~self.AreSoftpanelsEnabled_ ;
@@ -247,7 +247,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             else
                 % Theoretically, should throw exception, I suppose
                 %return
-                self.broadcast('Update');
+                %self.broadcast('Update');
                 error('ws:unableToAddElectrode', ...
                       'Unable to add a new electrode') ;
             end
@@ -261,21 +261,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Add the electrode
             electrodeIndex = length(self.Electrodes_)+1 ;
             self.Electrodes_{electrodeIndex}=electrode;  
-            %self.IsElectrodeMarkedForTestPulse_(electrodeIndex)=false;
             self.IsElectrodeMarkedForRemoval_(electrodeIndex)=false;
             self.DidLastElectrodeUpdateWork_(electrodeIndex)=true;  % true by convention
-            
-%             % Notify the parent Ephys object that an electrode has been added
-%             ephys=self.Parent_;
-%             if ~isempty(ephys) ,
-%                 ephys.electrodeWasAdded(electrode);
-%             end
-            
-            % Notify subscribers
-            self.broadcast('Update');
         end
         
-        function wasRemoved = removeMarkedElectrodes_(self)
+        function wasRemoved = removeMarkedElectrodes(self)
             isToBeRemoved= self.IsElectrodeMarkedForRemoval_;
             % The constructions below (=[]) are better than the alternative
             % (where you define isToBeKept and do x=x(isToBeKept) b/c it
@@ -292,14 +282,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 self.LargestElectrodeIndexUsed_ = -inf;
             end
             
-%             % Notify the parent Ephys object that an electrode has been
-%             % removed
-%             if ~isempty(self.Parent_)
-%                 self.Parent_.electrodesRemoved();
-%             end
-
-            % Notify subscribers
-            self.broadcast('Update');
+            % % Notify subscribers
+            % self.broadcast('Update');
             
             wasRemoved = isToBeRemoved ;
         end
@@ -316,7 +300,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             end            
 %         end        
         
-        function doNeedToUpdateGainsAndModes = setElectrodeType_(self, electrodeIndex, newValue)
+        function doNeedToUpdateGainsAndModes = setElectrodeType(self, electrodeIndex, newValue)
             % Can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is *not* in command of the
             % gain settings.
@@ -341,10 +325,10 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 end
             end
             %self.changeReadiness(+1);
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
-        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
+        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType(self, electrodeIndex, newValue)
             % Can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
@@ -365,7 +349,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     end                    
                 end
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
 
 %         function setTestPulseElectrodeModeOrScaling(self,testPulseElectrodeIndex,propertyName,newValue)
@@ -480,7 +464,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             self.Parent_.electrodeMayHaveChanged(electrode,propertyName);
             
             % notify the view(s)
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
 %         function set.Electrodes(self,newElectrodes)
@@ -828,7 +812,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             end            
         end
         
-        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains_(self, desiredNewValueOfIsInControlOfSoftpanelModeAndGains)
+        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains(self, desiredNewValueOfIsInControlOfSoftpanelModeAndGains)
             if islogical(desiredNewValueOfIsInControlOfSoftpanelModeAndGains) && isscalar(desiredNewValueOfIsInControlOfSoftpanelModeAndGains) ,
                 desiredNewValueOfAreSoftPanelsEnabled = ~desiredNewValueOfIsInControlOfSoftpanelModeAndGains ;
                 %originalValue = self.AreSoftpanelsEnabled_ ;
@@ -842,7 +826,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     if ~isempty(indicesThatMatch) && indicesThatMatch(1)==1 ,
                         desiredNewValueOfAreSoftPanelsEnabled = self.AreSoftpanelsEnabled_ ;
                     else
-                        self.broadcast('Update') ;
+                        %self.broadcast('Update') ;
                         rethrow(me) ;
                     end
                 end
@@ -852,7 +836,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 % gains and modes are up-to-date
                 doUpdateSmartElectrodeGainsAndModes = ~newValueOfAreSoftPanelsEnabled ;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
         
 %         function startIdleHeartbeatTimer(self)
@@ -981,21 +965,21 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             %self.State_
 %         end  % function
 
-        function didSetIsInputChannelActive(self) 
-            self.broadcast('DidSetIsInputChannelActive');
-        end
+%         function didSetIsInputChannelActive(self) 
+%             %self.broadcast('DidSetIsInputChannelActive');
+%         end
 
-        function didSetIsDigitalOutputTimed(self)
-            self.broadcast('DidSetIsDigitalOutputTimed');
-        end
+%         function didSetIsDigitalOutputTimed(self)
+%             %self.broadcast('DidSetIsDigitalOutputTimed');
+%         end
         
-        function didChangeNumberOfInputChannels(self)
-            self.broadcast('DidChangeNumberOfInputChannels');
-        end
+%         function didChangeNumberOfInputChannels(self)
+%             %self.broadcast('DidChangeNumberOfInputChannels');
+%         end
         
-        function didChangeNumberOfOutputChannels(self)
-            self.broadcast('DidChangeNumberOfOutputChannels');
-        end
+%         function didChangeNumberOfOutputChannels(self)
+%             %self.broadcast('DidChangeNumberOfOutputChannels');
+%         end
         
         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
             if didSucceed ,
@@ -1004,7 +988,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     electrode.didSetAnalogInputChannelName(oldValue, newValue) ;
                 end            
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end        
         
         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
@@ -1014,7 +998,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     electrode.didSetAnalogOutputChannelName(oldValue, newValue) ;
                 end            
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end        
         
         function debug(self) %#ok<MANU>
@@ -1129,7 +1113,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.enableBroadcastsMaybe() ;
             
             % Broadcast update
-            self.broadcast('Update') ;
+            %self.broadcast('Update') ;
         end  % function        
     end % methods
     
@@ -1245,7 +1229,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %             result = self.TestPulseElectrodes ;
 %         end    
         
-        function setElectrodeProperty_(self, electrodeIndex, propertyName, newValue)            
+        function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)            
             switch propertyName ,
                 case 'Name' ,
                     self.setElectrodeName_(electrodeIndex, newValue) ,
@@ -1271,17 +1255,17 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                     electrode = self.Electrodes_{electrodeIndex} ;
                     electrode.setProperty_(propertyName, newValue) ;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end        
         
-        function setElectrodeModeAndScalings_(self,...
-                                              electrodeIndex, ...
-                                              newMode, ...
-                                              newCurrentMonitorScaling, ...
-                                              newVoltageMonitorScaling, ...
-                                              newCurrentCommandScaling, ...
-                                              newVoltageCommandScaling,...
-                                              newIsCommandEnabled)
+        function setElectrodeModeAndScalings(self,...
+                                             electrodeIndex, ...
+                                             newMode, ...
+                                             newCurrentMonitorScaling, ...
+                                             newVoltageMonitorScaling, ...
+                                             newCurrentCommandScaling, ...
+                                             newVoltageCommandScaling,...
+                                             newIsCommandEnabled)
             electrode = self.Electrodes_{electrodeIndex} ;
             electrode.setModeAndScalings_(newMode, ...
                                           newCurrentMonitorScaling, ...
@@ -1289,7 +1273,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                                           newCurrentCommandScaling, ...
                                           newVoltageCommandScaling,...
                                           newIsCommandEnabled) ;
-            self.broadcast('Update');
+            %self.broadcast('Update');
         end  % function
 
         function [areAnyOfThisType, ...

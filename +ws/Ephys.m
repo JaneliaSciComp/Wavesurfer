@@ -110,21 +110,21 @@ classdef Ephys < ws.Subsystem
         end        
         
         function didSetIsInputChannelActive(self) 
-            self.ElectrodeManager_.didSetIsInputChannelActive() ;
+            %self.ElectrodeManager_.didSetIsInputChannelActive() ;
             self.TestPulser_.didSetIsInputChannelActive() ;
         end
         
-        function didSetIsDigitalOutputTimed(self)
-            self.ElectrodeManager_.didSetIsDigitalOutputTimed() ;
-        end
+%         function didSetIsDigitalOutputTimed(self)
+%             %self.ElectrodeManager_.didSetIsDigitalOutputTimed() ;
+%         end
         
         function didChangeNumberOfInputChannels(self)
-            self.ElectrodeManager_.didChangeNumberOfInputChannels();
+            %self.ElectrodeManager_.didChangeNumberOfInputChannels();
             self.TestPulser_.didChangeNumberOfInputChannels();
         end        
         
         function didChangeNumberOfOutputChannels(self)
-            self.ElectrodeManager_.didChangeNumberOfOutputChannels();
+            %self.ElectrodeManager_.didChangeNumberOfOutputChannels();
             self.TestPulser_.didChangeNumberOfOutputChannels();
         end        
 
@@ -172,10 +172,10 @@ classdef Ephys < ws.Subsystem
             self.enableBroadcastsMaybe() ;
         end
         
-        function updateEverythingAfterProtocolFileOpen_(self)
-            self.ElectrodeManager_.broadcast('Update') ;
-            self.TestPulser_.broadcast('Update') ;
-        end        
+%         function updateEverythingAfterProtocolFileOpen_(self)
+%             %self.ElectrodeManager_.broadcast('Update') ;
+%             %self.TestPulser_.broadcast('Update') ;
+%         end        
     end  % methods block 
 
     methods
@@ -216,8 +216,8 @@ classdef Ephys < ws.Subsystem
             
             % Broadcast updates for sub-models and self, now that
             % everything is in sync, and should be self-consistent
-            self.TestPulser_.broadcast('Update');
-            self.ElectrodeManager_.broadcast('Update');
+            %self.TestPulser_.broadcast('Update');
+            %self.ElectrodeManager_.broadcast('Update');
             %self.broadcast('Update');  % is this necessary?
         end  % function
         
@@ -581,26 +581,26 @@ classdef Ephys < ws.Subsystem
             result = self.TestPulser_ ;
         end
             
-        function setElectrodeProperty_(self, electrodeIndex, propertyName, newValue)
-            self.ElectrodeManager_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+        function setElectrodeProperty(self, electrodeIndex, propertyName, newValue)
+            self.ElectrodeManager_.setElectrodeProperty(electrodeIndex, propertyName, newValue) ;
             self.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
         end
         
-        function setElectrodeModeAndScalings_(self,...
-                                              electrodeIndex, ...
-                                              newMode, ...
-                                              newCurrentMonitorScaling, ...
-                                              newVoltageMonitorScaling, ...
-                                              newCurrentCommandScaling, ...
-                                              newVoltageCommandScaling,...
-                                              newIsCommandEnabled)
-            self.ElectrodeManager_.setElectrodeModeAndScalings_(electrodeIndex, ...
-                                                                newMode, ...
-                                                                newCurrentMonitorScaling, ...
-                                                                newVoltageMonitorScaling, ...
-                                                                newCurrentCommandScaling, ...
-                                                                newVoltageCommandScaling,...
-                                                                newIsCommandEnabled) ;
+        function setElectrodeModeAndScalings(self,...
+                                             electrodeIndex, ...
+                                             newMode, ...
+                                             newCurrentMonitorScaling, ...
+                                             newVoltageMonitorScaling, ...
+                                             newCurrentCommandScaling, ...
+                                             newVoltageCommandScaling,...
+                                             newIsCommandEnabled)
+            self.ElectrodeManager_.setElectrodeModeAndScalings(electrodeIndex, ...
+                                                               newMode, ...
+                                                               newCurrentMonitorScaling, ...
+                                                               newVoltageMonitorScaling, ...
+                                                               newCurrentCommandScaling, ...
+                                                               newVoltageCommandScaling,...
+                                                               newIsCommandEnabled) ;
             self.electrodeMayHaveChanged(electrodeIndex, '') ;
         end  % function
 
@@ -638,42 +638,39 @@ classdef Ephys < ws.Subsystem
             self.ElectrodeManager_.reconnectWithSmartElectrodes_() ;
         end  % function
         
-        function doNeedToUpdateGainsAndModes = setElectrodeType_(self, electrodeIndex, newValue)
+        function doNeedToUpdateGainsAndModes = setElectrodeType(self, electrodeIndex, newValue)
             % can only change the electrode type if softpanels are
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
-            doNeedToUpdateGainsAndModes = self.ElectrodeManager_.setElectrodeType_(electrodeIndex, newValue) ;
+            doNeedToUpdateGainsAndModes = self.ElectrodeManager_.setElectrodeType(electrodeIndex, newValue) ;
         end  % function
         
-        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
-            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+        function doUpdateSmartElectrodeGainsAndModes = setElectrodeIndexWithinType(self, electrodeIndex, newValue)
+            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setElectrodeIndexWithinType(electrodeIndex, newValue) ;
         end
         
-        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains_(self, newValue)
-            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+        function doUpdateSmartElectrodeGainsAndModes = setIsInControlOfSoftpanelModeAndGains(self, newValue)
+            doUpdateSmartElectrodeGainsAndModes = self.ElectrodeManager_.setIsInControlOfSoftpanelModeAndGains(newValue) ;
         end
         
         function newElectrodeIndex = addNewElectrode(self)
             newElectrodeIndex = self.ElectrodeManager_.addNewElectrode() ;
-            %electrodeName = self.ElectrodeManager_.getElectrodeProperty(electrodeIndex, 'Name') ;
-            %isElectrodeEligibleForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeEligibleForTestPulse() ;
             electrodeCountAfter = self.ElectrodeManager_.getElectrodeCount() ;
             self.TestPulser_.addingElectrode(newElectrodeIndex, electrodeCountAfter) ;
-            %self.electrodeWasAdded(electrodeIndex);
         end
         
-        function removeMarkedElectrodes_(self)
-            wasRemoved = self.ElectrodeManager_.removeMarkedElectrodes_() ;
+        function removeMarkedElectrodes(self)
+            wasRemoved = self.ElectrodeManager_.removeMarkedElectrodes() ;
             electrodeCountAfter = self.ElectrodeManager_.getElectrodeCount() ;
             self.TestPulser_.electrodesRemoved_(wasRemoved, electrodeCountAfter) ;
         end
 
-        function setDoTrodeUpdateBeforeRun_(self, newValue)
-            self.ElectrodeManager_.setDoTrodeUpdateBeforeRun_(newValue) ;
+        function setDoTrodeUpdateBeforeRun(self, newValue)
+            self.ElectrodeManager_.setDoTrodeUpdateBeforeRun(newValue) ;
         end        
 
-        function result = getDoTrodeUpdateBeforeRun_(self)
-            result = self.ElectrodeManager_.getDoTrodeUpdateBeforeRun_() ;
+        function result = getDoTrodeUpdateBeforeRun(self)
+            result = self.ElectrodeManager_.getDoTrodeUpdateBeforeRun() ;
         end 
         
 %         function setElectrodeModeOrScaling_(self, electrodeIndex, propertyName, newValue)
@@ -753,9 +750,9 @@ classdef Ephys < ws.Subsystem
             result = self.ElectrodeManager_.AreSoftpanelsEnabled ;
         end
 
-        function set.AreSoftpanelsEnabled(self, newValue)
-            self.ElectrodeManager_.AreSoftpanelsEnabled = newValue ;
-        end
+%         function set.AreSoftpanelsEnabled(self, newValue)
+%             self.ElectrodeManager_.AreSoftpanelsEnabled = newValue ;
+%         end
         
         function result = doesElectrodeHaveCommandOnOffSwitch(self)
             result = self.ElectrodeManager_.doesElectrodeHaveCommandOnOffSwitch() ;
@@ -791,9 +788,9 @@ classdef Ephys < ws.Subsystem
 %             result = self.ElectrodeManager_ ;
 %         end
            
-        function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
-            self.ElectrodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.ElectrodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
             self.TestPulser_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
