@@ -58,11 +58,11 @@ classdef TestPulser < ws.Model
         SamplingRateCached_
     end    
     
-    events
-        Update
-        DidSetIsInputChannelActive
-        UpdateTrace
-    end
+%     events
+%         Update
+%         DidSetIsInputChannelActive
+%         UpdateTrace
+%     end
     
     methods
         function self = TestPulser()            

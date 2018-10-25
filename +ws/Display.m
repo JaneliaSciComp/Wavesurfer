@@ -121,7 +121,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             result = self.IsAnalogChannelDisplayed_ ;
         end
         
-        function toggleIsAnalogChannelDisplayed_(self, aiChannelIndex, nAIChannels) 
+        function toggleIsAnalogChannelDisplayed(self, aiChannelIndex, nAIChannels) 
             if isnumeric(aiChannelIndex) && isscalar(aiChannelIndex) && isreal(aiChannelIndex) && (aiChannelIndex==round(aiChannelIndex)) ,
                 %nAIChannels = self.Parent.Acquisition.NAnalogChannels ;
                 if 1<=aiChannelIndex && aiChannelIndex<=nAIChannels ,
@@ -135,7 +135,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            self.broadcast('Update');
+            %self.broadcast('Update');
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
                       'Argument to toggleIsAnalogChannelDisplayed must be a valid AI channel index') ;

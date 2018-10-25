@@ -382,6 +382,8 @@ classdef WavesurferModel < ws.Model
         DidMaybeSetUserClassName
         DidSetSingleFigureVisibility
         UpdateDoIncludeSessionIndexInDataFileName
+        TPDidSetIsInputChannelActive
+        TPUpdateTrace
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -4782,7 +4784,13 @@ classdef WavesurferModel < ws.Model
         
         function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
             nAIChannels = self.NAIChannels ;
-            self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
+            try
+                self.Display_.toggleIsAnalogChannelDisplayed(aiChannelIndex, nAIChannels) ;
+            catch err
+                self.broadcast('UpdateDisplay') ;
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateDisplay') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
