@@ -105,8 +105,8 @@ classdef GeneralSettingsController < ws.Controller
                 %wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
                 wsModel.subscribeMeToDisplayEvent(self,'DidSetUpdateRate','','updateControlProperties');
                 wsModel.subscribeMeToDisplayEvent(self,'UpdateXSpan','','updateControlProperties');
-                wsModel.subscribeMeToLoggingEvent(self,'Update','','updateControlProperties');
-                wsModel.subscribeMeToLoggingEvent(self,'UpdateDoIncludeSessionIndex','','update');
+                wsModel.subscribeMe(self,'UpdateLogging','','updateControlProperties');
+                wsModel.subscribeMe(self,'UpdateDoIncludeSessionIndexInDataFileName','','update');
                 wsModel.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
                 wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            end

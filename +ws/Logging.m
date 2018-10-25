@@ -55,7 +55,7 @@ classdef Logging < ws.Subsystem
 
     events
         %Update
-        UpdateDoIncludeSessionIndex
+        %UpdateDoIncludeSessionIndex
     end
     
     methods
@@ -106,15 +106,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.NextSweepIndex(self, newValue)
-            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
-                newValue=double(newValue) ;
-                self.NextSweepIndex_ = newValue;
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'NextSweepIndex must be a (scalar) nonnegative integer');
-            end
-            self.broadcast('Update');            
+            self.NextSweepIndex_ = double(newValue) ;
         end
         
         function result=get.NextSweepIndex(self)
@@ -126,14 +118,7 @@ classdef Logging < ws.Subsystem
 %         end
 
         function set.IsOKToOverwrite(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
-                self.IsOKToOverwrite_ = logical(newValue);
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
-            end
-            self.broadcast('Update');                        
+            self.IsOKToOverwrite_ = logical(newValue) ;
         end
         
         function result=get.IsOKToOverwrite(self)
@@ -141,14 +126,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.DoIncludeDate(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                self.DoIncludeDate_ = logical(newValue);
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'DoIncludeDate must be a logical scalar, or convertable to one');                  
-            end
-            self.broadcast('Update');            
+            self.DoIncludeDate_ = logical(newValue);
         end
         
         function result=get.DoIncludeDate(self)
@@ -156,20 +134,12 @@ classdef Logging < ws.Subsystem
         end
 
         function set.DoIncludeSessionIndex(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                originalValue = self.DoIncludeSessionIndex_ ;
-                newValueForReals = logical(newValue) ;
-                self.DoIncludeSessionIndex_ = newValueForReals ;
-                if newValueForReals && ~originalValue ,
-                    self.NextSweepIndex_ = 1 ;
-                    %self.FirstSweepIndexInNextFile_ = 1 ;
-                end
-            else
-                self.broadcast('UpdateDoIncludeSessionIndex');
-                error('ws:invalidPropertyValue', ...
-                      'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
+            originalValue = self.DoIncludeSessionIndex_ ;
+            newValueForReals = logical(newValue) ;
+            self.DoIncludeSessionIndex_ = newValueForReals ;
+            if newValueForReals && ~originalValue ,
+                self.NextSweepIndex_ = 1 ;
             end
-            self.broadcast('UpdateDoIncludeSessionIndex');            
         end
         
         function result=get.DoIncludeSessionIndex(self)
@@ -177,26 +147,11 @@ classdef Logging < ws.Subsystem
         end
 
         function set.SessionIndex(self, newValue)
-            if self.DoIncludeSessionIndex ,
-                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
-                    originalValue = self.SessionIndex_ ;
-                    self.SessionIndex_ = newValue;
-                    if newValue ~= originalValue ,
-                        self.NextSweepIndex_ = 1 ;
-                        %self.FirstSweepIndexInNextFile_ = 1 ;
-                    end
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'SessionIndex must be an integer greater than or equal to one');
-                end
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'Can''t set SessionIndex when DoIncludeSessionIndex is false');
-
+            originalValue = self.SessionIndex_ ;
+            self.SessionIndex_ = newValue;
+            if newValue ~= originalValue ,
+                self.NextSweepIndex_ = 1 ;
             end
-            self.broadcast('Update');
         end
         
         function result=get.SessionIndex(self)

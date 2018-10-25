@@ -381,6 +381,7 @@ classdef WavesurferModel < ws.Model
         DidMaybeChangeProtocol
         DidMaybeSetUserClassName
         DidSetSingleFigureVisibility
+        UpdateDoIncludeSessionIndexInDataFileName
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -5950,8 +5951,15 @@ classdef WavesurferModel < ws.Model
             result = self.Logging_.IsOKToOverwrite ;
         end
         
-        function set.IsOKToOverwriteDataFile(self, newValue)
-            self.Logging_.IsOKToOverwrite = newValue ;
+        function set.IsOKToOverwriteDataFile(self, newValue)            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                self.Logging_.IsOKToOverwrite = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'IsOKToOverwriteDataFile must be a logical scalar, or convertable to one');                  
+            end
+            self.broadcast('UpdateLogging');                                    
         end
         
         function result = get.NPlots(self) 
@@ -5959,7 +5967,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.NextSweepIndex(self, newValue)
-            self.Logging_.NextSweepIndex = newValue ;
+            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
+                self.Logging_.NextSweepIndex = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'NextSweepIndex must be a (scalar) nonnegative integer');
+            end
+            self.broadcast('UpdateLogging');                        
         end
         
         function result = get.NextSweepIndex(self)
@@ -6028,9 +6043,9 @@ classdef WavesurferModel < ws.Model
 %             self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
 %         end
         
-        function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.PlotIndexFromChannelIndex(self)
             result = self.Display_.PlotIndexFromChannelIndex ;
@@ -6120,8 +6135,15 @@ classdef WavesurferModel < ws.Model
             result = self.Logging_.DoIncludeDate ;
         end
         
-        function set.DoIncludeDateInDataFileName(self, newValue)
-            self.Logging_.DoIncludeDate = newValue ;
+        function set.DoIncludeDateInDataFileName(self, newValue)            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                self.Logging_.DoIncludeDate = newValue ;
+            else
+                self.broadcast('UpdateLogging') ;
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeDateInDataFileName must be a logical scalar, or convertable to one') ;                  
+            end
+            self.broadcast('UpdateLogging') ;                        
         end
 
         function result = get.DoIncludeSessionIndexInDataFileName(self)
@@ -6130,6 +6152,16 @@ classdef WavesurferModel < ws.Model
         
         function set.DoIncludeSessionIndexInDataFileName(self, newValue)
             self.Logging_.DoIncludeSessionIndex = newValue ;
+            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                self.Logging_.DoIncludeSessionIndex = newValue ;
+            else
+                self.broadcast('UpdateDoIncludeSessionIndexInDataFileName');
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeSessionIndexInDataFileName must be a logical scalar, or convertable to one');                  
+            end
+            self.broadcast('UpdateDoIncludeSessionIndexInDataFileName');            
+            
         end
         
         function result = get.SessionIndex(self)
@@ -6137,7 +6169,20 @@ classdef WavesurferModel < ws.Model
         end        
         
         function set.SessionIndex(self, newValue)
-            self.Logging_.SessionIndex = newValue ;
+            if self.DoIncludeSessionIndexInDataFileName ,
+                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                    self.Logging_.SessionIndex = newValue ;
+                else
+                    self.broadcast('UpdateLogging');
+                    error('ws:invalidPropertyValue', ...
+                          'SessionIndex must be an integer greater than or equal to one');
+                end
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'Can''t set SessionIndex when DoIncludeSessionIndexInDataFileName is false');
+            end
+            self.broadcast('UpdateLogging');            
         end
 
 %         function result = stimulusLibrary(self)
