@@ -845,7 +845,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Encodable.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
         end

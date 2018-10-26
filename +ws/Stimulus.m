@@ -54,7 +54,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     
     methods
         function self = Stimulus()
-            self@ws.Model() ;
+            %self@ws.Model() ;
             self.Delegate_ = ws.SquarePulseStimulusDelegate();  
         end
         
@@ -375,7 +375,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -383,7 +383,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
 
     methods         
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
             % delete some property names that are defined in subclasses
             % that don't need to go into the header file
             propNames=setdiff(propNamesRaw, ...

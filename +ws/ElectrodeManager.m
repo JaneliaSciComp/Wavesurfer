@@ -52,7 +52,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     methods
         function self = ElectrodeManager()
             % General initialization
-            self@ws.Model();
+            %self@ws.Model();
             self.EPCMasterSocket_=ws.EPCMasterSocket();
             self.MulticlampCommanderSocket_=ws.MulticlampCommanderSocket();
             self.AreSoftpanelsEnabled_=true;
@@ -1051,12 +1051,12 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %     end  % protected methods block
     
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end

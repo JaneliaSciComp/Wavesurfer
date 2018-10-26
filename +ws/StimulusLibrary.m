@@ -76,7 +76,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
     
     methods
         function self = StimulusLibrary()
-            self@ws.Model();
+            %self@ws.Model();
             self.Stimuli_ = cell(1,0) ;
             self.Maps_    = cell(1,0) ;
             self.Sequences_  = cell(1,0) ;
@@ -826,7 +826,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         end  % function    
         
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
             % delete some property names 
             % that don't need to go into the header file
             propNames=setdiff(propNamesRaw, ...
@@ -2204,7 +2204,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
            out = self.(name);
        end  % function
         
-       % Allows access to protected and protected variables from ws.Coding.
+       % Allows access to protected and protected variables from ws.Encodable.
        function setPropertyValue_(self, name, value)
            self.(name) = value;
        end  % function

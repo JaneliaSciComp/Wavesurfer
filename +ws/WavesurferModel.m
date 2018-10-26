@@ -414,7 +414,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     
     methods
         function self = WavesurferModel(isAwake, isHeaded)
-            self@ws.Model();
+            %self@ws.Model();
             
             if ~exist('isAwake','var') || isempty(isAwake) ,
                 isAwake = false ;
@@ -2306,12 +2306,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end % protected methods block
         
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             %if isequal(name,'IsDIChannelTerminalOvercommitted_')
             %    dbstack
@@ -2552,7 +2552,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             saveStruct = load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            newModel = ws.Encodable.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
@@ -2652,7 +2652,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             saveStruct=load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            newModel = ws.Encodable.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicUserSettings_(newModel) ;
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
@@ -3049,12 +3049,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function propNames = listPropertiesForCheckingIndependence(self)
             % Define a helper function
-            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
+            propNamesRaw = listPropertiesForCheckingIndependence@ws.Encodable(self) ;
             propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
         end
         
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Coding(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
             propNames=setdiff(propNamesRaw, ...
                               {'IsReady'}) ;
         end  % function                 
@@ -3271,7 +3271,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandles(source) ;
+            self.FastProtocols_ = ws.Encodable.copyCellArrayOfHandles(source) ;
         end  % function        
     end  % protected methods block
     
@@ -3971,7 +3971,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Encodable.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
             
@@ -6728,11 +6728,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function encoding = encodeForHeader(self)
             % Get the default header encoding
-            encoding = encodeForHeader@ws.Model(self) ;            
+            encoding = encodeForHeader@ws.Encodable(self) ;            
             
             % Add custom field
             thisPropertyValue = self.getStimulusLibraryCopy() ;
-            encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
+            encodingOfPropertyValue = ws.Encodable.encodeAnythingForHeader(thisPropertyValue) ;
             encoding.StimulusLibrary = encodingOfPropertyValue ;
         end
         

@@ -17,7 +17,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     
     methods
         function self = MulticlampCommanderSocket()
-            self@ws.Model() ;
+            %self@ws.Model() ;
             %self.IsOpen_=false;
         end  % function
         

@@ -66,7 +66,7 @@ classdef TestPulser < ws.Model
     
     methods
         function self = TestPulser()            
-            self@ws.Model() ;
+            %self@ws.Model() ;
             % ElectrodeIndex_ defaults to empty, therefore there is no test pulse
             % electrode as far as we're concerned
             self.PulseDuration_ = 10e-3 ;  % s
@@ -959,7 +959,7 @@ classdef TestPulser < ws.Model
         
     end  % protected methods block
     
-    % These next two methods allow access to private and protected variables from ws.Coding. 
+    % These next two methods allow access to private and protected variables from ws.Encodable. 
     methods (Access=protected)
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -974,7 +974,7 @@ classdef TestPulser < ws.Model
         % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
         % after.
         function decodeUnwrappedEncodingCore_(self, encoding)
-            decodeUnwrappedEncodingCore_@ws.Coding(self, encoding) ;
+            decodeUnwrappedEncodingCore_@ws.Encodable(self, encoding) ;
             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
         end  % function
     end

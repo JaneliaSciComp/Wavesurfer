@@ -1,5 +1,7 @@
-classdef (Abstract) Coding < handle
-
+classdef (Abstract) Encodable < handle
+    % An Encodable is something that can be serialized for persistence, and
+    % also for writing to a header file.
+    
     methods
         function propNames = listPropertiesForCheckingIndependence(self)
             % Define a helper function
@@ -38,7 +40,7 @@ classdef (Abstract) Coding < handle
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 thisPropertyValue = self.getPropertyValue_(thisPropertyName);
-                encodingOfPropertyValue = ws.Coding.encodeAnythingForPersistence(thisPropertyValue);
+                encodingOfPropertyValue = ws.Encodable.encodeAnythingForPersistence(thisPropertyValue);
                 encoding.(thisPropertyName)=encodingOfPropertyValue;
             end
             
@@ -63,7 +65,7 @@ classdef (Abstract) Coding < handle
             for i = 1:length(propertyNames) ,
                 thisPropertyName=propertyNames{i};
                 thisPropertyValue = self.getPropertyValue_(thisPropertyName);
-                encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue);
+                encodingOfPropertyValue = ws.Encodable.encodeAnythingForHeader(thisPropertyValue);
                 encoding.(thisPropertyName)=encodingOfPropertyValue;
             end
         end
@@ -86,7 +88,7 @@ classdef (Abstract) Coding < handle
                                 fprintf('Failure for property %s\n',thisPropertyName) ;
                                 result = false ;
                                 return
-                            elseif isa(selfProperty, 'ws.Coding') ,                                
+                            elseif isa(selfProperty, 'ws.Encodable') ,                                
                                 isThisPropertyIndependent = selfProperty.isIndependentFrom(otherProperty) ;
                                 if isThisPropertyIndependent ,
                                     % these are independent, so keep checking...
@@ -162,7 +164,7 @@ classdef (Abstract) Coding < handle
             % specified in the classdef.
             
             %className=class(self);
-            %value=ws.Coding.classPropertyNames_(className);
+            %value=ws.Encodable.classPropertyNames_(className);
             
             mc = metaclass(self);
             allClassProperties = mc.Properties;
@@ -175,7 +177,7 @@ classdef (Abstract) Coding < handle
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
             % some other kind of transformation on encoding, this method can be overridden.
-            out = self.(name);
+            out = self.(name) ;
         end
         
         function setPropertyValue_(self, name, value)
@@ -210,7 +212,7 @@ classdef (Abstract) Coding < handle
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Encodable.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
         end        
@@ -225,7 +227,7 @@ classdef (Abstract) Coding < handle
             elseif iscell(thing) ,
                 encoding=cell(size(thing));
                 for j=1:numel(thing) ,
-                    encoding{j} = ws.Coding.encodeAnythingForPersistence(thing{j});
+                    encoding{j} = ws.Encodable.encodeAnythingForPersistence(thing{j});
                 end
                 encodingContainer = struct('className',{'cell'},'encoding',{encoding}) ;
             elseif isstruct(thing) ,
@@ -234,11 +236,11 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
-                        encoding(i).(thisFieldName) = ws.Coding.encodeAnythingForPersistence(thing(i).(thisFieldName)) ;
+                        encoding(i).(thisFieldName) = ws.Encodable.encodeAnythingForPersistence(thing(i).(thisFieldName)) ;
                     end
                 end
                 encodingContainer=struct('className',{'struct'},'encoding',{encoding}) ;
-            elseif isa(thing, 'ws.Coding') ,
+            elseif isa(thing, 'ws.Encodable') ,
                 encodingContainer = thing.encodeForPersistence() ;
             else                
                 error('Coding:dontKnowHowToEncode', ...
@@ -255,7 +257,7 @@ classdef (Abstract) Coding < handle
             elseif iscell(thing) ,
                 encoding=cell(size(thing));
                 for j=1:numel(thing) ,
-                    encoding{j} = ws.Coding.encodeAnythingForHeader(thing{j});
+                    encoding{j} = ws.Encodable.encodeAnythingForHeader(thing{j});
                 end
             elseif isstruct(thing) ,
                 fieldNames=fieldnames(thing);
@@ -263,10 +265,10 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(thing) ,
                     for j=1:length(fieldNames) ,
                         thisFieldName=fieldNames{j};
-                        encoding(i).(thisFieldName) = ws.Coding.encodeAnythingForHeader(thing(i).(thisFieldName));
+                        encoding(i).(thisFieldName) = ws.Encodable.encodeAnythingForHeader(thing(i).(thisFieldName));
                     end
                 end
-            elseif isa(thing, 'ws.Coding') ,
+            elseif isa(thing, 'ws.Encodable') ,
                 encoding = thing.encodeForHeader() ;
             else                
                 error('Coding:dontKnowHowToEncode', ...
@@ -281,7 +283,7 @@ classdef (Abstract) Coding < handle
             end
             % Unpack the encoding container, or try to deal with it if
             % encodingContainer is not actually an encoding container.            
-            if ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
+            if ws.Encodable.isAnEncodingContainer(encodingContainer) ,                        
                 % Unpack the fields of the encodingContainer
                 className = encodingContainer.className ;
                 encoding = encodingContainer.encoding ;
@@ -308,7 +310,7 @@ classdef (Abstract) Coding < handle
 
             % Check for certain legacy classNames, and use their modern
             % equivalent.
-            className = ws.Coding.modernizeLegacyClassNameIfNeeded(className) ;
+            className = ws.Encodable.modernizeLegacyClassNameIfNeeded(className) ;
             
             % Create the object to be returned
             if ws.isANumericClassName(className) || isequal(className,'char') || isequal(className,'logical') ,
@@ -316,7 +318,7 @@ classdef (Abstract) Coding < handle
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
                 for i=1:numel(result) ,
-                    result{i} = ws.Coding.decodeEncodingContainer(encoding{i}, warningLogger) ;
+                    result{i} = ws.Encodable.decodeEncodingContainer(encoding{i}, warningLogger) ;
                       % A cell array can't be a parent, so we just use
                       % parent
                 end
@@ -326,7 +328,7 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;
-                        result(i).(fieldName) = ws.Coding.decodeEncodingContainer(encoding(i).(fieldName), warningLogger) ;
+                        result(i).(fieldName) = ws.Encodable.decodeEncodingContainer(encoding(i).(fieldName), warningLogger) ;
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
@@ -502,14 +504,14 @@ classdef (Abstract) Coding < handle
                                        isequal(propertyName, 'PulseDuration_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     subresult = 1e-3 * str2double(rawSubresult) ;  % string to double, ms to s
                                 elseif isa(result, 'ws.ScopeModel') && ...
                                         ( ( isequal(fieldName, 'YUnits_') && isequal(propertyName, 'YUnits_')) || ...
                                           ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -524,7 +526,7 @@ classdef (Abstract) Coding < handle
                                        isequal(fieldName, 'ChannelNames_') && isequal(propertyName, 'ChannelName_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % rawSubresult is always a one-element cellstring.  Just
                                     % want the string.
                                     if isempty(rawSubresult) ,
@@ -537,7 +539,7 @@ classdef (Abstract) Coding < handle
                                 elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -552,7 +554,7 @@ classdef (Abstract) Coding < handle
                                        && ...
                                        isequal(fieldName,'Edge_') && isequal(propertyName,'Edge_') ,
                                     % BC hack 
-                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    subresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     % sometimes subresult is empty.  If
                                     % so, don't set it.
                                     doSetPropertyValue = ~isempty(subresult) ;
@@ -563,7 +565,7 @@ classdef (Abstract) Coding < handle
                                     % file is missing.
                                     doSetPropertyValue = true ;
                                     try 
-                                        subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                        subresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                     catch me 
                                         if isequal(me.identifier, 'MATLAB:UndefinedFunction') ,
                                             % The class being missing
@@ -578,7 +580,7 @@ classdef (Abstract) Coding < handle
                                 else                                    
                                     % the usual case
                                     doSetPropertyValue = true ;
-                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    subresult = ws.Encodable.decodeEncodingContainer(subencoding, warningLogger) ;
                                 end
                                 if doSetPropertyValue ,
                                     try
@@ -620,7 +622,7 @@ classdef (Abstract) Coding < handle
                     result = cell(1,n) ;
                     for i=1:n ,
                         hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
-                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger) ;
+                        result{i} = ws.Encodable.decodeEncodingContainer(hackedContainer, warningLogger) ;
                         % A cell array can't be a parent, so we just use
                         % parent
                     end
@@ -642,7 +644,7 @@ classdef (Abstract) Coding < handle
         end  % function
         
         function target = copyCellArrayOfHandles(source)
-            % Utility function for copying a cell array of ws.Coding
+            % Utility function for copying a cell array of ws.Encodable
             % entities, given a parent.
             nElements = length(source) ;
             target = cell(size(source)) ;  % want to preserve row vectors vs col vectors

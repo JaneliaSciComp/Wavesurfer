@@ -25,7 +25,7 @@ classdef BuiltinTrigger < ws.Model
     
     methods
         function self = BuiltinTrigger()   
-            self@ws.Model() ;  % have to accept parent arg, but ignore it
+            %self@ws.Model() ;  % have to accept parent arg, but ignore it
             %fprintf('ws.BuiltinTrigger constructor called\n') ;
             %dbstack
             self.Name_ = 'Built-in Trigger (PFI8)' ;
@@ -125,7 +125,7 @@ classdef BuiltinTrigger < ws.Model
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function

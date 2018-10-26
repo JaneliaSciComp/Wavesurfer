@@ -76,12 +76,12 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     end  % methods block
         
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        

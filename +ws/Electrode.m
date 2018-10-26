@@ -61,7 +61,7 @@ classdef Electrode < ws.Model % & ws.Mimic
     methods        
         function self=Electrode()
             % Set the defaults
-            self@ws.Model();
+            %self@ws.Model();
             self.Name_ = '' ;
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
@@ -788,7 +788,7 @@ classdef Electrode < ws.Model % & ws.Mimic
     methods
         function setProperty_(self, propertyName, newValue)            
             % This one is deisigned to be used for most setting needs.
-            % setPropertyValue_() is mostly just for use by ws.Coding.
+            % setPropertyValue_() is mostly just for use by ws.Encodable.
             methodName = horzcat('set', propertyName, '_') ;
             feval(methodName, self, newValue) ;
         end

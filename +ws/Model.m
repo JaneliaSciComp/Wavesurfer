@@ -1,15 +1,11 @@
-classdef (Abstract) Model < ws.Coding
+classdef (Abstract) Model < ws.Encodable
+    % A model is an Encodable with a zero-arg constructor, which implements
+    % the get() and set() methods.
+    %
+    % We don't formally enforce the zero-arg constructor bit, but any
+    % subclass of ws.Model should implement a zero-arg constructor.
+    
     methods
-        function self = Model()
-        end  % function
-        
-        function delete(self)  %#ok<INUSD>
-        end        
-        
-        function debug(self) %#ok<MANU>
-            keyboard
-        end  % function        
-        
         function result = get(self, propertyName) 
             result = self.(propertyName) ;
         end

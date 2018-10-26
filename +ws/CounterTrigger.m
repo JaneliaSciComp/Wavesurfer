@@ -33,7 +33,7 @@ classdef CounterTrigger < ws.Model
 
     methods
         function self = CounterTrigger() 
-            self = self@ws.Model() ;  
+            %self = self@ws.Model() ;  
             self.Name_ = 'Counter Trigger' ;
             self.IsInternalRepeatCountOverridden_ = false ;
             self.InternalRepeatCount_ = 1 ;
@@ -183,7 +183,7 @@ classdef CounterTrigger < ws.Model
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function        

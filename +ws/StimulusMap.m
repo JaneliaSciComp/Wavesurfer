@@ -31,7 +31,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
 
     methods
         function self = StimulusMap()
-            self@ws.Model();
+            %self@ws.Model();
         end
         
         function debug(self) %#ok<MANU>
@@ -381,7 +381,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function

@@ -139,7 +139,7 @@ classdef Ephys < ws.Subsystem
     
     methods         
         function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
+            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
             % delete some property names that are defined in subclasses
             % that don't need to go into the header file
             propNames=setdiff(propNamesRaw, ...
@@ -148,12 +148,12 @@ classdef Ephys < ws.Subsystem
     end  % public methods block    
     
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end

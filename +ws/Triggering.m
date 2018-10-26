@@ -225,12 +225,12 @@ classdef Triggering < ws.Subsystem
     end  % protected method block    
 
     methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -693,7 +693,7 @@ classdef Triggering < ws.Subsystem
                     target.mimic(source) ;
                 elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandles(source) ;
+                    target = ws.Encodable.copyCellArrayOfHandles(source) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,

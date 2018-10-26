@@ -567,7 +567,7 @@ classdef Looper < handle
             self.releaseHardwareResources_() ;           
             
             % Make our own settings mimic those of wavesurferModelSettings
-            %wsModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings) ;
+            %wsModel = ws.Encodable.decodeEncodingContainer(wavesurferModelSettings) ;
             %self.setLooperProtocol_(looperProtocol) ;
 
             % Set the overcommitment stuff, calculated in the frontend

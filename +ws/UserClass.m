@@ -1,4 +1,4 @@
-classdef UserClass < ws.Coding
+classdef UserClass < ws.Encodable
     % The superclass from which user classes should inherit.  Contains methods
     % that get called at various points, including during a run.  The user
     % class gets instantiated in *each* of the three main processes of WS: the

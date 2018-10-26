@@ -16,8 +16,8 @@ classdef FastProtocol < ws.Model
     end
     
     methods
-        function self=FastProtocol()
-            self@ws.Model() ;
+        function self = FastProtocol()
+            %self@ws.Model() ;
         end
         
         function set.ProtocolFileName(self, newValue)
@@ -57,7 +57,7 @@ classdef FastProtocol < ws.Model
             result = self.(propertyName) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end  % function

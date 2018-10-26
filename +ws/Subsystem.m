@@ -14,7 +14,7 @@ classdef (Abstract) Subsystem < ws.Model
     
     methods
         function self = Subsystem()
-            self@ws.Model() ;
+            %self@ws.Model() ;
         end
                 
         function out = get.IsEnabled(self)
