@@ -183,8 +183,7 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
                 model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
                 model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
-                model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;
-                
+                model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;                
                 model.subscribeMe(self,'UpdateDisplay','','update') ;
                 model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
                 model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
