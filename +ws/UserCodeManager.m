@@ -203,7 +203,7 @@ classdef UserCodeManager < ws.Subsystem
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -235,7 +235,7 @@ classdef UserCodeManager < ws.Subsystem
             end
             
             % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
+            %self.enableBroadcastsMaybe();
             
             % Broadcast update
             %self.broadcast('Update');
@@ -291,15 +291,15 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
     end
         
-    methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.enableBroadcastsMaybe() ;
-        end
-    end  % protected methods block
+%     methods (Access=protected)    
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.enableBroadcastsMaybe() ;
+%         end
+%     end  % protected methods block
     
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();        

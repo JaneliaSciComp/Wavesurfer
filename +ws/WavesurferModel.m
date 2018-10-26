@@ -3161,7 +3161,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Don't want to do broadcasts while we're in a
             % possibly-inconsistent state
             %self.disableBroadcasts() ;
-            self.disableAllBroadcastsDammit_() ;  % want to disable *all* broadcasts, in *all* subsystems
+            self.disableBroadcasts() ;
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -3223,7 +3223,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 
             % Safe to do broadcasts again
             %self.enableBroadcastsMaybe() ;
-            self.enableBroadcastsMaybeDammit_() ;
+            self.enableBroadcastsMaybe() ;
             
             % Make sure the looper knows which output channels are timed vs
             % on-demand
@@ -3276,52 +3276,43 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % protected methods block
     
     methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-            self.Triggering_.disableBroadcasts() ;
-            self.Acquisition_.disableBroadcasts() ;
-            self.Stimulation_.disableBroadcasts() ;
-            self.Display_.disableBroadcasts() ;
-            %self.Ephys_.TestPulser.disableBroadcasts() ;
-            %self.Ephys_.ElectrodeManager.disableBroadcasts() ;
-            self.Ephys_.disableAllBroadcastsDammit_() ;
-            self.UserCodeManager_.disableBroadcasts() ;
-            self.Logging_.disableBroadcasts() ;            
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.Logging_.enableBroadcastsMaybe() ;                        
-            self.UserCodeManager_.enableBroadcastsMaybe() ;
-            self.Ephys_.enableBroadcastsMaybeDammit_() ;
-%             self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
-%             self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
-            self.Display_.enableBroadcastsMaybe() ;
-            self.Stimulation_.enableBroadcastsMaybe() ;
-            self.Acquisition_.enableBroadcastsMaybe() ;            
-            self.Triggering_.enableBroadcastsMaybe() ;
-            self.enableBroadcastsMaybe() ;
-        end
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%             %self.Triggering_.disableBroadcasts() ;
+%             %self.Acquisition_.disableBroadcasts() ;
+%             %self.Stimulation_.disableBroadcasts() ;
+%             %self.Display_.disableBroadcasts() ;
+%             %self.Ephys_.TestPulser.disableBroadcasts() ;
+%             %self.Ephys_.ElectrodeManager.disableBroadcasts() ;
+%             %self.Ephys_.disableAllBroadcastsDammit_() ;
+%             %self.UserCodeManager_.disableBroadcasts() ;
+%             %self.Logging_.disableBroadcasts() ;            
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.Logging_.enableBroadcastsMaybe() ;                        
+%             self.UserCodeManager_.enableBroadcastsMaybe() ;
+%             self.Ephys_.enableBroadcastsMaybeDammit_() ;
+% %             self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
+% %             self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
+%             self.Display_.enableBroadcastsMaybe() ;
+%             self.Stimulation_.enableBroadcastsMaybe() ;
+%             self.Acquisition_.enableBroadcastsMaybe() ;            
+%             self.Triggering_.enableBroadcastsMaybe() ;
+%             self.enableBroadcastsMaybe() ;
+%         end
         
         function updateEverythingAfterProtocolFileOpen_(self)
-            %self.Logging_.broadcast('Update') ;        
             self.broadcast('UpdateLogging') ;
-            %self.UserCodeManager_.broadcast('Update') ;
             self.broadcast('UpdateUserCodeManager') ;
-            %self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
             self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('UpdateTestPulser') ;            
-            %self.Ephys_.ElectrodeManager.broadcast('Update') ;
-            %self.Ephys_.TestPulser.broadcast('Update') ;
-            self.Display_.broadcast('ClearData') ;
-            self.Display_.broadcast('Update') ;
-            %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
-                                                      % subscribes to this anymore.
+            self.broadcast('ClearData') ;
+            self.broadcast('UpdateDisplay') ;
             self.broadcast('UpdateStimulusLibrary') ;
-            %self.Acquisition_.broadcast('Update') ;
             self.broadcast('UpdateTriggering') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
-            %self.broadcast('DidSetSingleFigureVisibility') ;
         end
     end  % protected methods block
     
@@ -4807,7 +4798,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if self.AreSweepsContinuous ,
                 value = false ;
             else
-                value = self.Display_.getIsXSpanSlavedToAcquistionDuration_() ;
+                value = self.Display_.IsXSpanSlavedToAcquistionDuration ;
             end
         end  % function
         

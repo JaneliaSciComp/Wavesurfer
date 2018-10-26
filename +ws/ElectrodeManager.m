@@ -1085,8 +1085,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             % Note that this uses the high-level setters, so it will cause
             % any subscribers to get (several) MayHaveChanged events.
             
-            % Disable broadcasts for speed
-            self.disableBroadcasts() ;
+            % % Disable broadcasts for speed
+            % self.disableBroadcasts() ;
 
             % Mimic the trodes
             nNewElectrodes=length(other.Electrodes_) ;
@@ -1109,8 +1109,8 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %               % transient
             self.DoTrodeUpdateBeforeRunWhenSensible_ = other.DoTrodeUpdateBeforeRunWhenSensible_ ;
 
-            % Re-enable broadcasts
-            self.enableBroadcastsMaybe() ;
+            % % Re-enable broadcasts
+            % self.enableBroadcastsMaybe() ;
             
             % Broadcast update
             %self.broadcast('Update') ;

@@ -234,17 +234,17 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end  % function
     end  % protected methods
 
-    methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-            self.StimulusLibrary_.disableBroadcasts() ;
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.StimulusLibrary_.enableBroadcastsMaybe() ;            
-            self.enableBroadcastsMaybe() ;
-        end
-    end  % protected methods block
+%     methods (Access=protected)    
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%             self.StimulusLibrary_.disableBroadcasts() ;
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.StimulusLibrary_.enableBroadcastsMaybe() ;            
+%             self.enableBroadcastsMaybe() ;
+%         end
+%     end  % protected methods block
     
     methods
 %         function self = StimulationSubsystem(parent)
@@ -584,7 +584,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -609,7 +609,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             end
             
             % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
+            %self.enableBroadcastsMaybe();
             
 %             % Broadcast update
 %             self.broadcast('Update');

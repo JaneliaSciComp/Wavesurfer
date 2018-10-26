@@ -386,14 +386,14 @@ classdef Triggering < ws.Subsystem
             trigger = ws.CounterTrigger();  % Triggers are now parentless
 
             % Set the trigger parameters
-            self.disableBroadcasts() ;
+            %self.disableBroadcasts() ;
             trigger.Name = sprintf('Counter %d',counterID) ;
             trigger.DeviceName = deviceName ; 
             trigger.CounterID = counterID ;  % at this point, we know this is a free counter
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
             trigger.Edge = 'rising' ;
-            self.enableBroadcastsMaybe() ;
+            %self.enableBroadcastsMaybe() ;
 
             % Note the number of counter triggers before adding this new
             % one
@@ -679,7 +679,7 @@ classdef Triggering < ws.Subsystem
             % Cause self to resemble other.
             
             % Disable broadcasts for speed
-            self.disableBroadcasts();
+            %self.disableBroadcasts();
             
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
@@ -711,7 +711,7 @@ classdef Triggering < ws.Subsystem
             self.synchronizeTransientStateToPersistedState_() ;            
 
             % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
+            %self.enableBroadcastsMaybe();
             
             % Broadcast update
             % self.broadcast('Update');            

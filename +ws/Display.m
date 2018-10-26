@@ -26,6 +26,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         ChannelIndexFromPlotIndex  % 1 x NPlots       
         PlotIndexFromChannelIndex  % 1 x nChannels
         PlotHeightFromPlotIndex  % 1 x NPlots
+        IsXSpanSlavedToAcquistionDuration
     end
 
     properties (Access = protected)
@@ -247,11 +248,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             end
 %         end
         
-        function value = getIsXSpanSlavedToAcquistionDuration_(self)
+        function value = get.IsXSpanSlavedToAcquistionDuration(self)
             value = self.IsXSpanSlavedToAcquistionDuration_;
         end  % function
         
-        function setIsXSpanSlavedToAcquistionDuration(self, newValue)
+        function set.IsXSpanSlavedToAcquistionDuration(self, newValue)
             self.IsXSpanSlavedToAcquistionDuration_ = newValue ;
         end
         

@@ -160,17 +160,17 @@ classdef Ephys < ws.Subsystem
     end  % protected methods block
     
     methods
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-            self.TestPulser_.disableBroadcasts() ;
-            self.ElectrodeManager_.disableBroadcasts() ;
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.TestPulser_.enableBroadcastsMaybe() ;
-            self.ElectrodeManager_.enableBroadcastsMaybe() ;
-            self.enableBroadcastsMaybe() ;
-        end
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%             self.TestPulser_.disableBroadcasts() ;
+%             self.ElectrodeManager_.disableBroadcasts() ;
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.TestPulser_.enableBroadcastsMaybe() ;
+%             self.ElectrodeManager_.enableBroadcastsMaybe() ;
+%             self.enableBroadcastsMaybe() ;
+%         end
         
 %         function updateEverythingAfterProtocolFileOpen_(self)
 %             %self.ElectrodeManager_.broadcast('Update') ;
@@ -184,8 +184,8 @@ classdef Ephys < ws.Subsystem
             
             % Disable broadcasts for speed
             %self.disableBroadcasts();
-            self.ElectrodeManager_.disableBroadcasts();
-            self.TestPulser_.disableBroadcasts();
+            %self.ElectrodeManager_.disableBroadcasts();
+            %self.TestPulser_.disableBroadcasts();
             % Get the list of property names for this file type
             propertyNames = self.listPropertiesForPersistence();
             
@@ -210,8 +210,8 @@ classdef Ephys < ws.Subsystem
             %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
             
             % Re-enable broadcasts
-            self.TestPulser_.enableBroadcastsMaybe();
-            self.ElectrodeManager_.enableBroadcastsMaybe();
+            %self.TestPulser_.enableBroadcastsMaybe();
+            %self.ElectrodeManager_.enableBroadcastsMaybe();
             %self.enableBroadcastsMaybe();
             
             % Broadcast updates for sub-models and self, now that
