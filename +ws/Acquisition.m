@@ -763,7 +763,7 @@ classdef Acquisition < ws.Subsystem
             data = self.LatestRawDigitalData_ ;
         end  % function
         
-        function addDataToUserCache(self, rawAnalogData, rawDigitalData, isSweepBased)
+        function addDataToCache(self, rawAnalogData, rawDigitalData, isSweepBased)
             %self.LatestAnalogData_ = scaledAnalogData ;
             self.LatestRawAnalogData_ = rawAnalogData ;
             self.LatestRawDigitalData_ = rawDigitalData ;

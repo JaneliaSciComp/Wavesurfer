@@ -1126,16 +1126,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
        
     methods (Access=protected)
         function didSetIsDigitalOutputTimed_(self)
-            %self.Ephys_.didSetIsDigitalOutputTimed() ;
             self.broadcast('EMDidSetIsDigitalOutputTimed') ;
             self.broadcast('UpdateChannels') ;            
         end        
         
         function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
-            %self.Ephys_.didSetIsInputChannelActive() ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
-            %self.Display_.didSetIsInputChannelActive() ;
             self.broadcast('ClearData') ;
             self.broadcast('UpdateDisplay') ;            
         end
@@ -1222,8 +1219,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
 
         function didSetSweepDurationIfFinite_(self)
-            %self.Triggering_.didSetSweepDurationIfFinite() ;
-            %self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
             if self.IsXSpanSlavedToAcquistionDuration ,
                 self.broadcast('ClearData') ;
             end                
@@ -1233,7 +1228,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
             self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
             self.broadcast('UpdateTriggering') ;
-            %self.Display_.didSetAreSweepsFiniteDuration();
             self.broadcast('ClearData') ;
             self.broadcast('DidSetXSpan') ;
         end        
@@ -2249,7 +2243,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %                 end
                 
                 % Store the data in the user cache
-                self.Acquisition_.addDataToUserCache(rawAnalogData, rawDigitalData, self.AreSweepsFiniteDuration_) ;
+                self.Acquisition_.addDataToCache(rawAnalogData, rawDigitalData, self.AreSweepsFiniteDuration_) ;
                 
                 % 
 
@@ -4805,7 +4799,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     isNewValueAllowed = true ;
                     self.Display_.IsXSpanSlavedToAcquistionDuration = logical(newValue) ;
-                    %self.clearData_() ; 
                     self.broadcast('ClearData');
                 else
                     isNewValueAllowed = false ;
@@ -4819,7 +4812,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                       'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
             end                            
             
-            %self.Display_.setIsXSpanSlavedToAcquistionDuration(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol');
         end
@@ -6245,7 +6237,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
            
         function set.XOffset(self, newValue)
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
-                self.Display_.XOffset = double(newValue);
+                self.Display_.XOffset = double(newValue) ;
             else
                 self.broadcast('DidSetXOffset');
                 error('ws:invalidPropertyValue', ...
@@ -6908,7 +6900,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 
                     % Add data to the user cache
                     isSweepBased = isfinite(sweepDuration) ;
-                    self.Looper_.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
+                    %self.Looper_.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
                     self.samplesAcquired_(rawAnalogData, ...
                                           rawDigitalData, ...
                                           timeSinceRunStartAtStartOfData ) ;
