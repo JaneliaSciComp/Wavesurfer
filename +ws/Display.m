@@ -63,18 +63,6 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         PlotIndexFromChannelIndex_ % 1 x nChannels (this has nan's for channels that are not displayed)
     end
     
-    events
-        Update
-        DidSetUpdateRate
-        UpdateXSpan
-        UpdateXOffset
-        UpdateYAxisLimits
-        %UpdateData
-        ClearData
-        %ItWouldBeNiceToKnowXSpanInPixels
-        AddData
-    end
-
     methods
         function self = Display()
             self@ws.Subsystem() ;

@@ -56,10 +56,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         IsDigitalChannelMarkedForDeletion_ = false(1,0)        
     end    
     
-    events 
-        DidSetDoRepeatSequence
-    end
-    
     methods
         function self = Stimulation()
             self@ws.Subsystem() ;

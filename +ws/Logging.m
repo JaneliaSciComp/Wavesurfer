@@ -53,11 +53,6 @@ classdef Logging < ws.Subsystem
         %CurrentSweepIndex_
     end
 
-    events
-        %Update
-        %UpdateDoIncludeSessionIndex
-    end
-    
     methods
         function self = Logging()
             self@ws.Subsystem() ;

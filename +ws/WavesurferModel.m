@@ -398,6 +398,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         UpdateYAxisLimits
         ClearData
         AddData
+        
+        UpdateReadiness        
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -408,10 +410,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         DegreeOfReadiness_ = 1
     end
 
-    events
-        UpdateReadiness
-    end
-    
     methods
         function self = WavesurferModel(isAwake, isHeaded)
             %self@ws.Model();
