@@ -393,11 +393,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         UpdateDisplay
         DidSetUpdateRate
-        UpdateXSpan
-        UpdateXOffset
-        UpdateYAxisLimits
+        DidSetXSpan
+        DidSetXOffset
+        DidSetYAxisLimits
         ClearData
-        AddData
+        DidAddData
         
         UpdateReadiness        
     end
@@ -1227,7 +1227,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if self.IsXSpanSlavedToAcquistionDuration ,
                 self.broadcast('ClearData') ;
             end                
-            self.broadcast('UpdateXSpan') ;
+            self.broadcast('DidSetXSpan') ;
         end        
         
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
@@ -1235,7 +1235,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('UpdateTriggering') ;
             %self.Display_.didSetAreSweepsFiniteDuration();
             self.broadcast('ClearData') ;
-            self.broadcast('UpdateXSpan') ;
+            self.broadcast('DidSetXSpan') ;
         end        
 
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
@@ -2271,7 +2271,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                                expectedSweepScanCount);
                 end
                 if self.Display_.IsEnabled ,
-                    [doesNeedClear, doesNeedUpdateXOffset] = ...
+                    [doesNeedClear, doesNeedDidSetXOffset] = ...
                         self.Display_.dataAvailable(isSweepBased, ...
                                                     t, ...
                                                     scaledAnalogData, ...
@@ -2282,10 +2282,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     if doesNeedClear ,
                         self.broadcast('ClearData') ;
                     end
-                    if doesNeedUpdateXOffset ,
-                        self.broadcast('UpdateXOffset') ;
+                    if doesNeedDidSetXOffset ,
+                        self.broadcast('DidSetXOffset') ;
                     end
-                    self.broadcast('AddData', t, scaledAnalogData, rawDigitalData) ;                                           
+                    self.broadcast('DidAddData', t, scaledAnalogData, rawDigitalData) ;                                           
                 end
                 if self.UserCodeManager_.IsEnabled ,
                     self.callUserMethod_('dataAvailable');
@@ -4852,7 +4852,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     didSucceed = false ;
                 end
             end
-            self.broadcast('UpdateXSpan');
+            self.broadcast('DidSetXSpan');
             if ~didSucceed ,
                 error('ws:invalidPropertyValue', ...
                       'XSpan must be a scalar finite positive number') ;
@@ -6247,11 +6247,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 self.Display_.XOffset = double(newValue);
             else
-                self.broadcast('UpdateXOffset');
+                self.broadcast('DidSetXOffset');
                 error('ws:invalidPropertyValue', ...
                       'XOffset must be a scalar finite number') ;
             end
-            self.broadcast('UpdateXOffset');
+            self.broadcast('DidSetXOffset');
         end
         
         function value = get.YLimitsPerAIChannel(self)
@@ -6366,28 +6366,28 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 
         function scrollUp(self, plotIndex)  % works on analog channels only
             channelIndex = self.Display_.scrollUp(plotIndex) ;
-            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDown(self, plotIndex)  % works on analog channels only
             channelIndex = self.Display_.scrollDown(plotIndex) ;
-            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomIn(self, plotIndex)  % works on analog channels only
             channelIndex = self.Display_.zoomIn(plotIndex) ;
-            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
             channelIndex = self.Display_.zoomOut(plotIndex) ;
-            self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex) ;
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end        

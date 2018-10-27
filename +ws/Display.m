@@ -399,7 +399,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            %self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
                       'Argument to scrollUp() must be a valid AI channel index') ;
@@ -425,7 +425,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            %self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
                       'Argument to scrollDown() must be a valid AI channel index') ;
@@ -450,7 +450,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            %self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
                       'Argument to zoomOut() must be a valid AI channel index') ;
@@ -475,7 +475,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             else
                 isValid = false ;
             end
-            %self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+            %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
                       'Argument to zoomIn() must be a valid AI channel index') ;
@@ -496,7 +496,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             else
 %                 isValid = false ;
 %             end
-%             self.broadcast('UpdateYAxisLimits', plotIndex, channelIndex);
+%             self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
 %             if ~isValid ,
 %                 error('ws:invalidPropertyValue', ...
 %                       'Argument to setYAxisLimitsTightToData() must be a valid AI channel index') ;
@@ -683,7 +683,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             self.ClearOnNextData_ = true;
         end
          
-        function [doesNeedClear, doesNeedUpdateXOffset] = ...
+        function [doesNeedClear, doesNeedDidSetXOffset] = ...
                 dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, xSpan)  %#ok<INUSL>
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
@@ -702,13 +702,13 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
                 xOffsetNudged=tNudged-xSpan;
                 if xOffsetNudged>self.XOffset ,
                     self.XOffset_=xOffsetNudged;
-                    %self.broadcast('UpdateXOffset') ;
-                    doesNeedUpdateXOffset = true ;
+                    %self.broadcast('DidSetXOffset') ;
+                    doesNeedDidSetXOffset = true ;
                 else
-                    doesNeedUpdateXOffset = false ;                    
+                    doesNeedDidSetXOffset = false ;                    
                 end
             else
-                doesNeedUpdateXOffset = false ;
+                doesNeedDidSetXOffset = false ;
             end
         end  % function
         
@@ -745,7 +745,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             % Called by the parent to notify of a change to the acquisition
 %             % duration            
 %             self.broadcast('ClearData') ;
-%             self.broadcast('UpdateXSpan') ;
+%             self.broadcast('DidSetXSpan') ;
 %         end
         
 %         function didSetSweepDurationIfFinite(self, isXSpanSlavedToAcquistionDuration)
@@ -754,7 +754,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             if isXSpanSlavedToAcquistionDuration ,
 %                 self.broadcast('ClearData') ;
 %             end                
-%             self.broadcast('UpdateXSpan') ;
+%             self.broadcast('DidSetXSpan') ;
 %         end
         
 %         function out = get.NPlots(self)

@@ -186,11 +186,11 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;                
                 model.subscribeMe(self,'UpdateDisplay','','update') ;
                 model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
-                model.subscribeMe(self,'UpdateXOffset','','updateXAxisLimits') ;
-                model.subscribeMe(self,'UpdateXSpan','','updateXAxisLimits') ;
-                model.subscribeMe(self,'UpdateYAxisLimits','','updateYAxisLimits') ;
+                model.subscribeMe(self,'DidSetXOffset','','updateXAxisLimits') ;
+                model.subscribeMe(self,'DidSetXSpan','','updateXAxisLimits') ;
+                model.subscribeMe(self,'DidSetYAxisLimits','','updateYAxisLimits') ;
                 model.subscribeMe(self,'ClearData','','clearData') ;
-                model.subscribeMe(self, 'AddData', '', 'addData') ;
+                model.subscribeMe(self, 'DidAddData', '', 'addData') ;
             end
             
             % Make the figure visible
