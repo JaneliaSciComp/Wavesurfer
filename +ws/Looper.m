@@ -90,7 +90,7 @@ classdef Looper < handle
         IsAtLeastOneActiveAIChannelCached_
         IsAtLeastOneActiveDIChannelCached_                
         IsArmedOrAcquiring_
-        NScansFromLatestCallback_
+        %NScansFromLatestCallback_
         IndexOfLastScanInCache_
         IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
@@ -957,7 +957,7 @@ classdef Looper < handle
         function startingSweepAcquisition_(self)
             %fprintf('LooperAcquisition::startingSweep()\n');
             self.IsArmedOrAcquiring_ = true;
-            self.NScansFromLatestCallback_ = [] ;
+            %self.NScansFromLatestCallback_ = [] ;
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works

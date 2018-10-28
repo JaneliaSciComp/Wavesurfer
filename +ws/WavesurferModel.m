@@ -396,7 +396,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         DidSetXSpan
         DidSetXOffset
         DidSetYAxisLimits
-        ClearData
+        DidSetDataCache
         DidAddData
         
         UpdateReadiness        
@@ -867,11 +867,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 %self.willSetSweepDurationIfFinite();
                 self.SweepDurationIfFinite_ = valueToSet;
                 self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                self.didSetSweepDurationIfFinite_();
+                if self.IsXSpanSlavedToAcquistionDuration ,
+                    self.broadcast('DidSetDataCache') ;
+                end
+                self.broadcast('DidSetXSpan') ;
                 self.DoesProtocolNeedSave_ = true ;
             else
-                %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                %self.didSetSweepDurationIfFinite();
                 self.broadcast('Update');
                 error('ws:invalidPropertyValue', ...
                       'SweepDurationIfFinite must be a (scalar) positive finite value');
@@ -979,7 +980,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Acquisition or Stimulation subsystem where the change was made".
             %self.Display_.didSetAnalogChannelUnitsOrScales() ;
             self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;
             self.broadcast('UpdateTestPulser') ;
         end
@@ -1011,7 +1012,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             %self.Display_.didSetAnalogInputTerminalID() ;
-            self.broadcast('ClearData') ;
+            %self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -1025,7 +1026,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
-            self.broadcast('ClearData') ;
+            %self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
             if wasSet ,
@@ -1125,18 +1126,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % public methods block
        
     methods (Access=protected)
-        function didSetIsDigitalOutputTimed_(self)
-            self.broadcast('EMDidSetIsDigitalOutputTimed') ;
-            self.broadcast('UpdateChannels') ;            
-        end        
-        
-        function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
-            self.broadcast('EMDidSetIsInputChannelActive') ;
-            self.broadcast('TPDidSetIsInputChannelActive') ;
-            self.broadcast('ClearData') ;
-            self.broadcast('UpdateDisplay') ;            
-        end
-        
         function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
@@ -1218,17 +1207,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %self.Ephys_.releaseTimedHardwareResources();
         end
 
-        function didSetSweepDurationIfFinite_(self)
-            if self.IsXSpanSlavedToAcquistionDuration ,
-                self.broadcast('ClearData') ;
-            end                
-            self.broadcast('DidSetXSpan') ;
-        end        
-        
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
             self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
             self.broadcast('UpdateTriggering') ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('DidSetXSpan') ;
         end        
 
@@ -1325,7 +1307,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if self.Display_.IsEnabled ,
                     self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
-                    self.broadcast('ClearData') ;
+                    self.clearDataCache_() ;
+                    self.broadcast('DidSetDataCache') ;
                 end
                 if self.Triggering_.IsEnabled ,
                     primaryDeviceName = self.PrimaryDeviceName ;
@@ -1685,8 +1668,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                             %fprintf('At top of within-sweep loop...\n') ;
                             timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
                             self.performOneLooperIterationDuringOngoingSweep_(timeSinceSweepStart, ...
-                                                                              self.FromRunStartTicId_, ...
-                                                                              self.SweepDuration) ;
+                                                                              self.FromRunStartTicId_) ;
                             isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
                             self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;
                             % do a drawnow() if it's been too long...
@@ -2274,7 +2256,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                                     timeSinceRunStartAtStartOfData, ...
                                                     self.XSpan);
                     if doesNeedClear ,
-                        self.broadcast('ClearData') ;
+                        %self.broadcast('DidSetDataCache') ;  
+                        % commenting
+                        % this is maybe a mistake, but either we don't need
+                        % it here, or there's a better way to do this.
                     end
                     if doesNeedDidSetXOffset ,
                         self.broadcast('DidSetXOffset') ;
@@ -2549,10 +2534,22 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
             %end
+            self.clearDataCache_() ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
-            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
+            
+            self.broadcast('UpdateLogging') ;
+            self.broadcast('UpdateUserCodeManager') ;
+            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateTestPulser') ;            
+            self.broadcast('DidSetDataCache') ;
+            self.broadcast('UpdateDisplay') ;
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateTriggering') ;
+            self.broadcast('Update') ;            
+            self.broadcast('LayoutAllWindows') ;
+            
             self.callUserMethod_('wake');  % wake the user object
             if self.ArePreferencesWritable , 
                 ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
@@ -2793,10 +2790,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Acquisition_.addAnalogChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                       nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.clearDataCache_() ;                                                  
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
-                self.broadcast('ClearData') ;
+                self.broadcast('DidSetDataCache') ;
                 self.broadcast('UpdateDisplay') ;
                 %self.Ephys_.didChangeNumberOfInputChannels();
                 self.broadcast('EMDidChangeNumberOfInputChannels');
@@ -2832,10 +2830,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
                 channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.clearDataCache_() ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
-                self.broadcast('ClearData') ;
+                self.broadcast('DidSetDataCache') ;
                 self.broadcast('UpdateDisplay') ;
                 %self.Ephys_.didChangeNumberOfInputChannels() ;                
                 self.broadcast('EMDidChangeNumberOfInputChannels');
@@ -2899,10 +2898,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedAIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels_() ;
+            self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
             %self.Ephys_.didChangeNumberOfInputChannels();
             self.broadcast('EMDidChangeNumberOfInputChannels');
@@ -2913,10 +2913,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
+            self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
             %self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
@@ -3294,18 +3295,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             self.enableBroadcastsMaybe() ;
 %         end
         
-        function updateEverythingAfterProtocolFileOpen_(self)
-            self.broadcast('UpdateLogging') ;
-            self.broadcast('UpdateUserCodeManager') ;
-            self.broadcast('UpdateElectrodeManager') ;
-            self.broadcast('UpdateTestPulser') ;            
-            self.broadcast('ClearData') ;
-            self.broadcast('UpdateDisplay') ;
-            self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateTriggering') ;
-            self.broadcast('Update') ;            
-            self.broadcast('LayoutAllWindows') ;
-        end
+%         function updateEverythingAfterProtocolFileOpen_(self)
+%             self.broadcast('UpdateLogging') ;
+%             self.broadcast('UpdateUserCodeManager') ;
+%             self.broadcast('UpdateElectrodeManager') ;
+%             self.broadcast('UpdateTestPulser') ;            
+%             self.broadcast('DidSetDataCache') ;
+%             self.broadcast('UpdateDisplay') ;
+%             self.broadcast('UpdateStimulusLibrary') ;
+%             self.broadcast('UpdateTriggering') ;
+%             self.broadcast('Update') ;            
+%             self.broadcast('LayoutAllWindows') ;
+%         end
     end  % protected methods block
     
     methods (Static)
@@ -4625,10 +4626,21 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
+            self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
-            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('EMDidSetIsInputChannelActive') ;
+            self.broadcast('TPDidSetIsInputChannelActive') ;
+            self.broadcast('DidSetDataCache') ;
+            self.broadcast('UpdateDisplay') ;            
             self.broadcast('UpdateChannels') ;
         end    
+
+        function result = getTimestampsForDataInCache(self)
+            dt=1/self.AcquisitionSampleRate;
+            tPastLast = self.t_ ;  % the timestamp of the scan that would follow the last scan in the cache
+            n = self.Acquisition_.getNScansInCache() ;
+            result = dt*(0:(n-1))' - dt*n + tPastLast ;
+        end
         
         function scaledAnalogData = getLatestAIData(self)
             % Get the data from the most-recent data available callback, as
@@ -4657,6 +4669,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
         end  % function
 
+        function result = getDIDataFromCache(self)
+            % Get the data from the main-memory cache, as double-precision floats.  This
+            % call unwraps the circular buffer for you.
+            result = self.Acquisition_.getRawDigitalget.tDataFromCache();
+        end  % function
+        
         function result = get.IsDIChannelActive(self)
             result = self.Acquisition_.getIsDigitalChannelActive_() ;
         end
@@ -4665,8 +4683,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
+            self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
-            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.broadcast('EMDidSetIsInputChannelActive') ;
+            self.broadcast('TPDidSetIsInputChannelActive') ;
+            self.broadcast('DidSetDataCache') ;
+            self.broadcast('UpdateDisplay') ;                        
             self.broadcast('UpdateChannels') ;
         end    
         
@@ -4735,7 +4757,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             display=self.Display_;
             if ~isempty(display)
                 %display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
-                self.broadcast('ClearData') ;
+                %self.broadcast('DidSetDataCache') ;
                 self.broadcast('UpdateDisplay') ;
             end            
             ephys=self.Ephys_;
@@ -4753,7 +4775,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             end
             %self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
-            self.broadcast('ClearData') ;
+            %self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
             self.broadcast('UpdateChannels') ;
         end
@@ -4799,7 +4821,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
                     isNewValueAllowed = true ;
                     self.Display_.IsXSpanSlavedToAcquistionDuration = logical(newValue) ;
-                    self.broadcast('ClearData');
+                    self.broadcast('DidSetDataCache');
                 else
                     isNewValueAllowed = false ;
                 end
@@ -4838,7 +4860,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     %self.XSpan_ = double(newValue);
                     self.Display_.setXSpan(double(newValue)) ;
                     %self.clearData_() ;
-                    self.broadcast('ClearData') ;
+                    self.broadcast('DidSetDataCache') ;
                     didSucceed = true ;
                 else
                     didSucceed = false ;
@@ -4973,10 +4995,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             try
                 wasSet = self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
             catch exception
-                self.didSetIsDigitalOutputTimed_() ;
+                self.broadcast('EMDidSetIsDigitalOutputTimed') ;
+                self.broadcast('UpdateChannels') ;
                 rethrow(exception) ;
             end            
-            self.didSetIsDigitalOutputTimed_() ;            
+            self.broadcast('EMDidSetIsDigitalOutputTimed') ;
+            self.broadcast('UpdateChannels') ;            
             if wasSet ,
                 self.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
                 self.DoesProtocolNeedSave_ = true ;
@@ -5187,6 +5211,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %         function changeTestPulserReadiness_(self, delta)
 %             self.Ephys_.changeTestPulserReadiness_(delta) ;
 %         end
+
+        function clearDataCache_(self) 
+            self.Acquisition_.clearDataCache() ;
+        end
         
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
@@ -5325,9 +5353,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
-            doNeedToClearData = self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
-            if doNeedToClearData ,
-                self.broadcast('ClearData') ;
+            doNeedToClearDataCache = self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            if doNeedToClearDataCache ,
+                self.clearDataCache_() ;
+                self.broadcast('DidSetDataCache') ;
             end
             self.broadcast('UpdateDisplay') ;            
             self.DoesProtocolNeedSave_ = true ;
@@ -5675,7 +5704,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                   'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
                     if isModeOrChannelNameOrScale ,
                         %self.Display_.didSetAnalogChannelUnitsOrScales() ;
-                        self.broadcast('ClearData') ;
+                        self.broadcast('DidSetDataCache') ;
                         self.broadcast('UpdateDisplay') ;
                         self.broadcast('UpdateChannels') ;
                     end                                
@@ -5758,7 +5787,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 % press of the Update button.
                 self.broadcast('UpdateElectrodeManager') ;
                 self.broadcast('UpdateTestPulser') ;
-                self.broadcast('ClearData') ;
+                self.broadcast('DidSetDataCache') ;
                 self.broadcast('UpdateDisplay') ;
                 self.broadcast('UpdateChannels') ;
             end
@@ -5844,17 +5873,19 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function removeMarkedElectrodes(self)
             try
                 self.Ephys_.removeMarkedElectrodes() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch err
                 self.broadcast('UpdateElectrodeManager');
                 self.broadcast('UpdateTestPulser') ;
+                self.broadcast('DidSetDataCache') ;
+                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateChannels') ;
                 rethrow(err) ;
             end
             self.broadcast('UpdateElectrodeManager');            
             self.broadcast('UpdateTestPulser') ;
-            %self.Display_.didRemoveElectrodes() ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
-            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateChannels') ;
         end
         
@@ -6125,7 +6156,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
             self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('ClearData') ;
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -6873,8 +6904,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function performOneLooperIterationDuringOngoingSweep_(self, ...
                                                               timeSinceSweepStart, ...
-                                                              fromRunStartTicId, ...
-                                                              sweepDuration)
+                                                              fromRunStartTicId)
                                                     
             % Acquire data, update soft real-time outputs
             [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
@@ -6899,7 +6929,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     %self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
 
                     % Add data to the user cache
-                    isSweepBased = isfinite(sweepDuration) ;
+                    %isSweepBased = isfinite(sweepDuration) ;
                     %self.Looper_.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
                     self.samplesAcquired_(rawAnalogData, ...
                                           rawDigitalData, ...

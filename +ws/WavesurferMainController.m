@@ -189,7 +189,7 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'DidSetXOffset','','updateXAxisLimits') ;
                 model.subscribeMe(self,'DidSetXSpan','','updateXAxisLimits') ;
                 model.subscribeMe(self,'DidSetYAxisLimits','','updateYAxisLimits') ;
-                model.subscribeMe(self,'ClearData','','clearData') ;
+                model.subscribeMe(self,'DidSetDataCache','','updateTraces') ;
                 model.subscribeMe(self, 'DidAddData', '', 'addData') ;
             end
             
@@ -870,7 +870,8 @@ classdef WavesurferMainController < ws.Controller
 
             % Do this separately, although we could do it at same time if
             % speed is an issue...
-            self.syncLineXDataAndYData_();
+            %self.syncLineXDataAndYData_();
+            self.updateTraces_() ;
         end  % function        
         
         function updateControlEnablementImplementation_(self) 
@@ -1147,10 +1148,14 @@ classdef WavesurferMainController < ws.Controller
             self.addData_(t, recentScaledAnalogData, recentRawDigitalData) ;
         end
         
-        function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            self.clearXDataAndYData_() ;
-            self.clearTraceData_() ;
-        end        
+%         function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+%             self.clearXDataAndYData_() ;
+%             self.clearTraceData_() ;
+%         end        
+
+        function updateTraces(self, broadcaster, eventName, propertyName, source, event) %#ok<INUSD>
+            self.updateTraces_() ;
+        end
         
         function updateXAxisLimits(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
             self.updateXAxisLimits_();
@@ -1169,9 +1174,9 @@ classdef WavesurferMainController < ws.Controller
             self.update() ;
         end  % function
         
-        function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
-            self.syncLineXDataAndYData_();
-        end  % function        
+%         function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
+%             self.syncLineXDataAndYData_();
+%         end  % function        
         
         function setYAxisLimitsTightToData(self, plotIndex)            
             if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,                
@@ -1204,9 +1209,8 @@ classdef WavesurferMainController < ws.Controller
                 end
             end
             self.update() ;  % update the button
-        end                
-        
-    end    
+        end                        
+    end  % public methods block    
     
     methods (Access=protected)
         function clearXDataAndYData_(self)
@@ -1309,6 +1313,69 @@ classdef WavesurferMainController < ws.Controller
             doKeepScan = (wsModel.XOffset<=xAllProto) ;
             xNew = xAllProto(doKeepScan) ;
             yNew = yAllProto(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+            
+            % Update the line graphics objects to reflect XData_, YData_
+            self.syncLineXDataAndYData_();
+            
+            % Change the y limits to match the data, if appropriate
+            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+            plotIndicesNeedingYLimitUpdate = wsModel.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
+        end  % function        
+
+        function updateTraces_(self)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            wsModel = self.Model_ ;
+            scaledAnalogData = wsModel.getAIDataFromCache() ;
+            rawDigitalData = wsModel.getDIDataFromCache() ;
+            t = wsModel.getTimestampsForDataInCache() ;
+            
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            %display = wsModel.Display ;
+            nActiveDIChannels = wsModel.getNActiveDIChannels() ;
+            if nActiveDIChannels==0 ,
+                y = scaledAnalogData ;
+            else
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(rawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDIChannels) ;
+                for j = 1:nActiveDIChannels ,
+                    recentDigitalData(:,j) = bitget(rawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
+                y = horzcat(scaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
+            x = t ;
+            
+            % Figure out the downsampling ratio
+            if isempty(self.ScopePlots_) ,
+                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+            else
+                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
+            end            
+            xSpan = wsModel.XSpan ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(x, y, r) ;            
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (wsModel.XOffset<=xForPlotting) ;
+            xNew = xForPlotting(doKeepScan) ;
+            yNew = yForPlotting(doKeepScan,:) ;
 
             % Commit the data to self
             self.XData_ = xNew ;

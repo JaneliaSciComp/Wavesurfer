@@ -77,15 +77,15 @@ classdef Acquisition < ws.Subsystem
     properties (Access = protected, Transient=true)
         IsAnalogChannelMarkedForDeletion_ = false(1,0)
         IsDigitalChannelMarkedForDeletion_ = false(1,0)
-        %LatestAnalogData_ = [] ;
-        LatestRawAnalogData_ = [] ;
-        LatestRawDigitalData_ = [] ;
-        RawAnalogDataCache_ = [];
-        RawDigitalDataCache_ = [];
-        IndexOfLastScanInCache_ = [];
-        NScansFromLatestCallback_
+        %LatestAnalogData_ = [] 
+        LatestRawAnalogData_ = [] 
+        LatestRawDigitalData_ = [] 
+        RawAnalogDataCache_ = []
+        RawDigitalDataCache_ = []
+        IndexOfLastScanInCache_ = []
+        %NScansFromLatestCallback_
         IsAllDataInCacheValid_
-        TimeOfLastPollingTimerFire_
+        %TimeOfLastPollingTimerFire_
         %NScansReadThisSweep_
         ActiveChannelIndexFromChannelIndex_ = zeros(1,0) ;
     end    
@@ -655,15 +655,13 @@ classdef Acquisition < ws.Subsystem
         
         function startingSweep(self)
             %fprintf('Acquisition::startingSweep()\n');
-            %self.IsArmedOrAcquiring_ = true;
-            self.NScansFromLatestCallback_ = [] ;
-            self.IndexOfLastScanInCache_ = 0 ;
-            self.IsAllDataInCacheValid_ = false ;
-            self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
-            %self.NScansReadThisSweep_ = 0 ;
-            %self.AnalogInputTask_.start();
-            %self.DigitalInputTask_.start();
+            self.clearDataCache() ;
         end  % function
+        
+        function clearDataCache(self)
+            self.IndexOfLastScanInCache_ = 0 ;
+            self.IsAllDataInCacheValid_ = false ;            
+        end
         
         function iChannel=iActiveChannelFromName(self,channelName)
             iChannels=find(strcmp(channelName,self.ActiveChannelNames));
@@ -775,7 +773,7 @@ classdef Acquisition < ws.Subsystem
                 self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
                 self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
                 self.IndexOfLastScanInCache_ = jf ;
-                self.NScansFromLatestCallback_ = n ;                
+                %self.NScansFromLatestCallback_ = n ;                
                 if jf == size(self.RawAnalogDataCache_,1) ,
                      self.IsAllDataInCacheValid_ = true;
                 end
@@ -808,7 +806,7 @@ classdef Acquisition < ws.Subsystem
                     self.IsAllDataInCacheValid_ = true ;
                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
                 end
-                self.NScansFromLatestCallback_ = n ;
+                %self.NScansFromLatestCallback_ = n ;
             end
         end
 
@@ -850,6 +848,14 @@ classdef Acquisition < ws.Subsystem
                 data = self.RawAnalogDataCache_(1:jf,:);
             end
         end  % function
+        
+        function nScansInCache = getNScansInCache(self)
+            if self.IsAllDataInCacheValid_ ,
+                nScansInCache = size(self.RawAnalogDataCache_,1) ;
+            else
+                nScansInCache = self.IndexOfLastScanInCache_ ;
+            end
+        end
         
         function data = getRawDigitalDataFromCache(self)
             % Get the data from the main-memory cache, as int16's.  This

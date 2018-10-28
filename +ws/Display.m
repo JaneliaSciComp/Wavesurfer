@@ -522,7 +522,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.broadcast('ClearData') ;
 %         end
         
-        function doNeedToClearData = setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+        function doNeedToClearDataCache = setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             % Typically called by ws.PlotArrangementDialogController after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
@@ -541,11 +541,12 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             newIsDigitalChannelDisplayed = isDisplayed(nAIChannels+1:end) ;
             newPlotHeightFromAnalogChannelIndex = plotHeights(1:nAIChannels) ;
             newPlotHeightFromDigitalChannelIndex = plotHeights(nAIChannels+1:end) ;
-            doNeedToClearData = ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
-                                ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
-                                ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
-                                ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
-                            
+            doNeedToClearDataCache = ...
+                ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
+                ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
+                ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
+                ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
+            
             % OK, now we can actually set instance variables                
             self.IsAnalogChannelDisplayed_ = newIsAnalogChannelDisplayed ;
             self.IsDigitalChannelDisplayed_ = newIsDigitalChannelDisplayed ;
