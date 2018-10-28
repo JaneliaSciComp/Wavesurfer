@@ -121,8 +121,8 @@ classdef WavesurferMainController < ws.Controller
             self.TestPulserController = ws.TestPulserController(model) ;
             self.FastProtocolsController = ws.FastProtocolsController(model) ;
             
-            % Set up XData_ and YData_
-            self.clearXDataAndYData_() ;
+            %% Set up XData_ and YData_
+            %self.clearXDataAndYData_() ;
            
             % Set properties of the figure
             set(self.FigureGH_, ...
@@ -231,8 +231,8 @@ classdef WavesurferMainController < ws.Controller
     
     methods (Access=protected)
         function resize_(self)
-            self.clearXDataAndYData_() ;
-            self.clearTraceData_() ;
+            %self.clearXDataAndYData_() ;
+            %self.clearTraceData_() ;
             self.layout_() ;            
         end        
         
@@ -1213,27 +1213,27 @@ classdef WavesurferMainController < ws.Controller
     end  % public methods block    
     
     methods (Access=protected)
-        function clearXDataAndYData_(self)
-            self.XData_ = zeros(0,1) ;
-            %acquisition = self.Model_.Acquisition ;
-            nActiveChannels = self.Model_.getNActiveAIChannels() + self.Model_.getNActiveDIChannels() ;
-            self.YData_ = zeros(0,nActiveChannels) ;
-        end
+%         function clearXDataAndYData_(self)
+%             self.XData_ = zeros(0,1) ;
+%             %acquisition = self.Model_.Acquisition ;
+%             nActiveChannels = self.Model_.getNActiveAIChannels() + self.Model_.getNActiveDIChannels() ;
+%             self.YData_ = zeros(0,nActiveChannels) ;
+%         end
         
-        function clearTraceData_(self)
-            % Also clear the lines in the plots
-            nPlots = length(self.ScopePlots_) ;
-            for iPlot = 1:nPlots ,
-                thisPlot = self.ScopePlots_(iPlot) ;
-                thisPlot.setLineXDataAndYData([],[]) ;
-            end            
-        end
+%         function clearTraceData_(self)
+%             % Also clear the lines in the plots
+%             nPlots = length(self.ScopePlots_) ;
+%             for iPlot = 1:nPlots ,
+%                 thisPlot = self.ScopePlots_(iPlot) ;
+%                 thisPlot.setLineXDataAndYData([],[]) ;
+%             end            
+%         end
 
         function [channelIndexFromPlotIndex, activeChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
-            if isempty(self.YData_) ,
-                % Make sure it's the right kind of empty
-                self.clearXDataAndYData_() ;
-            end
+%             if isempty(self.YData_) ,
+%                 % Make sure it's the right kind of empty
+%                 self.clearXDataAndYData_() ;
+%             end
             xData = self.XData_ ;
             yData = self.YData_ ;
             wsModel = self.Model_ ;
@@ -1367,9 +1367,13 @@ classdef WavesurferMainController < ws.Controller
                 xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
             end            
             xSpan = wsModel.XSpan ;
+            dt = 1/wsModel.AcquisitionSampleRate ;
             r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
             
             % Downsample the new data
+            %size_of_x = size(x)
+            %size_of_y = size(y)
+            %class_of_y = class(y)
             [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(x, y, r) ;            
             
             % Trim off scans that would be off the screen anyway

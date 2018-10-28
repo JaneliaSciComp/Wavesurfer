@@ -307,7 +307,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         IndexOfSelectedFastProtocol_ = 1  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         State_ = 'uninitialized'
         Subsystems_
-        t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
+        t_ = 0  % During a sweep, the time stamp of the scan *just after* the most recent scan
         %NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_
@@ -2902,9 +2902,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
-            %self.Ephys_.didChangeNumberOfInputChannels();
+            self.broadcast('DidSetDataCache') ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateTestPulser');
             self.broadcast('UpdateChannels');  % causes channels figure to update
@@ -2917,8 +2916,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;            
+            self.broadcast('DidSetDataCache') ;
             %self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateTestPulser');
@@ -4636,7 +4635,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end    
 
         function result = getTimestampsForDataInCache(self)
-            dt=1/self.AcquisitionSampleRate;
+            dt = 1/self.AcquisitionSampleRate ;
             tPastLast = self.t_ ;  % the timestamp of the scan that would follow the last scan in the cache
             n = self.Acquisition_.getNScansInCache() ;
             result = dt*(0:(n-1))' - dt*n + tPastLast ;
@@ -4655,9 +4654,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
-            channelScales=self.AIChannelScales(self.IsAIChannelActive);
-            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;            
+            if isempty(rawAnalogData) ,
+                scaledAnalogData = double(rawAnalogData) ;
+            else
+                channelScales=self.AIChannelScales(self.IsAIChannelActive);
+                scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;                
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
+            end
         end  % function
 
         function scaledData = getSinglePrecisionAIDataFromCache(self)
@@ -4672,7 +4675,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function result = getDIDataFromCache(self)
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
-            result = self.Acquisition_.getRawDigitalget.tDataFromCache();
+            result = self.Acquisition_.getRawDigitalDataFromCache();
         end  % function
         
         function result = get.IsDIChannelActive(self)
@@ -5353,11 +5356,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
-            doNeedToClearDataCache = self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
-            if doNeedToClearDataCache ,
-                self.clearDataCache_() ;
-                self.broadcast('DidSetDataCache') ;
-            end
+            self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
             self.broadcast('UpdateDisplay') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            

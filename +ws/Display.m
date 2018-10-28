@@ -522,7 +522,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %             self.broadcast('ClearData') ;
 %         end
         
-        function doNeedToClearDataCache = setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
+        function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             % Typically called by ws.PlotArrangementDialogController after OK
             % button is pressed.  Does no argument checking.
             nAIChannels = length(self.IsAnalogChannelDisplayed_) ;
@@ -533,19 +533,19 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             % changing.  To determine whether this is the case, we need to
             % cache the original values of some things, and compare them to
             % the new values.
-            oldIsAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
-            oldIsDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
-            oldPlotHeightFromAnalogChannelIndex = self.PlotHeightFromAnalogChannelIndex_ ;
-            oldPlotHeightFromDigitalChannelIndex = self.PlotHeightFromDigitalChannelIndex_ ;
+%             oldIsAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;
+%             oldIsDigitalChannelDisplayed = self.IsDigitalChannelDisplayed_ ;
+%             oldPlotHeightFromAnalogChannelIndex = self.PlotHeightFromAnalogChannelIndex_ ;
+%             oldPlotHeightFromDigitalChannelIndex = self.PlotHeightFromDigitalChannelIndex_ ;
             newIsAnalogChannelDisplayed = isDisplayed(1:nAIChannels) ;
             newIsDigitalChannelDisplayed = isDisplayed(nAIChannels+1:end) ;
             newPlotHeightFromAnalogChannelIndex = plotHeights(1:nAIChannels) ;
             newPlotHeightFromDigitalChannelIndex = plotHeights(nAIChannels+1:end) ;
-            doNeedToClearDataCache = ...
-                ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
-                ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
-                ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
-                ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
+%             doNeedToClearDataCache = ...
+%                 ~isequal(newIsAnalogChannelDisplayed, oldIsAnalogChannelDisplayed) || ...
+%                 ~isequal(newIsDigitalChannelDisplayed, oldIsDigitalChannelDisplayed) || ...
+%                 ~isequal(newPlotHeightFromAnalogChannelIndex, oldPlotHeightFromAnalogChannelIndex) || ...
+%                 ~isequal(newPlotHeightFromDigitalChannelIndex, oldPlotHeightFromDigitalChannelIndex) ;
             
             % OK, now we can actually set instance variables                
             self.IsAnalogChannelDisplayed_ = newIsAnalogChannelDisplayed ;

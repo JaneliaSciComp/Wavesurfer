@@ -82,9 +82,9 @@ classdef Acquisition < ws.Subsystem
         LatestRawDigitalData_ = [] 
         RawAnalogDataCache_ = []
         RawDigitalDataCache_ = []
-        IndexOfLastScanInCache_ = []
+        IndexOfLastScanInCache_ = 0
         %NScansFromLatestCallback_
-        IsAllDataInCacheValid_
+        IsAllDataInCacheValid_ = false
         %TimeOfLastPollingTimerFire_
         %NScansReadThisSweep_
         ActiveChannelIndexFromChannelIndex_ = zeros(1,0) ;
