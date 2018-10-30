@@ -927,10 +927,8 @@ classdef Acquisition < ws.Subsystem
             newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
-        function wasDeleted = deleteMarkedAnalogChannels_(self)
-            % This should only be called by self.Parent.
+        function wasDeleted = deleteMarkedAnalogChannels(self)
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
-            %channelNamesToDelete = self.AnalogChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case for when all channels are being deleted.
                 % Have to do this because we want all these properties to
@@ -944,7 +942,13 @@ classdef Acquisition < ws.Subsystem
                 self.AnalogChannelUnits_ = cell(1,0) ;
                 self.IsAnalogChannelActive_ = true(1,0) ;
                 self.IsAnalogChannelMarkedForDeletion_ = false(1,0) ;
+                n = size(self.RawAnalogDataCache_, 1) ;
+                self.RawAnalogDataCache_ = zeros(n, 0, 'int16') ;
+                m = size(self.LatestRawAnalogData_, 1) ;
+                self.LatestRawAnalogData_ = zeros(m, 0, 'int16') ;
             else
+                isAnalogChannelActiveBefore = self.IsAnalogChannelActive_ ;
+                isActiveBeforeAndIsToBeDeleted = isAnalogChannelActiveBefore & isToBeDeleted ;
                 isKeeper = ~isToBeDeleted ;
                 %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
@@ -954,6 +958,8 @@ classdef Acquisition < ws.Subsystem
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
+                self.RawAnalogDataCache_ = self.RawAnalogDataCache_(:,isActiveBeforeAndIsToBeDeleted) ;
+                self.LatestRawAnalogData_ = self.LatestRawAnalogData_(:,isActiveBeforeAndIsToBeDeleted) ;                
             end
             self.updateActiveChannelIndexFromChannelIndex_() ;
             self.clearAnalogScalingCoefficientsCache_() ;

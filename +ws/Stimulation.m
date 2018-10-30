@@ -522,7 +522,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
-        function wasDeleted = deleteMarkedAnalogChannels_(self)
+        function wasDeleted = deleteMarkedAnalogChannels(self)
             % This has to be public so that the parent can call it, but it
             % should not be called by anyone but the parent.
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;

@@ -2194,8 +2194,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function dataAvailable_(self)
-            % The central method for handling incoming data, after it has
-            % been buffered for a while, and we're ready to display+log it.
+            % The central method for handling incoming data.
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
             
             %fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
@@ -2897,7 +2896,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end        
         
         function deleteMarkedAIChannels(self)
-            wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels_() ;
+            wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels() ;
             self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
@@ -2936,7 +2935,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function deleteMarkedAOChannels(self)
-            self.Stimulation_.deleteMarkedAnalogChannels_() ;
+            self.Stimulation_.deleteMarkedAnalogChannels() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;

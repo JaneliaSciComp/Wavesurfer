@@ -1357,9 +1357,6 @@ classdef WavesurferMainController < ws.Controller
                 y = horzcat(scaledAnalogData, recentDigitalData) ;
             end
             
-            % Compute a timeline for the new data            
-            x = t ;
-            
             % Figure out the downsampling ratio
             if isempty(self.ScopePlots_) ,
                 xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
@@ -1374,7 +1371,7 @@ classdef WavesurferMainController < ws.Controller
             %size_of_x = size(x)
             %size_of_y = size(y)
             %class_of_y = class(y)
-            [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(x, y, r) ;            
+            [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(t, y, r) ;            
             
             % Trim off scans that would be off the screen anyway
             doKeepScan = (wsModel.XOffset<=xForPlotting) ;
