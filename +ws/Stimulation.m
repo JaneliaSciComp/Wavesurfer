@@ -2,21 +2,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     % Stimulation subsystem
     
     properties (Dependent = true)
-        %SampleRate  % Hz
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
-        %StimulusLibrary
-%         AnalogChannelScales
-%           % A row vector of scale factors to convert each channel from native units to volts on the coax.
-%           % This is implicitly in units of ChannelUnits per volt (see below)
-%         AnalogChannelUnits
-%           % An SIUnit row vector that describes the real-world units 
-%           % for each stimulus channel.
-        %IsDigitalChannelTimed
-        %DigitalOutputStateIfUntimed
         AnalogTerminalIDs
         DigitalTerminalIDs
-%         IsAnalogChannelMarkedForDeletion
-%         IsDigitalChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -115,30 +103,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
         end
         
-        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
-            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
-            %deviceName = self.Parent.DeviceName ;
-            
-%             %newChannelDeviceName = deviceName ;
-%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-%             if isempty(freeTerminalIDs) ,
-%                 return  % can't add a new one, because no free IDs
-%             else
-%                 newTerminalID = freeTerminalIDs(1) ;
-%             end
+        function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-%             %newChannelName = newChannelPhysicalName ;
-%             
-%             % Determine device name for the new channel
-%             if self.NDigitalChannels==0 ,                
-%                 if isempty(allDeviceNames) ,                   
-%                     deviceNameForNewChannel = 'Dev1' ;
-%                 else
-%                     deviceNameForNewChannel = allDeviceNames{1} ;
-%                 end
-%             else
-%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
-%             end
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
@@ -146,11 +112,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
             self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            
-            %self.Parent.didAddDigitalOutputChannel() ;
-            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
             
             newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function

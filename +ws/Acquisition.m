@@ -102,59 +102,12 @@ classdef Acquisition < ws.Subsystem
         
         function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)
             %fprintf('Acquisition::startingRun()\n');
-            
-            % Check that there's at least one active input channel
-            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
-            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            NActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
-            if NActiveInputChannels==0 ,
+            nActiveInputChannels = self.clearDataCaches_(areSweepsContinuous, areSweepsFiniteDuration, sweepDuration) ;
+            if nActiveInputChannels==0 ,
                 error('wavesurfer:NoActiveInputChannels' , ...
                       'There must be at least one active input channel to perform a run');
             end
-
-            % Dimension the cache that will hold acquired data in main memory
-            if self.NDigitalChannels<=8 ,
-                dataType = 'uint8';
-            elseif self.NDigitalChannels<=16 ,
-                dataType = 'uint16';
-            elseif self.NDigitalChannels<=32 ,
-                dataType = 'uint32';
-            elseif self.NDigitalChannels<=64 ,
-                dataType = 'uint64';
-            else
-                error('Can''t have more than 64 DI channels') ;
-            end
-            if areSweepsContinuous ,
-                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
-                self.RawAnalogDataCache_ = zeros(nScans,nActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(nScans,min(1,nActiveDigitalChannels),dataType);
-            elseif areSweepsFiniteDuration ,
-                expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
-                self.RawAnalogDataCache_ = zeros(expectedScanCount,nActiveAnalogChannels,'int16');
-                self.RawDigitalDataCache_ = zeros(expectedScanCount,min(1,nActiveDigitalChannels),dataType);
-            else
-                % Shouldn't ever happen
-                self.RawAnalogDataCache_ = [];                
-                self.RawDigitalDataCache_ = [];                
-            end
         end  % function
-        
-%         function completingRun(self)
-%             self.AnalogScalingCoefficientsCache_ = [] ;
-%         end
-%         
-%         function stoppingRun(self) 
-%             self.AnalogScalingCoefficientsCache_ = [] ;
-%         end
-%         
-%         function abortingRun(self)
-%             % Called if a failure occurred during startingRun() for subsystems
-%             % that have already passed startingRun() to clean up, and called fater
-%             % abortingSweep().
-%             
-%             % This code MUST be exception free.
-%             self.AnalogScalingCoefficientsCache_ = [] ;
-%         end
         
         function wasSet = setSingleDigitalTerminalID_(self, i, newValue)
             % This should only be called from the parent
@@ -200,43 +153,39 @@ classdef Acquisition < ws.Subsystem
 %     end  % methods block    
     
     methods
-        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
-            %deviceName = self.Parent.DeviceName ;
+        function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
+            oldNDigitalChannels = self.NDigitalChannels ;
+            oldDigitalDataType = ws.digitalDataTypeFromDIChannelCount(oldNDigitalChannels) ;
+            %oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            oldNDigitalColumns = min(1,nActiveDigitalChannels) ;
+            newChannelIndex = oldNDigitalChannels + 1 ;
             
-%             %newChannelDeviceName = deviceName ;
-%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-%             if isempty(freeTerminalIDs) ,
-%                 return  % can't add a new one, because no free IDs
-%             else
-%                 newTerminalID = freeTerminalIDs(1) ;
-%             end
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-%             %newChannelName = newChannelPhysicalName ;
-%             
-%             % Determine device name for the new channel
-%             if self.NDigitalChannels==0 ,                
-%                 if isempty(allDeviceNames) ,                   
-%                     deviceNameForNewChannel = 'Dev1' ;
-%                 else
-%                     deviceNameForNewChannel = allDeviceNames{1} ;
-%                 end
-%             else
-%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
-%             end            
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
-            %self.DigitalTerminalNames_ =  [self.DigitalTerminalNames_ {newChannelPhysicalName}] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            %self.syncIsDigitalChannelTerminalOvercommitted_() ;
+            
+            if oldNDigitalColumns==0 ,
+                rawAnalogDataCache = self.RawAnalogDataCache_ ;
+                latestRawAnalogData = self.LatestRawDigitalData_ ;
+                self.clearDataCaches_() ;  % Use this to dimension things properly
+                self.RawAnalogDataCache_ = rawAnalogDataCache ;
+                self.LatestRawDigitalData_ = latestRawAnalogData ;
+            else
+                newDigitalDataType = ws.digitalDataTypeFromDIChannelCount(oldNDigitalChannels+1) ;
+                if ~isequal(newDigitalDataType, oldDigitalDataType) ,
+                    self.RawDigitalDataCache_ = feval(newDigitalDataType, self.RawDigitalDataCache_) ;
+                    self.LatestRawDigitalData_ = feval(newDigitalDataType, self.LatestRawDigitalData_) ;
+                else
+                    self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, newChannelIndex, 0) ;
+                    self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, newChannelIndex, 0) ;
+                end
+            end
             
             self.updateActiveChannelIndexFromChannelIndex_() ;
-            %self.Parent.didAddDigitalInputChannel() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-            
-            newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
         
         function wasDeleted = deleteMarkedDigitalChannels_(self)
@@ -912,15 +861,20 @@ classdef Acquisition < ws.Subsystem
 %             result  = self.NScansReadThisSweep_ ;
 %         end        
         
-        function newChannelIndex = addAnalogChannel_(self, deviceNameForNewChannel, newTerminalID)
+        function newChannelIndex = addAnalogChannel(self, deviceNameForNewChannel, newTerminalID)
             newChannelName = sprintf('AI%d', newTerminalID) ;
             self.AnalogTerminalIDs_ = [self.AnalogTerminalIDs_ newTerminalID] ;
             self.AnalogChannelNames_ = [self.AnalogChannelNames_ {newChannelName}] ;
             self.AnalogDeviceNames_ = [self.AnalogDeviceNames_ {deviceNameForNewChannel}] ;
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
-            self.IsAnalogChannelActive_ = [  self.IsAnalogChannelActive_ true ];
-            self.IsAnalogChannelMarkedForDeletion_ = [  self.IsAnalogChannelMarkedForDeletion_ false ];
+            self.IsAnalogChannelActive_ = [ self.IsAnalogChannelActive_ true ];
+            self.IsAnalogChannelMarkedForDeletion_ = [ self.IsAnalogChannelMarkedForDeletion_ false ];
+            n = size(self.RawAnalogDataCache_, 1) ;
+            self.RawAnalogDataCache_ = [self.RawAnalogDataCache_ zeros(n,1,'int16')] ;
+            m = size(self.LatestRawAnalogData_, 1) ;
+            self.LatestRawAnalogData_ = [self.LatestRawAnalogData_ zeros(m,1,'int16')] ;
+            
             self.updateActiveChannelIndexFromChannelIndex_() ;
             self.clearAnalogScalingCoefficientsCache_() ;
             
@@ -1003,6 +957,29 @@ classdef Acquisition < ws.Subsystem
             activeChannelIndexFromChannelIndex(~isChannelActive) = nan ;  % want inactive channels to be nan in this array, so save us a get.() in some cases
             self.ActiveChannelIndexFromChannelIndex_ = activeChannelIndexFromChannelIndex ;
         end  % function
+        
+        function nActiveInputChannels = clearDataCaches_(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)  %#ok<INUSL>
+            % This will also dimension the data cache properly
+            
+            % Check that there's at least one active input channel
+            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
+            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
+
+            % Dimension the cache that will hold acquired data in main memory
+            digitalDataType = ws.digitalDataTypeFromDIChannelCount(self.NDigitalChannels) ; 
+            nDigitalColumns = min(1,nActiveDigitalChannels) ;
+            if areSweepsContinuous ,
+                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
+            else  %if areSweepsFiniteDuration ,
+                nScans = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
+            end
+            self.RawAnalogDataCache_ = zeros(nScans,nActiveAnalogChannels,'int16');
+            self.RawDigitalDataCache_ = zeros(nScans,nDigitalColumns,digitalDataType);
+            self.LatestRawAnalogData_ = zeros(0,nActiveAnalogChannels,'int16');
+            self.LatestRawDigitalData_ = zeros(0,nDigitalColumns,digitalDataType);
+        end  % function
+        
     end  % protected methods block
 
     methods
@@ -1023,6 +1000,5 @@ classdef Acquisition < ws.Subsystem
             nDigitalChannels = length(self.DigitalChannelNames_) ;
             self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
         end                
-
     end  % public methods block
 end  % classdef

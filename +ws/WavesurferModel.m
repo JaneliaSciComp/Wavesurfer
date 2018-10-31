@@ -2787,8 +2787,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 newChannelIndex = [] ;
             else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
-                newChannelIndex = self.Acquisition_.addAnalogChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
+                newChannelIndex = self.Acquisition_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
                 self.clearDataCache_() ;                                                  
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
@@ -2827,8 +2827,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 channelIndex = [] ;
             else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
-                channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                    nextFreeDeviceNameAndTerminalID.terminalID) ;
+                channelIndex = self.Acquisition_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                   nextFreeDeviceNameAndTerminalID.terminalID) ;
                 self.clearDataCache_() ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
@@ -2858,8 +2858,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
                 %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
                 %allDeviceNames = self.AllDeviceNames ;
-                newChannelIndex = self.Stimulation_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                       nextFreeDeviceNameAndTerminalID.terminalID) ;
+                newChannelIndex = self.Stimulation_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
                 %self.Display_.didAddDigitalOutputChannel() ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
