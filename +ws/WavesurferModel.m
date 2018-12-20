@@ -2910,7 +2910,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function deleteMarkedDIChannels(self)
-            wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
+            wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels() ;
             self.clearDataCache_() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;

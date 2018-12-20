@@ -189,7 +189,7 @@ classdef Acquisition < ws.Subsystem
             self.updateActiveChannelIndexFromChannelIndex_() ;
         end  % function
         
-        function wasDeleted = deleteMarkedDigitalChannels_(self)
+        function wasDeleted = deleteMarkedDigitalChannels(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
             %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
