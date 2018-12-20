@@ -155,7 +155,8 @@ classdef Acquisition < ws.Subsystem
     methods
         function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
             oldNDigitalChannels = self.NDigitalChannels ;
-            oldDigitalDataType = ws.digitalDataTypeFromDIChannelCount(oldNDigitalChannels) ;
+            oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            oldDigitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(oldNActiveDigitalChannels) ;
             %oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
             oldNDigitalColumns = min(1,nActiveDigitalChannels) ;
             newChannelIndex = oldNDigitalChannels + 1 ;
@@ -175,13 +176,13 @@ classdef Acquisition < ws.Subsystem
                 self.RawAnalogDataCache_ = rawAnalogDataCache ;
                 self.LatestRawDigitalData_ = latestRawAnalogData ;
             else
-                newDigitalDataType = ws.digitalDataTypeFromDIChannelCount(oldNDigitalChannels+1) ;
+                newDigitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(oldNActiveDigitalChannels+1) ;
                 if ~isequal(newDigitalDataType, oldDigitalDataType) ,
                     self.RawDigitalDataCache_ = feval(newDigitalDataType, self.RawDigitalDataCache_) ;
                     self.LatestRawDigitalData_ = feval(newDigitalDataType, self.LatestRawDigitalData_) ;
                 else
-                    self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, newChannelIndex, 0) ;
-                    self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, newChannelIndex, 0) ;
+                    self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, oldNActiveDigitalChannels+1, 0) ;
+                    self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, oldNActiveDigitalChannels+1, 0) ;
                 end
             end
             
@@ -967,7 +968,7 @@ classdef Acquisition < ws.Subsystem
             nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
 
             % Dimension the cache that will hold acquired data in main memory
-            digitalDataType = ws.digitalDataTypeFromDIChannelCount(self.NDigitalChannels) ; 
+            digitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(nActiveDigitalChannels) ; 
             nDigitalColumns = min(1,nActiveDigitalChannels) ;
             if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;

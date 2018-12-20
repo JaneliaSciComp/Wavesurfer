@@ -1,4 +1,4 @@
-function dataType = digitalDataTypeFromDIChannelCount(nActiveDIChannels)
+function dataType = digitalDataTypeFromActiveDIChannelCount(nActiveDIChannels)
     if nActiveDIChannels<=8
         dataType = 'uint8';
     elseif nActiveDIChannels<=16
