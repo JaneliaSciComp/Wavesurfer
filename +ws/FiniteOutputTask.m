@@ -453,14 +453,14 @@ classdef FiniteOutputTask < handle
             self.IsOutputBufferSyncedToChannelData_ = true ;
         end  % function
 
-        function packedData = packDigitalData_(self,unpackedData)
-            % Only used for digital data.  outputData is an nScans x
-            % nSignals logical array.  packedOutputData is an nScans x 1
-            % uint32 array, with each outputData column stored in the right
-            % bit of packedOutputData, given the physical line ID for that
+        function result = packDigitalData_(self, logicalData)
+            % Only used for digital data.  logicalData is an nScans x
+            % nSignals logical array.  result is an nScans x 1
+            % uint32 array, with each logicalData column stored in the right
+            % bit of result, given the physical line ID for that
             % channel.
-            [nScans,nChannels] = size(unpackedData);
-            packedData = zeros(nScans,1,'uint32');
+            [nScans,nChannels] = size(logicalData);
+            result = zeros(nScans,1,'uint32');
             %terminalIDs = ws.terminalIDsFromTerminalNames(self.TerminalNames);
             terminalIDs = self.TerminalIDs_ ;
             for j=1:nChannels ,
@@ -468,8 +468,8 @@ classdef FiniteOutputTask < handle
                 %thisChannelData = uint32(outputData(:,j));                
                 %thisChannelDataShifted = bitshift(thisChannelData,terminalID) ;
                 %packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
-                thisChannelData = unpackedData(:,j);
-                packedData = bitset(packedData,terminalID+1,thisChannelData);  % +1 to convert to 1-based indexing
+                thisChannelData = logicalData(:,j);
+                result = bitset(result,terminalID+1,thisChannelData);  % +1 to convert to 1-based indexing
             end
         end  % function
     end  % Static methods

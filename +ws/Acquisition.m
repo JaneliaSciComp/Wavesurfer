@@ -903,18 +903,18 @@ classdef Acquisition < ws.Subsystem
                 self.LatestRawAnalogData_ = zeros(m, 0, 'int16') ;
             else
                 isAnalogChannelActiveBefore = self.IsAnalogChannelActive_ ;
-                isActiveBeforeAndIsToBeDeleted = isAnalogChannelActiveBefore & isToBeDeleted ;
-                isKeeper = ~isToBeDeleted ;
+                isToBeKeptFromActiveAnalogChannelIndex = ~isToBeDeleted(isAnalogChannelActiveBefore) ;
+                isToBeKeptFromAnalogChannelIndex = ~isToBeDeleted ;
                 %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-                self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isKeeper) ;
-                self.AnalogChannelNames_ = self.AnalogChannelNames_(isKeeper) ;
-                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
-                self.AnalogChannelScales_ = self.AnalogChannelScales_(isKeeper) ;
-                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isKeeper) ;
-                self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isKeeper) ;
-                self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isKeeper) ;
-                self.RawAnalogDataCache_ = self.RawAnalogDataCache_(:,isActiveBeforeAndIsToBeDeleted) ;
-                self.LatestRawAnalogData_ = self.LatestRawAnalogData_(:,isActiveBeforeAndIsToBeDeleted) ;                
+                self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isToBeKeptFromAnalogChannelIndex) ;
+                self.AnalogChannelNames_ = self.AnalogChannelNames_(isToBeKeptFromAnalogChannelIndex) ;
+                self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isToBeKeptFromAnalogChannelIndex) ;
+                self.AnalogChannelScales_ = self.AnalogChannelScales_(isToBeKeptFromAnalogChannelIndex) ;
+                self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isToBeKeptFromAnalogChannelIndex) ;
+                self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isToBeKeptFromAnalogChannelIndex) ;
+                self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isToBeKeptFromAnalogChannelIndex) ;
+                self.RawAnalogDataCache_ = self.RawAnalogDataCache_(:,isToBeKeptFromActiveAnalogChannelIndex) ;
+                self.LatestRawAnalogData_ = self.LatestRawAnalogData_(:,isToBeKeptFromActiveAnalogChannelIndex) ;                
             end
             self.updateActiveChannelIndexFromChannelIndex_() ;
             self.clearAnalogScalingCoefficientsCache_() ;
