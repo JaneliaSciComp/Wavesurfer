@@ -156,9 +156,9 @@ classdef Acquisition < ws.Subsystem
         function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
             oldNDigitalChannels = self.NDigitalChannels ;
             oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            oldDigitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(oldNActiveDigitalChannels) ;
+            oldDigitalDataType = ws.uintDataTypeFromDigitalChannelCount(oldNActiveDigitalChannels) ;
             %oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            oldNDigitalColumns = min(1,nActiveDigitalChannels) ;
+            oldNDigitalColumns = min(1,oldNActiveDigitalChannels) ;
             newChannelIndex = oldNDigitalChannels + 1 ;
             
             newChannelName = sprintf('P0.%d',newTerminalID) ;
@@ -170,13 +170,14 @@ classdef Acquisition < ws.Subsystem
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
             
             if oldNDigitalColumns==0 ,
-                rawAnalogDataCache = self.RawAnalogDataCache_ ;
-                latestRawAnalogData = self.LatestRawDigitalData_ ;
-                self.clearDataCaches_() ;  % Use this to dimension things properly
-                self.RawAnalogDataCache_ = rawAnalogDataCache ;
-                self.LatestRawDigitalData_ = latestRawAnalogData ;
+                nScans = size(self.RawDigitalDataCache_, 1) ;
+                nActiveDigitalChannels = 1 ;
+                digitalDataType = ws.uintDataTypeFromDigitalChannelCount(nActiveDigitalChannels) ;
+                nUintDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(nActiveDigitalChannels) ;
+                self.RawDigitalDataCache_ = zeros(nScans,nUintDigitalColumns,digitalDataType);
+                self.LatestRawDigitalData_ = zeros(0,nUintDigitalColumns,digitalDataType);
             else
-                newDigitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(oldNActiveDigitalChannels+1) ;
+                newDigitalDataType = ws.uintDataTypeFromDigitalChannelCount(oldNActiveDigitalChannels+1) ;
                 if ~isequal(newDigitalDataType, oldDigitalDataType) ,
                     self.RawDigitalDataCache_ = feval(newDigitalDataType, self.RawDigitalDataCache_) ;
                     self.LatestRawDigitalData_ = feval(newDigitalDataType, self.LatestRawDigitalData_) ;
@@ -198,14 +199,28 @@ classdef Acquisition < ws.Subsystem
                 self.DigitalChannelNames_ = cell(1,0) ;
                 self.DigitalDeviceNames_ = cell(1,0) ;
                 self.IsDigitalChannelActive_ = true(1,0) ;
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
+                digitalDataType = ws.uintDataTypeFromDigitalChannelCount(0) ;
+                n = size(self.RawDigitalDataCache_, 1) ;                
+                self.RawDigitalDataCache_ = zeros(n, 0, digitalDataType) ;
+                m = size(self.LatestRawAnalogData_, 1) ;
+                self.LatestRawDigitalData_ = zeros(m, 0, digitalDataType) ;
             else
-                isKeeper = ~isToBeDeleted ;
-                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isKeeper) ;
-                self.DigitalChannelNames_ = self.DigitalChannelNames_(isKeeper) ;
-                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isKeeper) ;
-                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isKeeper) ;
-                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isKeeper) ;
+                isDigitalChannelActiveBefore = self.IsDigitalChannelActive_ ;
+                activeDigitalChannelCountBefore = sum(isDigitalChannelActiveBefore) ;
+                isToBeKeptFromActiveDigitalChannelIndex = ~isToBeDeleted(isDigitalChannelActiveBefore) ;                
+                isToBeKeptFromDigitalChannelIndex = ~isToBeDeleted ;
+                self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isToBeKeptFromDigitalChannelIndex) ;
+                self.DigitalChannelNames_ = self.DigitalChannelNames_(isToBeKeptFromDigitalChannelIndex) ;
+                self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isToBeKeptFromDigitalChannelIndex) ;
+                self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isToBeKeptFromDigitalChannelIndex) ;
+                self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isToBeKeptFromDigitalChannelIndex) ;
+                originalRawDigitalDataCacheAsLogical = ws.logicalColumnsFromUintColumn(self.RawDigitalDataCache_, activeDigitalChannelCountBefore) ;
+                originalLatestRawDigitalDataAsLogical = ws.logicalColumnsFromUintColumn(self.LatestRawDigitalData_, activeDigitalChannelCountBefore) ;
+                newRawDigitalDataCacheAsLogical = originalRawDigitalDataCacheAsLogical(:,isToBeKeptFromActiveDigitalChannelIndex) ;
+                newLatestRawDigitalDataAsLogical = originalLatestRawDigitalDataAsLogical(:,isToBeKeptFromActiveDigitalChannelIndex) ; 
+                self.RawDigitalDataCache_ = ws.uintColumnFromLogicalColumns(newRawDigitalDataCacheAsLogical) ;
+                self.LatestRawDigitalData_ = ws.uintColumnFromLogicalColumns(newLatestRawDigitalDataAsLogical) ;                
             end
             self.updateActiveChannelIndexFromChannelIndex_() ;
             wasDeleted = isToBeDeleted ;
@@ -968,8 +983,8 @@ classdef Acquisition < ws.Subsystem
             nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
 
             % Dimension the cache that will hold acquired data in main memory
-            digitalDataType = ws.digitalDataTypeFromActiveDIChannelCount(nActiveDigitalChannels) ; 
-            nDigitalColumns = min(1,nActiveDigitalChannels) ;
+            digitalDataType = ws.uintDataTypeFromDigitalChannelCount(nActiveDigitalChannels) ; 
+            nDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(nActiveDigitalChannels) ;
             if areSweepsContinuous ,
                 nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
             else  %if areSweepsFiniteDuration ,
