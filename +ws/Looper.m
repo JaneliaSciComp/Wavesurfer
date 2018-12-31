@@ -83,16 +83,16 @@ classdef Looper < handle
     end
     
     properties (Access = protected, Transient=true)
-        LatestRawAnalogData_
-        LatestRawDigitalData_
-        RawAnalogDataCache_
-        RawDigitalDataCache_
+        %LatestRawAnalogData_
+        %LatestRawDigitalData_
+        %RawAnalogDataCache_
+        %RawDigitalDataCache_
         IsAtLeastOneActiveAIChannelCached_
         IsAtLeastOneActiveDIChannelCached_                
         IsArmedOrAcquiring_
         %NScansFromLatestCallback_
-        IndexOfLastScanInCache_
-        IsAllDataInCacheValid_
+        %IndexOfLastScanInCache_
+        %IsAllDataInCacheValid_
         TimeOfLastPollingTimerFire_
         %NScansReadThisSweep_        
     end        
@@ -333,23 +333,23 @@ classdef Looper < handle
                 % memory
                 nActiveAIChannels = sum(isAIChannelActive);
                 nActiveDIChannels = sum(isDIChannelActive);
-                if nActiveDIChannels<=8
-                    dataType = 'uint8';
-                elseif nActiveDIChannels<=16
-                    dataType = 'uint16';
-                else %nDIChannels<=32
-                    dataType = 'uint32';
-                end
-                if isfinite(sweepDuration)  ,
-                    %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
-                    expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
-                    self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
-                    self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
-                else                                
-                    nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
-                    self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
-                    self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
-                end
+%                 if nActiveDIChannels<=8
+%                     dataType = 'uint8';
+%                 elseif nActiveDIChannels<=16
+%                     dataType = 'uint16';
+%                 else %nDIChannels<=32
+%                     dataType = 'uint32';
+%                 end
+%                 if isfinite(sweepDuration)  ,
+%                     %expectedScanCount = round(self.SweepDuration_ * self.AcquisitionSampleRate_);
+%                     expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(acquisitionSampleRate, sweepDuration) ;
+%                     %self.RawAnalogDataCache_ = zeros(expectedScanCount, nActiveAIChannels, 'int16') ;
+%                     %self.RawDigitalDataCache_ = zeros(expectedScanCount, min(1,nActiveDIChannels), dataType) ;
+%                 else                                
+%                     nScans = round(dataCacheDurationWhenContinuous * acquisitionSampleRate) ;
+%                     %self.RawAnalogDataCache_ = zeros(nScans, nActiveAIChannels, 'int16') ;
+%                     %self.RawDigitalDataCache_ = zeros(nScans, min(1,nActiveDIChannels), dataType) ;
+%                 end
 
                 self.IsAtLeastOneActiveAIChannelCached_ = (nActiveAIChannels>0) ;
                 self.IsAtLeastOneActiveDIChannelCached_ = (nActiveDIChannels>0) ;
@@ -958,8 +958,8 @@ classdef Looper < handle
             %fprintf('LooperAcquisition::startingSweep()\n');
             self.IsArmedOrAcquiring_ = true;
             %self.NScansFromLatestCallback_ = [] ;
-            self.IndexOfLastScanInCache_ = 0 ;
-            self.IsAllDataInCacheValid_ = false ;
+            %self.IndexOfLastScanInCache_ = 0 ;
+            %self.IsAllDataInCacheValid_ = false ;
             self.TimeOfLastPollingTimerFire_ = 0 ;  % not really true, but works
             %self.NScansReadThisSweep_ = 0 ;
             self.DidCompleteSweep_ = false ;

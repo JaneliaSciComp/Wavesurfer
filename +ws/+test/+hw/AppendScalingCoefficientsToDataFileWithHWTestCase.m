@@ -28,8 +28,8 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             end
             self.verifyEqual(wsModel.NAIChannels, nAIChannels, 'Number of analog channels is wrong') ;
             nInactiveAnalogChannels = 2 ;
-            wsModel.IsAIChannelActive(3) = false ;  % shouldn't matter
-            wsModel.IsAIChannelActive(5) = false ;
+            wsModel.setSingleIsAIChannelActive(3, false) ;  % shouldn't matter
+            wsModel.setSingleIsAIChannelActive(5, false) ;
             nActiveAIChannels = nAIChannels - nInactiveAnalogChannels ;
             self.verifyEqual(wsModel.getNActiveAIChannels(), nActiveAIChannels, 'Number of active analog channels is wrong') ;
             wsModel.SweepDuration = 0.1 ;  % sec

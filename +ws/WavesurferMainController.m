@@ -1334,6 +1334,9 @@ classdef WavesurferMainController < ws.Controller
 
             wsModel = self.Model_ ;
             scaledAnalogData = wsModel.getAIDataFromCache() ;
+            %if size(scaledAnalogData,2) ~= sum(wsModel.IsAIChannelActive) , 
+            %    keyboard
+            %end
             rawDigitalData = wsModel.getDIDataFromCache() ;
             t = wsModel.getTimestampsForDataInCache() ;
             

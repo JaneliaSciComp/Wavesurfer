@@ -2089,12 +2089,12 @@ classdef ChannelsController < ws.Controller
             self.Model_.do('setSingleAIChannelUnits', i, newString) ;
         end
         
-        function AIIsActiveCheckboxesActuated(self,source,event) %#ok<INUSD>
-            isTheChannel=find(source==self.AIIsActiveCheckboxes);
-            isAnalogChannelActive=self.Model_.IsAIChannelActive;
-            isAnalogChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
-            %self.Model_.Acquisition.IsAnalogChannelActive=isAnalogChannelActive;             
-            self.Model_.do('set', 'IsAIChannelActive', isAnalogChannelActive) ;             
+        function AIIsActiveCheckboxesActuated(self, source, event) %#ok<INUSD>
+            aiChannelIndex = find(source==self.AIIsActiveCheckboxes) ;
+            %originalIsAIChannelActive = self.Model_.IsAIChannelActive ;
+            %newIsAIChannelActive = ws.replace(originalIsAIChannelActive, aiChannelIndex, get(source,'Value')) ;  %#ok<FNDSB>
+            newValue = get(source,'Value') ;
+            self.Model_.do('setSingleIsAIChannelActive', aiChannelIndex, newValue) ;  %#ok<FNDSB>
         end
 
         function AIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>

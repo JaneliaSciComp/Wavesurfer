@@ -1008,7 +1008,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
 
         function setSingleAIChannelTerminalID(self, i, newValue)
-            self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+            self.Acquisition_.setSingleAnalogTerminalID(i, newValue) ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
             %self.Display_.didSetAnalogInputTerminalID() ;
@@ -1307,7 +1307,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if self.Display_.IsEnabled ,
                     self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
-                    self.clearDataCache_() ;
+                    self.Acquisition_.clearDataCache() ;
                     self.broadcast('DidSetDataCache') ;
                 end
                 if self.Triggering_.IsEnabled ,
@@ -1497,7 +1497,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
-            self.Acquisition_.cacheAnalogScalingCoefficients_(analogScalingCoefficients) ;
+            self.Acquisition_.cacheAnalogScalingCoefficients(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             
             % Now tell the logging subsystem that a run is about to start,
@@ -2533,7 +2533,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
             %end
-            self.clearDataCache_() ;
+            self.Acquisition_.clearDataCache() ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
@@ -2789,7 +2789,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Acquisition_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
-                self.clearDataCache_() ;                                                  
+                %self.Acquisition_.clearDataCache() ;                                                  
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
@@ -2829,7 +2829,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
                 channelIndex = self.Acquisition_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                    nextFreeDeviceNameAndTerminalID.terminalID) ;
-                self.clearDataCache_() ;
+                %self.Acquisition_.clearDataCache() ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
@@ -2897,7 +2897,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedAIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels() ;
-            self.clearDataCache_() ;
+            %self.Acquisition_.clearDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
@@ -2911,7 +2911,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels() ;
-            self.clearDataCache_() ;
+            %self.Acquisition_.clearDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
@@ -3404,6 +3404,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 warningException = warningExceptionMaybe{1} ;
                 self.AllowTimerCallback_ = true ;
                 throw(warningException) ;
+            end
+            if ~self.Acquisition_.doesRawAnalogDataCacheHaveCorrectColumnCount() ,
+                fprintf('Badness!') ;
+                keyboard
             end
             self.AllowTimerCallback_ = true ;
         end
@@ -4620,11 +4624,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.Acquisition_.getIsAnalogChannelActive_() ;
         end
         
-        function set.IsAIChannelActive(self, newValue)
+        function setSingleIsAIChannelActive(self, aiChannelIndex, newValue)
             % Boolean array indicating which of the AI channels is
             % active.
-            self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
-            self.clearDataCache_() ;
+            self.Acquisition_.setSingleIsAnalogChannelActive(aiChannelIndex, newValue) ;
+            %self.Acquisition_.clearDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
@@ -4685,7 +4689,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
-            self.clearDataCache_() ;
+            %self.Acquisition_.clearDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
@@ -4985,7 +4989,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if 1<=i && i<=self.NAOChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
+                    self.Stimulation_.setSingleAnalogTerminalID(i, newValueAsDouble) ;
                     self.DoesProtocolNeedSave_ = true ;
                 end
             end
@@ -5214,10 +5218,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             self.Ephys_.changeTestPulserReadiness_(delta) ;
 %         end
 
-        function clearDataCache_(self) 
-            self.Acquisition_.clearDataCache() ;
-        end
-        
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.

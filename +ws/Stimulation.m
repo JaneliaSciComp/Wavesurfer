@@ -531,7 +531,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
-        function setSingleAnalogTerminalID_(self, i, newValue)
+        function setSingleAnalogTerminalID(self, i, newValue)
             self.AnalogTerminalIDs_(i) = newValue ;
         end
     end  % methods block
