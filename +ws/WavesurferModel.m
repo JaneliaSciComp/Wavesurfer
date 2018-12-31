@@ -4681,10 +4681,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.Acquisition_.getIsDigitalChannelActive_() ;
         end
 
-        function set.IsDIChannelActive(self, newValue)
+        function setSingleIsDIChannelActive(self, diChannelIndex, newValue)
             % Boolean array indicating which of the AI channels is
             % active.
-            self.Acquisition_.setIsDigitalChannelActive(newValue) ;
+            self.Acquisition_.setSingleIsDigitalChannelActive(diChannelIndex, newValue) ;
             %self.Acquisition_.invalidateDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('EMDidSetIsInputChannelActive') ;

@@ -430,15 +430,28 @@ classdef Acquisition < ws.Subsystem
             result = self.IsDigitalChannelActive_ ;
         end
         
-        function setIsDigitalChannelActive(self, newValue)
-            % Boolean array indicating which of the available channels is
-            % active.
-            if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelActive_)) ,
-                % Set the setting
-                self.IsDigitalChannelActive_ = newValue;
-                self.updateActiveChannelIndexFromChannelIndex_() ;
+        function setSingleIsDigitalChannelActive(self, diChannelIndex, newValue)
+            originalIsDigitalChannelActiveFromAnalogChannelIndex = self.IsDigitalChannelActive_ ;            
+            originalValue = originalIsDigitalChannelActiveFromAnalogChannelIndex(diChannelIndex) ;
+            if newValue ~= originalValue ,
+                originalRawDigitalDataCache = self.RawDigitalDataCache_ ;
+                isAnalogChannelActive = self.IsAnalogChannelActive_ ;
+                
+                newIsDigitalChannelActiveFromAnalogChannelIndex = ws.replace(originalIsDigitalChannelActiveFromAnalogChannelIndex, ...
+                                                                             diChannelIndex, ...
+                                                                             newValue) ;
+                newIsChannelActive = horzcat(isAnalogChannelActive, newIsDigitalChannelActiveFromAnalogChannelIndex) ;
+                newActiveChannelIndexFromChannelIndex = ws.computeActiveChannelIndexFromChannelIndex(newIsChannelActive) ;                
+                newRawDigitalDataCache = ...
+                    ws.updateBitsAfterIsDigitalChannelActiveChange(originalRawDigitalDataCache, ...
+                                                                   diChannelIndex, ...
+                                                                   originalIsDigitalChannelActiveFromAnalogChannelIndex, ...
+                                                                   newValue) ;
+                % Commit new values to self
+                self.IsDigitalChannelActive_ = newIsDigitalChannelActiveFromAnalogChannelIndex;
+                self.ActiveChannelIndexFromChannelIndex_ = newActiveChannelIndexFromChannelIndex ;
+                self.RawDigitalDataCache_ = newRawDigitalDataCache ;
             end
-            %self.Parent.didSetIsInputChannelActive() ;            
         end
         
         function value = get.NActiveChannels(self)

@@ -10,47 +10,6 @@ classdef Looper < handle
         DidCompleteSweep
     end
     
-    properties (Access = protected)        
-%         PrimaryDeviceName_ = ''
-%         IsPrimaryDeviceAPXIDevice_ = false
-        %ReferenceClockSource_ = []
-        %ReferenceClockRate_ = []
-        %NDIOTerminals_ = 0
-        %NPFITerminals_ = 0
-        %NCounters_ = 0
-        %NAITerminals_ = 0
-        %AITerminalIDsOnDevice_ = cell(1,0)
-        %NAOTerminals_ = 0 ;            
-%         NSweepsPerRun_ = 1
-%         SweepDuration_ = [] 
-        %DOChannelDeviceNames_ = cell(1,0)
-%         DOChannelTerminalIDs_ = zeros(1,0)
-%         DigitalOutputStateIfUntimed_ = false(1,0)
-%         IsDOChannelTimed_ = false(1,0)     
-%         DOChannelNames_ = cell(1,0)
-%         AcquisitionSampleRate_ = []
-%         AIChannelNames_ = cell(1,0)
-%         AIChannelScales_ = zeros(1,0)
-%         IsAIChannelActive_ = false(1,0)
-%         AIChannelDeviceNames_ = cell(1,0)
-%         AIChannelTerminalIDs_ = zeros(1,0)
-            
-%         DIChannelNames_ = cell(1,0)
-%         IsDIChannelActive_ = false(1,0)
-        %DIChannelDeviceNames_ = cell(1,0)
-%         DIChannelTerminalIDs_ = zeros(1,0)
-            
-        %DataCacheDurationWhenContinuous_ = []
-        
-        %IsDOChannelTerminalOvercommitted_ = false(1,0)
-        
-%         AcquisitionTriggerDeviceName_
-%         AcquisitionTriggerPFIID_
-%         AcquisitionTriggerEdge_
-        
-        %TheUserObject_
-    end
-
     properties (Access=protected, Transient=true)
         %Frontend_        
         DidCompleteSweep_

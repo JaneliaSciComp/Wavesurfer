@@ -2215,10 +2215,9 @@ classdef ChannelsController < ws.Controller
         end
         
         function DIIsActiveCheckboxesActuated(self,source,event)  %#ok<INUSD>
-            isTheChannel=find(source==self.DIIsActiveCheckboxes);
-            isDigitalChannelActive=self.Model_.IsDIChannelActive;
-            isDigitalChannelActive(isTheChannel)=get(source,'Value');  %#ok<FNDSB>
-            self.Model_.do('set', 'IsDIChannelActive', isDigitalChannelActive);
+            diChannelIndex = find(source==self.DIIsActiveCheckboxes) ;
+            newValue = get(source,'Value') ;
+            self.Model_.do('setSingleIsDIChannelActive', diChannelIndex, newValue);  %#ok<FNDSB>
         end
 
         function DIIsMarkedForDeletionCheckboxesActuated(self,source,event)  %#ok<INUSD>
