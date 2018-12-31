@@ -1250,6 +1250,9 @@ classdef WavesurferMainController < ws.Controller
                     thisPlot.setLineXDataAndYData([],[]) ;
                 else
                     % channel is active
+                    if activeChannelIndex > size(yData,2) ,
+                        keyboard
+                    end
                     yDataForThisChannel = yData(:,activeChannelIndex) ;
                     thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;
                 end
