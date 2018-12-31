@@ -100,9 +100,29 @@ classdef Acquisition < ws.Subsystem
             self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
-        function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)
-            %fprintf('Acquisition::startingRun()\n');
-            nActiveInputChannels = self.clearDataCaches_(areSweepsContinuous, areSweepsFiniteDuration, sweepDuration) ;
+        function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)  %#ok<INUSL>
+            % Dimension the data cache properly, and set them all to zero
+            % values
+            
+            % Check that there's at least one active input channel
+            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
+            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
+
+            % Dimension the cache that will hold acquired data in main memory
+            digitalDataType = ws.uintDataTypeFromDigitalChannelCount(nActiveDigitalChannels) ; 
+            nDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(nActiveDigitalChannels) ;
+            if areSweepsContinuous ,
+                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
+            else  %if areSweepsFiniteDuration ,
+                nScans = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
+            end
+            self.RawAnalogDataCache_ = zeros(nScans,nActiveAnalogChannels,'int16');
+            self.RawDigitalDataCache_ = zeros(nScans,nDigitalColumns,digitalDataType);
+            self.LatestRawAnalogData_ = zeros(0,nActiveAnalogChannels,'int16');
+            self.LatestRawDigitalData_ = zeros(0,nDigitalColumns,digitalDataType);
+            
+            % Thow an error if no active input channel
             if nActiveInputChannels==0 ,
                 error('wavesurfer:NoActiveInputChannels' , ...
                       'There must be at least one active input channel to perform a run');
@@ -410,7 +430,7 @@ classdef Acquisition < ws.Subsystem
             result = self.IsDigitalChannelActive_ ;
         end
         
-        function setIsDigitalChannelActive_(self, newValue)
+        function setIsDigitalChannelActive(self, newValue)
             % Boolean array indicating which of the available channels is
             % active.
             if islogical(newValue) && isequal(size(newValue),size(self.IsDigitalChannelActive_)) ,
@@ -637,10 +657,12 @@ classdef Acquisition < ws.Subsystem
         
         function startingSweep(self)
             %fprintf('Acquisition::startingSweep()\n');
-            self.clearDataCache() ;
+            self.invalidateDataCache() ;
         end  % function
         
-        function clearDataCache(self)
+        function invalidateDataCache(self)
+            % Set the circular buffer metadata to indicate no valid data in
+            % the buffer.
             self.IndexOfLastScanInCache_ = 0 ;
             self.IsAllDataInCacheValid_ = false ;            
         end
@@ -988,30 +1010,7 @@ classdef Acquisition < ws.Subsystem
         function updateActiveChannelIndexFromChannelIndex_(self)
             isChannelActive = horzcat(self.IsAnalogChannelActive_, self.IsDigitalChannelActive_) ;
             self.ActiveChannelIndexFromChannelIndex_ = ws.computeActiveChannelIndexFromChannelIndex(isChannelActive) ;
-        end  % function
-        
-        function nActiveInputChannels = clearDataCaches_(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)  %#ok<INUSL>
-            % This will also dimension the data cache properly
-            
-            % Check that there's at least one active input channel
-            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
-            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
-
-            % Dimension the cache that will hold acquired data in main memory
-            digitalDataType = ws.uintDataTypeFromDigitalChannelCount(nActiveDigitalChannels) ; 
-            nDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(nActiveDigitalChannels) ;
-            if areSweepsContinuous ,
-                nScans = round(self.DataCacheDurationWhenContinuous_ * self.SampleRate_) ;
-            else  %if areSweepsFiniteDuration ,
-                nScans = ws.nScansFromScanRateAndDesiredDuration(self.SampleRate_, sweepDuration) ;
-            end
-            self.RawAnalogDataCache_ = zeros(nScans,nActiveAnalogChannels,'int16');
-            self.RawDigitalDataCache_ = zeros(nScans,nDigitalColumns,digitalDataType);
-            self.LatestRawAnalogData_ = zeros(0,nActiveAnalogChannels,'int16');
-            self.LatestRawDigitalData_ = zeros(0,nDigitalColumns,digitalDataType);
-        end  % function
-        
+        end  % function        
     end  % protected methods block
 
     methods

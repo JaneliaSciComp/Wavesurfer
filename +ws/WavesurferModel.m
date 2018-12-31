@@ -1307,7 +1307,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if self.Display_.IsEnabled ,
                     self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
-                    self.Acquisition_.clearDataCache() ;
+                    self.Acquisition_.invalidateDataCache() ;
                     self.broadcast('DidSetDataCache') ;
                 end
                 if self.Triggering_.IsEnabled ,
@@ -2533,7 +2533,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
             %end
-            self.Acquisition_.clearDataCache() ;
+            self.Acquisition_.invalidateDataCache() ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
@@ -2789,7 +2789,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Acquisition_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
-                %self.Acquisition_.clearDataCache() ;                                                  
+                %self.Acquisition_.invalidateDataCache() ;                                                  
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
@@ -2829,7 +2829,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
                 channelIndex = self.Acquisition_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                    nextFreeDeviceNameAndTerminalID.terminalID) ;
-                %self.Acquisition_.clearDataCache() ;
+                %self.Acquisition_.invalidateDataCache() ;
                 self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
@@ -2897,7 +2897,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedAIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels() ;
-            %self.Acquisition_.clearDataCache() ;
+            %self.Acquisition_.invalidateDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
@@ -2911,7 +2911,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function deleteMarkedDIChannels(self)
             wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels() ;
-            %self.Acquisition_.clearDataCache() ;
+            %self.Acquisition_.invalidateDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
@@ -4624,7 +4624,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setSingleIsAnalogChannelActive(aiChannelIndex, newValue) ;
-            %self.Acquisition_.clearDataCache() ;
+            %self.Acquisition_.invalidateDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
@@ -4684,8 +4684,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function set.IsDIChannelActive(self, newValue)
             % Boolean array indicating which of the AI channels is
             % active.
-            self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
-            %self.Acquisition_.clearDataCache() ;
+            self.Acquisition_.setIsDigitalChannelActive(newValue) ;
+            %self.Acquisition_.invalidateDataCache() ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
