@@ -3405,10 +3405,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.AllowTimerCallback_ = true ;
                 throw(warningException) ;
             end
-            if ~self.Acquisition_.doesRawAnalogDataCacheHaveCorrectColumnCount() ,
-                fprintf('Badness!') ;
-                keyboard
-            end
             self.AllowTimerCallback_ = true ;
         end
 

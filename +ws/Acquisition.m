@@ -1032,9 +1032,5 @@ classdef Acquisition < ws.Subsystem
             nDigitalChannels = length(self.DigitalChannelNames_) ;
             self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
         end               
-        
-        function result = doesRawAnalogDataCacheHaveCorrectColumnCount(self)
-            result = (size(self.RawAnalogDataCache_, 2) == sum(self.IsAnalogChannelActive_)) ;
-        end
     end  % public methods block
 end  % classdef
