@@ -1229,7 +1229,7 @@ classdef WavesurferMainController < ws.Controller
 %             end            
 %         end
 
-        function [channelIndexFromPlotIndex, activeChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
+        function [channelIndexFromPlotIndex, cacheChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
 %             if isempty(self.YData_) ,
 %                 % Make sure it's the right kind of empty
 %                 self.clearXDataAndYData_() ;
@@ -1238,23 +1238,20 @@ classdef WavesurferMainController < ws.Controller
             yData = self.YData_ ;
             wsModel = self.Model_ ;
             %acq = wsModel.Acquisition ;
-            activeChannelIndexFromChannelIndex = wsModel.ActiveInputChannelIndexFromInputChannelIndex ;            
+            isChannelInCacheFromChannelIndex = wsModel.IsInputChannelInCacheFromInputChannelIndex ;            
+            cacheChannelIndexFromChannelIndex = wsModel.CacheInputChannelIndexFromInputChannelIndex ;            
             channelIndexFromPlotIndex = wsModel.ChannelIndexFromPlotIndex ;
             nPlots = length(self.ScopePlots_) ;
             for iPlot = 1:nPlots ,
                 thisPlot = self.ScopePlots_(iPlot) ;
                 channelIndex = channelIndexFromPlotIndex(iPlot) ;
-                activeChannelIndex = activeChannelIndexFromChannelIndex(channelIndex) ;
-                if isnan(activeChannelIndex) ,
-                    % channel is not active
-                    thisPlot.setLineXDataAndYData([],[]) ;
-                else
-                    % channel is active
-                    if activeChannelIndex > size(yData,2) ,
-                        keyboard
-                    end
-                    yDataForThisChannel = yData(:,activeChannelIndex) ;
+                isChannelInCache = isChannelInCacheFromChannelIndex(channelIndex) ;
+                if isChannelInCache ,
+                    cacheChannelIndex = cacheChannelIndexFromChannelIndex(channelIndex) ;
+                    yDataForThisChannel = yData(:,cacheChannelIndex) ;
                     thisPlot.setLineXDataAndYData(xData, yDataForThisChannel) ;
+                else
+                    thisPlot.setLineXDataAndYData([],[]) ;
                 end
             end
         end  % function       
@@ -1480,8 +1477,8 @@ classdef WavesurferMainController < ws.Controller
             % Min and max of the data, across all plotted channels.
             % Returns a 1x2 array.
             % If all channels are empty, returns [+inf -inf].
-            activeChannelIndexFromChannelIndex = self.Model_.ActiveInputChannelIndexFromInputChannelIndex ;
-            indexWithinData = activeChannelIndexFromChannelIndex(aiChannelIndex) ;
+            cacheChannelIndexFromChannelIndex = self.Model_.CacheInputChannelIndexFromInputChannelIndex ;
+            indexWithinData = cacheChannelIndexFromChannelIndex(aiChannelIndex) ;
             y = self.YData_(:,indexWithinData) ;
             yMinRaw = min(y) ;
             yMin = ws.fif(isempty(yMinRaw),+inf,yMinRaw) ;

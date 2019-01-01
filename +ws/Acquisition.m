@@ -39,7 +39,13 @@ classdef Acquisition < ws.Subsystem
         %IsDigitalChannelTerminalOvercommitted
         AnalogScalingCoefficients
         DataCacheDurationWhenContinuous
-        ActiveChannelIndexFromChannelIndex
+        CacheChannelIndexFromChannelIndex
+        IsAnalogChannelActive
+        IsDigitalChannelActive
+        IsInCacheFromAnalogChannelIndex
+        IsInCacheFromDigitalChannelIndex
+        IndexInCacheFromAnalogChannelIndex
+        IndexInCacheFromDigitalChannelIndex
     end
     
 %     properties (Dependent=true, Hidden=true)        
@@ -85,13 +91,14 @@ classdef Acquisition < ws.Subsystem
         IndexOfLastScanInCache_ = 0
         %NScansFromLatestCallback_
         IsAllDataInCacheValid_ = false
+        IsInCacheFromAnalogChannelIndex_ = false(1,0)
+        IndexInCacheFromAnalogChannelIndex_ = nan(1,0)
+        IsInCacheFromDigitalChannelIndex_ = false(1,0)
+        IndexInCacheFromDigitalChannelIndex_ = true(1,0)
         %TimeOfLastPollingTimerFire_
         %NScansReadThisSweep_
-        ActiveChannelIndexFromChannelIndex_ = zeros(1,0) ;
-    end    
-    
-    properties (Access=protected, Transient=true)
-        AnalogScalingCoefficientsCache_  % a cache of the analog input scaling coefficients, populated at the start of a run, set to empty at end of run
+        %IndexInCacheFromChannelIndex_ = zeros(1,0) ;
+        AnalogScalingCoefficientsCache_  % a cache of the analog input scaling coefficients, populated at the start of a run
     end
     
     methods
@@ -174,78 +181,41 @@ classdef Acquisition < ws.Subsystem
     
     methods
         function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
-            oldNDigitalChannels = self.NDigitalChannels ;
-            oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            oldDigitalDataType = ws.uintDataTypeFromDigitalChannelCount(oldNActiveDigitalChannels) ;
-            %oldNActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
-            oldNDigitalColumns = min(1,oldNActiveDigitalChannels) ;
-            newChannelIndex = oldNDigitalChannels + 1 ;
-            
-            newChannelName = sprintf('P0.%d',newTerminalID) ;
-            
+            newChannelName = sprintf('P0.%d',newTerminalID) ;            
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
             self.DigitalChannelNames_ = [self.DigitalChannelNames_ {newChannelName}] ;
             self.IsDigitalChannelActive_ = [  self.IsDigitalChannelActive_ true ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            
-            if oldNDigitalColumns==0 ,
-                nScans = size(self.RawDigitalDataCache_, 1) ;
-                nActiveDigitalChannels = 1 ;
-                digitalDataType = ws.uintDataTypeFromDigitalChannelCount(nActiveDigitalChannels) ;
-                nUintDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(nActiveDigitalChannels) ;
-                self.RawDigitalDataCache_ = zeros(nScans,nUintDigitalColumns,digitalDataType);
-                self.LatestRawDigitalData_ = zeros(0,nUintDigitalColumns,digitalDataType);
-            else
-                newDigitalDataType = ws.uintDataTypeFromDigitalChannelCount(oldNActiveDigitalChannels+1) ;
-                if ~isequal(newDigitalDataType, oldDigitalDataType) ,
-                    self.RawDigitalDataCache_ = feval(newDigitalDataType, self.RawDigitalDataCache_) ;
-                    self.LatestRawDigitalData_ = feval(newDigitalDataType, self.LatestRawDigitalData_) ;
-                else
-                    self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, oldNActiveDigitalChannels+1, 0) ;
-                    self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, oldNActiveDigitalChannels+1, 0) ;
-                end
-            end
-            
-            self.updateActiveChannelIndexFromChannelIndex_() ;
+            self.IsInCacheFromDigitalChannelIndex_ = [ self.IsInCacheFromDigitalChannelIndex_ false ] ;
+            self.IndexInCacheFromDigitalChannelIndex_ = [ self.IndexInCacheFromDigitalChannelIndex_ nan ] ;
+            newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
         
         function wasDeleted = deleteMarkedDigitalChannels(self)
             isToBeDeleted = self.IsDigitalChannelMarkedForDeletion_ ;
-            %channelNamesToDelete = self.DigitalChannelNames_(isToBeDeleted) ;            
             if all(isToBeDeleted) ,
                 % Special case so things stay row vectors
                 self.DigitalTerminalIDs_ = zeros(1,0) ;
                 self.DigitalChannelNames_ = cell(1,0) ;
                 self.DigitalDeviceNames_ = cell(1,0) ;
                 self.IsDigitalChannelActive_ = true(1,0) ;
-                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;                
-                digitalDataType = ws.uintDataTypeFromDigitalChannelCount(0) ;
-                n = size(self.RawDigitalDataCache_, 1) ;                
-                self.RawDigitalDataCache_ = zeros(n, 0, digitalDataType) ;
-                m = size(self.LatestRawAnalogData_, 1) ;
-                self.LatestRawDigitalData_ = zeros(m, 0, digitalDataType) ;
+                self.IsDigitalChannelMarkedForDeletion_ = false(1,0) ;       
+                self.IsInCacheFromDigitalChannelIndex_ = false(1,0) ;
+                self.IndexInCacheFromDigitalChannelIndex_ = nan(1,0) ;
             else
-                isDigitalChannelActiveBefore = self.IsDigitalChannelActive_ ;
-                activeDigitalChannelCountBefore = sum(isDigitalChannelActiveBefore) ;
-                isToBeKeptFromActiveDigitalChannelIndex = ~isToBeDeleted(isDigitalChannelActiveBefore) ;                
                 isToBeKeptFromDigitalChannelIndex = ~isToBeDeleted ;
                 self.DigitalTerminalIDs_ = self.DigitalTerminalIDs_(isToBeKeptFromDigitalChannelIndex) ;
                 self.DigitalChannelNames_ = self.DigitalChannelNames_(isToBeKeptFromDigitalChannelIndex) ;
                 self.DigitalDeviceNames_ = self.DigitalDeviceNames_(isToBeKeptFromDigitalChannelIndex) ;
                 self.IsDigitalChannelActive_ = self.IsDigitalChannelActive_(isToBeKeptFromDigitalChannelIndex) ;
                 self.IsDigitalChannelMarkedForDeletion_ = self.IsDigitalChannelMarkedForDeletion_(isToBeKeptFromDigitalChannelIndex) ;
-                originalRawDigitalDataCacheAsLogical = ws.logicalColumnsFromUintColumn(self.RawDigitalDataCache_, activeDigitalChannelCountBefore) ;
-                originalLatestRawDigitalDataAsLogical = ws.logicalColumnsFromUintColumn(self.LatestRawDigitalData_, activeDigitalChannelCountBefore) ;
-                newRawDigitalDataCacheAsLogical = originalRawDigitalDataCacheAsLogical(:,isToBeKeptFromActiveDigitalChannelIndex) ;
-                newLatestRawDigitalDataAsLogical = originalLatestRawDigitalDataAsLogical(:,isToBeKeptFromActiveDigitalChannelIndex) ; 
-                self.RawDigitalDataCache_ = ws.uintColumnFromLogicalColumns(newRawDigitalDataCacheAsLogical) ;
-                self.LatestRawDigitalData_ = ws.uintColumnFromLogicalColumns(newLatestRawDigitalDataAsLogical) ;                
+                self.IsInCacheFromDigitalChannelIndex_ = self.IsInCacheFromDigitalChannelIndex_(isToBeKeptFromDigitalChannelIndex) ;
+                self.IndexInCacheFromDigitalChannelIndex_ = self.IndexInCacheFromDigitalChannelIndex_(isToBeKeptFromDigitalChannelIndex) ;
             end
-            self.updateActiveChannelIndexFromChannelIndex_() ;
+            
+            % Set return value
             wasDeleted = isToBeDeleted ;
-%             %self.syncIsDigitalChannelTerminalOvercommitted_() ;
-%             self.Parent.didDeleteDigitalInputChannels(channelNamesToDelete) ;
         end  % function
         
         function settingPrimaryDeviceName(self, newPrimaryDeviceName)            
@@ -345,45 +315,41 @@ classdef Acquisition < ws.Subsystem
             result=[self.IsAnalogChannelActive_ self.IsDigitalChannelActive_];
         end
         
-        function result = getIsAnalogChannelActive_(self)
+        function result = get.IsAnalogChannelActive(self)
             % Boolean array indicating which of the available analog channels is
             % active.
             result = self.IsAnalogChannelActive_ ;
         end
         
-        function setSingleIsAnalogChannelActive(self, analogChannelIndex, newValue)
+        function result = get.IsInCacheFromAnalogChannelIndex(self)
+            result = self.IsInCacheFromAnalogChannelIndex_ ;
+        end
+
+        function result = get.IsInCacheFromDigitalChannelIndex(self)
+            result = self.IsInCacheFromDigitalChannelIndex_ ;
+        end
+        
+        function result = get.IndexInCacheFromAnalogChannelIndex(self)
+            result = self.IndexInCacheFromAnalogChannelIndex_ ;
+        end
+        
+        function result = get.IndexInCacheFromDigitalChannelIndex(self)
+            result = self.IndexInCacheFromDigitalChannelIndex_ ;
+        end
+        
+        function setSingleIsAnalogChannelActive(self, analogChannelIndex, newSingleValue)
             originalIsAnalogChannelActiveFromAnalogChannelIndex = self.IsAnalogChannelActive_ ;            
-            originalValue = originalIsAnalogChannelActiveFromAnalogChannelIndex(analogChannelIndex) ;
-            if newValue ~= originalValue ,
-                originalAnalogScalingCoefficientsCache = self.AnalogScalingCoefficientsCache_ ;                
-                originalRawAnalogDataCache = self.RawAnalogDataCache_ ;
-                isDigitalChannelActive = self.IsDigitalChannelActive_ ;
-                
+            originalSingleValue = originalIsAnalogChannelActiveFromAnalogChannelIndex(analogChannelIndex) ;
+            if newSingleValue ~= originalSingleValue ,
                 newIsAnalogChannelActiveFromAnalogChannelIndex = ws.replace(originalIsAnalogChannelActiveFromAnalogChannelIndex, ...
                                                                             analogChannelIndex, ...
-                                                                            newValue) ;
-                isChannelActive = horzcat(newIsAnalogChannelActiveFromAnalogChannelIndex, isDigitalChannelActive) ;
-                newActiveChannelIndexFromChannelIndex = ws.computeActiveChannelIndexFromChannelIndex(isChannelActive) ;                
-                newAnalogScalingCoefficientsCache = ...
-                    ws.updateColumnsAfterIsAnalogChannelActiveChange(originalAnalogScalingCoefficientsCache, ...
-                                                                     analogChannelIndex, ...
-                                                                     originalIsAnalogChannelActiveFromAnalogChannelIndex, ...
-                                                                     newValue) ;
-                newRawAnalogDataCache = ...
-                    ws.updateColumnsAfterIsAnalogChannelActiveChange(originalRawAnalogDataCache, ...
-                                                                     analogChannelIndex, ...
-                                                                     originalIsAnalogChannelActiveFromAnalogChannelIndex, ...
-                                                                     newValue) ;
-                % Commit new values to self
+                                                                            newSingleValue) ;
                 self.IsAnalogChannelActive_ = newIsAnalogChannelActiveFromAnalogChannelIndex;
-                self.ActiveChannelIndexFromChannelIndex_ = newActiveChannelIndexFromChannelIndex ;
-                self.AnalogScalingCoefficientsCache_ = newAnalogScalingCoefficientsCache ;
-                self.RawAnalogDataCache_ = newRawAnalogDataCache ;
             end
         end
         
-        function result = get.ActiveChannelIndexFromChannelIndex(self)
-            result = self.ActiveChannelIndexFromChannelIndex_ ;
+        function result = get.CacheChannelIndexFromChannelIndex(self)
+            result = self.IndexInCacheFromChannelIndex_ ;
         end
         
         function result = indexOfAnalogChannelWithinActiveAnalogChannels(self, aiChannelIndex)
@@ -424,33 +390,20 @@ classdef Acquisition < ws.Subsystem
             end
         end
         
-        function result=getIsDigitalChannelActive_(self)
+        function result=get.IsDigitalChannelActive(self)
             % Boolean array indicating which of the available digital channels is
             % active.
             result = self.IsDigitalChannelActive_ ;
         end
         
-        function setSingleIsDigitalChannelActive(self, diChannelIndex, newValue)
+        function setSingleIsDigitalChannelActive(self, diChannelIndex, newSingleValue)
             originalIsDigitalChannelActiveFromAnalogChannelIndex = self.IsDigitalChannelActive_ ;            
-            originalValue = originalIsDigitalChannelActiveFromAnalogChannelIndex(diChannelIndex) ;
-            if newValue ~= originalValue ,
-                originalRawDigitalDataCache = self.RawDigitalDataCache_ ;
-                isAnalogChannelActive = self.IsAnalogChannelActive_ ;
-                
+            originalSingleValue = originalIsDigitalChannelActiveFromAnalogChannelIndex(diChannelIndex) ;
+            if newSingleValue ~= originalSingleValue ,
                 newIsDigitalChannelActiveFromAnalogChannelIndex = ws.replace(originalIsDigitalChannelActiveFromAnalogChannelIndex, ...
                                                                              diChannelIndex, ...
-                                                                             newValue) ;
-                newIsChannelActive = horzcat(isAnalogChannelActive, newIsDigitalChannelActiveFromAnalogChannelIndex) ;
-                newActiveChannelIndexFromChannelIndex = ws.computeActiveChannelIndexFromChannelIndex(newIsChannelActive) ;                
-                newRawDigitalDataCache = ...
-                    ws.updateBitsAfterIsDigitalChannelActiveChange(originalRawDigitalDataCache, ...
-                                                                   diChannelIndex, ...
-                                                                   originalIsDigitalChannelActiveFromAnalogChannelIndex, ...
-                                                                   newValue) ;
-                % Commit new values to self
+                                                                             newSingleValue) ;
                 self.IsDigitalChannelActive_ = newIsDigitalChannelActiveFromAnalogChannelIndex;
-                self.ActiveChannelIndexFromChannelIndex_ = newActiveChannelIndexFromChannelIndex ;
-                self.RawDigitalDataCache_ = newRawDigitalDataCache ;
             end
         end
         
@@ -568,10 +521,10 @@ classdef Acquisition < ws.Subsystem
             if 1<=i && i<=self.NAnalogChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    activeAnalogChannelIndexFromAnalogChannelIndex = ws.computeActiveChannelIndexFromChannelIndex(self.IsAnalogChannelActive_) ;
-                    activeAnalogChannelIndex = activeAnalogChannelIndexFromAnalogChannelIndex(i) ;
+                    %activeAnalogChannelIndexFromAnalogChannelIndex = ws.computeActiveChannelIndexFromChannelIndex(self.IsAnalogChannelActive_) ;
+                    %activeAnalogChannelIndex = activeAnalogChannelIndexFromAnalogChannelIndex(i) ;
                     self.AnalogTerminalIDs_(i) = newValueAsDouble ;
-                    self.AnalogScalingCoefficientsCache_(:,activeAnalogChannelIndex) = nan ;
+                    %self.AnalogScalingCoefficientsCache_(:,activeAnalogChannelIndex) = nan ;
                 end
             end
             %self.Parent.didSetAnalogInputTerminalID();
@@ -670,6 +623,12 @@ classdef Acquisition < ws.Subsystem
         
         function startingSweep(self)
             %fprintf('Acquisition::startingSweep()\n');
+            isAnalogChannelActive = self.IsAnalogChannelActive_ ;
+            isDigitalChannelActive = self.IsDigitalChannelActive_ ;
+            self.IsInCacheFromAnalogChannelIndex_ = isAnalogChannelActive ;
+            self.IsInCacheFromDigitalChannelIndex_ = isDigitalChannelActive ;            
+            [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
+                ws.computeActiveChannelIndexFromRespectiveChannelIndex(isAnalogChannelActive, isDigitalChannelActive) ;
             self.invalidateDataCache() ;
         end  % function
         
@@ -680,26 +639,26 @@ classdef Acquisition < ws.Subsystem
             self.IsAllDataInCacheValid_ = false ;            
         end
         
-        function iChannel=iActiveChannelFromName(self,channelName)
-            iChannels=find(strcmp(channelName,self.ActiveChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
-            else
-                iChannel=iChannels(1);
-            end
-        end  % function
+%         function iChannel = iActiveChannelFromName(self,channelName)
+%             iChannels=find(strcmp(channelName,self.ActiveChannelNames));
+%             if isempty(iChannels) ,
+%                 iChannel=nan;
+%             else
+%                 iChannel=iChannels(1);
+%             end
+%         end  % function
 
-        function iChannel=iChannelFromName(self,channelName)
-            % Get the index of the the channel in the available channels
-            % array, given the name.
-            % Note that this does _not_ return a channel ID.
-            iChannels=find(strcmp(channelName,self.ChannelNames));
-            if isempty(iChannels) ,
-                iChannel=nan;
-            else
-                iChannel=iChannels(1);
-            end
-        end  % function
+%         function iChannel=iChannelFromName(self,channelName)
+%             % Get the index of the the channel in the available channels
+%             % array, given the name.
+%             % Note that this does _not_ return a channel ID.
+%             iChannels=find(strcmp(channelName,self.ChannelNames));
+%             if isempty(iChannels) ,
+%                 iChannel=nan;
+%             else
+%                 iChannel=iChannels(1);
+%             end
+%         end  % function
         
         function iChannel = aiChannelIndexFromName(self, channelName)
             % Get the index of the the channel in the available channels
@@ -937,15 +896,16 @@ classdef Acquisition < ws.Subsystem
             self.AnalogChannelScales_ = [ self.AnalogChannelScales_ 1 ] ;
             self.AnalogChannelUnits_ = [ self.AnalogChannelUnits_ {'V'} ] ;
             self.IsAnalogChannelActive_ = [ self.IsAnalogChannelActive_ true ];
+            self.IsInCacheFromAnalogChannelIndex_ = [ self.IsInCacheFromAnalogChannelIndex_ false ];
+            self.IndexInCacheFromAnalogChannelIndex_ = [ self.IndexInCacheFromAnalogChannelIndex_ nan ];
             self.IsAnalogChannelMarkedForDeletion_ = [ self.IsAnalogChannelMarkedForDeletion_ false ];
-            n = size(self.RawAnalogDataCache_, 1) ;
-            self.RawAnalogDataCache_ = [self.RawAnalogDataCache_ zeros(n,1,'int16')] ;
-            m = size(self.LatestRawAnalogData_, 1) ;
-            self.LatestRawAnalogData_ = [self.LatestRawAnalogData_ zeros(m,1,'int16')] ;
+            %n = size(self.RawAnalogDataCache_, 1) ;
+            %self.RawAnalogDataCache_ = [self.RawAnalogDataCache_ zeros(n,1,'int16')] ;
+            %m = size(self.LatestRawAnalogData_, 1) ;
+            %self.LatestRawAnalogData_ = [self.LatestRawAnalogData_ zeros(m,1,'int16')] ;
+            self.AnalogScalingCoefficientsCache_(:,end+1) = nan ;            
             
-            self.updateActiveChannelIndexFromChannelIndex_() ;
-            self.AnalogScalingCoefficientsCache_(:,end+1) = nan ;
-            
+            % Get the value to be returned
             newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
@@ -968,10 +928,11 @@ classdef Acquisition < ws.Subsystem
                 self.RawAnalogDataCache_ = zeros(n, 0, 'int16') ;
                 m = size(self.LatestRawAnalogData_, 1) ;
                 self.LatestRawAnalogData_ = zeros(m, 0, 'int16') ;
-                self.AnalogScalingCoefficientsCache_ = [] ;
+                self.IsInCacheFromAnalogChannelIndex_ = false(1,0) ;
+                self.IndexInCacheFromAnalogChannelIndex_ = nan(1,0) ;               
+                coefficientCount = size(self.AnalogScalingCoefficientsCache_, 1) ;
+                self.AnalogScalingCoefficientsCache_ = zeros(coefficientCount, 0) ;
             else
-                isAnalogChannelActiveBefore = self.IsAnalogChannelActive_ ;
-                isToBeKeptFromActiveAnalogChannelIndex = ~isToBeDeleted(isAnalogChannelActiveBefore) ;
                 isToBeKeptFromAnalogChannelIndex = ~isToBeDeleted ;
                 %self.AnalogDeviceNames_ = self.AnalogDeviceNames_(isKeeper) ;
                 self.AnalogTerminalIDs_ = self.AnalogTerminalIDs_(isToBeKeptFromAnalogChannelIndex) ;
@@ -981,15 +942,18 @@ classdef Acquisition < ws.Subsystem
                 self.AnalogChannelUnits_ = self.AnalogChannelUnits_(isToBeKeptFromAnalogChannelIndex) ;
                 self.IsAnalogChannelActive_ = self.IsAnalogChannelActive_(isToBeKeptFromAnalogChannelIndex) ;
                 self.IsAnalogChannelMarkedForDeletion_ = self.IsAnalogChannelMarkedForDeletion_(isToBeKeptFromAnalogChannelIndex) ;
-                self.RawAnalogDataCache_ = self.RawAnalogDataCache_(:,isToBeKeptFromActiveAnalogChannelIndex) ;
-                self.LatestRawAnalogData_ = self.LatestRawAnalogData_(:,isToBeKeptFromActiveAnalogChannelIndex) ;                
-                self.AnalogScalingCoefficientsCache_ =  self.AnalogScalingCoefficientsCache_(:, isToBeKeptFromActiveAnalogChannelIndex) ;
+                %self.RawAnalogDataCache_ = self.RawAnalogDataCache_(:,isToBeKeptFromActiveAnalogChannelIndex) ;
+                %self.LatestRawAnalogData_ = self.LatestRawAnalogData_(:,isToBeKeptFromActiveAnalogChannelIndex) ;                
+                self.IsInCacheFromAnalogChannelIndex_ = self.IsInCacheFromAnalogChannelIndex_(isToBeKeptFromAnalogChannelIndex) ;                
+                self.IndexInCacheFromAnalogChannelIndex_ = self.IndexInCacheFromAnalogChannelIndex_(isToBeKeptFromAnalogChannelIndex) ;
+                
+                isInCacheFromAnalogChannelIndex = self.IsInCacheFromAnalogChannelIndex_ ;
+                isToBeKeptFromCachedAnalogChannelIndex = isToBeKeptFromAnalogChannelIndex(isInCacheFromAnalogChannelIndex) ;
+                self.AnalogScalingCoefficientsCache_ =  self.AnalogScalingCoefficientsCache_(:, isToBeKeptFromCachedAnalogChannelIndex) ;                
             end
-            self.updateActiveChannelIndexFromChannelIndex_() ;
             
-            %self.syncIsAnalogChannelTerminalOvercommitted_() ;
+            % Set return value
             wasDeleted = isToBeDeleted ;
-            %self.Parent.didDeleteAnalogInputChannels(wasDeleted) ;
         end  % function        
     end  % public methods block
     
@@ -1017,12 +981,11 @@ classdef Acquisition < ws.Subsystem
         end  % function
         
         function synchronizeTransientStateToPersistedState_(self)
-            self.updateActiveChannelIndexFromChannelIndex_() ;            
-        end  % function        
-        
-        function updateActiveChannelIndexFromChannelIndex_(self)
-            isChannelActive = horzcat(self.IsAnalogChannelActive_, self.IsDigitalChannelActive_) ;
-            self.ActiveChannelIndexFromChannelIndex_ = ws.computeActiveChannelIndexFromChannelIndex(isChannelActive) ;
+            %self.updateCacheChannelIndexFromChannelIndex_() ;            
+            analogChannelCount = length(self.AnalogChannelNames_) ;
+            self.IndexInCacheFromAnalogChannelIndex_ = nan(1, analogChannelCount) ;
+            digitalChannelCount = length(self.DigitalChannelNames_) ;
+            self.IndexInCacheFromDigitalChannelIndex_ = nan(1, digitalChannelCount) ;            
         end  % function        
     end  % protected methods block
 
@@ -1030,7 +993,7 @@ classdef Acquisition < ws.Subsystem
         function setSingleAnalogDeviceName(self, i, newValue)
             % Checking done by parent
             self.AnalogDeviceNames_{i} = newValue ;
-            self.AnalogScalingCoefficientsCache_ = [] ;
+            %self.AnalogScalingCoefficientsCache_ = [] ;
         end  % function        
         
         function setSingleDigitalDeviceName(self, i, newValue)

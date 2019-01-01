@@ -100,7 +100,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         ChannelIndexWithinTypeFromPlotIndex
         IsAnalogFromPlotIndex
         ChannelIndexFromPlotIndex
-        ActiveInputChannelIndexFromInputChannelIndex
+        CacheInputChannelIndexFromInputChannelIndex
         PlotHeightFromPlotIndex
         PlotIndexFromChannelIndex  % 1 x nChannels
         AIChannelTerminalNames
@@ -129,6 +129,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         IsPerformingRun
         IsPerformingSweep
         DataCacheDurationWhenContinuous
+        IsInputChannelInCacheFromInputChannelIndex
     end
     
     properties (Access=protected)
@@ -4617,7 +4618,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end  % function
         
         function result = get.IsAIChannelActive(self)
-            result = self.Acquisition_.getIsAnalogChannelActive_() ;
+            result = self.Acquisition_.IsAnalogChannelActive ;
         end
         
         function setSingleIsAIChannelActive(self, aiChannelIndex, newValue)
@@ -4656,20 +4657,21 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isempty(rawAnalogData) ,
                 scaledAnalogData = double(rawAnalogData) ;
             else
-                channelScales=self.AIChannelScales(self.IsAIChannelActive);
-                scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;                
+                %channelScales=self.AIChannelScales(self.IsAIChannelActive);
+                channelScales = self.AIChannelScales(self.Acquisition_.IsInCacheFromAnalogChannelIndex);
+                scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
                 scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
             end
         end  % function
 
-        function scaledData = getSinglePrecisionAIDataFromCache(self)
-            % Get the data from the main-memory cache, as single-precision floats.  This
-            % call unwraps the circular buffer for you.
-            rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
-            channelScales=self.AIChannelScales(self.IsAIChannelActive);
-            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
-        end  % function
+%         function scaledData = getSinglePrecisionAIDataFromCache(self)
+%             % Get the data from the main-memory cache, as single-precision floats.  This
+%             % call unwraps the circular buffer for you.
+%             rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
+%             channelScales=self.AIChannelScales(self.IsAIChannelActive);
+%             scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+%             scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%         end  % function
 
         function result = getDIDataFromCache(self)
             % Get the data from the main-memory cache, as double-precision floats.  This
@@ -4678,7 +4680,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end  % function
         
         function result = get.IsDIChannelActive(self)
-            result = self.Acquisition_.getIsDigitalChannelActive_() ;
+            result = self.Acquisition_.IsDigitalChannelActive ;
         end
 
         function setSingleIsDIChannelActive(self, diChannelIndex, newValue)
@@ -5728,7 +5730,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function result = areTestPulseElectrodeChannelsValid(self)
             aiChannelNames = self.AIChannelNames ;
-            isAIChannelActive = self.Acquisition_.getIsAnalogChannelActive_() ;            
+            isAIChannelActive = self.Acquisition_.IsAnalogChannelActive ;            
             activeAIChannelNames = aiChannelNames(isAIChannelActive) ;
             aoChannelNames = self.AOChannelNames ;
             result = self.Ephys_.areTestPulseElectrodeChannelsValid(activeAIChannelNames, aoChannelNames) ;
@@ -6290,9 +6292,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function result = get.ChannelIndexFromPlotIndex(self)
             result = self.Display_.ChannelIndexFromPlotIndex ;
         end
+
+        function result = get.IsInputChannelInCacheFromInputChannelIndex(self)
+            % Cache input channels are the input channels that were active
+            % at the time of the last sweep.
+            result = [ self.Acquisition_.IsInCacheFromAnalogChannelIndex self.Acquisition_.IsInCacheFromDigitalChannelIndex ] ;
+        end        
         
-        function result = get.ActiveInputChannelIndexFromInputChannelIndex(self)
-            result = self.Acquisition_.ActiveChannelIndexFromChannelIndex ;
+        function result = get.CacheInputChannelIndexFromInputChannelIndex(self)
+            % Cache input channels are the input channels that were active
+            % at the time of the last sweep.
+            result = [ self.Acquisition_.IndexInCacheFromAnalogChannelIndex self.Acquisition_.IndexInCacheFromDigitalChannelIndex ] ;
         end
         
         function result = get.PlotHeightFromPlotIndex(self)
