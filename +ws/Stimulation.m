@@ -587,7 +587,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.IsAnalogChannelMarkedForDeletion_ = false(1, nAnalogChannels) ;
             nDigitalChannels = length(self.DigitalChannelNames_) ;
             self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
-        end                
+        end
     end
 
     methods (Access=protected)

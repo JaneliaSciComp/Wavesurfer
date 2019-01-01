@@ -4673,10 +4673,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
 %         end  % function
 
-        function result = getDIDataFromCache(self)
+        function [result, signalCount] = getDIDataFromCache(self)
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
-            result = self.Acquisition_.getRawDigitalDataFromCache();
+            [result, signalCount] = self.Acquisition_.getRawDigitalDataFromCache();
         end  % function
         
         function result = get.IsDIChannelActive(self)

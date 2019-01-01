@@ -1334,10 +1334,7 @@ classdef WavesurferMainController < ws.Controller
 
             wsModel = self.Model_ ;
             scaledAnalogData = wsModel.getAIDataFromCache() ;
-            %if size(scaledAnalogData,2) ~= sum(wsModel.IsAIChannelActive) , 
-            %    keyboard
-            %end
-            rawDigitalData = wsModel.getDIDataFromCache() ;
+            [digitalDataAsUint, cachedDigitalSignalCount] = wsModel.getDIDataFromCache() ;
             t = wsModel.getTimestampsForDataInCache() ;
             
             % Get the uint8/uint16/uint32 data out of recentRawDigitalData
@@ -1345,20 +1342,22 @@ classdef WavesurferMainController < ws.Controller
             % concat it with the recentScaledAnalogData, storing the result
             % in yRecent.
             %display = wsModel.Display ;
-            nActiveDIChannels = wsModel.getNActiveDIChannels() ;
-            if nActiveDIChannels==0 ,
-                y = scaledAnalogData ;
-            else
-                % Might need to write a mex function to quickly translate
-                % recentRawDigitalData to recentDigitalData.
-                nScans = size(rawDigitalData,1) ;                
-                recentDigitalData = zeros(nScans,nActiveDIChannels) ;
-                for j = 1:nActiveDIChannels ,
-                    recentDigitalData(:,j) = bitget(rawDigitalData,j) ;
-                end
-                % End of code that might need to mex-ify
-                y = horzcat(scaledAnalogData, recentDigitalData) ;
-            end
+            digitalDataAsLogical = ws.logicalColumnsFromUintColumn(digitalDataAsUint, cachedDigitalSignalCount) ;
+            y = horzcat(scaledAnalogData, digitalDataAsLogical) ;  % horzcat will convert logical to double
+%             nActiveDIChannels = wsModel.getNActiveDIChannels() ;
+%             if nActiveDIChannels==0 ,
+%                 y = scaledAnalogData ;
+%             else
+%                 % Might need to write a mex function to quickly translate
+%                 % recentRawDigitalData to recentDigitalData.
+%                 nScans = size(digitalDataAsUint,1) ;                
+%                 recentDigitalData = zeros(nScans,nActiveDIChannels) ;
+%                 for j = 1:nActiveDIChannels ,
+%                     recentDigitalData(:,j) = bitget(digitalDataAsUint,j) ;
+%                 end
+%                 % End of code that might need to mex-ify
+%                 y = horzcat(scaledAnalogData, recentDigitalData) ;
+%             end
             
             % Figure out the downsampling ratio
             if isempty(self.ScopePlots_) ,

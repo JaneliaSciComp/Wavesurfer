@@ -90,7 +90,7 @@ classdef Acquisition < ws.Subsystem
         RawDigitalDataCache_ = []
         IndexOfLastScanInCache_ = 0
         %NScansFromLatestCallback_
-        IsAllDataInCacheValid_ = false
+        AreAllScansInCacheValid_ = false
         IsInCacheFromAnalogChannelIndex_ = false(1,0)
         IndexInCacheFromAnalogChannelIndex_ = nan(1,0)
         IsInCacheFromDigitalChannelIndex_ = false(1,0)
@@ -112,8 +112,10 @@ classdef Acquisition < ws.Subsystem
             % values
             
             % Check that there's at least one active input channel
-            nActiveAnalogChannels = sum(self.IsAnalogChannelActive_);
-            nActiveDigitalChannels = sum(self.IsDigitalChannelActive_);
+            isAnalogChannelActive = self.IsAnalogChannelActive_ ;
+            isDigitalChannelActive = self.IsDigitalChannelActive_ ;
+            nActiveAnalogChannels = sum(isAnalogChannelActive);
+            nActiveDigitalChannels = sum(isDigitalChannelActive);
             nActiveInputChannels = nActiveAnalogChannels + nActiveDigitalChannels ;
 
             % Dimension the cache that will hold acquired data in main memory
@@ -128,6 +130,12 @@ classdef Acquisition < ws.Subsystem
             self.RawDigitalDataCache_ = zeros(nScans,nDigitalColumns,digitalDataType);
             self.LatestRawAnalogData_ = zeros(0,nActiveAnalogChannels,'int16');
             self.LatestRawDigitalData_ = zeros(0,nDigitalColumns,digitalDataType);
+
+            % Update the cache metadata to keep in sync
+            self.IsInCacheFromAnalogChannelIndex_ = isAnalogChannelActive ;
+            self.IsInCacheFromDigitalChannelIndex_ = isDigitalChannelActive ;            
+            [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
+                ws.computeActiveChannelIndexFromRespectiveChannelIndex(isAnalogChannelActive, isDigitalChannelActive) ;            
             
             % Thow an error if no active input channel
             if nActiveInputChannels==0 ,
@@ -623,12 +631,6 @@ classdef Acquisition < ws.Subsystem
         
         function startingSweep(self)
             %fprintf('Acquisition::startingSweep()\n');
-            isAnalogChannelActive = self.IsAnalogChannelActive_ ;
-            isDigitalChannelActive = self.IsDigitalChannelActive_ ;
-            self.IsInCacheFromAnalogChannelIndex_ = isAnalogChannelActive ;
-            self.IsInCacheFromDigitalChannelIndex_ = isDigitalChannelActive ;            
-            [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
-                ws.computeActiveChannelIndexFromRespectiveChannelIndex(isAnalogChannelActive, isDigitalChannelActive) ;
             self.invalidateDataCache() ;
         end  % function
         
@@ -636,7 +638,7 @@ classdef Acquisition < ws.Subsystem
             % Set the circular buffer metadata to indicate no valid data in
             % the buffer.
             self.IndexOfLastScanInCache_ = 0 ;
-            self.IsAllDataInCacheValid_ = false ;            
+            self.AreAllScansInCacheValid_ = false ;            
         end
         
 %         function iChannel = iActiveChannelFromName(self,channelName)
@@ -751,7 +753,7 @@ classdef Acquisition < ws.Subsystem
                 self.IndexOfLastScanInCache_ = jf ;
                 %self.NScansFromLatestCallback_ = n ;                
                 if jf == size(self.RawAnalogDataCache_,1) ,
-                     self.IsAllDataInCacheValid_ = true;
+                     self.AreAllScansInCacheValid_ = true;
                 end
             else                
                 % Add data to cache, wrapping around if needed
@@ -769,7 +771,7 @@ classdef Acquisition < ws.Subsystem
                     self.RawAnalogDataCache_(j0:jf,:) = rawAnalogData;
                     self.RawDigitalDataCache_(j0:jf,:) = rawDigitalData;
                     self.IndexOfLastScanInCache_ = 0 ;
-                    self.IsAllDataInCacheValid_ = true ;
+                    self.AreAllScansInCacheValid_ = true ;
                 else
                     % Need to write part of rawData to end of data cache,
                     % part to start of data cache                    
@@ -779,7 +781,7 @@ classdef Acquisition < ws.Subsystem
                     self.RawAnalogDataCache_(1:nScansAtStartOfCache,:) = rawAnalogData(end-nScansAtStartOfCache+1:end,:) ;
                     self.RawDigitalDataCache_(j0:end,:) = rawDigitalData(1:nScansAtEndOfCache,:) ;
                     self.RawDigitalDataCache_(1:nScansAtStartOfCache,:) = rawDigitalData(end-nScansAtStartOfCache+1:end,:) ;
-                    self.IsAllDataInCacheValid_ = true ;
+                    self.AreAllScansInCacheValid_ = true ;
                     self.IndexOfLastScanInCache_ = nScansAtStartOfCache ;
                 end
                 %self.NScansFromLatestCallback_ = n ;
@@ -807,7 +809,7 @@ classdef Acquisition < ws.Subsystem
         function data = getRawAnalogDataFromCache(self)
             % Get the data from the main-memory cache, as int16's.  This
             % call unwraps the circular buffer for you.
-            if self.IsAllDataInCacheValid_ ,
+            if self.AreAllScansInCacheValid_ ,
                 if self.IndexOfLastScanInCache_ == 0 ,
                     data = self.RawAnalogDataCache_ ;
                 else
@@ -826,17 +828,18 @@ classdef Acquisition < ws.Subsystem
         end  % function
         
         function nScansInCache = getNScansInCache(self)
-            if self.IsAllDataInCacheValid_ ,
+            if self.AreAllScansInCacheValid_ ,
                 nScansInCache = size(self.RawAnalogDataCache_,1) ;
             else
                 nScansInCache = self.IndexOfLastScanInCache_ ;
             end
         end
         
-        function data = getRawDigitalDataFromCache(self)
+        function [data, signalCount] = getRawDigitalDataFromCache(self)
             % Get the data from the main-memory cache, as int16's.  This
             % call unwraps the circular buffer for you.
-            if self.IsAllDataInCacheValid_ ,
+            signalCount = sum(self.IsInCacheFromDigitalChannelIndex_) ;
+            if self.AreAllScansInCacheValid_ ,
                 if self.IndexOfLastScanInCache_ == 0 ,
                     data = self.RawDigitalDataCache_ ;
                 else
