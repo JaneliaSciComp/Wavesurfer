@@ -1308,7 +1308,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 if self.Display_.IsEnabled ,
                     self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
-                    self.Acquisition_.invalidateDataCache() ;
+                    %self.Acquisition_.invalidateDataCache() ;
                     self.broadcast('DidSetDataCache') ;
                 end
                 if self.Triggering_.IsEnabled ,
@@ -2534,7 +2534,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
             %end
-            self.Acquisition_.invalidateDataCache() ;
+            %self.Acquisition_.invalidateDataCache() ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;

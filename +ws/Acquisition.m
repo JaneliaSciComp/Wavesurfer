@@ -136,6 +136,7 @@ classdef Acquisition < ws.Subsystem
             self.IsInCacheFromDigitalChannelIndex_ = isDigitalChannelActive ;            
             [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
                 ws.computeActiveChannelIndexFromRespectiveChannelIndex(isAnalogChannelActive, isDigitalChannelActive) ;            
+            self.invalidateDataCache() ;
             
             % Thow an error if no active input channel
             if nActiveInputChannels==0 ,
@@ -989,6 +990,7 @@ classdef Acquisition < ws.Subsystem
             self.IndexInCacheFromAnalogChannelIndex_ = nan(1, analogChannelCount) ;
             digitalChannelCount = length(self.DigitalChannelNames_) ;
             self.IndexInCacheFromDigitalChannelIndex_ = nan(1, digitalChannelCount) ;            
+            self.invalidateDataCache() ;
         end  % function        
     end  % protected methods block
 
