@@ -59,16 +59,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end
         
         function mimic(self,other)
-            % Disable broadcasts for speed
-            %self.disableBroadcasts();
-            
             self.ElectrodeIDs_ = other.ElectrodeIDs_ ;
-            
-            % Re-enable broadcasts
-            %self.enableBroadcastsMaybe();
-            
-            % Broadcast update
-            %self.broadcast('Update');
         end
         
         %%
@@ -271,8 +262,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             electrodeIDs=ws.dabs.axon.MulticlampTelegraph('getAllElectrodeIDs');
             sortedElectrodeIDs=ws.MulticlampCommanderSocket.sortElectrodeIDs(electrodeIDs);
             self.ElectrodeIDs_ = sortedElectrodeIDs;  % want them ordered reliably
-        end  % function
-        
+        end  % function        
     end  % protected methods
     
     methods (Static=true)  % public class methods

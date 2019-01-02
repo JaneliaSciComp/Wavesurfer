@@ -29,7 +29,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
     properties (Access = protected)
         Electrodes_ = cell(1,0);  % row vector of electrodes
         %IsElectrodeMarkedForTestPulse_ = true(1,0)  % boolean row vector, same length as Electrodes_
-        LargestElectrodeIndexUsed_ = -inf
+        %LargestElectrodeIndexUsed_ = -inf
         AreSoftpanelsEnabled_
         DidLastElectrodeUpdateWork_ = false(1,0)  % false iff an electrode is smart, and the last attempted update of its gains, etc. threw an error
         MulticlampCommanderSocket_  % A 'socket' for communicating with the Multiclamp Commander application (non-transient b/c electrode IDs are persisted)
@@ -231,7 +231,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             %electrode=[];  % fallback return value
             currentElectrodeNames=cellfun(@(electrode)(electrode.Name),self.Electrodes_,'UniformOutput',false);
             isPutativeNameUnique=false;
-            iInitial=max(self.LargestElectrodeIndexUsed_,0)+1;
+            iInitial = 1 ;
             for i=iInitial:iInitial+100 ,
                 putativeName=sprintf('Electrode %d',i);
                 if any(strcmp(putativeName,currentElectrodeNames)) ,                    
@@ -242,7 +242,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 end
             end
             if isPutativeNameUnique ,
-                self.LargestElectrodeIndexUsed_=max(i,self.LargestElectrodeIndexUsed_);
+                %self.LargestElectrodeIndexUsed_=max(i,self.LargestElectrodeIndexUsed_);
                 name=putativeName;
             else
                 % Theoretically, should throw exception, I suppose
@@ -276,11 +276,11 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
             self.IsElectrodeMarkedForRemoval_(isToBeRemoved) = [] ;  % should be all false afterwards
             self.DidLastElectrodeUpdateWork_(isToBeRemoved) = [] ;
             
-            % If the number of electrodes is down to zero, reset the
-            % default electrode numbering
-            if isempty(self.Electrodes_) ,
-                self.LargestElectrodeIndexUsed_ = -inf;
-            end
+%             % If the number of electrodes is down to zero, reset the
+%             % default electrode numbering
+%             if isempty(self.Electrodes_) ,
+%                 self.LargestElectrodeIndexUsed_ = -inf;
+%             end
             
             % % Notify subscribers
             % self.broadcast('Update');
@@ -1074,50 +1074,74 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 end
             end
             %self.broadcast('Update') ;
-        end            
+        end                    
+    end  % protected methods block
+        
+    methods        
+%         function mimic(self, other)
+%             % Note that this uses the high-level setters, so it will cause
+%             % any subscribers to get (several) MayHaveChanged events.
+%             
+%             % Mimic the trodes
+%             nNewElectrodes=length(other.Electrodes_) ;
+%             self.Electrodes_ = cell(1, nNewElectrodes) ;
+%             for i=1:nNewElectrodes ,
+%                 self.Electrodes_{i} = ws.Electrode() ;
+%                 self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
+%             end
+%             
+%             % Copy some fields
+%             self.IsElectrodeMarkedForRemoval_ = other.IsElectrodeMarkedForRemoval_ ;
+%             self.AreSoftpanelsEnabled_ = other.AreSoftpanelsEnabled_ ;
+%             self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork_ ;
+%             
+%             % mimic the softpanel sockets
+%             self.EPCMasterSocket_.mimic(other.EPCMasterSocket_) ;
+%             self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_) ;
+%             self.DoTrodeUpdateBeforeRunWhenSensible_ = other.DoTrodeUpdateBeforeRunWhenSensible_ ;
+%         end  % function        
+        
+        function mimic(self, other)
+            % Cause self to resemble other.
+            
+            % Get the list of property names for this file type
+            propertyNames = ws.listPropertiesForPersistence(self);
+            
+            % Set each property to the corresponding one
+            for i = 1:length(propertyNames) ,
+                thisPropertyName=propertyNames{i};
+                if any(strcmp(thisPropertyName,{'EPCMasterSocket_', 'MulticlampCommanderSocket_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = self.(thisPropertyName) ;
+                    target.mimic(source) ;
+                elseif any(strcmp(thisPropertyName,{'Electrodes_'})) ,
+                    source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
+                    target = ws.copyCellArrayOfHandles(source) ;
+                    self.(thisPropertyName) = target ;
+                else
+                    if isprop(other,thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
+        end  % function
+        
+        function sanitizePersistedState_(self)  %#ok<MANU>
+        end
         
         function synchronizeTransientStateToPersistedState_(self)
             electrodeCount = length(self.Electrodes_) ;
             self.IsElectrodeMarkedForRemoval_ = false(1, electrodeCount) ; 
-        end  % function                
-    end  % protected methods block
-        
-    methods (Access=public)        
-        function mimic(self, other)
-            % Note that this uses the high-level setters, so it will cause
-            % any subscribers to get (several) MayHaveChanged events.
-            
-            % % Disable broadcasts for speed
-            % self.disableBroadcasts() ;
-
-            % Mimic the trodes
-            nNewElectrodes=length(other.Electrodes_) ;
-            self.Electrodes_ = cell(1, nNewElectrodes) ;
-            for i=1:nNewElectrodes ,
-                self.Electrodes_{i} = ws.Electrode() ;
-                self.Electrodes_{i}.mimic(other.Electrodes_{i}) ;
-            end
-            
-            % Copy some fields
-            %self.IsElectrodeMarkedForTestPulse_ = other.IsElectrodeMarkedForTestPulse_ ;
-            self.IsElectrodeMarkedForRemoval_ = other.IsElectrodeMarkedForRemoval_ ;
-            self.AreSoftpanelsEnabled_ = other.AreSoftpanelsEnabled_ ;
-            self.DidLastElectrodeUpdateWork_ = other.DidLastElectrodeUpdateWork_ ;
-            
-            % mimic the softpanel sockets
-            self.MulticlampCommanderSocket_.mimic(other.MulticlampCommanderSocket_) ;
-%             self.EPCMasterSocket_.mimic(other.EPCMasterSocket_) ;  
-%               % Doesn't actually do anything, and self.EPCMasterSocket_ is
-%               % transient
-            self.DoTrodeUpdateBeforeRunWhenSensible_ = other.DoTrodeUpdateBeforeRunWhenSensible_ ;
-
-            % % Re-enable broadcasts
-            % self.enableBroadcastsMaybe() ;
-            
-            % Broadcast update
-            %self.broadcast('Update') ;
-        end  % function        
-    end % methods
+        end  % function                        
+    end  % public methods block
     
     methods
         function parameterName=parameterNameForSettingFromPropertyName(self,electrodeIndex,propertyName)

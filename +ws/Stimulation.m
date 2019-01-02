@@ -540,9 +540,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            %self.disableBroadcasts();
-            
             % Get the list of property names for this file type
             propertyNames = ws.listPropertiesForPersistence(self);
             
@@ -564,12 +561,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     end
                 end
             end
-            
-            % Re-enable broadcasts
-            %self.enableBroadcastsMaybe();
-            
-%             % Broadcast update
-%             self.broadcast('Update');
         end  % function
     end  % public methods block
 
@@ -865,5 +856,4 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.DigitalDeviceNames_{i} = newValue ;
         end  % function                
     end  % public methods block
-
 end  % classdef

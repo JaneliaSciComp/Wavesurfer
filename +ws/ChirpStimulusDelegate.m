@@ -88,6 +88,7 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = ChirpStimulusDelegate()
+            %fprintf('Creating a ChirpStimulusDelegate!') ;
             self = self@ws.StimulusDelegate() ;
         end  % function
         

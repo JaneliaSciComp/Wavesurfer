@@ -266,7 +266,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                         
                         % Make a new delegate of the right kind
                         delegateClassName = sprintf('ws.%sStimulusDelegate',other.TypeString) ;
-                        delegate=feval(delegateClassName) ;
+                        delegate = feval(delegateClassName) ;
                         self.Delegate_ = delegate ;
                         self.Delegate_.mimic(other.Delegate_) ;
                     else

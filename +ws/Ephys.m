@@ -182,10 +182,6 @@ classdef Ephys < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            %self.disableBroadcasts();
-            %self.ElectrodeManager_.disableBroadcasts();
-            %self.TestPulser_.disableBroadcasts();
             % Get the list of property names for this file type
             propertyNames = ws.listPropertiesForPersistence(self);
             
@@ -204,21 +200,7 @@ classdef Ephys < ws.Subsystem
                         self.setPropertyValue_(thisPropertyName, source) ;
                     end                    
                 end
-            end
-            
-            % Ensure self-consistency of self
-            %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
-            
-            % Re-enable broadcasts
-            %self.TestPulser_.enableBroadcastsMaybe();
-            %self.ElectrodeManager_.enableBroadcastsMaybe();
-            %self.enableBroadcastsMaybe();
-            
-            % Broadcast updates for sub-models and self, now that
-            % everything is in sync, and should be self-consistent
-            %self.TestPulser_.broadcast('Update');
-            %self.ElectrodeManager_.broadcast('Update');
-            %self.broadcast('Update');  % is this necessary?
+            end            
         end  % function
         
 %         function settingPrimaryDeviceName(self, deviceName)

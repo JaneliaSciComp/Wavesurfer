@@ -2591,7 +2591,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %                               'layoutForAllWindows',layoutForAllWindows, ...
 %                               'versionString',versionString);  %#ok<NASGU>
             saveStruct=struct(wavesurferModelSettingsVariableName,wavesurferModelSettings, ...
-                              'versionString',versionString);  %#ok<NASGU>
+                              'versionString',versionString);
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct');     
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
@@ -2668,7 +2668,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
-                              'versionString',versionString) ;  %#ok<NASGU>
+                              'versionString',versionString) ;
             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            

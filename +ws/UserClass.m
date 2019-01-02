@@ -44,4 +44,23 @@ classdef UserClass < handle
         stoppingEpisode(self, refiller)      
         abortingEpisode(self, refiller)        
     end  % methods
+    
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
 end  % classdef

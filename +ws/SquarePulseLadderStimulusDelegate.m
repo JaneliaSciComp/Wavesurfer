@@ -229,4 +229,10 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
         end  % function
     end
     
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
 end

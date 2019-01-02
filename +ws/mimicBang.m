@@ -13,8 +13,11 @@ function mimicBang(destination, source)
     for i = 1:length(propertyNames) ,
         thisPropertyName = propertyNames{i} ;
         if isprop(source, thisPropertyName) ,
-            source = source.getPropertyValue_(thisPropertyName) ;
-            destination.setPropertyValue_(thisPropertyName, source) ;
+            thisValue = source.getPropertyValue_(thisPropertyName) ;
+            if isa(thisValue, 'handle') ,
+                error('Can''t use ws.mimicBang() on handle properties') ;
+            end
+            destination.setPropertyValue_(thisPropertyName, thisValue) ;
         end
     end
 

@@ -592,9 +592,9 @@ classdef Logging < ws.Subsystem
         end  % function
     end
     
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end        
-    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
 end

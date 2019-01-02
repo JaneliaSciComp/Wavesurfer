@@ -53,6 +53,50 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyEqual(stimulus,stimulusCheck);  % test value equality
             self.verifyFalse(stimulus==stimulusCheck);  % test (lack of) identity
         end  % function
+
+        function testCopyingOfStimulusDelegate(self)            
+            csd = ws.ChirpStimulusDelegate() ;
+            csd.InitialFrequency = '42' ;
+            csd2 = ws.copy(csd) ;
+            %csd2.InitialFrequency
+            shouldBeTrue = isequal(csd, csd2)
+            self.verifyTrue(isequal(csd, csd2)) ;
+        end  % function
+        
+        function testSettingOfStimulusAdditionalParameter(self)            
+            stimulus = ws.Stimulus() ;
+            stimulus.TypeString = 'Chirp' ;            
+            valueAsSet = '45.44323' ;
+            stimulus.setAdditionalParameter('InitialFrequency', valueAsSet) ;
+            valueAsGotten = stimulus.getAdditionalParameter('InitialFrequency') ;
+            self.verifyEqual(valueAsSet, valueAsGotten) ;
+        end  % function
+        
+        function testCopyingOfStimulus(self)            
+            % create some stimuli, etc.
+            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
+            stimulus = stimulusLibrary.Stimuli{1} ; 
+
+            % copy
+            stimulusCopy = ws.copy(stimulus) ;
+            
+            % check value quality
+            isEqualInValue = isequal(stimulus, stimulusCopy) ;
+            self.verifyTrue(isEqualInValue);  % test value equality
+            
+            % verify lack of identity
+            isDistinct = (stimulus ~= stimulusCopy) ;  % test identity (i.e. pointer equality)
+            self.verifyTrue(isDistinct);
+            
+            % another copy, to make sure no aliasing is going on
+            stimulusCopyCopyModded = ws.copy(stimulusCopy) ;
+            stimulusCopyCopyModded.setAdditionalParameter('InitialFrequency', '45.44323') ;
+            
+            % 2nd copy should be different from original and 1st copy
+            self.verifyTrue(isequal(stimulus, stimulusCopy)) ;  % test value equality
+            self.verifyFalse(isequal(stimulus,stimulusCopyCopyModded)) ;  % test value equality
+            self.verifyFalse(isequal(stimulusCopy,stimulusCopyCopyModded)) ;  % test value equality
+        end  % function
         
         function testCopyingOfStimuli(self)            
             % create some stimuli, etc.
@@ -60,10 +104,10 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimuli = stimulusLibrary.Stimuli ; 
 
             % copy
-            stimuliCopy = cellfun(@(stimulus)(stimulus.copy()),stimuli,'UniformOutput',false) ;
+            stimuliCopy = cellfun(@ws.copy,stimuli,'UniformOutput',false) ;
             
             % check value quality
-            isEqualInValue = ws.cellisequal(stimuli,stimuliCopy) ;
+            isEqualInValue = ws.cellisequal(stimuli, stimuliCopy) ;
             self.verifyTrue(all(isEqualInValue));  % test value equality
             
             % verify lack of identity
@@ -71,7 +115,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyTrue(all(isDistinct));
             
             % another copy, to make sure no aliasing is going on
-            stimuliCopyCopyModded = cellfun(@(stimulus)(stimulus.copy()),stimuliCopy,'UniformOutput',false) ;
+            stimuliCopyCopyModded = cellfun(@ws.copy,stimuliCopy,'UniformOutput',false) ;
             stimuliCopyCopyModded{1}.setAdditionalParameter('InitialFrequency', '45.44323') ;
             
             % 2nd copy should be different from original and 1st copy
@@ -214,7 +258,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
             
             % copy
-            stimulusLibraryCopy = stimulusLibrary.copy() ;
+            stimulusLibraryCopy = ws.copy(stimulusLibrary) ;
             
             % check
             self.verifyTrue(stimulusLibraryCopy.isSelfConsistent()) ;
@@ -222,7 +266,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             self.verifyTrue(all(stimulusLibrary~=stimulusLibraryCopy)) ;  % test (lack of) identity
             
             % another copy, to make sure no aliasing is going on
-            stimulusLibraryCopyCopy = stimulusLibraryCopy.copy() ;
+            stimulusLibraryCopyCopy = ws.copy(stimulusLibraryCopy) ;
             %stimulus1 = stimulusLibraryCopyCopy.Stimuli{1};  % should be an alias
             %stimulus1.Delegate.InitialFrequency='45.44323';  % should modify stimulusLibraryCopyCopy
             stimulusLibraryCopyCopy.setItemProperty('ws.Stimulus', 1, 'InitialFrequency', '45.44323') ;

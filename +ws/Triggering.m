@@ -678,9 +678,6 @@ classdef Triggering < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            %self.disableBroadcasts();
-            
             % Get the list of property names for this file type
             propertyNames = ws.listPropertiesForPersistence(self);
             

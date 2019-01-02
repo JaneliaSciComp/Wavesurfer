@@ -459,7 +459,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end  % methods
     
     methods
-        
         function setLEDState(self, looper, onOrOff)
             % Will set the LED state              
             digitalOutputStateIfUntimed = looper.DOChannelStateIfUntimed ;
@@ -823,7 +822,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
     end
     
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -836,18 +835,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % If a Coding subclass wants to decode private/protected variables, or do
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
-        end
-        
-        function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
-            % This method should set any transient state variables to
-            % ensure that the object invariants are met, given the values
-            % of the persisted state variables.  The default implementation
-            % does nothing, but subclasses can override it to make sure the
-            % object invariants are satisfied after an object is decoded
-            % from persistant storage.  This is called by
-            % ws.Encodable.decodeEncodingContainerGivenParent() after
-            % a new object is instantiated, and after its persistent state
-            % variables have been set to the encoded values.
-        end
+        end        
     end
 end  % classdef

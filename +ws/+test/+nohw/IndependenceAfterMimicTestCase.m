@@ -17,7 +17,7 @@ classdef IndependenceAfterMimicTestCase < matlab.unittest.TestCase
             wsm = ws.WavesurferModel() ;
             wsm2 = ws.WavesurferModel() ;
             wsm.mimic(wsm2) ;
-            isIndependent = wsm.isIndependentFrom(wsm2) ;
+            isIndependent = ws.isIndependentFrom(wsm,wsm2) ;
             self.verifyTrue(isIndependent) ;
         end
         

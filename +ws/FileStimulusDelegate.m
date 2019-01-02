@@ -187,8 +187,7 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
                     end
                 end                
             end
-        end  % function
-        
+        end  % function        
     end
 
     %
@@ -218,6 +217,11 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
             self.(name) = value;
         end  % function
     end
-    
+   
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
 end
 

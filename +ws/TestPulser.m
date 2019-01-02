@@ -1,17 +1,5 @@
 classdef TestPulser < ws.Model 
-    properties (Dependent=true) 
-        %PulseDurationInMsAsString  % the duration of the pulse, in ms.  The sweep duration is twice this.
-        %DoSubtractBaseline
-        %IsAutoY
-        %IsAutoYRepeating
-        %IsRunning
-        %SweepDuration  % s
-        %PulseDuration  % s
-        %UpdateRate  % Hz
-    end
-    
     properties  (Access=protected)  % need to see if some of these things should be transient
-        %ElectrodeName_  
         ElectrodeIndex_  % index into the array of *all* electrodes (or empty)
         PulseDuration_  % the duration of the pulse, in s.  The sweep duration is twice this.
         DoSubtractBaseline_
@@ -36,7 +24,6 @@ classdef TestPulser < ws.Model
         OutputTask_
         TimerValue_
         LastToc_
-        %IndexOfElectrodeWithinTPElectrodesCached_
         AmplitudePerElectrodeCached_  % cached double version of AmplitudeAsDoublePerElectrode, for speed during sweeps
         IsCCPerElectrodeCached_  
         IsVCPerElectrodeCached_  
@@ -54,15 +41,8 @@ classdef TestPulser < ws.Model
         NSweepsPerAutoY_  % if IsAutoY_ and IsAutoYRepeating_, we update the y limits every this many sweeps (if we can)
         NSweepsCompletedAsOfLastYLimitsUpdate_
         GainOrResistanceUnitsPerElectrodeCached_
-        %DeviceName_
         SamplingRateCached_
     end    
-    
-%     events
-%         Update
-%         DidSetIsInputChannelActive
-%         UpdateTrace
-%     end
     
     methods
         function self = TestPulser()            
@@ -83,49 +63,11 @@ classdef TestPulser < ws.Model
             %self.Parent_=[];  % not necessary, but harmless
         end  % method
         
-%         function do(self, methodName, varargin)
-%             % This is intended to be the usual way of calling model
-%             % methods.  For instance, a call to a ws.Controller
-%             % controlActuated() method should generally result in a single
-%             % call to .do() on it's model object, and zero direct calls to
-%             % model methods.  This gives us a
-%             % good way to implement functionality that is common to all
-%             % model method calls, when they are called as the main "thing"
-%             % the user wanted to accomplish.  For instance, we start
-%             % warning logging near the beginning of the .do() method, and turn
-%             % it off near the end.  That way we don't have to do it for
-%             % each model method, and we only do it once per user command.            
-%             root = self.Parent.Parent ;
-%             root.startLoggingWarnings() ;
-%             try
-%                 self.(methodName)(varargin{:}) ;
-%             catch exception
-%                 % If there's a real exception, the warnings no longer
-%                 % matter.  But we want to restore the model to the
-%                 % non-logging state.
-%                 root.stopLoggingWarnings() ;  % discard the result, which might contain warnings
-%                 rethrow(exception) ;
-%             end
-%             warningExceptionMaybe = root.stopLoggingWarnings() ;
-%             if ~isempty(warningExceptionMaybe) ,
-%                 warningException = warningExceptionMaybe{1} ;
-%                 throw(warningException) ;
-%             end
-%         end
-        
         function didSetAnalogChannelUnitsOrScales(self)
             self.clearExistingSweepIfPresent_();
             %self.broadcast('Update');            
         end
            
-%         function didChangeNumberOfInputChannels(self)
-%             %self.broadcast('Update');
-%         end
-        
-%         function didChangeNumberOfOutputChannels(self)
-%             self.broadcast('Update');
-%         end
-        
         function result = getElectrodeIndex(self)
             result = self.ElectrodeIndex_ ;
         end
@@ -138,18 +80,6 @@ classdef TestPulser < ws.Model
             end
             %self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount) ;
         end
-        
-%         function value=getElectrodeName_(self)
-%             value=self.ElectrodeName_;
-%         end
-% 
-%         function setElectrodeName_(self, newValue)
-%             self.ElectrodeName_ = newValue;
-%         end
-        
-%         function value=get.NSweepsCompletedThisRun(self)
-%             value=self.NSweepsCompletedThisRun_;
-%         end
         
         function value=getPulseDuration_(self)  % s
             %value=1e-3*str2double(self.PulseDurationInMsAsString_);  % ms->s
@@ -232,10 +162,6 @@ classdef TestPulser < ws.Model
             value = dt*(0:(nScansInSweep-1))' ;  % s
         end
         
-%         function value = get.SweepDuration(self)  % s
-%             value = 2 * self.PulseDuration_ ;
-%         end
-        
         function value = getNScansInSweep_(self, fs)
             dt = 1/fs ;  % s
             sweepDuration = 2*self.PulseDuration_ ;
@@ -246,109 +172,10 @@ classdef TestPulser < ws.Model
             value=self.IsRunning_;
         end
 
-%         function result=get.CommandUnitsPerElectrode(self)
-%             testPulser = self ;
-%             ephys=testPulser.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             commandChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             result = cell(1,n) ;
-%             for i=1:n ,
-%                 unit=wavesurferModel.aoChannelUnitsFromName(commandChannelNames{i});
-%                 result{i} = unit ;
-%             end
-%         end  % function
-%         
-%         function result=get.MonitorUnitsPerElectrode(self)        
-%             testPulser = self ;
-%             ephys=testPulser.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             monitorChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             result = cell(1,n) ;
-%             for i=1:n ,
-%                 unit = wavesurferModel.aiChannelUnitsFromName(monitorChannelNames{i}) ;
-%                 result{i} = unit ;
-%             end
-%         end  % function
-        
-%         function result=get.IsVCPerElectrode(self) 
-%             % Returns a logical row array indicated whether each trode is
-%             % in VC mode.  Note that to be in VC mode, from the Test
-%             % Pulser's point of view, is a different matter from being in
-%             % VC mode from the Electrode Manager's point of view.  The EM
-%             % mode just determines which channels get used as command and
-%             % monitor for the electrode.  The TP only considers an
-%             % electrode to be in VC if the command units are commensurable
-%             % (summable) with Volts, and the monitor units are
-%             % commensurable with Amps.
-%             commandUnitsPerElectrode=self.CommandUnitsPerElectrode;
-%             monitorUnitsPerElectrode=self.MonitorUnitsPerElectrode;
-%             n=length(commandUnitsPerElectrode);
-%             result=false(1,n);
-%             for i=1:n ,
-%                 commandUnits = commandUnitsPerElectrode{i} ;
-%                 monitorUnits = monitorUnitsPerElectrode{i} ;
-%                 areCommandUnitsCommensurateWithVolts = ~isempty(commandUnits) && isequal(commandUnits(end),'V') ;
-%                 if areCommandUnitsCommensurateWithVolts ,
-%                     areMonitorUnitsCommensurateWithAmps = ~isempty(monitorUnits) && isequal(monitorUnits(end),'A') ;
-%                     result(i) = areMonitorUnitsCommensurateWithAmps ;
-%                 else
-%                     result(i) = false ;
-%                 end
-%             end
-%         end  % function
-% 
-%         function result=get.IsCCPerElectrode(self) 
-%             % Returns a logical row array indicated whether each trode is
-%             % in CC mode.  Note that to be in CC mode, from the Test
-%             % Pulser's point of view, is a different matter from being in
-%             % VC mode from the Electrode Manager's point of view.  The EM
-%             % mode just determines which channels get used as command and
-%             % monitor for the electrode.  The TP only considers an
-%             % electrode to be in CC if the command units are commensurable
-%             % (summable) with amps, and the monitor units are
-%             % commensurable with volts.
-%             commandUnitsPerElectrode=self.CommandUnitsPerElectrode;
-%             monitorUnitsPerElectrode=self.MonitorUnitsPerElectrode;
-%             n=length(commandUnitsPerElectrode);
-%             result=false(1,n);
-%             for i=1:n ,
-%                 commandUnits = commandUnitsPerElectrode(i) ;
-%                 monitorUnits = monitorUnitsPerElectrode(i) ;
-%                 areCommandUnitsCommensurateWithAmps = ~isempty(commandUnits) && isequal(commandUnits(end),'A') ;
-%                 if areCommandUnitsCommensurateWithAmps ,
-%                     areMonitorUnitsCommensurateWithVolts = ~isempty(monitorUnits) && isequal(monitorUnits(end),'V') ;
-%                     result(i) = areMonitorUnitsCommensurateWithVolts ;
-%                 else
-%                     result(i) = false ;
-%                 end                
-%             end
-%         end  % function
-
         function result = getGainOrResistanceUnitsPerTestPulseElectrodeCached_(self)
             result = self.GainOrResistanceUnitsPerElectrodeCached_ ;
         end        
 
-%         function result = getGainOrResistanceUnitsPerElectrode_(self)
-%             if self.IsRunning_ ,
-%                 result = self.GainOrResistanceUnitsPerElectrodeCached_ ;
-%             else
-%                 resultIfCC = ws.divideUnits(self.MonitorUnitsPerElectrode,self.CommandUnitsPerElectrode);
-%                 resultIfVC = ws.divideUnits(self.CommandUnitsPerElectrode,self.MonitorUnitsPerElectrode);
-%                 isVCPerElectrode = self.IsVCPerElectrode ;
-%                 result = ws.fif(isVCPerElectrode, resultIfVC, resultIfCC) ;
-%             end
-%         end
-        
         function result = getGainOrResistancePerElectrode(self)
             result = self.GainOrResistancePerElectrode_ ;
         end
@@ -356,70 +183,6 @@ classdef TestPulser < ws.Model
         function value = getUpdateRate_(self)
             value = self.UpdateRate_ ;
         end
-        
-%         function result=get.CommandTerminalIDPerElectrode(self)
-%             ephys=self.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             commandChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             stimulationSubsystem=wavesurferModel.Stimulation;
-%             result=zeros(1,n);
-%             for i=1:n ,
-%                 thisCommandChannelName = commandChannelNames{i} ;
-%                 thisTerminalID = stimulationSubsystem.analogTerminalIDFromName(thisCommandChannelName) ;
-%                 result(i) = thisTerminalID ;
-%             end
-%         end
-%         
-%         function result=get.MonitorTerminalIDPerElectrode(self)
-%             ephys=self.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             monitorChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             acquisition=wavesurferModel.Acquisition;
-%             result=zeros(1,n);
-%             for i=1:n ,
-%                 result(i)=acquisition.analogTerminalIDFromName(monitorChannelNames{i});
-%             end
-%         end
-        
-%         function result=get.CommandChannelScalePerElectrode(self)
-%             ephys=self.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             commandChannelNames=cellfun(@(electrode)(electrode.CommandChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             result=zeros(1,n);
-%             for i=1:n ,
-%                 result(i)=wavesurferModel.aoChannelScaleFromName(commandChannelNames{i});
-%             end
-%         end
-%         
-%         function result=get.MonitorChannelScalePerElectrode(self)
-%             ephys=self.Parent_;
-%             electrodeManager=ephys.ElectrodeManager;
-%             testPulseElectrodes=electrodeManager.TestPulseElectrodes;
-%             monitorChannelNames=cellfun(@(electrode)(electrode.MonitorChannelName), ...
-%                                         testPulseElectrodes, ...
-%                                         'UniformOutput',false);
-%             n=length(testPulseElectrodes);           
-%             wavesurferModel=ephys.Parent;
-%             result=zeros(1,n);
-%             for i=1:n ,
-%                 result(i)=wavesurferModel.aiChannelScaleFromName(monitorChannelNames{i});
-%             end
-%         end
         
         function yLimits = automaticYLimits(self)
             % Trys to determine the automatic y limits from the monitor
@@ -505,24 +268,6 @@ classdef TestPulser < ws.Model
             
             %self.broadcast('Update') ;
         end  % function
-        
-%         function electrodeMayHaveChanged(self,electrode,propertyName) %#ok<INUSD>
-%             % Called by the parent Ephys to notify the TestPulser of a
-%             % change.
-% %             if (self.Electrode == electrode) ,  % pointer comparison, essentially
-% %                 self.Electrode=electrode;  % call the setter to change everything that should change
-% %             end
-%             self.broadcast('Update') ;
-%         end  % function
-        
-%         function settingElectrodeIndex_(self, electrodeCount)
-%             % Redimension MonitorPerElectrode_ appropriately, etc.
-%             %self.NElectrodes_ = nTestPulseElectrodes ;
-%             self.clearExistingSweepIfPresent_()
-%             
-%             % Change the electrode if needed
-%             self.setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(electrodeCount);
-%         end  % function
         
         function prepareForStart(self, ...
                                  amplitudePerTestPulseElectrode, ...
@@ -895,69 +640,14 @@ classdef TestPulser < ws.Model
                     end
                 end
             end
-        end  % function
-        
-        function synchronizeTransientStateToPersistedState_(self)
-            self.clearExistingSweepIfPresent_() ;  % mainly to dimension self.GainPerElectrode_ and self.GainOrResistancePerElectrode_ properly
         end  % function        
-        
-        
-%         function autosetYLimits_(self)
-%             % Syncs the Y limits to the monitor signal, if self is in the
-%             % right mode and the monitor signal is well-behaved.
-%             if self.IsYAuto_ ,
-%                 automaticYLimits=self.automaticYLimits();
-%                 if ~isempty(automaticYLimits) ,
-%                     self.YLimits_=automaticYLimits;
-%                 end
-%             end
-%         end
-
-%         function setCurrentTPElectrodeToFirstTPElectrodeIfInvalidOrEmpty_(self, electrodeCount)
-%             % Checks that the ElectrodeIndex_ is still a valid choice.  If not,
-%             % tries to find another one.  If that also fails, sets
-%             % ElectrodeIndex_ to empty.  Also, if ElectrodeIndex_ is empty but there
-%             % is at least one test pulse electrode, makes ElectrodeIndex_ point
-%             % to the first test pulse electrode.
-%             if ~isscalar(electrodeCount) || ~isa(electrodeCount, 'double') ,
-%                 error('Bad!!!') ;
-%             end
-%             isElectrodeEligibleForTestPulseAfter = true(1, electrodeCount) ;
-%             if ~any(isElectrodeEligibleForTestPulseAfter) ,
-%                 % If there are no electrodes marked for test pulsing, set
-%                 % self.ElectrodeIndex_ to empty.
-%                 %self.ElectrodeIndex_ = [] ;
-%                 self.setElectrodeIndex([]) ;
-%             else
-%                 % If get here, there is at least one electrode eligible for test pulsing
-%                 if isempty(self.ElectrodeIndex_) ,
-%                     % If no current TP electrode, set the current TP electrode to the first
-%                     % electrode marked for TPing.
-%                     %self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;
-%                     self.setElectrodeIndex(find(isElectrodeEligibleForTestPulseAfter,1)) ;
-%                       % no current electrode, but list of TP electrodes is nonempty, so make the first one current.
-%                 else
-%                     % If we get here, self.ElectrodeIndex is a scalar, and there is at least
-%                     % one electrode eligible for TPing. So we make sure that the
-%                     % self.ElectrodeIndex points to an electrode eligible for TPing.
-%                     isSupposedCurrentTestPulseElectrodeEligibleForTestPulsing = ...
-%                         self.ElectrodeIndex_ <= length(isElectrodeEligibleForTestPulseAfter) && ...
-%                         isElectrodeEligibleForTestPulseAfter(self.ElectrodeIndex_) ;
-%                     if isSupposedCurrentTestPulseElectrodeEligibleForTestPulsing ,
-%                         % Nothing to do here---self.ElectrodeIndex 
-%                         % points to an electrode eligible for test pulsing.
-%                     else
-%                         % If get here, self.ElectrodeIndex does not point to an electrode eligible
-%                         % for TPing.
-%                         % In this case, the first TP electrode the current one.
-%                         %self.ElectrodeIndex_ = find(isElectrodeEligibleForTestPulseAfter,1) ;  
-%                         self.setElectrodeIndex(find(isElectrodeEligibleForTestPulseAfter,1)) ;
-%                     end
-%                 end
-%             end 
-%         end  % function
-        
     end  % protected methods block
+    
+    methods
+        function result = getMonitorPerElectrode_(self)
+            result = self.MonitorPerElectrode_ ;
+        end
+    end
     
     % These next two methods allow access to private and protected variables from ws.Encodable. 
     methods 
@@ -970,31 +660,14 @@ classdef TestPulser < ws.Model
         end  % function
     end
     
-%     methods (Access=protected)
-%         % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
-%         % after.
-%         function decodeUnwrappedEncodingCore_(self, encoding)
-%             decodeUnwrappedEncodingCore_@ws.Encodable(self, encoding) ;
-%             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
-%         end  % function
-%     end
-    
-    methods
-%         function settingPrimaryDeviceName(self, deviceName)
-%             %fprintf('ws.Triggering::didSetDevice() called\n') ;
-%             %dbstack
-%             self.DeviceName_ = deviceName ;
-%         end        
-        
-        function result = getMonitorPerElectrode_(self)
-            result = self.MonitorPerElectrode_ ;
-        end
-    end
-    
     methods
         function mimic(self, other)
             ws.mimicBang(self, other) ;
         end
+        
+        function synchronizeTransientStateToPersistedState_(self)
+            self.clearExistingSweepIfPresent_() ;  % mainly to dimension self.GainPerElectrode_ and self.GainOrResistancePerElectrode_ properly
+        end  % function                
     end    
     
 end  % classdef
