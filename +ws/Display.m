@@ -890,23 +890,18 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %     end  % protected methods block
     
     methods (Access=protected)    
-        function setIsEnabledImplementation_(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
-                self.IsEnabled_ = logical(newValue) ;
-%                 if ~self.IsEnabled_ ,
-%                     %self.clearData_() ;  % if we just disabled Display, clear the data
-%                     self.broadcast('ClearData') ;
-%                 end
-                didSucceed = true ;
-            else
-                didSucceed = false ;
-            end
-            %self.broadcast('Update') ;
-            if ~didSucceed ,
-                error('ws:invalidPropertyValue', ...
-                      'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
-            end
-        end
+%         function setIsEnabledImplementation_(self, newValue)
+%             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+%                 self.IsEnabled_ = logical(newValue) ;
+%                 didSucceed = true ;
+%             else
+%                 didSucceed = false ;
+%             end
+%             if ~didSucceed ,
+%                 error('ws:invalidPropertyValue', ...
+%                       'IsEnabled must be a scalar, and must be logical, 0, or 1') ;
+%             end
+%         end
         
         function updateMappingsFromPlotIndices_(self)
             isAnalogChannelDisplayed = self.IsAnalogChannelDisplayed_ ;

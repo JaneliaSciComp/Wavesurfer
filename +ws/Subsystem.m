@@ -18,7 +18,7 @@ classdef (Abstract) Subsystem < ws.Model
         end
                 
         function out = get.IsEnabled(self)
-            out = self.getIsEnabledImplementation();
+            out = self.getIsEnabledImplementation_();
             % out = self.IsIsEnabled_ && self.CanEnable;
         end
         
@@ -63,13 +63,13 @@ classdef (Abstract) Subsystem < ws.Model
 %         function dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) %#ok<INUSD>
 %         end
 
-        function mimicWavesurferModel_(self, other)
-            % This is only every called when self is a subsystem of a
-            % Looper or Refiller object, and other is the corresponding
-            % subsystem of a WavesurferModel object.  It is used to sync
-            % the satellite settings to the WavesurferModel settings.
-            self.mimic(other) ;
-        end
+%         function mimicWavesurferModel_(self, other)
+%             % This is only every called when self is a subsystem of a
+%             % Looper or Refiller object, and other is the corresponding
+%             % subsystem of a WavesurferModel object.  It is used to sync
+%             % the satellite settings to the WavesurferModel settings.
+%             self.mimic(other) ;
+%         end
 
 %         function do(self, methodName, varargin)
 %             % This is intended to be the usual way of calling model
@@ -116,7 +116,7 @@ classdef (Abstract) Subsystem < ws.Model
 %             self.setPropertyTags('Parent', 'ExcludeFromFileTypes', {'header'});
 %         end
         
-        function out = getIsEnabledImplementation(self)
+        function out = getIsEnabledImplementation_(self)
             out = self.IsEnabled_;
         end
         
