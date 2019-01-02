@@ -150,7 +150,7 @@ classdef BiasUserClass < ws.UserClass
         function configure(obj)
             disp('Calling BIAS config.');            
             for i=1:obj.bias_nCams
-                if exist(obj.bias_cfgFiles{i},'file');
+                if exist(obj.bias_cfgFiles{i},'file') ,
                     obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
                 end
             end
