@@ -545,7 +545,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end  % function
     end
     
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -559,6 +559,5 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
         end        
-    end  % protected methods
-    
+    end  % protected methods    
 end  % classdef

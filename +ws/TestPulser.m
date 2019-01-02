@@ -960,7 +960,7 @@ classdef TestPulser < ws.Model
     end  % protected methods block
     
     % These next two methods allow access to private and protected variables from ws.Encodable. 
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -970,14 +970,14 @@ classdef TestPulser < ws.Model
         end  % function
     end
     
-    methods (Access=protected)
-        % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
-        % after.
-        function decodeUnwrappedEncodingCore_(self, encoding)
-            decodeUnwrappedEncodingCore_@ws.Encodable(self, encoding) ;
-            self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
-        end  % function
-    end
+%     methods (Access=protected)
+%         % Have to override decodeUnwrappedEncodingCore_() to sync up transient properties
+%         % after.
+%         function decodeUnwrappedEncodingCore_(self, encoding)
+%             decodeUnwrappedEncodingCore_@ws.Encodable(self, encoding) ;
+%             self.clearExistingSweepIfPresent_();  % need to resync some transient properties to the "new" self
+%         end  % function
+%     end
     
     methods
 %         function settingPrimaryDeviceName(self, deviceName)
@@ -990,5 +990,11 @@ classdef TestPulser < ws.Model
             result = self.MonitorPerElectrode_ ;
         end
     end
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
     
 end  % classdef

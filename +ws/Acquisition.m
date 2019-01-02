@@ -265,7 +265,7 @@ classdef Acquisition < ws.Subsystem
         end        
     end  % public methods block
 
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -1001,7 +1001,7 @@ classdef Acquisition < ws.Subsystem
         end  % function        
     end  % public methods block
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -1058,4 +1058,10 @@ classdef Acquisition < ws.Subsystem
             self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
         end               
     end  % public methods block
+        
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
 end  % classdef

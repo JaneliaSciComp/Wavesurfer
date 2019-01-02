@@ -178,7 +178,7 @@ classdef CounterTrigger < ws.Model
         end  % function        
     end  % public methods
     
-    methods (Access=protected)        
+    methods       
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -194,4 +194,10 @@ classdef CounterTrigger < ws.Model
             result = ( isscalar(value) && isnumeric(value) && isreal(value) && value>0 && (round(value)==value || isinf(value)) ) ;
         end  % function
     end  % static methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end            
 end  % classdef

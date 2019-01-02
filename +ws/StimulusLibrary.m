@@ -124,15 +124,15 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
         function result = get.Sequences(self)
             % We don't want to expose our guts to clients, so make a copy
             % to return.
-            result = cellfun(@(item)(item.copy()), self.Sequences_, 'UniformOutput', false) ;
+            result = cellfun(@ws.copy, self.Sequences_, 'UniformOutput', false) ;
         end  % function
         
         function result = get.Maps(self)
-            result = cellfun(@(item)(item.copy()), self.Maps_, 'UniformOutput', false) ;
+            result = cellfun(@ws.copy, self.Maps_, 'UniformOutput', false) ;
         end  % function
         
         function result = get.Stimuli(self)
-            result = cellfun(@(item)(item.copy()), self.Stimuli_, 'UniformOutput', false) ;
+            result = cellfun(@ws.copy, self.Stimuli_, 'UniformOutput', false) ;
         end  % function
         
         function value = isEmpty(self)
@@ -349,14 +349,14 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % Want to handle this case, but there's not much to do here
             else
                 % Make a deep copy of the stimuli
-                self.Stimuli_ = cellfun(@(element)(element.copy()),other.Stimuli_,'UniformOutput',false);
+                self.Stimuli_ = cellfun(@ws.copy,other.Stimuli_,'UniformOutput',false);
                 % for i=1:length(self.Stimuli_) ,
                 %     self.Stimuli_{i}.Parent=self;  % make the Parent correct
                 % end
 
                 % Make a deep copy of the maps, which needs both the old & new
                 % stimuli to work properly
-                self.Maps_ = cellfun(@(element)(element.copy()),other.Maps_,'UniformOutput',false);            
+                self.Maps_ = cellfun(@ws.copy,other.Maps_,'UniformOutput',false);            
                 %for i=1:length(self.Maps_) ,
                 %    self.Maps_{i}.Parent=self;  % make the Parent correct
                 %end
@@ -364,7 +364,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 % Make a deep copy of the sequences, which needs both the old & new
                 % maps to work properly            
                 %self.Sequences_=other.Sequences_.copyGivenMaps(self.Maps_,other.Maps_);
-                self.Sequences_= cellfun(@(element)(element.copy()),other.Sequences_,'UniformOutput',false);                        
+                self.Sequences_= cellfun(@ws.copy,other.Sequences_,'UniformOutput',false);                        
                 %for i=1:length(self.Sequences_) ,
                 %    self.Sequences_{i}.Parent=self;  % make the Parent correct
                 %end
@@ -399,7 +399,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(item) ,
                 result = item ;
             else
-                result = item.copy() ;
+                result = ws.copy(item) ;
             end
         end  % function
 
@@ -519,7 +519,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(selectedItem) ,
                 result = selectedItem ;
             else
-                result = selectedItem.copy() ;
+                result = ws.copy(selectedItem) ;
             end
         end  % function
         
@@ -533,7 +533,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(item),
                 result = item ;
             else
-                result = item.copy() ;
+                result = ws.copy(item) ;
             end
         end  % function
         
@@ -546,7 +546,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(item),
                 result = item ;
             else
-                result = item.copy() ;
+                result = ws.copy(item) ;
             end
         end  % function
         
@@ -559,7 +559,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(item),
                 result = item ;
             else
-                result = item.copy() ;
+                result = ws.copy(item) ;
             end
         end  % function
         
@@ -825,13 +825,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             value=isequalHelper(self,other,'ws.StimulusLibrary');
         end  % function    
         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
-            % delete some property names 
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'SelectedItemClassName', 'SelectedItemIndexWithinClass', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex'}) ;
-        end  % function 
+%         function propNames = listPropertiesForHeader(self)
+%             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
+%             % delete some property names 
+%             % that don't need to go into the header file
+%             propNames=setdiff(propNamesRaw, ...
+%                               {'SelectedItemClassName', 'SelectedItemIndexWithinClass', 'SelectedStimulusIndex', 'SelectedMapIndex', 'SelectedSequenceIndex'}) ;
+%         end  % function 
     
         function bindingIndex = addBindingToSelectedItem(self)
             className = self.SelectedItemClassName_ ;
@@ -1336,7 +1336,7 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             if isempty(item) ,
                 result = item ;
             else
-                result = item.copy() ;
+                result = ws.copy(item) ;
             end
         end  % function                                
         
@@ -1653,6 +1653,15 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             binding2Index = self.addBindingToItem('ws.StimulusSequence', sequence2Index) ;
             self.setItemBindingProperty('ws.StimulusSequence', sequence2Index, binding2Index, 'IndexOfEachMapInLibrary', stimulusMap1Index) ;
         end  % function                
+        
+       function out = getPropertyValue_(self, name)
+           out = self.(name);
+       end  % function
+        
+       % Allows access to protected and protected variables from ws.Encodable.
+       function setPropertyValue_(self, name, value)
+           self.(name) = value;
+       end  % function
     end  % public methods block
     
     
@@ -2199,17 +2208,10 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                  'SelectedOutputableClassName' 'SelectedOutputableIndex'};
             value=isequalElementHelper(self,other,propertyNamesToCompare);
        end  % function       
-       
-       function out = getPropertyValue_(self, name)
-           out = self.(name);
-       end  % function
-        
-       % Allows access to protected and protected variables from ws.Encodable.
-       function setPropertyValue_(self, name, value)
-           self.(name) = value;
-       end  % function
+    end
     
-        function sanitizePersistedState_(self) 
+    methods
+       function sanitizePersistedState_(self) 
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
             % This is often useful to provide backwards compatibility
@@ -2296,7 +2298,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
                 end
             end
         end  % function
-        
+    end  % public methods block
+    
+    methods (Access=protected)    
         function [sequence, sequenceIndex] = addNewSequence_(self)
             %self.disableBroadcasts();
             sequence=ws.StimulusSequence();

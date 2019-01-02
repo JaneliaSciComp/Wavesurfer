@@ -206,7 +206,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end
     end  
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -234,5 +234,11 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
 %             self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
 %         end
     end  % protected methods block    
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
 end  % classdef
 

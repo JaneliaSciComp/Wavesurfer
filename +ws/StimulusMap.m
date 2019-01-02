@@ -376,7 +376,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end  % function
     end  % methods
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -387,7 +387,7 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end  % function
     end
     
-    methods (Access=protected)
+    methods
         function synchronizeTransientStateToPersistedState_(self)
             nBindings = length(self.ChannelName_) ;
             self.IsMarkedForDeletion_ = false(1, nBindings) ;
@@ -405,4 +405,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             self.Multiplier_ = ws.sanitizeRowVectorLength(self.Multiplier_, nBindings, 1) ;
         end
     end  % protected methods block    
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
 end

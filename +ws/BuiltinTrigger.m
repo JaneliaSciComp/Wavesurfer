@@ -120,7 +120,7 @@ classdef BuiltinTrigger < ws.Model
         end        
     end  % methods
     
-    methods (Access=protected)        
+    methods    
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -129,6 +129,12 @@ classdef BuiltinTrigger < ws.Model
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
+    end
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
     end
     
 %     properties (Hidden, SetAccess=protected)

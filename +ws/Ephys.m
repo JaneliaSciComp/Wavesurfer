@@ -137,17 +137,17 @@ classdef Ephys < ws.Subsystem
         end        
     end  % methods block
     
-    methods         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
-            % delete some property names that are defined in subclasses
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'TestPulser'}) ;
-        end  % function 
-    end  % public methods block    
+%     methods         
+%         function propNames = listPropertiesForHeader(self)
+%             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
+%             % delete some property names that are defined in subclasses
+%             % that don't need to go into the header file
+%             propNames=setdiff(propNamesRaw, ...
+%                               {'TestPulser'}) ;
+%         end  % function 
+%     end  % public methods block    
     
-    methods (Access = protected)
+    methods
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -187,7 +187,7 @@ classdef Ephys < ws.Subsystem
             %self.ElectrodeManager_.disableBroadcasts();
             %self.TestPulser_.disableBroadcasts();
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             % all the "configurable" props in this class hold scalar

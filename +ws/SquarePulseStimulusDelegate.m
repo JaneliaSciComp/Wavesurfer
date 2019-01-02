@@ -172,7 +172,7 @@ classdef SquarePulseStimulusDelegate < ws.StimulusDelegate
        end
     end
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -182,5 +182,19 @@ classdef SquarePulseStimulusDelegate < ws.StimulusDelegate
             self.(name) = value;
         end  % function
     end
+
+    methods
+        function sanitizePersistedState_(self) %#ok<MANU>
+        end
+        
+        function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
+        end
+    end  % protected methods block    
+
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
     
 end

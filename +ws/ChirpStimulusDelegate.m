@@ -236,7 +236,7 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
        end
     end
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -247,5 +247,10 @@ classdef ChirpStimulusDelegate < ws.StimulusDelegate
         end  % function
     end
     
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
 end
 

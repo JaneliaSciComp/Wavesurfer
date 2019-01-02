@@ -1,4 +1,4 @@
-classdef (Abstract) Model < ws.Encodable
+classdef (Abstract) Model < handle
     % A model is an Encodable with a zero-arg constructor, which implements
     % the get() and set() methods.
     %

@@ -224,7 +224,7 @@ classdef Triggering < ws.Subsystem
 %         end  % method        
     end  % protected method block    
 
-    methods (Access = protected)
+    methods 
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -303,7 +303,7 @@ classdef Triggering < ws.Subsystem
             if isempty(trigger) ,
                 result = [] ;
             else
-                result = trigger.copy() ;
+                result = ws.copy(trigger) ;
             end
         end
         
@@ -682,7 +682,7 @@ classdef Triggering < ws.Subsystem
             %self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -693,7 +693,7 @@ classdef Triggering < ws.Subsystem
                     target.mimic(source) ;
                 elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Encodable.copyCellArrayOfHandles(source) ;
+                    target = ws.copyCellArrayOfHandles(source) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,
@@ -709,12 +709,6 @@ classdef Triggering < ws.Subsystem
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
-
-            % Re-enable broadcasts
-            %self.enableBroadcastsMaybe();
-            
-            % Broadcast update
-            % self.broadcast('Update');            
         end  % function
         
         function settingPrimaryDeviceName(self, deviceName, nCounters, nPFITerminals)
@@ -733,7 +727,7 @@ classdef Triggering < ws.Subsystem
         end        
     end  % public methods block
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -759,6 +753,10 @@ classdef Triggering < ws.Subsystem
                 self.NewAcquisitionTriggerSchemeIndex_  = 1 ;  % This means the built-in trigger
             end
         end  % function
+        
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
+        end
+        
     end  % protected methods block
     
     methods

@@ -581,7 +581,7 @@ classdef Logging < ws.Subsystem
         end  % function        
     end  % public methods block
     
-    methods (Access=protected)        
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function

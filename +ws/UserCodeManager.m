@@ -206,7 +206,7 @@ classdef UserCodeManager < ws.Subsystem
             %self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -280,7 +280,7 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
     end    
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function

@@ -728,7 +728,7 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         end
 %     end
     
-    methods (Access = protected)
+    methods
         function result = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -793,5 +793,4 @@ classdef Electrode < ws.Model % & ws.Mimic
             feval(methodName, self, newValue) ;
         end
     end
-
 end  % classdef

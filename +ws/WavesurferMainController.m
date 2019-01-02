@@ -2088,7 +2088,7 @@ classdef WavesurferMainController < ws.Controller
 %         end  % function
     end  % protected methods
     
-    methods (Access = protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  

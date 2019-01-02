@@ -27,16 +27,15 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
         y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  % abstract        
     end
     
-    methods         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
-            % delete some property names that are defined in subclasses
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
-        end  % function        
-        
-    end  % public methods block        
+%     methods         
+%         function propNames = listPropertiesForHeader(self)
+%             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
+%             % delete some property names that are defined in subclasses
+%             % that don't need to go into the header file
+%             propNames=setdiff(propNamesRaw, ...
+%                               {'AdditionalParameterNames', 'AdditionalParameterDisplayNames', 'AdditionalParameterDisplayUnitses'}) ;
+%         end  % function                
+%     end  % public methods block        
 
     %
     % Implementations of methods needed to be a ws.ValueComparable
@@ -57,7 +56,7 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
        end
     end
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function

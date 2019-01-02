@@ -1506,7 +1506,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             try
                 logging = self.Logging_ ;
                 if logging.IsEnabled ,
-                    headerStruct = self.encodeForHeader() ;
+                    headerStruct = ws.encodeForHeader(self) ;
                     logging.startingRun(self.NextRunAbsoluteFileName, self.IsAIChannelActive, self.ExpectedSweepScanCount, ...
                                         self.AcquisitionSampleRate, self.AreSweepsFiniteDuration, headerStruct);
                 end
@@ -2282,7 +2282,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
     end % protected methods block
         
-    methods (Access = protected)
+    methods 
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name) ;
@@ -2529,7 +2529,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             saveStruct = load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Encodable.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
@@ -2582,7 +2582,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
-            wavesurferModelSettings=self.encodeForPersistence();
+            wavesurferModelSettings = ws.encodeForPersistence(self) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -2641,7 +2641,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             saveStruct=load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Encodable.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicUserSettings_(newModel) ;
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
@@ -2664,7 +2664,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end                        
-            userSettings=self.encodeForPersistence() ;
+            userSettings = ws.encodeForPersistence(self) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
@@ -3016,7 +3016,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -3037,19 +3037,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             
             % Broadcast update
             self.broadcast('Update');
-        end  % function
-        
-        function propNames = listPropertiesForCheckingIndependence(self)
-            % Define a helper function
-            propNamesRaw = listPropertiesForCheckingIndependence@ws.Encodable(self) ;
-            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
-        end
-        
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
-            propNames=setdiff(propNamesRaw, ...
-                              {'IsReady'}) ;
-        end  % function                 
+        end  % function        
     end  % public methods block
 
     methods (Access=protected)
@@ -3148,7 +3136,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.releaseTimedHardwareResources_() ;
 
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Don't want to do broadcasts while we're in a
             % possibly-inconsistent state
@@ -3246,7 +3234,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end  % function
     end  % protected methods block
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -3263,7 +3251,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.Encodable.copyCellArrayOfHandles(source) ;
+            self.FastProtocols_ = ws.copyCellArrayOfHandles(source) ;
         end  % function        
     end  % protected methods block
     
@@ -6742,15 +6730,15 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             value=(self.DegreeOfReadiness_>0);
         end               
         
-        function encoding = encodeForHeader(self)
-            % Get the default header encoding
-            encoding = encodeForHeader@ws.Encodable(self) ;            
-            
-            % Add custom field
-            thisPropertyValue = self.getStimulusLibraryCopy() ;
-            encodingOfPropertyValue = ws.Encodable.encodeAnythingForHeader(thisPropertyValue) ;
-            encoding.StimulusLibrary = encodingOfPropertyValue ;
-        end
+%         function encoding = encodeForHeader(self)
+%             % Get the default header encoding
+%             encoding = encodeForHeader@ws.Encodable(self) ;            
+%             
+%             % Add custom field
+%             thisPropertyValue = self.getStimulusLibraryCopy() ;
+%             encodingOfPropertyValue = ws.encodeAnythingForHeader(thisPropertyValue) ;
+%             encoding.StimulusLibrary = encodingOfPropertyValue ;
+%         end
         
         function result = get.ArePreferencesWritable(self)
             result = self.ArePreferencesWritable_ ;
@@ -7242,6 +7230,5 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function set.FastProtocolsFigurePosition(self, newValue)
             self.FastProtocolsFigurePosition_ = newValue ;
         end        
-        
-    end
+    end    
 end  % classdef

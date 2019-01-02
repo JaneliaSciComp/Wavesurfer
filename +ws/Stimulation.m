@@ -59,7 +59,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         
     end  % methods block
         
-    methods (Access = protected)
+    methods 
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -230,7 +230,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %         end
 
         function result = getStimulusLibraryCopy(self)
-            result = self.StimulusLibrary_.copy() ;
+            result = ws.copy(self.StimulusLibrary_) ;
         end
 
         function out = getSampleRate_(self)
@@ -544,7 +544,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -553,7 +553,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
                     target = self.(thisPropertyName) ;
                     if isempty(target) ,
-                        self.setPropertyValue_(thisPropertyName, source.copy()) ;
+                        self.setPropertyValue_(thisPropertyName, ws.copy(source)) ;
                     else
                         target.mimic(source);
                     end
@@ -590,7 +590,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end
     end
 
-    methods (Access=protected)
+    methods 
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -865,5 +865,5 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.DigitalDeviceNames_{i} = newValue ;
         end  % function                
     end  % public methods block
-    
+
 end  % classdef

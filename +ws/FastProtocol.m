@@ -52,7 +52,7 @@ classdef FastProtocol < ws.Model
         end
     end  % public methods
         
-    methods (Access=protected)
+    methods 
         function result = getPropertyValue_(self, propertyName)
             result = self.(propertyName) ;
         end  % function
@@ -63,4 +63,9 @@ classdef FastProtocol < ws.Model
         end  % function
     end
     
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
 end

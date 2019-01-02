@@ -125,7 +125,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end
         
         function output = get.Delegate(self)
-            output = self.Delegate_.copy() ;
+            output = ws.copy(self.Delegate_) ;
         end
         
         function result = get.AdditionalParameterNames(self)
@@ -248,7 +248,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             %self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();           
+            propertyNames = ws.listPropertiesForPersistence(self);           
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -370,7 +370,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end
     end
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
@@ -381,17 +381,17 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end  % function
     end
 
-    methods         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
-            % delete some property names that are defined in subclasses
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
-        end  % function 
-    end  % public methods block    
+%     methods         
+%         function propNames = listPropertiesForHeader(self)
+%             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
+%             % delete some property names that are defined in subclasses
+%             % that don't need to go into the header file
+%             propNames=setdiff(propNamesRaw, ...
+%                               {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
+%         end  % function 
+%     end  % public methods block    
     
-    methods (Access=protected)
+    methods 
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -413,8 +413,10 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             end
             self.LegacyDCOffset_ = [] ;
         end
-    end  % protected methods block    
-    
+        
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
+        end
+    end  % protected methods block        
 end
 
 

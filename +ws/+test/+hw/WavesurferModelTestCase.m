@@ -69,7 +69,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibraryCopy = wsModel.getStimulusLibraryCopy() ;
             
             % Save the protocol to disk
-            protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
+            protocolSettings = ws.encodeForPersistence(wsModel) ;  %#ok<NASGU>
             fileName = [tempname() '.mat'] ;
             save(fileName, 'protocolSettings') ;
 
@@ -80,7 +80,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s = load(fileName) ;
             protocolSettingsCheck = s.protocolSettings ;
             %wsModel.decodeProperties(protocolSettingsCheck);
-            wsModel = ws.Encodable.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old wsModel object
+            wsModel = ws.decodeEncodingContainer(protocolSettingsCheck) ;  % this should release the old wsModel object
 
             % compare the stim library in model to the copy of the
             % populated version
@@ -119,7 +119,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;
             
             % Get the thing we'll save to disk
-            protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
+            protocolSettings = ws.encodeForPersistence(wsModel) ;  %#ok<NASGU>
 
             % Check that the stimulusLibrary in protocolSettings is self-consistent
             self.verifyTrue(true);
@@ -158,7 +158,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Save the protocol to disk
             %protocolSettings=wsModel.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=wsModel.encodeForPersistence();  %#ok<NASGU>
+            protocolSettings=ws.encodeForPersistence(wsModel);  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
 
@@ -169,7 +169,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsAsRead=s.protocolSettings;
             %wsModel2.decodeProperties(protocolSettingsCheck);
-            wsModelAsDecoded = ws.Encodable.decodeEncodingContainer(protocolSettingsAsRead) ;
+            wsModelAsDecoded = ws.decodeEncodingContainer(protocolSettingsAsRead) ;
 
             % Check the self-consistency of the stim library
             self.verifyTrue(wsModelAsDecoded.isStimulusLibrarySelfConsistent());
@@ -209,7 +209,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             
             % Save the protocol to disk
             %protocolSettings=wsModel.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings = wsModel.encodeForPersistence() ;  %#ok<NASGU>
+            protocolSettings = ws.encodeForPersistence(wsModel) ;  %#ok<NASGU>
             fileName = [tempname() '.mat'] ;
             save(fileName, 'protocolSettings') ;
 
@@ -220,7 +220,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s=load(fileName);
             protocolSettingsCheck=s.protocolSettings;
             %wsModel.decodeProperties(protocolSettingsCheck);
-            wsModel = ws.Encodable.decodeEncodingContainer(protocolSettingsCheck) ;
+            wsModel = ws.decodeEncodingContainer(protocolSettingsCheck) ;
 
             % All map durations should be not free, again
             %isDurationOverridden= ~[wsModel.Stimulation.StimulusLibrary.Maps.IsDurationFree];
@@ -270,7 +270,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % Save the protocol to disk, very similar to how
             % WavesurferController does it
             %protocolSettings=wsModel.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=wsModel.encodeForPersistence();  %#ok<NASGU>
+            protocolSettings=ws.encodeForPersistence(wsModel);  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
             
@@ -296,7 +296,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             protocolSettingsCheck=s.protocolSettings;
             %wsModelCheck.releaseHardwareResources();
             %wsModelCheck.decodeProperties(protocolSettingsCheck);
-            wsModelCheck = ws.Encodable.decodeEncodingContainer(protocolSettingsCheck) ; 
+            wsModelCheck = ws.decodeEncodingContainer(protocolSettingsCheck) ; 
             
             % Check that all settings are as set
             for i=1:nSettings ,
@@ -358,7 +358,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             % Save the protocol to disk, very similar to how
             % WavesurferController does it
             %protocolSettings=wsModel.encodeConfigurablePropertiesForFileType('cfg');  %#ok<NASGU>
-            protocolSettings=wsModel.encodeForPersistence();  %#ok<NASGU>
+            protocolSettings=ws.encodeForPersistence(wsModel);  %#ok<NASGU>
             fileName=[tempname() '.mat'];
             save(fileName,'protocolSettings');
             
@@ -380,7 +380,7 @@ classdef WavesurferModelTestCase < ws.test.StimulusLibraryTestCase
             s = load(fileName) ;
             protocolSettingsCheck = s.protocolSettings ;
             %emCheck.decodeProperties(protocolSettingsCheck);
-            emCheck = ws.Encodable.decodeEncodingContainer(protocolSettingsCheck) ;
+            emCheck = ws.decodeEncodingContainer(protocolSettingsCheck) ;
             
             % Check that all settings are as set
             %electrode=emCheck.Ephys.ElectrodeManager.Electrodes{1};             %#ok<NASGU>

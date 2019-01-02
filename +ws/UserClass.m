@@ -1,4 +1,4 @@
-classdef UserClass < ws.Encodable
+classdef UserClass < handle
     % The superclass from which user classes should inherit.  Contains methods
     % that get called at various points, including during a run.  The user
     % class gets instantiated in *each* of the three main processes of WS: the
@@ -15,8 +15,7 @@ classdef UserClass < ws.Encodable
     %
     % Any non-transient, non-dependent properties of the user object are saved
     % to the protocol file, and are also serialized and sent to the refiller
-    % and loooper at the start of each run.  
-    
+    % and loooper at the start of each run.      
 
     methods (Abstract=true)
         wake(self, rootModel)
@@ -45,13 +44,4 @@ classdef UserClass < ws.Encodable
         stoppingEpisode(self, refiller)      
         abortingEpisode(self, refiller)        
     end  % methods
-
-%     methods 
-%         function other = copy(self)
-%             className = class(self) ;
-%             other = feval(className) ;
-%             other.mimic(self) ;            
-%         end  % function                
-%     end
-    
 end  % classdef

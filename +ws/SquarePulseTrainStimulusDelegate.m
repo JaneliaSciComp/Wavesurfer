@@ -219,7 +219,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
        end
     end
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function

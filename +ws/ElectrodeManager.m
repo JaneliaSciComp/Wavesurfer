@@ -1050,7 +1050,7 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
 %         end  % function
 %     end  % protected methods block
     
-    methods (Access = protected)
+    methods
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
@@ -1060,7 +1060,9 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end
-        
+    end
+    
+    methods (Access=protected)
         function setElectrodeName_(self, electrodeIndex, newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,  
                 electrodeNames = cellfun(@(electrode)(electrode.Name), ...
@@ -1317,7 +1319,6 @@ classdef ElectrodeManager < ws.Model % & ws.Mimic  % & ws.EventBroadcaster (was 
                 voltageCommandScalings = [] ;                
                 isCommandEnabled = [] ;                
             end
-        end  % function
-        
-    end        
+        end  % function        
+    end            
 end  % classdef

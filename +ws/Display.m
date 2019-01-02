@@ -804,7 +804,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
 %         end  % function        
 %     end  % protected methods block
     
-    methods (Access = protected)        
+    methods      
         % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)            
             out = self.(name);
@@ -845,7 +845,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end                
     end
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self) %#ok<MANU>
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -1036,7 +1036,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         end  % function
     end  % static methods block
 
-    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end       
     
 %     methods (Static=true)
 %         function tag=tagFromString(str)
