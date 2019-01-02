@@ -1,5 +1,5 @@
-# just don't muck around with line endings
-* text=false
+# Hopefully do the right thing with line endings
+* text=auto
 
 # git automatically normalizes all end of lines in the repository to LF (linefeed)
 # git has a built in algorithm to detect if a file is a text or binary file
