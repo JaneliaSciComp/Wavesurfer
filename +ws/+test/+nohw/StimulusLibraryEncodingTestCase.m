@@ -12,46 +12,45 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
 %             self.verifyTrue(all(sequenceIsLiveAndSelfConsistent));
         end
         
-        function testSavingOfTestPulseStimulus(self)
+        function testEncodingOfTestPulseStimulus(self)
             % create some stimuli, etc.
             stimulusLibrary=self.createPopulatedStimulusLibrary();
-            stimuli=stimulusLibrary.Stimuli;
+            stimuli=stimulusLibrary.Stimuli;  % This makes copies of all the stimuli
             stimulus=stimuli{2};  % a test pulse
 
             % make an orpan copy
             orphanStimulus = ws.copy(stimulus);
             
-            % save to disk
-            fileName=[tempname() '.mat'];
-            save(fileName,'orphanStimulus');
+            % encode
+            encodedOrphanStimulus = ws.encodeAnythingForPersistence(orphanStimulus) ;
+            %fileName=[tempname() '.mat'];
+            %save(fileName,'orphanStimulus');
             
-            % load back from disk
-            s=load(fileName);
-            stimulusCheck=s.orphanStimulus;
+            % decode
+            %s=load(fileName);
+            stimulusCheck = ws.decodeEncodingContainer(encodedOrphanStimulus) ;
             
             % check
             self.verifyEqual(orphanStimulus,stimulusCheck);  % test value equality
             self.verifyFalse(orphanStimulus==stimulusCheck);  % test (lack of) identity
         end  % function
         
-        function testSavingOfChirpStimulus(self)
+        function testEncodingOfChirpStimulus(self)
             % create some stimuli, etc.
             
-            stimulusLibrary=self.createPopulatedStimulusLibrary();
+            stimulusLibrary = self.createPopulatedStimulusLibrary() ;
             %stimuli=self.makeExampleStimulusParts();
-            stimulus=ws.copy(stimulusLibrary.Stimuli{1});  % this is a chirp
+            stimulus = ws.copy(stimulusLibrary.Stimuli{1}) ;  % this is a chirp
 
-            % save to disk
-            fileName=[tempname() '.mat'];
-            save(fileName,'stimulus');
+            % encode
+            encodedStimulus = ws.encodeAnythingForPersistence(stimulus) ;
             
-            % load back from disk
-            s=load(fileName);
-            stimulusCheck=s.stimulus;
+            % decode
+            stimulusCheck = ws.decodeEncodingContainer(encodedStimulus) ;
             
             % check
-            self.verifyEqual(stimulus,stimulusCheck);  % test value equality
-            self.verifyFalse(stimulus==stimulusCheck);  % test (lack of) identity
+            self.verifyEqual(stimulus, stimulusCheck) ;  % test value equality
+            self.verifyFalse(stimulus==stimulusCheck) ;  % test (lack of) identity
         end  % function
 
         function testCopyingOfStimulusDelegate(self)            
@@ -154,19 +153,12 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
 %             self.verifyFalse(channelBinding==channelBindingCheck);  % test (lack of) identity
 %         end  % function
                 
-        function testSavingOfStimulusMap(self)
+        function testEncodingOfStimulusMap(self)
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts(); %#ok<NASGU>
-            map=stimulusLibrary.Maps{2};
-            
-            fileName=[tempname() '.mat'];
-            save(fileName,'map');
-            
-            s=load(fileName);
-            mapCheck=s.map;
-            %mapCheck.revive(stimulusLibrary.Stimuli);
-            
-            %self.verifyTrue(mapCheck.isLiveAndSelfConsistent());  % test soundness of the restored one
+            map=stimulusLibrary.Maps{2};  % a copy            
+            encodedMap = ws.encodeAnythingForPersistence(map) ;            
+            mapCheck = ws.decodeEncodingContainer(encodedMap) ;
             self.verifyEqual(map,mapCheck);  % test value equality
             self.verifyTrue(all(map~=mapCheck));  % test (lack of) identity
         end  % function
@@ -175,12 +167,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts(); %#ok<NASGU>
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             maps=stimulusLibrary.Maps;
-            
-            fileName=[tempname() '.mat'];
-            save(fileName,'maps');
-            
-            s=load(fileName);
-            mapsCheck=s.maps;
+            encodedMaps = ws.encodeAnythingForPersistence(maps) ;
+            mapsCheck = ws.decodeEncodingContainer(encodedMaps) ;
             %cellfun(@(map)(map.revive(stimulusLibrary.Stimuli)),mapsCheck);
             %mapsCheck.revive(stimuli);
             
@@ -194,15 +182,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             %[stimuli,maps,sequences]=self.makeExampleStimulusParts(); %#ok<ASGLU>
             stimulusLibrary=self.createPopulatedStimulusLibrary();
             sequences=stimulusLibrary.Sequences;
-            
-            fileName=[tempname() '.mat'];
-            save(fileName,'sequences');
-            
-            s=load(fileName);
-            sequencesCheck=s.sequences;
-            %cellfun(@(seq)(seq.revive(stimulusLibrary.Maps)),sequencesCheck);
-            
-            %self.verifyTrue(all(cellfun(@isLiveAndSelfConsistent,sequencesCheck)));  % test soundness of the restored one
+            encoded = ws.encodeAnythingForPersistence(sequences) ;
+            sequencesCheck = ws.decodeEncodingContainer(encoded) ;
             self.verifyTrue(all(ws.cellisequal(sequences,sequencesCheck)));  % test value equality
             self.verifyTrue(all(ws.cellne(sequences,sequencesCheck)));  % test (lack of) identity
         end  % function
@@ -215,11 +196,8 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             stimulusLibrary.setSelectedOutputableByClassNameAndIndex('ws.StimulusSequence', 2) ;            
             self.verifyTrue(stimulusLibrary.isSelfConsistent()) ;
             
-            fileName=[tempname() '.mat'] ;
-            save(fileName,'stimulusLibrary') ;
-            
-            s = load(fileName) ;
-            stimulusLibraryCheck = s.stimulusLibrary ;
+            encodedStimulusLibrary = ws.encodeAnythingForPersistence(stimulusLibrary) ;
+            stimulusLibraryCheck = ws.decodeEncodingContainer(encodedStimulusLibrary) ;
             
             self.verifyTrue(stimulusLibraryCheck.isSelfConsistent());  % test soundness of the restored one            
             self.verifyEqual(stimulusLibrary.Stimuli,stimulusLibraryCheck.Stimuli);  % test value equality
