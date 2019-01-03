@@ -155,22 +155,22 @@ classdef SquarePulseStimulusDelegate < ws.StimulusDelegate
 %         end        
     end
     
-    %
-    % Implementations of methods needed to be a ws.ValueComparable
-    %
-    methods
-        function value=isequal(self,other)
-            % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.SquarePulseStimulusDelegate');
-        end                            
-    end
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            propertyNamesToCompare={'Delay' 'Duration' 'Amplitude' 'DCOffset'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end
-    end
+%     %
+%     % Implementations of methods needed to be a ws.ValueComparable
+%     %
+%     methods
+%         function value=isequal(self,other)
+%             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
+%             value=isequalHelper(self,other,'ws.SquarePulseStimulusDelegate');
+%         end                            
+%     end
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             propertyNamesToCompare={'Delay' 'Duration' 'Amplitude' 'DCOffset'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end
+%     end
     
     methods
         function out = getPropertyValue_(self, name)

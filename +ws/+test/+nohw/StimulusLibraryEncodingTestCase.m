@@ -59,7 +59,7 @@ classdef StimulusLibraryEncodingTestCase < ws.test.StimulusLibraryTestCase
             csd.InitialFrequency = '42' ;
             csd2 = ws.copy(csd) ;
             %csd2.InitialFrequency
-            shouldBeTrue = isequal(csd, csd2)
+            %shouldBeTrue = isequal(csd, csd2)
             self.verifyTrue(isequal(csd, csd2)) ;
         end  % function
         

@@ -1,4 +1,4 @@
-classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
+classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  % & ws.EventBroadcaster (was before ws.Mimic)
 
     % Note the all of these getters return *copies* of internal stimulus
     % library objects.  If you want to mutate the stimulus library, you
@@ -821,9 +821,9 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
 %             self.broadcast('Update') ;
 %         end
 
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusLibrary');
-        end  % function    
+%         function value=isequal(self,other)
+%             value=isequalHelper(self,other,'ws.StimulusLibrary');
+%         end  % function    
         
 %         function propNames = listPropertiesForHeader(self)
 %             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
@@ -2201,13 +2201,13 @@ classdef StimulusLibrary < ws.Model & ws.ValueComparable   % & ws.Mimic  % & ws.
             out = ws.StimulusLibrary.generateUntitledItemName('stimulus',names);
         end  % function
         
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare = ...
-                {'Stimuli' 'Maps' 'Sequences' 'SelectedItemClassName' 'SelectedSequenceIndex' 'SelectedMapIndex' 'SelectedStimulusIndex' ...
-                 'SelectedOutputableClassName' 'SelectedOutputableIndex'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end  % function       
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar StimulusMap's
+%             propertyNamesToCompare = ...
+%                 {'Stimuli' 'Maps' 'Sequences' 'SelectedItemClassName' 'SelectedSequenceIndex' 'SelectedMapIndex' 'SelectedStimulusIndex' ...
+%                  'SelectedOutputableClassName' 'SelectedOutputableIndex'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end  % function       
     end
     
     methods

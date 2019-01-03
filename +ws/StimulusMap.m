@@ -1,4 +1,4 @@
-classdef StimulusMap < ws.Model & ws.ValueComparable
+classdef StimulusMap < ws.Model     % & ws.ValueComparable
     
     properties (Dependent=true)
         Name
@@ -195,10 +195,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         function bindingIndex = addBinding(self)
             % Add a "binding" to the list of bindings
             bindingIndex = self.NBindings + 1 ;
-            self.ChannelName_{bindingIndex} = '' ;
-            self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;
-            self.Multiplier_(bindingIndex) = 1 ;
-            self.IsMarkedForDeletion_(bindingIndex) = false ;
+            self.ChannelName_{1,bindingIndex} = '' ;
+            self.IndexOfEachStimulusInLibrary_{1,bindingIndex} = [] ;
+            self.Multiplier_(1,bindingIndex) = 1 ;
+            self.IsMarkedForDeletion_(1,bindingIndex) = false ;
         end   % function
         
         function deleteBinding(self, index)
@@ -350,19 +350,19 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end  % function
     end  % public methods block
     
-    methods
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusMap');
-        end  % function    
-    end  % methods
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Duration' 'ChannelName' 'IndexOfEachStimulusInLibrary' 'Multiplier'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end  % function
-    end  % methods
+%     methods
+%         function value=isequal(self,other)
+%             value=isequalHelper(self,other,'ws.StimulusMap');
+%         end  % function    
+%     end  % methods
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar StimulusMap's
+%             propertyNamesToCompare={'Name' 'Duration' 'ChannelName' 'IndexOfEachStimulusInLibrary' 'Multiplier'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end  % function
+%     end  % methods
     
     methods
         function other = copy(self)

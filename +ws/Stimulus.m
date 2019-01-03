@@ -1,4 +1,4 @@
-classdef Stimulus < ws.Model & ws.ValueComparable
+classdef Stimulus < ws.Model  %& ws.ValueComparable
     %Stimulus Base class for stimulus classes.
     
     % This class has a copy() method, which creates a completely
@@ -220,27 +220,27 @@ classdef Stimulus < ws.Model & ws.ValueComparable
 %         end
 %     end
     
-    %
-    % Implementations of methods needed to be a ws.ValueComparable
-    %
-    methods
-        function value=isequal(self,other)
-            % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.Stimulus');
-        end                            
-    end
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar Stimulus's
-            % Can't use the built-in isequal b/c want to ignore UUIDs in this
-            % test
-            % Don't need to compare as StimLibraryItem's, b/c only property
-            % of that is UUID, which we want to ignore
-            propertyNamesToCompare={'Name' 'Delegate'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end
-    end
+%     %
+%     % Implementations of methods needed to be a ws.ValueComparable
+%     %
+%     methods
+%         function value=isequal(self,other)
+%             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
+%             value=isequalHelper(self,other,'ws.Stimulus');
+%         end                            
+%     end
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar Stimulus's
+%             % Can't use the built-in isequal b/c want to ignore UUIDs in this
+%             % test
+%             % Don't need to compare as StimLibraryItem's, b/c only property
+%             % of that is UUID, which we want to ignore
+%             propertyNamesToCompare={'Name' 'Delegate'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end
+%     end
     
     methods 
         function mimic(self, other)

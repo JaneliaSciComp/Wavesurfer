@@ -1,4 +1,4 @@
-classdef StimulusSequence < ws.Model & ws.ValueComparable
+classdef StimulusSequence < ws.Model      % & ws.ValueComparable
     % Represents a sequence of stimulus maps, to be used in sequence.
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
@@ -151,19 +151,19 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end  % function
     end  % methods
 
-    methods
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusSequence');
-        end  % function    
-    end  % methods
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'IndexOfEachMapInLibrary'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end  % function       
-    end  % methods
+%     methods
+%         function value=isequal(self,other)
+%             value=isequalHelper(self,other,'ws.StimulusSequence');
+%         end  % function    
+%     end  % methods
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar StimulusMap's
+%             propertyNamesToCompare={'Name' 'IndexOfEachMapInLibrary'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end  % function       
+%     end  % methods
     
     methods
         function other = copy(self)
