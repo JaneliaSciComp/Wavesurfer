@@ -1,4 +1,4 @@
-classdef UserCodeManager < ws.Subsystem
+classdef UserCodeManager < ws.Model
     
     properties (Dependent = true)
         %ClassName
@@ -25,8 +25,8 @@ classdef UserCodeManager < ws.Subsystem
     
     methods
         function self = UserCodeManager()
-            self@ws.Subsystem() ;
-            self.IsEnabled=true;            
+            %self@ws.Subsystem() ;
+            %self.IsEnabled=true;            
         end  % function
 
         function delete(self)

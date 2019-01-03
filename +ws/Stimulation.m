@@ -1,5 +1,13 @@
-classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
+classdef Stimulation < ws.Model
     % Stimulation subsystem
+    
+    properties (Dependent = true)
+        IsEnabled
+    end
+    
+    properties (Access = protected)
+        IsEnabled_ = false
+    end
     
     properties (Dependent = true)
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
@@ -46,7 +54,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
     
     methods
         function self = Stimulation()
-            self@ws.Subsystem() ;
+            %self@ws.Subsystem() ;
             self.StimulusLibrary_ = ws.StimulusLibrary();  % create a StimulusLibrary, which doesn't need to know its parent
         end
         
@@ -868,6 +876,16 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function set(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end           
+    end  % public methods block        
+    
+    methods
+        function result = get.IsEnabled(self)
+            result = self.IsEnabled_ ;
+        end
+        
+        function set.IsEnabled(self, value)
+            self.IsEnabled_ = value ;
+        end
     end  % public methods block        
     
 end  % classdef

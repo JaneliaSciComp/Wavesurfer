@@ -1,4 +1,4 @@
-classdef Acquisition < ws.Subsystem
+classdef Acquisition < ws.Model
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
         %DeviceNames  % the device ID of the NI board for each channel, a cell array of strings
@@ -77,8 +77,8 @@ classdef Acquisition < ws.Subsystem
     
     methods
         function self = Acquisition()
-            self@ws.Subsystem() ;
-            self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
+            %self@ws.Subsystem() ;
+            %self.IsEnabled = true;  % acquisition system is always enabled, even if there are no input channels            
         end
         
         function startingRun(self, areSweepsContinuous, areSweepsFiniteDuration, sweepDuration)  %#ok<INUSL>

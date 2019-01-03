@@ -1,5 +1,13 @@
-classdef Display < ws.Subsystem   %& ws.EventSubscriber
+classdef Display < ws.Model
     % Display manages the display and update of one or more Scope objects.
+    
+    properties (Dependent = true)
+        IsEnabled
+    end
+    
+    properties (Access = protected)
+        IsEnabled_ = true
+    end
     
     properties (Dependent = true)
         IsGridOn
@@ -65,7 +73,7 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
     
     methods
         function self = Display()
-            self@ws.Subsystem() ;
+            %self@ws.Subsystem() ;
             self.XOffset_ = 0 ;  % s
             self.XSpan_ = 1 ;  % s
             self.UpdateRate_ = 10 ;  % Hz
@@ -1048,6 +1056,16 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
         function set(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end           
+    end  % public methods block        
+    
+    methods
+        function result = get.IsEnabled(self)
+            result = self.IsEnabled_ ;
+        end
+        
+        function set.IsEnabled(self, value)
+            self.IsEnabled_ = value ;
+        end
     end  % public methods block        
     
 end

@@ -1,4 +1,4 @@
-classdef Ephys < ws.Subsystem
+classdef Ephys < ws.Model
     properties (Dependent=true)
         %TestPulseElectrodeCommandChannelName
         %TestPulseElectrodeMonitorChannelName
@@ -36,8 +36,8 @@ classdef Ephys < ws.Subsystem
     
     methods
         function self = Ephys()
-            self@ws.Subsystem() ;
-            self.IsEnabled=true;            
+            %self@ws.Subsystem() ;
+            %self.IsEnabled=true;            
             self.ElectrodeManager_ = ws.ElectrodeManager() ;    % no longer needs parent
             self.TestPulser_ = ws.TestPulser() ;  % no longer needs parent
             %self.TestPulser_.setNElectrodes_(self.ElectrodeManager_.TestPulseElectrodesCount) ;
@@ -90,21 +90,7 @@ classdef Ephys < ws.Subsystem
 %             isElectrodeMarkedForTestPulseAfter = self.ElectrodeManager_.getIsElectrodeMarkedForTestPulse_() ;
 %             self.TestPulser_.isElectrodeMarkedForTestPulseMayHaveChanged(isElectrodeMarkedForTestPulseAfter) ;
 %         end
-                
-        function startingRun(self)  %#ok<MANU>
-            % Update all the gains and modes that are associated with smart
-            % electrodes if checkbox is checked
-%             if self.ElectrodeManager_.DoTrodeUpdateBeforeRun
-%                 self.ElectrodeManager_.updateSmartElectrodeGainsAndModes() ;
-%             end
-        end
-        
-        function completingRun(self) %#ok<MANU>
-        end
-        
-        function abortingRun(self) %#ok<MANU>
-        end
-        
+                        
         function didSetAcquisitionSampleRate(self,newValue)
             self.TestPulser_.didSetAcquisitionSampleRate(newValue) ;
         end        

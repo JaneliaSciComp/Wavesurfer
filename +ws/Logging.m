@@ -1,5 +1,13 @@
-classdef Logging < ws.Subsystem
+classdef Logging < ws.Model
     % Logging  Subsystem that logs data to disk.
+    
+    properties (Dependent = true)
+        IsEnabled
+    end
+    
+    properties (Access = protected)
+        IsEnabled_ = false
+    end
     
     properties (Dependent=true)
         FileLocation  % absolute path of data file directory
@@ -55,7 +63,7 @@ classdef Logging < ws.Subsystem
 
     methods
         function self = Logging()
-            self@ws.Subsystem() ;
+            %self@ws.Subsystem() ;
             self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
@@ -287,10 +295,8 @@ classdef Logging < ws.Subsystem
         end
         
         function startingSweep(self)
-            %profile resume
             % No data written at the start of the sweep
             self.DidWriteSomeDataForThisSweep_ = false ;
-            %profile off
         end
         
         function completingSweep(self)
@@ -609,6 +615,16 @@ classdef Logging < ws.Subsystem
         function set(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end           
+    end  % public methods block        
+    
+    methods
+        function result = get.IsEnabled(self)
+            result = self.IsEnabled_ ;
+        end
+        
+        function set.IsEnabled(self, value)
+            self.IsEnabled_ = value ;
+        end
     end  % public methods block        
     
 end

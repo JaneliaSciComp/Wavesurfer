@@ -1,4 +1,4 @@
-classdef Triggering < ws.Subsystem 
+classdef Triggering < ws.Model
     % In the following, a "trigger" is same as a "trigger scheme".  There was
     % once a distinction, but no longer.
     
@@ -35,8 +35,8 @@ classdef Triggering < ws.Subsystem
         
     methods
         function self = Triggering()
-            self@ws.Subsystem() ;
-            self.IsEnabled = true ;
+            %self@ws.Subsystem() ;
+            %self.IsEnabled = true ;
             self.BuiltinTrigger_ = ws.BuiltinTrigger() ;  % triggers are now parentless
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
@@ -159,16 +159,7 @@ classdef Triggering < ws.Subsystem
                 self.StimulationCounterTask_.start() ;
             end
         end  % function
-        
-        function startingSweep(self) %#ok<MANU>
-        end  % function
-
-        function completingSweep(self) %#ok<MANU>
-        end  % function
-        
-        function abortingSweep(self) %#ok<MANU>
-        end  % function
-        
+                
         function completingRun(self)
             self.completingOrStoppingOrAbortingRun_() ;
         end  % function
