@@ -14,5 +14,5 @@ function installWavesurferForNow()
 
     repoRootFolderName=fileparts(pathToInstallWavesurferForNow);
     addpath(repoRootFolderName);
-    addpath(fullfile(repoRootFolderName,'matlab-zmq','lib'));
+    %addpath(fullfile(repoRootFolderName,'matlab-zmq','lib'));
 end
