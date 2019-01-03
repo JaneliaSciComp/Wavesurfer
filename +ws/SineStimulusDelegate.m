@@ -38,7 +38,7 @@ classdef SineStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = SineStimulusDelegate()
-            self=self@ws.StimulusDelegate();
+            %self=self@ws.StimulusDelegate();
         end
         
         function set.Delay(self, value)

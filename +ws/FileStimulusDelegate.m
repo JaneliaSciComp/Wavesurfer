@@ -38,7 +38,7 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = FileStimulusDelegate()
-            self=self@ws.StimulusDelegate();
+            %self=self@ws.StimulusDelegate();
         end  % function
         
         function set.Delay(self, value)

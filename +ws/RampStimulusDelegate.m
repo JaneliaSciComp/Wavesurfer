@@ -36,7 +36,7 @@ classdef RampStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = RampStimulusDelegate()
-            self=self@ws.StimulusDelegate();
+            %self=self@ws.StimulusDelegate();
         end
         
         function set.Delay(self, value)

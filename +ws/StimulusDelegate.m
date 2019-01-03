@@ -2,11 +2,8 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
     % Superclass class for a stimulus delegate, which implements a
     % particular kind of stimulus (pulse, since, chirp, etc) for a Stimulus object 
     
-    methods
-        function self = StimulusDelegate()
-        end
-
-        y = calculateCoreSignal(self, stimulus, t, sweepIndexWithinSet)  % abstract        
+    methods (Abstract=true)
+        data = calculateSignal(self, t, sweepIndexWithinSet)  
     end
     
     %
@@ -23,17 +20,5 @@ classdef (Abstract) StimulusDelegate < ws.Model & ws.ValueComparable
         function value=isequalElement(self,other) %#ok<INUSD>
            value=true;
        end
-    end
-    
-    methods 
-        function out = getPropertyValue_(self, name)
-            out = self.(name);
-        end  % function
-        
-        % Allows access to protected and protected variables from ws.Encodable.
-        function setPropertyValue_(self, name, value)
-            self.(name) = value;
-        end  % function
-    end
-    
+    end    
 end

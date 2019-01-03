@@ -38,7 +38,7 @@ classdef ExpressionStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = ExpressionStimulusDelegate()
-            self=self@ws.StimulusDelegate();
+            %self=self@ws.StimulusDelegate();
         end  % function
         
         function set.Delay(self, value)

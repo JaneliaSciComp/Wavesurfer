@@ -41,7 +41,7 @@ classdef SquarePulseLadderStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = SquarePulseLadderStimulusDelegate()
-            self = self@ws.StimulusDelegate() ;
+            %self = self@ws.StimulusDelegate() ;
         end
         
         function set.Delay(self, value)
