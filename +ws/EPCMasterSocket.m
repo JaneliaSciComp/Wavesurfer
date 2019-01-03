@@ -1211,4 +1211,28 @@ classdef EPCMasterSocket < handle
         end  % function                    
     end  % protected class methods
 
+    methods    
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end  % function
+        
+        % Allows access to protected and protected variables from ws.Encodable.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end  % function
+    end
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
 end  % classdef

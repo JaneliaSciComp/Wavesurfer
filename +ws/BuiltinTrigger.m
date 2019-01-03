@@ -137,25 +137,17 @@ classdef BuiltinTrigger < ws.Model
         end
     end
     
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
-    
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-% 
-%             s.Name=struct('Classes', 'char', ...
-%                           'Attributes', {{'vector'}}, ...
-%                           'AllowEmpty', false);
-%             s.DeviceName=struct('Classes', 'char', ...
-%                             'Attributes', {{'vector'}}, ...
-%                             'AllowEmpty', true);
-%             s.PFIID=struct('Classes', 'numeric', ...
-%                            'Attributes', {{'scalar', 'integer'}}, ...
-%                            'AllowEmpty', false);
-%         end  % function
-%     end  % class methods block
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
     
 end  % classdef

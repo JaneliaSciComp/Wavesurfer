@@ -788,9 +788,25 @@ classdef Electrode < ws.Model % & ws.Mimic
     methods
         function setProperty_(self, propertyName, newValue)            
             % This one is deisigned to be used for most setting needs.
-            % setPropertyValue_() is mostly just for use by ws.Encodable.
+            % setPropertyValue_() is mostly just for use when encoding.
+            % 2019-01: This is dumb.  Should just be using public setters
+            % and the set() method, before, for this stuff.
             methodName = horzcat('set', propertyName, '_') ;
             feval(methodName, self, newValue) ;
         end
     end
+        
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
 end  % classdef

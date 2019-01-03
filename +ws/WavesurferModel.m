@@ -7231,4 +7231,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.FastProtocolsFigurePosition_ = newValue ;
         end        
     end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
 end  % classdef

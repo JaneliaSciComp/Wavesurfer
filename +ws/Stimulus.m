@@ -417,6 +417,20 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
         end
     end  % protected methods block        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
 end
 
 
