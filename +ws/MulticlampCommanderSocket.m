@@ -48,7 +48,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end
         
         function self=close(self)
-            ws.dabs.axon.MulticlampTelegraph('stop');
+            ws.axon.MulticlampTelegraph('stop');
             self.ElectrodeIDs_ = zeros(0,1) ;
         end  % function
         
@@ -86,7 +86,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 %ws.dabs.axon.MulticlampTelegraph('requestElectrodeState',electrodeID)
                 %ws.sleep(0.05);  % Wait a bit for response (how short can we make this?)
                 %electrodeState=ws.dabs.axon.MulticlampTelegraph('collectElectrodeState',electrodeID);
-                electrodeState=ws.dabs.axon.MulticlampTelegraph('getElectrodeState',electrodeID);
+                electrodeState=ws.axon.MulticlampTelegraph('getElectrodeState',electrodeID);
                 if isempty(electrodeState) ,
                     errorId='MulticlampCommanderSocket:NoResponseToElectrodeStateRequest';
                     errorMessage=sprintf('No response to request for state of Axon electrode %d.',electrodeIndex);
@@ -259,7 +259,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     methods (Access=protected)
         function updateElectrodeList_(self)
             % Update the list of electrode IDs that we know about
-            electrodeIDs=ws.dabs.axon.MulticlampTelegraph('getAllElectrodeIDs');
+            electrodeIDs=ws.axon.MulticlampTelegraph('getAllElectrodeIDs');
             sortedElectrodeIDs=ws.MulticlampCommanderSocket.sortElectrodeIDs(electrodeIDs);
             self.ElectrodeIDs_ = sortedElectrodeIDs;  % want them ordered reliably
         end  % function        
