@@ -136,23 +136,23 @@ classdef WavesurferMainController < ws.Controller
            
             % Load in the needed icons from disk
             wavesurferDirName=fileparts(which('wavesurfer'));
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'up_arrow.png');
             self.NormalYScrollUpIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'down_arrow.png');
             self.NormalYScrollDownIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'y_tight_to_data.png');
             self.NormalYTightToDataIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_locked.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'y_tight_to_data_locked.png');
             self.NormalYTightToDataLockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_tight_to_data_unlocked.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'y_tight_to_data_unlocked.png');
             self.NormalYTightToDataUnlockedIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'y_manual_set.png');
             self.NormalYCaretIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png') ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'play.png') ;
             self.NormalPlayIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png') ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'record.png') ;
             self.NormalRecordIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png') ;
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'stop.png') ;
             self.NormalStopIcon_ = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             
             % Create the trace color sequence
@@ -392,19 +392,19 @@ classdef WavesurferMainController < ws.Controller
                    
             % "Toolbar" buttons
             wavesurferDirName=fileparts(which('wavesurfer'));
-            playIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'play.png'));
+            playIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'icons', 'play.png'));
             self.PlayButton = ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
                           'Style','pushbutton', ...
                           'TooltipString','Play', ...
                           'CData',playIcon);
-            recordIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'record.png'));
+            recordIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'icons', 'record.png'));
             self.RecordButton = ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
                           'Style','pushbutton', ...
                           'TooltipString','Record', ...
                           'CData',recordIcon);
-            stopIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'stop.png'));
+            stopIcon = ws.readPNGForToolbarIcon(fullfile(wavesurferDirName, '+ws', 'icons', 'stop.png'));
             self.StopButton = ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
                           'Style','pushbutton', ...

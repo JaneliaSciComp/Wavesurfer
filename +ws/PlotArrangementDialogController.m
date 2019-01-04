@@ -69,9 +69,9 @@ classdef PlotArrangementDialogController < ws.Controller
 
             % Load the icons from disk
             wavesurferDirName=fileparts(which('wavesurfer'));
-            upIconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            upIconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'up_arrow.png');
             upIcon = ws.readPNGWithTransparencyForUIControlImage(upIconFileName) ;            
-            downIconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            downIconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'down_arrow.png');
             downIcon = ws.readPNGWithTransparencyForUIControlImage(downIconFileName) ;            
             
             self.IsDisplayedRowTitle_ = ...

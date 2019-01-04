@@ -443,7 +443,7 @@ classdef TestPulserController < ws.Controller
                           'Callback',@(src,evt)(self.controlActuated('ZoomOutButton',src,evt)));
 
             wavesurferDirName=fileparts(which('wavesurfer'));
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'up_arrow.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'up_arrow.png');
             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollUpButton= ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
@@ -452,7 +452,7 @@ classdef TestPulserController < ws.Controller
                           'Callback',@(src,evt)(self.controlActuated('ScrollUpButton',src,evt)));
 %                           'String','^', ...
 
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'down_arrow.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'down_arrow.png');
             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.ScrollDownButton= ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
@@ -460,7 +460,7 @@ classdef TestPulserController < ws.Controller
                           'CData',cdata, ...
                           'Callback',@(src,evt)(self.controlActuated('ScrollDownButton',src,evt)));
             
-            iconFileName = fullfile(wavesurferDirName, '+ws', 'private', 'icons', 'y_manual_set.png');
+            iconFileName = fullfile(wavesurferDirName, '+ws', 'icons', 'y_manual_set.png');
             cdata = ws.readPNGWithTransparencyForUIControlImage(iconFileName) ;
             self.YLimitsButton= ...
                 ws.uicontrol('Parent',self.FigureGH_, ...
