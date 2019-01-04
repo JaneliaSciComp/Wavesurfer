@@ -59,7 +59,7 @@ classdef AITask < handle
             for deviceIndex = 1:deviceCount ,
                 deviceName = deviceNamePerDevice{deviceIndex} ;
                 dabsTaskName = sprintf('%s for %s', taskName, deviceName) ;
-                self.DabsDaqTasks_{deviceIndex} = ws.dabs.ni.daqmx.Task(dabsTaskName) ;
+                self.DabsDaqTasks_{deviceIndex} = DAQmxCreateTask(dabsTaskName) ;
             end
             
             % Create a tic id
@@ -88,22 +88,23 @@ classdef AITask < handle
                     for iChannel = 1:nChannelsThisDevice ,
                         terminalID = terminalIDs(iChannel) ;
                         dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                        dabsTask.createAIVoltageChan(deviceName, ...
-                                                     terminalID, ...
-                                                     [], ...
-                                                     -10, ...
-                                                     +10, ...
-                                                     'DAQmx_Val_Volts', ...
-                                                     [], ...
-                                                     'DAQmx_Val_Diff') ;
+                        DAQMxCreateAIVoltageChan(dabsTask, ...
+                                                 deviceName, ...
+                                                 terminalID, ...
+                                                 [], ...
+                                                 -10, ...
+                                                 +10, ...
+                                                 DAQmx_Val_Volts, ...
+                                                 [], ...
+                                                 DAQmx_Val_Diff) ;
                     end
                     [referenceClockSource, referenceClockRate] = ...
                         ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                    set(dabsTask, 'refClkSrc', referenceClockSource) ;
-                    set(dabsTask, 'refClkRate', referenceClockRate) ;
-                    dabsTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                    DAQmxSetRefClkSrc(dabsTask, referenceClockSource) ;
+                    DAQmxSetRefClkRate(dabsTask, referenceClockRate) ;
+                    DAQmxCfgSampClkTiming(dabsTask, sampleRate, 'DAQmx_Val_FiniteSamps');
                     try
-                        dabsTask.control('DAQmx_Val_Task_Verify');
+                        DAQmxTaskControl(dabsTask, 'DAQmx_Val_Task_Verify');
                     catch cause
                         rawException = MException('ws:daqmx:taskFailedVerification', ...
                                                   'There was a problem with the parameters of the input task, and it failed verification') ;
@@ -111,7 +112,7 @@ classdef AITask < handle
                         throw(exception) ;
                     end
                     try
-                        taskSampleClockRate = dabsTask.sampClkRate ;
+                        taskSampleClockRate = DAQmxGetSampClkRate(dabsTask) ;
                     catch cause
                         rawException = MException('ws:daqmx:errorGettingTaskSampleClockRate', ...
                                                   'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
@@ -125,7 +126,7 @@ classdef AITask < handle
 
                     % Get the scaling coefficients, store them in a per-channel way
                     channelIndices = channelIndicesPerDevice{deviceIndex} ;
-                    rawScalingCoefficients = dabsTask.getAIDevScalingCoeffs() ;   % nChannelsThisDevice x nCoefficients, low-order coeffs first
+                    rawScalingCoefficients =  DAQmxGetAIDevScalingCoeff(dabsTask) ;   % nChannelsThisDevice x nCoefficients, low-order coeffs first
                     scalingCoefficients = transpose(rawScalingCoefficients);  % nCoefficients x nChannelsThisDevice , low-order coeffs first
                     self.ScalingCoefficients_(:,channelIndices) = scalingCoefficients ;  % nCoefficients x nChannels , low-order coeffs first
                 end
@@ -136,9 +137,9 @@ classdef AITask < handle
             
             % Determine the clock timing
             if isinf(desiredSweepDuration) ,
-                clockTiming = 'DAQmx_Val_ContSamps' ;
+                clockTiming = DAQmx_Val_ContSamps ;
             else
-                clockTiming = 'DAQmx_Val_FiniteSamps' ;
+                clockTiming = DAQmx_Val_FiniteSamps ;
             end                
             
             % function setTrigger(self, keystoneTask, triggerDeviceName, triggerPFIID, triggerEdge)
@@ -187,7 +188,7 @@ classdef AITask < handle
                         dabsTask.disableStartTrig() ;
                     else
                         dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-                        dabsTask.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+                        DAQmxCfgDigEdgeStartTrig(dabsTask, triggerTerminalName, dabsTriggerEdge);
                     end
                 end
             end
@@ -218,7 +219,7 @@ classdef AITask < handle
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = deviceCount:-1:1 ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    dabsTask.start() ;
+                    DAQmxStartTask(dabsTask) ;
                 end
                 %self.DabsDaqTask_.start();
                 timeNow = toc(self.TicId_) ;
@@ -250,7 +251,7 @@ classdef AITask < handle
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    if ~dabsTask.isTaskDoneQuiet() ,
+                    if ~DAQmxIsTaskDone(dabsTask) ,
                         result = false ;
                         return
                     end                        
@@ -516,7 +517,7 @@ classdef AITask < handle
             deviceCount = length(dabsDaqTasks) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = dabsDaqTasks{deviceIndex} ;
-                scanCountAvailableForDevice = dabsTask.getReadAvailSampPerChan() ;
+                scanCountAvailableForDevice = DAQmxGetReadAvailSampPerChan(dabsTask) ;
                 result = max(result, scanCountAvailableForDevice) ;
             end            
         end
@@ -526,7 +527,7 @@ classdef AITask < handle
             deviceCount = length(dabsDaqTasks) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = dabsDaqTasks{deviceIndex} ;
-                dataForDevice = dabsTask.readAnalogData(scanCount, 'native') ;
+                dataForDevice = DAQmxReadAnalogDataI16(dabsTask, scanCount) ;
                 channelIndicesForDevice = channelIndicesPerDevice{deviceIndex} ;
                 data(:, channelIndicesForDevice) = dataForDevice ;
             end
@@ -535,11 +536,11 @@ classdef AITask < handle
         function setDABSTaskTimingBang(dabsDaqTask, clockTiming, expectedScanCount, sampleRate)
             switch clockTiming ,
                 case 'DAQmx_Val_FiniteSamps'
-                    dabsDaqTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', expectedScanCount) ;
+                    DAQmxCfgSampClkTiming(dabsDaqTask, sampleRate, 'DAQmx_Val_FiniteSamps', expectedScanCount) ;
                       % we validated the sample rate when we created
                       % the input task, so should be ok, but check
                       % anyway
-                      if dabsDaqTask.sampClkRate~=sampleRate ,
+                      if DAQmxGetSampClkRate(dabsDaqTask)~=sampleRate ,
                           error('The DABS task sample rate is not equal to the desired sampling rate') ;
                       end  
                 case 'DAQmx_Val_ContSamps'
@@ -548,11 +549,11 @@ classdef AITask < handle
                     else
                         bufferSize = expectedScanCount ;
                     end
-                    dabsDaqTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_ContSamps', 2*bufferSize) ;
+                    DAQmxCfgSampClkTiming(dabsDaqTask, sampleRate, 'DAQmx_Val_ContSamps', 2*bufferSize) ;
                       % we validated the sample rate when we created
                       % the input task, so should be ok, but check
                       % anyway
-                      if dabsDaqTask.sampClkRate~=sampleRate ,
+                      if  DAQmxGetSampClkRate(dabsDaqTask)~=sampleRate ,
                           error('The DABS task sample rate is not equal to the desired sampling rate');
                       end  
                 otherwise
