@@ -1,7 +1,15 @@
 #include "mex.h"
 #include "matrix.h"
 #include "NIDAQmx.h"
-#include "daqmex.h"
+//#include "daqmex.h"
+
+
+
+#define EMPTY_IS_ALLOWED 1
+#define EMPTY_IS_NOT_ALLOWED 0
+#define MISSING_IS_ALLOWED 1
+#define MISSING_IS_NOT_ALLOWED 0
+
 
 
 // Define the 'instance variables' for the 'Singleton'
@@ -11,6 +19,212 @@
 TaskHandle TASK_HANDLES[MAXIMUM_TASK_HANDLE_COUNT] ;
 mwSize TASK_HANDLE_COUNT = 0 ;
 
+
+
+#define isfinite(x) ( _finite(x) )        // MSVC-specific, change as needed
+
+
+
+void handlePossibleDAQmxErrorOrWarning(int32 errorCode)  {
+    char errorID[ERROR_ID_BUFFER_SIZE] ;
+    const char *functionName;
+    int32 rawErrorMessageBufferSize;  
+    char *rawErrorMessage;  
+    int32 errorMessageBufferSize;
+    char *errorMessage;
+    int32 errorCodeMagnitude;
+    char errorCodeSignAsString[2] = "" ;
+
+    // Ignore no-error condition, and also (controversially) ignore warnings
+    if (errorCode<0)  {
+        functionName = mexFunctionName();
+        rawErrorMessageBufferSize = DAQmxGetErrorString(errorCode,NULL,0);  
+            // Probe to get the required buffer size
+        rawErrorMessage = (char *)mxCalloc(rawErrorMessageBufferSize,sizeof(char));  
+            // this is right, no +1 needed for string terminator
+        errorMessageBufferSize = rawErrorMessageBufferSize+100 ;
+        errorMessage = (char*) mxCalloc(errorMessageBufferSize,sizeof(char));
+        DAQmxGetErrorString(errorCode,rawErrorMessage,rawErrorMessageBufferSize);
+        // Can't have "-" in errorID, so work around this...
+        if (errorCode>=0)  {            
+            errorCodeMagnitude = errorCode ;
+            //errorCodeSignAsString = "";  // initialized to this
+        }
+        else {
+            errorCodeMagnitude = -errorCode ;
+            errorCodeSignAsString[0] = 'n';
+            errorCodeSignAsString[1] = (char)0;
+        }
+        sprintf_s(errorID, 
+                  ERROR_ID_BUFFER_SIZE, 
+                  "ws.ni:DAQmxError:%s%d",
+                  errorCodeSignAsString,
+                  errorCodeMagnitude); 
+        sprintf_s(errorMessage, 
+                  errorMessageBufferSize, 
+                  "DAQmx Error (%d) in %s: %s", 
+                  errorCode, 
+                  functionName, 
+                  rawErrorMessage);
+        //mexPrintf("here!\n");
+        //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
+        mexErrMsgIdAndTxt(errorID,errorMessage);
+    }
+}
+// end of function
+
+
+
+// Note that you should mxFree() the thing returned by readStringArgument when done with it
+char *readStringArgument(int nrhs, const mxArray *prhs[], 
+                         int index, const char *argumentName, 
+                         unsigned int isEmptyAllowed, unsigned int isMissingAllowed)  {
+    char *result = NULL ;
+
+    if (nrhs<index+1)  {
+        // Arg is missing
+        if (isMissingAllowed)  {
+            result = NULL ;
+        }
+        else  {
+            mexErrMsgIdAndTxt("ws.ni:BadArgument","%s cannot be missing",argumentName);
+        }
+    }
+    else  {
+        // Arg exists
+        if ( mxIsEmpty(prhs[index]) )  {
+            if (isEmptyAllowed)  {
+                result = NULL ;
+            }
+            else {
+                mexErrMsgIdAndTxt("ws.ni:BadArgument","%s cannot be empty",argumentName);
+            }
+        }
+        else {
+            // Arg exists, is nonempty
+            if ( !mxIsChar(prhs[index]) )  {
+                mexErrMsgIdAndTxt("ws.ni:BadArgument","%s must be a string",argumentName);
+            }
+            else {
+                // Arg exists, is nonempty, is a char array
+                result = mxArrayToString(daqmxConstantAsMXArray) ;  // Do I need to free this?  Yes, with mxFree()
+                if (!result)  {
+                    mexErrMsgIdAndTxt("ws.ni:InternalError", "Problem getting %s into a C string", argumentName);
+                }
+            }
+        }
+    }
+
+    return result ;
+}
+// end of function
+
+
+
+float64 readTimeoutArgument(int nrhs, const mxArray *prhs[], int index)  {
+    float64 timeout;
+
+    if (nrhs>index)  {
+        if ( mxIsEmpty(prhs[index]) )  {
+            timeout = DAQmx_Val_WaitInfinitely ;
+        }
+        else if ( mxIsScalar(prhs[index]) )  {
+            timeout = (float64) mxGetScalar(prhs[index]) ;
+            if (timeout==-1.0 || timeout>=0)  {
+                if ( isfinite(timeout) )  {
+                    // do nothing, all is well
+                }
+                else  {
+                    timeout = DAQmx_Val_WaitInfinitely ;
+                }
+            }
+            else  {
+                mexErrMsgIdAndTxt("ws.ni:badArgument",
+                                  "timeout must be DAQmx_Val_WaitInfinitely (-1), 0, or positive");        
+            }
+        }
+        else  {
+            mexErrMsgIdAndTxt("ws.ni:badArgument",
+                              "timeout must be a missing, empty, or a scalar");        
+        }
+    }
+    else  {
+        timeout = DAQmx_Val_WaitInfinitely ;
+    }
+    
+    return timeout ;
+}
+// end of function
+
+
+// Utility to look up value names
+bool daqmxValueFromString(const char * valueAsString, int32 * result)  {
+    bool success = true ;
+    // Dispatch on the method name
+    if ( strcmp(valueAsString,"DAQmx_Val_ContSamps")==0 )  {
+        *result = DAQmx_Val_ContSamps ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Falling")==0 )  {
+        *result = DAQmx_Val_Falling ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_FiniteSamps")==0 )  {
+        *result = DAQmx_Val_FiniteSamps ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Rising")==0 )  {
+        *result = DAQmx_Val_Rising ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Abort")==0 )  {
+        *result = DAQmx_Val_Task_Abort ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Commit")==0 )  {
+        *result = DAQmx_Val_Task_Commit ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Reserve")==0 )  {
+        *result = DAQmx_Val_Task_Reserve ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Start")==0 )  {
+        *result = DAQmx_Val_Task_Start ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Stop")==0 )  {
+        *result = DAQmx_Val_Task_Stop ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Unreserve")==0 )  {
+        *result = DAQmx_Val_Task_Unreserve ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_Task_Verify")==0 )  {
+        *result = DAQmx_Val_Task_Verify ;
+    }
+    if ( strcmp(valueAsString,"DAQmx_Val_WaitInfinitely")==0 )  {
+        *result = DAQmx_Val_WaitInfinitely ;
+    }
+    else  {
+        // Doesn't match anything, so error
+        success = false
+    }
+    return success ;
+}
+
+
+int32 readValueArgument(int nrhs, const mxArray *prhs[], 
+                        int index, const char *argumentName)  {
+    char * valueAsString ;
+    int32 result ;
+    
+    valueAsString = 
+        readStringArgument(nrhs, prhs, 
+                           index, argumentName, 
+                           EMPTY_IS_NOT_ALLOWED, MISSING_IS_NOT_ALLOWED) ;  // Need to mxFree() this at some point
+    bool success = daqmxValueFromString(valueAsString, &result) ;
+    mxFree(valueAsString) ;
+    if (!success)  {
+        mexErrMsgIdAndTxt("ws.ni:badArgument",
+                          "Did not recognize value %s for argument %s", valueAsString, argumentName);
+    }
+    
+    return result ;
+}
+
+    
 
 // Helper function for reading a task handle argument and validating it
 TaskHandle readTaskHandleArgument(int nrhs, const mxArray *prhs[])  {
@@ -36,19 +250,20 @@ TaskHandle readTaskHandleArgument(int nrhs, const mxArray *prhs[])  {
         }
         //mexPrintf("isTaskHandleValid: %d\n", isTaskHandleValid) ;
         if (!isTaskHandleValid)  {
-            mexErrMsgIdAndTxt("daqmex:badArgument",
+            mexErrMsgIdAndTxt("ws.ni:badArgument",
                               "taskHandle is not a registered task handle");
         }
         // If get here, taskHandle is a registered task handle
     }
     else  {
-        mexErrMsgIdAndTxt("daqmex:badArgument",
+        mexErrMsgIdAndTxt("ws.ni:badArgument",
                           "taskHandle must be a uint64 scalar");
     }
 
     return taskHandle ;
 }
 // end of function
+
 
 
 // Utility function
@@ -72,6 +287,7 @@ bool isMxArrayAString(const mxArray* arg)  {
 }
 
     
+
 // This will be registered with mexAtExit()
 static void finalize(void)  {
     int32 status ;  // Used several places for DAQmx return codes
@@ -89,6 +305,7 @@ static void finalize(void)  {
 // end of function
 
 
+
 // This is called if the entry point is unlocked        
 static void initialize(void)  {
     mexLock() ;
@@ -98,8 +315,9 @@ static void initialize(void)  {
 }
 
     
+
 // taskHandle = DAQmxTaskMaster_('DAQmxCreateTask', taskName)
-void createTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void CreateTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     char *taskName ;
@@ -108,7 +326,7 @@ void createTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //mwSize i ;
 
     if ( TASK_HANDLE_COUNT == MAXIMUM_TASK_HANDLE_COUNT )  {
-        mexErrMsgIdAndTxt("daqmex:tooManyTasks",
+        mexErrMsgIdAndTxt("ws.ni:tooManyTasks",
                           "Unable to create new DAQmx task, because the maximum number of tasks already exist") ;
     }    
     
@@ -144,8 +362,10 @@ void createTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 }
 // end of function
 
-// taskHandle = DAQmxTaskMaster_('GetAllTaskHandles')
-void getAllTaskHandles(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+
+
+// taskHandles = DAQmxGetAllTaskHandles()
+void GetAllTaskHandles(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //int32 status ;  // Used several places for DAQmx return codes
     //TaskHandle taskHandle ;
     //mxArray *taskHandleMXArray ;
@@ -169,8 +389,9 @@ void getAllTaskHandles(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 // end of function
 
 
-// DAQmxTaskMaster_('DAQmxClearTask', taskHandle)
-void clearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+
+// DAQmxClearTask(taskHandle)
+void ClearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
 
@@ -212,8 +433,9 @@ void clearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 }
 
 
+
 // DAQmxStartTask(taskHandle)
-void startTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void StartTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -236,8 +458,9 @@ void startTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // end of function
 
 
+
 // DAQmxStopTask(taskHandle)
-void stopTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void StopTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -258,42 +481,31 @@ void stopTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // end of function
 
 
+
 // DAQmxTaskControl(taskHandle, action)
-void taskControl(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void TaskControl(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     int32 action ;
 
-    //
-    // Read input arguments
-    //
-
     // prhs[1]: taskHandle
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: action
-    if ( (nrhs>2) && mxIsScalar(prhs[2]) )  
-        {
-        action = (int32) mxGetScalar(prhs[2]) ;
-        }
-    else 
-        {
-        mexErrMsgIdAndTxt("daqmex:BadArgument",
-                          "action must be a scalar");        
-        }
+    action = readValueArgument(nrhs, prhs, 
+                               2, "action") ;
 
-    //
     // Make the call
-    //
-    status = DAQmxTaskControl(taskHandle,action) ;
+    status = DAQmxTaskControl(taskHandle, action) ;
     handlePossibleDAQmxErrorOrWarning(status);
     }
 // end of function
 
 
+
 // DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource, triggerEdge)
-void cfgDigEdgeStartTrig(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CfgDigEdgeStartTrig(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -301,39 +513,30 @@ void cfgDigEdgeStartTrig(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     int32 triggerEdge ;
     int index ;
 
-    //
-    // Read input arguments
-    //
-
     // prhs[1]: taskHandle
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: triggerSource
     index=2 ;
-    readStringArgument(nrhs, prhs, index, "triggerSource", EMPTY_IS_NOT_ALLOWED, MISSING_IS_NOT_ALLOWED);
+    triggerSource = readStringArgument(nrhs, prhs, 
+                                       index, "triggerSource", 
+                                       EMPTY_IS_NOT_ALLOWED, MISSING_IS_NOT_ALLOWED);
 
     // prhs[3]: triggerEdge
     index++ ;
-    if ( nrhs>index && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) )
-        {
-        triggerEdge = (int32) mxGetScalar(prhs[index]) ;
-        }
-    else
-        {
-        mexErrMsgTxt("triggerEdge must be a numeric scalar");        
-        }
+    triggerEdge = readValueArgument(nrhs, prhs, 
+                                    index, "triggerEdge") ;
 
-    //
     // Make the call
-    //
     status = DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource, triggerEdge) ;
     handlePossibleDAQmxErrorOrWarning(status);
     }
 // end of function
 
 
+
 // DAQmxCfgSampClkTiming(taskHandle,source,rate,activeEdge,sampleMode,sampsPerChanToAcquire)
-void cfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -373,25 +576,15 @@ void cfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
     // prhs[4]: activeEdge
     index=4 ;
-    if ( nrhs>index && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) )
-        {
-        activeEdge = (int32) mxGetScalar(prhs[index]) ;
-        }
-    else
-        {
-        mexErrMsgTxt("activeEdge must be a numeric scalar");        
-        }
+    activeEdge = 
+        readValueArgument(nrhs, prhs, 
+                          index, "activeEdge") ;
 
     // prhs[5]: sampleMode
     index++ ;
-    if ( nrhs>index && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) )
-        {
-        sampleMode = (int32) mxGetScalar(prhs[index]) ;
-        }
-    else
-        {
-        mexErrMsgTxt("sampleMode must be a numeric scalar");        
-        }
+    sampleMode = 
+        readValueArgument(nrhs, prhs, 
+                          index, "sampleMode") ;
 
     // prhs[6]: sampsPerChannelToAcquire
     index++ ;
@@ -418,9 +611,9 @@ void cfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 // end of function
 
 
+
 // DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName)
-void createAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
-    {
+void CreateAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     char *physicalChannelName ;
@@ -438,25 +631,21 @@ void createAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: physicalChannelName
-    if ( (nrhs>2) && mxIsChar(prhs[2]) ) 
-        {
+    if ( (nrhs>2) && mxIsChar(prhs[2]) )   {
         nCharacters = mxGetNumberOfElements(prhs[2]);
-        if (nCharacters==0) 
-            {
-            mexErrMsgIdAndTxt("daqmex:BadArgument","physicalChannelName cannot be empty");
-            }
+        if (nCharacters==0)   {
+            mexErrMsgIdAndTxt("ws.ni:BadArgument","physicalChannelName cannot be empty");
+        }
         bufferSize = nCharacters + 1 ;
         physicalChannelName = (char *)mxCalloc(bufferSize,sizeof(char));  
         rc = mxGetString(prhs[2], physicalChannelName, (mwSize)bufferSize);
-        if (rc != 0)
-            {
-            mexErrMsgIdAndTxt("daqmex:InternalError","Problem getting physicalChannelName into a C string");
-            }
+        if (rc != 0)  {
+            mexErrMsgIdAndTxt("ws.ni:InternalError","Problem getting physicalChannelName into a C string");
         }
-    else 
-        {
-        mexErrMsgIdAndTxt("daqmex:BadArgument","physicalChannelName must be a string");
-        }
+    }
+    else  {
+        mexErrMsgIdAndTxt("ws.ni:BadArgument","physicalChannelName must be a string");
+    }
 
     //
     // Make the call
@@ -470,16 +659,13 @@ void createAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
                                       DAQmx_Val_Volts, 
                                       NULL);
     handlePossibleDAQmxErrorOrWarning(status);
-
-    // Return output data
-    //plhs[0] = outputDataMXArray ;  
-        // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned        
-    }
+}
 // end of function
 
 
+
 // DAQmxCreateAOVoltageChan(taskHandle, physicalChannelName)
-void createAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -517,11 +703,12 @@ void createAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 // end of function
 
 
+
 // DAQmxCreateDIChan(taskHandle, physicalLineName)
 //   physicalLineName should be something like 'Dev1/line0' or
 //   'Dev1/line7', not something fancy like 'Dev1/port0' or
 //   'Dev1/port0/line1' or a range, or any of that sort of thing
-void createDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -554,11 +741,12 @@ void createDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // end of function
 
 
+
 // DAQmxCreateDOChan(taskHandle, physicalLineName)
 //   physicalLineName should be something like 'Dev1/line0' or
 //   'Dev1/line7', not something fancy like 'Dev1/port0' or
 //   'Dev1/port0/line1' or a range, or any of that sort of thing
-void createDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -591,8 +779,9 @@ void createDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // end of function
 
 
+
 // nSampsPerChanAvail = DAQmxGetReadAvailSampPerChan(taskHandle)
-void getReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void GetReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -617,8 +806,9 @@ void getReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray 
 // end of function
 
 
+
 // isTaskDone = DAQmxIsTaskDone(taskHandle)
-void isTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void IsTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -645,8 +835,9 @@ void isTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 // end of function
 
 
+
 // outputData = DAQmxReadBinaryI16(taskHandle, nSampsPerChanWanted, timeout)
-void readBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -743,8 +934,9 @@ void readBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
 
+
 // outputData = DAQmxReadDigitalLines(taskHandle, nSampsPerChanWanted, timeout)
-void readDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -778,7 +970,7 @@ void readDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
         }
     else 
         {
-        mexErrMsgIdAndTxt("daqmex:badArgument","numSampsPerChanWanted must be a scalar");        
+        mexErrMsgIdAndTxt("ws.ni:badArgument","numSampsPerChanWanted must be a scalar");        
         }
 
     // prhs[3]: timeout
@@ -810,7 +1002,7 @@ void readDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
     arraySizeInSamps = (uInt32) (numSampsPerChanToTryToRead * numChannels) ;
     if ( mxGetNumberOfElements(outputDataMXArray) != (size_t)(arraySizeInSamps) )
         {
-        mexErrMsgIdAndTxt("daqmex:failedToAllocateMemory",
+        mexErrMsgIdAndTxt("ws.ni:failedToAllocateMemory",
                           "Failed to allocate an output array of the desired size");    
         }
 
@@ -839,7 +1031,7 @@ void readDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
         // If things are as we expect, numBytesPerSamp should *always* be one
         if ( numBytesPerSamp != 1)
             {
-            mexErrMsgIdAndTxt("daqmex:numBytesPerSampIsWrong",
+            mexErrMsgIdAndTxt("ws.ni:numBytesPerSampIsWrong",
                               "numBytesPerSamp is %d, it should be one",numBytesPerSamp);        
             }
         }
@@ -850,8 +1042,9 @@ void readDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
     }
 
 
+
 // outputData = DAQmxReadDigitalU32(taskHandle, nSampsPerChanWanted, timeout)
-void readDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -944,9 +1137,9 @@ void readDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
 
+
 // DAQmxWaitUntilTaskDone(taskHandle, timeToWait)
-void waitUntilTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
-    {
+void WaitUntilTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     float64 timeToWait ;
@@ -961,50 +1154,42 @@ void waitUntilTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 
     // prhs[2]: timeToWait
     index=2 ;
-    if (nrhs>index)
-        {
-        if ( mxIsEmpty(prhs[index]) )  
-            {
+    if (nrhs>index)  {
+        if ( mxIsEmpty(prhs[index]) )   {
             timeToWait = DAQmx_Val_WaitInfinitely ;
-            }
-        else if ( mxIsScalar(prhs[index]) )  
-            {
+        }
+        else if ( mxIsScalar(prhs[index]) )   {
             timeToWait = (float64) mxGetScalar(prhs[index]) ;
-            if (timeToWait==-1.0 || timeToWait>=0)
-                {
-                if ( isfinite(timeToWait) )
-                    {
+            if (timeToWait==-1.0 || timeToWait>=0)  {
+                if ( isfinite(timeToWait) )  {
                     // do nothing, all is well
-                    }
-                else
-                    {
-                    timeToWait = DAQmx_Val_WaitInfinitely ;
-                    }            
                 }
-            else 
-                {
-                mexErrMsgTxt("timeToWait must be DAQmx_Val_WaitInfinitely (-1), 0, or positive");        
+                else  {
+                    timeToWait = DAQmx_Val_WaitInfinitely ;
                 }
             }
-        else 
-            {
-            mexErrMsgTxt("timeToWait must be a missing, empty, or a scalar");        
+            else  {
+                mexErrMsgTxt("timeToWait must be DAQmx_Val_WaitInfinitely (-1), 0, or positive");
             }
         }
-    else
-        {
+        else  {
+            mexErrMsgTxt("timeToWait must be a missing, empty, or a scalar");        
+        }
+    }
+    else  {
         timeToWait = DAQmx_Val_WaitInfinitely ;
-        }   
+    }
 
     //
     // Make the call
     status = DAQmxWaitUntilTaskDone(taskHandle,timeToWait) ; 
     handlePossibleDAQmxErrorOrWarning(status);
-    }
+}
+
 
 
 // sampsPerChanWritten = DAQmxWriteAnalogF64(taskHandle, autoStart, timeout, writeArray)
-void writeAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     int index ; // index of the input arg we're currently dealing with
@@ -1050,7 +1235,7 @@ void writeAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
     else
         {
-        mexErrMsgIdAndTxt("daqmex:badArgument","writeArray must be an matrix of real doubles");        
+        mexErrMsgIdAndTxt("ws.ni:badArgument","writeArray must be an matrix of real doubles");        
         }
 
     // Determine # of channels in task
@@ -1062,7 +1247,7 @@ void writeAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     //mexPrintf("nChannelsInWriteArray: %d\n",nChannelsInWriteArray) ;    
     if (nChannelsInTask != nChannelsInWriteArray)
         {
-        mexErrMsgIdAndTxt("daqmex:badArgument",
+        mexErrMsgIdAndTxt("ws.ni:badArgument",
                           "writeArray must have the same number of columns as the task has channels");
         }
 
@@ -1085,8 +1270,9 @@ void writeAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
 
+
 // sampsPerChanWritten = DAQmxWriteDigitalLines(taskHandle, autoStart, timeout, writeArray)
-void writeDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     int index ; // index of the input arg we're currently dealing with
@@ -1131,7 +1317,7 @@ void writeDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
         }
     else
         {
-        mexErrMsgIdAndTxt("daqmex:badArgument","writeArray must be a matrix of class logical");        
+        mexErrMsgIdAndTxt("ws.ni:badArgument","writeArray must be a matrix of class logical");        
         }
 
     // Determine # of channels in task
@@ -1143,7 +1329,7 @@ void writeDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
     //mexPrintf("nChannelsInWriteArray: %d\n",nChannelsInWriteArray) ;    
     if (nChannelsInTask != nChannelsInWriteArray)
         {
-        mexErrMsgIdAndTxt("daqmex:badArgument",
+        mexErrMsgIdAndTxt("ws.ni:badArgument",
                           "writeArray must have the same number of columns as the task has channels");
         }
 
@@ -1165,6 +1351,7 @@ void writeDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
         // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned        
     }
 // end of function
+
 
 
 // The entry-point, where we do dispatch
@@ -1189,69 +1376,69 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     
     // Dispatch on the method name
     char* action = mxArrayToString(actionAsMxArray) ;  // Do I need to free this?
-    if ( strcmp(action,"createTask")==0 )  {
-        createTask(nlhs, plhs, nrhs, prhs) ;
+    if ( strcmp(action,"DAQmxCreateTask")==0 )  {
+        CreateTask(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"getAllTaskHandles")==0 )  {
-        getAllTaskHandles(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxGetAllTaskHandles")==0 )  {
+        GetAllTaskHandles(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"clearTask")==0 )  {
-        clearTask(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxClearTask")==0 )  {
+        ClearTask(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"startTask")==0 )  {
-        startTask(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxStartTask")==0 )  {
+        StartTask(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"stopTask")==0 )  {
-        stopTask(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxStopTask")==0 )  {
+        StopTask(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"taskControl")==0 )  {
-        taskControl(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxTaskControl")==0 )  {
+        TaskControl(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"createAIVoltageChan")==0 )  {
-        createAIVoltageChan(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCreateAIVoltageChan")==0 )  {
+        CreateAIVoltageChan(nlhs, plhs, nrhs, prhs) ;
     }    
-    else if ( strcmp(action,"createAOVoltageChan")==0 )  {
-        createAOVoltageChan(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCreateAOVoltageChan")==0 )  {
+        CreateAOVoltageChan(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"createDIChan")==0 )  {
-        createDIChan(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCreateDIChan")==0 )  {
+        CreateDIChan(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"createDOChan")==0 )  {
-        createDOChan(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCreateDOChan")==0 )  {
+        CreateDOChan(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"getReadAvailSampPerChan")==0 )  {
-        getReadAvailSampPerChan(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxGetReadAvailSampPerChan")==0 )  {
+        GetReadAvailSampPerChan(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"isTaskDone")==0 )  {
-        isTaskDone(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxIsTaskDone")==0 )  {
+        IsTaskDone(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"readBinaryI16")==0 )  {
-        readBinaryI16(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxReadBinaryI16")==0 )  {
+        ReadBinaryI16(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"readDigitalLines")==0 )  {
-        readDigitalLines(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxReadDigitalLines")==0 )  {
+        ReadDigitalLines(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"readDigitalU32")==0 )  {
-        readDigitalU32(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxReadDigitalU32")==0 )  {
+        ReadDigitalU32(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"waitUntilTaskDone")==0 )  {
-        waitUntilTaskDone(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxWaitUntilTaskDone")==0 )  {
+        WaitUntilTaskDone(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"writeAnalogF64")==0 )  {
-        writeAnalogF64(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxWriteAnalogF64")==0 )  {
+        WriteAnalogF64(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"writeDigitalLines")==0 )  {
-        writeDigitalLines(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxWriteDigitalLines")==0 )  {
+        WriteDigitalLines(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"cfgSampClkTiming")==0 )  {
-        cfgSampClkTiming(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCfgSampClkTiming")==0 )  {
+        CfgSampClkTiming(nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( strcmp(action,"cfgDigEdgeStartTrig")==0 )  {
-        cfgDigEdgeStartTrig(nlhs, plhs, nrhs, prhs) ;
+    else if ( strcmp(action,"DAQmxCfgDigEdgeStartTrig")==0 )  {
+        CfgDigEdgeStartTrig(nlhs, plhs, nrhs, prhs) ;
     }
     else  {
         // Doesn't match anything, so error
-        mexErrMsgIdAndTxt("daqmex:noSuchMethod",
+        mexErrMsgIdAndTxt("ws.ni:noSuchMethod",
                           "DAQmxTaskMaster_() doesn't recognize that method name") ;
     }
 

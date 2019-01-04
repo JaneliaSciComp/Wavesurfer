@@ -14,5 +14,5 @@ function installWavesurferForNow()
 
     repoRootFolderName=fileparts(pathToInstallWavesurferForNow);
     addpath(repoRootFolderName);
-    addpath(fullfile(repoRootFolderName,'daqmex'));
+    %addpath(fullfile(repoRootFolderName,'daqmex'));
 end
