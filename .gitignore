@@ -53,3 +53,5 @@ BuildLog.htm
 launch_satellite_engine/bin/launch_satellite_engine.exe
 *.lib
 *.cache
+*.VC.opendb
+*.VC.db

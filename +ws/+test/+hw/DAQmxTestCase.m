@@ -50,8 +50,8 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             nSampsPerChanAvail = ws.ni('DAQmxGetReadAvailSampPerChan', aiTaskHandle) ;  % should be 1000
             self.verifyEqual(nSampsPerChanAvail,desiredScanCount) ;                        
             data = ws.ni('DAQmxReadBinaryI16', aiTaskHandle, nSampsPerChanAvail) ;
-            self.verifyTrue(min(data)>-11) ;   % just gross sanity check
-            self.verifyTrue(max(data)<+11) ;
+            self.verifyTrue(isequal(class(data), 'int16')) ;
+            self.verifyTrue(isequal(size(data), [desiredScanCount 1])) ;
             ws.ni('DAQmxStopTask', aiTaskHandle) ;
             ws.ni('DAQmxClearTask', aiTaskHandle) ;
             allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
@@ -110,7 +110,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxCreateAOVoltageChan', aoTaskHandle, 'Dev1/ao0') ;
             ws.ni('DAQmxCfgSampClkTiming', aoTaskHandle, 'ai/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
-            y = 5 * sin(2*pi*f0*t) ;
+            y = 5 * sin(2*pi*f0*t) ;  % V
             
             ws.ni('DAQmxWriteAnalogF64', aoTaskHandle, false, [], y) ;
             
@@ -124,9 +124,9 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxStopTask', aiTaskHandle) ;
 
             %data = (10/32768) * double(dataRaw) ;            
-            rawScalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeff', aiTaskHandle) ;   % nChannelsThisDevice x nCoefficients, low-order coeffs first
+            rawScalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', aiTaskHandle) ;   % nChannelsThisDevice x nCoefficients, low-order coeffs first
             scalingCoefficients = transpose(rawScalingCoefficients);  % nCoefficients x nChannelsThisDevice , low-order coeffs first
-            data = ws.scaledDoubleAnalogDataFromRaw(dataRaw, 1, scalingCoefficients) ;
+            data = ws.scaledDoubleAnalogDataFromRaw(dataRaw, 1, scalingCoefficients) ;  % V
             
             ws.ni('DAQmxClearTask', aiTaskHandle);
             ws.ni('DAQmxClearTask', aoTaskHandle);
@@ -135,11 +135,14 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             self.verifyEqual(length(allTaskHandles), 0) ;
             
             f = figure('color','w');
-            a = axes(f) ;
+            a = axes('Parent', f) ;
             line('Parent', a, 'XData', t, 'YData', y   , 'Color', 'b');
             line('Parent', a, 'XData', t, 'YData', data, 'Color', 'r');
             pause(10) ;
             delete(f) ;
+            
+            maximum_absolute_error = max(abs((data-y)));  % V
+            self.verifyTrue(maximum_absolute_error<0.01) ;            
         end
         
     end  % test methods
