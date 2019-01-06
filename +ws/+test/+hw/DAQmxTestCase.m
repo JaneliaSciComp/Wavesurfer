@@ -104,13 +104,16 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             
             aiTaskHandle = ws.ni('DAQmxCreateTask', 'AI') ;
             ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0') ;
+            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai1') ;
             ws.ni('DAQmxCfgSampClkTiming', aiTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             aoTaskHandle = ws.ni('DAQmxCreateTask', 'AO');
             ws.ni('DAQmxCreateAOVoltageChan', aoTaskHandle, 'Dev1/ao0') ;
+            ws.ni('DAQmxCreateAOVoltageChan', aoTaskHandle, 'Dev1/ao1') ;
             ws.ni('DAQmxCfgSampClkTiming', aoTaskHandle, 'ai/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
-            y = 5 * sin(2*pi*f0*t) ;  % V
+            y(:,1) = 5 * sin(2*pi*f0*t) ;  % V
+            y(:,2) = 5 * cos(2*pi*f0*t) ;  % V
             
             ws.ni('DAQmxWriteAnalogF64', aoTaskHandle, false, [], y) ;
             
@@ -124,9 +127,8 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxStopTask', aiTaskHandle) ;
 
             %data = (10/32768) * double(dataRaw) ;            
-            rawScalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', aiTaskHandle) ;   % nChannelsThisDevice x nCoefficients, low-order coeffs first
-            scalingCoefficients = transpose(rawScalingCoefficients);  % nCoefficients x nChannelsThisDevice , low-order coeffs first
-            data = ws.scaledDoubleAnalogDataFromRaw(dataRaw, 1, scalingCoefficients) ;  % V
+            scalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', aiTaskHandle)    % nCoefficients x nChannelsThisDevice , low-order coeffs first
+            data = ws.scaledDoubleAnalogDataFromRaw(dataRaw, [1 1], scalingCoefficients) ;  % V
             
             ws.ni('DAQmxClearTask', aiTaskHandle);
             ws.ni('DAQmxClearTask', aoTaskHandle);
@@ -136,9 +138,11 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             
             f = figure('color','w');
             a = axes('Parent', f) ;
-            line('Parent', a, 'XData', t, 'YData', y   , 'Color', 'b');
-            line('Parent', a, 'XData', t, 'YData', data, 'Color', 'r');
-            pause(10) ;
+            line('Parent', a, 'XData', t, 'YData', y(:,1)   , 'Color', 'b');
+            line('Parent', a, 'XData', t, 'YData', y(:,2)   , 'Color', 'b');
+            line('Parent', a, 'XData', t, 'YData', data(:,1), 'Color', 'r');
+            line('Parent', a, 'XData', t, 'YData', data(:,2), 'Color', 'r');
+            pause(1) ;
             delete(f) ;
             
             maximum_absolute_error = max(abs((data-y)));  % V

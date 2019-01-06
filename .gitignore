@@ -55,3 +55,4 @@ launch_satellite_engine/bin/launch_satellite_engine.exe
 *.cache
 *.VC.opendb
 *.VC.db
+*.log

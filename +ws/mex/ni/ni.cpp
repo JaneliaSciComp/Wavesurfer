@@ -998,9 +998,51 @@ void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 
+// Trim whitespace from either end of a string
+std::string 
+trim(const std::string & s) {
+    std::string::const_iterator it = s.begin();
+    while (it != s.end() && isspace(*it)) {
+        it++;
+    }
+
+    std::string::const_reverse_iterator rit = s.rbegin();
+    while (rit.base() != it && isspace(*rit)) {
+        rit++;
+    }
+
+    return std::string(it, rit.base());
+}
+
+
+
+// Parse a comma-separated list of channel names into a vector of strings, with one channel 
+// name per element
+std::vector<std::string>
+parseListOfChannelNames(const std::string & listOfChannelNames) {
+    // Input should be a comma-separated list of channel names, e.g.
+    // "Dev1/ai0, Dev1/ai1".  Returns a vector of strings, with one 
+    // channel name per string.
+
+    int commaCount = int(std::count(listOfChannelNames.begin(), listOfChannelNames.end(), ','));
+    int channelCount = commaCount + 1;
+    std::vector<std::string> result(channelCount);
+    size_t startPosition = 0;
+    for (int i = 0; i < channelCount; ++i) {
+        size_t endPosition = listOfChannelNames.find(',', startPosition);  // returns end-of-string when ',' not found
+        std::string raw = listOfChannelNames.substr(startPosition, endPosition - startPosition);
+        result[i] = trim(raw);
+        // Prepare for next iteration
+        startPosition = endPosition;
+    }
+
+    return result;
+}
+
+
+
 // coefficients = DAQmxGetAIDevScalingCoeffs(taskHandle)
-void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
-    {
+void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // All X series devices seem to return 4 coefficients
     // Simulated X series return 2, but we just fill in the rest with zeros
     const int32 coefficientCount = 4 ;
@@ -1016,15 +1058,24 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
     handlePossibleDAQmxErrorOrWarning(status);
 
     // Get the names of the channels
-    int32 bufferSizeNeeded = DAQmxGetTaskChannels(taskHandle, NULL, 0) ;
-    std::vector<char> buffer(bufferSizeNeeded);
-    status = DAQmxGetTaskChannels(taskHandle, buffer.data(), bufferSizeNeeded);
+    int32 bufferSizeNeeded = DAQmxGetTaskChannels(taskHandle, NULL, 0) ;  
+        // This is the length of the string + 1, for the null terminator
+    std::string channelListAsString(bufferSizeNeeded-1, '*');
+    status = DAQmxGetTaskChannels(taskHandle, const_cast<char*>(channelListAsString.c_str()), bufferSizeNeeded);
     handlePossibleDAQmxErrorOrWarning(status);
 
     // Print that string
-    mexPrintf("channel names: %s\n", buffer.data());
-    // buffer now contains a comma-separated list of channel names, e.g.
+    //mexPrintf("channelListAsString size: %d\n", bufferSizeNeeded);
+    //mexPrintf("channel names: %s\n", channelListAsString.data());
+
+    // channelListAsString now contains a comma-separated list of channel names, e.g.
     // "Dev1/ai0, Dev1/ai1"
+
+    // Parse the list to get a vector of channel names
+    std::vector<std::string> channelNames(parseListOfChannelNames(channelListAsString));
+    //for (uInt32 i = 0; i < channelCount; ++i) {
+    //    mexPrintf("channelNames[%d]: %s\n", i, channelNames[i].c_str());
+    //}
 
     // Allocate the output buffer
     mxArray *outputDataMXArray;
@@ -1033,6 +1084,19 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
     // Get a pointer to the storage for the output buffer
     double * outputDataPtr = (double *)mxGetData(outputDataMXArray);
+
+    // Make the DAQmx call, once per channel
+    for (uInt32 i = 0; i < channelCount; ++i) {
+        status = DAQmxGetAIDevScalingCoeff(taskHandle, channelNames[i].c_str(), outputDataPtr+i*coefficientCount, coefficientCount);
+        if (status < 0) {
+            mxFree(outputDataMXArray);
+        }
+        handlePossibleDAQmxErrorOrWarning(status);
+        //mexPrintf("coeff[0]: %g\n", *(outputDataPtr + i*coefficientCount + 0));
+        //mexPrintf("coeff[1]: %g\n", *(outputDataPtr + i*coefficientCount + 1));
+        //mexPrintf("coeff[2]: %g\n", *(outputDataPtr + i*coefficientCount + 2));
+        //mexPrintf("coeff[3]: %g\n", *(outputDataPtr + i*coefficientCount + 3));
+    }
 
     // Return output data
     plhs[0] = outputDataMXArray ;  
