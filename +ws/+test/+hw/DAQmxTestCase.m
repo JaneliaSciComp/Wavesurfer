@@ -127,7 +127,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxStopTask', aiTaskHandle) ;
 
             %data = (10/32768) * double(dataRaw) ;            
-            scalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', aiTaskHandle)    % nCoefficients x nChannelsThisDevice , low-order coeffs first
+            scalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', aiTaskHandle) ;   % nCoefficients x nChannelsThisDevice , low-order coeffs first
             data = ws.scaledDoubleAnalogDataFromRaw(dataRaw, [1 1], scalingCoefficients) ;  % V
             
             ws.ni('DAQmxClearTask', aiTaskHandle);
@@ -142,11 +142,91 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             line('Parent', a, 'XData', t, 'YData', y(:,2)   , 'Color', 'b');
             line('Parent', a, 'XData', t, 'YData', data(:,1), 'Color', 'r');
             line('Parent', a, 'XData', t, 'YData', data(:,2), 'Color', 'r');
+            drawnow ;
             pause(1) ;
             delete(f) ;
             
-            maximum_absolute_error = max(abs((data-y)));  % V
+            maximum_absolute_error = max(max(abs((data-y))));  % V
             self.verifyTrue(maximum_absolute_error<0.01) ;            
+        end
+
+        function testDILines(self)
+            fs = 1000 ;  % Hz
+            dt = 1/fs ;
+            T = 1 ;  % s
+            N = round(T/dt) ;
+            t = dt*(0:(N-1))' ;
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            diTaskHandle = ws.ni('DAQmxCreateTask', 'DI');
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(diTaskHandle, allTaskHandles) ;            
+            
+            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line0', 'DAQmx_Val_ChanPerLine') ;
+            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line1', 'DAQmx_Val_ChanPerLine') ;
+            ws.ni('DAQmxCfgSampClkTiming', diTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            
+            ws.ni('DAQmxStartTask', diTaskHandle) ;
+            ws.ni('DAQmxWaitUntilTaskDone', diTaskHandle) ,
+            ws.ni('DAQmxStopTask', diTaskHandle) ;
+            
+            data = ws.ni('DAQmxReadDigitalLines', diTaskHandle, N) ;
+            self.verifyTrue(isequal(class(data), 'logical')) ;            
+            self.verifyTrue(isequal(size(data), [N 2])) ;
+            
+            ws.ni('DAQmxClearTask', diTaskHandle);
+            
+            f = figure('color','w');
+            a = axes('Parent', f) ;
+            plot(a, t, data);
+            drawnow ;
+            pause(1) ;
+            delete(f) ;
+        end
+        
+        function testDIU32(self)
+            fs = 1000 ;  % Hz
+            dt = 1/fs ;
+            T = 1 ;  % s
+            N = round(T/dt) ;
+            t = dt*(0:(N-1))' ;
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            diTaskHandle = ws.ni('DAQmxCreateTask', 'DI');
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(diTaskHandle, allTaskHandles) ;            
+            
+            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line0,Dev1/line1', 'DAQmx_Val_ChanForAllLines') ;
+            %ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line1', 'DAQmx_Val_ChanForAllLines') ;
+            ws.ni('DAQmxCfgSampClkTiming', diTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            
+            ws.ni('DAQmxStartTask', diTaskHandle) ;
+            ws.ni('DAQmxWaitUntilTaskDone', diTaskHandle) ,
+            ws.ni('DAQmxStopTask', diTaskHandle) ;
+            
+            data = ws.ni('DAQmxReadDigitalU32', diTaskHandle, N) ;
+            
+            ws.ni('DAQmxClearTask', diTaskHandle);
+
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            self.verifyTrue(isequal(class(data), 'uint32')) ;            
+            self.verifyTrue(isequal(size(data), [N 1])) ;            
+            self.verifyTrue(all(data<4)) ;  % since only two lowest-order bits are in use
+            
+            f = figure('color','w');
+            a = axes('Parent', f) ;
+            plot(a, t, data);
+            drawnow ;
+            pause(1) ;
+            delete(f) ;
         end
         
     end  % test methods

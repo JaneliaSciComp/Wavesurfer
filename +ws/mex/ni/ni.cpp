@@ -247,6 +247,15 @@ daqmxValueFromString(const std::string & valueAsString)  {
     else if ( valueAsString == "DAQmx_Val_Task_Verify" )  {
         resultMaybe = std::make_pair(true, DAQmx_Val_Task_Verify) ;
     }
+    else if (valueAsString == "DAQmx_Val_Task_Verify") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_Task_Verify);
+    }
+    else if (valueAsString == "DAQmx_Val_ChanPerLine") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_ChanPerLine);
+    }    
+    else if (valueAsString == "DAQmx_Val_ChanForAllLines") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_ChanForAllLines);
+    }
     else  {
         // Doesn't match anything, so result is empty
         resultMaybe = std::make_pair(false, 0);
@@ -783,7 +792,7 @@ void CreateAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 
 
 
-// DAQmxCreateDIChan(taskHandle, physicalLineName)
+// DAQmxCreateDIChan(taskHandle, physicalLineName, lineGrouping)
 //   physicalLineName should be something like 'Dev1/line0' or
 //   'Dev1/line7', not something fancy like 'Dev1/port0' or
 //   'Dev1/port0/line1' or a range, or any of that sort of thing
@@ -797,15 +806,16 @@ void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     std::string physicalLineName( readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName", 
                                                               EMPTY_IS_NOT_ALLOWED) ) ;
 
-    //
+    // prhs[2]: lineGrouping
+    int32 lineGrouping = readValueArgument(nrhs, prhs, 3, "lineGrouping");
+
     // Make the call
-    //
     int32 status;
     status = DAQmxCreateDIChan(taskHandle,
                                physicalLineName.c_str(), 
                                NULL, 
-                               DAQmx_Val_ChanPerLine) ;
-    // Setting the third argument this way guarantees (I think) that
+                               lineGrouping) ;
+    // Setting the fourth argument to DAQmx_Val_ChanPerLine guarantees (I think) that
     // if you call DAQmxReadDigitalLines() later, it will always
     // return 1 for numBytesPerSamp.  This is nice b/c it means we
     // don't have to return that if/when we wrap DAQmxReadDigitalLines().
@@ -1214,71 +1224,57 @@ void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 
 // outputData = DAQmxReadDigitalU32(taskHandle, nSampsPerChanWanted, timeout)
-void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
-    {
-    int32 status ;  // Used several places for DAQmx return codes
-    TaskHandle taskHandle ;
-    int32 numSampsPerChanWanted ;  // this does take negative vals in the case of DAQmx_Val_Auto
-    float64 timeout ;
-    //uInt32 numChannels; 
-    int32 numSampsPerChanToTryToRead;
-    uInt32 nSampsPerChanAvailable;
-    //mxClassID outputDataClass = mxINT16_CLASS;
-    mxArray *outputDataMXArray;
-    uInt32 arraySizeInSamps;
-    uInt32 *outputDataPtr;
-    int32 numSampsPerChanRead;
-
-    //
-    // Read input arguments
-    //
-
+void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
-    // prhs[2]: numSampsPerChanWanted
-    // prhs[3]: timeout
-
-    // prhs[1]: taskHandle
+    TaskHandle taskHandle;
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: numSampsPerChanWanted
-    if ( (nrhs>2) && mxIsScalar(prhs[2]) )  
-        {
+    int32 numSampsPerChanWanted;  // this does take negative vals in the case of DAQmx_Val_Auto
+    if ( (nrhs>2) && mxIsScalar(prhs[2]) )   {
         numSampsPerChanWanted = (int32) mxGetScalar(prhs[2]) ;
-        }
-    else 
-        {
+    }
+    else {
         mexErrMsgTxt("numSampsPerChanWanted must be a scalar");        
-        }
+    }
 
     // prhs[3]: timeout
+    float64 timeout;
     timeout = readTimeoutArgument(nrhs, prhs, 3) ;
     
     // Determine the number of samples to try to read.
     // If user has requested all the sample available, find out how many that is.
-    if (numSampsPerChanWanted>=0) 
-        {
+    int32 status;  // Used for DAQmx return code(s)
+    int32 numSampsPerChanToTryToRead;
+    if (numSampsPerChanWanted>=0)  {
+        // The case where the caller gave a number of scans to read
         numSampsPerChanToTryToRead = numSampsPerChanWanted ;
-        }        
-    else            
-        {
-        // In this case, have to find out how many scans are available
+    }
+    else {
+        // The case where the caller gave DAQmx_Val_Auto for the number of scans to
+        // read.
+        // In this case, have to find out how many scans are available.
+        uInt32 nSampsPerChanAvailable;
         status = DAQmxGetReadAvailSampPerChan(taskHandle,&nSampsPerChanAvailable);
         handlePossibleDAQmxErrorOrWarning(status);
         numSampsPerChanToTryToRead = nSampsPerChanAvailable ;
-        }
+    }
     
     // Allocate the output buffer
-    outputDataMXArray = 
-        mxCreateNumericMatrix(numSampsPerChanToTryToRead,1,mxUINT32_CLASS,mxREAL);
+    mxArray *outputDataMXArray;
+    outputDataMXArray =
+        mxCreateNumericMatrix(numSampsPerChanToTryToRead, 1, mxUINT32_CLASS, mxREAL);
 
     // Check that the array size is correct
-    arraySizeInSamps = (uInt32) numSampsPerChanToTryToRead ;
-    if ( mxGetNumberOfElements(outputDataMXArray) != (size_t)(arraySizeInSamps) )
-        {
+    if ( mxGetNumberOfElements(outputDataMXArray) != (size_t)(numSampsPerChanToTryToRead) )  {
         mexErrMsgTxt("Failed to allocate an output array of the desired size");    
-        }
+    }
+
+    // Print the buffer size
+    mexPrintf("numSampsPerChanToTryToRead: %d\n", numSampsPerChanToTryToRead);
 
     // Get a pointer to the storage for the output buffer
+    uInt32 *outputDataPtr;
     outputDataPtr = (uInt32 *)mxGetData(outputDataMXArray);
 
     // Read the data
@@ -1286,20 +1282,23 @@ void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // The daqmx reading functions complain if you call them when there's no more data to read, 
     // even if you ask for zero scans.
     // So we don't attempt a read if numSampsPerChanToTryToRead is zero.
-    if (numSampsPerChanToTryToRead>0)  
-        {
+    int32 numSampsPerChanActuallyRead = 0;
+    if (numSampsPerChanToTryToRead>0)  {
         status = DAQmxReadDigitalU32(taskHandle, 
                                      numSampsPerChanToTryToRead, 
                                      timeout, 
                                      DAQmx_Val_GroupByChannel, 
                                      outputDataPtr, 
-                                     arraySizeInSamps, 
-                                     &numSampsPerChanRead, 
+                                     numSampsPerChanToTryToRead,
+                                     &numSampsPerChanActuallyRead, 
                                      NULL);
+
+        // Print the buffer size
+        mexPrintf("numSampsPerChanActuallyRead: %d\n", numSampsPerChanActuallyRead);
 
         // Check for error during the read
         handlePossibleDAQmxErrorOrWarning(status);
-        }
+    }
 
     // Return output data
     plhs[0] = outputDataMXArray ;  
