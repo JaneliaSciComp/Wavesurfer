@@ -228,6 +228,88 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             pause(1) ;
             delete(f) ;
         end
+
+        function testDO(self)
+            fs = 1000 ;  % Hz
+            dt = 1/fs ;
+            T = 1 ;  % s
+            N = round(T/dt) ;
+            t = dt*(0:(N-1))' ;
+            f0 = 10;  % Hz
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            doTaskHandle = ws.ni('DAQmxCreateTask', 'DO');
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(doTaskHandle, allTaskHandles) ;            
+            
+            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1') ;
+            ws.ni('DAQmxCfgSampClkTiming', doTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            
+            y = (sin(2*pi*f0*t)>=0) ;
+            
+            ws.ni('DAQmxWriteDigitalLines', doTaskHandle, false, [], y) ;
+            
+            ws.ni('DAQmxStartTask', doTaskHandle) ;  % Won't actually start until DI task starts b/c of sample clock settings
+            ws.ni('DAQmxWaitUntilTaskDone', doTaskHandle) ,
+            ws.ni('DAQmxStopTask', doTaskHandle) ;
+            
+            ws.ni('DAQmxClearTask', doTaskHandle);
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;            
+        end
         
+        function testDOAndDI2(self)
+            fs = 20000 ;  % Hz
+            dt = 1/fs ;
+            T = 1 ;  % s
+            N = round(T/dt) ;
+            t = dt*(0:(N-1))' ;
+            f0 = 5;  % Hz
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            diTaskHandle = ws.ni('DAQmxCreateTask', 'DI');
+            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line0') ;
+            ws.ni('DAQmxCfgSampClkTiming', diTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            
+            doTaskHandle = ws.ni('DAQmxCreateTask', 'DO');
+            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1') ;
+            ws.ni('DAQmxCfgSampClkTiming', doTaskHandle, 'di/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual([diTaskHandle doTaskHandle], allTaskHandles) ;                        
+            
+            y = (sin(2*pi*f0*t)>=0) ;
+            
+            ws.ni('DAQmxWriteDigitalLines', doTaskHandle, false, [], y) ;
+            
+            ws.ni('DAQmxStartTask', doTaskHandle) ;
+            ws.ni('DAQmxStartTask', diTaskHandle) ;
+            ws.ni('DAQmxWaitUntilTaskDone', diTaskHandle) ,
+            ws.ni('DAQmxWaitUntilTaskDone', doTaskHandle) ,
+            ws.ni('DAQmxStopTask', doTaskHandle) ;
+            
+            data = ws.ni('DAQmxReadDigitalLines', diTaskHandle, N) ;  % Have to read the data *before* you stop the task
+            ws.ni('DAQmxStopTask', diTaskHandle) ;
+            
+            ws.ni('DAQmxClearTask', diTaskHandle);
+            ws.ni('DAQmxClearTask', doTaskHandle);
+            
+            allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
+            self.verifyEqual(length(allTaskHandles), 0) ;
+            
+            f = figure('color','w');
+            a = axes('Parent', f) ;
+            line('Parent', a, 'XData', t, 'YData', y   , 'Color', 'b');
+            line('Parent', a, 'XData', t, 'YData', data, 'Color', 'r');
+            drawnow ;
+            pause(1) ;
+            delete(f) ;
+        end
     end  % test methods
  end  % classdef
