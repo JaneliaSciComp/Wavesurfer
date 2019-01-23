@@ -93,7 +93,7 @@ readStringArgument(int nrhs, const mxArray *prhs[],
             result = std::make_pair(false, "") ;
         }
         else  {
-            mexErrMsgIdAndTxt("ws:ni:BadArgument","%s cannot be missing",argumentName);
+            mexErrMsgIdAndTxt("ws:ni:BadArgument","%s cannot be missing",argumentName.c_str());
         }
     }
     else  {
@@ -103,13 +103,13 @@ readStringArgument(int nrhs, const mxArray *prhs[],
                 result = std::make_pair(true, "");
             }
             else {
-                mexErrMsgIdAndTxt("ws:ni:BadArgument","%s cannot be empty",argumentName);
+                mexErrMsgIdAndTxt("ws:ni:BadArgument","%s cannot be empty",argumentName.c_str());
             }
         }
         else {
             // Arg exists, is nonempty
             if ( !mxIsChar(prhs[index]) )  {
-                mexErrMsgIdAndTxt("ws:ni:BadArgument","%s must be a string",argumentName);
+                mexErrMsgIdAndTxt("ws:ni:BadArgument","%s must be a string",argumentName.c_str());
             }
             else {
                 // Arg exists, is nonempty, is a char array
@@ -137,7 +137,7 @@ readMandatoryStringArgument(int nrhs, const mxArray *prhs[],
 
     if (nrhs<index + 1) {
         // Arg is missing
-        mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s cannot be missing", argumentName);
+        mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s cannot be missing", argumentName.c_str());
     }
     else {
         // Arg exists
@@ -146,13 +146,13 @@ readMandatoryStringArgument(int nrhs, const mxArray *prhs[],
                 result = "" ;
             }
             else {
-                mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s cannot be empty", argumentName);
+                mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s cannot be empty", argumentName.c_str());
             }
         }
         else {
             // Arg exists, is nonempty
             if (!mxIsChar(prhs[index])) {
-                mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s must be a string", argumentName);
+                mexErrMsgIdAndTxt("ws:ni:BadArgument", "%s must be a string", argumentName.c_str());
             }
             else {
                 // Arg exists, is nonempty, is a char array
@@ -806,7 +806,7 @@ void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     std::string physicalLineName( readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName", 
                                                               EMPTY_IS_NOT_ALLOWED) ) ;
 
-    // prhs[2]: lineGrouping
+    // prhs[3]: lineGrouping
     int32 lineGrouping = readValueArgument(nrhs, prhs, 3, "lineGrouping");
 
     // Make the call
@@ -845,17 +845,11 @@ void CreateDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     std::string physicalLineName(readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName",
                                                              EMPTY_IS_NOT_ALLOWED));
 
-    //
     // Make the call
-    //
     status = DAQmxCreateDOChan(taskHandle, 
                                physicalLineName.c_str(), 
                                NULL, 
                                DAQmx_Val_ChanPerLine) ;
-    // Setting the third argument this way guarantees (I think) that
-    // if you call DAQmxWriteDigitalLines() later, it will always
-    // return 1 for numBytesPerSamp.  This is nice b/c it means we
-    // don't have to return that if/when we wrap DAQmxWriteDigitalLines().
     handlePossibleDAQmxErrorOrWarning(status);
     }
 // end of function
@@ -1209,6 +1203,8 @@ void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
         handlePossibleDAQmxErrorOrWarning(status);
 
         // If things are as we expect, numBytesPerSamp should *always* be one
+        // Another way of saying this is that we don't support configurations of the DI lines 
+        // such that numBytesPerSamp is greater than 1
         if ( numBytesPerSamp != 1)
             {
             mexErrMsgIdAndTxt("ws:ni:numBytesPerSampIsWrong",
@@ -1490,7 +1486,7 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
         }
     else
         {
-        mexErrMsgIdAndTxt("ws:ni:badArgument","writeArray must be a matrix of class logical");        
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "writeArray must be a matrix of class logical");        
         }
 
     // Determine # of channels in task

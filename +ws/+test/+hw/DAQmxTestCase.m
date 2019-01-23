@@ -274,7 +274,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             self.verifyEqual(length(allTaskHandles), 0) ;
             
             diTaskHandle = ws.ni('DAQmxCreateTask', 'DI');
-            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line0') ;
+            ws.ni('DAQmxCreateDIChan', diTaskHandle, 'Dev1/line0', 'DAQmx_Val_ChanPerLine') ;
             ws.ni('DAQmxCfgSampClkTiming', diTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             doTaskHandle = ws.ni('DAQmxCreateTask', 'DO');
@@ -305,8 +305,8 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             
             f = figure('color','w');
             a = axes('Parent', f) ;
-            line('Parent', a, 'XData', t, 'YData', y   , 'Color', 'b');
-            line('Parent', a, 'XData', t, 'YData', data, 'Color', 'r');
+            line('Parent', a, 'XData', t, 'YData', double(y)   , 'Color', 'b');
+            line('Parent', a, 'XData', t, 'YData', double(data), 'Color', 'r');
             drawnow ;
             pause(1) ;
             delete(f) ;
