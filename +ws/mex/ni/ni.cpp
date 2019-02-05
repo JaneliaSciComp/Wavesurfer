@@ -264,6 +264,56 @@ daqmxValueFromString(const std::string & valueAsString)  {
 }
 
 
+std::string 
+busTypeStringFromCode(int32 busTypeCode) {
+    std::string result;
+    switch (busTypeCode) {
+    case DAQmx_Val_PCI:
+        result = "DAQmx_Val_PCI";
+        break;
+    case DAQmx_Val_PCIe:
+        result = "DAQmx_Val_PCIe";
+        break;
+    case DAQmx_Val_PXI:
+        result = "DAQmx_Val_PXI";
+        break;
+    case DAQmx_Val_PXIe:
+        result = "DAQmx_Val_PXIe";
+        break;
+    case DAQmx_Val_SCXI:
+        result = "DAQmx_Val_SCXI";
+        break;
+    case DAQmx_Val_SCC:
+        result = "DAQmx_Val_SCC";
+        break;
+    case DAQmx_Val_PCCard:
+        result = "DAQmx_Val_PCCard";
+        break;
+    case DAQmx_Val_USB:
+        result = "DAQmx_Val_USB";
+        break;
+    case DAQmx_Val_CompactDAQ:
+        result = "DAQmx_Val_CompactDAQ";
+        break;
+    case DAQmx_Val_CompactRIO:
+        result = "DAQmx_Val_CompactRIO";
+        break;
+    case DAQmx_Val_TCPIP:
+        result = "DAQmx_Val_TCPIP";
+        break;
+    case DAQmx_Val_Unknown:
+        result = "DAQmx_Val_Unknown";
+        break;
+    case DAQmx_Val_SwitchBlock:
+        result = "DAQmx_Val_SwitchBlock";
+        break;
+    default:
+        result = "Unknown bus type code: " + std::to_string((int)busTypeCode);
+    }
+    return result;
+}
+
+
 int32
 readValueArgument(int nrhs, const mxArray *prhs[], 
                   int index, const std::string & argumentName)  {
@@ -1529,6 +1579,132 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 
 
 
+// deviceNames = DAQmxGetSysDevNames()
+void GetSysDevNames(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+    int32 bufferSize = DAQmxGetSysDevNames(NULL, 0) ;
+        // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetSysDevNames(resultAsCharVector.data(), (uInt32)(bufferSize)) ;
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+
+// diLinesAsString = DAQmxGetDevDILines(deviceName)
+void GetDevDILines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    // prhs[1]: deviceName
+    std::string deviceName(
+        readMandatoryStringArgument(nrhs, prhs,
+                                    1, "deviceName",
+                                    EMPTY_IS_NOT_ALLOWED));
+
+    // Make the calls
+    int32 bufferSize = DAQmxGetDevDILines(deviceName.c_str(), NULL, 0);
+    // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetDevDILines(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+
+// coPhysicalChannelsAsString = DAQmxGetDevCOPhysicalChans(deviceName)
+void GetDevCOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    // prhs[1]: deviceName
+    std::string deviceName(
+        readMandatoryStringArgument(nrhs, prhs,
+            1, "deviceName",
+            EMPTY_IS_NOT_ALLOWED));
+
+    // Make the calls
+    int32 bufferSize = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), NULL, 0);
+    // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+
+// channelsAsString = DAQmxGetDevAIPhysicalChans(deviceName)
+void GetDevAIPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    // prhs[1]: deviceName
+    std::string deviceName(
+        readMandatoryStringArgument(nrhs, prhs,
+            1, "deviceName",
+            EMPTY_IS_NOT_ALLOWED));
+
+    // Make the calls
+    int32 bufferSize = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), NULL, 0);
+    // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+// channelsAsString = DAQmxGetDevAOPhysicalChans(deviceName)
+void GetDevAOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    // prhs[1]: deviceName
+    std::string deviceName(
+        readMandatoryStringArgument(nrhs, prhs,
+            1, "deviceName",
+            EMPTY_IS_NOT_ALLOWED));
+
+    // Make the calls
+    int32 bufferSize = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), NULL, 0);
+    // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+
+// busTypeAsString = DAQmxGetDevBusType(deviceName)
+void GetDevBusType(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: deviceName
+    std::string deviceName(
+        readMandatoryStringArgument(nrhs, prhs,
+            1, "deviceName",
+            EMPTY_IS_NOT_ALLOWED));
+
+    // Make the calls
+    int32 busTypeCode;
+    int32 status = DAQmxGetDevBusType(deviceName.c_str(), &busTypeCode);
+    handlePossibleDAQmxErrorOrWarning(status);
+    std::string busTypeAsString = busTypeStringFromCode(busTypeCode);
+    // Return output data
+    plhs[0] = mxCreateString(busTypeAsString.c_str());
+}
+// end of function
+
+
+
 // The entry-point, where we do dispatch
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
@@ -1620,10 +1796,39 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     else if ( action == "DAQmxGetAIDevScalingCoeffs" )  {
         GetAIDevScalingCoeffs(nlhs, plhs, nrhs, prhs) ;
     }
+    else if (action == "DAQmxGetAIDevScalingCoeffs") {
+        GetAIDevScalingCoeffs(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetSysDevNames") {
+        GetSysDevNames(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetDevDILines") {
+        GetDevDILines(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetDevCOPhysicalChans") {
+        GetDevCOPhysicalChans(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetDevAIPhysicalChans") {
+        GetDevAIPhysicalChans(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetDevAOPhysicalChans") {
+        GetDevAOPhysicalChans(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetDevBusType") {
+        GetDevBusType(nlhs, plhs, nrhs, prhs);
+    }
+    /*
+    else if (action == "DAQmxSetRefClkSrc") {
+        SetRefClkSrc(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxSetRefClkRate") {
+        SetRefClkRate(nlhs, plhs, nrhs, prhs);
+    }
+*/
     else  {
         // Doesn't match anything, so error
         mexErrMsgIdAndTxt("ws:ni:noSuchMethod",
-                          "DAQmxTaskMaster_() doesn't recognize that method name") ;
+                          "ws.ni() doesn't recognize that method name") ;
     }
 
     //mexPrintf("About to exit\n");

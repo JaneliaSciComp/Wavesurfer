@@ -56,3 +56,10 @@ launch_satellite_engine/bin/launch_satellite_engine.exe
 *.VC.opendb
 *.VC.db
 *.log
++ws/ni.ipdb
++ws/minMaxDownsampleMex.ipdb
++ws/scaledDoubleAnalogDataFromRawMex.ipdb
++ws/ni.iobj
++ws/minMaxDownsampleMex.iobj
++ws/scaledDoubleAnalogDataFromRawMex.iobj
+*.tmp
