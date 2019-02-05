@@ -1705,6 +1705,98 @@ void GetDevBusType(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 
+// terminalName = DAQmxGetRefClkSrc(taskHandle)
+void GetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    //
+    // Read input arguments
+    //
+
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+    // Make the calls
+    int32 bufferSize = DAQmxGetRefClkSrc(taskHandle, NULL, 0);
+    // Probe to get the required buffer size
+    //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
+    std::vector<char> resultAsCharVector(bufferSize);
+    int32 status = DAQmxGetRefClkSrc(taskHandle, resultAsCharVector.data(), (uInt32)(bufferSize));
+    handlePossibleDAQmxErrorOrWarning(status);
+    // Return output data
+    plhs[0] = mxCreateString(resultAsCharVector.data());
+}
+// end of function
+
+
+
+// DAQmxSetRefClkSrc(taskHandle, terminalName)
+void SetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    //
+    // Read input arguments
+    //
+
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+    // prhs[2]: terminalName
+    std::string terminalName(
+        readMandatoryStringArgument(nrhs, prhs,
+            2, "terminalName",
+            EMPTY_IS_NOT_ALLOWED));
+
+    //
+    // Make the call
+    // 
+    int32 status = DAQmxSetRefClkSrc(taskHandle, terminalName.c_str());
+    handlePossibleDAQmxErrorOrWarning(status);
+}
+// end of function
+
+
+
+// rate = DAQmxGetRefClkRate(taskHandle)
+void GetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+    // Make the call
+    float64 result;
+    int32 status = DAQmxGetRefClkRate(taskHandle, &result);
+    handlePossibleDAQmxErrorOrWarning(status);
+
+    // Return output data
+    plhs[0] = mxCreateDoubleScalar(result);
+}
+// end of function
+
+
+
+// DAQmxSetRefClkRate(taskHandle, rate)
+void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+    // prhs[2]: rate
+    int index = 2;
+    float64 rate;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        rate = mxGetScalar(prhs[index]);
+        mexPrintf("rate is %g\n", rate);
+        if ((rate <= 0) || !isfinite(rate)) {
+            mexErrMsgTxt("rate must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgTxt("rate must be a numeric non-complex scalar");
+    }
+
+    // Make the call
+    int32 status = DAQmxSetRefClkRate(taskHandle, rate);
+    handlePossibleDAQmxErrorOrWarning(status);
+}
+// end of function
+
+
+
 // The entry-point, where we do dispatch
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
@@ -1817,14 +1909,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     else if (action == "DAQmxGetDevBusType") {
         GetDevBusType(nlhs, plhs, nrhs, prhs);
     }
-    /*
+    else if (action == "DAQmxGetRefClkSrc") {
+        GetRefClkSrc(nlhs, plhs, nrhs, prhs);
+    }
     else if (action == "DAQmxSetRefClkSrc") {
         SetRefClkSrc(nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxGetRefClkRate") {
+        GetRefClkRate(nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxSetRefClkRate") {
         SetRefClkRate(nlhs, plhs, nrhs, prhs);
     }
-*/
     else  {
         // Doesn't match anything, so error
         mexErrMsgIdAndTxt("ws:ni:noSuchMethod",
