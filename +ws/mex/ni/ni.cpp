@@ -1,6 +1,8 @@
 #include <string>
 #include <vector>
-#include <limits> 
+#include <limits>
+//#include <iostream>
+//#include <memory>
 #include "float.h"
 #include "mex.h"
 #include "matrix.h"
@@ -30,10 +32,27 @@ int32 TASK_HANDLE_COUNT = 0 ;
 
 
 
-void 
-handlePossibleDAQmxErrorOrWarning(int32 errorCode)  {
+// We want something like sprintf that handles the memory allocation for us, and returns a std::string
+template<typename ... Args>
+std::string
+sprintfpp(const std::string & format, Args ... args) {
+	size_t size = snprintf(nullptr, 0, format.c_str(), args ...) + 1; // Extra space for '\0'
+	std::unique_ptr<char[]> buffer(new char[size]);
+	snprintf(buffer.get(), size, format.c_str(), args ...);
+	return std::string(buffer.get(), buffer.get() + size - 1); // We don't want the '\0' inside
+}
+
+template<typename ... Args>
+void
+printfpp(const std::string & format, Args ... args) {
+	std::string stringToPrint = sprintfpp(format, args ...);
+	mexPrintf(stringToPrint.c_str());
+}
+
+void
+handlePossibleDAQmxErrorOrWarning(int32 errorCode, std::string action)  {
     char errorID[ERROR_ID_BUFFER_SIZE] ;
-    const char *functionName;
+    //const char *functionName;
     int32 rawErrorMessageBufferSize;  
     char *rawErrorMessage;  
     int32 errorMessageBufferSize;
@@ -43,7 +62,7 @@ handlePossibleDAQmxErrorOrWarning(int32 errorCode)  {
 
     // Ignore no-error condition, and also (controversially) ignore warnings
     if (errorCode<0)  {
-        functionName = mexFunctionName();
+        //functionName = mexFunctionName();
         rawErrorMessageBufferSize = DAQmxGetErrorString(errorCode,NULL,0);  
             // Probe to get the required buffer size
         rawErrorMessage = (char *)mxCalloc(rawErrorMessageBufferSize,sizeof(char));  
@@ -70,7 +89,7 @@ handlePossibleDAQmxErrorOrWarning(int32 errorCode)  {
                   errorMessageBufferSize, 
                   "DAQmx Error (%d) in %s: %s", 
                   errorCode, 
-                  functionName, 
+                  action.c_str(), 
                   rawErrorMessage);
         //mexPrintf("here!\n");
         //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
@@ -494,7 +513,7 @@ initialize(void)  {
 
 // taskHandle = DAQmxTaskMaster_('DAQmxCreateTask', taskName)
 void
-CreateTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+CreateTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     mxArray *taskHandleMXArray ;
@@ -514,7 +533,7 @@ CreateTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 
     // Create the task
     status = DAQmxCreateTask(taskName.c_str(), &taskHandle) ;
-    handlePossibleDAQmxErrorOrWarning(status); 
+    handlePossibleDAQmxErrorOrWarning(status, action); 
 
     //mexPrintf("Point 3\n");
 
@@ -542,7 +561,7 @@ CreateTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 
 
 // taskHandles = DAQmxGetAllTaskHandles()
-void GetAllTaskHandles(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void GetAllTaskHandles(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //int32 status ;  // Used several places for DAQmx return codes
     //TaskHandle taskHandle ;
     //mxArray *taskHandleMXArray ;
@@ -568,7 +587,7 @@ void GetAllTaskHandles(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 
 
 // DAQmxClearTask(taskHandle)
-void ClearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void ClearTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
@@ -583,7 +602,7 @@ void ClearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Clear the task
     int32 status;  // Used several places for DAQmx return codes
     status = clearTaskByIndex(taskHandleIndex) ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     
     // If get here, task was successfully un-registered                    
 }
@@ -591,15 +610,15 @@ void ClearTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 
 
 // DAQmxClearAllTasks()
-void ClearAllTasks(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void ClearAllTasks(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status = clearAllTasks() ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 
 
 
 // DAQmxStartTask(taskHandle)
-void StartTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void StartTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -617,14 +636,14 @@ void StartTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Make the call
     //
     status = DAQmxStartTask(taskHandle);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
 // DAQmxStopTask(taskHandle)
-void StopTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void StopTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -640,36 +659,36 @@ void StopTask(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // Make the call
     //
     status = DAQmxStopTask(taskHandle);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
-// DAQmxTaskControl(taskHandle, action)
-void TaskControl(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+// DAQmxTaskControl(taskHandle, taskAction)
+void TaskControl(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
-    int32 action ;
+    int32 taskAction ;
 
     // prhs[1]: taskHandle
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
-    // prhs[2]: action
-    action = readValueArgument(nrhs, prhs, 
-                               2, "action") ;
+    // prhs[2]: taskAction
+    taskAction = readValueArgument(nrhs, prhs, 
+                                   2, "taskAction") ;
 
     // Make the call
-    status = DAQmxTaskControl(taskHandle, action) ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    status = DAQmxTaskControl(taskHandle, taskAction) ;
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
 // DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource, triggerEdge)
-void CfgDigEdgeStartTrig(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CfgDigEdgeStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
@@ -692,14 +711,14 @@ void CfgDigEdgeStartTrig(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     // Make the call
     int32 status ;
     status = DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), triggerEdge) ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
 // DAQmxCfgSampClkTiming(taskHandle,source,rate,activeEdge,sampleMode,sampsPerChanToAcquire)
-void CfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
     // prhs[2]: source
     // prhs[3]: rate
@@ -754,14 +773,14 @@ void CfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
                                    activeEdge, 
                                    sampleMode,
                                    sampsPerChanToAcquire);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
 // DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName)
-void CreateAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
     TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
@@ -796,14 +815,14 @@ void CreateAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
                                  +10.0, 
                                  DAQmx_Val_Volts, 
                                  NULL);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 // end of function
 
 
 
 // DAQmxCreateAOVoltageChan(taskHandle, physicalChannelName)
-void CreateAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateAOVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     // prhs[1]: taskHandle
     // prhs[2]: physicalChannelName
@@ -826,7 +845,7 @@ void CreateAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
                                       +10.0, 
                                       DAQmx_Val_Volts, 
                                       NULL);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
@@ -836,7 +855,7 @@ void CreateAOVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
 //   physicalLineName should be something like 'Dev1/line0' or
 //   'Dev1/line7', not something fancy like 'Dev1/port0' or
 //   'Dev1/port0/line1' or a range, or any of that sort of thing
-void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateDIChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
@@ -859,7 +878,7 @@ void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     // if you call DAQmxReadDigitalLines() later, it will always
     // return 1 for numBytesPerSamp.  This is nice b/c it means we
     // don't have to return that if/when we wrap DAQmxReadDigitalLines().
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
@@ -869,7 +888,7 @@ void CreateDIChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 //   physicalLineName should be something like 'Dev1/line0' or
 //   'Dev1/line7', not something fancy like 'Dev1/port0' or
 //   'Dev1/port0/line1' or a range, or any of that sort of thing
-void CreateDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void CreateDOChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -890,14 +909,14 @@ void CreateDOChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                physicalLineName.c_str(), 
                                NULL, 
                                DAQmx_Val_ChanPerLine) ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
 
 
 
 // nSampsPerChanAvail = DAQmxGetReadAvailSampPerChan(taskHandle)
-void GetReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void GetReadAvailSampPerChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -914,7 +933,7 @@ void GetReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray 
     // Make the call
     //
     status = DAQmxGetReadAvailSampPerChan(taskHandle, &nSampsPerChanAvail);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Return output data
     plhs[0] = mxCreateDoubleScalar((double)nSampsPerChanAvail) ;  
@@ -924,7 +943,7 @@ void GetReadAvailSampPerChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray 
 
 
 // isTaskDone = DAQmxIsTaskDone(taskHandle)
-void IsTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void IsTaskDone(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
@@ -934,7 +953,7 @@ void IsTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     int32 status;
     bool32 isTaskDone;
     status = DAQmxIsTaskDone(taskHandle, &isTaskDone);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Return output data
     plhs[0] = mxCreateLogicalScalar(isTaskDone?true:false) ;  // Using tenary op prevents warning
@@ -944,7 +963,7 @@ void IsTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 // outputData = DAQmxReadBinaryI16(taskHandle, nSampsPerChanWanted, timeout)
-void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void ReadBinaryI16(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -985,7 +1004,7 @@ void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     
     // Determine # of channels
     status = DAQmxGetReadNumChans(taskHandle,&numChannels); 
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     
     // Determine the number of samples to try to read.
     // If user has requested all the sample available, find out how many that is.
@@ -997,7 +1016,7 @@ void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
         // In this case, have to find out how many scans are available
         status = DAQmxGetReadAvailSampPerChan(taskHandle,&nSampsPerChanAvailable);
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
         numSampsPerChanToTryToRead = nSampsPerChanAvailable ;
         }
     
@@ -1032,7 +1051,7 @@ void ReadBinaryI16(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                     NULL);
 
         // Check for error during the read
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
         }
 
     // Return output data
@@ -1086,7 +1105,7 @@ parseListOfChannelNames(const std::string & listOfChannelNames) {
 
 
 // coefficients = DAQmxGetAIDevScalingCoeffs(taskHandle)
-void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void GetAIDevScalingCoeffs(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // All X series devices seem to return 4 coefficients
     // Simulated X series return 2, but we just fill in the rest with zeros
     const int32 coefficientCount = 4 ;
@@ -1099,15 +1118,15 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
     int32 status ;  // Used several places for DAQmx return codes
     uInt32 channelCount; 
     status = DAQmxGetReadNumChans(taskHandle, &channelCount); 
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Get the names of the channels
     int32 bufferSize = DAQmxGetTaskChannels(taskHandle, NULL, 0) ;  // This is the length of the string + 1, for the null terminator
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     std::vector<char> channelListAsCharVector(bufferSize);
     //status = DAQmxGetTaskChannels(taskHandle, const_cast<char*>(channelListAsCharVector.data()), bufferSizeNeeded);
     status = DAQmxGetTaskChannels(taskHandle, channelListAsCharVector.data(), bufferSize);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     std::string channelListAsString(channelListAsCharVector.data());
 
     // Print that string
@@ -1137,7 +1156,7 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
         if (status < 0) {
             mxFree(outputDataMXArray);
         }
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
         //mexPrintf("coeff[0]: %g\n", *(outputDataPtr + i*coefficientCount + 0));
         //mexPrintf("coeff[1]: %g\n", *(outputDataPtr + i*coefficientCount + 1));
         //mexPrintf("coeff[2]: %g\n", *(outputDataPtr + i*coefficientCount + 2));
@@ -1152,7 +1171,7 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
 
 // outputData = DAQmxReadDigitalLines(taskHandle, nSampsPerChanWanted, timeout)
-void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void ReadDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
@@ -1202,13 +1221,13 @@ void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
         {
         // In this case, have to find out how many scans are available
         status = DAQmxGetReadAvailSampPerChan(taskHandle,&nSampsPerChanAvailable);
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
         numSampsPerChanToTryToRead = nSampsPerChanAvailable ;
         }
     
     // Determine # of channels
     status = DAQmxGetReadNumChans(taskHandle,&numChannels); 
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     
     // Allocate the output buffer
     outputDataMXArray = 
@@ -1242,7 +1261,7 @@ void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
                                        NULL);
 
         // Check for error during the read
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
 
         // If things are as we expect, numBytesPerSamp should *always* be one
         // Another way of saying this is that we don't support configurations of the DI lines 
@@ -1262,7 +1281,7 @@ void ReadDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 
 // outputData = DAQmxReadDigitalU32(taskHandle, nSampsPerChanWanted, timeout)
-void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void ReadDigitalU32(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
@@ -1294,7 +1313,7 @@ void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
         // In this case, have to find out how many scans are available.
         uInt32 nSampsPerChanAvailable;
         status = DAQmxGetReadAvailSampPerChan(taskHandle,&nSampsPerChanAvailable);
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
         numSampsPerChanToTryToRead = nSampsPerChanAvailable ;
     }
     
@@ -1335,7 +1354,7 @@ void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
         mexPrintf("numSampsPerChanActuallyRead: %d\n", numSampsPerChanActuallyRead);
 
         // Check for error during the read
-        handlePossibleDAQmxErrorOrWarning(status);
+        handlePossibleDAQmxErrorOrWarning(status, action);
     }
 
     // Return output data
@@ -1346,7 +1365,7 @@ void ReadDigitalU32(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 
 
 // DAQmxWaitUntilTaskDone(taskHandle, timeToWait)
-void WaitUntilTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void WaitUntilTaskDone(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 status ;  // Used several places for DAQmx return codes
     TaskHandle taskHandle ;
     float64 timeToWait ;
@@ -1390,13 +1409,13 @@ void WaitUntilTaskDone(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
     //
     // Make the call
     status = DAQmxWaitUntilTaskDone(taskHandle,timeToWait) ; 
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 
 
 
 // sampsPerChanWritten = DAQmxWriteAnalogF64(taskHandle, autoStart, timeout, writeArray)
-void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
+void WriteAnalogF64(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
     int index ; // index of the input arg we're currently dealing with
@@ -1447,7 +1466,7 @@ void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // Determine # of channels in task
     status = DAQmxGetWriteNumChans(taskHandle,&nChannelsInTask); 
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Verify the number of channels in the task equals that in the writeArray
     //mexPrintf("nChannelsInTask: %d\n",nChannelsInTask) ;
@@ -1473,7 +1492,7 @@ void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                                  writeArray,
                                  &nSampsPerChanWritten, 
                                  NULL);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Return output data
     plhs[0] = mxCreateDoubleScalar(nSampsPerChanWritten) ;  
@@ -1483,7 +1502,7 @@ void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 // sampsPerChanWritten = DAQmxWriteDigitalLines(taskHandle, autoStart, timeout, writeArray)
-void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void WriteDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //
     // Read input arguments
     //
@@ -1522,7 +1541,7 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
     // Determine # of channels in task
     uInt32 nChannelsInTask;
     int32 status = DAQmxGetWriteNumChans(taskHandle,&nChannelsInTask);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Verify the number of channels in the task equals that in the writeArray
     //mexPrintf("nChannelsInTask: %d\n",nChannelsInTask) ;
@@ -1550,7 +1569,7 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
                                     writeArray,
                                     &nSampsPerChanWritten, 
                                     NULL);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Return output data
     plhs[0] = mxCreateDoubleScalar(nSampsPerChanWritten) ;  
@@ -1561,14 +1580,14 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 
 
 // deviceNames = DAQmxGetSysDevNames()
-void GetSysDevNames(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
+void GetSysDevNames(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 bufferSize = DAQmxGetSysDevNames(NULL, 0) ;
         // Probe to get the required buffer size
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetSysDevNames(resultAsCharVector.data(), (uInt32)(bufferSize)) ;
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
@@ -1577,7 +1596,7 @@ void GetSysDevNames(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 
 
 // diLinesAsString = DAQmxGetDevDILines(deviceName)
-void GetDevDILines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void GetDevDILines(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     // prhs[1]: deviceName
     std::string deviceName(
@@ -1587,12 +1606,12 @@ void GetDevDILines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // Make the calls
     int32 bufferSize = DAQmxGetDevDILines(deviceName.c_str(), NULL, 0);
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     // Probe to get the required buffer size
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevDILines(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     //if (!resultAsCharVector.data()) {
     //    mexPrintf("resultAsCharVector.data() is null\n");
@@ -1604,7 +1623,7 @@ void GetDevDILines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 // coPhysicalChannelsAsString = DAQmxGetDevCOPhysicalChans(deviceName)
-void GetDevCOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void GetDevCOPhysicalChans(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     // prhs[1]: deviceName
     std::string deviceName(
@@ -1614,11 +1633,11 @@ void GetDevCOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
     // Make the calls
     int32 bufferSize = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), NULL, 0);  // Probe to get the required buffer size
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem                                                    
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem                                                    
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
@@ -1627,7 +1646,7 @@ void GetDevCOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
 
 // channelsAsString = DAQmxGetDevAIPhysicalChans(deviceName)
-void GetDevAIPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void GetDevAIPhysicalChans(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     // prhs[1]: deviceName
     std::string deviceName(
@@ -1637,11 +1656,11 @@ void GetDevAIPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
     // Make the calls
     int32 bufferSize = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), NULL, 0);  // Probe to get the required buffer size
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
@@ -1649,7 +1668,7 @@ void GetDevAIPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
 
 // channelsAsString = DAQmxGetDevAOPhysicalChans(deviceName)
-void GetDevAOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+void GetDevAOPhysicalChans(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
     // prhs[1]: deviceName
     std::string deviceName(
@@ -1660,11 +1679,11 @@ void GetDevAOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
     // Make the calls
     int32 bufferSize = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), NULL, 0);
     // Probe to get the required buffer size
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
@@ -1673,7 +1692,7 @@ void GetDevAOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
 
 
 // busTypeAsString = DAQmxGetDevBusType(deviceName)
-void GetDevBusType(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void GetDevBusType(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: deviceName
     std::string deviceName(
         readMandatoryStringArgument(nrhs, prhs,
@@ -1683,7 +1702,7 @@ void GetDevBusType(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // Make the calls
     int32 busTypeCode;
     int32 status = DAQmxGetDevBusType(deviceName.c_str(), &busTypeCode);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     std::string busTypeAsString = busTypeStringFromCode(busTypeCode);
     // Return output data
     plhs[0] = mxCreateString(busTypeAsString.c_str());
@@ -1693,7 +1712,7 @@ void GetDevBusType(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 // terminalName = DAQmxGetRefClkSrc(taskHandle)
-void GetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void GetRefClkSrc(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //
     // Read input arguments
     //
@@ -1703,11 +1722,11 @@ void GetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     // Make the calls
     int32 bufferSize = DAQmxGetRefClkSrc(taskHandle, NULL, 0);  // Probe to get the required buffer size
-    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    handlePossibleDAQmxErrorOrWarning(bufferSize, action);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetRefClkSrc(taskHandle, resultAsCharVector.data(), (uInt32)(bufferSize));
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
     // Return output data
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
@@ -1716,7 +1735,7 @@ void GetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 // DAQmxSetRefClkSrc(taskHandle, terminalName)
-void SetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void SetRefClkSrc(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     //
     // Read input arguments
     //
@@ -1734,21 +1753,21 @@ void SetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // Make the call
     // 
     int32 status = DAQmxSetRefClkSrc(taskHandle, terminalName.c_str());
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 // end of function
 
 
 
 // rate = DAQmxGetRefClkRate(taskHandle)
-void GetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void GetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
     TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
 
     // Make the call
     float64 result;
     int32 status = DAQmxGetRefClkRate(taskHandle, &result);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 
     // Return output data
     plhs[0] = mxCreateDoubleScalar(result);
@@ -1758,7 +1777,7 @@ void GetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
 
 // DAQmxSetRefClkRate(taskHandle, rate)
-void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+void SetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
     TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
 
@@ -1778,7 +1797,7 @@ void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     // Make the call
     int32 status = DAQmxSetRefClkRate(taskHandle, rate);
-    handlePossibleDAQmxErrorOrWarning(status);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 // end of function
 
@@ -1810,103 +1829,103 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     mxFree(actionAsCharPtr);
 
     if ( action == "DAQmxCreateTask" )  {
-        CreateTask(nlhs, plhs, nrhs, prhs) ;
+        CreateTask(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxGetAllTaskHandles" )  {
-        GetAllTaskHandles(nlhs, plhs, nrhs, prhs) ;
+        GetAllTaskHandles(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxClearTask" )  {
-        ClearTask(nlhs, plhs, nrhs, prhs) ;
+        ClearTask(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxClearAllTasks" )  {
-        ClearAllTasks(nlhs, plhs, nrhs, prhs) ;
+        ClearAllTasks(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxStartTask" )  {
-        StartTask(nlhs, plhs, nrhs, prhs) ;
+        StartTask(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxStopTask" )  {
-        StopTask(nlhs, plhs, nrhs, prhs) ;
+        StopTask(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxTaskControl" )  {
-        TaskControl(nlhs, plhs, nrhs, prhs) ;
+        TaskControl(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCreateAIVoltageChan" )  {
-        CreateAIVoltageChan(nlhs, plhs, nrhs, prhs) ;
+        CreateAIVoltageChan(action, nlhs, plhs, nrhs, prhs) ;
     }    
     else if ( action == "DAQmxCreateAOVoltageChan" )  {
-        CreateAOVoltageChan(nlhs, plhs, nrhs, prhs) ;
+        CreateAOVoltageChan(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCreateDIChan" )  {
-        CreateDIChan(nlhs, plhs, nrhs, prhs) ;
+        CreateDIChan(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCreateDOChan" )  {
-        CreateDOChan(nlhs, plhs, nrhs, prhs) ;
+        CreateDOChan(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxGetReadAvailSampPerChan" )  {
-        GetReadAvailSampPerChan(nlhs, plhs, nrhs, prhs) ;
+        GetReadAvailSampPerChan(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxIsTaskDone" )  {
-        IsTaskDone(nlhs, plhs, nrhs, prhs) ;
+        IsTaskDone(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxReadBinaryI16" )  {
-        ReadBinaryI16(nlhs, plhs, nrhs, prhs) ;
+        ReadBinaryI16(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxReadDigitalLines" )  {
-        ReadDigitalLines(nlhs, plhs, nrhs, prhs) ;
+        ReadDigitalLines(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxReadDigitalU32" )  {
-        ReadDigitalU32(nlhs, plhs, nrhs, prhs) ;
+        ReadDigitalU32(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxWaitUntilTaskDone" )  {
-        WaitUntilTaskDone(nlhs, plhs, nrhs, prhs) ;
+        WaitUntilTaskDone(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxWriteAnalogF64" )  {
-        WriteAnalogF64(nlhs, plhs, nrhs, prhs) ;
+        WriteAnalogF64(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxWriteDigitalLines" )  {
-        WriteDigitalLines(nlhs, plhs, nrhs, prhs) ;
+        WriteDigitalLines(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCfgSampClkTiming" )  {
-        CfgSampClkTiming(nlhs, plhs, nrhs, prhs) ;
+        CfgSampClkTiming(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCfgDigEdgeStartTrig" )  {
-        CfgDigEdgeStartTrig(nlhs, plhs, nrhs, prhs) ;
+        CfgDigEdgeStartTrig(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxGetAIDevScalingCoeffs" )  {
-        GetAIDevScalingCoeffs(nlhs, plhs, nrhs, prhs) ;
+        GetAIDevScalingCoeffs(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if (action == "DAQmxGetAIDevScalingCoeffs") {
-        GetAIDevScalingCoeffs(nlhs, plhs, nrhs, prhs);
+        GetAIDevScalingCoeffs(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetSysDevNames") {
-        GetSysDevNames(nlhs, plhs, nrhs, prhs);
+        GetSysDevNames(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetDevDILines") {
-        GetDevDILines(nlhs, plhs, nrhs, prhs);
+        GetDevDILines(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetDevCOPhysicalChans") {
-        GetDevCOPhysicalChans(nlhs, plhs, nrhs, prhs);
+        GetDevCOPhysicalChans(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetDevAIPhysicalChans") {
-        GetDevAIPhysicalChans(nlhs, plhs, nrhs, prhs);
+        GetDevAIPhysicalChans(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetDevAOPhysicalChans") {
-        GetDevAOPhysicalChans(nlhs, plhs, nrhs, prhs);
+        GetDevAOPhysicalChans(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetDevBusType") {
-        GetDevBusType(nlhs, plhs, nrhs, prhs);
+        GetDevBusType(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetRefClkSrc") {
-        GetRefClkSrc(nlhs, plhs, nrhs, prhs);
+        GetRefClkSrc(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxSetRefClkSrc") {
-        SetRefClkSrc(nlhs, plhs, nrhs, prhs);
+        SetRefClkSrc(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxGetRefClkRate") {
-        GetRefClkRate(nlhs, plhs, nrhs, prhs);
+        GetRefClkRate(action, nlhs, plhs, nrhs, prhs);
     }
     else if (action == "DAQmxSetRefClkRate") {
-        SetRefClkRate(nlhs, plhs, nrhs, prhs);
+        SetRefClkRate(action, nlhs, plhs, nrhs, prhs);
     }
     else  {
         // Doesn't match anything, so error
