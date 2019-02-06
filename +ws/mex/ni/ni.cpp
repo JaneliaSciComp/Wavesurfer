@@ -74,7 +74,7 @@ handlePossibleDAQmxErrorOrWarning(int32 errorCode)  {
                   rawErrorMessage);
         //mexPrintf("here!\n");
         //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
-        mexErrMsgIdAndTxt(errorID,errorMessage);
+        mexErrMsgIdAndTxt(errorID, errorMessage);
     }
 }
 // end of function
@@ -1782,11 +1782,11 @@ void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         rate = mxGetScalar(prhs[index]);
         mexPrintf("rate is %g\n", rate);
         if ((rate <= 0) || !isfinite(rate)) {
-            mexErrMsgTxt("rate must be a finite, positive value");
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a finite, positive value");
         }
     }
     else {
-        mexErrMsgTxt("rate must be a numeric non-complex scalar");
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a numeric non-complex scalar");
     }
 
     // Make the call
@@ -1801,14 +1801,14 @@ void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
     if (nrhs<1)  {
-        mexErrMsgIdAndTxt("DAQmxTaskMaster_:tooFewArguments",
-                          "DAQmxTaskMaster_() needs at least one argument") ;
+        mexErrMsgIdAndTxt("ws:ni:tooFewArguments",
+                          "ws.ni() needs at least one argument") ;
     }
     
     const mxArray* actionAsMxArray = (mxArray*)(prhs[0]) ;
     if (!isMxArrayAString(actionAsMxArray))  {
-        mexErrMsgIdAndTxt("DAQmxTaskMaster_:argNotAString", 
-                          "First argument to DAQmxTaskMaster_() must be a string.") ;        
+        mexErrMsgIdAndTxt("ws:ni:argNotAString", 
+                          "First argument to ws.ni() must be a string.") ;        
     }
 
     // Keep the DLL in memory after exit, so that this function acts as a poor man's 
