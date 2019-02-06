@@ -6,10 +6,11 @@ function result = getNumberOfSingleEndedAITerminalsFromDevice(deviceName)
         result = 0 ;
     else
         try
-            device = ws.dabs.ni.daqmx.Device(deviceName) ;
-            commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+            %device = ws.dabs.ni.daqmx.Device(deviceName) ;
+            %commaSeparatedListOfAIChannels = device.get('AIPhysicalChans') ;  % this is a string
+            commaSeparatedListOfAIChannels = ws.ni('DAQmxGetDevAIPhysicalChans', deviceName) ;  % this is a string
         catch exception
-            if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+            if isequal(exception.identifier,'ws:ni:DAQmxError:n200220') ,  % that code mean invalid device name
                 result = 0 ;
                 return
             else

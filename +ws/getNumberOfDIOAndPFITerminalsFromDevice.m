@@ -9,10 +9,11 @@ function [numberOfDIOChannels,numberOfPFILines] = getNumberOfDIOAndPFITerminalsF
         numberOfPFILines = 0 ;
     else
         try
-            device = ws.dabs.ni.daqmx.Device(deviceName) ;
-            commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+            %device = ws.dabs.ni.daqmx.Device(deviceName) ;
+            %commaSeparatedListOfChannelNames = device.get('DILines') ;  % this is a string
+            commaSeparatedListOfChannelNames = ws.ni('DAQmxGetDevDILines', deviceName) ;
         catch exception
-            if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+            if isequal(exception.identifier,'ws:ni:DAQmxError:n200220') ,  % that code mean invalid device name
                 numberOfDIOChannels = 0 ;
                 numberOfPFILines = 0 ;
                 return

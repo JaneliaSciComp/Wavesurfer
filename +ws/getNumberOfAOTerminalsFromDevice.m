@@ -5,10 +5,12 @@ function result = getNumberOfAOTerminalsFromDevice(deviceName)
         result = 0 ;
     else
         try
-            device = ws.dabs.ni.daqmx.Device(deviceName) ;
-            commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+            %device = ws.dabs.ni.daqmx.Device(deviceName) ;
+            %commaSeparatedListOfChannelNames = device.get('AOPhysicalChans') ;  % this is a string
+            commaSeparatedListOfChannelNames = ws.ni('DAQmxGetDevAOPhysicalChans', deviceName) ;  % this is a string
+            
         catch exception
-            if isequal(exception.identifier,'dabs:noDeviceByThatName') ,
+            if isequal(exception.identifier,'ws:ni:DAQmxError:n200220') ,  % that code mean invalid device name
                 result = 0 ;
                 return
             else

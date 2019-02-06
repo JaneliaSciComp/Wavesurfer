@@ -762,31 +762,20 @@ void CfgSampClkTiming(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]
 
 // DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName)
 void CreateAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
-    int32 status ;  // Used several places for DAQmx return codes
-    TaskHandle taskHandle ;
-    char *physicalChannelName = 0 ;
-    int rc ;
-    size_t nCharacters, bufferSize ;
-
-    //
-    // Read input arguments
-    //
-
     // prhs[1]: taskHandle
-    // prhs[2]: physicalChannelName
-
-    // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: physicalChannelName
+    std::vector<char> physicalChannelNameAsCharVector;
     if ( (nrhs>2) && mxIsChar(prhs[2]) )   {
-        nCharacters = mxGetNumberOfElements(prhs[2]);
+        size_t nCharacters = mxGetNumberOfElements(prhs[2]);
         if (nCharacters==0)   {
             mexErrMsgIdAndTxt("ws:ni:BadArgument","physicalChannelName cannot be empty");
         }
-        bufferSize = nCharacters + 1 ;
-        physicalChannelName = (char *)mxCalloc(bufferSize,sizeof(char));  
-        rc = mxGetString(prhs[2], physicalChannelName, (mwSize)bufferSize);
+        size_t bufferSize = nCharacters + 1 ;
+        physicalChannelNameAsCharVector.resize(bufferSize);
+        //physicalChannelName = (char *)mxCalloc(bufferSize,sizeof(char));  
+        int rc = mxGetString(prhs[2], physicalChannelNameAsCharVector.data(), (mwSize)bufferSize);
         if (rc != 0)  {
             mexErrMsgIdAndTxt("ws:ni:InternalError","Problem getting physicalChannelName into a C string");
         }
@@ -798,14 +787,15 @@ void CreateAIVoltageChan(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prh
     //
     // Make the call
     //
-    status = DAQmxCreateAIVoltageChan(taskHandle,
-                                      physicalChannelName, 
-                                      NULL,
-                                      DAQmx_Val_Cfg_Default, 
-                                      -10.0, 
-                                      +10.0, 
-                                      DAQmx_Val_Volts, 
-                                      NULL);
+    int32 status = 
+        DAQmxCreateAIVoltageChan(taskHandle,
+                                 physicalChannelNameAsCharVector.data(),
+                                 NULL,
+                                 DAQmx_Val_Cfg_Default,
+                                 -10.0, 
+                                 +10.0, 
+                                 DAQmx_Val_Volts, 
+                                 NULL);
     handlePossibleDAQmxErrorOrWarning(status);
 }
 // end of function
@@ -1112,11 +1102,13 @@ void GetAIDevScalingCoeffs(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
     handlePossibleDAQmxErrorOrWarning(status);
 
     // Get the names of the channels
-    int32 bufferSizeNeeded = DAQmxGetTaskChannels(taskHandle, NULL, 0) ;  
-        // This is the length of the string + 1, for the null terminator
-    std::string channelListAsString(bufferSizeNeeded-1, '*');
-    status = DAQmxGetTaskChannels(taskHandle, const_cast<char*>(channelListAsString.c_str()), bufferSizeNeeded);
+    int32 bufferSize = DAQmxGetTaskChannels(taskHandle, NULL, 0) ;  // This is the length of the string + 1, for the null terminator
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
+    std::vector<char> channelListAsCharVector(bufferSize);
+    //status = DAQmxGetTaskChannels(taskHandle, const_cast<char*>(channelListAsCharVector.data()), bufferSizeNeeded);
+    status = DAQmxGetTaskChannels(taskHandle, channelListAsCharVector.data(), bufferSize);
     handlePossibleDAQmxErrorOrWarning(status);
+    std::string channelListAsString(channelListAsCharVector.data());
 
     // Print that string
     //mexPrintf("channelListAsString size: %d\n", bufferSizeNeeded);
@@ -1491,69 +1483,57 @@ void WriteAnalogF64(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 
 // sampsPerChanWritten = DAQmxWriteDigitalLines(taskHandle, autoStart, timeout, writeArray)
-void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
-    {
-    int32 status ;  // Used several places for DAQmx return codes
-    int index ; // index of the input arg we're currently dealing with
-    TaskHandle taskHandle ;
-    bool32 autoStart ;
-    float64 timeout ;
-    uInt8 *writeArray = 0 ;
-    size_t nSampsPerChan ;
-    size_t nChannelsInWriteArray ;
-    uInt32 nChannelsInTask ;
-    int32 nSampsPerChanWritten ;
-
+void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     //
     // Read input arguments
     //
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: autoStart
-    index = 2;
-    if ( (nrhs>index) && mxIsScalar(prhs[index]) )  
-        {
+    bool32 autoStart;
+    int index = 2; // index of the input arg we're currently dealing with
+    if ( (nrhs>index) && mxIsScalar(prhs[index]) )  {
         autoStart = (bool32) mxGetScalar(prhs[index]) ;
-        }
-    else 
-        {
+    }
+    else  {
         mexErrMsgTxt("autoStart must be a scalar");        
-        }
+    }
 
     // prhs[3]: timeout
     index++;
-    timeout = readTimeoutArgument(nrhs, prhs, index) ;
-    
+    float64 timeout = readTimeoutArgument(nrhs, prhs, index) ;
+
     // prhs[4]: writeArray
+    uInt8 *writeArray = 0;
+    size_t nSampsPerChan;
+    size_t nChannelsInWriteArray;
     index++;
-    if ( nrhs>index && mxIsLogical(prhs[index]) && mxGetNumberOfDimensions(prhs[index])==2 )
-        {
+    if ( nrhs>index && mxIsLogical(prhs[index]) && mxGetNumberOfDimensions(prhs[index])==2 )  {
         nSampsPerChan = mxGetM(prhs[index]) ;
         nChannelsInWriteArray = mxGetN(prhs[index]) ;
         writeArray = (uInt8 *)mxGetData(prhs[index]) ;
-        }
-    else
-        {
+    }
+    else  {
         mexErrMsgIdAndTxt("ws:ni:badArgument", "writeArray must be a matrix of class logical");        
-        }
+    }
 
     // Determine # of channels in task
-    status = DAQmxGetWriteNumChans(taskHandle,&nChannelsInTask); 
+    uInt32 nChannelsInTask;
+    int32 status = DAQmxGetWriteNumChans(taskHandle,&nChannelsInTask);
     handlePossibleDAQmxErrorOrWarning(status);
 
     // Verify the number of channels in the task equals that in the writeArray
     //mexPrintf("nChannelsInTask: %d\n",nChannelsInTask) ;
     //mexPrintf("nChannelsInWriteArray: %d\n",nChannelsInWriteArray) ;    
-    if (nChannelsInTask != nChannelsInWriteArray)
-        {
+    if (nChannelsInTask != nChannelsInWriteArray)  {
         mexErrMsgIdAndTxt("ws:ni:badArgument",
                           "writeArray must have the same number of columns as the task has channels");
-        }
+    }
 
     // Check that nSampsPerChan will fit in an int32, and error if not
-    if (nSampsPerChan > std::numeric_limits<int32>::max()) {
+    if (nSampsPerChan > std::numeric_limits<int32>::max())  {
         mexErrMsgIdAndTxt("ws:ni:badArgument", "writeArray has too many rows, maximum is %d", std::numeric_limits<int32>::max());
     }
     int32 nSampsPerChanAsInt32 = int32(nSampsPerChan);
@@ -1561,7 +1541,8 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
     //
     // Make the call
     // 
-    status = DAQmxWriteDigitalLines(taskHandle, 
+    int32 nSampsPerChanWritten;
+    status = DAQmxWriteDigitalLines(taskHandle,
                                     nSampsPerChanAsInt32,
                                     autoStart,
                                     timeout, 
@@ -1574,7 +1555,7 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
     // Return output data
     plhs[0] = mxCreateDoubleScalar(nSampsPerChanWritten) ;  
         // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned        
-    }
+}
 // end of function
 
 
@@ -1583,6 +1564,7 @@ void WriteDigitalLines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[
 void GetSysDevNames(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     int32 bufferSize = DAQmxGetSysDevNames(NULL, 0) ;
         // Probe to get the required buffer size
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetSysDevNames(resultAsCharVector.data(), (uInt32)(bufferSize)) ;
@@ -1605,12 +1587,16 @@ void GetDevDILines(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // Make the calls
     int32 bufferSize = DAQmxGetDevDILines(deviceName.c_str(), NULL, 0);
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
     // Probe to get the required buffer size
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevDILines(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
     handlePossibleDAQmxErrorOrWarning(status);
     // Return output data
+    //if (!resultAsCharVector.data()) {
+    //    mexPrintf("resultAsCharVector.data() is null\n");
+    //}
     plhs[0] = mxCreateString(resultAsCharVector.data());
 }
 // end of function
@@ -1627,8 +1613,8 @@ void GetDevCOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
             EMPTY_IS_NOT_ALLOWED));
 
     // Make the calls
-    int32 bufferSize = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), NULL, 0);
-    // Probe to get the required buffer size
+    int32 bufferSize = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), NULL, 0);  // Probe to get the required buffer size
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem                                                    
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevCOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
@@ -1650,8 +1636,8 @@ void GetDevAIPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
             EMPTY_IS_NOT_ALLOWED));
 
     // Make the calls
-    int32 bufferSize = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), NULL, 0);
-    // Probe to get the required buffer size
+    int32 bufferSize = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), NULL, 0);  // Probe to get the required buffer size
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevAIPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
@@ -1674,6 +1660,7 @@ void GetDevAOPhysicalChans(int nlhs, mxArray *plhs[], int nrhs, const mxArray *p
     // Make the calls
     int32 bufferSize = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), NULL, 0);
     // Probe to get the required buffer size
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetDevAOPhysicalChans(deviceName.c_str(), resultAsCharVector.data(), (uInt32)(bufferSize));
@@ -1715,8 +1702,8 @@ void GetRefClkSrc(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
 
     // Make the calls
-    int32 bufferSize = DAQmxGetRefClkSrc(taskHandle, NULL, 0);
-    // Probe to get the required buffer size
+    int32 bufferSize = DAQmxGetRefClkSrc(taskHandle, NULL, 0);  // Probe to get the required buffer size
+    handlePossibleDAQmxErrorOrWarning(bufferSize);  // This is an error code if there was a problem
     //mexPrintf("Queried buffer size is: %d\n", (int)(bufferSize));
     std::vector<char> resultAsCharVector(bufferSize);
     int32 status = DAQmxGetRefClkSrc(taskHandle, resultAsCharVector.data(), (uInt32)(bufferSize));
@@ -1780,7 +1767,7 @@ void SetRefClkRate(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     float64 rate;
     if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
         rate = mxGetScalar(prhs[index]);
-        mexPrintf("rate is %g\n", rate);
+        //mexPrintf("rate is %g\n", rate);
         if ((rate <= 0) || !isfinite(rate)) {
             mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a finite, positive value");
         }

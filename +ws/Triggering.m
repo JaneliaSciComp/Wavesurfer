@@ -82,21 +82,26 @@ classdef Triggering < ws.Model
             % invariant, that the tasks are all empty when WS is not running.
             
             % Set up the built-in trigger task
-            self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-            sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
-            %builtinTrigger = self.BuiltinTrigger_
-            self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+%             self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
+%             sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
+%             self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+%             [referenceClockSource, referenceClockRate] = ...
+%                 ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+%             set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
+%             set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
+%             self.BuiltinTriggerDABSTask_.writeDigitalData(false);
+
+            self.BuiltinTriggerDABSTask_ = ws.ni('DAQmxCreateTask', 'WaveSurfer Built-in Trigger Task');  % on-demand DO task
+            sweepTriggerTerminalName = sprintf('%s/pfi%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
+            ws.ni('DAQmxCreateDOChan', self.BuiltinTriggerDABSTask_, sweepTriggerTerminalName) ;
             [referenceClockSource, referenceClockRate] = ...
                 ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-            set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
-            set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
-            self.BuiltinTriggerDABSTask_.writeDigitalData(false);
+            ws.ni('DAQmxSetRefClkSrc', self.BuiltinTriggerDABSTask_, referenceClockSource) ;
+            ws.ni('DAQmxSetRefClkRate', self.BuiltinTriggerDABSTask_, referenceClockRate) ;
+            autoStart = true ;
+            timeout = -1 ;  % means to wait as long as needed
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDABSTask_, autoStart, timeout, false) ;
             
-%             % Set up the counter triggers, if any
-%             % Tear down any pre-existing counter trigger tasks
-%             self.AcquisitionCounterTask_ = [];
-%             self.StimulationCounterTask_ = [];
-
             % If needed, set up the acquisition counter task
             acquisitionTrigger = self.getAcquisitionTrigger_() ;            
             if isa(acquisitionTrigger, 'ws.CounterTrigger') ,  % acquisition subsystem is always enabled
