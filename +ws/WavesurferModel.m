@@ -1322,16 +1322,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
              stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
                self.determineKeystoneTasks_() ;
             
-            % Isn't the code below a race condition?  What if the refiller
-            % responds first?  No, it's not a race, because one is waiting
-            % on the LooperIPCRequester_, the other on the
-            % RefillerIPCRequester_.
-            
-            % Wait for the looper to respond that it is ready
-            %timeout = 10 ;  % s
-            %[err,looperResponse] = self.LooperIPCRequester_.waitForResponse(timeout, 'startingRun') ;
+            % Tell the looper to start
             try
-               looperResponse = ...
+               coeffsAndClock = ...
                     self.Looper_.startingRun(acquisitionKeystoneTaskType, ...
                                              acquisitionKeystoneTaskDeviceName, ...
                                              self.IsAIChannelActive, ...
@@ -1347,46 +1340,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                              self.acquisitionTriggerProperty('PFIID'), ...
                                              self.acquisitionTriggerProperty('Edge'), ...
                                              self.DIChannelTerminalIDs) ;
-               err = [] ;                          
             catch err
+                self.abortOngoingRun_();
+                self.changeReadiness_(+1);
+                rethrow(err) ;
             end            
-            if isempty(err) ,
-                if isa(looperResponse,'MException') ,
-                    compositeLooperError = looperResponse ;
-                    analogScalingCoefficients = [] ;
-                    clockAtRunStartTic = [] ;
-                else
-                    compositeLooperError = [] ;
-                    analogScalingCoefficients = looperResponse.ScalingCoefficients ;
-                    clockAtRunStartTic = looperResponse.ClockAtRunStartTic ;
-                end
-            else
-                % If there was an error in the
-                % message-sending-and-receiving process, then we don't
-                % really care if the looper also had a problem.  We have
-                % bigger fish to fry, in a sense.
-                compositeLooperError = err ;
-                analogScalingCoefficients = [] ;
-                clockAtRunStartTic = [] ;
-            end            
-            if isempty(compositeLooperError) ,
-                summaryLooperError = [] ;
-            else
-                % Something went wrong
-                %self.abortOngoingRun_();
-                %self.changeReadiness_(+1);
-                summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
-                                                'The looper encountered a problem while getting ready for the run');
-                summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
-                %throw(summaryLooperError) ;  % can't throw until we
-                %consume the message from the refiller.  See below.
-            end
             
-            % Even if the looper had a problem, we still need to get the
-            % message from the refiller, if any, because we're using
-            % req-rep for these messages.
-            
-            % Wait for the refiller to respond that it is ready
+            % Tell the refiller to start
             try
                 stimulationTriggerClass = self.stimulationTriggerProperty('class') ;
                 if isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,                    
@@ -1429,55 +1389,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                         self.Refiller_.startEpisode(aoData, doData) ;
                     end
                 end
-                                       
-                refillerError = [] ;
-                err = [] ;
             catch err
+                self.abortOngoingRun_();
+                self.changeReadiness_(+1);
+                rethrow(err) ;                
             end            
-            %[err, refillerError] = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingRun') ;
-            if isempty(err) ,
-                compositeRefillerError = refillerError ;
-            else
-                % If there was an error in the
-                % message-sending-and-receiving process, then we don't
-                % really care if the refiller also had a problem.  We have
-                % bigger fish to fry, in a sense.
-                compositeRefillerError = err ;
-            end
-            if isempty(compositeRefillerError) ,
-                summaryRefillerError = [] ;
-            else
-                % Something went wrong
-                %self.abortOngoingRun_();
-                %self.changeReadiness_(+1);
-                summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
-                                                  'The refiller encountered a problem while getting ready for the run');
-                summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
-                %throw(me) ;
-            end
-            
-            % OK, now throw up if needed
-            if isempty(summaryLooperError) ,
-                if isempty(summaryRefillerError) ,
-                    % nothing to do
-                else
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryRefillerError) ;                    
-                end
-            else
-                if isempty(summaryRefillerError) ,
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryLooperError) ;                                        
-                else
-                    % Problems abound!  Throw the looper one, for no good
-                    % reason...
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryLooperError) ;                                                            
-                end                
-            end
             
 %             % Create the timer
 %             self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
@@ -1489,6 +1405,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
+            analogScalingCoefficients = coeffsAndClock.ScalingCoefficients ;
+            clockAtRunStartTic = coeffsAndClock.ClockAtRunStartTic ;
             self.Acquisition_.cacheAnalogScalingCoefficients(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             

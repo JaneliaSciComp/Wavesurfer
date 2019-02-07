@@ -2,7 +2,7 @@
 #include <vector>
 #include <limits>
 //#include <iostream>
-//#include <memory>
+#include <memory>
 #include "float.h"
 #include "mex.h"
 #include "matrix.h"
@@ -33,6 +33,15 @@ int32 TASK_HANDLE_COUNT = 0 ;
 
 
 // We want something like sprintf that handles the memory allocation for us, and returns a std::string
+// Note that if you want to do something like 
+//
+//     std::string output = sprintfpp("The string is %s", cstr)
+//
+// then the cstr has to be a c-style string (not a std::string).  If you have a std::string (call it str), 
+// then you need to do
+//
+//     std::string output = sprintfpp("The string is %s", str.c_str())
+//
 template<typename ... Args>
 std::string
 sprintfpp(const std::string & format, Args ... args) {
@@ -42,6 +51,8 @@ sprintfpp(const std::string & format, Args ... args) {
 	return std::string(buffer.get(), buffer.get() + size - 1); // We don't want the '\0' inside
 }
 
+
+
 template<typename ... Args>
 void
 printfpp(const std::string & format, Args ... args) {
@@ -49,57 +60,37 @@ printfpp(const std::string & format, Args ... args) {
 	mexPrintf(stringToPrint.c_str());
 }
 
+
+
 void
 handlePossibleDAQmxErrorOrWarning(int32 errorCode, std::string action)  {
-    char errorID[ERROR_ID_BUFFER_SIZE] ;
-    //const char *functionName;
-    int32 rawErrorMessageBufferSize;  
-    char *rawErrorMessage;  
-    int32 errorMessageBufferSize;
-    char *errorMessage;
-    int32 errorCodeMagnitude;
-    char errorCodeSignAsString[2] = "" ;
-
     // Ignore no-error condition, and also (controversially) ignore warnings
-    if (errorCode<0)  {
-        //functionName = mexFunctionName();
-        rawErrorMessageBufferSize = DAQmxGetErrorString(errorCode,NULL,0);  
-            // Probe to get the required buffer size
-        rawErrorMessage = (char *)mxCalloc(rawErrorMessageBufferSize,sizeof(char));  
-            // this is right, no +1 needed for string terminator
-        errorMessageBufferSize = rawErrorMessageBufferSize+100 ;
-        errorMessage = (char*) mxCalloc(errorMessageBufferSize,sizeof(char));
-        DAQmxGetErrorString(errorCode,rawErrorMessage,rawErrorMessageBufferSize);
-        // Can't have "-" in errorID, so work around this...
-        if (errorCode>=0)  {            
-            errorCodeMagnitude = errorCode ;
-            //errorCodeSignAsString = "";  // initialized to this
-        }
-        else {
-            errorCodeMagnitude = -errorCode ;
-            errorCodeSignAsString[0] = 'n';
-            errorCodeSignAsString[1] = (char)0;
-        }
-        sprintf_s(errorID, 
-                  ERROR_ID_BUFFER_SIZE, 
-                  "ws:ni:DAQmxError:%s%d",
-                  errorCodeSignAsString,
-                  errorCodeMagnitude); 
-        sprintf_s(errorMessage, 
-                  errorMessageBufferSize, 
-                  "DAQmx Error (%d) in %s: %s", 
+    if (errorCode >= 0)
+        return;
+    int32 rawErrorMessageBufferSize = DAQmxGetErrorString(errorCode,NULL,0);  // Probe to get the required buffer size
+    std::vector<char> rawErrorMessageBuffer(rawErrorMessageBufferSize);  // this is right, no +1 needed for string terminator
+    DAQmxGetErrorString(errorCode, rawErrorMessageBuffer.data(), rawErrorMessageBufferSize);
+    std::string rawErrorMessage(rawErrorMessageBuffer.data());
+    int32 errorMessageBufferSize = rawErrorMessageBufferSize+100 ;
+    // Can't have "-" in errorID, so work around this...
+    int32 errorCodeMagnitude = -errorCode;
+    std::string errorID = sprintfpp("ws:ni:DAQmxError:%s%d",
+                                    "n",
+                                    errorCodeMagnitude); 
+    std::string errorMessage = 
+        sprintfpp("DAQmx Error (%d) in %s: %s", 
                   errorCode, 
                   action.c_str(), 
                   rawErrorMessage);
-        //mexPrintf("here!\n");
-        //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
-        mexErrMsgIdAndTxt(errorID, errorMessage);
-    }
+    //mexPrintf("here!\n");
+    //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
+    mexErrMsgIdAndTxt(errorID.c_str(), errorMessage.c_str());
 }
 // end of function
 
 
 
+/*
 std::pair<bool, std::string>
 readStringArgument(int nrhs, const mxArray *prhs[], 
                    int index, const std::string & argumentName, 
@@ -145,7 +136,7 @@ readStringArgument(int nrhs, const mxArray *prhs[],
     return result ;
 }
 // end of function
-
+*/
 
 
 std::string
@@ -526,8 +517,7 @@ CreateTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArra
     }    
     
     // prhs[1]: taskName
-    std::pair<bool, std::string> taskNameMaybe( readStringArgument(nrhs, prhs, 1, "taskName", EMPTY_IS_NOT_ALLOWED, MISSING_IS_NOT_ALLOWED) ) ;
-    std::string taskName(taskNameMaybe.second) ;
+    std::string taskName(readMandatoryStringArgument(nrhs, prhs, 1, "taskName", EMPTY_IS_NOT_ALLOWED)) ;
 
     //mexPrintf("Point 2\n");
 
@@ -696,11 +686,9 @@ void CfgDigEdgeStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs
 
     // prhs[2]: triggerSource
     int index=2 ;
-    std::pair<bool, std::string> triggerSourceMaybe ( 
-        readStringArgument(nrhs, prhs, 
-                           index, "triggerSource", 
-                           EMPTY_IS_NOT_ALLOWED, MISSING_IS_NOT_ALLOWED) ) ;
-    std::string triggerSource(triggerSourceMaybe.second) ;
+    std::string triggerSource( readMandatoryStringArgument(nrhs, prhs,
+                                                           index, "triggerSource",
+                                                           EMPTY_IS_NOT_ALLOWED) );
 
     // prhs[3]: triggerEdge
     index++ ;
@@ -713,6 +701,21 @@ void CfgDigEdgeStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs
     status = DAQmxCfgDigEdgeStartTrig(taskHandle, triggerSource.c_str(), triggerEdge) ;
     handlePossibleDAQmxErrorOrWarning(status, action);
     }
+// end of function
+
+
+
+// DAQmxDisableStartTrig(taskHandle)
+void DisableStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
+{
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle;
+    taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+    // Make the call
+    int32 status = DAQmxDisableStartTrig(taskHandle);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
 // end of function
 
 
@@ -731,7 +734,7 @@ void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
     taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: source
-    std::pair<bool, std::string> sourceMaybe( readStringArgument(nrhs, prhs, 2, "source", EMPTY_IS_ALLOWED, MISSING_IS_ALLOWED) ) ;
+    std::string source( readMandatoryStringArgument(nrhs, prhs, 2, "source", EMPTY_IS_ALLOWED) ) ;
 
     // prhs[3]: rate
     float64 rate;
@@ -766,7 +769,7 @@ void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 
     // Call it in
     int32 status;
-    const char * sourceArgument = (sourceMaybe.first ? sourceMaybe.second.c_str() : NULL) ;
+    const char * sourceArgument = (source.empty() ? NULL : source.c_str()) ;
     status = DAQmxCfgSampClkTiming(taskHandle,
                                    sourceArgument,
                                    rate, 
@@ -785,30 +788,17 @@ void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs
     TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
 
     // prhs[2]: physicalChannelName
-    std::vector<char> physicalChannelNameAsCharVector;
-    if ( (nrhs>2) && mxIsChar(prhs[2]) )   {
-        size_t nCharacters = mxGetNumberOfElements(prhs[2]);
-        if (nCharacters==0)   {
-            mexErrMsgIdAndTxt("ws:ni:BadArgument","physicalChannelName cannot be empty");
-        }
-        size_t bufferSize = nCharacters + 1 ;
-        physicalChannelNameAsCharVector.resize(bufferSize);
-        //physicalChannelName = (char *)mxCalloc(bufferSize,sizeof(char));  
-        int rc = mxGetString(prhs[2], physicalChannelNameAsCharVector.data(), (mwSize)bufferSize);
-        if (rc != 0)  {
-            mexErrMsgIdAndTxt("ws:ni:InternalError","Problem getting physicalChannelName into a C string");
-        }
-    }
-    else  {
-        mexErrMsgIdAndTxt("ws:ni:BadArgument","physicalChannelName must be a string");
-    }
+    std::string physicalChannelName =
+        readMandatoryStringArgument(nrhs, prhs,
+                                    2, "physicalChannelName",
+                                    EMPTY_IS_NOT_ALLOWED);
 
     //
     // Make the call
     //
     int32 status = 
         DAQmxCreateAIVoltageChan(taskHandle,
-                                 physicalChannelNameAsCharVector.data(),
+                                 physicalChannelName.c_str(),
                                  NULL,
                                  DAQmx_Val_Cfg_Default,
                                  -10.0, 
@@ -1803,6 +1793,23 @@ void SetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, cons
 
 
 
+// rate = DAQmxGetSampClkRate(taskHandle)
+void GetSampClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+	// prhs[1]: taskHandle
+	TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+
+	// Make the call
+	float64 result;
+	int32 status = DAQmxGetSampClkRate(taskHandle, &result);
+	handlePossibleDAQmxErrorOrWarning(status, action);
+
+	// Return output data
+	plhs[0] = mxCreateDoubleScalar(result);
+}
+// end of function
+
+
+
 // The entry-point, where we do dispatch
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
@@ -1891,6 +1898,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     else if ( action == "DAQmxCfgDigEdgeStartTrig" )  {
         CfgDigEdgeStartTrig(action, nlhs, plhs, nrhs, prhs) ;
     }
+    else if (action == "DAQmxDisableStartTrig") {
+        DisableStartTrig(action, nlhs, plhs, nrhs, prhs);
+    }
     else if ( action == "DAQmxGetAIDevScalingCoeffs" )  {
         GetAIDevScalingCoeffs(action, nlhs, plhs, nrhs, prhs) ;
     }
@@ -1927,10 +1937,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     else if (action == "DAQmxSetRefClkRate") {
         SetRefClkRate(action, nlhs, plhs, nrhs, prhs);
     }
-    else  {
+	else if (action == "DAQmxGetSampClkRate") {
+		GetSampClkRate(action, nlhs, plhs, nrhs, prhs);
+	}
+	else  {
         // Doesn't match anything, so error
+        std::string errorMessage = sprintfpp("ws.ni() doesn't recognize method name %s", action.c_str());
         mexErrMsgIdAndTxt("ws:ni:noSuchMethod",
-                          "ws.ni() doesn't recognize that method name") ;
+                          errorMessage.c_str()) ;
     }
 
     //mexPrintf("About to exit\n");
