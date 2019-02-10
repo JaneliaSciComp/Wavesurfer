@@ -196,7 +196,17 @@ classdef AITask < handle
         end  % function
         
         function delete(self)
-            cellfun(@ws.deleteIfValidHandle, self.DabsDaqTasks_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            %cellfun(@ws.deleteIfValidHandle, self.DabsDaqTasks_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            for i = 1 : length(self.DabsDaqTasks_) ,
+                dabsTask = self.DabsDaqTasks_{i} ;
+                if ~isempty(dabsTask) ,
+                    if ~ws.ni('DAQmxIsTaskDone', dabsTask) ,
+                        ws.ni('DAQmxStopTask', dabsTask) ;
+                    end
+                    ws.ni('DAQmxClearTask', dabsTask) ;
+                end
+                self.DabsDaqTasks_{i} = [] ;
+            end
             self.DabsDaqTasks_ = cell(1,0) ;  % not really necessary...
         end
         
@@ -235,7 +245,8 @@ classdef AITask < handle
             deviceCount = length(self.DabsDaqTasks_) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                dabsTask.stop() ;
+                %dabsTask.stop() ;
+                ws.ni('DAQmxStopTask', dabsTask) ;
             end
         end
         
@@ -528,7 +539,7 @@ classdef AITask < handle
             deviceCount = length(dabsDaqTasks) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = dabsDaqTasks{deviceIndex} ;
-                dataForDevice = ws.ni('DAQmxReadAnalogDataI16', dabsTask, scanCount) ;
+                dataForDevice = ws.ni('DAQmxReadBinaryI16', dabsTask, scanCount, -1) ;
                 channelIndicesForDevice = channelIndicesPerDevice{deviceIndex} ;
                 data(:, channelIndicesForDevice) = dataForDevice ;
             end

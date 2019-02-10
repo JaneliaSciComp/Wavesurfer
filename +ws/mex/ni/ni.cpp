@@ -81,7 +81,7 @@ handlePossibleDAQmxErrorOrWarning(int32 errorCode, std::string action)  {
         sprintfpp("DAQmx Error (%d) in %s: %s", 
                   errorCode, 
                   action.c_str(), 
-                  rawErrorMessage);
+                  rawErrorMessage.c_str());
     //mexPrintf("here!\n");
     //mexPrintf("id: %s, msg: %s\n",errorID,errorMessage);
     mexErrMsgIdAndTxt(errorID.c_str(), errorMessage.c_str());
@@ -345,7 +345,7 @@ readValueArgument(int nrhs, const mxArray *prhs[],
 
 // Helper function for reading a task handle argument and validating it
 TaskHandle
-readTaskHandleArgument(int nrhs, const mxArray *prhs[])  {
+readTaskHandleArgument(std::string action, int nrhs, const mxArray *prhs[])  {
     TaskHandle taskHandle = 0 ;
     bool isTaskHandleValid ;
     mwSize i ;
@@ -368,14 +368,16 @@ readTaskHandleArgument(int nrhs, const mxArray *prhs[])  {
         }
         //mexPrintf("isTaskHandleValid: %d\n", isTaskHandleValid) ;
         if (!isTaskHandleValid)  {
+            std::string errorMessage = sprintfpp("In ws.ni 'method' %s, taskHandle is not a registered task handle", action.c_str());
             mexErrMsgIdAndTxt("ws:ni:badArgument",
-                              "taskHandle is not a registered task handle");
+                              errorMessage.c_str());
         }
         // If get here, taskHandle is a registered task handle
     }
     else  {
+        std::string errorMessage = sprintfpp("In ws.ni 'method' %s, taskHandle must be a uint64 scalar", action.c_str());
         mexErrMsgIdAndTxt("ws:ni:badArgument",
-                          "taskHandle must be a uint64 scalar");
+                          errorMessage.c_str());
     }
 
     return taskHandle ;
@@ -580,7 +582,7 @@ void GetAllTaskHandles(std::string action, int nlhs, mxArray *plhs[], int nrhs, 
 void ClearTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
         // This will error out if there are zero registered tasks
     
     // Find the index of the task handle
@@ -620,7 +622,7 @@ void StartTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mx
     // prhs[1]: taskHandle
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     //
     // Make the call
@@ -643,7 +645,7 @@ void StopTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxA
     //
 
     // prhs[0]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     //
     // Make the call
@@ -663,7 +665,7 @@ void TaskControl(std::string action, int nlhs, mxArray *plhs[], int nrhs, const 
     int32 taskAction ;
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: taskAction
     taskAction = readValueArgument(nrhs, prhs, 
@@ -682,7 +684,7 @@ void CfgDigEdgeStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: triggerSource
     int index=2 ;
@@ -710,7 +712,7 @@ void DisableStartTrig(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs);
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
     // Make the call
     int32 status = DAQmxDisableStartTrig(taskHandle);
@@ -731,7 +733,7 @@ void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: source
     std::string source( readMandatoryStringArgument(nrhs, prhs, 2, "source", EMPTY_IS_ALLOWED) ) ;
@@ -785,7 +787,7 @@ void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 // DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName)
 void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: physicalChannelName
     std::string physicalChannelName =
@@ -819,7 +821,7 @@ void CreateAOVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs
 
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: physicalChannelName
     std::string physicalChannelName( readMandatoryStringArgument(nrhs, prhs, 
@@ -849,7 +851,7 @@ void CreateDIChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: physicalLineName
     std::string physicalLineName( readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName", 
@@ -888,7 +890,7 @@ void CreateDOChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     //
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: physicalLineName
     std::string physicalLineName(readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName",
@@ -917,7 +919,7 @@ void GetReadAvailSampPerChan(std::string action, int nlhs, mxArray *plhs[], int 
     //
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     //
     // Make the call
@@ -937,7 +939,7 @@ void IsTaskDone(std::string action, int nlhs, mxArray *plhs[], int nrhs, const m
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // Make the call
     int32 status;
@@ -977,7 +979,7 @@ void ReadBinaryI16(std::string action, int nlhs, mxArray *plhs[], int nrhs, cons
     // prhs[3]: timeout
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: numSampsPerChanRequested
     if ( (nrhs>2) && mxIsScalar(prhs[2]) )  
@@ -1102,7 +1104,7 @@ void GetAIDevScalingCoeffs(std::string action, int nlhs, mxArray *plhs[], int nr
     
     // prhs[1]: taskHandle
     TaskHandle taskHandle ;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // Determine # of channels
     int32 status ;  // Used several places for DAQmx return codes
@@ -1186,7 +1188,7 @@ void ReadDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
     // prhs[3]: timeout
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: numSampsPerChanWanted
     if ( (nrhs>2) && mxIsScalar(prhs[2]) )  
@@ -1274,7 +1276,7 @@ void ReadDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 void ReadDigitalU32(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: numSampsPerChanWanted
     int32 numSampsPerChanWanted;  // this does take negative vals in the case of DAQmx_Val_Auto
@@ -1366,7 +1368,7 @@ void WaitUntilTaskDone(std::string action, int nlhs, mxArray *plhs[], int nrhs, 
     //
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: timeToWait
     index=2 ;
@@ -1423,7 +1425,7 @@ void WriteAnalogF64(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
     //
 
     // prhs[1]: taskHandle
-    taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: autoStart
     index = 2;
@@ -1498,7 +1500,7 @@ void WriteDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, 
     //
 
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs) ;
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: autoStart
     bool32 autoStart;
@@ -1708,7 +1710,7 @@ void GetRefClkSrc(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     //
 
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
     // Make the calls
     int32 bufferSize = DAQmxGetRefClkSrc(taskHandle, NULL, 0);  // Probe to get the required buffer size
@@ -1731,7 +1733,7 @@ void SetRefClkSrc(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     //
 
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
     // prhs[2]: terminalName
     std::string terminalName(
@@ -1752,7 +1754,7 @@ void SetRefClkSrc(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
 // rate = DAQmxGetRefClkRate(taskHandle)
 void GetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
     // Make the call
     float64 result;
@@ -1769,7 +1771,7 @@ void GetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, cons
 // DAQmxSetRefClkRate(taskHandle, rate)
 void SetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     // prhs[1]: taskHandle
-    TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
     // prhs[2]: rate
     int index = 2;
@@ -1796,7 +1798,7 @@ void SetRefClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, cons
 // rate = DAQmxGetSampClkRate(taskHandle)
 void GetSampClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 	// prhs[1]: taskHandle
-	TaskHandle taskHandle = readTaskHandleArgument(nrhs, prhs);
+	TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
 
 	// Make the call
 	float64 result;
@@ -1805,6 +1807,77 @@ void GetSampClkRate(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
 
 	// Return output data
 	plhs[0] = mxCreateDoubleScalar(result);
+}
+// end of function
+
+
+
+// sz = DAQmxGetBufOutputBufSize(taskHandle)
+void GetBufOutputBufSize(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // Make the call
+    uInt32 result;
+    int32 status = DAQmxGetBufOutputBufSize(taskHandle, &result);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+
+    // Return output data
+    plhs[0] = mxCreateDoubleScalar((float64)result);
+}
+// end of function
+
+
+
+// DAQmxCfgOutputBuffer(taskHandle, scanCount)
+void CfgOutputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: scanCount
+    int index = 2;
+    double scanCountAsDouble;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index]))  {
+        scanCountAsDouble = mxGetScalar(prhs[index]);
+        //mexPrintf("rate is %g\n", rate);
+        if (!isfinite(scanCountAsDouble) || scanCountAsDouble < 0 || scanCountAsDouble>4294967295.0)  {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a numeric non-complex scalar");
+    }
+    uInt32 scanCount = uInt32(round(scanCountAsDouble));
+
+    // Make the call
+    int32 status = DAQmxCfgOutputBuffer(taskHandle, scanCount);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxResetWriteRelativeTo(taskHandle)
+void ResetWriteRelativeTo(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // Make the call
+    int32 status = DAQmxResetWriteRelativeTo(taskHandle);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxResetWriteOffset(taskHandle)
+void ResetWriteOffset(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // Make the call
+    int32 status = DAQmxResetWriteOffset(taskHandle);
+    handlePossibleDAQmxErrorOrWarning(status, action);
 }
 // end of function
 
@@ -1940,7 +2013,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
 	else if (action == "DAQmxGetSampClkRate") {
 		GetSampClkRate(action, nlhs, plhs, nrhs, prhs);
 	}
-	else  {
+    else if (action == "DAQmxGetBufOutputBufSize") {
+        GetBufOutputBufSize(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxCfgOutputBuffer") {
+        CfgOutputBuffer(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxResetWriteRelativeTo") {
+        ResetWriteRelativeTo(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxResetWriteOffset") {
+        ResetWriteOffset(action, nlhs, plhs, nrhs, prhs);
+    }
+    else  {
         // Doesn't match anything, so error
         std::string errorMessage = sprintfpp("ws.ni() doesn't recognize method name %s", action.c_str());
         mexErrMsgIdAndTxt("ws:ni:noSuchMethod",

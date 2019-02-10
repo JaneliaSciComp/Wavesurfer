@@ -58,8 +58,14 @@ classdef Triggering < ws.Model
 
         function releaseTimedHardwareResources(self)
             % Delete the built-in trigger task
-            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to explicitly delete b/c DABS task
-            self.BuiltinTriggerDABSTask_ = [] ;
+            %ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to explicitly delete b/c DABS task
+            if ~isempty(self.BuiltinTriggerDABSTask_) ,
+                if ~ws.ni('DAQmxIsTaskDone', self.BuiltinTriggerDABSTask_) ,
+                    ws.ni('DAQmxStopTask', self.BuiltinTriggerDABSTask_) ;
+                end
+                ws.ni('DAQmxClearTask', self.BuiltinTriggerDABSTask_) ;
+                self.BuiltinTriggerDABSTask_ = [] ;
+            end
 %             if ~isempty(self.AcquisitionCounterTask_) ,
 %                 self.AcquisitionCounterTask_.stop();
 %             end
@@ -72,9 +78,11 @@ classdef Triggering < ws.Model
         
         function pulseBuiltinTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
-            self.BuiltinTriggerDABSTask_.writeDigitalData(true);            
+            %self.BuiltinTriggerDABSTask_.writeDigitalData(true);            
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDABSTask_, true, -1, true) ;
             %pause(0.010);  % TODO: get rid of once done debugging
-            self.BuiltinTriggerDABSTask_.writeDigitalData(false);            
+            %self.BuiltinTriggerDABSTask_.writeDigitalData(false);            
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDABSTask_, true, -1, false) ;
         end  % function
                 
         function startingRun(self, primaryDeviceName, isPrimaryDeviceAPXIDevice)

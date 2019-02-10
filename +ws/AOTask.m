@@ -1,31 +1,8 @@
 classdef AOTask < handle
-%     properties (Dependent = true)
-%         TaskName
-%         DeviceNames
-%         TerminalIDs
-%         OutputDuration
-%         IsChannelInTask
-%           % this is information that the task itself doesn't use, but it
-%           % becomes relevant when the task is created, and stops being
-%           % relevant when the task is destroyed, so it makes sense to keep
-%           % it with the task.
-%         SampleRate      % Hz
-%         TriggerTerminalName
-%         TriggerEdge
-%         ChannelData
-%     end
-    
-    % This class is not persisted, so no need to transient/persistent
+    % This class is not persisted, so no need for transient/persistent
     % distinction
     properties (Access = protected)
         SampleRate_ = 20000
-        %TriggerTerminalName_ = ''
-        %TriggerEdge_ = []
-        %DeviceNames_ = cell(1,0)
-        %TerminalIDs_ = zeros(1,0)        
-        %ChannelData_
-        %IsOutputBufferSyncedToChannelData_ = false
-        %IsChannelInTask_ = true(1,0)  % Some channels are not actually in the task, b/c of conflicts
         DabsDaqTasks_ = []  % Can be empty if there are zero channels
         ChannelCount_ = 0
         ChannelIndicesPerDevice_ = cell(1,0)
@@ -47,7 +24,8 @@ classdef AOTask < handle
             for deviceIndex = 1:deviceCount ,
                 deviceName = deviceNamePerDevice{deviceIndex} ;
                 dabsTaskName = sprintf('%s for %s', taskName, deviceName) ;
-                self.DabsDaqTasks_{deviceIndex} = ws.dabs.ni.daqmx.Task(dabsTaskName) ;
+                %self.DabsDaqTasks_{deviceIndex} = ws.dabs.ni.daqmx.Task(dabsTaskName) ;
+                self.DabsDaqTasks_{deviceIndex} = ws.ni('DAQmxCreateTask', dabsTaskName) ;
             end
             
             % Store this stuff
@@ -66,25 +44,37 @@ classdef AOTask < handle
                     for iChannel = 1:nChannelsThisDevice ,
                         terminalID = terminalIDs(iChannel) ;
                         dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                        dabsTask.createAOVoltageChan(deviceName, terminalID) ;
+                        %dabsTask.createAOVoltageChan(deviceName, terminalID) ;
+                        physicalChannelName = sprintf('%s/ao%d', deviceName, terminalID) ;
+                        ws.ni('DAQmxCreateAOVoltageChan', dabsTask, physicalChannelName) ;
                     end
                     [referenceClockSource, referenceClockRate] = ...
                         ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                    set(dabsTask, 'refClkSrc', referenceClockSource) ;
-                    set(dabsTask, 'refClkRate', referenceClockRate) ;
-                    dabsTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                    %set(dabsTask, 'refClkSrc', referenceClockSource) ;
+                    %set(dabsTask, 'refClkRate', referenceClockRate) ;
+                    ws.ni('DAQmxSetRefClkSrc', dabsTask, referenceClockSource) ;
+                    ws.ni('DAQmxSetRefClkRate', dabsTask, referenceClockRate) ;                    
+                    %dabsTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                    ws.ni('DAQmxCfgSampClkTiming', dabsTask, '', sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', 2);
+                        % 2 is the minimum value advisable when using FiniteSamps mode. If this isn't
+                        % set, then Error -20077 can occur if writeXXX() operation precedes configuring
+                        % sampQuantSampPerChan property to a non-zero value -- a bit strange,
+                        % considering that it is allowed to buffer/write more data than specified to
+                        % generate.                    
                     try
-                        dabsTask.control('DAQmx_Val_Task_Verify');
+                        %dabsTask.control('DAQmx_Val_Task_Verify');
+                        ws.ni('DAQmxTaskControl', dabsTask, 'DAQmx_Val_Task_Verify');
                     catch cause
-                        rawException = MException('ws:daqmx:taskFailedVerification', ...
+                        rawException = MException('ws:taskFailedVerification', ...
                                                   'There was a problem with the parameters of the input task, and it failed verification') ;
                         exception = addCause(rawException, cause) ;
                         throw(exception) ;
                     end
                     try
-                        taskSampleClockRate = dabsTask.sampClkRate ;
+                        %taskSampleClockRate = dabsTask.sampClkRate ;
+                        taskSampleClockRate = ws.ni('DAQmxGetSampClkRate', dabsTask) ;
                     catch cause
-                        rawException = MException('ws:daqmx:errorGettingTaskSampleClockRate', ...
+                        rawException = MException('ws:errorGettingTaskSampleClockRate', ...
                                                   'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
                         exception = addCause(rawException, cause) ;
                         throw(exception) ;
@@ -139,19 +129,37 @@ classdef AOTask < handle
                     end
                     
                     % Actually set the start trigger on the DABS daq task
+%                     if isempty(triggerTerminalName) ,
+%                         % This is mostly here for testing
+%                         dabsTask.disableStartTrig() ;
+%                     else
+%                         dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+%                         dabsTask.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+%                     end
                     if isempty(triggerTerminalName) ,
                         % This is mostly here for testing
-                        dabsTask.disableStartTrig() ;
+                        ws.ni('DAQmxDisableStartTrig', dabsTask) ;
                     else
                         dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-                        dabsTask.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+                        ws.ni('DAQmxCfgDigEdgeStartTrig', dabsTask, triggerTerminalName, dabsTriggerEdge);
                     end
+                    
                 end
             end
         end  % function
         
         function delete(self)
-            cellfun(@ws.deleteIfValidHandle, self.DabsDaqTasks_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            %cellfun(@ws.deleteIfValidHandle, self.DabsDaqTasks_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            for i = 1 : length(self.DabsDaqTasks_) ,
+                dabsTask = self.DabsDaqTasks_{i} ;
+                if ~isempty(dabsTask) ,
+                    if ~ws.ni('DAQmxIsTaskDone', dabsTask) ,
+                        ws.ni('DAQmxStopTask', dabsTask) ;
+                    end
+                    ws.ni('DAQmxClearTask', dabsTask) ;
+                end
+                self.DabsDaqTasks_{i} = [] ;
+            end
             self.DabsDaqTasks_ = cell(1,0) ;  % not really necessary...
         end  % function
         
@@ -163,7 +171,8 @@ classdef AOTask < handle
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = deviceCount:-1:1 ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    dabsTask.start() ;
+                    %dabsTask.start() ;
+                    ws.ni('DAQmxStartTask', dabsTask) ;
                 end
             end
         end  % function
@@ -174,7 +183,8 @@ classdef AOTask < handle
             deviceCount = length(self.DabsDaqTasks_) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                dabsTask.stop() ;
+                %dabsTask.stop() ;
+                ws.ni('DAQmxStopTask', dabsTask) ;
             end
         end  % function
 
@@ -185,7 +195,8 @@ classdef AOTask < handle
             deviceCount = length(self.DabsDaqTasks_) ;
             for deviceIndex = 1:deviceCount ,
                 dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                dabsTask.disableStartTrig() ;
+                %dabsTask.disableStartTrig() ;
+                ws.ni('DAQmxDisableStartTrig', dabsTask) ;
             end
         end  % function
         
@@ -234,113 +245,6 @@ classdef AOTask < handle
     end  % methods
     
     methods
-%         function out = get.TerminalNames(self)
-%             out = self.TerminalNames_ ;
-%         end  % function
-
-%         function out = get.DeviceNames(self)
-%             out = self.DeviceNames_ ;
-%         end  % function
-% 
-%         function out = get.TerminalIDs(self)
-%             out = self.TerminalIDs_ ;
-%         end  % function
-
-%         function out = get.ChannelNames(self)
-%             out = self.ChannelNames_ ;
-%         end  % function
-        
-%         function value = get.SampleRate(self)
-%             value = self.SampleRate_;
-%         end  % function
-        
-%         function out = get.TaskName(self)
-%             if isempty(self.DabsDaqTask_) ,
-%                 out = '';
-%             else
-%                 out = self.DabsDaqTask_.taskName;
-%             end
-%         end  % function
-        
-%         function set.TriggerTerminalName(self, newValue)
-%             if isempty(newValue) ,
-%                 self.TriggerTerminalName_ = '' ;
-%             elseif ws.isString(self.TriggerTerminalName_) ,
-%                 self.TriggerTerminalName_ = newValue ;
-%             else
-%                 error('ws:invalidPropertyValue', ...
-%                       'TriggerTerminalName must be empty or a string');
-%             end
-%         end  % function
-%         
-%         function value = get.TriggerTerminalName(self)
-%             value = self.TriggerTerminalName_ ;
-%         end  % function
-% 
-%         function set.TriggerEdge(self, newValue)
-%             if isempty(newValue) ,
-%                 self.TriggerEdge_ = [];
-%             elseif ws.isAnEdgeType(newValue) ,
-%                 self.TriggerEdge_ = newValue;
-%             else
-%                 error('ws:invalidPropertyValue', ...
-%                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
-%             end            
-%         end  % function
-%         
-%         function value = get.TriggerEdge(self)
-%             value = self.TriggerEdge_ ;
-%         end  % function                
-        
-%         function arm(self)
-%             % called before the first call to start()            
-%             %fprintf('FiniteOutputTask::arm()\n');
-%             if self.IsArmed_ ,
-%                 return
-%             end
-%             
-%             % Configure self.DabsDaqTask_
-%             if isempty(self.DabsDaqTask_) ,
-%                 % do nothing
-%             else
-%                 % Set up callbacks
-%                 %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-% 
-%                 % Set up triggering
-%                 if isempty(self.TriggerTerminalName) ,
-%                     self.DabsDaqTask_.disableStartTrig() ;
-%                 else
-%                     terminalName = self.TriggerTerminalName ;
-%                     triggerEdge = self.TriggerEdge ;
-%                     dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-%                     self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge) ;
-%                 end
-%             end
-%             
-%             % Note that we are now armed
-%             self.IsArmed_ = true;
-%         end  % function
-
-%         function disarm(self)
-%             if self.IsArmed_ ,            
-%                 if isempty(self.DabsDaqTask_) ,
-%                     % do nothing
-%                 else
-%                     % Unregister callbacks
-%                     %self.DabsDaqTask_.doneEventCallbacks = {};
-% 
-%                     % Stop the task
-%                     self.DabsDaqTask_.stop();
-%                     
-%                     % Unreserve resources (abort should do this for us)
-%                     %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
-%                 end
-%                 
-%                 % Note that we are now disarmed
-%                 self.IsArmed_ = false;
-%             end
-%         end  % function   
-        
         function result = isDone(self)
             if isempty(self.DabsDaqTasks_) ,
                 % This means there are no channels
@@ -349,7 +253,7 @@ classdef AOTask < handle
                 deviceCount = length(self.DabsDaqTasks_) ;
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    if ~dabsTask.isTaskDoneQuiet() ,
+                    if ~ws.ni('DAQmxIsTaskDone', dabsTask) ,
                         result = false ;
                         return
                     end                        
@@ -401,26 +305,34 @@ classdef AOTask < handle
             %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
             % this is needed b/c we might have filled the buffer before bur never outputed that data
             nScansInOutputData = size(outputData,1) ;
-            nScansInBuffer = dabsTask.get('bufOutputBufSize') ;
+            %nScansInBuffer = dabsTask.get('bufOutputBufSize') ;
+            nScansInBuffer = ws.ni('DAQmxGetBufOutputBufSize', dabsTask) ;
             if nScansInBuffer ~= nScansInOutputData ,
-                dabsTask.cfgOutputBuffer(nScansInOutputData) ;
+                %dabsTask.cfgOutputBuffer(nScansInOutputData) ;
+                ws.ni('DAQmxCfgOutputBuffer', dabsTask, nScansInOutputData) ;
             end
 
             % Configure the the number of scans in the finite-duration output
             %sampleRate = self.SampleRate_ ;
-            dabsTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData) ;
+            %dabsTask.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData) ;
+            ws.ni('DAQmxCfgSampClkTiming', dabsTask, '', sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', nScansInOutputData);
               % We validated the sample rate when we created the
               % FiniteOutputTask, so this should be OK, but check
               % anyway.
-            if dabsTask.sampClkRate ~= sampleRate ,
+            if ws.ni('DAQmxGetSampClkRate', dabsTask) ~= sampleRate ,
                 error('The DABS task sample rate is not equal to the desired sampling rate');
             end
 
             % Write the data to the output buffer
             outputData(end,:) = 0 ;  % don't want to end on nonzero value
-            dabsTask.reset('writeRelativeTo') ;
-            dabsTask.reset('writeOffset') ;
-            dabsTask.writeAnalogData(outputData) ;
+            %dabsTask.reset('writeRelativeTo') ;
+            %dabsTask.reset('writeOffset') ;
+            ws.ni('DAQmxResetWriteRelativeTo', dabsTask) ;
+            ws.ni('DAQmxResetWriteOffset', dabsTask) ;            
+            %dabsTask.writeAnalogData(outputData) ;
+            autoStart = false ;  % Don't automatically start the task.  This is typically what you want for a timed task.
+            timeout = -1 ;  % wait indefinitely
+            ws.ni('DAQmxWriteAnalogF64', dabsTask, autoStart, timeout, outputData) ;
         end
     end  % Static methods
     
