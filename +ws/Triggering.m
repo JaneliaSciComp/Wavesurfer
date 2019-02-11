@@ -101,7 +101,7 @@ classdef Triggering < ws.Model
 
             self.BuiltinTriggerDABSTask_ = ws.ni('DAQmxCreateTask', 'WaveSurfer Built-in Trigger Task');  % on-demand DO task
             sweepTriggerTerminalName = sprintf('%s/pfi%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
-            ws.ni('DAQmxCreateDOChan', self.BuiltinTriggerDABSTask_, sweepTriggerTerminalName) ;
+            ws.ni('DAQmxCreateDOChan', self.BuiltinTriggerDABSTask_, sweepTriggerTerminalName, 'DAQmx_Val_ChanForAllLines') ;
             [referenceClockSource, referenceClockRate] = ...
                 ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
             ws.ni('DAQmxSetRefClkSrc', self.BuiltinTriggerDABSTask_, referenceClockSource) ;

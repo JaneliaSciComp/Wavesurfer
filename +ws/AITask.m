@@ -91,7 +91,8 @@ classdef AITask < handle
                         physicalChannelName = sprintf('%s/ai%d', deviceName, terminalID) ;
                         ws.ni('DAQmxCreateAIVoltageChan', ...
                               dabsTask, ...
-                              physicalChannelName) ;
+                              physicalChannelName, ...
+                              'DAQmx_Val_Diff') ;
                     end
                     [referenceClockSource, referenceClockRate] = ...
                         ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
@@ -156,7 +157,7 @@ classdef AITask < handle
                 for deviceIndex = 1:deviceCount ,
                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
                     expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
-                    ws.AITask.setDABSTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
+                    ws.setDAQmxTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
 
                     % Set up triggering
                     deviceName = deviceNamePerDevice{deviceIndex} ;                    
@@ -544,46 +545,6 @@ classdef AITask < handle
                 data(:, channelIndicesForDevice) = dataForDevice ;
             end
         end
-        
-        function setDABSTaskTimingBang(dabsDaqTask, clockTiming, expectedScanCount, sampleRate)
-            switch clockTiming ,
-                case 'DAQmx_Val_FiniteSamps'
-                    ws.ni('DAQmxCfgSampClkTiming', ...
-                          dabsDaqTask, ...
-                          '', ...
-                          sampleRate, ...
-                          'DAQmx_Val_Rising', ...
-                          'DAQmx_Val_FiniteSamps', ...
-                          expectedScanCount) ;
-                      % we validated the sample rate when we created
-                      % the input task, so should be ok, but check
-                      % anyway
-                      if ws.ni('DAQmxGetSampClkRate', dabsDaqTask)~=sampleRate ,
-                          error('The DABS task sample rate is not equal to the desired sampling rate') ;
-                      end  
-                case 'DAQmx_Val_ContSamps'
-                    if isinf(expectedScanCount) ,
-                        bufferSize = sampleRate ;  % Default to 1 second of data as the buffer.
-                    else
-                        bufferSize = expectedScanCount ;
-                    end
-                    ws.ni('DAQmxCfgSampClkTiming', ...
-                          dabsDaqTask, ...
-                          '', ...
-                          sampleRate, ...
-                          'DAQmx_Val_Rising', ...
-                          'DAQmx_Val_ContSamps', ...
-                          2*bufferSize) ;
-                      % we validated the sample rate when we created
-                      % the input task, so should be ok, but check
-                      % anyway
-                      if ws.ni('DAQmxGetSampClkRate', dabsDaqTask) ~= sampleRate ,
-                          error('The DABS task sample rate is not equal to the desired sampling rate');
-                      end  
-                otherwise
-                    error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
-            end
-        end          
     end
 end
 

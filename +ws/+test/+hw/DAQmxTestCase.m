@@ -37,7 +37,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
 
         function testAI(self)
             aiTaskHandle = ws.ni('DAQmxCreateTask', 'AI') ;
-            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0') ;
+            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0', 'DAQmx_Val_Diff') ;
             desiredSampleRate = 1000 ;  % Hz
             desiredScanCount = 1000 ;
             ws.ni('DAQmxCfgSampClkTiming', aiTaskHandle, [], desiredSampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', desiredScanCount) ;
@@ -103,8 +103,8 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             self.verifyEqual(length(allTaskHandles), 0) ;
             
             aiTaskHandle = ws.ni('DAQmxCreateTask', 'AI') ;
-            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0') ;
-            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai1') ;
+            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0', 'DAQmx_Val_Diff') ;
+            ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai1', 'DAQmx_Val_Diff') ;
             ws.ni('DAQmxCfgSampClkTiming', aiTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             aoTaskHandle = ws.ni('DAQmxCreateTask', 'AO');

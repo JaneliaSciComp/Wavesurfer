@@ -266,6 +266,21 @@ daqmxValueFromString(const std::string & valueAsString)  {
     else if (valueAsString == "DAQmx_Val_ChanForAllLines") {
         resultMaybe = std::make_pair(true, DAQmx_Val_ChanForAllLines);
     }
+    else if (valueAsString == "DAQmx_Val_Cfg_Default") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_Cfg_Default);
+    }
+    else if (valueAsString == "DAQmx_Val_Diff") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_Diff);
+    }
+    else if (valueAsString == "DAQmx_Val_RSE") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_RSE);
+    }
+    else if (valueAsString == "DAQmx_Val_NRSE") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_NRSE);
+    }   
+    else if (valueAsString == "DAQmx_Val_PseudoDiff") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_PseudoDiff);
+    }
     else  {
         // Doesn't match anything, so result is empty
         resultMaybe = std::make_pair(false, 0);
@@ -333,8 +348,9 @@ readValueArgument(int nrhs, const mxArray *prhs[],
                                     EMPTY_IS_NOT_ALLOWED) ;  // This will not return if arg is missing
     std::pair<bool, int32> resultMaybe = daqmxValueFromString(valueAsString) ;
     if (!resultMaybe.first)  {
+        std::string errorMessage = sprintfpp("Did not recognize value %s for argument %s", valueAsString.c_str(), argumentName.c_str());
         mexErrMsgIdAndTxt("ws:ni:badArgument",
-                          "Did not recognize value %s for argument %s", valueAsString.c_str(), argumentName);
+                          errorMessage.c_str());
     }
 
     int32 result = resultMaybe.second ;
@@ -784,7 +800,7 @@ void CfgSampClkTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 
 
 
-// DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName)
+// DAQmxCreateAIVoltageChan(taskHandle, physicalChannelName, terminalConfig)
 void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // prhs[1]: taskHandle
     TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
@@ -795,6 +811,10 @@ void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs
                                     2, "physicalChannelName",
                                     EMPTY_IS_NOT_ALLOWED);
 
+    // prhs[3]: termination
+    int32 terminalConfig =
+        readValueArgument(nrhs, prhs, 3, "terminalConfig");
+
     //
     // Make the call
     //
@@ -802,7 +822,7 @@ void CreateAIVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs
         DAQmxCreateAIVoltageChan(taskHandle,
                                  physicalChannelName.c_str(),
                                  NULL,
-                                 DAQmx_Val_Cfg_Default,
+                                 terminalConfig,
                                  -10.0, 
                                  +10.0, 
                                  DAQmx_Val_Volts, 
@@ -843,19 +863,16 @@ void CreateAOVoltageChan(std::string action, int nlhs, mxArray *plhs[], int nrhs
 
 
 
-// DAQmxCreateDIChan(taskHandle, physicalLineName, lineGrouping)
-//   physicalLineName should be something like 'Dev1/line0' or
-//   'Dev1/line7', not something fancy like 'Dev1/port0' or
-//   'Dev1/port0/line1' or a range, or any of that sort of thing
+// DAQmxCreateDIChan(taskHandle, lines, lineGrouping)
 void CreateDIChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     // prhs[1]: taskHandle
     TaskHandle taskHandle;
     taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
-    // prhs[2]: physicalLineName
-    std::string physicalLineName( readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName", 
-                                                              EMPTY_IS_NOT_ALLOWED) ) ;
+    // prhs[2]: lines
+    std::string lines( readMandatoryStringArgument(nrhs, prhs, 2, "lines", 
+                                                   EMPTY_IS_NOT_ALLOWED) ) ;
 
     // prhs[3]: lineGrouping
     int32 lineGrouping = readValueArgument(nrhs, prhs, 3, "lineGrouping");
@@ -863,7 +880,7 @@ void CreateDIChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     // Make the call
     int32 status;
     status = DAQmxCreateDIChan(taskHandle,
-                               physicalLineName.c_str(), 
+                               lines.c_str(), 
                                NULL, 
                                lineGrouping) ;
     // Setting the fourth argument to DAQmx_Val_ChanPerLine guarantees (I think) that
@@ -876,10 +893,7 @@ void CreateDIChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
 
 
 
-// DAQmxCreateDOChan(taskHandle, physicalLineName)
-//   physicalLineName should be something like 'Dev1/line0' or
-//   'Dev1/line7', not something fancy like 'Dev1/port0' or
-//   'Dev1/port0/line1' or a range, or any of that sort of thing
+// DAQmxCreateDOChan(taskHandle, lines)
 void CreateDOChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  
     {
     int32 status ;  // Used several places for DAQmx return codes
@@ -893,14 +907,17 @@ void CreateDOChan(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
     taskHandle = readTaskHandleArgument(action, nrhs, prhs) ;
 
     // prhs[2]: physicalLineName
-    std::string physicalLineName(readMandatoryStringArgument(nrhs, prhs, 2, "physicalLineName",
-                                                             EMPTY_IS_NOT_ALLOWED));
+    std::string lines(readMandatoryStringArgument(nrhs, prhs, 2, "lines",
+                                                  EMPTY_IS_NOT_ALLOWED));
+
+    // prhs[3]: lineGrouping
+    int32 lineGrouping = readValueArgument(nrhs, prhs, 3, "lineGrouping");
 
     // Make the call
     status = DAQmxCreateDOChan(taskHandle, 
-                               physicalLineName.c_str(), 
+                               lines.c_str(), 
                                NULL, 
-                               DAQmx_Val_ChanPerLine) ;
+                               lineGrouping) ;
     handlePossibleDAQmxErrorOrWarning(status, action);
     }
 // end of function
@@ -1261,7 +1278,7 @@ void ReadDigitalLines(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
         if ( numBytesPerSamp != 1)
             {
             mexErrMsgIdAndTxt("ws:ni:numBytesPerSampIsWrong",
-                              "numBytesPerSamp is %d, it should be one",numBytesPerSamp);        
+                              "numBytesPerSamp is %d, it should be one", numBytesPerSamp);        
             }
         }
 
