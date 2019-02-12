@@ -31,8 +31,9 @@ function clean()
 
     % delete any ongoing daq tasks
     ws.FileExistenceCheckerManager.getShared().removeAll() ;
-    daqSystem = ws.dabs.ni.daqmx.System();
-    ws.deleteIfValidHandle(daqSystem.tasks);
+    %daqSystem = ws.dabs.ni.daqmx.System();    
+    %ws.deleteIfValidHandle(daqSystem.tasks);
+    ws.ni('DAQmxClearAllTasks') ;
 end  % function
 
 % function localMakeBackup(filename)
