@@ -252,6 +252,18 @@ classdef UserCodeManager < ws.Subsystem
             % Broadcast update
             self.broadcast('Update');
         end  % function        
+        
+        function callUserObjectMethod(self, methodName, varargin)
+            self.TheObject_.(methodName)(varargin{:}) ;
+        end
+        
+        function setUserObjectProperty(self, propertyName, newValue)
+            self.TheObject_.(propertyName) = newValue ;
+        end
+
+        function result = getUserObjectProperty(self, propertyName)
+            result = self.TheObject_.(propertyName) ;
+        end        
     end  % public methods block
        
     methods (Access=protected)
