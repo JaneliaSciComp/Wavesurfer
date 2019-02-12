@@ -595,7 +595,7 @@ for driveLetterSingleton = driveLettersToTry ,
     if exist(putativePath, 'file') ,
         didFindIt = true ;
         result = putativePath ;
-        fprintf('Found it!  Path: %s\n', result) ;
+        %fprintf('Found it!  Path: %s\n', result) ;
         break
     end
 end
