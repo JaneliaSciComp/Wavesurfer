@@ -1346,7 +1346,7 @@ void ReadDigitalU32(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
     }
 
     // Print the buffer size
-    mexPrintf("numSampsPerChanToTryToRead: %d\n", numSampsPerChanToTryToRead);
+    //mexPrintf("numSampsPerChanToTryToRead: %d\n", numSampsPerChanToTryToRead);
 
     // Get a pointer to the storage for the output buffer
     uInt32 *outputDataPtr;
@@ -1369,7 +1369,7 @@ void ReadDigitalU32(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
                                      NULL);
 
         // Print the buffer size
-        mexPrintf("numSampsPerChanActuallyRead: %d\n", numSampsPerChanActuallyRead);
+        //mexPrintf("numSampsPerChanActuallyRead: %d\n", numSampsPerChanActuallyRead);
 
         // Check for error during the read
         handlePossibleDAQmxErrorOrWarning(status, action);
