@@ -118,7 +118,7 @@ classdef DITask < handle
 %                         error('finiteacquisition:unknownclocktiming', 'Unexpected clock timing mode.');
 %                 end
                 expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
-                ws.setDAQmxTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
+                ws.setDAQmxTaskTimingBang(self.DabsDaqTask_, clockTiming, expectedScanCount, sampleRate) ;
 
                 % Set up triggering
 %                 if isempty(triggerTerminalName)

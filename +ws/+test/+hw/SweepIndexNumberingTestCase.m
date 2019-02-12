@@ -4,16 +4,13 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
-            delete(timerfindall()) ;
+            ws.clearDuringTests();
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(groot,'Type','Figure')) ;
-            %ws.reset() ;
-            delete(timerfindall()) ;
+            ws.clearDuringTests();
         end
     end
 
@@ -55,17 +52,21 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             %arrayOfWhatShouldBeTrue = zeros(4,1); %this will store the actual results
            
             pause(1);
+            
             % Create timer so Wavesurfer will be stopped 5 seconds after
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
             delayUntilManualStop = 10 ;  % s
-            timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
-                                          'TimerFcn',@(~,~)(wsModel.stop()), ...
-                                          'StartDelay',delayUntilManualStop, ...
-                                          'Period', 2*delayUntilManualStop);  % do this repeatedly in case first is missed
-            start(timerToStopWavesurfer);
-            wsModel.recordAndBlock();  % this will block
-            stop(timerToStopWavesurfer);
+%             timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
+%                                           'TimerFcn',@(~,~)(wsModel.stop()), ...
+%                                           'StartDelay',delayUntilManualStop, ...
+%                                           'Period', 2*delayUntilManualStop);  % do this repeatedly in case first is missed
+%             start(timerToStopWavesurfer);
+%             wsModel.recordAndBlock();  % this will block
+%             stop(timerToStopWavesurfer);
+            wsModel.record() ;
+            pause(delayUntilManualStop) ;
+            wsModel.stop() ;           
             
             % No external trigger was created, so no data should have been
             % collected and no file or data should have been written. Also,
@@ -86,11 +87,13 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);            
 
             pause(1);
-            % Start timer so Wavesurfer is stopped after 5 seconds
-            start(timerToStopWavesurfer);
+            % Start timer so Wavesurfer is stopped after delayUntilManualStop seconds
+%             start(timerToStopWavesurfer);
             wsModel.record();
-            pause(2*delayUntilManualStop) ;
-            stop(timerToStopWavesurfer);
+            pause(delayUntilManualStop) ;
+            wsModel.stop() ;                       
+%             pause(2*delayUntilManualStop) ;
+%             stop(timerToStopWavesurfer);
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = (length(filesCreated)==1) ;
             if wasAnOutputFileCreated ,
@@ -112,7 +115,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
 
             % Delete the data file, timer
             delete(dataFilePatternAbsolute);
-            delete(timerToStopWavesurfer);
+            %delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
             self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;

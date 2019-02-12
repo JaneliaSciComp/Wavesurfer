@@ -245,7 +245,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;
             self.verifyEqual(doTaskHandle, allTaskHandles) ;            
             
-            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1') ;
+            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1', 'DAQmx_Val_ChanPerLine') ;
             ws.ni('DAQmxCfgSampClkTiming', doTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             y = (sin(2*pi*f0*t)>=0) ;
@@ -278,7 +278,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxCfgSampClkTiming', diTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             doTaskHandle = ws.ni('DAQmxCreateTask', 'DO');
-            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1') ;
+            ws.ni('DAQmxCreateDOChan', doTaskHandle, 'Dev1/line1', 'DAQmx_Val_ChanPerLine') ;
             ws.ni('DAQmxCfgSampClkTiming', doTaskHandle, 'di/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             allTaskHandles = ws.ni('DAQmxGetAllTaskHandles') ;

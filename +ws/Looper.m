@@ -696,7 +696,7 @@ classdef Looper < handle
                 % Get the digital device names and terminal IDs, other
                 % things out of self
                 %primaryDeviceName = self.Frontend_.PrimaryDeviceName ;
-                deviceNameForEachDOChannel = repmat({primaryDeviceName},size(doChannelTerminalIDs)) ;
+                %deviceNameForEachDOChannel = repmat({primaryDeviceName},size(doChannelTerminalIDs)) ;
                 %deviceNameForEachDOChannel = self.DOChannelDeviceNames_ ;
                 terminalIDForEachDOChannel = doChannelTerminalIDs ;
                 
@@ -709,12 +709,12 @@ classdef Looper < handle
                 % Filter for just the on-demand ones
                 isOnDemandForEachDOChannel = ~isDOChannelTimed ;
                 if any(isOnDemandForEachDOChannel) ,
-                    deviceNameForEachOnDemandDOChannel = deviceNameForEachDOChannel ;
+                    %deviceNameForEachOnDemandDOChannel = deviceNameForEachDOChannel ;
                     terminalIDForEachOnDemandDOChannel = terminalIDForEachDOChannel(isOnDemandForEachDOChannel) ;
                     outputStateForEachOnDemandDOChannel = onDemandOutputStateForEachDOChannel(isOnDemandForEachDOChannel) ;
                     isTerminalUniquelyCommittedForEachOnDemandDOChannel = isTerminalUniquelyCommittedForEachDOChannel(isOnDemandForEachDOChannel) ;
                 else
-                    deviceNameForEachOnDemandDOChannel = cell(1,0) ;  % want a length-zero row vector
+                    %deviceNameForEachOnDemandDOChannel = cell(1,0) ;  % want a length-zero row vector
                     terminalIDForEachOnDemandDOChannel = zeros(1,0) ;  % want a length-zero row vector
                     outputStateForEachOnDemandDOChannel = false(1,0) ;  % want a length-zero row vector
                     isTerminalUniquelyCommittedForEachOnDemandDOChannel = true(1,0) ;  % want a length-zero row vector
@@ -725,13 +725,12 @@ classdef Looper < handle
                 isInTaskForEachOnDemandDOChannel = isTerminalUniquelyCommittedForEachOnDemandDOChannel ;
                 
                 % Create the task
-                deviceNamesInTask = deviceNameForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
+                %deviceNamesInTask = deviceNameForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 terminalIDsInTask = terminalIDForEachOnDemandDOChannel(isInTaskForEachOnDemandDOChannel) ;
                 self.UntimedDigitalOutputTask_ = ...
                     ws.OnDemandDOTask('WaveSurfer Untimed Digital Output Task', ...
                                       primaryDeviceName, ...
                                       isPrimaryDeviceAPXIDevice, ...
-                                      deviceNamesInTask, ...
                                       terminalIDsInTask) ;
                 self.IsInUntimedDOTaskForEachUntimedDOChannel_ = isInTaskForEachOnDemandDOChannel ;
                                                

@@ -22,7 +22,7 @@ classdef ResolvedAnalogInputConflictTestCase < matlab.unittest.TestCase
             try
                 wsModel.playAndBlock() ;
             catch me
-                if isequal(me.identifier, 'wavesurfer:looperDidntGetReady') ,
+                if isequal(me.identifier, 'ws:ni:DAQmxError:n200489') ,
                     % we expect this error, so ignore it
                 else
                     rethrow(me) ;

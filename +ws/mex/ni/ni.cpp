@@ -227,14 +227,20 @@ daqmxValueFromString(const std::string & valueAsString)  {
     if ( valueAsString == "DAQmx_Val_ContSamps" )  {
         resultMaybe = std::make_pair(true, DAQmx_Val_ContSamps) ;
     }
+    else if (valueAsString == "DAQmx_Val_FiniteSamps") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_FiniteSamps);
+    }
     else if ( valueAsString == "DAQmx_Val_Falling" )  {
         resultMaybe = std::make_pair(true, DAQmx_Val_Falling) ;
     }
-    else if ( valueAsString == "DAQmx_Val_FiniteSamps" )  {
-        resultMaybe = std::make_pair(true, DAQmx_Val_FiniteSamps) ;
-    }
     else if ( valueAsString == "DAQmx_Val_Rising" )  {
         resultMaybe = std::make_pair(true, DAQmx_Val_Rising) ;
+    }
+    else if (valueAsString == "DAQmx_Val_Low") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_Low);
+    }
+    else if (valueAsString == "DAQmx_Val_High") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_High);
     }
     else if ( valueAsString == "DAQmx_Val_Task_Abort" )  {
         resultMaybe = std::make_pair(true, DAQmx_Val_Task_Abort) ;
@@ -280,6 +286,9 @@ daqmxValueFromString(const std::string & valueAsString)  {
     }   
     else if (valueAsString == "DAQmx_Val_PseudoDiff") {
         resultMaybe = std::make_pair(true, DAQmx_Val_PseudoDiff);
+    }
+    else if (valueAsString == "DAQmx_Val_CounterOutputEvent") {
+        resultMaybe = std::make_pair(true, DAQmx_Val_CounterOutputEvent);
     }
     else  {
         // Doesn't match anything, so result is empty
@@ -1858,11 +1867,11 @@ void CfgOutputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, co
         scanCountAsDouble = mxGetScalar(prhs[index]);
         //mexPrintf("rate is %g\n", rate);
         if (!isfinite(scanCountAsDouble) || scanCountAsDouble < 0 || scanCountAsDouble>4294967295.0)  {
-            mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a finite, positive value");
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "scanCount must be a finite, positive value");
         }
     }
     else {
-        mexErrMsgIdAndTxt("ws:ni:badArgument", "rate must be a numeric non-complex scalar");
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "scanCount must be a numeric non-complex scalar");
     }
     uInt32 scanCount = uInt32(round(scanCountAsDouble));
 
@@ -1894,6 +1903,147 @@ void ResetWriteOffset(std::string action, int nlhs, mxArray *plhs[], int nrhs, c
 
     // Make the call
     int32 status = DAQmxResetWriteOffset(taskHandle);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxCreateCOPulseChanFreq(taskHandle, counter, idleState, initialDelay, freq, dutyCycle)
+void CreateCOPulseChanFreq(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: counter
+    std::string counter =
+        readMandatoryStringArgument(nrhs, prhs,
+                                    2, "counter",
+                                    EMPTY_IS_NOT_ALLOWED);
+
+    // prhs[3]: idleState
+    int32 idleState =
+        readValueArgument(nrhs, prhs, 3, "idleState");
+
+    // prhs[4]: initialDelay
+    int index = 4;
+    float64 initialDelay;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        initialDelay = mxGetScalar(prhs[index]);
+        if (!isfinite(initialDelay) || initialDelay<0.0) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "initialDelay must be a finite, nonnegative value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "initialDelay must be a numeric non-complex scalar");
+    }
+
+    // prhs[5]: freq
+    ++index;
+    float64 freq;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        freq = mxGetScalar(prhs[index]);
+        if (!isfinite(freq) || freq<=0.0) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "freq must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "freq must be a numeric non-complex scalar");
+    }
+
+    // prhs[6]: dutyCycle
+    ++index;
+    float64 dutyCycle;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        dutyCycle = mxGetScalar(prhs[index]);
+        if (!isfinite(dutyCycle) || dutyCycle <= 0.0 || dutyCycle >= 1.0) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "dutyCycle must be a finite value greater than 0.0 and less than 1.0");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "dutyCycle must be a numeric non-complex scalar");
+    }
+
+
+    //
+    // Make the call
+    //
+    int32 status =
+        DAQmxCreateCOPulseChanFreq(taskHandle, 
+                                   counter.c_str(), 
+                                   NULL, 
+                                   DAQmx_Val_Hz, 
+                                   idleState, 
+                                   initialDelay, 
+                                   freq, 
+                                   dutyCycle);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxCfgImplicitTiming(taskHandle, sampleMode, sampsPerChanToAcquire)
+void CfgImplicitTiming(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: sampleMode
+    int32 sampleMode =
+        readValueArgument(nrhs, prhs, 2, "sampleMode");
+
+    // prhs[3]: sampsPerChanToAcquire
+    int index = 3;
+    double sampsPerChanToAcquireAsDouble;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        sampsPerChanToAcquireAsDouble = mxGetScalar(prhs[index]);
+        //mexPrintf("rate is %g\n", rate);
+        if (!isfinite(sampsPerChanToAcquireAsDouble) || sampsPerChanToAcquireAsDouble < 0 || sampsPerChanToAcquireAsDouble > std::numeric_limits<uInt64>::max()) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "sampsPerChanToAcquire must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "sampsPerChanToAcquire must be a numeric non-complex scalar");
+    }
+    uInt64 sampsPerChanToAcquire = uInt64(round(sampsPerChanToAcquireAsDouble));
+
+
+    //
+    // Make the call
+    //
+    int32 status =
+        DAQmxCfgImplicitTiming(
+            taskHandle,
+            sampleMode,
+            sampsPerChanToAcquire);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxExportSignal(taskHandle, signalID, outputTerminal)
+void ExportSignal(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: signalID
+    int32 signalID =
+        readValueArgument(nrhs, prhs, 2, "signalID");
+
+    // prhs[3]: outputTerminal
+    std::string outputTerminal =
+        readMandatoryStringArgument(nrhs, prhs,
+            3, "outputTerminal",
+            EMPTY_IS_NOT_ALLOWED);
+
+    //
+    // Make the call
+    //
+    int32 status =
+        DAQmxExportSignal(
+            taskHandle,
+            signalID, 
+            outputTerminal.c_str());
     handlePossibleDAQmxErrorOrWarning(status, action);
 }
 // end of function
@@ -2041,6 +2191,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     }
     else if (action == "DAQmxResetWriteOffset") {
         ResetWriteOffset(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxCreateCOPulseChanFreq") {
+        CreateCOPulseChanFreq(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxCfgImplicitTiming") {
+        CfgImplicitTiming(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxExportSignal") {
+        ExportSignal(action, nlhs, plhs, nrhs, prhs);
     }
     else  {
         // Doesn't match anything, so error
