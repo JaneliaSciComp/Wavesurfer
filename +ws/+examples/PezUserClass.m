@@ -1,18 +1,21 @@
 classdef PezUserClass < ws.UserClass
     properties
-        TrialSequenceMode = 'all 1'  % can also be 'all-1', 'all-2', 'alternating'
+        TrialSequenceMode = 'all-1'  % can be 'all-1', 'all-2', 'alternating', or 'random'
         
-        BasePosition1  % 3x1, mm
-        ToneFrequency1  % Hz
-        DeliverPosition1  % 3x1, mm
+        BasePosition1 = [-74 70 20]  % 3x1, mm?
+        ToneFrequency1 = 3000  % Hz
+        DeliverPosition1 = [50 64 20]  % 3x1, mm?
+        DispenseChannelPosition1 = -23  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
-        BasePosition2  % 3x1, mm
-        ToneFrequency2  % Hz
-        DeliverPosition2  % 3x1, mm
+        BasePosition2 = [-74 70 20]  % 3x1, mm?
+        ToneFrequency2 = 10000  % Hz
+        DeliverPosition2 = [60 64 20]  % 3x1, mm?
+        DispenseChannelPosition2 = -30  % scalar, mm?
         
-        ToneDuration  % s
-        ToneDelay  % s, the delay between the end of the tone and the movement to the deliver position
-        ReturnDelay  % s, the delay until the post returns to the home position
+        ToneDuration = 1  % s
+        ToneDelay = 6  % s, the delay between the move to the deliver position and the start of the tone
+        DispenseDelay = 10  % s, the delay from the end of the tone to the move to the dispense position
+        ReturnDelay = 0.2  % s, the delay until the post returns to the home position
     end  % properties
 
     properties (SetAccess=private)
@@ -97,14 +100,17 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.basePosition('setValue', self.BasePosition1) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
                 self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition1) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition1) ;
             else
                 self.PezDispenser_.basePosition('setValue', self.BasePosition2) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition2) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition2) ;
             end
             self.PezDispenser_.toneDuration('setValue', self.ToneDuration) ;            
             self.PezDispenser_.toneDelayMin('setValue', self.ToneDelay) ;            
             self.PezDispenser_.toneDelayMax('setValue', self.ToneDelay) ;            
+            self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay) ;            
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;            
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;            
         end
