@@ -1079,6 +1079,89 @@ void ReadBinaryI16(std::string action, int nlhs, mxArray *plhs[], int nrhs, cons
 
 
 
+// outputData = DAQmxReadAnalogF64(taskHandle, nSampsPerChanWanted, timeout)
+void ReadAnalogF64(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    // prhs[2]: numSampsPerChanRequested
+    // prhs[3]: timeout
+
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: numSampsPerChanRequested
+    int32 numSampsPerChanRequested;  // this does take negative vals in the case of DAQmx_Val_Auto
+    if ((nrhs>2) && mxIsScalar(prhs[2]))  {
+        numSampsPerChanRequested = (int32)mxGetScalar(prhs[2]);
+    }
+    else  {
+        mexErrMsgTxt("numSampsPerChanRequested must be a scalar");
+    }
+
+    // prhs[3]: timeout
+    float64 timeout = readTimeoutArgument(nrhs, prhs, 3);
+
+    // Determine # of channels
+    uInt32 numChannels;
+    int32 status = DAQmxGetReadNumChans(taskHandle, &numChannels);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+
+    // Determine the number of samples to try to read.
+    // If user has requested all the sample available, find out how many that is.
+    int32 numSampsPerChanToTryToRead;
+    if (numSampsPerChanRequested >= 0)  {
+        numSampsPerChanToTryToRead = numSampsPerChanRequested;
+    }
+    else {
+        // In this case, have to find out how many scans are available
+        uInt32 nSampsPerChanAvailable;
+        status = DAQmxGetReadAvailSampPerChan(taskHandle, &nSampsPerChanAvailable);
+        handlePossibleDAQmxErrorOrWarning(status, action);
+        numSampsPerChanToTryToRead = nSampsPerChanAvailable;
+    }
+
+    // Allocate the output buffer
+    mxArray *outputDataMXArray;
+    outputDataMXArray =
+        mxCreateNumericMatrix(numSampsPerChanToTryToRead, numChannels, mxDOUBLE_CLASS, mxREAL);
+
+    // Check that the array size is correct
+    uInt32 arraySizeInSamps = ((uInt32)numSampsPerChanToTryToRead) * numChannels;
+    if (mxGetNumberOfElements(outputDataMXArray) != (size_t)(arraySizeInSamps))  {
+        mexErrMsgTxt("Failed to allocate an output array of the desired size");
+    }
+
+    // Get a pointer to the storage for the output buffer
+    float64 *outputDataPtr;
+    outputDataPtr = (float64 *)mxGetData(outputDataMXArray);
+
+    // Read the data
+    //mexPrintf("About to try to read %d scans of data\n", numSampsPerChanToTryToRead);
+    // The daqmx reading functions complain if you call them when there's no more data to read, 
+    // even if you ask for zero scans.
+    // So we don't attempt a read if numSampsPerChanToTryToRead is zero.
+    if (numSampsPerChanToTryToRead>0)  {
+        int32 numSampsPerChanRead;
+        status = DAQmxReadAnalogF64(
+            taskHandle,
+            numSampsPerChanToTryToRead,
+            timeout,
+            DAQmx_Val_GroupByChannel,
+            outputDataPtr,
+            arraySizeInSamps,
+            &numSampsPerChanRead,
+            NULL);
+
+        // Check for error during the read
+        handlePossibleDAQmxErrorOrWarning(status, action);
+    }
+
+    // Return output data
+    plhs[0] = outputDataMXArray;
+    // even if nlhs==0, still safe to assign to plhs[0], and should do this, so ans gets assigned        
+}
+
+
+
 // Trim whitespace from either end of a string
 std::string 
 trim(const std::string & s) {
@@ -2050,6 +2133,34 @@ void ExportSignal(std::string action, int nlhs, mxArray *plhs[], int nrhs, const
 
 
 
+// DAQmxCfgInputBuffer(taskHandle, numSampsPerChan)
+void CfgInputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: numSampsPerChan
+    int index = 2;
+    double numSampsPerChanAsDouble;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        numSampsPerChanAsDouble = mxGetScalar(prhs[index]);
+        //mexPrintf("rate is %g\n", rate);
+        if (!isfinite(numSampsPerChanAsDouble) || numSampsPerChanAsDouble < 0 || numSampsPerChanAsDouble>4294967295.0) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "numSampsPerChan must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "numSampsPerChan must be a numeric non-complex scalar");
+    }
+    uInt32 numSampsPerChan = uInt32(round(numSampsPerChanAsDouble));
+
+    // Make the call
+    int32 status = DAQmxCfgInputBuffer(taskHandle, numSampsPerChan);
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
 // The entry-point, where we do dispatch
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
@@ -2075,7 +2186,28 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     std::string action(actionAsCharPtr);
     mxFree(actionAsCharPtr);
 
-    if ( action == "DAQmxCreateTask" )  {
+    if (action == "DAQmxReadBinaryI16") {
+        ReadBinaryI16(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxReadAnalogF64") {
+        ReadAnalogF64(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxReadDigitalLines") {
+        ReadDigitalLines(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxReadDigitalU32") {
+        ReadDigitalU32(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxWriteAnalogF64") {
+        WriteAnalogF64(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxWriteDigitalLines") {
+        WriteDigitalLines(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxIsTaskDone") {
+        IsTaskDone(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if ( action == "DAQmxCreateTask" )  {
         CreateTask(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxGetAllTaskHandles" )  {
@@ -2111,26 +2243,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     else if ( action == "DAQmxGetReadAvailSampPerChan" )  {
         GetReadAvailSampPerChan(action, nlhs, plhs, nrhs, prhs) ;
     }
-    else if ( action == "DAQmxIsTaskDone" )  {
-        IsTaskDone(action, nlhs, plhs, nrhs, prhs) ;
-    }
-    else if ( action == "DAQmxReadBinaryI16" )  {
-        ReadBinaryI16(action, nlhs, plhs, nrhs, prhs) ;
-    }
-    else if ( action == "DAQmxReadDigitalLines" )  {
-        ReadDigitalLines(action, nlhs, plhs, nrhs, prhs) ;
-    }
-    else if ( action == "DAQmxReadDigitalU32" )  {
-        ReadDigitalU32(action, nlhs, plhs, nrhs, prhs) ;
-    }
     else if ( action == "DAQmxWaitUntilTaskDone" )  {
         WaitUntilTaskDone(action, nlhs, plhs, nrhs, prhs) ;
-    }
-    else if ( action == "DAQmxWriteAnalogF64" )  {
-        WriteAnalogF64(action, nlhs, plhs, nrhs, prhs) ;
-    }
-    else if ( action == "DAQmxWriteDigitalLines" )  {
-        WriteDigitalLines(action, nlhs, plhs, nrhs, prhs) ;
     }
     else if ( action == "DAQmxCfgSampClkTiming" )  {
         CfgSampClkTiming(action, nlhs, plhs, nrhs, prhs) ;
@@ -2200,6 +2314,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     }
     else if (action == "DAQmxExportSignal") {
         ExportSignal(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxCfgInputBuffer") {
+        CfgInputBuffer(action, nlhs, plhs, nrhs, prhs);
     }
     else  {
         // Doesn't match anything, so error

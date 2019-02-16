@@ -290,36 +290,57 @@ classdef TestPulser < ws.Model
 
             % Set up the input task
             % fprintf('About to create the input task...\n');
-            self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
+            %self.InputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Input');
+            self.InputTask_ = ws.ni('DAQmxCreateTask', 'Test Pulse Input') ;
             for i=1:nElectrodes ,
-                self.InputTask_.createAIVoltageChan(deviceName, monitorTerminalIDPerTestPulseElectrode(i));  % defaults to differential
+                %self.InputTask_.createAIVoltageChan(deviceName, monitorTerminalIDPerTestPulseElectrode(i));  % defaults to differential
+                terminalID = monitorTerminalIDPerTestPulseElectrode(i) ;
+                physicalChannelName = sprintf('%s/ai%d', deviceName, terminalID) ;                
+                ws.ni('DAQmxCreateAIVoltageChan', ...
+                      dabsTask, ...
+                      physicalChannelName, ...
+                      'DAQmx_Val_Diff') ;
             end
             [referenceClockSource, referenceClockRate] = ...
                 ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-            set(self.InputTask_, 'refClkSrc', referenceClockSource) ;
-            set(self.InputTask_, 'refClkRate', referenceClockRate) ;            
+            %set(self.InputTask_, 'refClkSrc', referenceClockSource) ;
+            %set(self.InputTask_, 'refClkRate', referenceClockRate) ;            
+            ws.ni('DAQmxSetRefClkSrc', self.InputTask_, referenceClockSource) ;
+            ws.ni('DAQmxSetRefClkRate', self.InputTask_, referenceClockRate) ;
             %deviceName = self.Parent.Parent.DeviceName ;
             clockString=sprintf('/%s/ao/SampleClock',deviceName);  % device name is something like 'Dev3'
-            self.InputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',[],clockString);
+            %self.InputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',[],clockString);
+            ws.ni('DAQmxCfgSampClkTiming', self.InputTask_, clockString, fs, 'DAQmx_Val_Rising', 'DAQmx_Val_ContSamps', 0);            
               % set the sampling rate, and use the AO sample clock to keep
               % acquisiton synced with analog output
-            self.InputTask_.cfgInputBuffer(10*nScans);
-
+            %self.InputTask_.cfgInputBuffer(10*nScans);
+            ws.ni('DAQmxCfgInputBuffer', self.InputTask_, 10*nScans);
+            
             % Set up the output task
             % fprintf('About to create the output task...\n');
-            self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
+            %self.OutputTask_ = ws.dabs.ni.daqmx.Task('Test Pulse Output');
+            self.OutputTask_ = ws.ni('DAQmxCreateTask', 'Test Pulse Output') ;
             for i=1:nElectrodes ,
-                self.OutputTask_.createAOVoltageChan(deviceName, commandTerminalIDPerTestPulseElectrode(i));
+                %self.OutputTask_.createAOVoltageChan(deviceName, commandTerminalIDPerTestPulseElectrode(i));
+                terminalID = commandTerminalIDPerTestPulseElectrode(i) ;
+                physicalChannelName = sprintf('%s/ao%d', deviceName, terminalID) ;
+                ws.ni('DAQmxCreateAOVoltageChan', self.OutputTask_, physicalChannelName) ;
             end
-            set(self.OutputTask_, 'refClkSrc', referenceClockSource) ;
-            set(self.OutputTask_, 'refClkRate', referenceClockRate) ;            
-            self.OutputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',nScans);
+            %set(self.OutputTask_, 'refClkSrc', referenceClockSource) ;
+            %set(self.OutputTask_, 'refClkRate', referenceClockRate) ;            
+            ws.ni('DAQmxSetRefClkSrc', self.OutputTask_, referenceClockSource) ;
+            ws.ni('DAQmxSetRefClkRate', self.OutputTask_, referenceClockRate) ;
+            %self.OutputTask_.cfgSampClkTiming(fs,'DAQmx_Val_ContSamps',nScans);
+            ws.ni('DAQmxCfgSampClkTiming', self.OutputTask_, '', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_ContSamps', nScans);
 
             % Limit the stimulus to the allowable range
             limitedCommandsInVolts=max(-10,min(commandsInVolts,+10));
 
             % Write the command to the output task                
-            self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
+            %self.OutputTask_.writeAnalogData(limitedCommandsInVolts);
+            autoStart = false ;  % Don't automatically start the task.  This is typically what you want for a timed task.
+            timeout = -1 ;  % wait indefinitely
+            ws.ni('DAQmxWriteAnalogF64', self.OutputTask_, autoStart, timeout, limitedCommandsInVolts) ;
 
             % Set up the input task callback
             %nSamplesPerSweep=nScans*nElectrodes;
@@ -381,8 +402,10 @@ classdef TestPulser < ws.Model
             self.LastToc_=toc(self.TimerValue_);
             
             % actually start the data acq tasks
-            self.InputTask_.start();  % won't actually start until output starts b/c see above
-            self.OutputTask_.start();
+            %self.InputTask_.start();  % won't actually start until output starts b/c see above
+            %self.OutputTask_.start();
+            ws.ni('DAQmxStartTask', self.InputTask_) ;  % won't actually start until output starts b/c see above
+            ws.ni('DAQmxStartTask', self.OutputTask_) ;
         end
         
         function stop_(self)
@@ -401,10 +424,12 @@ classdef TestPulser < ws.Model
             %    self.IsStopping_=true;
             %end
             if ~isempty(self.OutputTask_) ,
-                self.OutputTask_.stop();
+                %self.OutputTask_.stop();
+                ws.ni('DAQmxStopTask', self.OutputTask_) ;
             end
             if ~isempty(self.InputTask_) ,            
-                self.InputTask_.stop();
+                %self.InputTask_.stop();
+                ws.ni('DAQmxStopTask', self.InputTask_) ;
             end
 
             %
@@ -412,25 +437,33 @@ classdef TestPulser < ws.Model
             % (Is there a better way to do this?)
             %
             nScans = 2 ;
-            self.OutputTask_.cfgSampClkTiming(self.SamplingRateCached_,'DAQmx_Val_ContSamps',nScans);
+            %self.OutputTask_.cfgSampClkTiming(self.SamplingRateCached_,'DAQmx_Val_ContSamps',nScans);
+            ws.ni('DAQmxCfgSampClkTiming', self.OutputTask_, '', self.SamplingRateCached_, 'DAQmx_Val_Rising', 'DAQmx_Val_ContSamps', nScans);
             %commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
-            commandsInVolts=zeros(nScans,self.NElectrodesCached_);
-            self.OutputTask_.writeAnalogData(commandsInVolts);
-            self.OutputTask_.start();
+            commandsInVolts = zeros(nScans,self.NElectrodesCached_) ;
+            %self.OutputTask_.writeAnalogData(commandsInVolts);
+            autoStart = false ;  % Don't automatically start the task.  This is typically what you want for a timed task.
+            timeout = -1 ;  % wait indefinitely
+            ws.ni('DAQmxWriteAnalogF64', self.OutputTask_, autoStart, timeout, commandsInVolts) ;
+            %self.OutputTask_.start();
+            ws.ni('DAQmxStartTask', self.OutputTask_) ;
             % pause for 10 ms without relinquishing control
 %             timerVal=tic();
 %             while (toc(timerVal)<0.010)
 %                 x=1+1; %#ok<NASGU>
 %             end            
             ws.restlessSleep(0.010);  % pause for 10 ms
-            self.OutputTask_.stop();
+            %self.OutputTask_.stop();
+            ws.ni('DAQmxStopTask', self.OutputTask_) ;
             % % Maybe try this: java.lang.Thread.sleep(10);
 
             % Continue with stopping stuff
             % fprintf('About to delete the tasks...\n');
             %self
-            delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
-            delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
+            %delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
+            %delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
+            ws.ni('DAQmxClearTask', self.InputTask_) ;
+            ws.ni('DAQmxClearTask', self.OutputTask_) ;
             self.InputTask_=[];
             self.OutputTask_=[];
             % maybe need to do more here...
@@ -465,8 +498,10 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.OutputTask_) ,
                     try
-                        self.OutputTask_.stop();
-                        delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
+                        %self.OutputTask_.stop();
+                        %delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
+                        ws.ni('DAQmxStopTask', self.OutputTask_) ;
+                        ws.ni('DAQmxClearTask', self.OutputTask_) ;
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're
                           % trying to do the best we can here.
@@ -485,8 +520,10 @@ classdef TestPulser < ws.Model
             else
                 if isvalid(self.InputTask_) ,
                     try
-                        self.InputTask_.stop();
-                        delete(self.InputTask_);  % it's a DABS task, so have to manually delete
+                        %self.InputTask_.stop();
+                        %delete(self.InputTask_);  % it's a DABS task, so have to manually delete
+                        ws.ni('DAQmxStopTask', self.InputTask_) ;
+                        ws.ni('DAQmxClearTask', self.InputTask_) ;
                           % this delete() can throw, if, e.g. the daq board has
                           % been turned off.  We discard the error because we're
                           % trying to do the best we can here.
@@ -520,7 +557,8 @@ classdef TestPulser < ws.Model
             % compute resistance
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude
-            rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
+            %rawMonitor=self.InputTask_.readAnalogData(self.NScansInSweepCached_);  % rawMonitor is in V, is NScansInSweep x NElectrodes
+            rawMonitor = ws.ni('DAQmxReadAnalogF64', self.InputTask_, self.NScansInSweepCached_, -1) ;
                 % We now read exactly the number of scans we expect.  Not
                 % doing this seemed to work fine on ALT's machine, but caused
                 % nasty jitter issues on Minoru's rig machine.  In retrospect, kinda
