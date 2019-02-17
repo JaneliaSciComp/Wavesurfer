@@ -20,15 +20,44 @@
 
 
 // Define the 'instance variables' for the 'Singleton'
-// We use these to check TaskHandles ofr validity, and thus
+// We use these to check TaskHandles for validity, and thus
 // avoid segfaulting.
 #define MAXIMUM_TASK_HANDLE_COUNT 32 
 TaskHandle TASK_HANDLES[MAXIMUM_TASK_HANDLE_COUNT] ;
 int32 TASK_HANDLE_COUNT = 0 ;
+bool IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
+mxArray * EVERY_N_SAMPLES_MATLAB_CALLBACK = 0;
+uInt32 N_SAMPLES = 0;
+TaskHandle EVERY_N_SAMPLES_TASK_HANDLE = (TaskHandle)(0);
 
 
 
 #define isfinite(x) ( _finite(x) )        // MSVC-specific, change as needed
+
+
+
+int32 CVICALLBACK everyNSamplesCppCallback(TaskHandle taskHandle, int32 everyNsamplesEventType, uInt32 nSamples, void *callbackData) {
+    int32 status = 0;
+    mxArray *rhs[1];
+
+    // Double-check here to make sure something is registered
+    if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
+        rhs[0] = EVERY_N_SAMPLES_MATLAB_CALLBACK;
+
+        mxArray *matlabExceptionOrNull = mexCallMATLABWithTrap(0, NULL, 1, rhs, "feval");
+        if (matlabExceptionOrNull) {
+            const mxArray * errorStringAsMxArray = mxGetProperty(matlabExceptionOrNull, 0, "message");
+            size_t errorStringLength = mxGetN(errorStringAsMxArray);
+            size_t bufferLength = errorStringLength + 1;
+            std::vector<char> errorStringBuffer(errorStringLength + 1);
+            mxGetString(errorStringAsMxArray, errorStringBuffer.data(), bufferLength);
+            mexPrintf("Error in everyNSamples callback: %s\n", errorStringBuffer.data());
+            status = 1;
+        }
+    }
+
+    return status;
+}
 
 
 
@@ -433,6 +462,40 @@ bool isMxArrayAString(const mxArray* arg)  {
 
 
     
+// A helper function that calls DAQmxRegisterEveryNSamplesEvent() to unregister the 
+// callback and modifies the globals appropriately.
+// Never throws a Matlab error, returns the status from DAQmxRegisterEveryNSamplesEvent(),
+// or zero if no callback is registered.
+int32 unregisterEveryNSamplesEventAndUpdateGlobals(bool doIgnoreErrors) {
+    int32 status = 0;
+    if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
+        // Call the DAQmx function
+        status =
+            DAQmxRegisterEveryNSamplesEvent(
+                EVERY_N_SAMPLES_TASK_HANDLE,
+                DAQmx_Val_Acquired_Into_Buffer,
+                N_SAMPLES,
+                DAQmx_Val_SynchronousEventCallbacks,
+                (DAQmxEveryNSamplesEventCallbackPtr)(0),
+                (void *)(0));
+        status = doIgnoreErrors ? 0 : status;
+
+        // If that worked, update the global variables
+        if (status >= 0) {
+            IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
+            mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
+            EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
+            EVERY_N_SAMPLES_TASK_HANDLE = (TaskHandle)(0);
+            N_SAMPLES = 0;
+        }
+    }
+
+    return status;
+}
+// end of function
+
+
+
 // Find the index in TASK_HANDLES of the given task handle.  Returns int32,
 // which is -1 if the handle is not found.
 int32
@@ -455,13 +518,21 @@ findTaskByHandle(TaskHandle taskHandle)  {
 // Won't throw a Matlab error, but returns a NI-style status code.
 // Doesn't let a warning stop it from removing an item from TASK_HANDLES.
 int32
-clearTaskByIndex(int32 taskHandleIndex)  {
+clearTaskByIndex(int32 taskHandleIndex, bool doIgnoreErrors)  {
     int32 status ;
 
     //mexPrintf("Just entered clearTaskByIndex, with taskHandleIndex = %d\n", taskHandleIndex) ;
     if ( 0 <= taskHandleIndex && taskHandleIndex < TASK_HANDLE_COUNT )  {
         TaskHandle taskHandle = TASK_HANDLES[taskHandleIndex] ;
+        if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED && taskHandle == EVERY_N_SAMPLES_TASK_HANDLE) {
+            status = unregisterEveryNSamplesEventAndUpdateGlobals(doIgnoreErrors);
+            status = doIgnoreErrors ? 0 : status;
+            if (status < 0) {
+                return status;
+            }
+        }
         status = DAQmxClearTask(taskHandle);
+        status = doIgnoreErrors ? 0 : status;
         if ( status >= 0 )  {  // Even if a warning, still remove the task from TASK_HANDLES
             // Remove it from the list, shifting tasks after it one left
             int32 i ;
@@ -487,14 +558,14 @@ clearTaskByIndex(int32 taskHandleIndex)  {
 // Utility to clear tasks: Won't generate a Matlab error, but returns a NI-style
 // status code indicating success/failure.  Ignores NI warnings.
 int32
-clearAllTasks(void)  {
+clearAllTasks(bool doIgnoreErrors)  {
     int32 status = 0 ;  // Used several places for DAQmx return codes
     int32 taskHandleIndex ;
 
     // Delete each task, last to first
     //for ( taskHandleIndex=0 ; taskHandleIndex<TASK_HANDLE_COUNT ; ++taskHandleIndex)  {
     for (taskHandleIndex=(TASK_HANDLE_COUNT-1); taskHandleIndex>=0; --taskHandleIndex)  {  // faster
-        int32 thisStatus = clearTaskByIndex(taskHandleIndex) ;
+        int32 thisStatus = clearTaskByIndex(taskHandleIndex, doIgnoreErrors) ;
         if ( thisStatus < 0 )  {  // ignore warnings but not errors
             status = thisStatus ;
         }
@@ -508,8 +579,12 @@ clearAllTasks(void)  {
 
 // This will be registered with mexAtExit()
 static void finalize(void)  {
+    // If a callback is registered, unregister it
+    const bool doIgnoreErrors = true;
+    unregisterEveryNSamplesEventAndUpdateGlobals(doIgnoreErrors);
+
     // Clear all the tasks
-    clearAllTasks() ;  // Ignore return value, b/c can't do anything about it anyway
+    clearAllTasks(doIgnoreErrors) ;  // Ignore return value, b/c can't do anything about it anyway
     
     // It's now safe to clear the DLL from memory
     mexUnlock() ;
@@ -617,8 +692,9 @@ void ClearTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mx
     }
     
     // Clear the task
+    const bool doIgnoreErrors = false;
     int32 status;  // Used several places for DAQmx return codes
-    status = clearTaskByIndex(taskHandleIndex) ;
+    status = clearTaskByIndex(taskHandleIndex, doIgnoreErrors) ;
     handlePossibleDAQmxErrorOrWarning(status, action);
     
     // If get here, task was successfully un-registered                    
@@ -628,7 +704,8 @@ void ClearTask(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mx
 
 // DAQmxClearAllTasks()
 void ClearAllTasks(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
-    int32 status = clearAllTasks() ;
+    const bool doIgnoreErrors = false;
+    int32 status = clearAllTasks(doIgnoreErrors) ;
     handlePossibleDAQmxErrorOrWarning(status, action);
 }
 
@@ -2161,6 +2238,93 @@ void CfgInputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
 
 
 
+// DAQmxRegisterEveryNSamplesEvent(taskHandle, nSamples, callbackFunction)
+void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
+        mexErrMsgIdAndTxt("ws:ni:callbackAlreadyRegistered", "A callback is already registered for everyNSamplesEvent");
+    }
+
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    // prhs[2]: nSamples
+    int index = 2;
+    double nSamplesAsDouble;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxIsNumeric(prhs[index]) && !mxIsComplex(prhs[index])) {
+        nSamplesAsDouble = mxGetScalar(prhs[index]);
+        if (!isfinite(nSamplesAsDouble) || nSamplesAsDouble < 0 || nSamplesAsDouble>4294967295.0) {
+            mexErrMsgIdAndTxt("ws:ni:badArgument", "nSamples must be a finite, positive value");
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "nSamplesAsDouble must be a numeric non-complex scalar");
+    }
+    uInt32 nSamples = uInt32(round(nSamplesAsDouble));
+
+    // prhs[3]: callbackFunction (the Matlab one)
+    index = 3;
+    const mxArray * callbackFunction=0;
+    if ((nrhs>index) && mxIsScalar(prhs[index]) && mxGetClassID(prhs[index])==mxFUNCTION_CLASS) {
+        callbackFunction = prhs[index];
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:badArgument", "callbackFunction must be a scalar function handle");
+    }
+
+    // Store the callback pointer 
+    EVERY_N_SAMPLES_MATLAB_CALLBACK = mxDuplicateArray(callbackFunction);
+    mexMakeArrayPersistent(EVERY_N_SAMPLES_MATLAB_CALLBACK);
+    IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = true;
+
+    // Make the call
+    int32 status = 
+        DAQmxRegisterEveryNSamplesEvent(
+            taskHandle, 
+            DAQmx_Val_Acquired_Into_Buffer,
+            nSamples,
+            DAQmx_Val_SynchronousEventCallbacks,
+            &everyNSamplesCppCallback, 
+            (void *)(0));
+    if (status<0) {
+        // There was an error, so unregister callback
+        IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
+        mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
+        EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
+        EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
+        EVERY_N_SAMPLES_TASK_HANDLE = (TaskHandle)(0);
+        N_SAMPLES = 0;
+    }
+    handlePossibleDAQmxErrorOrWarning(status, action);
+}
+// end of function
+
+
+
+// DAQmxUnregisterEveryNSamplesEvent(taskHandle)
+void UnregisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    // prhs[1]: taskHandle
+    TaskHandle taskHandle = readTaskHandleArgument(action, nrhs, prhs);
+
+    if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED)  {
+        if (taskHandle == EVERY_N_SAMPLES_TASK_HANDLE) {
+            // Unregister the callback
+            const bool doIgnoreErrors = false;
+            int32 status = unregisterEveryNSamplesEventAndUpdateGlobals(doIgnoreErrors);
+            handlePossibleDAQmxErrorOrWarning(status, action);
+        }
+        else {
+            std::string errorMessage = sprintfpp("No callback is registered for everyNSamplesEvent for task handle %p", taskHandle);
+            mexErrMsgIdAndTxt("ws:ni:noCallbackRegisteredForTask", errorMessage.c_str());
+        }
+    }
+    else {
+        mexErrMsgIdAndTxt("ws:ni:noCallbackRegistered", "No callback is registered for everyNSamplesEvent");
+    }
+}
+// end of function
+
+
+
 // The entry-point, where we do dispatch
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     // Dispatch on the 'method' name
@@ -2317,6 +2481,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])  {
     }
     else if (action == "DAQmxCfgInputBuffer") {
         CfgInputBuffer(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxRegisterEveryNSamplesEvent") {
+        RegisterEveryNSamplesEvent(action, nlhs, plhs, nrhs, prhs);
+    }
+    else if (action == "DAQmxUnregisterEveryNSamplesEvent") {
+        UnregisterEveryNSamplesEvent(action, nlhs, plhs, nrhs, prhs);
     }
     else  {
         // Doesn't match anything, so error

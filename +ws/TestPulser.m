@@ -297,7 +297,7 @@ classdef TestPulser < ws.Model
                 terminalID = monitorTerminalIDPerTestPulseElectrode(i) ;
                 physicalChannelName = sprintf('%s/ai%d', deviceName, terminalID) ;                
                 ws.ni('DAQmxCreateAIVoltageChan', ...
-                      dabsTask, ...
+                      self.InputTask_, ...
                       physicalChannelName, ...
                       'DAQmx_Val_Diff') ;
             end
@@ -344,8 +344,9 @@ classdef TestPulser < ws.Model
 
             % Set up the input task callback
             %nSamplesPerSweep=nScans*nElectrodes;
-            self.InputTask_.everyNSamples = nScans ;
-            self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(wsModel.completingTestPulserSweep()) ;
+            %self.InputTask_.everyNSamples = nScans ;
+            %self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(wsModel.completingTestPulserSweep()) ;
+            ws.ni('DAQmxRegisterEveryNSamplesEvent', self.InputTask_, nScans, @()(wsModel.completingTestPulserSweep())) ;
 
             % Cache some things for speed during sweeps
             self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
@@ -496,19 +497,17 @@ classdef TestPulser < ws.Model
             if isempty(self.OutputTask_) ,
                 % nothing to do here
             else
-                if isvalid(self.OutputTask_) ,
-                    try
-                        %self.OutputTask_.stop();
-                        %delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
-                        ws.ni('DAQmxStopTask', self.OutputTask_) ;
-                        ws.ni('DAQmxClearTask', self.OutputTask_) ;
-                          % this delete() can throw, if, e.g. the daq board has
-                          % been turned off.  We discard the error because we're
-                          % trying to do the best we can here.
-                    catch me  %#ok<NASGU>
-                        % Not clear what to do here...
-                        % For now, just ignore the error and forge ahead
-                    end
+                try
+                    %self.OutputTask_.stop();
+                    %delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
+                    ws.ni('DAQmxStopTask', self.OutputTask_) ;
+                    ws.ni('DAQmxClearTask', self.OutputTask_) ;
+                      % this delete() can throw, if, e.g. the daq board has
+                      % been turned off.  We discard the error because we're
+                      % trying to do the best we can here.
+                catch me  %#ok<NASGU>
+                    % Not clear what to do here...
+                    % For now, just ignore the error and forge ahead
                 end
                 % At this point self.OutputTask_ is no longer valid
                 self.OutputTask_ = [] ;
@@ -518,19 +517,17 @@ classdef TestPulser < ws.Model
             if isempty(self.InputTask_) ,
                 % nothing to do here
             else
-                if isvalid(self.InputTask_) ,
-                    try
-                        %self.InputTask_.stop();
-                        %delete(self.InputTask_);  % it's a DABS task, so have to manually delete
-                        ws.ni('DAQmxStopTask', self.InputTask_) ;
-                        ws.ni('DAQmxClearTask', self.InputTask_) ;
-                          % this delete() can throw, if, e.g. the daq board has
-                          % been turned off.  We discard the error because we're
-                          % trying to do the best we can here.
-                    catch me  %#ok<NASGU>
-                        % Not clear what to do here...
-                        % For now, just ignore the error and forge ahead
-                    end
+                try
+                    %self.InputTask_.stop();
+                    %delete(self.InputTask_);  % it's a DABS task, so have to manually delete
+                    ws.ni('DAQmxStopTask', self.InputTask_) ;
+                    ws.ni('DAQmxClearTask', self.InputTask_) ;
+                      % this delete() can throw, if, e.g. the daq board has
+                      % been turned off.  We discard the error because we're
+                      % trying to do the best we can here.
+                catch me  %#ok<NASGU>
+                    % Not clear what to do here...
+                    % For now, just ignore the error and forge ahead
                 end
                 % At this point self.InputTask_ is no longer valid
                 self.InputTask_ = [] ;
