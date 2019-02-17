@@ -383,8 +383,8 @@ classdef Ephys < ws.Model
             self.TestPulser_.abort_() ;
         end
         
-        function completingTestPulserSweep(self, source, event)
-            self.TestPulser_.completingSweep(source, event) ;
+        function completingTestPulserSweep(self)
+            self.TestPulser_.completingSweep() ;
         end
 
         function result = isTestPulsing(self)

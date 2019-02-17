@@ -550,7 +550,7 @@ classdef TestPulser < ws.Model
             % self.changeReadiness(+1);
         end  % function
         
-        function completingSweep(self, varargin)
+        function completingSweep(self)
             % compute resistance
             % compute delta in monitor
             % Specify the time windows for measuring the baseline and the pulse amplitude

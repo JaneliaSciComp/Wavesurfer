@@ -5086,8 +5086,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end            
         end  % function    
         
-        function completingTestPulserSweep(self, source, event)
-            self.Ephys_.completingTestPulserSweep(source, event) ;
+        function completingTestPulserSweep(self)
+            self.Ephys_.completingTestPulserSweep() ;
             self.broadcast('TPUpdateTrace');
         end
     end
