@@ -426,18 +426,22 @@ classdef TestPulser < ws.Model
             %end
             if ~isempty(self.OutputTask_) ,
                 %self.OutputTask_.stop();
+                fprintf('About to stop task at point 1\n');
                 ws.ni('DAQmxStopTask', self.OutputTask_) ;
+                fprintf('Done stopping task at point 1\n');
             end
             if ~isempty(self.InputTask_) ,            
                 %self.InputTask_.stop();
+                fprintf('About to stop task at point 2\n');
                 ws.ni('DAQmxStopTask', self.InputTask_) ;
+                fprintf('Done stopping task at point 2\n');
             end
 
             %
             % make sure the output is set to the non-pulsed state
             % (Is there a better way to do this?)
             %
-            nScans = 2 ;
+            nScans = 1000 ;  % 2 scans doesn't seem to work reliably, not sure where the cutoff is
             %self.OutputTask_.cfgSampClkTiming(self.SamplingRateCached_,'DAQmx_Val_ContSamps',nScans);
             ws.ni('DAQmxCfgSampClkTiming', self.OutputTask_, '', self.SamplingRateCached_, 'DAQmx_Val_Rising', 'DAQmx_Val_ContSamps', nScans);
             %commandsInVolts=zeros(self.NScansInSweep,self.NElectrodes);
@@ -455,7 +459,9 @@ classdef TestPulser < ws.Model
 %             end            
             ws.restlessSleep(0.010);  % pause for 10 ms
             %self.OutputTask_.stop();
+            fprintf('About to stop task at point 3\n');
             ws.ni('DAQmxStopTask', self.OutputTask_) ;
+            fprintf('Done stopping task at point 3\n');
             % % Maybe try this: java.lang.Thread.sleep(10);
 
             % Continue with stopping stuff
@@ -463,9 +469,11 @@ classdef TestPulser < ws.Model
             %self
             %delete(self.InputTask_);  % Have to explicitly delete b/c it's a DABS task
             %delete(self.OutputTask_);  % Have to explicitly delete b/c it's a DABS task
+            fprintf('About to clear input task\n') ;
             ws.ni('DAQmxClearTask', self.InputTask_) ;
-            ws.ni('DAQmxClearTask', self.OutputTask_) ;
+            fprintf('Done clearing input task\n') ;
             self.InputTask_=[];
+            ws.ni('DAQmxClearTask', self.OutputTask_) ;
             self.OutputTask_=[];
             % maybe need to do more here...
             self.IsRunning_=false;
@@ -486,7 +494,7 @@ classdef TestPulser < ws.Model
             %self.broadcast('Update');
         end  % function
         
-        function abort_(self)
+        function abort(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
 
@@ -500,7 +508,9 @@ classdef TestPulser < ws.Model
                 try
                     %self.OutputTask_.stop();
                     %delete(self.OutputTask_);  % it's a DABS task, so have to manually delete
+                    fprintf('About to stop task at point 4\n');
                     ws.ni('DAQmxStopTask', self.OutputTask_) ;
+                    fprintf('Done stopping task at point 4\n');
                     ws.ni('DAQmxClearTask', self.OutputTask_) ;
                       % this delete() can throw, if, e.g. the daq board has
                       % been turned off.  We discard the error because we're
@@ -520,7 +530,9 @@ classdef TestPulser < ws.Model
                 try
                     %self.InputTask_.stop();
                     %delete(self.InputTask_);  % it's a DABS task, so have to manually delete
+                    fprintf('About to stop task at point 5\n');
                     ws.ni('DAQmxStopTask', self.InputTask_) ;
+                    fprintf('Done stopping task at point 5\n');
                     ws.ni('DAQmxClearTask', self.InputTask_) ;
                       % this delete() can throw, if, e.g. the daq board has
                       % been turned off.  We discard the error because we're

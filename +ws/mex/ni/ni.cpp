@@ -25,6 +25,7 @@
 #define MAXIMUM_TASK_HANDLE_COUNT 32 
 TaskHandle TASK_HANDLES[MAXIMUM_TASK_HANDLE_COUNT] ;
 int32 TASK_HANDLE_COUNT = 0 ;
+
 bool IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
 mxArray * EVERY_N_SAMPLES_MATLAB_CALLBACK = 0;
 uInt32 N_SAMPLES = 0;
@@ -40,6 +41,7 @@ int32 CVICALLBACK everyNSamplesCppCallback(TaskHandle taskHandle, int32 everyNsa
     int32 status = 0;
     mxArray *rhs[1];
 
+	mexPrintf("Inside everyNSamplesCppCallback()\n");
     // Double-check here to make sure something is registered
     if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
         rhs[0] = EVERY_N_SAMPLES_MATLAB_CALLBACK;
@@ -478,10 +480,12 @@ int32 unregisterEveryNSamplesEventAndUpdateGlobals(bool doIgnoreErrors) {
                 DAQmx_Val_SynchronousEventCallbacks,
                 (DAQmxEveryNSamplesEventCallbackPtr)(0),
                 (void *)(0));
+		mexPrintf("Return from call to DAQmxRegisterEveryNSamplesEvent() to unregister was %d\n", status);
         status = doIgnoreErrors ? 0 : status;
 
         // If that worked, update the global variables
         if (status >= 0) {
+			mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false\n");
             IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
             mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
             EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
@@ -2238,8 +2242,25 @@ void CfgInputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
 
 
 
+void printGlobalState() {
+	mexPrintf("TASK_HANDLE_COUNT: %d\n", TASK_HANDLE_COUNT);
+	for (int i = 0; i < TASK_HANDLE_COUNT; ++i) {
+		mexPrintf("TASK_HANDLES[%d]: %p\n", i, TASK_HANDLES[i]);
+	}
+
+	mexPrintf("IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED: %d\n", IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED);
+	mexPrintf("EVERY_N_SAMPLES_MATLAB_CALLBACK: %p\n", EVERY_N_SAMPLES_MATLAB_CALLBACK);
+	mexPrintf("N_SAMPLES: %ud\n", N_SAMPLES);
+	mexPrintf("EVERY_N_SAMPLES_TASK_HANDLE: %p\n", EVERY_N_SAMPLES_TASK_HANDLE);
+}
+// end of function
+
+
+
 // DAQmxRegisterEveryNSamplesEvent(taskHandle, nSamples, callbackFunction)
 void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+	printGlobalState();
+
     if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
         mexErrMsgIdAndTxt("ws:ni:callbackAlreadyRegistered", "A callback is already registered for everyNSamplesEvent");
     }
@@ -2272,10 +2293,13 @@ void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], i
     }
 
     // Store the callback pointer 
-    EVERY_N_SAMPLES_MATLAB_CALLBACK = mxDuplicateArray(callbackFunction);
+	EVERY_N_SAMPLES_TASK_HANDLE = taskHandle;
+	N_SAMPLES = nSamples;
+	EVERY_N_SAMPLES_MATLAB_CALLBACK = mxDuplicateArray(callbackFunction);
     mexMakeArrayPersistent(EVERY_N_SAMPLES_MATLAB_CALLBACK);
-    IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = true;
-
+	mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = true\n");
+	IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = true;
+		
     // Make the call
     int32 status = 
         DAQmxRegisterEveryNSamplesEvent(
@@ -2285,16 +2309,19 @@ void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], i
             DAQmx_Val_SynchronousEventCallbacks,
             &everyNSamplesCppCallback, 
             (void *)(0));
+	mexPrintf("Return from DAQmxRegisterEveryNSamplesEvent() is %d\n", status);
     if (status<0) {
         // There was an error, so unregister callback
+		mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false\n");
         IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
         mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
-        EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
         EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
         EVERY_N_SAMPLES_TASK_HANDLE = (TaskHandle)(0);
         N_SAMPLES = 0;
     }
     handlePossibleDAQmxErrorOrWarning(status, action);
+
+	printGlobalState();
 }
 // end of function
 

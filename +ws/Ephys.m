@@ -380,7 +380,7 @@ classdef Ephys < ws.Model
         end
         
         function abortTestPulsing(self)
-            self.TestPulser_.abort_() ;
+            self.TestPulser_.abort() ;
         end
         
         function completingTestPulserSweep(self)
