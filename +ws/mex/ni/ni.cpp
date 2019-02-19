@@ -41,7 +41,7 @@ int32 CVICALLBACK everyNSamplesCppCallback(TaskHandle taskHandle, int32 everyNsa
     int32 status = 0;
     mxArray *rhs[1];
 
-	mexPrintf("Inside everyNSamplesCppCallback()\n");
+	//mexPrintf("Inside everyNSamplesCppCallback()\n");
     // Double-check here to make sure something is registered
     if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
         rhs[0] = EVERY_N_SAMPLES_MATLAB_CALLBACK;
@@ -480,12 +480,12 @@ int32 unregisterEveryNSamplesEventAndUpdateGlobals(bool doIgnoreErrors) {
                 DAQmx_Val_SynchronousEventCallbacks,
                 (DAQmxEveryNSamplesEventCallbackPtr)(0),
                 (void *)(0));
-		mexPrintf("Return from call to DAQmxRegisterEveryNSamplesEvent() to unregister was %d\n", status);
+		//mexPrintf("Return from call to DAQmxRegisterEveryNSamplesEvent() to unregister was %d\n", status);
         status = doIgnoreErrors ? 0 : status;
 
         // If that worked, update the global variables
         if (status >= 0) {
-			mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false\n");
+			//mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false\n");
             IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
             mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
             EVERY_N_SAMPLES_MATLAB_CALLBACK = (mxArray *)(0);
@@ -2242,18 +2242,18 @@ void CfgInputBuffer(std::string action, int nlhs, mxArray *plhs[], int nrhs, con
 
 
 
-void printGlobalState() {
-	mexPrintf("TASK_HANDLE_COUNT: %d\n", TASK_HANDLE_COUNT);
-	for (int i = 0; i < TASK_HANDLE_COUNT; ++i) {
-		mexPrintf("TASK_HANDLES[%d]: %p\n", i, TASK_HANDLES[i]);
-	}
-
-	mexPrintf("IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED: %d\n", IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED);
-	mexPrintf("EVERY_N_SAMPLES_MATLAB_CALLBACK: %p\n", EVERY_N_SAMPLES_MATLAB_CALLBACK);
-	mexPrintf("N_SAMPLES: %ud\n", N_SAMPLES);
-	mexPrintf("EVERY_N_SAMPLES_TASK_HANDLE: %p\n", EVERY_N_SAMPLES_TASK_HANDLE);
-}
-// end of function
+//void printGlobalState() {
+//	mexPrintf("TASK_HANDLE_COUNT: %d\n", TASK_HANDLE_COUNT);
+//	for (int i = 0; i < TASK_HANDLE_COUNT; ++i) {
+//		mexPrintf("TASK_HANDLES[%d]: %p\n", i, TASK_HANDLES[i]);
+//	}
+//
+//	mexPrintf("IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED: %d\n", IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED);
+//	mexPrintf("EVERY_N_SAMPLES_MATLAB_CALLBACK: %p\n", EVERY_N_SAMPLES_MATLAB_CALLBACK);
+//	mexPrintf("N_SAMPLES: %ud\n", N_SAMPLES);
+//	mexPrintf("EVERY_N_SAMPLES_TASK_HANDLE: %p\n", EVERY_N_SAMPLES_TASK_HANDLE);
+//}
+//// end of function
 
 
 
