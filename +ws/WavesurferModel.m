@@ -5472,21 +5472,21 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end  % function
         
         function zoomOutTestPulseView(self)
-            self.Ephys_.zoomOutTestPulseView_() ;
+            self.Ephys_.zoomOutTestPulseView() ;
             self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollUpTestPulseView(self)
-            self.Ephys_.scrollUpTestPulseView_() ;
+            self.Ephys_.scrollUpTestPulseView() ;
             self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDownTestPulseView(self)
-            self.Ephys_.scrollDownTestPulseView_() ;
+            self.Ephys_.scrollDownTestPulseView() ;
             self.broadcast('UpdateTestPulser') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
