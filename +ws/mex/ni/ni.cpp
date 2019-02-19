@@ -2259,7 +2259,7 @@ void printGlobalState() {
 
 // DAQmxRegisterEveryNSamplesEvent(taskHandle, nSamples, callbackFunction)
 void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-	printGlobalState();
+	//printGlobalState();
 
     if (IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED) {
         mexErrMsgIdAndTxt("ws:ni:callbackAlreadyRegistered", "A callback is already registered for everyNSamplesEvent");
@@ -2302,12 +2302,12 @@ void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], i
 		
 	int32 status;
 
-	// Get ReadChannelsToRead, to make sure it doesn't get messed up.
-	int32 bufferSize = DAQmxGetReadChannelsToRead(taskHandle, NULL, 0);
-	std::vector<char> buffer(bufferSize);
-	status = DAQmxGetReadChannelsToRead(taskHandle, buffer.data(), bufferSize);
-	handlePossibleDAQmxErrorOrWarning(status, action);
-	mexPrintf("ReadChannelsToRead before: %s\n", buffer.data());
+	//// Get ReadChannelsToRead, to make sure it doesn't get messed up.
+	//int32 bufferSize = DAQmxGetReadChannelsToRead(taskHandle, NULL, 0);
+	//std::vector<char> buffer(bufferSize);
+	//status = DAQmxGetReadChannelsToRead(taskHandle, buffer.data(), bufferSize);
+	//handlePossibleDAQmxErrorOrWarning(status, action);
+	//mexPrintf("ReadChannelsToRead before: %s\n", buffer.data());
 
     // Make the call
     status = 
@@ -2320,7 +2320,7 @@ void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], i
             (void *)(0));
 	mexPrintf("Return from DAQmxRegisterEveryNSamplesEvent() is %d\n", status);
     if (status<0) {
-        // There was an error, so unregister callback
+        // There was an error, so undo all the changes we made to the globals
 		mexPrintf("About to set IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false\n");
         IS_EVERY_N_SAMPLES_MATLAB_CALLBACK_REGISTERED = false;
         mxDestroyArray(EVERY_N_SAMPLES_MATLAB_CALLBACK);
@@ -2330,20 +2330,25 @@ void RegisterEveryNSamplesEvent(std::string action, int nlhs, mxArray *plhs[], i
     }
     handlePossibleDAQmxErrorOrWarning(status, action);
 
-	// Get ReadChannelsToRead, to make sure it doesn't get messed up.
-	int32 bufferSize2 = DAQmxGetReadChannelsToRead(taskHandle, NULL, 0);
-	std::vector<char> buffer2(bufferSize);
-	status = DAQmxGetReadChannelsToRead(taskHandle, buffer2.data(), bufferSize2);
-	handlePossibleDAQmxErrorOrWarning(status, action);
-	mexPrintf("ReadChannelsToRead after: %s\n", buffer2.data());
-
-	// Reset and set ReadChannelsToRead, just to try it
-	status = DAQmxResetReadChannelsToRead(taskHandle);
-	handlePossibleDAQmxErrorOrWarning(status, action);
-	status = DAQmxSetReadChannelsToRead(taskHandle, buffer.data());
+	// Stopping the task after registering makes it work properly in repeated usage.
+	// Why that might be is mysterious to me.
+	status = DAQmxStopTask(taskHandle);
 	handlePossibleDAQmxErrorOrWarning(status, action);
 
-	printGlobalState();
+	//// Get ReadChannelsToRead, to make sure it doesn't get messed up.
+	//int32 bufferSize2 = DAQmxGetReadChannelsToRead(taskHandle, NULL, 0);
+	//std::vector<char> buffer2(bufferSize);
+	//status = DAQmxGetReadChannelsToRead(taskHandle, buffer2.data(), bufferSize2);
+	//handlePossibleDAQmxErrorOrWarning(status, action);
+	//mexPrintf("ReadChannelsToRead after: %s\n", buffer2.data());
+
+	//// Reset and set ReadChannelsToRead, just to try it
+	//status = DAQmxResetReadChannelsToRead(taskHandle);
+	//handlePossibleDAQmxErrorOrWarning(status, action);
+	//status = DAQmxSetReadChannelsToRead(taskHandle, buffer.data());
+	//handlePossibleDAQmxErrorOrWarning(status, action);
+
+	//printGlobalState();
 }
 // end of function
 

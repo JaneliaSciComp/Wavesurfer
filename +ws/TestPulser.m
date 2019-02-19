@@ -348,6 +348,13 @@ classdef TestPulser < ws.Model
             %self.InputTask_.everyNSamplesEventCallbacks = @(varargin)(wsModel.completingTestPulserSweep()) ;
             ws.ni('DAQmxRegisterEveryNSamplesEvent', self.InputTask_, nScans, @()(wsModel.completingTestPulserSweep())) ;
 
+            % Does this help?  Yes!!! This fixes it!!!!
+            %ws.ni('DAQmxStopTask', self.InputTask_) ;  % For some reason, this makes registering the callback work on the 2nd and subsequent times
+            %  Moved the stop call into ws.ni('DAQmxRegisterEveryNSamplesEvent', ...)
+            %  'method'.  Seems to do the trick.
+            %ws.restlessSleep(0.010);  % pause for 10 ms  % this does not seem to matter,
+                                       % but leave it here but commented in case there's trouble later
+            
             % Cache some things for speed during sweeps
             self.IsVCPerElectrodeCached_ = isVCPerTestPulseElectrode ;
             self.IsCCPerElectrodeCached_ = isCCPerTestPulseElectrode;
