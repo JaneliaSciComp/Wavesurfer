@@ -10,7 +10,7 @@ classdef OnDemandDOTask < handle
     end
     
     properties (Access = protected, Transient = true)
-        DabsDaqTask_ = [];
+        DAQmxTaskHandle_ = [];
     end
     
     properties (Access = protected)
@@ -29,10 +29,10 @@ classdef OnDemandDOTask < handle
                                     
             % Create the task, channels
             if nChannels==0 ,
-                self.DabsDaqTask_ = [] ;
+                self.DAQmxTaskHandle_ = [] ;
             else
-                %self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName) ;
-                self.DabsDaqTask_ = ws.ni('DAQmxCreateTask', taskName) ;
+                %self.DAQmxTaskHandle_ = ws.dabs.ni.daqmx.Task(taskName) ;
+                self.DAQmxTaskHandle_ = ws.ni('DAQmxCreateTask', taskName) ;
             end            
             
             % Create the channels, set the timing mode (has to be done
@@ -46,16 +46,16 @@ classdef OnDemandDOTask < handle
                     terminalID = terminalIDs(i) ;
                     %channelName = channelNames{i} ;
                     %lineName = sprintf('line%d',terminalID) ;
-                    %self.DabsDaqTask_.createDOChan(deviceName, lineName);
+                    %self.DAQmxTaskHandle_.createDOChan(deviceName, lineName);
                     lineSpecification = sprintf('%s/line%d', primaryDeviceName, terminalID) ;
-                    ws.ni('DAQmxCreateDOChan', self.DabsDaqTask_, lineSpecification, 'DAQmx_Val_ChanForAllLines')
+                    ws.ni('DAQmxCreateDOChan', self.DAQmxTaskHandle_, lineSpecification, 'DAQmx_Val_ChanForAllLines')
                 end       
                 [referenceClockSource, referenceClockRate] = ...
                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
-                %set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;                
-                %set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;                
-                ws.ni('DAQmxSetRefClkSrc', self.DabsDaqTask_, referenceClockSource) ;
-                ws.ni('DAQmxSetRefClkRate', self.DabsDaqTask_, referenceClockRate) ;
+                %set(self.DAQmxTaskHandle_, 'refClkSrc', referenceClockSource) ;                
+                %set(self.DAQmxTaskHandle_, 'refClkRate', referenceClockRate) ;                
+                ws.ni('DAQmxSetRefClkSrc', self.DAQmxTaskHandle_, referenceClockSource) ;
+                ws.ni('DAQmxSetRefClkRate', self.DAQmxTaskHandle_, referenceClockRate) ;
             end            
             
             % Store this stuff
@@ -66,41 +66,41 @@ classdef OnDemandDOTask < handle
         end  % function
         
         function delete(self)
-            if ~isempty(self.DabsDaqTask_) ,                
+            if ~isempty(self.DAQmxTaskHandle_) ,                
                 try
                     self.zeroChannelData();  % set all channels off before deleting
                 catch me %#ok<NASGU>
                     % just ignore, since can't throw during a delete method
                 end
-                %delete(self.DabsDaqTask_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-                if ~ws.ni('DAQmxIsTaskDone', self.DabsDaqTask_) ,
-                    ws.ni('DAQmxStopTask', self.DabsDaqTask_) ;
+                %delete(self.DAQmxTaskHandle_);  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+                if ~ws.ni('DAQmxIsTaskDone', self.DAQmxTaskHandle_) ,
+                    ws.ni('DAQmxStopTask', self.DAQmxTaskHandle_) ;
                 end
-                ws.ni('DAQmxClearTask', self.DabsDaqTask_) ;
+                ws.ni('DAQmxClearTask', self.DAQmxTaskHandle_) ;
             end
-            self.DabsDaqTask_=[];
+            self.DAQmxTaskHandle_=[];
         end  % function
         
         function start(self)
-            %self.DabsDaqTask_.start();
-            if ~isempty(self.DabsDaqTask_) ,
-                %self.DabsDaqTask_.start();
-                ws.ni('DAQmxStartTask', self.DabsDaqTask_) ;
+            %self.DAQmxTaskHandle_.start();
+            if ~isempty(self.DAQmxTaskHandle_) ,
+                %self.DAQmxTaskHandle_.start();
+                ws.ni('DAQmxStartTask', self.DAQmxTaskHandle_) ;
             end            
         end  % function
         
 %         function abort(self)
-%             if ~isempty(self.DabsDaqTask_)
-%                 self.DabsDaqTask_.abort();
+%             if ~isempty(self.DAQmxTaskHandle_)
+%                 self.DAQmxTaskHandle_.abort();
 %             end
 %         end  % function
         
         function stop(self)
-            %if ~isempty(self.DabsDaqTask_) && ~self.DabsDaqTask_.isTaskDoneQuiet()
-            %    self.DabsDaqTask_.stop();
+            %if ~isempty(self.DAQmxTaskHandle_) && ~self.DAQmxTaskHandle_.isTaskDoneQuiet()
+            %    self.DAQmxTaskHandle_.stop();
             %end
-            if ~isempty(self.DabsDaqTask_) && ~ws.ni('DAQmxIsTaskDone', self.DabsDaqTask_) ,
-                ws.ni('DAQmxStopTask', self.DabsDaqTask_) ;
+            if ~isempty(self.DAQmxTaskHandle_) && ~ws.ni('DAQmxIsTaskDone', self.DAQmxTaskHandle_) ,
+                ws.ni('DAQmxStopTask', self.DAQmxTaskHandle_) ;
             end            
         end  % function
         
@@ -140,8 +140,8 @@ classdef OnDemandDOTask < handle
             % latency.  Note that there's no error checking here, so if
             % newValue is a bad value, that's on you.  No free lunch, etc.
             self.ChannelData_ = newValue ;
-            %self.DabsDaqTask_.writeDigitalData(newValue);
-            ws.ni('DAQmxWriteDigitalLines', self.DabsDaqTask_, true, -1, newValue);
+            %self.DAQmxTaskHandle_.writeDigitalData(newValue);
+            ws.ni('DAQmxWriteDigitalLines', self.DAQmxTaskHandle_, true, -1, newValue);
         end
         
         function debug(self) %#ok<MANU>
@@ -159,10 +159,10 @@ classdef OnDemandDOTask < handle
 %         end  % function
                     
 %         function out = get.TaskName(self)
-%             if isempty(self.DabsDaqTask_) ,
+%             if isempty(self.DAQmxTaskHandle_) ,
 %                 out = '';
 %             else
-%                 out = self.DabsDaqTask_.taskName;
+%                 out = self.DAQmxTaskHandle_.taskName;
 %             end
 %         end  % function
     end  % public methods
@@ -172,7 +172,7 @@ classdef OnDemandDOTask < handle
 %             % For a successful capture, this class is responsible for stopping the task when
 %             % it is done.  For external clients to interrupt a running task, use the abort()
 %             % method on the Output object.
-%             self.DabsDaqTask_.stop();
+%             self.DAQmxTaskHandle_.stop();
 %             
 %             % Fire the event before unregistering the callback functions.  At the end of a
 %             % script the DAQmx callbacks may be the only references preventing the object
@@ -184,13 +184,13 @@ classdef OnDemandDOTask < handle
     methods (Access = protected)
         function syncOutputBufferToChannelData_(self)
             % Actually set up the task, if present
-            if isempty(self.DabsDaqTask_) ,
+            if isempty(self.DAQmxTaskHandle_) ,
                 % do nothing
             else            
                 % Write the data to the output buffer
                 outputData = self.ChannelData ;
-                %self.DabsDaqTask_.writeDigitalData(outputData) ;
-                ws.ni('DAQmxWriteDigitalLines', self.DabsDaqTask_, true, -1, outputData);
+                %self.DAQmxTaskHandle_.writeDigitalData(outputData) ;
+                ws.ni('DAQmxWriteDigitalLines', self.DAQmxTaskHandle_, true, -1, outputData);
             end
         end  % function
     end  % Static methods

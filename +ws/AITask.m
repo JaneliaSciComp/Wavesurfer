@@ -30,13 +30,13 @@ classdef AITask < handle
         %DeviceNamePerDevice_ = cell(1,0)
         %TerminalIDsPerDevice_ = cell(1,0)
         ChannelIndicesPerDevice_ = cell(1,0)
-        DabsDaqTasks_ = cell(1,0)     % the DABS task objects, or empty if the number of channels is zero
+        DAQmxTaskHandles_ = cell(1,0)     % the DAQmx task handles, or empty if the number of channels is zero
         TicId_
         TimeAtLastRead_
-        TimeAtTaskStart_  % only accurate if DabsDaqTask_ is empty, and task has been started
-        NScansReadSoFar_  % only accurate if DabsDaqTask_ is empty, and task has been started
-        NScansExpectedCache_  % only accurate if DabsDaqTask_ is empty, and task has been started
-        CachedFinalScanTime_  % used when self.DabsDaqTask_ is empty
+        TimeAtTaskStart_  % only accurate if DAQmxTaskHandles_ is empty, and task has been started
+        NScansReadSoFar_  % only accurate if DAQmxTaskHandles_ is empty, and task has been started
+        NScansExpectedCache_  % only accurate if DAQmxTaskHandles_ is empty, and task has been started
+        CachedFinalScanTime_  % used when self.DAQmxTaskHandles_ is empty
         %KeystoneTask_
         %TriggerDeviceName_
         %TriggerPFIID_
@@ -55,11 +55,11 @@ classdef AITask < handle
             
             % Create the tasks
             deviceCount = length(deviceNamePerDevice) ;
-            self.DabsDaqTasks_ = cell(1, deviceCount) ;
+            self.DAQmxTaskHandles_ = cell(1, deviceCount) ;
             for deviceIndex = 1:deviceCount ,
                 deviceName = deviceNamePerDevice{deviceIndex} ;
                 daqmxTaskName = sprintf('%s for %s', taskName, deviceName) ;
-                self.DabsDaqTasks_{deviceIndex} = ws.ni('DAQmxCreateTask', daqmxTaskName) ;
+                self.DAQmxTaskHandles_{deviceIndex} = ws.ni('DAQmxCreateTask', daqmxTaskName) ;
             end
             
             % Create a tic id
@@ -87,17 +87,17 @@ classdef AITask < handle
                     nChannelsThisDevice = length(terminalIDs) ;
                     for iChannel = 1:nChannelsThisDevice ,
                         terminalID = terminalIDs(iChannel) ;
-                        dabsTask = self.DabsDaqTasks_{deviceIndex} ;
+                        daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
                         physicalChannelName = sprintf('%s/ai%d', deviceName, terminalID) ;
                         ws.ni('DAQmxCreateAIVoltageChan', ...
-                              dabsTask, ...
+                              daqmxTaskHandle, ...
                               physicalChannelName, ...
                               'DAQmx_Val_Diff') ;
                     end
                     [referenceClockSource, referenceClockRate] = ...
                         ws.getReferenceClockSourceAndRate(deviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                    ws.ni('DAQmxSetRefClkSrc', dabsTask, referenceClockSource) ;
-                    ws.ni('DAQmxSetRefClkRate', dabsTask, referenceClockRate) ;
+                    ws.ni('DAQmxSetRefClkSrc', daqmxTaskHandle, referenceClockSource) ;
+                    ws.ni('DAQmxSetRefClkRate', daqmxTaskHandle, referenceClockRate) ;
                     source = '';  % means to use default sample clock
                     scanCount = 2 ;
                         % 2 is the minimum value advisable when using FiniteSamps mode. If this isn't
@@ -105,9 +105,9 @@ classdef AITask < handle
                         % sampQuantSampPerChan property to a non-zero value -- a bit strange,
                         % considering that it is allowed to buffer/write more data than specified to
                         % generate.
-                    ws.ni('DAQmxCfgSampClkTiming', dabsTask, source, sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', scanCount);
+                    ws.ni('DAQmxCfgSampClkTiming', daqmxTaskHandle, source, sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', scanCount);
                     try
-                        ws.ni('DAQmxTaskControl', dabsTask, 'DAQmx_Val_Task_Verify');
+                        ws.ni('DAQmxTaskControl', daqmxTaskHandle, 'DAQmx_Val_Task_Verify');
                     catch cause
                         rawException = MException('ws:taskFailedVerification', ...
                                                   'There was a problem with the parameters of the input task, and it failed verification') ;
@@ -115,7 +115,7 @@ classdef AITask < handle
                         throw(exception) ;
                     end
                     try
-                        taskSampleClockRate = ws.ni('DAQmxGetSampClkRate', dabsTask) ;
+                        taskSampleClockRate = ws.ni('DAQmxGetSampClkRate', daqmxTaskHandle) ;
                     catch cause
                         rawException = MException('ws:errorGettingTaskSampleClockRate', ...
                                                   'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
@@ -129,7 +129,7 @@ classdef AITask < handle
 
                     % Get the scaling coefficients, store them in a per-channel way
                     channelIndices = channelIndicesPerDevice{deviceIndex} ;
-                    scalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', dabsTask) ;   % nCoefficients x nChannelsThisDevice, low-order coeffs first
+                    scalingCoefficients =  ws.ni('DAQmxGetAIDevScalingCoeffs', daqmxTaskHandle) ;   % nCoefficients x nChannelsThisDevice, low-order coeffs first
                     self.ScalingCoefficients_(:,channelIndices) = scalingCoefficients ;  % nCoefficients x nChannels , low-order coeffs first
                 end
             else
@@ -151,13 +151,13 @@ classdef AITask < handle
             %self.TriggerEdge_ = triggerEdgeIfKeystoneAndPrimary ;
             
             % What used to be "arming"
-            if ~isempty(self.DabsDaqTasks_) ,
+            if ~isempty(self.DAQmxTaskHandles_) ,
                 % Set up timing
-                deviceCount = length(self.DabsDaqTasks_) ;
+                deviceCount = length(self.DAQmxTaskHandles_) ;
                 for deviceIndex = 1:deviceCount ,
-                    dabsTask = self.DabsDaqTasks_{deviceIndex} ;
+                    daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
                     expectedScanCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, desiredSweepDuration) ;
-                    ws.setDAQmxTaskTimingBang(dabsTask, clockTiming, expectedScanCount, sampleRate) ;
+                    ws.setDAQmxTaskTimingBang(daqmxTaskHandle, clockTiming, expectedScanCount, sampleRate) ;
 
                     % Set up triggering
                     deviceName = deviceNamePerDevice{deviceIndex} ;                    
@@ -187,32 +187,32 @@ classdef AITask < handle
                     % Actually set the start trigger on the DABS daq task
                     if isempty(triggerTerminalName) ,
                         % This is mostly here for testing
-                        ws.ni('DAQmxDisableStartTrig', dabsTask) ;
+                        ws.ni('DAQmxDisableStartTrig', daqmxTaskHandle) ;
                     else
-                        dabsTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
-                        ws.ni('DAQmxCfgDigEdgeStartTrig', dabsTask, triggerTerminalName, dabsTriggerEdge);
+                        daqmxTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
+                        ws.ni('DAQmxCfgDigEdgeStartTrig', daqmxTaskHandle, triggerTerminalName, daqmxTriggerEdge);
                     end
                 end
             end
         end  % function
         
         function delete(self)
-            %cellfun(@ws.deleteIfValidHandle, self.DabsDaqTasks_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-            for i = 1 : length(self.DabsDaqTasks_) ,
-                dabsTask = self.DabsDaqTasks_{i} ;
-                if ~isempty(dabsTask) ,
-                    if ~ws.ni('DAQmxIsTaskDone', dabsTask) ,
-                        ws.ni('DAQmxStopTask', dabsTask) ;
+            %cellfun(@ws.deleteIfValidHandle, self.DAQmxTaskHandles_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            for i = 1 : length(self.DAQmxTaskHandles_) ,
+                daqmxTaskHandle = self.DAQmxTaskHandles_{i} ;
+                if ~isempty(daqmxTaskHandle) ,
+                    if ~ws.ni('DAQmxIsTaskDone', daqmxTaskHandle) ,
+                        ws.ni('DAQmxStopTask', daqmxTaskHandle) ;
                     end
-                    ws.ni('DAQmxClearTask', dabsTask) ;
+                    ws.ni('DAQmxClearTask', daqmxTaskHandle) ;
                 end
-                self.DabsDaqTasks_{i} = [] ;
+                self.DAQmxTaskHandles_{i} = [] ;
             end
-            self.DabsDaqTasks_ = cell(1,0) ;  % not really necessary...
+            self.DAQmxTaskHandles_ = cell(1,0) ;  % not really necessary...
         end
         
         function start(self)
-            if isempty(self.DabsDaqTasks_) ,
+            if isempty(self.DAQmxTaskHandles_) ,
                 self.CachedFinalScanTime_ = ws.finalScanTimeFromScanRateAndDesiredDuration(self.SampleRate_, self.DesiredSweepDuration_) ;
                   % In a normal input task, a scan is done right at the
                   % start of the sweep (t==0).  So the the final scan occurs at
@@ -228,10 +228,10 @@ classdef AITask < handle
                 % Start the tasks in reverse order, so the primary-device task starts last
                 % This makes sure all the other tasks are ready before the AI start trigger
                 % on the primary device fires
-                deviceCount = length(self.DabsDaqTasks_) ;
+                deviceCount = length(self.DAQmxTaskHandles_) ;
                 for deviceIndex = deviceCount:-1:1 ,
-                    dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    ws.ni('DAQmxStartTask', dabsTask) ;
+                    daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
+                    ws.ni('DAQmxStartTask', daqmxTaskHandle) ;
                 end
                 %self.DabsDaqTask_.start();
                 timeNow = toc(self.TicId_) ;
@@ -243,16 +243,16 @@ classdef AITask < handle
         function stop(self)
             % stop the tasks in the reverse order they were started in, for no
             % super-good reason.
-            deviceCount = length(self.DabsDaqTasks_) ;
+            deviceCount = length(self.DAQmxTaskHandles_) ;
             for deviceIndex = 1:deviceCount ,
-                dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                %dabsTask.stop() ;
-                ws.ni('DAQmxStopTask', dabsTask) ;
+                daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
+                %daqmxTaskHandle.stop() ;
+                ws.ni('DAQmxStopTask', daqmxTaskHandle) ;
             end
         end
         
         function result = isDone(self)
-            if isempty(self.DabsDaqTasks_) ,
+            if isempty(self.DAQmxTaskHandles_) ,
                 if isinf(self.DesiredSweepDuration_) ,  % don't want to bother with toc() if we already know the answer...
                     result = false ;
                 else
@@ -261,10 +261,10 @@ classdef AITask < handle
                     result = durationSoFar>self.CachedFinalScanTime_ ;
                 end
             else
-                deviceCount = length(self.DabsDaqTasks_) ;
+                deviceCount = length(self.DAQmxTaskHandles_) ;
                 for deviceIndex = 1:deviceCount ,
-                    dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-                    if ~ws.ni('DAQmxIsTaskDone', dabsTask) ,
+                    daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
+                    if ~ws.ni('DAQmxIsTaskDone', daqmxTaskHandle) ,
                         result = false ;
                         return
                     end                        
@@ -284,7 +284,7 @@ classdef AITask < handle
             % timeSinceSweepStart is useful for debugging, so we leave it there, even
             % though we don't use it.
             timeSinceRunStartNow = toc(fromRunStartTicId) ;
-            if isempty(self.DabsDaqTasks_) ,
+            if isempty(self.DAQmxTaskHandles_) ,
                 % Since there are zero active channels, want to fake
                 % the acquisition of a reasonable number of samples,
                 % given the timing and acq duration.
@@ -307,7 +307,7 @@ classdef AITask < handle
                 else
                     %data = self.DabsDaqTask_.readAnalogData(nScansToRead, 'native') ;  % rawData is int16
                     channelCount = length(self.TerminalIDs_) ;
-                    data = ws.AITask.readScanCountFromDABSTasks(nScansToRead, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
+                    data = ws.AITask.readScanCountFromDAQmxTasks(nScansToRead, self.DAQmxTaskHandles_, channelCount, self.ChannelIndicesPerDevice_) ;
                 end
             end
             nScans = size(data,1) ;
@@ -321,12 +321,12 @@ classdef AITask < handle
     
     methods (Access=protected)
 %         function data = readScanCountFromAllDABSTasks_(self, scanCount)
-%             deviceCount = length(self.DabsDaqTasks_) ;
+%             deviceCount = length(self.DAQmxTaskHandles_) ;
 %             channelCount = length(self.TerminalIDs_) ;
 %             data = zeros(scanCount, channelCount, 'int16') ;
 %             for deviceIndex = 1:deviceCount ,
-%                 dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-%                 dataForDevice = dabsTask.readAnalogData(scanCount,'native') ;
+%                 daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
+%                 dataForDevice = daqmxTaskHandle.readAnalogData(scanCount,'native') ;
 %                 channelIndicesForDevice = self.ChannelIndicesPerDevice_{deviceCount} ;
 %                 data(:, channelIndicesForDevice) = dataForDevice ;
 %             end
@@ -334,9 +334,9 @@ classdef AITask < handle
         
         function data = justReadWhatIsAvailable_(self)
             % self.DabsDaqTask_ cannot be empty when this is called
-            nScansAvailable = ws.AITask.getScanCountAvailable(self.DabsDaqTasks_) ;
+            nScansAvailable = ws.AITask.getScanCountAvailable(self.DAQmxTaskHandles_) ;
             channelCount = self.ChannelCount_ ;        
-            data = ws.AITask.readScanCountFromDABSTasks(nScansAvailable, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
+            data = ws.AITask.readScanCountFromDAQmxTasks(nScansAvailable, self.DAQmxTaskHandles_, channelCount, self.ChannelIndicesPerDevice_) ;
             self.TimeAtLastRead_ = toc(self.TicId_) ;
         end  % function
 
@@ -347,7 +347,7 @@ classdef AITask < handle
 %             nChecksMax = 10 ;
 %             nScansPerCheck = nan(1,nChecksMax);
 %             for iCheck = 1:nChecksMax ,
-%                 nScansAvailable = ws.AITask.getScanCountAvailable(self.DabsDaqTasks_) ;
+%                 nScansAvailable = ws.AITask.getScanCountAvailable(self.DAQmxTaskHandles_) ;
 %                 nScansPerCheck(iCheck) = nScansAvailable ;
 %                 if nScansAvailable>=nScansExpected ,
 %                     break
@@ -356,7 +356,7 @@ classdef AITask < handle
 %             %nScansPerCheck
 %             %data = self.DabsDaqTask_.readAnalogData([],'native') ;
 %             channelCount = self.ChannelCount_ ;        
-%             data = ws.AITask.readScanCountFromDABSTasks(nScansAvailable, self.DabsDaqTasks_, channelCount, self.ChannelIndicesPerDevice_) ;
+%             data = ws.AITask.readScanCountFromDAQmxTasks(nScansAvailable, self.DAQmxTaskHandles_, channelCount, self.ChannelIndicesPerDevice_) ;
 %             self.TimeAtLastRead_ = toc(self.TicId_) ;
 %         end  % function
     end  % protected methods block
@@ -452,7 +452,7 @@ classdef AITask < handle
 %                 return
 %             end
 % 
-%             if isempty(self.DabsDaqTasks_) ,
+%             if isempty(self.DAQmxTaskHandles_) ,
 %                 % do nothing
 %             else
 %                 % Set up timing
@@ -460,8 +460,8 @@ classdef AITask < handle
 %                 sampleRate = self.SampleRate_ ;
 %                 deviceCount = length(dabsDaqTasks) ;
 %                 for deviceIndex = 1:deviceCount ,
-%                     dabsTask = self.DabsDaqTasks_{deviceIndex} ;
-%                     ws.AITask.setDABSTaskTimingBang(dabsTask, self.ClockTiming_, self.ExpectedScanCount, sampleRate) ;
+%                     daqmxTaskHandle = self.DAQmxTaskHandles_{deviceIndex} ;
+%                     ws.AITask.setDABSTaskTimingBang(daqmxTaskHandle, self.ClockTiming_, self.ExpectedScanCount, sampleRate) ;
 % 
 %                     % Set up triggering
 %                     deviceName = self.DeviceNamePerDevice_{deviceIndex} ;
@@ -483,7 +483,7 @@ classdef AITask < handle
 %                     end
 %                     
 %                     dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-%                     dabsTask.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
+%                     daqmxTaskHandle.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge);
 %                 end
 %             end
 %             
@@ -525,22 +525,22 @@ classdef AITask < handle
 %     end  % protected methods block
     
     methods (Static)
-        function result = getScanCountAvailable(dabsDaqTasks) 
+        function result = getScanCountAvailable(daqmxTaskHandles) 
             result = 0 ;
-            deviceCount = length(dabsDaqTasks) ;
+            deviceCount = length(daqmxTaskHandles) ;
             for deviceIndex = 1:deviceCount ,
-                dabsTask = dabsDaqTasks{deviceIndex} ;
-                scanCountAvailableForDevice = ws.ni('DAQmxGetReadAvailSampPerChan', dabsTask) ;
+                daqmxTaskHandle = daqmxTaskHandles{deviceIndex} ;
+                scanCountAvailableForDevice = ws.ni('DAQmxGetReadAvailSampPerChan', daqmxTaskHandle) ;
                 result = max(result, scanCountAvailableForDevice) ;
             end            
         end
         
-        function data = readScanCountFromDABSTasks(scanCount, dabsDaqTasks, channelCount, channelIndicesPerDevice)
+        function data = readScanCountFromDAQmxTasks(scanCount, daqmxTaskHandles, channelCount, channelIndicesPerDevice)
             data = zeros(scanCount, channelCount, 'int16') ;
-            deviceCount = length(dabsDaqTasks) ;
+            deviceCount = length(daqmxTaskHandles) ;
             for deviceIndex = 1:deviceCount ,
-                dabsTask = dabsDaqTasks{deviceIndex} ;
-                dataForDevice = ws.ni('DAQmxReadBinaryI16', dabsTask, scanCount, -1) ;
+                daqmxTaskHandle = daqmxTaskHandles{deviceIndex} ;
+                dataForDevice = ws.ni('DAQmxReadBinaryI16', daqmxTaskHandle, scanCount, -1) ;
                 channelIndicesForDevice = channelIndicesPerDevice{deviceIndex} ;
                 data(:, channelIndicesForDevice) = dataForDevice ;
             end
