@@ -5074,9 +5074,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             
             try             
                 self.changeReadiness_(-1) ;  % Takes some time to stop
-                fprintf('About to call self.Ephys_.stopTestPulsing()\n');
+                %fprintf('About to call self.Ephys_.stopTestPulsing()\n');
                 self.Ephys_.stopTestPulsing() ;
-                fprintf('Done with call to self.Ephys_.stopTestPulsing()\n');
+                %fprintf('Done with call to self.Ephys_.stopTestPulsing()\n');
                 self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
@@ -5090,7 +5090,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end  % function    
         
         function completingTestPulserSweep(self)
-            fprintf('Inside ws.WavesurferModel::completingTestPulserSweep()\n');
+            %fprintf('Inside ws.WavesurferModel::completingTestPulserSweep()\n');
             self.Ephys_.completingTestPulserSweep() ;
             self.broadcast('TPUpdateTrace');
         end
