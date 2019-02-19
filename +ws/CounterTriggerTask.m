@@ -42,9 +42,9 @@ classdef CounterTriggerTask < handle
             exportTerminalList = sprintf('/%s/pfi%d', deviceName, pfiID) ;
             %self.DabsDaqTask_.exportSignal('DAQmx_Val_CounterOutputEvent', exportTerminalList) ;
             ws.ni('DAQmxExportSignal', self.DabsDaqTask_, 'DAQmx_Val_CounterOutputEvent', exportTerminalList)
-            dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType('rising') ;
+            daqmxTriggerEdge = ws.daqmxEdgeTypeFromEdgeType('rising') ;
             %self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
-            ws.ni('DAQmxCfgDigEdgeStartTrig', self.DabsDaqTask_, triggerTerminalName, dabsTriggerEdge);
+            ws.ni('DAQmxCfgDigEdgeStartTrig', self.DabsDaqTask_, triggerTerminalName, daqmxTriggerEdge);
         end  % function
         
         function delete(self)

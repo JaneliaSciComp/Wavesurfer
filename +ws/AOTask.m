@@ -140,7 +140,7 @@ classdef AOTask < handle
                         % This is mostly here for testing
                         ws.ni('DAQmxDisableStartTrig', dabsTask) ;
                     else
-                        dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+                        dabsTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
                         ws.ni('DAQmxCfgDigEdgeStartTrig', dabsTask, triggerTerminalName, dabsTriggerEdge);
                     end
                     

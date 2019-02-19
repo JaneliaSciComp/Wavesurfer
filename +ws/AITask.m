@@ -58,8 +58,8 @@ classdef AITask < handle
             self.DabsDaqTasks_ = cell(1, deviceCount) ;
             for deviceIndex = 1:deviceCount ,
                 deviceName = deviceNamePerDevice{deviceIndex} ;
-                dabsTaskName = sprintf('%s for %s', taskName, deviceName) ;
-                self.DabsDaqTasks_{deviceIndex} = ws.ni('DAQmxCreateTask', dabsTaskName) ;
+                daqmxTaskName = sprintf('%s for %s', taskName, deviceName) ;
+                self.DabsDaqTasks_{deviceIndex} = ws.ni('DAQmxCreateTask', daqmxTaskName) ;
             end
             
             % Create a tic id
@@ -189,7 +189,7 @@ classdef AITask < handle
                         % This is mostly here for testing
                         ws.ni('DAQmxDisableStartTrig', dabsTask) ;
                     else
-                        dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+                        dabsTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
                         ws.ni('DAQmxCfgDigEdgeStartTrig', dabsTask, triggerTerminalName, dabsTriggerEdge);
                     end
                 end

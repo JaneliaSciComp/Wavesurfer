@@ -131,8 +131,8 @@ classdef DITask < handle
                     % This is mostly here for testing
                     ws.ni('DAQmxDisableStartTrig', self.DabsDaqTask_) ;
                 else
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-                    ws.ni('DAQmxCfgDigEdgeStartTrig', self.DabsDaqTask_, triggerTerminalName, dabsTriggerEdge);
+                    daqmxTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
+                    ws.ni('DAQmxCfgDigEdgeStartTrig', self.DabsDaqTask_, triggerTerminalName, daqmxTriggerEdge);
                 end
             end
             
