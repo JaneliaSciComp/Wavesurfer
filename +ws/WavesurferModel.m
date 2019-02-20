@@ -7140,5 +7140,19 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function set(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end           
-    end  % public methods block            
+    end  % public methods block
+    
+    methods
+        function callUserObjectMethod(self, methodName, varargin)
+            self.UserCodeManager_.callUserObjectMethod(methodName, varargin{:}) ;
+        end
+        
+        function setUserObjectProperty(self, propertyName, newValue)
+            self.UserCodeManager_.setUserObjectProperty(propertyName, newValue) ;
+        end
+
+        function result = getUserObjectProperty(self, propertyName)
+            result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
+        end
+    end  % public methods block
 end  % classdef
