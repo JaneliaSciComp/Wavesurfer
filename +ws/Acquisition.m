@@ -66,13 +66,26 @@ classdef Acquisition < ws.Model
         %NScansFromLatestCallback_
         AreAllScansInCacheValid_ = false
         IsInCacheFromAnalogChannelIndex_ = false(1,0)
+          % This is basically a 'snapshot' of IsAnalogChannelActive_ from the most recent
+          % run.  But if channels have been added/deleted since the last run, this will be
+          % modified to keep the elements in register with the current AI channels.  For a
+          % channel add, a false will be appended to the end of this.  For a delete, that
+          % element will be deleted from this also.          
         IndexInCacheFromAnalogChannelIndex_ = nan(1,0)
         IsInCacheFromDigitalChannelIndex_ = false(1,0)
+          % This is basically a 'snapshot' of IsDigitalChannelActive_ from the most recent
+          % run.  But if channels have been added/deleted since the last run, this will be
+          % modified to keep the elements in register with the current DI channels.  For a
+          % channel add, a false will be appended to the end of this.  For a delete, that
+          % element will be deleted from this also.
         IndexInCacheFromDigitalChannelIndex_ = true(1,0)
         %TimeOfLastPollingTimerFire_
         %NScansReadThisSweep_
         %IndexInCacheFromChannelIndex_ = zeros(1,0) ;
-        AnalogScalingCoefficientsCache_ = zeros(4,0)  % a cache of the analog input scaling coefficients, populated at the start of a run
+        AnalogScalingCoefficientsCache_ = zeros(4,0)
+          % A cache of the analog input scaling coefficients, populated at the start of a
+          % run.  The number of columns of this should be equal to
+          % sum(self.IsInCacheFromAnalogChannelIndex_)
     end
     
     methods
@@ -179,24 +192,24 @@ classdef Acquisition < ws.Model
             self.IsInCacheFromDigitalChannelIndex_ = [ self.IsInCacheFromDigitalChannelIndex_ false ] ;
             %self.IndexInCacheFromDigitalChannelIndex_ = [ self.IndexInCacheFromDigitalChannelIndex_ nan ] ;
             
-            % Update the caches
-            if originalCachedDigitalChannelCount==0 ,
-                nScans = size(self.RawDigitalDataCache_, 1) ;
-                newCachedDigitalChannelCount = 1 ;
-                digitalDataType = ws.uintDataTypeFromDigitalChannelCount(newCachedDigitalChannelCount) ;
-                nUintDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(newCachedDigitalChannelCount) ;
-                self.RawDigitalDataCache_ = zeros(nScans,nUintDigitalColumns,digitalDataType);
-                self.LatestRawDigitalData_ = zeros(0,nUintDigitalColumns,digitalDataType);
-            else
-                newDigitalCacheDataType = ws.uintDataTypeFromDigitalChannelCount(originalCachedDigitalChannelCount+1) ;
-                if ~isequal(newDigitalCacheDataType, originalDigitalCacheDataType) ,
-                    self.RawDigitalDataCache_ = feval(newDigitalCacheDataType, self.RawDigitalDataCache_) ;
-                    self.LatestRawDigitalData_ = feval(newDigitalCacheDataType, self.LatestRawDigitalData_) ;
-                else
-                    self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, originalCachedDigitalChannelCount+1, 0) ;
-                    self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, originalCachedDigitalChannelCount+1, 0) ;
-                end
-            end            
+%             % Update the caches
+%             if originalCachedDigitalChannelCount==0 ,
+%                 nScans = size(self.RawDigitalDataCache_, 1) ;
+%                 newCachedDigitalChannelCount = 1 ;
+%                 digitalDataType = ws.uintDataTypeFromDigitalChannelCount(newCachedDigitalChannelCount) ;
+%                 nUintDigitalColumns = ws.uintColumnCountFromLogicalColumnCount(newCachedDigitalChannelCount) ;
+%                 self.RawDigitalDataCache_ = zeros(nScans,nUintDigitalColumns,digitalDataType);
+%                 self.LatestRawDigitalData_ = zeros(0,nUintDigitalColumns,digitalDataType);
+%             else
+%                 newDigitalCacheDataType = ws.uintDataTypeFromDigitalChannelCount(originalCachedDigitalChannelCount+1) ;
+%                 if ~isequal(newDigitalCacheDataType, originalDigitalCacheDataType) ,
+%                     self.RawDigitalDataCache_ = feval(newDigitalCacheDataType, self.RawDigitalDataCache_) ;
+%                     self.LatestRawDigitalData_ = feval(newDigitalCacheDataType, self.LatestRawDigitalData_) ;
+%                 else
+%                     self.RawDigitalDataCache_ = bitset(self.RawDigitalDataCache_, originalCachedDigitalChannelCount+1, 0) ;
+%                     self.LatestRawDigitalData_ = bitset(self.LatestRawDigitalData_, originalCachedDigitalChannelCount+1, 0) ;
+%                 end
+%             end            
             
             % Update the mapping from channel indices to cache indices
             [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
@@ -932,11 +945,11 @@ classdef Acquisition < ws.Model
             self.IsInCacheFromAnalogChannelIndex_ = [ self.IsInCacheFromAnalogChannelIndex_ false ];
             %self.IndexInCacheFromAnalogChannelIndex_ = [ self.IndexInCacheFromAnalogChannelIndex_ nan ];
             self.IsAnalogChannelMarkedForDeletion_ = [ self.IsAnalogChannelMarkedForDeletion_ false ];
-            n = size(self.RawAnalogDataCache_, 1) ;
-            self.RawAnalogDataCache_ = [self.RawAnalogDataCache_ zeros(n,1,'int16')] ;
-            m = size(self.LatestRawAnalogData_, 1) ;
-            self.LatestRawAnalogData_ = [self.LatestRawAnalogData_ zeros(m,1,'int16')] ;
-            self.AnalogScalingCoefficientsCache_(:,end+1) = nan ;            
+            %n = size(self.RawAnalogDataCache_, 1) ;
+            %self.RawAnalogDataCache_ = [self.RawAnalogDataCache_ zeros(n,1,'int16')] ;
+            %m = size(self.LatestRawAnalogData_, 1) ;
+            %self.LatestRawAnalogData_ = [self.LatestRawAnalogData_ zeros(m,1,'int16')] ;
+            %self.AnalogScalingCoefficientsCache_(:,end+1) = nan ;            
             
             % Update the mapping from channel indices to cache indices
             [self.IndexInCacheFromAnalogChannelIndex_, self.IndexInCacheFromDigitalChannelIndex_] = ...
