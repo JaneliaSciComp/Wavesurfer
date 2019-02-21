@@ -78,6 +78,7 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             ws.ni('DAQmxCfgSampClkTiming', aoTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             y = 5 * sin(2*pi*f0*t) ;
+            y(end)=0 ;  % make sure we end on zero, otherwise subsequent tests can get messed up
             
             ws.ni('DAQmxWriteAnalogF64', aoTaskHandle, false, [], y) ;
             
@@ -105,20 +106,21 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             aiTaskHandle = ws.ni('DAQmxCreateTask', 'AI') ;
             ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai0', 'DAQmx_Val_Diff') ;
             ws.ni('DAQmxCreateAIVoltageChan', aiTaskHandle, 'Dev1/ai1', 'DAQmx_Val_Diff') ;
-            ws.ni('DAQmxCfgSampClkTiming', aiTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            ws.ni('DAQmxCfgSampClkTiming', aiTaskHandle, 'ao/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             aoTaskHandle = ws.ni('DAQmxCreateTask', 'AO');
             ws.ni('DAQmxCreateAOVoltageChan', aoTaskHandle, 'Dev1/ao0') ;
             ws.ni('DAQmxCreateAOVoltageChan', aoTaskHandle, 'Dev1/ao1') ;
-            ws.ni('DAQmxCfgSampClkTiming', aoTaskHandle, 'ai/SampleClock', fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
+            ws.ni('DAQmxCfgSampClkTiming', aoTaskHandle, [], fs, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', N) ;
             
             y(:,1) = 5 * sin(2*pi*f0*t) ;  % V
             y(:,2) = 5 * cos(2*pi*f0*t) ;  % V
+            y(end,:) = 0 ;  % make sure we leave them at 0 V
             
             ws.ni('DAQmxWriteAnalogF64', aoTaskHandle, false, [], y) ;
             
-            ws.ni('DAQmxStartTask', aoTaskHandle) ;
             ws.ni('DAQmxStartTask', aiTaskHandle) ;
+            ws.ni('DAQmxStartTask', aoTaskHandle) ;
             ws.ni('DAQmxWaitUntilTaskDone', aiTaskHandle) ,
             ws.ni('DAQmxWaitUntilTaskDone', aoTaskHandle) ,
             ws.ni('DAQmxStopTask', aoTaskHandle) ;
@@ -146,8 +148,8 @@ classdef DAQmxTestCase < matlab.unittest.TestCase
             pause(1) ;
             delete(f) ;
             
-            maximum_absolute_error = max(max(abs((data-y))));  % V
-            self.verifyTrue(maximum_absolute_error<0.01) ;            
+            maximum_absolute_error = max(max(abs((data-y)))) ;  % V
+            self.verifyTrue(maximum_absolute_error<0.05) ;            
         end
 
         function testDILines(self)
