@@ -1,21 +1,21 @@
 classdef PezUserClass < ws.UserClass
     properties
-        TrialSequenceMode = 'all-1'  % can be 'all-1', 'all-2', 'alternating', or 'random'
-        
-        BasePosition1 = [-74 70 20]  % 3x1, mm?
+        TrialSequenceMode = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
+               
+        BasePosition1 = [-74 50 64]  % 3x1, mm?
         ToneFrequency1 = 3000  % Hz
-        DeliverPosition1 = [50 64 20]  % 3x1, mm?
-        DispenseChannelPosition1 = -23  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+        DeliverPosition1 = [-73 51 64]  % 3x1, mm?
+        DispenseChannelPosition1 = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
-        BasePosition2 = [-74 70 20]  % 3x1, mm?
+        BasePosition2 = [-74 50 64]  % 3x1, mm?
         ToneFrequency2 = 10000  % Hz
-        DeliverPosition2 = [60 64 20]  % 3x1, mm?
+        DeliverPosition2 = [-73 60 64]  % 3x1, mm?
         DispenseChannelPosition2 = -30  % scalar, mm?
         
         ToneDuration = 1  % s
-        ToneDelay = 6  % s, the delay between the move to the deliver position and the start of the tone
-        DispenseDelay = 10  % s, the delay from the end of the tone to the move to the dispense position
-        ReturnDelay = 0.2  % s, the delay until the post returns to the home position
+        ToneDelay = 1  % s, the delay between the move to the deliver position and the start of the tone
+        DispenseDelay = 1  % s, the delay from the end of the tone to the move to the dispense position
+        ReturnDelay = 0.12  % s, the delay until the post returns to the home position
     end  % properties
 
     properties (Dependent)
@@ -97,23 +97,39 @@ classdef PezUserClass < ws.UserClass
             fprintf('About to start a sweep in PezUserClass.\n');
             sweepIndex = wsModel.NSweepsCompletedInThisRun + 1 ;
             trialType = self.TrialSequence_(sweepIndex) ;
+            pauseDuration = 0.000 ; % s
             if trialType == 1 ,
                 self.PezDispenser_.basePosition('setValue', self.BasePosition1) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition1) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition1) ;
+                %pause(pauseDuration) ;
             else
                 self.PezDispenser_.basePosition('setValue', self.BasePosition2) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition2) ;
+                %pause(pauseDuration) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition2) ;
+                %pause(pauseDuration) ;
             end
             self.PezDispenser_.toneDuration('setValue', self.ToneDuration) ;            
+            %pause(pauseDuration) ;
             self.PezDispenser_.toneDelayMin('setValue', self.ToneDelay) ;            
+            %pause(pauseDuration) ;
             self.PezDispenser_.toneDelayMax('setValue', self.ToneDelay) ;            
+            %pause(pauseDuration) ;
             self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay) ;            
+            %pause(pauseDuration) ;
+            %returnDelay = self.ReturnDelay
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;            
+            %pause(pauseDuration) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;            
+            %pause(pauseDuration) ;
         end
         
         function completingSweep(self,wsModel)  %#ok<INUSD>
