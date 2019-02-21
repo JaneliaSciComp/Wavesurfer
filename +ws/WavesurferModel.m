@@ -6252,6 +6252,14 @@ classdef WavesurferModel < ws.Model
             end               
         end        
         
+        function result = listUserObjectMethods(self)
+            result = self.UserCodeManager_.listUserObjectMethods() ;
+        end
+        
+        function result = listUserObjectProperties(self)
+            result = self.UserCodeManager_.listUserObjectProperties() ;
+        end
+        
         function callUserObjectMethod(self, methodName, varargin)
             self.UserCodeManager_.callUserObjectMethod(methodName, varargin{:}) ;
         end

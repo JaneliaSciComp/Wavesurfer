@@ -18,12 +18,13 @@ classdef PezUserClass < ws.UserClass
         ReturnDelay = 0.2  % s, the delay until the post returns to the home position
     end  % properties
 
-    properties (SetAccess=private)
+    properties (Dependent)
         TrialSequence  % 1 x sweepCount, each element 1 or 2
     end
 
     properties (Access=protected, Transient=true)
         PezDispenser_
+        TrialSequence_
     end
     
     methods
@@ -51,13 +52,13 @@ classdef PezUserClass < ws.UserClass
             fprintf('About to start a run in PezUserClass.\n');
             sweepCount = wsModel.NSweepsPerRun ;
             if isequal(self.TrialSequenceMode, 'all-1') 
-                self.TrialSequence = repmat(1, [1 sweepCount]) ;  %#ok<REPMAT>
+                self.TrialSequence_ = repmat(1, [1 sweepCount]) ;  %#ok<REPMAT>
             elseif isequal(self.TrialSequenceMode, 'all-2') 
-                self.TrialSequence = repmat(2, [1 sweepCount]) ;
+                self.TrialSequence_ = repmat(2, [1 sweepCount]) ;
             elseif isequal(self.TrialSequenceMode, 'alternating')
-                self.TrialSequence = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
+                self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
             elseif isequal(self.TrialSequenceMode, 'random') 
-                self.TrialSequence = randi(2, [1 sweepCount]) ;
+                self.TrialSequence_ = randi(2, [1 sweepCount]) ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
             end
@@ -95,7 +96,7 @@ classdef PezUserClass < ws.UserClass
             % Called just before each sweep
             fprintf('About to start a sweep in PezUserClass.\n');
             sweepIndex = wsModel.NSweepsCompletedInThisRun + 1 ;
-            trialType = self.TrialSequence(sweepIndex) ;
+            trialType = self.TrialSequence_(sweepIndex) ;
             if trialType == 1 ,
                 self.PezDispenser_.basePosition('setValue', self.BasePosition1) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
@@ -166,6 +167,18 @@ classdef PezUserClass < ws.UserClass
         function abortingEpisode(self,refiller)  %#ok<INUSD>
             % Called if a episode goes wrong
             fprintf('Oh noes!  An episode aborted in PezUserClass.\n');
+        end
+        
+        function result = get.TrialSequence(self)
+            result = self.TrialSequence_ ;
+        end
+        
+        function set.TrialSequenceMode(self, newValue) 
+            if any(strcmp(newValue, {'all-1' 'all-2' 'alternating' 'random'}))
+                self.TrialSequenceMode = newValue ;
+            else
+                error('TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+            end
         end
     end  % methods
     

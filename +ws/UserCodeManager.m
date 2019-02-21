@@ -253,6 +253,14 @@ classdef UserCodeManager < ws.Subsystem
             self.broadcast('Update');
         end  % function        
         
+        function result = listUserObjectMethods(self)
+            result = methods(self.TheObject_) ;
+        end
+        
+        function result = listUserObjectProperties(self)
+            result = properties(self.TheObject_) ;
+        end
+        
         function callUserObjectMethod(self, methodName, varargin)
             self.TheObject_.(methodName)(varargin{:}) ;
         end
