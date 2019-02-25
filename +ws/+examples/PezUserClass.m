@@ -1,15 +1,31 @@
 classdef PezUserClass < ws.UserClass
+    properties (Constant)
+        TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
+    end
+    
     properties
         TrialSequenceMode = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
-               
-        BasePosition1 = [-74 50 64]  % 3x1, mm?
+        
+        %BasePosition1 = [-74 50 64]  % 3x1, mm?
+        BasePosition1X = -74  % mm?
+        BasePosition1Y =  50  % mm?
+        BasePosition1Z =  64  % mm?
         ToneFrequency1 = 3000  % Hz
-        DeliverPosition1 = [-73 51 64]  % 3x1, mm?
+        %DeliverPosition1 = [-73 51 64]  % 3x1, mm?
+        DeliverPosition1X = -73  % mm?
+        DeliverPosition1Y =  51  % mm?
+        DeliverPosition1Z =  64  % mm?
         DispenseChannelPosition1 = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
-        BasePosition2 = [-74 50 64]  % 3x1, mm?
+        %BasePosition2 = [-74 50 64]  % 3x1, mm?
+        BasePosition2X = -74  % mm?
+        BasePosition2Y =  50  % mm?
+        BasePosition2Z =  64  % mm?
         ToneFrequency2 = 10000  % Hz
-        DeliverPosition2 = [-73 60 64]  % 3x1, mm?
+        %DeliverPosition2 = [-73 60 64]  % 3x1, mm?
+        DeliverPosition2X = -73  % mm?
+        DeliverPosition2Y =  60  % mm?
+        DeliverPosition2Z =  64  % mm?
         DispenseChannelPosition2 = -30  % scalar, mm?
         
         ToneDuration = 1  % s
@@ -36,6 +52,9 @@ classdef PezUserClass < ws.UserClass
         function wake(self, rootModel)  %#ok<INUSL>
             fprintf('Waking an instance of PezUserClass.\n');
             if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
+                ws.examples.PezController(self) ;
+                   % Don't need to keep a ref, b/c this creates a figure, the callbacks of which
+                   % hold references to the controller
             end
         end
          
@@ -97,22 +116,22 @@ classdef PezUserClass < ws.UserClass
             fprintf('About to start a sweep in PezUserClass.\n');
             sweepIndex = wsModel.NSweepsCompletedInThisRun + 1 ;
             trialType = self.TrialSequence_(sweepIndex) ;
-            pauseDuration = 0.000 ; % s
+            %pauseDuration = 0.000 ; % s
             if trialType == 1 ,
-                self.PezDispenser_.basePosition('setValue', self.BasePosition1) ;
+                self.PezDispenser_.basePosition('setValue', [self.BasePosition1X self.BasePosition1Y self.BasePosition1Z]) ;
                 %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
                 %pause(pauseDuration) ;
-                self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition1) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1X self.DeliverPosition1Y self.DeliverPosition1Z]) ;
                 %pause(pauseDuration) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition1) ;
                 %pause(pauseDuration) ;
             else
-                self.PezDispenser_.basePosition('setValue', self.BasePosition2) ;
+                self.PezDispenser_.basePosition('setValue', [self.BasePosition2X self.BasePosition2Y self.BasePosition2Z]) ;
                 %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
                 %pause(pauseDuration) ;
-                self.PezDispenser_.deliverPosition('setValue', self.DeliverPosition2) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2X self.DeliverPosition2Y self.DeliverPosition2Z]) ;
                 %pause(pauseDuration) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition2) ;
                 %pause(pauseDuration) ;
@@ -190,7 +209,7 @@ classdef PezUserClass < ws.UserClass
         end
         
         function set.TrialSequenceMode(self, newValue) 
-            if any(strcmp(newValue, {'all-1' 'all-2' 'alternating' 'random'}))
+            if any(strcmp(newValue, self.TrialSequenceModeOptions))
                 self.TrialSequenceMode = newValue ;
             else
                 error('TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
