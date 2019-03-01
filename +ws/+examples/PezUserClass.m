@@ -2,45 +2,67 @@ classdef PezUserClass < ws.UserClass
     properties (Constant)
         TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
     end
-    
-    properties
-        TrialSequenceMode = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
-        
-        %BasePosition1 = [-74 50 64]  % 3x1, mm?
-        BasePosition1X = -74  % mm?
-        BasePosition1Y =  50  % mm?
-        BasePosition1Z =  64  % mm?
-        ToneFrequency1 = 3000  % Hz
-        %DeliverPosition1 = [-73 51 64]  % 3x1, mm?
-        DeliverPosition1X = -73  % mm?
-        DeliverPosition1Y =  51  % mm?
-        DeliverPosition1Z =  64  % mm?
-        DispenseChannelPosition1 = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
-
-        %BasePosition2 = [-74 50 64]  % 3x1, mm?
-        BasePosition2X = -74  % mm?
-        BasePosition2Y =  50  % mm?
-        BasePosition2Z =  64  % mm?
-        ToneFrequency2 = 10000  % Hz
-        %DeliverPosition2 = [-73 60 64]  % 3x1, mm?
-        DeliverPosition2X = -73  % mm?
-        DeliverPosition2Y =  60  % mm?
-        DeliverPosition2Z =  64  % mm?
-        DispenseChannelPosition2 = -30  % scalar, mm?
-        
-        ToneDuration = 1  % s
-        ToneDelay = 1  % s, the delay between the move to the deliver position and the start of the tone
-        DispenseDelay = 1  % s, the delay from the end of the tone to the move to the dispense position
-        ReturnDelay = 0.12  % s, the delay until the post returns to the home position
-    end  % properties
 
     properties (Dependent)
-        TrialSequence  % 1 x sweepCount, each element 1 or 2
-    end
+        TrialSequenceMode
+        
+        BasePosition1X
+        BasePosition1Y
+        BasePosition1Z
+        ToneFrequency1
+        DeliverPosition1X
+        DeliverPosition1Y
+        DeliverPosition1Z
+        DispenseChannelPosition1
+
+        BasePosition2X
+        BasePosition2Y
+        BasePosition2Z
+        ToneFrequency2
+        DeliverPosition2X
+        DeliverPosition2Y
+        DeliverPosition2Z
+        DispenseChannelPosition2
+        
+        ToneDuration
+        ToneDelay
+        DispenseDelay
+        ReturnDelay
+        
+        TrialSequence  % 1 x sweepCount, each element 1 or 2        
+    end  % properties
+    
+    properties (Access=protected)
+        TrialSequenceMode_ = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
+        
+        BasePosition1X_ = -74  % mm?
+        BasePosition1Y_ =  50  % mm?
+        BasePosition1Z_ =  64  % mm?
+        ToneFrequency1_ = 3000  % Hz
+        DeliverPosition1X_ = -73  % mm?
+        DeliverPosition1Y_ =  51  % mm?
+        DeliverPosition1Z_ =  64  % mm?
+        DispenseChannelPosition1_ = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+
+        BasePosition2X_ = -74  % mm?
+        BasePosition2Y_ =  50  % mm?
+        BasePosition2Z_ =  64  % mm?
+        ToneFrequency2_ = 10000  % Hz
+        DeliverPosition2X_ = -73  % mm?
+        DeliverPosition2Y_ =  60  % mm?
+        DeliverPosition2Z_ =  64  % mm?
+        DispenseChannelPosition2_ = -30  % scalar, mm?
+        
+        ToneDuration_ = 1  % s
+        ToneDelay_ = 1  % s, the delay between the move to the deliver position and the start of the tone
+        DispenseDelay_ = 1  % s, the delay from the end of the tone to the move to the dispense position
+        ReturnDelay_ = 0.12  % s, the delay until the post returns to the home position
+    end  % properties
 
     properties (Access=protected, Transient=true)
         PezDispenser_
         TrialSequence_
+        Controller_
     end
     
     methods
@@ -49,19 +71,22 @@ classdef PezUserClass < ws.UserClass
             fprintf('Instantiating an instance of PezUserClass.\n');
         end
         
-        function wake(self, rootModel)  %#ok<INUSL>
+        function wake(self, rootModel)
             fprintf('Waking an instance of PezUserClass.\n');
             if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
-                ws.examples.PezController(self) ;
+                self.Controller_ = ws.examples.PezController(self) ;
                    % Don't need to keep a ref, b/c this creates a figure, the callbacks of which
                    % hold references to the controller
             end
         end
-         
-        function delete(self)  %#ok<INUSD>
+        
+        function delete(self)
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
             fprintf('An instance of PezUserClass is being deleted.\n');
+            if ~isempty(self.Controller_) && isvalid(self.Controller_) ,
+                delete(self.Controller_) ;
+            end
         end
         
         % These methods are called in the frontend process
@@ -203,19 +228,274 @@ classdef PezUserClass < ws.UserClass
             % Called if a episode goes wrong
             fprintf('Oh noes!  An episode aborted in PezUserClass.\n');
         end
+    end  % public methods
         
+    methods
         function result = get.TrialSequence(self)
             result = self.TrialSequence_ ;
         end
         
+        function result = get.TrialSequenceMode(self)
+            result = self.TrialSequenceMode_ ;
+        end
+        
+        function result = get.BasePosition1X(self)
+            result = self.BasePosition1X_ ;
+        end
+        
+        function result = get.BasePosition1Y(self)
+            result = self.BasePosition1Y_ ;
+        end
+        
+        function result = get.BasePosition1Z(self)
+            result = self.BasePosition1Z_ ;
+        end
+        
+        function result = get.ToneFrequency1(self)
+            result = self.ToneFrequency1_ ;
+        end
+        
+        function result = get.DeliverPosition1X(self)
+            result = self.DeliverPosition1X_ ;
+        end
+        
+        function result = get.DeliverPosition1Y(self)
+            result = self.DeliverPosition1Y_ ;
+        end
+        
+        function result = get.DeliverPosition1Z(self)
+            result = self.DeliverPosition1Z_ ;
+        end
+        
+        function result = get.DispenseChannelPosition1(self)
+            result = self.DispenseChannelPosition1_ ;
+        end
+        
+        function result = get.BasePosition2X(self)
+            result = self.BasePosition2X_ ;
+        end
+        
+        function result = get.BasePosition2Y(self)
+            result = self.BasePosition2Y_ ;
+        end
+        
+        function result = get.BasePosition2Z(self)
+            result = self.BasePosition2Z_ ;
+        end
+        
+        function result = get.ToneFrequency2(self)
+            result = self.ToneFrequency2_ ;
+        end
+        
+        function result = get.DeliverPosition2X(self)
+            result = self.DeliverPosition2X_ ;
+        end
+        
+        function result = get.DeliverPosition2Y(self)
+            result = self.DeliverPosition2Y_ ;
+        end
+        
+        function result = get.DeliverPosition2Z(self)
+            result = self.DeliverPosition2Z_ ;
+        end
+        
+        function result = get.DispenseChannelPosition2(self)
+            result = self.DispenseChannelPosition2_ ;
+        end
+        
+        function result = get.ToneDuration(self)
+            result = self.ToneDuration_ ;
+        end
+        
+        function result = get.ToneDelay(self)
+            result = self.ToneDelay_ ;
+        end
+        
+        function result = get.DispenseDelay(self)
+            result = self.DispenseDelay_ ;
+        end
+        
+        function result = get.ReturnDelay(self)
+            result = self.ReturnDelay_ ;
+        end
+        
         function set.TrialSequenceMode(self, newValue) 
-            if any(strcmp(newValue, self.TrialSequenceModeOptions))
-                self.TrialSequenceMode = newValue ;
-            else
-                error('TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+            if ~any(strcmp(newValue, self.TrialSequenceModeOptions))
+                error('ws:invalidPropertyValue', 'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+            end
+            self.TrialSequenceMode_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end        
+                
+        function set.BasePosition1X(self, newValue)
+            self.checkValue_('BasePosition1X', newValue) ;
+            self.BasePosition1X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.BasePosition1Y(self, newValue)
+            self.checkValue_('BasePosition1Y', newValue) ;
+            self.BasePosition1Y_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.BasePosition1Z(self, newValue)
+            self.checkValue_('BasePosition1Z', newValue) ;
+            self.BasePosition1Z_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.ToneFrequency1(self, newValue)
+            self.checkValue_('ToneFrequency1', newValue) ;
+            self.ToneFrequency1_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition1X(self, newValue)
+            self.checkValue_('DeliverPosition1X', newValue) ;
+            self.DeliverPosition1X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition1Y(self, newValue)
+            self.checkValue_('DeliverPosition1Y', newValue) ;
+            self.DeliverPosition1Y_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition1Z(self, newValue)
+            self.checkValue_('DeliverPosition1Z', newValue) ;
+            self.DeliverPosition1Z_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseChannelPosition1(self, newValue)
+            self.checkValue_('DispenseChannelPosition1', newValue) ;
+            self.DispenseChannelPosition1_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.BasePosition2X(self, newValue)
+            self.checkValue_('BasePosition2X', newValue) ;
+            self.BasePosition2X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.BasePosition2Y(self, newValue)
+            self.checkValue_('BasePosition2Y', newValue) ;
+            self.BasePosition2Y_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.BasePosition2Z(self, newValue)
+            self.checkValue_('BasePosition2Z', newValue) ;
+            self.BasePosition2Z_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.ToneFrequency2(self, newValue)
+            self.checkValue_('ToneFrequency2', newValue) ;
+            self.ToneFrequency2_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition2X(self, newValue)
+            self.checkValue_('DeliverPosition2X', newValue) ;
+            self.DeliverPosition2X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition2Y(self, newValue)
+            self.checkValue_('DeliverPosition2Y', newValue) ;
+            self.DeliverPosition2Y_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DeliverPosition2Z(self, newValue)
+            self.checkValue_('DeliverPosition2Z', newValue) ;
+            self.DeliverPosition2Z_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseChannelPosition2(self, newValue)
+            self.checkValue_('DispenseChannelPosition2', newValue) ;
+            self.DispenseChannelPosition2_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.ToneDuration(self, newValue)
+            self.checkValue_('ToneDuration', newValue) ;
+            self.ToneDuration_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.ToneDelay(self, newValue)
+            self.checkValue_('ToneDelay', newValue) ;
+            self.ToneDelay_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseDelay(self, newValue)
+            self.checkValue_('DispenseDelay', newValue) ;
+            self.DispenseDelay_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.ReturnDelay(self, newValue)
+            self.checkValue_('ReturnDelay', newValue) ;
+            self.ReturnDelay_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+    end  % public methods
+    
+    methods (Access=protected)
+        function tellControllerToUpdateIfPresent_(self)
+            if ~isempty(self.Controller_) ,
+                self.Controller_.update() ;
             end
         end
-    end  % methods
+        
+        function checkValue_(self, propertyName, newValue)  %#ok<INUSL>
+            if isequal(propertyName, 'ReturnDelay') ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0.1<newValue ) ,
+                    error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
+                end                                    
+            elseif ~isempty(strfind(propertyName, 'Position')) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-100<=newValue) && (newValue<=+100) ) ,
+                    error('ws:invalidPropertyValue', 'Position property value is invalid') ;
+                end
+            elseif ~isempty(strfind(propertyName, 'Duration')) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
+                    error('ws:invalidPropertyValue', 'Duration property value is invalid') ;
+                end                    
+            elseif ~isempty(strfind(propertyName, 'Delay')) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
+                    error('ws:invalidPropertyValue', 'Delay property value is invalid') ;
+                end                    
+            elseif ~isempty(strfind(propertyName, 'Frequency')) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<newValue ) ,
+                    error('ws:invalidPropertyValue', 'Frequency property value is invalid') ;
+                end                    
+            else
+                error('Unrecognized property name') ;
+            end
+        end
+    end  % protected methods block
+    
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % This allows public access to private properties in certain limited
+            % circumstances, like persisting.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % This allows public access to private properties in certain limited
+            % circumstances, like persisting.
+            self.(name) = value;
+        end
+    end  % protected
     
 end  % classdef
 

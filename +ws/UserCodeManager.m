@@ -272,6 +272,12 @@ classdef UserCodeManager < ws.Subsystem
         function result = getUserObjectProperty(self, propertyName)
             result = self.TheObject_.(propertyName) ;
         end        
+        
+        function result = getUserObjectHandle_(self)
+            % We generally from on returning references to object owned by self.
+            % Only use this method if you're sure you know what you're doing.
+            result = self.TheObject_ ;            
+        end
     end  % public methods block
        
     methods (Access=protected)

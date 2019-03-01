@@ -6271,6 +6271,12 @@ classdef WavesurferModel < ws.Model
         function result = getUserObjectProperty(self, propertyName)
             result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
         end
+        
+        function result = getUserObjectHandle_(self)
+            % We generally from on returning references to object owned by self.
+            % Only use this method if you're sure you know what you're doing.
+            result = self.UserCodeManager_.getUserObjectHandle_() ;            
+        end
     end  % public methods block
     
     methods (Access = protected)

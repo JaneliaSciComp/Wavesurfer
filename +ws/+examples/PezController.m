@@ -36,7 +36,10 @@ classdef PezController < handle
             fig = figure('Name', 'Pez', ...
                          'MenuBar', 'none', ...
                          'IntegerHandle', 'off', ...
+                         'Resize', 'off', ...
+                         'CloseRequestFcn', @(source, event)(ws.nop()), ...
                          'HandleVisibility', 'off') ;
+                % Make the figure un-closable, since no way to get it back if it gets closed...     
             self.Figure_ = fig ;
             
             self.TrialSequenceModeLabel_ = ...
@@ -195,7 +198,7 @@ classdef PezController < handle
                                          'UnitsString', 's') ;
             
             self.layout_() ;
-            self.update_() ;
+            self.update() ;
         end
         
         function delete(self)
@@ -205,22 +208,71 @@ classdef PezController < handle
         end
 
         function controlActuated(self, source, event)  %#ok<INUSD>
+            % Figure out the property name and the new value
             if source==self.TrialSequenceModePopupMenu_ ,
-                newValueAsString = ws.getPopupMenuSelection(source, self.Model_.TrialSequenceModeOptions) ;
-                self.Model_.TrialSequenceMode = newValueAsString ;
+                propertyName = 'TrialSequenceMode' ;
+                newValue = ws.getPopupMenuSelection(source, self.Model_.TrialSequenceModeOptions) ;
+                try
+                    self.Model_.TrialSequenceMode = newValue ;
+                catch exception
+                    self.update() ;  % If an exception is throw, the PezUserClass will generally not tell the controller to update
+                    if isequal(exception.identifier, 'ws:invalidPropertyValue') ,
+                        % do nothing
+                    else
+                        ws.raiseDialogOnException(exception) ;
+                    end
+                end
             else
                 % Must be an edit
                 tag = source.Tag ;
                 propertyName = tag ;
-                newValueAsString = source.String ;
-                newValue = str2double(newValueAsString) ;
-                if isfinite(newValue) ,
-                    self.Model_.(propertyName) = newValue ;
+                rawNewValue = source.String ;
+                newValue = str2double(rawNewValue) ;
+            end
+            
+            % Attempt to set the property name in the model, and deal with any exceptions
+            try
+                self.Model_.(propertyName) = newValue ;
+            catch exception
+                self.update() ;  % If an exception is throw, the PezUserClass will generally not tell the controller to update
+                if isequal(exception.identifier, 'ws:invalidPropertyValue') ,
+                    % do nothing
+                else
+                    % raise a dialog
+                    ws.raiseDialogOnException(exception) ;
                 end
             end
-            self.update_() ;
-        end
+            %self.update() ;
+        end        
         
+        function update(self)
+            ws.setPopupMenuItemsAndSelectionBang(self.TrialSequenceModePopupMenu_, ...
+                                                 self.Model_.TrialSequenceModeOptions, ...
+                                                 self.Model_.TrialSequenceMode) ;
+            
+            self.BasePosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1X) ;            
+            self.BasePosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1Y) ;            
+            self.BasePosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1Z) ;            
+            self.ToneFrequency1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency1) ;                        
+            self.DeliverPosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1X) ;            
+            self.DeliverPosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Y) ;            
+            self.DeliverPosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Z) ;            
+            self.DispenseChannelPosition1LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseChannelPosition1) ;                        
+            
+            self.BasePosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2X) ;            
+            self.BasePosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2Y) ;            
+            self.BasePosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2Z) ;            
+            self.ToneFrequency2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency2) ;                        
+            self.DeliverPosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2X) ;            
+            self.DeliverPosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Y) ;            
+            self.DeliverPosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Z) ;            
+            self.DispenseChannelPosition2LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseChannelPosition2) ;
+
+            self.ToneDurationLabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration) ;
+            self.ToneDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay) ;
+            self.DispenseDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseDelay) ;
+            self.ReturnDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ReturnDelay) ;            
+        end                
     end  % public methods block    
     
     methods (Access=private)
@@ -330,35 +382,6 @@ classdef PezController < handle
             yOffset = yOffset - defaultYSpacing ;
             self.ReturnDelayLabelledEdit_.Position(1:2) = [xBaseline yOffset] ;
             self.ReturnDelayLabelledEdit_.Position(3)   = editWidth ;
-        end
-        
-        function update_(self)
-            ws.setPopupMenuItemsAndSelectionBang(self.TrialSequenceModePopupMenu_, ...
-                                                 self.Model_.TrialSequenceModeOptions, ...
-                                                 self.Model_.TrialSequenceMode) ;
-            
-            self.BasePosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1X) ;            
-            self.BasePosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1Y) ;            
-            self.BasePosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1Z) ;            
-            self.ToneFrequency1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency1) ;                        
-            self.DeliverPosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1X) ;            
-            self.DeliverPosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Y) ;            
-            self.DeliverPosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Z) ;            
-            self.DispenseChannelPosition1LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseChannelPosition1) ;                        
-            
-            self.BasePosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2X) ;            
-            self.BasePosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2Y) ;            
-            self.BasePosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition2Z) ;            
-            self.ToneFrequency2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency2) ;                        
-            self.DeliverPosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2X) ;            
-            self.DeliverPosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Y) ;            
-            self.DeliverPosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Z) ;            
-            self.DispenseChannelPosition2LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseChannelPosition2) ;
-
-            self.ToneDurationLabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration) ;
-            self.ToneDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay) ;
-            self.DispenseDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseDelay) ;
-            self.ReturnDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ReturnDelay) ;            
         end        
     end  % private methods block    
     

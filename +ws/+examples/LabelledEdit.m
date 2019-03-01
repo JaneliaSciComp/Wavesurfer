@@ -19,7 +19,7 @@ classdef LabelledEdit < handle
     methods
         function self = LabelledEdit(varargin)
             propertyValuePairsAsCellArray = varargin ;
-            propertyValueStruct = ws.structFrompropertyValuePairs(propertyValuePairsAsCellArray) ;
+            propertyValueStruct = ws.structFromPropertyValuePairs(propertyValuePairsAsCellArray) ;
             propertyNames = fieldnames(propertyValueStruct) ;
             
             % Figure out the parent
