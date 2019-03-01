@@ -16,7 +16,7 @@ classdef (Abstract) Coding < handle
         
         function propNames = listPropertiesForHeader(self)
             % Define helper
-            shouldPropertyBeIncludedInHeader = @(x)(strcmpi(x.GetAccess,'public') && ~x.Hidden) ;
+            shouldPropertyBeIncludedInHeader = @(x)(strcmpi(x.GetAccess,'public') && ~x.Hidden && ~x.Transient) ;
 
             % Actually get the prop names that satisfy the predicate
             propNames = self.propertyNamesSatisfyingPredicate_(shouldPropertyBeIncludedInHeader);

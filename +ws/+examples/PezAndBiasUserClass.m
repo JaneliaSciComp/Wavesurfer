@@ -265,5 +265,19 @@ classdef PezAndBiasUserClass < ws.UserClass
         end        
     end  % methods
     
+    methods (Access = protected)
+        function out = getPropertyValue_(self, name)
+            % This allows public access to private properties in certain limited
+            % circumstances, like persisting.
+            out = self.(name);
+        end
+        
+        function setPropertyValue_(self, name, value)
+            % This allows public access to private properties in certain limited
+            % circumstances, like persisting.
+            self.(name) = value;
+        end
+    end  % protected
+        
 end  % classdef
 

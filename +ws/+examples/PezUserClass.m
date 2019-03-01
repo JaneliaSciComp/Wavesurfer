@@ -1,5 +1,5 @@
 classdef PezUserClass < ws.UserClass
-    properties (Constant)
+    properties (Constant, Transient)  % Transient so doesn't get written to data files
         TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
     end
 
@@ -102,7 +102,8 @@ classdef PezUserClass < ws.UserClass
             elseif isequal(self.TrialSequenceMode, 'alternating')
                 self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
             elseif isequal(self.TrialSequenceMode, 'random') 
-                self.TrialSequence_ = randi(2, [1 sweepCount]) ;
+                trialSequence = randi(2, [1 sweepCount]) ;
+                self.TrialSequence_ = trialSequence ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
             end
@@ -121,7 +122,8 @@ classdef PezUserClass < ws.UserClass
         
         function stoppingRun(self,wsModel)  %#ok<INUSD>
             % Called if a sweep goes wrong
-            fprintf('User stopped a run in PezUserClass.');
+            fprintf('User stopped a run in PezUserClass.\n');
+            self.PezDispenser_.abort() ;
             self.PezDispenser_.close() ;
             delete(self.PezDispenser_) ;
             self.PezDispenser_ = [] ;
@@ -131,6 +133,7 @@ classdef PezUserClass < ws.UserClass
             % Called if a run goes wrong, after the call to
             % abortingSweep()
             fprintf('Oh noes!  A run aborted in PezUserClass.\n');
+            self.PezDispenser_.abort() ;
             self.PezDispenser_.close() ;
             delete(self.PezDispenser_) ;
             self.PezDispenser_ = [] ;
@@ -321,7 +324,8 @@ classdef PezUserClass < ws.UserClass
         
         function set.TrialSequenceMode(self, newValue) 
             if ~any(strcmp(newValue, self.TrialSequenceModeOptions))
-                error('ws:invalidPropertyValue', 'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+                error('ws:invalidPropertyValue', ...
+                      'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
             end
             self.TrialSequenceMode_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
@@ -461,19 +465,19 @@ classdef PezUserClass < ws.UserClass
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0.1<newValue ) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
-            elseif ~isempty(strfind(propertyName, 'Position')) ,
+            elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-100<=newValue) && (newValue<=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;
                 end
-            elseif ~isempty(strfind(propertyName, 'Duration')) ,
+            elseif ~isempty(strfind(propertyName, 'Duration')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Duration property value is invalid') ;
                 end                    
-            elseif ~isempty(strfind(propertyName, 'Delay')) ,
+            elseif ~isempty(strfind(propertyName, 'Delay')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Delay property value is invalid') ;
                 end                    
-            elseif ~isempty(strfind(propertyName, 'Frequency')) ,
+            elseif ~isempty(strfind(propertyName, 'Frequency')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<newValue ) ,
                     error('ws:invalidPropertyValue', 'Frequency property value is invalid') ;
                 end                    
