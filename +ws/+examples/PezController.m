@@ -28,6 +28,8 @@ classdef PezController < handle
         ToneDelayLabelledEdit_
         DispenseDelayLabelledEdit_
         ReturnDelayLabelledEdit_
+        
+        ResetButton_
     end
 
     methods
@@ -197,6 +199,13 @@ classdef PezController < handle
                                          'LabelString', 'Return Delay:', ...
                                          'UnitsString', 's') ;
             
+            self.ResetButton_ = ...
+                ws.uicontrol('Parent', fig, ...
+                             'Tag', 'ResetButton', ...
+                             'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                             'Style', 'pushbutton', ...
+                             'String', 'Reset') ;
+                         
             self.layout_() ;
             self.update() ;
         end
@@ -208,31 +217,24 @@ classdef PezController < handle
         end
 
         function controlActuated(self, source, event)  %#ok<INUSD>
-            % Figure out the property name and the new value
-            if source==self.TrialSequenceModePopupMenu_ ,
-                propertyName = 'TrialSequenceMode' ;
-                newValue = ws.getPopupMenuSelection(source, self.Model_.TrialSequenceModeOptions) ;
-                try
-                    self.Model_.TrialSequenceMode = newValue ;
-                catch exception
-                    self.update() ;  % If an exception is throw, the PezUserClass will generally not tell the controller to update
-                    if isequal(exception.identifier, 'ws:invalidPropertyValue') ,
-                        % do nothing
-                    else
-                        ws.raiseDialogOnException(exception) ;
-                    end
-                end
-            else
-                % Must be an edit
-                tag = source.Tag ;
-                propertyName = tag ;
-                rawNewValue = source.String ;
-                newValue = str2double(rawNewValue) ;
-            end
-            
-            % Attempt to set the property name in the model, and deal with any exceptions
             try
-                self.Model_.(propertyName) = newValue ;
+                if source==self.ResetButton_ ,
+                    self.Model_.reset() ;
+                else
+                    % Must be a case where we want to set a model property
+                    if source==self.TrialSequenceModePopupMenu_ ,
+                        propertyName = 'TrialSequenceMode' ;
+                        newValue = ws.getPopupMenuSelection(source, self.Model_.TrialSequenceModeOptions) ;
+                    else
+                        % Must be an edit
+                        tag = source.Tag ;
+                        propertyName = tag ;
+                        rawNewValue = source.String ;
+                        newValue = str2double(rawNewValue) ;
+                    end
+                    % Attempt to set the property name in the model
+                    self.Model_.(propertyName) = newValue ;
+                end
             catch exception
                 self.update() ;  % If an exception is throw, the PezUserClass will generally not tell the controller to update
                 if isequal(exception.identifier, 'ws:invalidPropertyValue') ,
@@ -241,14 +243,15 @@ classdef PezController < handle
                     % raise a dialog
                     ws.raiseDialogOnException(exception) ;
                 end
-            end
-            %self.update() ;
-        end        
+            end                
+                
+        end  % function
         
         function update(self)
             ws.setPopupMenuItemsAndSelectionBang(self.TrialSequenceModePopupMenu_, ...
                                                  self.Model_.TrialSequenceModeOptions, ...
                                                  self.Model_.TrialSequenceMode) ;
+            self.TrialSequenceModePopupMenu_.Enable = ws.onIff(~self.Model_.IsRunning) ;
             
             self.BasePosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1X) ;            
             self.BasePosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.BasePosition1Y) ;            
@@ -272,13 +275,38 @@ classdef PezController < handle
             self.ToneDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay) ;
             self.DispenseDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseDelay) ;
             self.ReturnDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ReturnDelay) ;            
+
+            self.BasePosition1XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.BasePosition1YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.BasePosition1ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;         
+            self.DeliverPosition1XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
+            self.DeliverPosition1YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
+            self.DeliverPosition1ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;  
+            self.DispenseChannelPosition1LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;                   
+            
+            self.BasePosition2XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;   
+            self.BasePosition2YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;  
+            self.BasePosition2ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;  
+            self.ToneFrequency2LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;             
+            self.DeliverPosition2XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
+            self.DeliverPosition2YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;    
+            self.DeliverPosition2ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;      
+            self.DispenseChannelPosition2LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+
+            self.ToneDurationLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.ToneDelayLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.DispenseDelayLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.ReturnDelayLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            
+            self.ResetButton_.Enable = ws.onIff(self.Model_.IsResetEnabled) ;
         end                
     end  % public methods block    
     
     methods (Access=private)
         function layout_(self)
             figureWidth = 300 ;
-            figureHeight = 710 ;
+            figureHeight = 750 ;
             
             defaultYSpacing = 30 ;
             xBaseline = 180 ;
@@ -286,6 +314,7 @@ classdef PezController < handle
             editWidth = 60 ;
             intergroupExtraYSpace = 20 ;
             belowModeExtraYSpace = 10 ;
+            aboveResetButtonExtraYSpace = 10 ;
             
             ws.resizeLeavingUpperLeftFixedBang(self.Figure_, [figureWidth figureHeight]) ;
             
@@ -382,6 +411,10 @@ classdef PezController < handle
             yOffset = yOffset - defaultYSpacing ;
             self.ReturnDelayLabelledEdit_.Position(1:2) = [xBaseline yOffset] ;
             self.ReturnDelayLabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing - aboveResetButtonExtraYSpace;
+            self.ResetButton_.Position(1:2) = [xBaseline yOffset] ;
+            
         end        
     end  % private methods block    
     

@@ -8,6 +8,7 @@ classdef LabelledEdit < handle
         Callback
         HorizontalAlignment
         Tag
+        Enable
     end        
     
     properties (Access=private)
@@ -42,7 +43,7 @@ classdef LabelledEdit < handle
             end            
         end
         
-        function delete(self)
+        function delete(self)  %#ok<INUSD>
         end
         
         function result = get.Tag(self)
@@ -90,5 +91,12 @@ classdef LabelledEdit < handle
             self.Edit_.HorizontalAlignment = newValue ;
         end
         
+        function result = get.Enable(self)
+            result = self.Edit_.Enable ;
+        end
+        
+        function set.Enable(self, newValue)
+            self.Edit_.Enable = newValue ;
+        end
     end  % public methods block    
 end

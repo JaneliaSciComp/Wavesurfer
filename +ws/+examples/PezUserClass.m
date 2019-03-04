@@ -30,6 +30,8 @@ classdef PezUserClass < ws.UserClass
         ReturnDelay
         
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
+        IsRunning
+        IsResetEnabled
     end  % properties
     
     properties (Access=protected)
@@ -63,6 +65,7 @@ classdef PezUserClass < ws.UserClass
         PezDispenser_
         TrialSequence_
         Controller_
+        IsRunning_ = false
     end
     
     methods
@@ -107,8 +110,10 @@ classdef PezUserClass < ws.UserClass
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
             end
+            self.IsRunning_ = true ;
             self.PezDispenser_ = ModularClient('COM3') ;
             self.PezDispenser_.open() ;
+            self.tellControllerToUpdateIfPresent_() ;
         end
         
         function completingRun(self,wsModel)  %#ok<INUSD>
@@ -118,6 +123,8 @@ classdef PezUserClass < ws.UserClass
             self.PezDispenser_.close() ;
             delete(self.PezDispenser_) ;
             self.PezDispenser_ = [] ;
+            self.IsRunning_ = false ;
+            self.tellControllerToUpdateIfPresent_() ;
         end
         
         function stoppingRun(self,wsModel)  %#ok<INUSD>
@@ -127,6 +134,8 @@ classdef PezUserClass < ws.UserClass
             self.PezDispenser_.close() ;
             delete(self.PezDispenser_) ;
             self.PezDispenser_ = [] ;
+            self.IsRunning_ = false ;
+            self.tellControllerToUpdateIfPresent_() ;
         end        
         
         function abortingRun(self,wsModel)  %#ok<INUSD>
@@ -137,6 +146,8 @@ classdef PezUserClass < ws.UserClass
             self.PezDispenser_.close() ;
             delete(self.PezDispenser_) ;
             self.PezDispenser_ = [] ;
+            self.IsRunning_ = false ;
+            self.tellControllerToUpdateIfPresent_() ;
         end
         
         function startingSweep(self,wsModel)
@@ -450,7 +461,27 @@ classdef PezUserClass < ws.UserClass
             self.ReturnDelay_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
+
+        function result = get.IsRunning(self)
+            result = self.IsRunning_ ;            
+        end
         
+        function result = get.IsResetEnabled(self)
+            result = ~self.IsRunning_ ;            
+        end
+        
+        function reset(self)
+            if self.IsResetEnabled ,
+                self.PezDispenser_ = ModularClient('COM3') ;
+                self.PezDispenser_.open() ;
+                self.PezDispenser_.reset() ;
+                %self.PezDispenser_.close() ;
+                delete(self.PezDispenser_) ;
+                self.PezDispenser_ = [] ;
+            else
+                error('Reset is not currently enabled.') ;
+            end
+        end
     end  % public methods
     
     methods (Access=protected)

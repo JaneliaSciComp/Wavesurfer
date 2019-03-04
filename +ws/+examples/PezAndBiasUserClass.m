@@ -3,20 +3,30 @@ classdef PezAndBiasUserClass < ws.UserClass
     properties (Dependent)
         TrialSequenceMode
         
-        BasePosition1  % 3x1, mm
-        ToneFrequency1  % Hz
-        DeliverPosition1  % 3x1, mm
-        DispenseChannelPosition1  % scalar, mm, the vertical delta from the deliver position to the dispense position
+        BasePosition1X
+        BasePosition1Y
+        BasePosition1Z
+        ToneFrequency1
+        DeliverPosition1X
+        DeliverPosition1Y
+        DeliverPosition1Z
+        DispenseChannelPosition1
 
-        BasePosition2  % 3x1, mm
-        ToneFrequency2  % Hz
-        DeliverPosition2  % 3x1, mm
-        DispenseChannelPosition2  % scalar, mm
+        BasePosition2X
+        BasePosition2Y
+        BasePosition2Z
+        ToneFrequency2
+        DeliverPosition2X
+        DeliverPosition2Y
+        DeliverPosition2Z
+        DispenseChannelPosition2
         
-        ToneDuration  % s
-        ToneDelay  % s, the delay between the move to the deliver position and the start of the tone
-        DispenseDelay % s, the delay from the end of the tone to the move to the dispense position
-        ReturnDelay  % s, the delay until the post returns to the home position
+        ToneDuration
+        ToneDelay
+        DispenseDelay
+        ReturnDelay
+        
+        TrialSequence  % 1 x sweepCount, each element 1 or 2        
     
         CameraCount
     end
@@ -164,20 +174,52 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.TrialSequenceMode = newValue ;
         end
         
-        function result = get.BasePosition1(self)
-            result = self.PezUserObject_.BasePosition1 ;
+        function result = get.BasePosition1X(self)
+            result = self.PezUserObject_.BasePosition1X ;
         end
         
-        function set.BasePosition1(self, newValue)
-            self.PezUserObject_.BasePosition1 = newValue ;
+        function result = get.BasePosition1Y(self)
+            result = self.PezUserObject_.BasePosition1Y ;
         end
         
-        function result = get.BasePosition2(self)
-            result = self.PezUserObject_.BasePosition2 ;
+        function result = get.BasePosition1Z(self)
+            result = self.PezUserObject_.BasePosition1Z ;
         end
         
-        function set.BasePosition2(self, newValue)
-            self.PezUserObject_.BasePosition2 = newValue ;
+        function set.BasePosition1X(self, newValue)
+            self.PezUserObject_.BasePosition1X = newValue ;
+        end
+        
+        function set.BasePosition1Y(self, newValue)
+            self.PezUserObject_.BasePosition1Z = newValue ;
+        end
+        
+        function set.BasePosition1Z(self, newValue)
+            self.PezUserObject_.BasePosition1Z = newValue ;
+        end
+        
+        function result = get.BasePosition2X(self)
+            result = self.PezUserObject_.BasePosition2X ;
+        end
+        
+        function result = get.BasePosition2Y(self)
+            result = self.PezUserObject_.BasePosition2Y ;
+        end
+        
+        function result = get.BasePosition2Z(self)
+            result = self.PezUserObject_.BasePosition2Z ;
+        end
+        
+        function set.BasePosition2X(self, newValue)
+            self.PezUserObject_.BasePosition2X = newValue ;
+        end
+            
+        function set.BasePosition2Y(self, newValue)
+            self.PezUserObject_.BasePosition2Y = newValue ;
+        end
+            
+        function set.BasePosition2Z(self, newValue)
+            self.PezUserObject_.BasePosition2Z = newValue ;
         end
             
         function result = get.ToneFrequency1(self)
@@ -196,20 +238,52 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.ToneFrequency2 = newValue ;
         end
             
-        function result = get.DeliverPosition1(self)
-            result = self.PezUserObject_.DeliverPosition1 ;
+        function result = get.DeliverPosition1X(self)
+            result = self.PezUserObject_.DeliverPosition1X ;
         end
         
-        function set.DeliverPosition1(self, newValue)
-            self.PezUserObject_.DeliverPosition1 = newValue ;
+        function result = get.DeliverPosition1Y(self)
+            result = self.PezUserObject_.DeliverPosition1Y ;
+        end
+        
+        function result = get.DeliverPosition1Z(self)
+            result = self.PezUserObject_.DeliverPosition1Z ;
+        end
+        
+        function set.DeliverPosition1X(self, newValue)
+            self.PezUserObject_.DeliverPosition1X = newValue ;
         end
             
-        function result = get.DeliverPosition2(self)
-            result = self.PezUserObject_.DeliverPosition2 ;
+        function set.DeliverPosition1Y(self, newValue)
+            self.PezUserObject_.DeliverPosition1Y = newValue ;
+        end
+            
+        function set.DeliverPosition1Z(self, newValue)
+            self.PezUserObject_.DeliverPosition1Z = newValue ;
+        end
+            
+        function result = get.DeliverPosition2X(self)
+            result = self.PezUserObject_.DeliverPosition2X ;
         end
         
-        function set.DeliverPosition2(self, newValue)
-            self.PezUserObject_.DeliverPosition2 = newValue ;
+        function result = get.DeliverPosition2Y(self)
+            result = self.PezUserObject_.DeliverPosition2Y ;
+        end
+        
+        function result = get.DeliverPosition2Z(self)
+            result = self.PezUserObject_.DeliverPosition2Z ;
+        end
+        
+        function set.DeliverPosition2X(self, newValue)
+            self.PezUserObject_.DeliverPosition2X = newValue ;
+        end
+            
+        function set.DeliverPosition2Y(self, newValue)
+            self.PezUserObject_.DeliverPosition2Y = newValue ;
+        end
+            
+        function set.DeliverPosition2Z(self, newValue)
+            self.PezUserObject_.DeliverPosition2Z = newValue ;
         end
             
         function result = get.DispenseChannelPosition1(self)
@@ -260,6 +334,10 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.ReturnDelay = newValue ;
         end
             
+        function result = get.TrialSequence(self)
+            result = self.PezUserObject_.TrialSequence ;
+        end
+        
         function result = get.CameraCount(self)
             result = self.BiasUserObject_.cameraCount ;
         end        
