@@ -3,30 +3,32 @@ classdef PezUserClass < ws.UserClass
         TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
     end
 
+    properties (Constant, Transient, Access=protected)  % Transient so doesn't get written to data files
+        DispenseToneVolumeWhenPlayed_ = 50   % percent of maximum
+    end
+    
     properties (Dependent)
         TrialSequenceMode
         
-        BasePosition1X
-        BasePosition1Y
-        BasePosition1Z
+        DoPlayDispenseTone
+        DispenseToneFrequency
+        
         ToneFrequency1
+        ToneDuration1
+        DispenseDelay1
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
-        DispenseChannelPosition1
+        DispensePosition1ZOffset
 
-        BasePosition2X
-        BasePosition2Y
-        BasePosition2Z
         ToneFrequency2
+        ToneDuration2
+        DispenseDelay2
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
-        DispenseChannelPosition2
+        DispensePosition2ZOffset
         
-        ToneDuration
-        ToneDelay
-        DispenseDelay
         ReturnDelay
         
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
@@ -37,28 +39,26 @@ classdef PezUserClass < ws.UserClass
     properties (Access=protected)
         TrialSequenceMode_ = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
         
-        BasePosition1X_ = -74  % mm?
-        BasePosition1Y_ =  50  % mm?
-        BasePosition1Z_ =  64  % mm?
-        ToneFrequency1_ = 3000  % Hz
-        DeliverPosition1X_ = -73  % mm?
-        DeliverPosition1Y_ =  51  % mm?
-        DeliverPosition1Z_ =  64  % mm?
-        DispenseChannelPosition1_ = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
-
-        BasePosition2X_ = -74  % mm?
-        BasePosition2Y_ =  50  % mm?
-        BasePosition2Z_ =  64  % mm?
-        ToneFrequency2_ = 10000  % Hz
-        DeliverPosition2X_ = -73  % mm?
-        DeliverPosition2Y_ =  60  % mm?
-        DeliverPosition2Z_ =  64  % mm?
-        DispenseChannelPosition2_ = -30  % scalar, mm?
+        DoPlayDispenseTone_ = false  % boolean
+        DispenseToneFrequency_ = 7000  % Hz        
         
-        ToneDuration_ = 1  % s
-        ToneDelay_ = 1  % s, the delay between the move to the deliver position and the start of the tone
-        DispenseDelay_ = 1  % s, the delay from the end of the tone to the move to the dispense position
-        ReturnDelay_ = 0.12  % s, the delay until the post returns to the home position
+        ToneFrequency1_ = 3000  % Hz
+        ToneDuration1_ = 1  % s
+        DispenseDelay1_ = 1  % s
+        DeliverPosition1X_ =  51  % mm?
+        DeliverPosition1Y_ =  64  % mm?
+        DeliverPosition1Z_ = -73  % mm?
+        DispensePosition1ZOffset_ = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+
+        ToneFrequency2_ = 10000  % Hz
+        ToneDuration2_ = 1  % s
+        DispenseDelay2_ = 1  % s
+        DeliverPosition2X_ =  60  % mm?
+        DeliverPosition2Y_ =  64  % mm?
+        DeliverPosition2Z_ = -73  % mm?
+        DispensePosition2ZOffset_ = -30  % scalar, mm?
+        
+        ReturnDelay_ = 6  % s, the duration the piston holds at the dispense position
     end  % properties
 
     properties (Access=protected, Transient=true)
@@ -77,7 +77,7 @@ classdef PezUserClass < ws.UserClass
         function wake(self, rootModel)
             fprintf('Waking an instance of PezUserClass.\n');
             if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
-                self.Controller_ = ws.examples.PezController(self) ;
+                ws.examples.PezController(self) ;
                    % Don't need to keep a ref, b/c this creates a figure, the callbacks of which
                    % hold references to the controller
             end
@@ -155,39 +155,58 @@ classdef PezUserClass < ws.UserClass
             fprintf('About to start a sweep in PezUserClass.\n');
             sweepIndex = wsModel.NSweepsCompletedInThisRun + 1 ;
             trialType = self.TrialSequence_(sweepIndex) ;
-            %pauseDuration = 0.000 ; % s
+            
+            % Note well: We have to permute the permission coordinates so that they match
+            % user expectations, given the orientation of the stage.  To the Arduino,
+            % increasing x means "piston more extended".  If we used Ardunio-native coords, 
+            %
+            %   increasing x == upward
+            %   increasing y == rightward
+            %   increasing z == away
+            %
+            % (All of these are from the POV of the experiemnter, sitting in front of the
+            % rig.)
+            %
+            % We want increasing z to be upwards, and to keep the coordinate system
+            % right-handed.  So we'll have a "user" coord system s.t.:
+            %
+            %   increasing x == rightward
+            %   increasing y == away
+            %   increasing z == upward
+            %
+            % Thus:
+            %
+            %   user x == arduino y
+            %   user y == arduino z
+            %   uzer z == arduino x
+            %
+            % I.e.
+            %   arduino x == user z
+            %   arduino y == user x
+            %   arduino z == user y
+            %
+            % So, long story short, we permute the user coords to get arduino coords
+            
             if trialType == 1 ,
-                self.PezDispenser_.basePosition('setValue', [self.BasePosition1X self.BasePosition1Y self.BasePosition1Z]) ;
-                %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
-                %pause(pauseDuration) ;
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1X self.DeliverPosition1Y self.DeliverPosition1Z]) ;
-                %pause(pauseDuration) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition1) ;
-                %pause(pauseDuration) ;
+                self.PezDispenser_.toneDuration('setValue', self.ToneDuration1) ;
+                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset) ;
             else
-                self.PezDispenser_.basePosition('setValue', [self.BasePosition2X self.BasePosition2Y self.BasePosition2Z]) ;
-                %pause(pauseDuration) ;
                 self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
-                %pause(pauseDuration) ;
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2X self.DeliverPosition2Y self.DeliverPosition2Z]) ;
-                %pause(pauseDuration) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispenseChannelPosition2) ;
-                %pause(pauseDuration) ;
+                self.PezDispenser_.toneDuration('setValue', self.ToneDuration2) ;
+                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset) ;
             end
-            self.PezDispenser_.toneDuration('setValue', self.ToneDuration) ;            
-            %pause(pauseDuration) ;
-            self.PezDispenser_.toneDelayMin('setValue', self.ToneDelay) ;            
-            %pause(pauseDuration) ;
-            self.PezDispenser_.toneDelayMax('setValue', self.ToneDelay) ;            
-            %pause(pauseDuration) ;
-            self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay) ;            
-            %pause(pauseDuration) ;
-            %returnDelay = self.ReturnDelay
-            self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;            
-            %pause(pauseDuration) ;
-            self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;            
-            %pause(pauseDuration) ;
+            self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
+            self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
+            self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
+            self.PezDispenser_.toneDelayMax('setValue', 0) ;            
+            dispenseToneVolume = ws.fif(self.DoPlayDispenseTone, self.DispenseToneVolumeWhenPlayed_, 0) ;
+            self.PezDispenser_.dispenseToneVolume('setValue', dispenseToneVolume) ;
+            self.PezDispenser_.dispenseToneFrequency('setValue', self.DispenseToneFrequency) ;
         end
         
         function completingSweep(self,wsModel)  %#ok<INUSD>
@@ -253,18 +272,6 @@ classdef PezUserClass < ws.UserClass
             result = self.TrialSequenceMode_ ;
         end
         
-        function result = get.BasePosition1X(self)
-            result = self.BasePosition1X_ ;
-        end
-        
-        function result = get.BasePosition1Y(self)
-            result = self.BasePosition1Y_ ;
-        end
-        
-        function result = get.BasePosition1Z(self)
-            result = self.BasePosition1Z_ ;
-        end
-        
         function result = get.ToneFrequency1(self)
             result = self.ToneFrequency1_ ;
         end
@@ -281,20 +288,8 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition1Z_ ;
         end
         
-        function result = get.DispenseChannelPosition1(self)
-            result = self.DispenseChannelPosition1_ ;
-        end
-        
-        function result = get.BasePosition2X(self)
-            result = self.BasePosition2X_ ;
-        end
-        
-        function result = get.BasePosition2Y(self)
-            result = self.BasePosition2Y_ ;
-        end
-        
-        function result = get.BasePosition2Z(self)
-            result = self.BasePosition2Z_ ;
+        function result = get.DispensePosition1ZOffset(self)
+            result = self.DispensePosition1ZOffset_ ;
         end
         
         function result = get.ToneFrequency2(self)
@@ -313,25 +308,37 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition2Z_ ;
         end
         
-        function result = get.DispenseChannelPosition2(self)
-            result = self.DispenseChannelPosition2_ ;
+        function result = get.DispensePosition2ZOffset(self)
+            result = self.DispensePosition2ZOffset_ ;
         end
         
-        function result = get.ToneDuration(self)
-            result = self.ToneDuration_ ;
+        function result = get.ToneDuration1(self)
+            result = self.ToneDuration1_ ;
         end
         
-        function result = get.ToneDelay(self)
-            result = self.ToneDelay_ ;
+        function result = get.DispenseDelay1(self)
+            result = self.DispenseDelay1_ ;
         end
         
-        function result = get.DispenseDelay(self)
-            result = self.DispenseDelay_ ;
+        function result = get.ToneDuration2(self)
+            result = self.ToneDuration2_ ;
+        end
+        
+        function result = get.DispenseDelay2(self)
+            result = self.DispenseDelay2_ ;
         end
         
         function result = get.ReturnDelay(self)
             result = self.ReturnDelay_ ;
         end
+        
+        function result = get.DispenseToneFrequency(self)
+            result = self.DispenseToneFrequency_ ;
+        end        
+        
+        function result = get.DoPlayDispenseTone(self)
+            result = self.DoPlayDispenseTone_ ;
+        end        
         
         function set.TrialSequenceMode(self, newValue) 
             if ~any(strcmp(newValue, self.TrialSequenceModeOptions))
@@ -342,24 +349,6 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end        
                 
-        function set.BasePosition1X(self, newValue)
-            self.checkValue_('BasePosition1X', newValue) ;
-            self.BasePosition1X_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.BasePosition1Y(self, newValue)
-            self.checkValue_('BasePosition1Y', newValue) ;
-            self.BasePosition1Y_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.BasePosition1Z(self, newValue)
-            self.checkValue_('BasePosition1Z', newValue) ;
-            self.BasePosition1Z_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
         function set.ToneFrequency1(self, newValue)
             self.checkValue_('ToneFrequency1', newValue) ;
             self.ToneFrequency1_ = newValue ;
@@ -384,27 +373,9 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispenseChannelPosition1(self, newValue)
-            self.checkValue_('DispenseChannelPosition1', newValue) ;
-            self.DispenseChannelPosition1_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.BasePosition2X(self, newValue)
-            self.checkValue_('BasePosition2X', newValue) ;
-            self.BasePosition2X_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.BasePosition2Y(self, newValue)
-            self.checkValue_('BasePosition2Y', newValue) ;
-            self.BasePosition2Y_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.BasePosition2Z(self, newValue)
-            self.checkValue_('BasePosition2Z', newValue) ;
-            self.BasePosition2Z_ = newValue ;
+        function set.DispensePosition1ZOffset(self, newValue)
+            self.checkValue_('DispensePosition1ZOffset', newValue) ;
+            self.DispensePosition1ZOffset_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
@@ -432,27 +403,33 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispenseChannelPosition2(self, newValue)
-            self.checkValue_('DispenseChannelPosition2', newValue) ;
-            self.DispenseChannelPosition2_ = newValue ;
+        function set.DispensePosition2ZOffset(self, newValue)
+            self.checkValue_('DispensePosition2ZOffset', newValue) ;
+            self.DispensePosition2ZOffset_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.ToneDuration(self, newValue)
-            self.checkValue_('ToneDuration', newValue) ;
-            self.ToneDuration_ = newValue ;
+        function set.ToneDuration1(self, newValue)
+            self.checkValue_('ToneDuration1', newValue) ;
+            self.ToneDuration1_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.ToneDelay(self, newValue)
-            self.checkValue_('ToneDelay', newValue) ;
-            self.ToneDelay_ = newValue ;
+        function set.DispenseDelay1(self, newValue)
+            self.checkValue_('DispenseDelay1', newValue) ;
+            self.DispenseDelay1_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispenseDelay(self, newValue)
-            self.checkValue_('DispenseDelay', newValue) ;
-            self.DispenseDelay_ = newValue ;
+        function set.ToneDuration2(self, newValue)
+            self.checkValue_('ToneDuration2', newValue) ;
+            self.ToneDuration2_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseDelay2(self, newValue)
+            self.checkValue_('DispenseDelay2', newValue) ;
+            self.DispenseDelay2_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
@@ -461,7 +438,24 @@ classdef PezUserClass < ws.UserClass
             self.ReturnDelay_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
-
+        
+        function set.DispenseToneFrequency(self, newValue)
+            self.checkValue_('DispenseToneFrequency', newValue) ;
+            self.DispenseToneFrequency_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DoPlayDispenseTone(self, rawNewValue)
+            self.checkValue_('DoPlayDispenseTone', rawNewValue) ;
+            if islogical(rawNewValue) ,
+                newValue = rawNewValue ;
+            else
+                newValue = (rawNewValue>0) ;
+            end
+            self.DoPlayDispenseTone_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
         function result = get.IsRunning(self)
             result = self.IsRunning_ ;            
         end
@@ -482,6 +476,15 @@ classdef PezUserClass < ws.UserClass
                 error('Reset is not currently enabled.') ;
             end
         end
+        
+        function registerController(self, controller)
+            self.Controller_ = controller ;
+        end
+        
+        function clearController(self)
+            self.Controller_ = [] ;
+        end
+        
     end  % public methods
     
     methods (Access=protected)
@@ -492,7 +495,11 @@ classdef PezUserClass < ws.UserClass
         end
         
         function checkValue_(self, propertyName, newValue)  %#ok<INUSL>
-            if isequal(propertyName, 'ReturnDelay') ,
+            if isequal(propertyName, 'DoPlayDispenseTone') ,
+                if ~( isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ) ,
+                    error('ws:invalidPropertyValue', 'DoPlayDispenseTone property value is invalid') ;
+                end                                                    
+            elseif isequal(propertyName, 'ReturnDelay') ,
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0.1<newValue ) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
