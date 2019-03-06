@@ -342,7 +342,7 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.BiasUserObject_.cameraCount ;
         end        
     end  % methods
-    
+        
     methods (Access = protected)
         function out = getPropertyValue_(self, name)
             % This allows public access to private properties in certain limited
@@ -356,6 +356,45 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.(name) = value;
         end
     end  % protected
-        
+    
+    methods 
+        function mimic(self, other)
+            % Need to override the default mimic method, 
+            
+            % Get the list of property names for this file type
+            propertyNames = self.listPropertiesForPersistence() ;
+            
+            % Set each property to the corresponding one, taking special care for some
+            for i = 1:length(propertyNames) ,
+                thisPropertyName = propertyNames{i} ;
+                if isprop(other, thisPropertyName) ,
+                    if isequal(thisPropertyName, 'PezUserObject_') || isequal(thisPropertyName, 'BiasUserObject_')
+                        source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
+                        target = self.(thisPropertyName) ;
+                        if ~isempty(target)
+                            target.delete() ;  % want to explicitly delete the old one                     
+                        end
+                        className = class(source) ;
+                        newTarget = feval(className) ;
+                        if ~isempty(source) ,
+                            newTarget.mimic(source) ;
+                        end
+                        self.setPropertyValue_(thisPropertyName, newTarget) ;                        
+                    else
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        self.setPropertyValue_(thisPropertyName, source) ;
+                    end
+                end
+            end
+            
+            % Do sanity-checking on persisted state
+            self.sanitizePersistedState_() ;
+            
+            % Make sure the transient state is consistent with
+            % the non-transient state
+            self.synchronizeTransientStateToPersistedState_() ;            
+        end  % function
+    end
+    
 end  % classdef
 
