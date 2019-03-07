@@ -199,9 +199,9 @@ classdef PezController < handle
                                          'LabelString', '', ...
                                          'UnitsString', 'mm') ;
                                                               
+            model.registerController(self) ;
             self.layout_() ;
             self.update() ;
-            model.registerController(self) ;
         end
         
         function delete(self)

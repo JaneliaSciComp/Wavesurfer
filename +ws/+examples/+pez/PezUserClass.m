@@ -72,6 +72,8 @@ classdef PezUserClass < ws.UserClass
         TrialSequence_
         Controller_
         IsRunning_ = false
+        IsResetInATimeout_ = false
+        ResetTimeoutTimer_
     end
     
     methods
@@ -92,6 +94,10 @@ classdef PezUserClass < ws.UserClass
             % Called when there are no more references to the object, just
             % prior to its memory being freed.
             fprintf('An instance of PezUserClass is being deleted.\n');
+            if ~isempty(self.ResetTimeoutTimer_) && isvalid(self.ResetTimeoutTimer_) ,
+                stop(self.ResetTimeoutTimer_) ;
+                delete(self.ResetTimeoutTimer_) ;
+            end
             if ~isempty(self.Controller_) && isvalid(self.Controller_) ,
                 delete(self.Controller_) ;
             end
@@ -500,17 +506,40 @@ classdef PezUserClass < ws.UserClass
         end
         
         function result = get.IsResetEnabled(self)
-            result = ~self.IsRunning_ ;            
+            result = ~self.IsRunning_ && ~self.IsResetInATimeout_ ;            
+        end
+
+        function clearIsRunning_(self)
+            self.IsRunning_ = false ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function clearIsResetInATimeout_(self)
+            if ~isempty(self.ResetTimeoutTimer_) ,
+                stop(self.ResetTimeoutTimer_) ;
+                delete(self.ResetTimeoutTimer_) ;
+                self.ResetTimeoutTimer_ = [] ;
+                self.IsResetInATimeout_ = false ;
+                self.tellControllerToUpdateIfPresent_() ;
+            end
         end
         
         function reset(self)
             if self.IsResetEnabled ,
-                self.PezDispenser_ = ModularClient('COM3') ;
+                self.IsResetInATimeout_ = true ;
+                self.tellControllerToUpdateIfPresent_() ;
+                self.PezDispenser_ = ws.examples.pez.ModularClient('COM3') ;
                 self.PezDispenser_.open() ;
                 self.PezDispenser_.reset() ;
                 %self.PezDispenser_.close() ;
                 delete(self.PezDispenser_) ;
                 self.PezDispenser_ = [] ;
+                self.ResetTimeoutTimer_ = ...
+                    timer('ExecutionMode', 'singleShot', ...
+                          'StartDelay', 30, ...
+                          'TimerFcn', @(~,~)(self.clearIsResetInATimeout_()), ...
+                          'ErrorFcn', @(~,~)(fprintf('WTF?!\n'))) ;                          
+                start(self.ResetTimeoutTimer_) ;      
             else
                 error('Reset is not currently enabled.') ;
             end
