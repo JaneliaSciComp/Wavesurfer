@@ -34,6 +34,9 @@ classdef PezUserClass < ws.UserClass
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
         IsResetEnabled
+        
+        IsFigurePositionSaved
+        SavedFigurePosition
     end  % properties
     
     properties (Access=protected)
@@ -59,6 +62,9 @@ classdef PezUserClass < ws.UserClass
         DispensePosition2ZOffset_ = -30  % scalar, mm?
         
         ReturnDelay_ = 6  % s, the duration the piston holds at the dispense position
+        
+        IsFigurePositionSaved_ = false
+        SavedFigurePosition_ = []
     end  % properties
 
     properties (Access=protected, Transient=true)
@@ -77,9 +83,8 @@ classdef PezUserClass < ws.UserClass
         function wake(self, rootModel)
             fprintf('Waking an instance of PezUserClass.\n');
             if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
-                ws.examples.PezController(self) ;
-                   % Don't need to keep a ref, b/c this creates a figure, the callbacks of which
-                   % hold references to the controller
+                ws.examples.pez.PezController(self) ;  % this will register the controller with self
+                self.Controller_.syncFigurePosition() ;
             end
         end
         
@@ -89,6 +94,15 @@ classdef PezUserClass < ws.UserClass
             fprintf('An instance of PezUserClass is being deleted.\n');
             if ~isempty(self.Controller_) && isvalid(self.Controller_) ,
                 delete(self.Controller_) ;
+            end
+        end
+        
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+            controller = self.Controller_ ;
+            if ~isempty(controller) ,
+                position = controller.FigurePosition ;
+                self.SavedFigurePosition_ = position ;
+                self.IsFigurePositionSaved_ = true ;
             end
         end
         
@@ -111,8 +125,22 @@ classdef PezUserClass < ws.UserClass
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
             end
             self.IsRunning_ = true ;
-            self.PezDispenser_ = ModularClient('COM3') ;
+            self.PezDispenser_ = ws.examples.pez.ModularClient('COM3') ;
             self.PezDispenser_.open() ;
+            if ~isempty(self.TrialSequence_) ,
+                firstTrialType = self.TrialSequence_(1) ;
+                % Move to the deliver position for the first sweep, so that no movement will
+                % be needed once the sweep starts.
+                if firstTrialType == 1 ,                    
+                    self.PezDispenser_.moveTo(0, self.DeliverPosition1Z) ;
+                    self.PezDispenser_.moveTo(1, self.DeliverPosition1X) ;
+                    self.PezDispenser_.moveTo(2, self.DeliverPosition1Y) ;                    
+                else
+                    self.PezDispenser_.moveTo(0, self.DeliverPosition2Z) ;
+                    self.PezDispenser_.moveTo(1, self.DeliverPosition2X) ;
+                    self.PezDispenser_.moveTo(2, self.DeliverPosition2Y) ;                    
+                end                
+            end
             self.tellControllerToUpdateIfPresent_() ;
         end
         
@@ -155,6 +183,26 @@ classdef PezUserClass < ws.UserClass
             fprintf('About to start a sweep in PezUserClass.\n');
             sweepIndex = wsModel.NSweepsCompletedInThisRun + 1 ;
             trialType = self.TrialSequence_(sweepIndex) ;
+                        
+            if trialType == 1 ,
+                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
+                self.PezDispenser_.toneDuration('setValue', self.ToneDuration1) ;
+                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset) ;
+            else
+                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
+                self.PezDispenser_.toneDuration('setValue', self.ToneDuration2) ;
+                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset) ;
+            end
+
+            % We need to tell the Arduino the delivery position for the *next* sweep, so
+            % that it goes to the right spot at the end.
+            nextSweepIndex = sweepIndex + 1 ;
+            if nextSweepIndex > length(self.TrialSequence_) ,
+                nextSweepIndex = sweepIndex ;
+            end
+            nextTrialType = self.TrialSequence_(nextSweepIndex) ;
             
             % Note well: We have to permute the permission coordinates so that they match
             % user expectations, given the orientation of the stage.  To the Arduino,
@@ -185,21 +233,12 @@ classdef PezUserClass < ws.UserClass
             %   arduino y == user x
             %   arduino z == user y
             %
-            % So, long story short, we permute the user coords to get arduino coords
-            
-            if trialType == 1 ,
-                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
-                self.PezDispenser_.toneDuration('setValue', self.ToneDuration1) ;
-                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset) ;
+            % So, long story short, we permute the user coords to get arduino coords            
+            if nextTrialType == 1 ,
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
             else
-                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
-                self.PezDispenser_.toneDuration('setValue', self.ToneDuration2) ;
-                self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset) ;
-            end
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+            end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
             self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
@@ -483,6 +522,18 @@ classdef PezUserClass < ws.UserClass
         
         function clearController(self)
             self.Controller_ = [] ;
+        end
+        
+        function result = get.IsFigurePositionSaved(self)
+            result = self.IsFigurePositionSaved_ ;
+        end
+        
+        function result = get.SavedFigurePosition(self)
+            if self.IsFigurePositionSaved_ ,                
+                result = self.SavedFigurePosition_ ;
+            else
+                error('Figure position is not saved') ;
+            end
         end
         
     end  % public methods

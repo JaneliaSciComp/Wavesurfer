@@ -228,6 +228,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         % These methods are called in the frontend process
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end
+        
         function startingRun(self,wsModel) 
             % Called just before each set of sweeps (a.k.a. each "run")
             

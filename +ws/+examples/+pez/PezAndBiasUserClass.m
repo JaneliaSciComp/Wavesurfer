@@ -54,6 +54,9 @@ classdef PezAndBiasUserClass < ws.UserClass
         end
         
         % These methods are called in the frontend process
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end
+        
         function startingRun(self, wsModel)
             self.PezUserObject_.startingRun(wsModel) ;
             self.BiasUserObject_.startingRun(wsModel) ;

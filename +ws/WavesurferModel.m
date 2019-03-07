@@ -2415,6 +2415,7 @@ classdef WavesurferModel < ws.Model
             end            
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
+            self.callUserMethod_('willSaveToProtocolFile');  % notify the user object we're about to save  
             wavesurferModelSettings=self.encodeForPersistence();
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
