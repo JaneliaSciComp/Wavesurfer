@@ -137,14 +137,16 @@ classdef PezUserClass < ws.UserClass
                 firstTrialType = self.TrialSequence_(1) ;
                 % Move to the deliver position for the first sweep, so that no movement will
                 % be needed once the sweep starts.
-                if firstTrialType == 1 ,                    
-                    self.PezDispenser_.moveTo(0, self.DeliverPosition1Z) ;
-                    self.PezDispenser_.moveTo(1, self.DeliverPosition1X) ;
-                    self.PezDispenser_.moveTo(2, self.DeliverPosition1Y) ;                    
+                if firstTrialType == 1 ,
+                    self.PezDispenser_.moveStageTo([self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                    %self.PezDispenser_.moveTo(0, self.DeliverPosition1Z) ;
+                    %self.PezDispenser_.moveTo(1, self.DeliverPosition1X) ;
+                    %self.PezDispenser_.moveTo(2, self.DeliverPosition1Y) ;                    
                 else
-                    self.PezDispenser_.moveTo(0, self.DeliverPosition2Z) ;
-                    self.PezDispenser_.moveTo(1, self.DeliverPosition2X) ;
-                    self.PezDispenser_.moveTo(2, self.DeliverPosition2Y) ;                    
+                    self.PezDispenser_.moveStageTo([self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                    %self.PezDispenser_.moveTo(0, self.DeliverPosition2Z) ;
+                    %self.PezDispenser_.moveTo(1, self.DeliverPosition2X) ;
+                    %self.PezDispenser_.moveTo(2, self.DeliverPosition2Y) ;                    
                 end                
             end
             self.tellControllerToUpdateIfPresent_() ;
