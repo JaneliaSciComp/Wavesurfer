@@ -1,16 +1,16 @@
-function result = getPreference(propertyName)
+function result = getProfile(profileName)
     appDataPath = getenv('APPDATA') ;
-    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer') ;
-    preferencesFilePath = fullfile(preferencesFolderPath, 'preferences.mat') ;
-    if exist(preferencesFilePath, 'file') ;
+    profilesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+    profileFilePath = fullfile(profilesFolderPath, sprintf('%s.mat', profileName)) ;
+    if exist(profileFilePath, 'file') ;
         preferences = load(preferencesFilePath) ;
-        if isfield(preferences, propertyName) ,
-            result = preferences.(propertyName) ;
+        if isfield(preferences, profileName) ,
+            result = preferences.(profileName) ;
         else
-            result = getDefaultPreference(propertyName) ;
+            result = getDefaultPreference(profileName) ;
         end
     else
-        result = getDefaultPreference(propertyName) ;
+        result = getDefaultPreference(profileName) ;
     end
 end
 

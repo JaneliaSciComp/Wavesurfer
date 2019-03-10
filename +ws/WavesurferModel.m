@@ -163,6 +163,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         ArePreferencesWritable_ = true
         TheBigTimer_ = []
         AllowTimerCallback_ = true ;
+        CurrentProfileName_
     end   
 
     properties (Dependent = true)
@@ -232,6 +233,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         ElectrodeManagerFigurePosition
         TestPulserFigurePosition        
         FastProtocolsFigurePosition        
+        
+        CurrentProfileName
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -496,11 +499,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % correctly.
             self.overrideOrReleaseStimulusMapDurationAsNeeded_();            
             
-            % Set the file name
+            % Set the protocol file name
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
-                
-                lastProtocolFilePath = ws.getPreference('LastProtocolFilePath') ;
+                profileName = ws.getApplicationPreference('LastProfile') ;
+                self.CurrentProfileName_ = profileName ;
+                lastProtocolFilePath = ws.getProfilePreference(profileName, 'LastProtocolFilePath') ;
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
                     protocolFileFolderPath = pwd() ;
@@ -522,6 +526,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
                 self.HasUserSpecifiedProtocolFileName_ = false ;
                 self.DoesProtocolNeedSave_ = false ;
+            
+                % Restore the fast protocols from the profile preferences
+                fastProtocolsAsStruct = ws.getProfilePreference(profileName, 'FastProtocols') ;
+                nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
+                for i = 1:nFastProtocolsToSet ,
+                    self.FastProtocols_{i}.ProtocolFileName = fastProtocolsAsStruct(i).ProtocolFileName ;
+                    self.FastProtocols_{i}.AutoStartType    = fastProtocolsAsStruct(i).AutoStartType    ;
+                end
             end
             
             % Lastly (I guess...) create a command connector (which will
@@ -2506,20 +2518,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
     end        
     
-    methods
-        function loadUserFileGivenFileName(self, fileName)
-            % Retained for backwards compatibility
-            self.openUserFileGivenFileName(fileName) ;
-        end
-    end        
-
-%     methods
-%         function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
-%             % Retained for backwards compatibility
-%             self.saveUserFileGivenFileName(absoluteFileName) ;
-%         end  % function
-%     end
-
     methods
         function openUserFileGivenFileName(self, fileName)
             % Actually opens the named user file.  fileName should be an
@@ -7153,6 +7151,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 
         function result = getUserObjectProperty(self, propertyName)
             result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
+        end
+    end  % public methods block
+    
+    methods
+        function result = get.CurrentProfileName(self)
+            result = self.CurrentProfileName_ ;            
         end
     end  % public methods block
 end  % classdef

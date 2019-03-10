@@ -1,4 +1,4 @@
-function result = getPreference(propertyName)
+function result = getApplicationPreference(propertyName)
     appDataPath = getenv('APPDATA') ;
     preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer') ;
     preferencesFilePath = fullfile(preferencesFolderPath, 'preferences.mat') ;
@@ -15,9 +15,7 @@ function result = getPreference(propertyName)
 end
 
 function result = getDefaultPreference(propertyName)
-    defaultPreferences = struct('LastProtocolFilePath', {''}, ...
-                                'LastUserFilePath', {''}, ...
-                                'LastProfileName', {'Default'}) ;
+    defaultPreferences = struct('LastProfileName', {'Default'}) ;
     if isfield(defaultPreferences, propertyName) ,
         result = defaultPreferences.(propertyName) ;
     else

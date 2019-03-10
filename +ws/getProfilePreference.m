@@ -1,7 +1,7 @@
-function result = getPreference(propertyName)
+function result = getProfilePreference(profileName, propertyName)
     appDataPath = getenv('APPDATA') ;
-    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer') ;
-    preferencesFilePath = fullfile(preferencesFolderPath, 'preferences.mat') ;
+    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+    preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileName)) ;
     if exist(preferencesFilePath, 'file') ;
         preferences = load(preferencesFilePath) ;
         if isfield(preferences, propertyName) ,
@@ -15,9 +15,10 @@ function result = getPreference(propertyName)
 end
 
 function result = getDefaultPreference(propertyName)
+    defaultFastProtocols = struct('ProtocolFileName', cell(1,0), ...
+                                  'AutoStartType', cell(1,0)) ;
     defaultPreferences = struct('LastProtocolFilePath', {''}, ...
-                                'LastUserFilePath', {''}, ...
-                                'LastProfileName', {'Default'}) ;
+                                'FastProtocols', {defaultFastProtocols}) ;    
     if isfield(defaultPreferences, propertyName) ,
         result = defaultPreferences.(propertyName) ;
     else

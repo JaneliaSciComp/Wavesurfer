@@ -1514,7 +1514,8 @@ classdef WavesurferMainController < ws.Controller
         end
                 
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            initialFilePathForFilePicker = ws.getPreference('LastProtocolFilePath') ;            
+            profileName = self.Model_.CurrentProfileName ;
+            initialFilePathForFilePicker = ws.getProfilePreference(profileName, 'LastProtocolFilePath') ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
@@ -1544,27 +1545,28 @@ classdef WavesurferMainController < ws.Controller
             self.saveOrSaveAsProtocolFile_(isSaveAs);
         end
 
-        function LoadUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-            initialFilePickerFolder = ws.getPreference('LastUserFilePath');            
-            isFileNameKnown=false;
-            userSettingsAbsoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-                        isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
-            if ~isempty(userSettingsAbsoluteFileName) ,
-                %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
-                self.Model_.do('loadUserFileGivenFileName', userSettingsAbsoluteFileName) ;
-            end            
-        end
-
-        function SaveUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-            isSaveAs = false ;
-            self.saveOrSaveAsUser_(isSaveAs) ;
-        end
-        
-        function SaveUserSettingsAsMenuItemActuated(self,source,event) %#ok<INUSD>
-            isSaveAs = true ;
-            self.saveOrSaveAsUser_(isSaveAs) ;
-        end
+%         function LoadUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
+%             profileName = ws.getPreference('LastProfileName');       
+%             initialFilePickerFolder = ws.userSettingsFileNameFromProfileName(profileName) ;
+%             isFileNameKnown=false;
+%             userSettingsAbsoluteFileName = ...
+%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
+%                         isFileNameKnown, '', 'user-settings', 'load', initialFilePickerFolder);                
+%             if ~isempty(userSettingsAbsoluteFileName) ,
+%                 %ws.Preferences.sharedPreferences().savePref('LastUserFilePath', userSettingsAbsoluteFileName) ;
+%                 self.Model_.do('openUserFileGivenFileName', userSettingsAbsoluteFileName) ;
+%             end            
+%         end
+% 
+%         function SaveUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
+%             isSaveAs = false ;
+%             self.saveOrSaveAsUser_(isSaveAs) ;
+%         end
+%         
+%         function SaveUserSettingsAsMenuItemActuated(self,source,event) %#ok<INUSD>
+%             isSaveAs = true ;
+%             self.saveOrSaveAsUser_(isSaveAs) ;
+%         end
         
         function ExportModelAndControllerToWorkspaceMenuItemActuated(self,source,event) %#ok<INUSD>
             assignin('base', 'wsModel', self.Model_) ;
@@ -1850,7 +1852,8 @@ classdef WavesurferMainController < ws.Controller
                 if self.Model_.HasUserSpecifiedProtocolFileName ,
                     fileChooserInitialFileName = self.Model_.AbsoluteProtocolFileName;
                 else                    
-                    fileChooserInitialFileName = ws.getPreference('LastProtocolFilePath');
+                    profileName = self.Model_.CurrentProfileName ;
+                    fileChooserInitialFileName = ws.getProfilePreference(profileName, 'LastProtocolFilePath');
                 end
             else
                 % this is a plain-old save
@@ -1885,55 +1888,56 @@ classdef WavesurferMainController < ws.Controller
             self.Model_.do('saveProtocolFileGivenFileName', fileName) ;
         end  % function
         
-        function saveOrSaveAsUser_(self, isSaveAs)
-            % Figure out the file name, or leave empty for save as
-            lastFileName=ws.getPreference('LastUserFilePath');
-            if isSaveAs ,
-                isFileNameKnown=false;
-                fileName='';  % not used
-                if self.Model_.HasUserSpecifiedUserSettingsFileName ,
-                    fileChooserInitialFileName = self.Model_.AbsoluteUserSettingsFileName;
-                else                    
-                    fileChooserInitialFileName = ws.getPreference('LastUserFilePath');
-                end
-            else
-                % this is a plain-old save
-                if self.Model_.HasUserSpecifiedUserSettingsFileName ,
-                    % this means that the user has already specified a
-                    % config file name
-                    isFileNameKnown=true;
-                    %fileName=ws.getPreference('LastProtocolFilePath');
-                    fileName=self.Model_.AbsoluteUserSettingsFileName;
-                    fileChooserInitialFileName = '';  % not used
-                else
-                    % This means that the user has not yet specified a
-                    % config file name
-                    isFileNameKnown=false;
-                    fileName='';  % not used
-                    if isempty(lastFileName)
-                        fileChooserInitialFileName = fullfile(pwd(),'unnamed.wsu');
-                    else
-                        fileChooserInitialFileName = lastFileName;
-                    end
-                end
-            end
-
-            % Prompt the user for a file name, if necessary, and save
-            % the file
-            %self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
-            absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
-                    isFileNameKnown, ...
-                    fileName, ...
-                    'user-settings', ...
-                    'save', ...
-                    fileChooserInitialFileName);
-
-            if ~isempty(absoluteFileName) ,
-                %self.Model_.saveUserFileGivenAbsoluteFileName(absoluteFileName) ;
-                self.Model_.do('saveUserFileGivenFileName', absoluteFileName) ;
-            end
-        end  % method                
+%         function saveOrSaveAsUser_(self, isSaveAs)
+%             % Figure out the file name, or leave empty for save as
+%             profileName = self.Model_.CurrentProfileName ;
+%             lastFileName = ws.getProfilePreference(profileName, 'LastUserFilePath');
+%             if isSaveAs ,
+%                 isFileNameKnown=false;
+%                 fileName='';  % not used
+%                 if self.Model_.HasUserSpecifiedUserSettingsFileName ,
+%                     fileChooserInitialFileName = self.Model_.AbsoluteUserSettingsFileName;
+%                 else                    
+%                     fileChooserInitialFileName = ws.getPreference('LastUserFilePath');
+%                 end
+%             else
+%                 % this is a plain-old save
+%                 if self.Model_.HasUserSpecifiedUserSettingsFileName ,
+%                     % this means that the user has already specified a
+%                     % config file name
+%                     isFileNameKnown=true;
+%                     %fileName=ws.getPreference('LastProtocolFilePath');
+%                     fileName=self.Model_.AbsoluteUserSettingsFileName;
+%                     fileChooserInitialFileName = '';  % not used
+%                 else
+%                     % This means that the user has not yet specified a
+%                     % config file name
+%                     isFileNameKnown=false;
+%                     fileName='';  % not used
+%                     if isempty(lastFileName)
+%                         fileChooserInitialFileName = fullfile(pwd(), 'unnamed.wsu');
+%                     else
+%                         fileChooserInitialFileName = lastFileName;
+%                     end
+%                 end
+%             end
+% 
+%             % Prompt the user for a file name, if necessary, and save
+%             % the file
+%             %self.saveUserSettings(isFileNameKnown, fileName, fileChooserInitialFileName);
+%             absoluteFileName = ...
+%                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
+%                     isFileNameKnown, ...
+%                     fileName, ...
+%                     'user-settings', ...
+%                     'save', ...
+%                     fileChooserInitialFileName);
+% 
+%             if ~isempty(absoluteFileName) ,
+%                 %self.Model_.saveUserFileGivenAbsoluteFileName(absoluteFileName) ;
+%                 self.Model_.do('saveUserFileGivenFileName', absoluteFileName) ;
+%             end
+%         end  % method                
 
         function copyAllFigurePositionsToModel_(self)
             % Save the layouts of all windows to the model state
