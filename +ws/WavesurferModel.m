@@ -500,7 +500,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
                 
-                lastProtocolFilePath = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
+                lastProtocolFilePath = ws.getPreference('LastProtocolFilePath') ;
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
                     protocolFileFolderPath = pwd() ;
@@ -2445,7 +2445,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             
             self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
             if self.ArePreferencesWritable , 
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+                ws.setPreference('LastProtocolFilePath', absoluteFileName);
             end
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
@@ -2491,7 +2491,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.HasUserSpecifiedProtocolFileName_ = true ;
             self.DoesProtocolNeedSave_ = false ;
             if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+                ws.setPreference('LastProtocolFilePath', absoluteFileName);
             end
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
@@ -2539,7 +2539,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+                ws.setPreference('LastUserFilePath', absoluteFileName) ;
             end
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
@@ -2566,7 +2566,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
             if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
+                ws.setPreference('LastUserFilePath', absoluteFileName) ;
             end
             %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
@@ -3450,7 +3450,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 try 
                     fastProtocol.(propertyName) = newValue ;
                     if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
-                        ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newValue) ;
+                        ws.setPreference('LastProtocolFilePath', newValue) ;
                     end
                 catch exception
                     self.updateFastProtocol() ;

@@ -1514,7 +1514,7 @@ classdef WavesurferMainController < ws.Controller
         end
                 
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            initialFilePathForFilePicker = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;            
+            initialFilePathForFilePicker = ws.getPreference('LastProtocolFilePath') ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
@@ -1545,7 +1545,7 @@ classdef WavesurferMainController < ws.Controller
         end
 
         function LoadUserSettingsMenuItemActuated(self,source,event) %#ok<INUSD>
-            initialFilePickerFolder = ws.Preferences.sharedPreferences().loadPref('LastUserFilePath');            
+            initialFilePickerFolder = ws.getPreference('LastUserFilePath');            
             isFileNameKnown=false;
             userSettingsAbsoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_( ...
@@ -1850,7 +1850,7 @@ classdef WavesurferMainController < ws.Controller
                 if self.Model_.HasUserSpecifiedProtocolFileName ,
                     fileChooserInitialFileName = self.Model_.AbsoluteProtocolFileName;
                 else                    
-                    fileChooserInitialFileName = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
+                    fileChooserInitialFileName = ws.getPreference('LastProtocolFilePath');
                 end
             else
                 % this is a plain-old save
@@ -1887,14 +1887,14 @@ classdef WavesurferMainController < ws.Controller
         
         function saveOrSaveAsUser_(self, isSaveAs)
             % Figure out the file name, or leave empty for save as
-            lastFileName=ws.Preferences.sharedPreferences().loadPref('LastUserFilePath');
+            lastFileName=ws.getPreference('LastUserFilePath');
             if isSaveAs ,
                 isFileNameKnown=false;
                 fileName='';  % not used
                 if self.Model_.HasUserSpecifiedUserSettingsFileName ,
                     fileChooserInitialFileName = self.Model_.AbsoluteUserSettingsFileName;
                 else                    
-                    fileChooserInitialFileName = ws.Preferences.sharedPreferences().loadPref('LastUserFilePath');
+                    fileChooserInitialFileName = ws.getPreference('LastUserFilePath');
                 end
             else
                 % this is a plain-old save
@@ -1902,7 +1902,7 @@ classdef WavesurferMainController < ws.Controller
                     % this means that the user has already specified a
                     % config file name
                     isFileNameKnown=true;
-                    %fileName=ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath');
+                    %fileName=ws.getPreference('LastProtocolFilePath');
                     fileName=self.Model_.AbsoluteUserSettingsFileName;
                     fileChooserInitialFileName = '';  % not used
                 else
@@ -1911,7 +1911,7 @@ classdef WavesurferMainController < ws.Controller
                     isFileNameKnown=false;
                     fileName='';  % not used
                     if isempty(lastFileName)
-                        fileChooserInitialFileName = fullfile(pwd(),'unnamed.usr');
+                        fileChooserInitialFileName = fullfile(pwd(),'unnamed.wsu');
                     else
                         fileChooserInitialFileName = lastFileName;
                     end
