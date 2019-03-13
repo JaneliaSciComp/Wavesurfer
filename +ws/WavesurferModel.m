@@ -502,9 +502,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Set the protocol file name
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
-                profileName = ws.getApplicationPreference('LastProfile') ;
+                profileName = ws.getLastProfileName() ;
                 self.CurrentProfileName_ = profileName ;
-                lastProtocolFilePath = ws.getProfilePreference(profileName, 'LastProtocolFilePath') ;
+                self.ProfileNames_ = ws.getProfileNames() ;  % read from disk
+                preferences = ws.getProfilePreferences(profileName) ;
+                lastProtocolFilePath = preferences.LastProtocolFilePath ;                
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
                     protocolFileFolderPath = pwd() ;
@@ -528,7 +530,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = false ;
             
                 % Restore the fast protocols from the profile preferences
-                fastProtocolsAsStruct = ws.getProfilePreference(profileName, 'FastProtocols') ;
+                fastProtocolsAsStruct = preferences.FastProtocols ;
                 nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
                 for i = 1:nFastProtocolsToSet ,
                     self.FastProtocols_{i}.ProtocolFileName = fastProtocolsAsStruct(i).ProtocolFileName ;
@@ -565,6 +567,25 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 catch me
                     fprintf('Unable to delete the timer in WSM delete() method.  Error was: %s', me.message) ;
                 end
+                
+                % Try to save the preferences
+                try
+                    if self.HasUserSpecifiedProtocolFileName ,
+                        lastProtocolFilePath = self.AbsoluteProtocolFileName ;
+                    else
+                        lastProtocolFilePath = '' ;
+                    end
+                    fastProtocolsAsStruct = struct(1,self.NFastProtocols) ;
+                    for i=1:self.NFastProtocols ,
+                        fastProtocolsAsStruct(i).ProtocolFileName = self.FastProtocols_{i}.ProtocolFileName ;
+                        fastProtocolsAsStruct(i).AutoStartType = self.FastProtocols_{i}.AutoStartType ;
+                    end
+                    preferences = struct('LastProtocolFilePath', {lastProtocolFilePath}, ...
+                                         'FastProtocols', {fastProtocolsAsStruct}) ;
+                    ws.setProfilePreferences(self.CurrentProfileName, preferences) ;
+                catch me
+                    fprintf('Unable to save the preferences in WSM delete() method.  Error was: %s', me.message) ;
+                end                    
                 
                 % Close the sockets
                 self.Looper_ = [] ;

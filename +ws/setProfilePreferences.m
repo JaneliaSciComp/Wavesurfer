@@ -1,4 +1,4 @@
-function setProfilePreference(profileName, propertyName, newValue)
+function setProfilePreferences(profileName, rawPreferences)
    appDataPath = getenv('APPDATA') ;
    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
    [didSucceed, ~, ~] = mkdir(preferencesFolderPath) ;
@@ -6,11 +6,6 @@ function setProfilePreference(profileName, propertyName, newValue)
        return
    end
    preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileName)) ;   
-   if exist(preferencesFilePath, 'file') ;
-       preferences = load(preferencesFilePath) ;
-   else
-       preferences = struct() ;
-   end
-   preferences.(propertyName) = newValue ;  %#ok<STRNU>
+   preferences = ws.sanitizePreferences(rawPreferences) ;  %#ok<NASGU>
    save(preferencesFilePath, '-struct', 'preferences') ;
 end
