@@ -193,15 +193,17 @@ classdef PezUserClass < ws.UserClass
             trialType = self.TrialSequence_(sweepIndex) ;
                         
             if trialType == 1 ,
-                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency1) ;
-                self.PezDispenser_.toneDuration('setValue', self.ToneDuration1) ;
+                self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency1) ;
+                self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset) ;
+                self.PezDispenser_.position('setValue', 'LEFT') ;
             else
-                self.PezDispenser_.toneFrequency('setValue', self.ToneFrequency2) ;
-                self.PezDispenser_.toneDuration('setValue', self.ToneDuration2) ;
+                self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
+                self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
                 self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset) ;
+                self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
             % We need to tell the Arduino the delivery position for the *next* sweep, so
@@ -243,14 +245,14 @@ classdef PezUserClass < ws.UserClass
             %
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
             else
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
-            self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
-            self.PezDispenser_.toneDelayMax('setValue', 0) ;            
+            %self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
+            %self.PezDispenser_.toneDelayMax('setValue', 0) ;            
             dispenseToneVolume = ws.fif(self.DoPlayDispenseTone, self.DispenseToneVolumeWhenPlayed_, 0) ;
             self.PezDispenser_.dispenseToneVolume('setValue', dispenseToneVolume) ;
             self.PezDispenser_.dispenseToneFrequency('setValue', self.DispenseToneFrequency) ;
