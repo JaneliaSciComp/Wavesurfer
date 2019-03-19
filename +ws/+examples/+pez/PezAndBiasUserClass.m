@@ -39,7 +39,7 @@ classdef PezAndBiasUserClass < ws.UserClass
     methods
         function self = PezAndBiasUserClass()            
             % Creates the "user object"
-            self.PezUserObject_ = ws.examples.PezUserClass() ;
+            self.PezUserObject_ = ws.examples.pez.PezUserClass() ;
             self.BiasUserObject_ = ws.examples.bias.StickShiftBiasUserClass() ;
         end
         
