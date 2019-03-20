@@ -5,6 +5,7 @@ classdef PezUserClass < ws.UserClass
 
     properties (Constant, Transient, Access=protected)  % Transient so doesn't get written to data files
         DispenseToneVolumeWhenPlayed_ = 50   % percent of maximum
+        ZOffset_ = -45  % mm
     end
     
     properties (Dependent)
@@ -48,20 +49,20 @@ classdef PezUserClass < ws.UserClass
         ToneFrequency1_ = 3000  % Hz
         ToneDuration1_ = 1  % s
         DispenseDelay1_ = 1  % s
-        DeliverPosition1X_ =  51  % mm?
-        DeliverPosition1Y_ =  64  % mm?
-        DeliverPosition1Z_ = -73  % mm?
-        DispensePosition1ZOffset_ = -21  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+        DeliverPosition1X_ =  60  % mm?
+        DeliverPosition1Y_ =  60  % mm?
+        DeliverPosition1Z_ =   0  % mm?
+        DispensePosition1ZOffset_ = 10  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
         ToneFrequency2_ = 10000  % Hz
         ToneDuration2_ = 1  % s
         DispenseDelay2_ = 1  % s
         DeliverPosition2X_ =  60  % mm?
-        DeliverPosition2Y_ =  64  % mm?
-        DeliverPosition2Z_ = -73  % mm?
-        DispensePosition2ZOffset_ = -30  % scalar, mm?
+        DeliverPosition2Y_ =  60  % mm?
+        DeliverPosition2Z_ = 0  % mm?
+        DispensePosition2ZOffset_ = 10  % scalar, mm?
         
-        ReturnDelay_ = 6  % s, the duration the piston holds at the dispense position
+        ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
         
         IsFigurePositionSaved_ = false
         SavedFigurePosition_ = []
@@ -138,12 +139,12 @@ classdef PezUserClass < ws.UserClass
                 % Move to the deliver position for the first sweep, so that no movement will
                 % be needed once the sweep starts.
                 if firstTrialType == 1 ,
-                    self.PezDispenser_.moveStageTo([self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                    self.PezDispenser_.moveStageTo([self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
                     %self.PezDispenser_.moveTo(0, self.DeliverPosition1Z) ;
                     %self.PezDispenser_.moveTo(1, self.DeliverPosition1X) ;
                     %self.PezDispenser_.moveTo(2, self.DeliverPosition1Y) ;                    
                 else
-                    self.PezDispenser_.moveStageTo([self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                    self.PezDispenser_.moveStageTo([self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
                     %self.PezDispenser_.moveTo(0, self.DeliverPosition2Z) ;
                     %self.PezDispenser_.moveTo(1, self.DeliverPosition2X) ;
                     %self.PezDispenser_.moveTo(2, self.DeliverPosition2Y) ;                    
@@ -196,13 +197,13 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency1) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset+self.ZOffset_) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset+self.ZOffset_) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -245,9 +246,9 @@ classdef PezUserClass < ws.UserClass
             %
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
             else
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
@@ -584,11 +585,11 @@ classdef PezUserClass < ws.UserClass
                     error('ws:invalidPropertyValue', 'DoPlayDispenseTone property value is invalid') ;
                 end                                                    
             elseif isequal(propertyName, 'ReturnDelay') ,
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0.1<newValue ) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-100<=newValue) && (newValue<=+100) ) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Duration')) ,  %#ok<STREMP>
