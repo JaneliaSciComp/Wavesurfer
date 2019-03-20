@@ -241,7 +241,7 @@ classdef FastProtocolsController < ws.Controller
             % directory.
             %filePickerInitialFolderFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
             profileName = self.Model_.CurrentProfileName ;
-            filePickerInitialFolderFromPreferences = ws.getProfilePreference(profileName, 'LastProtocolFilePath') ;
+            filePickerInitialFolderFromPreferences = self.Model_.LastProtocolFilePath ;
             originalFastProtocolFileName = self.Model_.getSelectedFastProtocolProperty('ProtocolFileName') ;
             if isempty(originalFastProtocolFileName) ,
                 if ~exist('startLocationFromPreferences','var') ,

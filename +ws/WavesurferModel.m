@@ -164,6 +164,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         TheBigTimer_ = []
         AllowTimerCallback_ = true ;
         CurrentProfileName_
+        ProfileNames_
+        LastProtocolFilePath_
     end   
 
     properties (Dependent = true)
@@ -235,6 +237,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         FastProtocolsFigurePosition        
         
         CurrentProfileName
+        ProfileNames
+        LastProtocolFilePath
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -504,9 +508,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 %self.addStarterChannelsAndStimulusLibrary() ;
                 profileName = ws.getLastProfileName() ;
                 self.CurrentProfileName_ = profileName ;
-                self.ProfileNames_ = ws.getProfileNames() ;  % read from disk
+                self.ProfileNames_ = sort(ws.getProfileNames()) ;  % read from disk
+                
                 preferences = ws.getProfilePreferences(profileName) ;
-                lastProtocolFilePath = preferences.LastProtocolFilePath ;                
+                self.syncPreferences_(preferences) ;
+                
+                lastProtocolFilePath = self.LastProtocolFilePath_ ;  % just loaded from disk 
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
                     protocolFileFolderPath = pwd() ;
@@ -528,14 +535,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
                 self.HasUserSpecifiedProtocolFileName_ = false ;
                 self.DoesProtocolNeedSave_ = false ;
-            
-                % Restore the fast protocols from the profile preferences
-                fastProtocolsAsStruct = preferences.FastProtocols ;
-                nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
-                for i = 1:nFastProtocolsToSet ,
-                    self.FastProtocols_{i}.ProtocolFileName = fastProtocolsAsStruct(i).ProtocolFileName ;
-                    self.FastProtocols_{i}.AutoStartType    = fastProtocolsAsStruct(i).AutoStartType    ;
-                end
             end
             
             % Lastly (I guess...) create a command connector (which will
@@ -565,26 +564,15 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                         self.TheBigTimer_ = [] ;
                     end                        
                 catch me
-                    fprintf('Unable to delete the timer in WSM delete() method.  Error was: %s', me.message) ;
+                    fprintf('Unable to delete the timer in WSM delete() method.  Error was: %s\n', me.message) ;
                 end
                 
                 % Try to save the preferences
                 try
-                    if self.HasUserSpecifiedProtocolFileName ,
-                        lastProtocolFilePath = self.AbsoluteProtocolFileName ;
-                    else
-                        lastProtocolFilePath = '' ;
-                    end
-                    fastProtocolsAsStruct = struct(1,self.NFastProtocols) ;
-                    for i=1:self.NFastProtocols ,
-                        fastProtocolsAsStruct(i).ProtocolFileName = self.FastProtocols_{i}.ProtocolFileName ;
-                        fastProtocolsAsStruct(i).AutoStartType = self.FastProtocols_{i}.AutoStartType ;
-                    end
-                    preferences = struct('LastProtocolFilePath', {lastProtocolFilePath}, ...
-                                         'FastProtocols', {fastProtocolsAsStruct}) ;
+                    preferences = self.packagePreferences() ;                 
                     ws.setProfilePreferences(self.CurrentProfileName, preferences) ;
                 catch me
-                    fprintf('Unable to save the preferences in WSM delete() method.  Error was: %s', me.message) ;
+                    fprintf('Unable to save the preferences in WSM delete() method.  Error was: %s\n', me.message) ;
                 end                    
                 
                 % Close the sockets
@@ -2464,6 +2452,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
+            if self.ArePreferencesWritable , 
+                self.LastProtocolFilePath_ = absoluteFileName ;
+            end
             
             self.broadcast('UpdateLogging') ;
             self.broadcast('UpdateUserCodeManager') ;
@@ -2477,9 +2468,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('LayoutAllWindows') ;
             
             self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
-            if self.ArePreferencesWritable , 
-                ws.setPreference('LastProtocolFilePath', absoluteFileName);
-            end
+            
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
             self.changeReadiness_(+1);
@@ -2524,7 +2513,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.HasUserSpecifiedProtocolFileName_ = true ;
             self.DoesProtocolNeedSave_ = false ;
             if self.ArePreferencesWritable ,
-                ws.setPreference('LastProtocolFilePath', absoluteFileName);
+                %ws.setPreference('LastProtocolFilePath', absoluteFileName);
+                self.LastProtocolFilePath_ = absoluteFileName ;
             end
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
@@ -3468,9 +3458,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 fastProtocol = self.FastProtocols_{index} ;
                 try 
                     fastProtocol.(propertyName) = newValue ;
-                    if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
-                        ws.setPreference('LastProtocolFilePath', newValue) ;
-                    end
+                    %if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
+                    %    ws.setPreference('LastProtocolFilePath', newValue) ;
+                    %end
                 catch exception
                     self.updateFastProtocol() ;
                     rethrow(exception) ;
@@ -7176,8 +7166,68 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % public methods block
     
     methods
+        function result = get.LastProtocolFilePath(self)
+            result = self.LastProtocolFilePath_ ;
+        end
+        
         function result = get.CurrentProfileName(self)
             result = self.CurrentProfileName_ ;            
         end
+
+        function set.CurrentProfileName(self, newValue)
+            profileNames = self.ProfileNames_ ;
+            if ws.isString(newValue) && ismember(newValue, profileNames) ,
+                preferences = self.packagePreferences() ;
+                ws.setProfilePreferences(self.CurrentProfileName, preferences) ;
+                try
+                    newPreferences = ws.getProfilePreferences(newValue) ;
+                catch err
+                    self.broadcast('Update') ;
+                    error('Unable to load preferences for new profile') ;
+                end                                                        
+                self.CurrentProfileName_ = newValue ;
+                self.syncPreferences_(newPreferences) ;
+            else
+                self.broadcast('Update') ;
+                error('ws:invalidPropertyValue', ...
+                      'CurrentProfileName must be one of the ProfileNames');
+            end
+            self.broadcast('Update') ;
+        end
+        
+        function result = get.ProfileNames(self)
+            result = self.ProfileNames_ ;            
+        end        
+
+        function result = packagePreferences(self)
+            if self.HasUserSpecifiedProtocolFileName ,
+                lastProtocolFilePath = self.AbsoluteProtocolFileName ;
+            else
+                lastProtocolFilePath = '' ;
+            end
+            fastProtocolsAsStruct = struct([]) ;
+            for i=1:self.NFastProtocols ,
+                fastProtocolsAsStruct(i).ProtocolFileName = self.FastProtocols_{i}.ProtocolFileName ;
+                fastProtocolsAsStruct(i).AutoStartType = self.FastProtocols_{i}.AutoStartType ;
+            end
+            result = struct('LastProtocolFilePath', {lastProtocolFilePath}, ...
+                            'FastProtocols', {fastProtocolsAsStruct}) ;
+        end        
     end  % public methods block
+    
+    methods (Access = protected)
+        function syncPreferences_(self, preferences)
+            lastProtocolFilePath = preferences.LastProtocolFilePath ;                
+            self.LastProtocolFilePath_ = lastProtocolFilePath ; 
+
+            % Restore the fast protocols from the profile preferences
+            fastProtocolsAsStruct = preferences.FastProtocols ;
+            nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
+            for i = 1:nFastProtocolsToSet ,
+                self.FastProtocols_{i}.ProtocolFileName = fastProtocolsAsStruct(i).ProtocolFileName ;
+                self.FastProtocols_{i}.AutoStartType    = fastProtocolsAsStruct(i).AutoStartType    ;
+            end
+        end
+    end
+    
 end  % classdef

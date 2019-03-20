@@ -11,9 +11,9 @@ classdef WavesurferMainController < ws.Controller
         OpenProtocolMenuItem
         SaveProtocolMenuItem
         SaveProtocolAsMenuItem
-        LoadUserSettingsMenuItem
-        SaveUserSettingsMenuItem
-        SaveUserSettingsAsMenuItem
+        %LoadUserSettingsMenuItem
+        %SaveUserSettingsMenuItem
+        %SaveUserSettingsAsMenuItem
         ExportModelAndControllerToWorkspaceMenuItem
         QuitMenuItem
         
@@ -28,8 +28,10 @@ classdef WavesurferMainController < ws.Controller
         %DisplayMenuItem
         YokeToScanimageMenuItem
         
-        UserMenu
+        ProfileMenu
         %FastProtocolsMenuItem
+        ProfileMenuItems
+        ManageProfilesMenuItem
         
         HelpMenu
         AboutMenuItem
@@ -367,21 +369,18 @@ classdef WavesurferMainController < ws.Controller
                        'Callback',@(source,event)self.controlActuated('arrangementMenuItem',source,event));                                                  
                    
             % User menu
-            self.UserMenu = ...
+            self.ProfileMenu = ...
                 uimenu('Parent',self.FigureGH_, ...
-                       'Label','User');
-%             self.FastProtocolsMenuItem = ...
-%                 uimenu('Parent',self.UserMenu, ...
-%                        'Label','Fast Protocols...');
-            self.LoadUserSettingsMenuItem = ...
-                uimenu('Parent',self.UserMenu, ...
-                       'Label','Open User Settings...');
-            self.SaveUserSettingsMenuItem = ...
-                uimenu('Parent',self.UserMenu, ...
-                       'Label','Save User Settings');
-            self.SaveUserSettingsAsMenuItem = ...
-                uimenu('Parent',self.UserMenu, ...
-                       'Label','Save User Settings As...');
+                       'Label','Profile');
+%             self.LoadUserSettingsMenuItem = ...
+%                 uimenu('Parent',self.ProfileMenu, ...
+%                        'Label','ManageProfiles...');
+%             self.SaveUserSettingsMenuItem = ...
+%                 uimenu('Parent',self.ProfileMenu, ...
+%                        'Label','Save User Settings');
+%             self.SaveUserSettingsAsMenuItem = ...
+%                 uimenu('Parent',self.ProfileMenu, ...
+%                        'Label','Save User Settings As...');
                    
             % Help menu       
             self.HelpMenu=uimenu('Parent',self.FigureGH_, ...
@@ -652,8 +651,29 @@ classdef WavesurferMainController < ws.Controller
                 % do nothing --- we already have the right number of
                 % ScopePlots
             end
+            
+            % Delete the items in the profile menu, re-make them
+            delete(self.ProfileMenuItems) ;
+            delete(self.ManageProfilesMenuItem) ;            
+            self.ProfileMenuItems = [] ;
+            self.ManageProfilesMenuItem = [] ;
+            profileNames = self.Model_.ProfileNames ;  % is sorted
+            %currentProfileName = self.Model_.CurrentProfileName ;
+            %isProfileCurrent = strcmp(currentProfileName, profileNames) ;
+            for i = 1 : length(profileNames) ,
+                profileName = profileNames{i} ;
+                self.ProfileMenuItems(i) = ...
+                    uimenu('Parent', self.ProfileMenu, ...
+                           'Label', profileName, ...
+                           'Callback', @(source, event)(self.controlActuated('ProfileMenuItem', source, event, profileName))) ;                           
+            end
+            self.ManageProfilesMenuItem = ...
+                uimenu('Parent', self.ProfileMenu, ...
+                       'Label', 'Manage Profiles...', ...
+                       'Callback', @(source, event)(self.controlActuated('ManageProfilesMenuItem', source, event)), ...
+                       'Separator', 'on') ;
         end
-    end
+    end  % protected methods block
     
     methods (Access = protected)
         function updateControlPropertiesImplementation_(self) 
@@ -721,7 +741,7 @@ classdef WavesurferMainController < ws.Controller
             set(self.YokeToScanimageMenuItem,'Checked',ws.onIff(wsModel.IsYokedToScanImage));
             
             % The save menu items
-            self.updateSaveUserSettingsMenuItem_();
+            self.updateProfileMenu_();
             
             % Finally, the window title
             self.updateWindowTitle_();
@@ -897,9 +917,9 @@ classdef WavesurferMainController < ws.Controller
             set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isNoDevice||isIdle));            
             set(self.SaveProtocolMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.SaveProtocolAsMenuItem,'Enable',ws.onIff(isIdle));            
-            set(self.LoadUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
-            set(self.SaveUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
-            set(self.SaveUserSettingsAsMenuItem,'Enable',ws.onIff(isIdle));            
+            %set(self.LoadUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            %set(self.SaveUserSettingsMenuItem,'Enable',ws.onIff(isIdle));            
+            %set(self.SaveUserSettingsAsMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.ExportModelAndControllerToWorkspaceMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
             %set(self.QuitMenuItem,'Enable',ws.onIff(true));  % always available          
                         
@@ -1123,16 +1143,15 @@ classdef WavesurferMainController < ws.Controller
     end
     
     methods (Access=protected)
-        function updateSaveUserSettingsMenuItem_(self)
-            absoluteUserSettingsFileName=self.Model_.AbsoluteUserSettingsFileName;
-            if ~isempty(absoluteUserSettingsFileName) ,            
-                [~, name, ext] = fileparts(absoluteUserSettingsFileName);
-                relativeFileName=[name ext];
-                menuItemHG=self.SaveUserSettingsMenuItem;
-                set(menuItemHG,'Label',sprintf('Save %s',relativeFileName));
-            else
-                menuItemHG=self.SaveUserSettingsMenuItem;
-                set(menuItemHG,'Label','Save User Settings');
+        function updateProfileMenu_(self)
+            profileNames = self.Model_.ProfileNames ;  % is sorted
+            currentProfileName = self.Model_.CurrentProfileName ;
+            isProfileCurrent = strcmp(currentProfileName, profileNames) ;
+            for i = 1 : length(self.ProfileMenuItems) ,
+                profileName = profileNames{i} ;
+                set(self.ProfileMenuItems(i), ...
+                    'Label', profileName, ...
+                    'Checked', ws.onIff(isProfileCurrent(i))) ;
             end
         end        
     end    
@@ -1514,8 +1533,8 @@ classdef WavesurferMainController < ws.Controller
         end
                 
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            profileName = self.Model_.CurrentProfileName ;
-            initialFilePathForFilePicker = ws.getProfilePreference(profileName, 'LastProtocolFilePath') ;            
+            %profileName = self.Model_.CurrentProfileName ;
+            initialFilePathForFilePicker = self.Model_.LastProtocolFilePath ;            
             isFileNameKnown = false ;
             absoluteFileName = ...
                 ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
@@ -1644,7 +1663,15 @@ classdef WavesurferMainController < ws.Controller
 %                 end
 %             end                        
         end  % function
-                
+
+        % Profile menu
+        function ProfileMenuItemActuated(self, source, event, profileName)  %#ok<INUSL>
+            self.Model_.do('set', 'CurrentProfileName', profileName) ;
+        end        
+
+        function ManageProfilesMenuItemActuated(self, source, event)
+        end
+
         % Help menu
         function AboutMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('ws.ui.controller.AboutWindow');
@@ -1852,8 +1879,8 @@ classdef WavesurferMainController < ws.Controller
                 if self.Model_.HasUserSpecifiedProtocolFileName ,
                     fileChooserInitialFileName = self.Model_.AbsoluteProtocolFileName;
                 else                    
-                    profileName = self.Model_.CurrentProfileName ;
-                    fileChooserInitialFileName = ws.getProfilePreference(profileName, 'LastProtocolFilePath');
+                    %profileName = self.Model_.CurrentProfileName ;
+                    fileChooserInitialFileName = self.Model_.LastProtocolFilePath ;
                 end
             else
                 % this is a plain-old save
