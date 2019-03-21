@@ -240,15 +240,11 @@ classdef FastProtocolsController < ws.Controller
             % that does not exist, then it will start in the current
             % directory.
             %filePickerInitialFolderFromPreferences = ws.Preferences.sharedPreferences().loadPref('LastProtocolFilePath') ;
-            profileName = self.Model_.CurrentProfileName ;
-            filePickerInitialFolderFromPreferences = self.Model_.LastProtocolFilePath ;
+            %profileName = self.Model_.CurrentProfileName ;
             originalFastProtocolFileName = self.Model_.getSelectedFastProtocolProperty('ProtocolFileName') ;
             if isempty(originalFastProtocolFileName) ,
-                if ~exist('startLocationFromPreferences','var') ,
-                    filePickerInitialFolder = '' ;
-                else
-                    filePickerInitialFolder =  filePickerInitialFolderFromPreferences ;
-                end
+                filePickerInitialFolderFromPreferences = self.Model_.LastProtocolFilePath ;
+                filePickerInitialFolder =  filePickerInitialFolderFromPreferences ;
             else
                 filePickerInitialFolder = originalFastProtocolFileName ;
             end

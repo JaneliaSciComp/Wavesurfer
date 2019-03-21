@@ -7224,8 +7224,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             fastProtocolsAsStruct = preferences.FastProtocols ;
             nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
             for i = 1:nFastProtocolsToSet ,
-                self.FastProtocols_{i}.ProtocolFileName = fastProtocolsAsStruct(i).ProtocolFileName ;
-                self.FastProtocols_{i}.AutoStartType    = fastProtocolsAsStruct(i).AutoStartType    ;
+                self.FastProtocols_{i}.setPropertyValue_('ProtocolFileName_', fastProtocolsAsStruct(i).ProtocolFileName) ;
+                self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
             end
         end
     end

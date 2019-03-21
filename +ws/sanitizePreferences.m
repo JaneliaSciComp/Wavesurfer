@@ -8,7 +8,7 @@ function result = sanitizePreferences(rawPreferences)
     fieldNames = fieldnames(defaultPreferences) ;
     for i = 1:length(fieldNames) ,
         fieldName = fieldNames{i} ;
-        if isfield(fieldName, rawPreferences) ,
+        if isfield(rawPreferences, fieldName) ,
             result.(fieldName) = rawPreferences.(fieldName) ;
         else
             result.(fieldName) = defaultPreferences.(fieldName) ;
