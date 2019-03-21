@@ -7200,11 +7200,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end        
 
         function result = packagePreferences(self)
-            if self.HasUserSpecifiedProtocolFileName ,
-                lastProtocolFilePath = self.AbsoluteProtocolFileName ;
-            else
-                lastProtocolFilePath = '' ;
-            end
+            lastProtocolFilePath = self.LastProtocolFilePath_ ;
+            %if self.HasUserSpecifiedProtocolFileName ,
+            %    lastProtocolFilePath = self.AbsoluteProtocolFileName ;
+            %else
+            %    lastProtocolFilePath = '' ;
+            %end
             fastProtocolsAsStruct = struct([]) ;
             for i=1:self.NFastProtocols ,
                 fastProtocolsAsStruct(i).ProtocolFileName = self.FastProtocols_{i}.ProtocolFileName ;
