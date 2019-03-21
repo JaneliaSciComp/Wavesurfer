@@ -6,7 +6,7 @@ function result = getProfileNames()
     if isempty(rawProfileNames) ,
         result = {'Default'} ;
     else
-        result = rawProfileNames ;
+        result = sort(rawProfileNames) ;
     end
 end
 

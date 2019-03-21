@@ -508,7 +508,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 %self.addStarterChannelsAndStimulusLibrary() ;
                 profileName = ws.getLastProfileName() ;
                 self.CurrentProfileName_ = profileName ;
-                self.ProfileNames_ = sort(ws.getProfileNames()) ;  % read from disk
+                self.ProfileNames_ = ws.getProfileNames() ;  % read from disk; these will be sorted
                 
                 preferences = ws.getProfilePreferences(profileName) ;
                 self.syncPreferences_(preferences) ;
@@ -7214,6 +7214,61 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = struct('LastProtocolFilePath', {lastProtocolFilePath}, ...
                             'FastProtocols', {fastProtocolsAsStruct}) ;
         end        
+        
+        function newProfileName = createNewProfile(self)
+            %appDataPath = getenv('APPDATA') ;
+            %preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+            didFindAvailableName = false ;
+            for i = 1:10 ,
+                if i==1 ,
+                    putativeNewProfileName = 'New Profile' ;
+                else
+                    putativeNewProfileName = sprintf('New Profile %d', i) ;
+                end                    
+                %putativePreferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', putativeProfileName)) ;
+                profileNames = self.ProfileNames_ ;
+                if ~ismember(putativeNewProfileName, profileNames) ,
+                    newProfileName = putativeNewProfileName ;
+                    didFindAvailableName = true ;
+                    break
+                end
+            end
+            if didFindAvailableName ,
+                % Write the current preferences to the current profile
+                preferences = self.packagePreferences() ;
+                ws.setProfilePreferences(self.CurrentProfileName, preferences) ;                
+                % Change state to accord with the new profile
+                self.CurrentProfileName_ = newProfileName ;
+                newProfileNames = sort(horzcat(self.ProfileNames_, {newProfileName})) ;
+                self.ProfileNames_ = newProfileNames ;
+            else
+               error('Unable to find an available name for the new profile') ; 
+            end
+            self.broadcast('Update') ;
+        end
+        
+        function deleteCurrentProfile(self)
+            profileNameToDelete = self.CurrentProfileName ;
+            if isequal(profileNameToDelete, 'Default') ,
+               error('Sorry, you can''t delete the default profile') ;
+            end
+            self.CurrentProfileName = 'Default' ;  % this will update the view
+            appDataPath = getenv('APPDATA') ;
+            preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+            preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileNameToDelete)) ;
+            try
+                delete(preferencesFilePath) ;
+            catch err
+               error('Unable to delete the profile preferences file from disk') ;                                 
+            end
+            % If get here, the file was successfully deleted
+            self.ProfileNames_ = setdiff(self.ProfileNames_, profileNameToDelete) ;
+            self.broadcast('Update') ;            
+        end
+        
+        function renameCurrentProfile(self, newValue)
+        end
+        
     end  % public methods block
     
     methods (Access = protected)

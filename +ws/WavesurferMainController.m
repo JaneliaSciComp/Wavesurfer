@@ -31,7 +31,10 @@ classdef WavesurferMainController < ws.Controller
         ProfileMenu
         %FastProtocolsMenuItem
         ProfileMenuItems
-        ManageProfilesMenuItem
+        %ManageProfilesMenuItem
+        NewProfileMenuItem
+        DeleteProfileMenuItem
+        RenameProfileMenuItem
         
         HelpMenu
         AboutMenuItem
@@ -654,9 +657,13 @@ classdef WavesurferMainController < ws.Controller
             
             % Delete the items in the profile menu, re-make them
             delete(self.ProfileMenuItems) ;
-            delete(self.ManageProfilesMenuItem) ;            
+            delete(self.NewProfileMenuItem) ;            
+            delete(self.DeleteProfileMenuItem) ;            
+            delete(self.RenameProfileMenuItem) ;            
             self.ProfileMenuItems = [] ;
-            self.ManageProfilesMenuItem = [] ;
+            self.NewProfileMenuItem = [] ;
+            self.DeleteProfileMenuItem = [] ;
+            self.RenameProfileMenuItem = [] ;
             profileNames = self.Model_.ProfileNames ;  % is sorted
             %currentProfileName = self.Model_.CurrentProfileName ;
             %isProfileCurrent = strcmp(currentProfileName, profileNames) ;
@@ -667,11 +674,19 @@ classdef WavesurferMainController < ws.Controller
                            'Label', profileName, ...
                            'Callback', @(source, event)(self.controlActuated('ProfileMenuItem', source, event, profileName))) ;                           
             end
-            self.ManageProfilesMenuItem = ...
+            self.NewProfileMenuItem = ...
                 uimenu('Parent', self.ProfileMenu, ...
-                       'Label', 'Manage Profiles...', ...
-                       'Callback', @(source, event)(self.controlActuated('ManageProfilesMenuItem', source, event)), ...
+                       'Label', 'New', ...
+                       'Callback', @(source, event)(self.controlActuated('NewProfileMenuItem', source, event)), ...
                        'Separator', 'on') ;
+            self.DeleteProfileMenuItem = ...
+                uimenu('Parent', self.ProfileMenu, ...
+                       'Label', 'Delete...', ...
+                       'Callback', @(source, event)(self.controlActuated('DeleteProfileMenuItem', source, event))) ;
+            self.RenameProfileMenuItem = ...
+                uimenu('Parent', self.ProfileMenu, ...
+                       'Label', 'Rename...', ...
+                       'Callback', @(source, event)(self.controlActuated('RenameProfileMenuItem', source, event))) ;
         end
     end  % protected methods block
     
@@ -1669,7 +1684,25 @@ classdef WavesurferMainController < ws.Controller
             self.Model_.do('set', 'CurrentProfileName', profileName) ;
         end        
 
-        function ManageProfilesMenuItemActuated(self, source, event)
+        function NewProfileMenuItemActuated(self, source, event)  %#ok<INUSD>
+            self.Model_.do('createNewProfile') ;
+        end
+
+        function DeleteProfileMenuItemActuated(self, source, event)  %#ok<INUSD>
+            currentProfileName = self.Model_.CurrentProfileName ;
+            if isequal(currentProfileName, 'Default') ,
+               error('Sorry, you can''t delete the default profile') ;
+            end
+            
+            choice = ws.questdlg(sprintf('Are you sure you want to delete the profile "%s"?', currentProfileName), ...
+                                 'Delete Profile?', 'Delete', 'Don''t Delete', 'Don''t Delete') ;            
+            if isequal(choice,'Delete') ,
+                self.Model_.do('deleteCurrentProfile') ;
+            end
+        end
+
+        function RenameProfileMenuItemActuated(self, source, event)
+            self.Model_.do('renameCurrentProfile', newValue) ;
         end
 
         % Help menu
