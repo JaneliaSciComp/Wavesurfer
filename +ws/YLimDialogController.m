@@ -123,8 +123,8 @@ classdef YLimDialogController < ws.Controller
             nRows=2;
             rowHeight=16;
             interRowHeight=8;
-            topSpaceHeight=10;
-            leftSpaceWidth=10;
+            topSpaceHeight=20;
+            leftSpaceWidth=40;
             widthBetweenLabelAndEdit=5;
             labelWidth=50;
             labelHeight=rowHeight;
@@ -136,7 +136,8 @@ classdef YLimDialogController < ws.Controller
             unitsXOffset=editXOffset+editWidth+widthBetweenEditAndUnits;
             unitsWidth=30;
             unitsHeight=rowHeight;
-            rightSpaceWidth=10;           
+            rightSpaceWidth=40;           
+            rightButtonSpaceWidth = 10 ;
             
             nBottomButtons=2;
             heightBetweenEditRowsAndBottomButtonRow=20;
@@ -171,7 +172,7 @@ classdef YLimDialogController < ws.Controller
             % Layout the bottom buttons
             widthOfAllBottomButtons=nBottomButtons*bottomButtonWidth+(nBottomButtons-1)*interBottomButtonSpaceWidth;
             %xOffsetOfLeftButton=(figureWidth-widthOfAllBottomButtons)/2;
-            xOffsetOfLeftButton=figureWidth-rightSpaceWidth-widthOfAllBottomButtons;
+            xOffsetOfLeftButton=figureWidth-rightButtonSpaceWidth-widthOfAllBottomButtons;
             
             xOffsetOfThisButton=xOffsetOfLeftButton;
             set(self.OKButton_,'Position',[xOffsetOfThisButton bottomSpaceHeight bottomButtonWidth bottomButtonHeight]);
