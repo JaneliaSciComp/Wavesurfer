@@ -165,8 +165,8 @@ classdef PlotArrangementDialogController < ws.Controller
             heightBetweenTitleRowAndWidgetRows = 4 ;
             rowHeight=20;
             interRowHeight=8;
-            topMarginHeight=2;
-            leftMarginWidth=10;
+            topMarginHeight=8;
+            leftMarginWidth=70;
             widthBetweenChannelColAndIsDisplayedCol=5;
             maxChannelTextExtent = ws.maximalExtent(self.ChannelNameTexts_) ;
             channelColWidth = maxChannelTextExtent(1)+4 ;  % the +4 is a shim
@@ -178,7 +178,7 @@ classdef PlotArrangementDialogController < ws.Controller
             widthBetweenPlotSizeColAndUpDownButtons=6;
             upDownButtonSize = 20 ;  % the buttons are square
             interUpDownButtonWidth = 2 ; 
-            rightMarginWidth=10;           
+            rightMarginWidth=70;           
             
             nBottomButtons=2;
             heightBetweenWidgetRowsAndBottomButtonRow=20;
@@ -186,6 +186,7 @@ classdef PlotArrangementDialogController < ws.Controller
             bottomButtonHeight=20;
             interBottomButtonSpaceWidth=6;
             bottomSpaceHeight=10;
+            rightButtonMarginWidth=10;           
             
             figureWidth = ...
                 leftMarginWidth + ...
@@ -247,7 +248,7 @@ classdef PlotArrangementDialogController < ws.Controller
 
             % Layout the bottom buttons
             widthOfAllBottomButtons=nBottomButtons*bottomButtonWidth+(nBottomButtons-1)*interBottomButtonSpaceWidth;
-            xOffsetOfLeftButton=figureWidth-rightMarginWidth-widthOfAllBottomButtons;
+            xOffsetOfLeftButton=figureWidth-rightButtonMarginWidth-widthOfAllBottomButtons;
             
             xOffsetOfThisButton=xOffsetOfLeftButton;
             set(self.OKButton_,'Position',[xOffsetOfThisButton bottomSpaceHeight bottomButtonWidth bottomButtonHeight]);
