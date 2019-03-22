@@ -109,6 +109,7 @@ classdef WavesurferMainController < ws.Controller
 
     properties (Access=protected)
         PlotArrangementDialogController_ = []
+        MyRenameProfileDialogController_ = [] 
     end
     
     methods
@@ -1701,8 +1702,17 @@ classdef WavesurferMainController < ws.Controller
             end
         end
 
-        function RenameProfileMenuItemActuated(self, source, event)
-            self.Model_.do('renameCurrentProfile', newValue) ;
+        function RenameProfileMenuItemActuated(self, source, event)  %#ok<INUSD>
+            currentProfileName = self.Model_.CurrentProfileName ;            
+            if isequal(currentProfileName, 'Default') ,
+                error('You can''t rename the default profile') ;
+            end
+            self.MyRenameProfileDialogController_ = [] ;  % if not first call, this should cause the old controller to be garbage collectable
+            myRenameProfileDialogModel = [] ;
+            parentFigurePosition = get(self.FigureGH_,'Position') ;
+            callbackFunction = @(newProfileName)(self.Model_.do('renameCurrentProfile', newProfileName)) ;
+            self.MyRenameProfileDialogController_ = ...
+                ws.RenameProfileDialogController(myRenameProfileDialogModel, parentFigurePosition, currentProfileName, callbackFunction) ;            
         end
 
         % Help menu

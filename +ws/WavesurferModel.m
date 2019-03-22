@@ -7266,7 +7266,48 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('Update') ;            
         end
         
-        function renameCurrentProfile(self, newValue)
+        function renameCurrentProfile(self, newProfileName)
+            % Get current values out of self
+            oldProfileName = self.CurrentProfileName ;            
+            oldProfileNames = self.ProfileNames_ ;
+            preferences = self.packagePreferences() ;
+            
+            % Check for name collision
+            if ismember(newProfileName, oldProfileNames) ,
+                error('There is already a profile named "%s"', newProfileName) ;
+            end
+            
+            % Delete the old-profile-name preference file from disk, if it exists
+            appDataPath = getenv('APPDATA') ;
+            preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+            oldPreferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', oldProfileName)) ;
+            try 
+                if exist(oldPreferencesFilePath, 'file') ,
+                    delete(oldPreferencesFilePath) ;
+                end
+            catch err
+                error('Unable to delete preferences file for profile "%s", so not renaming', oldProfileName) ;
+            end            
+            
+            % Make sure the new name is valid by trying to write out the preferences under
+            % the new name
+            try
+                ws.setProfilePreferences(newProfileName, preferences) ;
+            catch err
+                error('%s is not an allowed profile name', newProfileName) ;
+            end            
+            
+            % Replace the old profile name with the new in profile names
+            newProfileNames = ws.renameInCellString(oldProfileNames, oldProfileName, newProfileName) ;
+            
+            % Commit things to self            
+            % The renamed profile preferences will get written to disk in delete(), or when
+            % user switches to a new profile.
+            self.CurrentProfileName_ = newProfileName ;
+            self.ProfileNames_ = newProfileNames ;
+            
+            % Finally, update the view
+            self.broadcast('Update') ;                        
         end
         
     end  % public methods block
