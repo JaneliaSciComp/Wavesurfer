@@ -29,9 +29,7 @@ classdef WavesurferMainController < ws.Controller
         YokeToScanimageMenuItem
         
         ProfileMenu
-        %FastProtocolsMenuItem
         ProfileMenuItems
-        %ManageProfilesMenuItem
         NewProfileMenuItem
         DeleteProfileMenuItem
         RenameProfileMenuItem
@@ -911,9 +909,8 @@ classdef WavesurferMainController < ws.Controller
         end  % function        
         
         function updateControlEnablementImplementation_(self) 
-            % In subclass, this should make sure the Enable property of
-            % each control is in-sync with the model.  It can assume that
-            % all the controls that should exist, do exist.
+            % This makes sure the Enable property of each control is in-sync with the
+            % model.  It can assume that all the controls that should exist, do exist.
 
             % Updates the menu and button enablement to be appropriate for
             % the model state.
@@ -928,6 +925,7 @@ classdef WavesurferMainController < ws.Controller
             isNoDevice = isequal(model.State,'no_device') ;
             isIdle=isequal(model.State,'idle');
             isAcquiring = isequal(model.State,'running') ;
+            isDefaultProfileCurrent = isequal(model.CurrentProfileName, 'Default') ;
             
             % File menu items
             set(self.OpenProtocolMenuItem,'Enable',ws.onIff(isNoDevice||isIdle));            
@@ -958,8 +956,11 @@ classdef WavesurferMainController < ws.Controller
             % These things stay active all the time, so user can change them during
             % acquisition.
             
-            % User menu
-            set(self.ManageFastProtocolsButton,'Enable',ws.onIff(isIdle));
+            % Profile menu
+            set(self.ProfileMenuItems,'Enable',ws.onIff(isIdle));
+            set(self.NewProfileMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.DeleteProfileMenuItem,'Enable',ws.onIff(isIdle&&~isDefaultProfileCurrent));
+            set(self.RenameProfileMenuItem,'Enable',ws.onIff(isIdle&&~isDefaultProfileCurrent));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
@@ -970,6 +971,7 @@ classdef WavesurferMainController < ws.Controller
             set(self.StopButton,'Enable',ws.onIff(isAcquiring));
             
             % Fast config buttons
+            set(self.ManageFastProtocolsButton,'Enable',ws.onIff(isIdle));
             nFastProtocolButtons=length(self.FastProtocolButtons);
             for i=1:nFastProtocolButtons ,
                 isNonempty = model.getFastProtocolProperty(i, 'IsNonempty') ;
