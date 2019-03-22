@@ -267,45 +267,15 @@ classdef CommandServer < handle
             [isCompleteCommandFile, commands] = ws.CommandServer.parseIncomingCommandFile(commandFileText) ;
             if isCompleteCommandFile ,
                 self.ensureYokingFilesAreGone_() ;
-                if self.IsParentWavesurferModel_ && isscalar(commands) ,
-                    command = commands ;  % b/c scalar
-                    isBlocking = ( isequal(command.name, 'record') || isequal(command.name, 'play') ) ;
-                else
-                    isBlocking = false ;
-                end
-
-                if isBlocking ,
-                    % Have to acknowledge the command before executing, b/c
-                    % command will block
-                    %self.IsProcessingIncomingCommand_ = false ;
-                    self.acknowledgeCommand_() ;
-
+                for idx = 1:length(commands) ,
+                    command = commands(idx) ;
                     try
-                        % awkward workaround because self.play() and self.record() is blocking call
-                        % acknowledgeSICommand_ needs to be done before play and
-                        % record
-                        % flag self.IsProcessingIncomingCommand_ is reset in self.run
-                        %self.IsProcessingIncomingCommand_ = true ;
-                        self.Parent.executeIncomingCommand(command) ;  % we know commands is a scalar
-                        %self.IsProcessingIncomingCommand_ = false ;
+                        self.Parent.executeIncomingCommand(command) ;
                     catch ME
-                        %self.IsProcessingIncomingCommand_ = false ;
                         rethrow(ME) ;
                     end
-                else
-                    % no blocking commands
-                    for idx = 1:length(commands) ,
-                        command = commands(idx) ;
-                        try
-                            self.Parent.executeIncomingCommand(command) ;
-                        catch ME
-                            %self.IsProcessingIncomingCommand_ = false ;
-                            rethrow(ME) ;
-                        end
-                    end
-                    %self.IsProcessingIncomingCommand_ = false ;
-                    self.acknowledgeCommand_() ;
-                end                
+                end
+                self.acknowledgeCommand_() ;
             end
         end  % function
             
