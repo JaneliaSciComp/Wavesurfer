@@ -2291,19 +2291,38 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     self.openProtocolFileGivenFileName(protocolFileName) ;
                 case 'saving-user-file-at-full-path'
                     siUserFileName = parameters{1} ;
-                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;
-                    self.saveUserFileGivenFileName(wsUserFileName) ;
+                    [~, putativeProfileName, ~] = fileparts(siUserFileName) ;
+                    if isequal(putativeProfileName, self.CurrentProfileName) ,
+                        % Write the preferences to disk, just for the hell of it
+                        self.savePreferences_(self.CurrentProfileName) ;
+                    else
+                        if ismember(putativeProfileName, self.ProfileNames) ,
+                            newProfileName = putativeProfileName ;
+                            self.CurrentProfileName = newProfileName ;  % this will update view                            
+                        else
+                            newProfileName = putativeProfileName ;
+                            temporaryProfileName = self.createNewProfile() ;  % this will update view
+                            self.CurrentProfileName = temporaryProfileName ;  % this will update view
+                            self.renameProfile(newProfileName) ;  % this will update view          
+                            self.savePreferences_(self.CurrentProfileName) ;  % what the hell                                                        
+                        end
+                    end                        
                 case 'loading-user-file-at-full-path'
                     siUserFileName = parameters{1} ;
-                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;                    
-                    self.openUserFileGivenFileName(wsUserFileName) ;                    
+                    [~, putativeProfileName, ~] = fileparts(siUserFileName) ;
+                    if isequal(putativeProfileName, self.CurrentProfileName) ,
+                        % Do nothing
+                    else
+                        if ismember(putativeProfileName, self.ProfileNames) ,
+                            newProfileName = putativeProfileName ;
+                            self.CurrentProfileName = newProfileName ;  % this will update view                            
+                        else
+                            error('Can''t find profile named "%s"', putativeProfileName) ;
+                        end
+                    end                        
                 case 'record'
-                    % self.record() is a blocking call, but that's dealt
-                    % with in the CommandServer
                     self.record()
                 case 'play'
-                    % self.play() is a blocking call, but that's dealt
-                    % with in the CommandServer
                     self.play()
                 case 'stop'
                     % This is similar to the user pressing the stop button
@@ -2550,7 +2569,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if self.ArePreferencesWritable ,
                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
             end
-            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1) ;            
             self.broadcast('UpdateFastProtocols') ;
@@ -2577,7 +2595,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if self.ArePreferencesWritable ,
                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
             end
-            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;            
@@ -7314,6 +7331,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     
     methods (Access = protected)
         function syncPreferences_(self, preferences)
+            % Set the state of self to match the given preferences
             lastProtocolFilePath = preferences.LastProtocolFilePath ;                
             self.LastProtocolFilePath_ = lastProtocolFilePath ; 
 
@@ -7325,6 +7343,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
             end
         end
-    end
+        
+        function savePreferences_(self, profileName)
+            preferences = self.packagePreferences() ;
+            %profileName = self.CurrentProfileName_ ;
+            ws.setProfilePreferences(profileName, preferences) ;
+        end
+
+        function loadPreferences_(self, profileName)
+            %profileName = self.CurrentProfileName_ ;
+            preferences = ws.getProfilePreferences(profileName) ;
+            self.syncPreferences_(preferences) ;
+        end        
+    end  % protected methods block
     
 end  % classdef
