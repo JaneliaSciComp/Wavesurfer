@@ -959,8 +959,8 @@ classdef WavesurferMainController < ws.Controller
             % Profile menu
             set(self.ProfileMenuItems,'Enable',ws.onIff(isIdle));
             set(self.NewProfileMenuItem,'Enable',ws.onIff(isIdle));
-            set(self.DeleteProfileMenuItem,'Enable',ws.onIff(isIdle&&~isDefaultProfileCurrent));
-            set(self.RenameProfileMenuItem,'Enable',ws.onIff(isIdle&&~isDefaultProfileCurrent));
+            set(self.DeleteProfileMenuItem,'Enable',ws.onIff(isIdle && ~isDefaultProfileCurrent));
+            set(self.RenameProfileMenuItem,'Enable',ws.onIff(isIdle && ~isDefaultProfileCurrent));
             
             % Help menu
             set(self.AboutMenuItem,'Enable',ws.onIff(isIdle||isNoDevice));
