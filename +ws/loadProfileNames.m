@@ -1,10 +1,10 @@
 function result = loadProfileNames()
-    appDataPath = getenv('APPDATA') ;
-    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
-    matFileNames = ws.simpleDir(fullfile(preferencesFolderPath, '*.mat')) ;
+    preferencesFilePath = ws.preferencesFileNameFromProfileName('Default') ;
+    preferencesFolderPath = fileparts(preferencesFilePath) ;
+    matFileNames = ws.simpleDir(fullfile(preferencesFolderPath, '*.wsu')) ;
     rawProfileNames = cellfun(@stripDotMat, matFileNames, 'UniformOutput', false) ;
     if isempty(rawProfileNames) ,
-        result = {'Default'} ;
+        result = { 'Default' } ;
     else
         result = sort(rawProfileNames) ;
     end

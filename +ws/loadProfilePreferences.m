@@ -1,9 +1,7 @@
 function result = loadProfilePreferences(profileName)
-    appDataPath = getenv('APPDATA') ;
-    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
-    preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileName)) ;
+    preferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
     if exist(preferencesFilePath, 'file') ;
-        rawPreferences = load(preferencesFilePath) ;
+        rawPreferences = load(preferencesFilePath, '-mat') ;
     else
         rawPreferences = struct() ;
     end

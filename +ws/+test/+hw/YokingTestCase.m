@@ -64,9 +64,12 @@ classdef YokingTestCase < matlab.unittest.TestCase
             %wsModel.DoUsePreferences = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;            
             pause(5) ;  % wait for other process to start            
-            userSettingsFilePath = horzcat(tempname(), '.wsu') ;
-            wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
-            wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
+            newProfileName = wsModel.createNewProfile() ;
+            wsModel.CurrentProfileName = newProfileName ;  % should cause WS to tell SI the default profile is being saved
+            %userSettingsFilePath = horzcat(tempname(), '.wsu') ;
+            %wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
+            wsModel.CurrentProfileName = 'Default' ;  % should cause WS to tell SI the Mortimer profile is being saved, and the Default profile is being loaded
+            %wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;

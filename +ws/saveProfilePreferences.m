@@ -1,11 +1,10 @@
 function saveProfilePreferences(profileName, rawPreferences)
-   appDataPath = getenv('APPDATA') ;
-   preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
-   [didSucceed, ~, ~] = mkdir(preferencesFolderPath) ;
-   if ~didSucceed ,
-       return
-   end
-   preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileName)) ;   
-   preferences = ws.sanitizePreferences(rawPreferences) ;  %#ok<NASGU>
-   save(preferencesFilePath, '-struct', 'preferences') ;
+    preferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
+    preferencesFolderPath = fileparts(preferencesFilePath) ;
+    [didSucceed, ~, ~] = mkdir(preferencesFolderPath) ;
+    if ~didSucceed ,
+        return
+    end
+    preferences = ws.sanitizePreferences(rawPreferences) ;  %#ok<NASGU>
+    save(preferencesFilePath, '-mat', '-struct', 'preferences') ;
 end

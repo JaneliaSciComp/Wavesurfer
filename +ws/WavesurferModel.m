@@ -512,6 +512,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % correctly.
             self.overrideOrReleaseStimulusMapDurationAsNeeded_();            
             
+            % Create a command connector (which will
+            % remain disabled for now)
+            % This needs to be done before loading the preferences, since it's the
+            % CommandClient_ that takes care of notifying SI of preference file loading,
+            % depending on whether we are yoked.
+            self.CommandServer_ = ws.CommandServer(self) ;
+            self.CommandClient_ = ws.CommandClient(self) ;
+            if isAwake ,
+                self.CommandServer_.IsEnabled = true ;
+            end            
+            
             % Set the protocol file name
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
@@ -540,14 +551,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
                 self.HasUserSpecifiedProtocolFileName_ = false ;
                 self.DoesProtocolNeedSave_ = false ;
-            end
-            
-            % Lastly (I guess...) create a command connector (which will
-            % remain disabled for now)
-            self.CommandServer_ = ws.CommandServer(self) ;
-            self.CommandClient_ = ws.CommandClient(self) ;
-            if isAwake ,
-                self.CommandServer_.IsEnabled = true ;
             end            
         end  % function
         
@@ -2310,7 +2313,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                             newProfileName = putativeProfileName ;
                             temporaryProfileName = self.createNewProfile() ;  % this will update view
                             self.CurrentProfileName = temporaryProfileName ;  % this will update view
-                            self.renameProfile(newProfileName) ;  % this will update view          
+                            self.renameCurrentProfile(newProfileName) ;  % this will update view          
                             self.savePreferences_(self.CurrentProfileName) ;  % what the hell                                                        
                         end
                     end                        
@@ -2401,23 +2404,25 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end
         
         function notifyScanImageThatSavingProtocolFileIfYoked_(self, absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+            commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n', absoluteProtocolFileName) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function notifyScanImageThatOpeningProtocolFileIfYoked_(self, absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nopening-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+            commandFileAsString = sprintf('1\nopening-protocol-file-at-full-path| %s\n', absoluteProtocolFileName) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
-        function notifyScanImageThatSavingUserFileIfYoked_(self, absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        function notifyScanImageThatSavingPreferencesIfYoked_(self, profileName)
+            absolutePreferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
+            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n', absolutePreferencesFilePath) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
 
-        function notifyScanImageThatOpeningUserFileIfYoked_(self, absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nopening-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        function notifyScanImageThatLoadingPreferencesIfYoked_(self, profileName)
+            absolutePreferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
+            commandFileAsString = sprintf('1\nopening-user-file-at-full-path| %s\n', absolutePreferencesFilePath) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
     end % methods
     
@@ -2571,7 +2576,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             if self.DoUsePreferences ,
 %                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
 %             end
-%             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
+%             self.notifyScanImageThatLoadingPreferencesIfYoked_(absoluteFileName) ;
 %             self.changeReadiness_(+1) ;            
 %             self.broadcast('UpdateFastProtocols') ;
 %             self.broadcast('Update') ;
@@ -7220,7 +7225,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.ProfileNames_ ;            
         end        
 
-        function result = packagePreferences(self)
+        function result = packagePreferences(self)  % constant method
             lastProtocolFilePath = self.LastProtocolFilePath_ ;
             %if self.HasUserSpecifiedProtocolFileName ,
             %    lastProtocolFilePath = self.AbsoluteProtocolFileName ;
@@ -7237,8 +7242,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end        
         
         function newProfileName = createNewProfile(self)
-            %appDataPath = getenv('APPDATA') ;
-            %preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
+            self.changeReadiness_(-1) ;            
             didFindAvailableName = false ;
             for i = 1:10 ,
                 if i==1 ,
@@ -7264,18 +7268,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                error('Unable to find an available name for the new profile') ; 
             end
+            self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;
         end
         
         function deleteCurrentProfile(self)
+            self.changeReadiness_(-1) ;            
             profileNameToDelete = self.CurrentProfileName ;
             if isequal(profileNameToDelete, 'Default') ,
                error('Sorry, you can''t delete the default profile') ;
             end
             self.CurrentProfileName = 'Default' ;  % this will update the view
-            appDataPath = getenv('APPDATA') ;
-            preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
-            preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileNameToDelete)) ;
+            preferencesFilePath = ws.preferencesFileNameFromProfileName(profileNameToDelete) ;
             try
                 delete(preferencesFilePath) ;
             catch err
@@ -7283,10 +7287,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             % If get here, the file was successfully deleted
             self.ProfileNames_ = setdiff(self.ProfileNames_, profileNameToDelete) ;
+            self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;            
         end
         
         function renameCurrentProfile(self, newProfileName)
+            self.changeReadiness_(-1) ;            
             % Get current values out of self
             oldProfileName = self.CurrentProfileName ;            
             oldProfileNames = self.ProfileNames_ ;
@@ -7297,9 +7303,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Delete the old-profile-name preference file from disk, if it exists
-            appDataPath = getenv('APPDATA') ;
-            preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
-            oldPreferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', oldProfileName)) ;
+            oldPreferencesFilePath = ws.preferencesFileNameFromProfileName(oldProfileName) ;
             try 
                 if exist(oldPreferencesFilePath, 'file') ,
                     delete(oldPreferencesFilePath) ;
@@ -7326,6 +7330,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.ProfileNames_ = newProfileNames ;
             
             % Finally, update the view
+            self.changeReadiness_(+1) ;            
             self.broadcast('Update') ;                        
         end
         
@@ -7356,6 +7361,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 preferences = self.packagePreferences() ;
                 ws.saveProfilePreferences(profileName, preferences) ;
             end
+            % Notify SI whether or not we're *really* saving the preferences
+            self.notifyScanImageThatSavingPreferencesIfYoked_(profileName) ;
         end
 
         function loadPreferences_(self, profileName)
@@ -7375,6 +7382,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
                 end
             end
+            % Notify SI whether or not we're *really* loading the preferences
+            self.notifyScanImageThatLoadingPreferencesIfYoked_(profileName) ;
         end        
     end  % protected methods block
     
