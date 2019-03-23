@@ -102,17 +102,17 @@ end  % function
 
 
 function [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doUsePreferences] = processArguments(args)
-    % Deal with --debug, --nodebug
+    % Deal with --prefs, --noprefs
     isPreferencesMatch = strcmp('--prefs', args) ;
     isNoPreferencesMatch = strcmp('--noprefs', args) ;
-    doUsePreferences = any(isPreferencesMatch) ;    
-    argsWithoutDebug = args(~(isPreferencesMatch|isNoPreferencesMatch)) ;
+    doUsePreferences = ~any(isNoPreferencesMatch) ;    
+    argsWithoutPreferences = args(~(isPreferencesMatch|isNoPreferencesMatch)) ;
 
     % Deal with --gui, --nogui
-    isGuiMatch = strcmp('--gui', argsWithoutDebug) ;
-    isNoguiMatch = strcmp('--nogui', argsWithoutDebug) ;
+    isGuiMatch = strcmp('--gui', argsWithoutPreferences) ;
+    isNoguiMatch = strcmp('--nogui', argsWithoutPreferences) ;
     isCommandLineOnly = any(isNoguiMatch) ;
-    argsLeft = argsWithoutDebug(~(isGuiMatch|isNoguiMatch)) ;
+    argsLeft = argsWithoutPreferences(~(isGuiMatch|isNoguiMatch)) ;
     
     % Deal with the rest of the args
     if isempty(argsLeft) ,

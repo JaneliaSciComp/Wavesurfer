@@ -165,7 +165,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         AllowTimerCallback_ = true ;
         CurrentProfileName_
         ProfileNames_
-        LastProtocolFilePath_
+        LastProtocolFilePath_ = ''
     end   
 
     properties (Dependent = true)
@@ -515,8 +515,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Set the protocol file name
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
-                self.loadProfileNameAndNames_() ;                
-                self.loadPreferences_(profileName) ;
+                self.loadProfileNameAndNames_() ;  % populates self.CurrentProfileName_                
+                self.loadPreferences_(self.CurrentProfileName_) ;
                 
                 lastProtocolFilePath = self.LastProtocolFilePath_ ;  % just loaded from disk, typically 
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
@@ -7341,7 +7341,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 profileNames = { profileName } ;
             end
             self.CurrentProfileName_ = profileName ;
-            self.CurrentProfileNames_ = profileNames ;
+            self.ProfileNames_ = profileNames ;
         end
         
         function saveLastProfileName_(self) 
