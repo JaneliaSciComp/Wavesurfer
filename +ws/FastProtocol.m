@@ -37,7 +37,6 @@ classdef FastProtocol < ws.Model
             if ws.isAStartType(newValue) ,
                 self.AutoStartType_ = newValue ;
             else
-                self.updateFastProtocol() ;
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');
             end

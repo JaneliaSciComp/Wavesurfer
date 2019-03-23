@@ -2548,58 +2548,58 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
     end        
     
-    methods
-        function openUserFileGivenFileName(self, fileName)
-            % Actually opens the named user file.  fileName should be an
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-            self.changeReadiness_(-1) ;
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            saveStruct=load('-mat',absoluteFileName) ;
-            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
-            self.mimicUserSettings_(newModel) ;
-            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
-            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            if self.ArePreferencesWritable ,
-                ws.setPreference('LastUserFilePath', absoluteFileName) ;
-            end
-            self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness_(+1) ;            
-            self.broadcast('UpdateFastProtocols') ;
-            self.broadcast('Update') ;
-        end
-    end        
+%     methods
+%         function openUserFileGivenFileName(self, fileName)
+%             % Actually opens the named user file.  fileName should be an
+%             % file name referring to a file that is known to be
+%             % present, at least as of a few milliseconds ago.
+%             self.changeReadiness_(-1) ;
+%             if ws.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end                        
+%             saveStruct=load('-mat',absoluteFileName) ;
+%             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
+%             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
+%             newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
+%             self.mimicUserSettings_(newModel) ;
+%             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
+%             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+%             if self.ArePreferencesWritable ,
+%                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
+%             end
+%             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
+%             self.changeReadiness_(+1) ;            
+%             self.broadcast('UpdateFastProtocols') ;
+%             self.broadcast('Update') ;
+%         end
+%     end        
 
-    methods
-        function saveUserFileGivenFileName(self, fileName)
-            self.changeReadiness_(-1) ;
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            userSettings = ws.encodeForPersistence(self) ;
-            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
-            versionString = ws.versionString() ;
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
-                              'versionString',versionString) ;  %#ok<NASGU>
-            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
-            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
-            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            if self.ArePreferencesWritable ,
-                ws.setPreference('LastUserFilePath', absoluteFileName) ;
-            end
-            self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness_(+1) ;            
-            self.broadcast('Update') ;            
-        end  % function
-    end
+%     methods
+%         function saveUserFileGivenFileName(self, fileName)
+%             self.changeReadiness_(-1) ;
+%             if ws.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end                        
+%             userSettings = ws.encodeForPersistence(self) ;
+%             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
+%             versionString = ws.versionString() ;
+%             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+%                               'versionString',versionString) ;  %#ok<NASGU>
+%             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
+%             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
+%             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+%             if self.ArePreferencesWritable ,
+%                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
+%             end
+%             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
+%             self.changeReadiness_(+1) ;            
+%             self.broadcast('Update') ;            
+%         end  % function
+%     end
     
 %     methods
 %         function set.AbsoluteProtocolFileName(self,newValue)
@@ -2617,15 +2617,15 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %         end
 %     end
 
-    methods
-        function updateFastProtocol(self)
-            % Called by one of the child FastProtocol's when it is changed
-            self.broadcast('UpdateFastProtocols');
-            self.broadcast('Update');  % need to update main window also
-        end
-    end
+%     methods
+%         function updateFastProtocol(self)
+%             % Called by one of the child FastProtocol's when it is changed
+%             self.broadcast('UpdateFastProtocols');
+%             self.broadcast('Update');  % need to update main window also
+%         end
+%     end
 
-    methods
+%     methods
 %         function result = allDigitalTerminalIDs(self)
 %             nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
 %             result = 0:(nDigitalTerminalIDsInHardware-1) ;              
@@ -2647,7 +2647,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
 %             result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
 %         end
-    end
+%     end
     
     methods
         function setSingleDOChannelTerminalID(self, iChannel, terminalID)
@@ -3414,7 +3414,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             fastProtocol = self.FastProtocols_{selectedIndex} ;
             fastProtocol.ProtocolFileName = '' ;
             fastProtocol.AutoStartType = 'do_nothing' ;
-            self.updateFastProtocol() ;
+            self.broadcast('UpdateFastProtocols');
+            self.broadcast('Update');  % need to update main window also            
         end  % method
         
 %         function result = selectedFastProtocolFileName(self)
@@ -3479,15 +3480,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     %    ws.setPreference('LastProtocolFilePath', newValue) ;
                     %end
                 catch exception
-                    self.updateFastProtocol() ;
+                    self.broadcast('UpdateFastProtocols');
+                    self.broadcast('Update');  % need to update main window also                    
                     rethrow(exception) ;
                 end
             else
-                self.updateFastProtocol() ;
+                self.broadcast('UpdateFastProtocols');
+                self.broadcast('Update');  % need to update main window also                    
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
-            self.updateFastProtocol() ;
+            self.broadcast('UpdateFastProtocols');
+            self.broadcast('Update');  % need to update main window also            
         end  % method        
                 
         function incrementSessionIndex(self)
