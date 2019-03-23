@@ -15,8 +15,7 @@ classdef SaveAndLoadProtocolWithUserClassTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;            
-            wsModel.ArePreferencesWritable = false ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;            
 
             wsModel.UserClassName = 'ws.examples.UserClassWithFigs' ;
             wsModel.TheUserObject.Greeting = 'This is a test.  This is only a test.' ;
@@ -26,8 +25,8 @@ classdef SaveAndLoadProtocolWithUserClassTestCase < matlab.unittest.TestCase
             delete(wsModel) ;
             wsModel = [] ;  %#ok<NASGU>
             
-            wsModel2 = wavesurfer('--nogui') ;
-            wsModel2.ArePreferencesWritable = false ;
+            wsModel2 = wavesurfer('--nogui', '--noprefs') ;
+            %wsModel2.DoUsePreferences = false ;
             wsModel2.do('openProtocolFileGivenFileName', protocolFilePath) ;
             delete(wsModel2) ;
             wsModel2 = [] ;  %#ok<NASGU>

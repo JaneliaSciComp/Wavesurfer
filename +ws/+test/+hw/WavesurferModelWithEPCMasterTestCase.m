@@ -120,8 +120,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
         function testUpdateBeforeRunCheckbox(self)
             % Create a WavesurferModel
             isAwake = true ;
-            wsModel = ws.WavesurferModel(isAwake) ;
-            wsModel.ArePreferencesWritable = false ;
+            doUsePreferences = false ;
+            wsModel = ws.WavesurferModel(isAwake, [], doUsePreferences) ;
             %wsModel = wavesurfer('--nogui') ;
             
             % Load configuration file with one Heka EPC electrode

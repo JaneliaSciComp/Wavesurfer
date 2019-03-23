@@ -16,10 +16,9 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function testFastProtocolSpeed(self)
-            [wsModel, wsController] = wavesurfer() ;            
+            [wsModel, wsController] = wavesurfer('--noprefs') ;            
             % Load 1 cfg file with 6 electrodes into fast protocol
             %fastProtocol = wsModel.FastProtocols{1};
-            wsModel.ArePreferencesWritable = false ;            
             thisDirName = fileparts(mfilename('fullpath')) ;
             wsModel.setFastProtocolProperty(1, ...
                                             'ProtocolFileName', ...
