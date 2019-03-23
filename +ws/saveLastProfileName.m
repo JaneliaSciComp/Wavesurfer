@@ -1,4 +1,4 @@
-function setLastProfileName(newValue)
+function saveLastProfileName(profileName)
    appDataPath = getenv('APPDATA') ;
    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer') ;
    [didSucceed, ~, ~] = mkdir(preferencesFolderPath) ;
@@ -11,6 +11,6 @@ function setLastProfileName(newValue)
    else
        fileContents = struct() ;
    end
-   fileContents.('LastProfileName') = newValue ;  %#ok<STRNU>
+   fileContents.('LastProfileName') = profileName ;  %#ok<STRNU>
    save(lastProfileNameFilePath, '-struct', 'fileContents') ;
 end

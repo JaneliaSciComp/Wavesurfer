@@ -7,8 +7,8 @@ function varargout = wavesurfer(varargin)
     %   "WAVESURFER <protocolFileName>" launches the WaveSurfer GUI,
     %   opening the named protocol file on launch.
     %
-    %   "WAVESURFER --debug" launches WaveSurfer in debugging mode.  This
-    %   makes the satellite process windows visible instead of hidden.
+    %   "WAVESURFER --noprefs" causes WaveSurfer to neither read nor write
+    %   preferences.  This is useful for debugging.
     %
     %   "WAVESURFER --nogui" launches WaveSurfer without the graphical user
     %   interface.
@@ -31,11 +31,11 @@ function varargout = wavesurfer(varargin)
     fprintf('Starting WaveSurfer...');
     
     % Process arguments
-    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly] = processArguments(varargin) ;
+    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doUsePreferences] = processArguments(varargin) ;
     
     % Create the application (model) object.
     isAwake = true ;
-    model = ws.WavesurferModel(isAwake, ~isCommandLineOnly);
+    model = ws.WavesurferModel(isAwake, ~isCommandLineOnly, doUsePreferences);
 
     % Start the controller, if desired
     if isCommandLineOnly ,
@@ -101,12 +101,12 @@ end  % function
 
 
 
-function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(args)
+function [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doUsePreferences] = processArguments(args)
     % Deal with --debug, --nodebug
-    isDebugMatch = strcmp('--debug', args) ;
-    isNoDebugMatch = strcmp('--nodebug', args) ;
-    doRunInDebugMode = any(isDebugMatch) ;    
-    argsWithoutDebug = args(~(isDebugMatch|isNoDebugMatch)) ;
+    isPreferencesMatch = strcmp('--prefs', args) ;
+    isNoPreferencesMatch = strcmp('--noprefs', args) ;
+    doUsePreferences = any(isPreferencesMatch) ;    
+    argsWithoutDebug = args(~(isPreferencesMatch|isNoPreferencesMatch)) ;
 
     % Deal with --gui, --nogui
     isGuiMatch = strcmp('--gui', argsWithoutDebug) ;
@@ -116,11 +116,11 @@ function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCo
     
     % Deal with the rest of the args
     if isempty(argsLeft) ,
-        wasProtocolOrMDFFileNameGivenAtCommandLine = false ;
-        protocolOrMDFFileName = '' ;
+        wasProtocolFileNameGivenAtCommandLine = false ;
+        protocolFileName = '' ;
     elseif isscalar(argsLeft) ,
-        wasProtocolOrMDFFileNameGivenAtCommandLine = true ;
-        protocolOrMDFFileName = argsLeft{1} ;        
+        wasProtocolFileNameGivenAtCommandLine = true ;
+        protocolFileName = argsLeft{1} ;        
     else
         % too many args
         error('ws:tooManyArgsToWavesurfer', ...

@@ -1,4 +1,4 @@
-function result = getLastProfileName()
+function result = loadLastProfileName()
     appDataPath = getenv('APPDATA') ;
     preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer') ;
     lastProfileNameFilePath = fullfile(preferencesFolderPath, 'last-profile-name.mat') ;

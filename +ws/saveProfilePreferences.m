@@ -1,4 +1,4 @@
-function setProfilePreferences(profileName, rawPreferences)
+function saveProfilePreferences(profileName, rawPreferences)
    appDataPath = getenv('APPDATA') ;
    preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
    [didSucceed, ~, ~] = mkdir(preferencesFolderPath) ;

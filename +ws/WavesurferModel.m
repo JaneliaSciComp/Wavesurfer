@@ -160,7 +160,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
         
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
-        ArePreferencesWritable_ = true
+        DoUsePreferences_ = true
         TheBigTimer_ = []
         AllowTimerCallback_ = true ;
         CurrentProfileName_
@@ -214,7 +214,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         AcquisitionTriggerIndex  % this is an index into Schemes
         StimulationUsesAcquisitionTrigger  % boolean
         StimulationTriggerIndex  % this is an index into Schemes
-        ArePreferencesWritable
+        DoUsePreferences
         DoesProtocolNeedSave
         
         IsGeneralSettingsFigureVisible
@@ -419,7 +419,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end
 
     methods
-        function self = WavesurferModel(isAwake, isHeaded)
+        function self = WavesurferModel(isAwake, isHeaded, doUsePreferences)
             %self@ws.Model();
             
             if ~exist('isAwake','var') || isempty(isAwake) ,
@@ -432,11 +432,20 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                 isHeaded = false ;                
             end         
+            if isAwake ,
+                if ~exist('doUsePreferences','var') || isempty(doUsePreferences) ,
+                    doUsePreferences = true ;
+                end
+            else
+                doUsePreferences = false ;                
+            end                     
+            
             %doRunInDebugMode = true ;
             %dbstop('if','error') ;
             
             self.IsAwake_ = isAwake ;
             self.IsHeaded_ = isHeaded ;
+            self.DoUsePreferences_ = doUsePreferences ;
             
             self.VersionString_ = ws.versionString() ;
             
@@ -506,14 +515,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Set the protocol file name
             if isAwake ,
                 %self.addStarterChannelsAndStimulusLibrary() ;
-                profileName = ws.getLastProfileName() ;
-                self.CurrentProfileName_ = profileName ;
-                self.ProfileNames_ = ws.getProfileNames() ;  % read from disk; these will be sorted
+                self.loadProfileNameAndNames_() ;                
+                self.loadPreferences_(profileName) ;
                 
-                preferences = ws.getProfilePreferences(profileName) ;
-                self.syncPreferences_(preferences) ;
-                
-                lastProtocolFilePath = self.LastProtocolFilePath_ ;  % just loaded from disk 
+                lastProtocolFilePath = self.LastProtocolFilePath_ ;  % just loaded from disk, typically 
                 lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
                 if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
                     protocolFileFolderPath = pwd() ;
@@ -569,8 +574,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 
                 % Try to save the preferences
                 try
-                    preferences = self.packagePreferences() ;                 
-                    ws.setProfilePreferences(self.CurrentProfileName, preferences) ;
+                    self.savePreferences_(self.CurrentProfileName_) ;  
+                        % if the above fails, we don't try to save self.CurrentProfileName to the
+                        % LastProfileName as stored on disk
+                    self.saveLastProfileName_() ;
                 catch me
                     fprintf('Unable to save the preferences in WSM delete() method.  Error was: %s\n', me.message) ;
                 end                    
@@ -2471,9 +2478,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
             self.DoesProtocolNeedSave_ = false ;
-            if self.ArePreferencesWritable , 
-                self.LastProtocolFilePath_ = absoluteFileName ;
-            end
+            self.LastProtocolFilePath_ = absoluteFileName ;
             
             self.broadcast('UpdateLogging') ;
             self.broadcast('UpdateUserCodeManager') ;
@@ -2531,10 +2536,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
             self.DoesProtocolNeedSave_ = false ;
-            if self.ArePreferencesWritable ,
-                %ws.setPreference('LastProtocolFilePath', absoluteFileName);
-                self.LastProtocolFilePath_ = absoluteFileName ;
-            end
+            self.LastProtocolFilePath_ = absoluteFileName ;
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1);            
@@ -2566,7 +2568,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             self.mimicUserSettings_(newModel) ;
 %             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
 %             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-%             if self.ArePreferencesWritable ,
+%             if self.DoUsePreferences ,
 %                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
 %             end
 %             self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
@@ -2592,7 +2594,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
 %             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
 %             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-%             if self.ArePreferencesWritable ,
+%             if self.DoUsePreferences ,
 %                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
 %             end
 %             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
@@ -3476,7 +3478,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 fastProtocol = self.FastProtocols_{index} ;
                 try 
                     fastProtocol.(propertyName) = newValue ;
-                    %if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
+                    %if isequal(propertyName, 'ProtocolFileName') && self.DoUsePreferences ,
                     %    ws.setPreference('LastProtocolFilePath', newValue) ;
                     %end
                 catch exception
@@ -6667,17 +6669,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             encoding.StimulusLibrary = encodingOfPropertyValue ;
 %         end
         
-        function result = get.ArePreferencesWritable(self)
-            result = self.ArePreferencesWritable_ ;
+        function result = get.DoUsePreferences(self)
+            result = self.DoUsePreferences_ ;
         end
         
-        function set.ArePreferencesWritable(self, rawNewValue)
+        function set.DoUsePreferences(self, rawNewValue)
             if (islogical(rawNewValue) || isnumeric(rawNewValue)) && isscalar(rawNewValue) && isfinite(rawNewValue) ,
                 newValue = logical(rawNewValue) ;
-                self.ArePreferencesWritable_ = newValue ;
+                self.DoUsePreferences_ = newValue ;
             else
                 error('ws:invalidPropertyValue', ...
-                      'ArePreferencesWritable must be a scalar, and must be logical or numeric and finite') ;
+                      'DoUsePreferences must be a scalar, and must be logical or numeric and finite') ;
             end               
         end        
 
@@ -7195,19 +7197,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.CurrentProfileName_ ;            
         end
 
-        function set.CurrentProfileName(self, newValue)
+        function set.CurrentProfileName(self, newProfileName)
             profileNames = self.ProfileNames_ ;
-            if ws.isString(newValue) && ismember(newValue, profileNames) ,
-                preferences = self.packagePreferences() ;
-                ws.setProfilePreferences(self.CurrentProfileName, preferences) ;
+            if ws.isString(newProfileName) && ismember(newProfileName, profileNames) ,
+                self.savePreferences_(self.CurrentProfileName) ;
                 try
-                    newPreferences = ws.getProfilePreferences(newValue) ;
+                    self.loadPreferences_(newProfileName) ;
                 catch err
                     self.broadcast('Update') ;
                     error('Unable to load preferences for new profile') ;
                 end                                                        
-                self.CurrentProfileName_ = newValue ;
-                self.syncPreferences_(newPreferences) ;
+                self.CurrentProfileName_ = newProfileName ;
             else
                 self.broadcast('Update') ;
                 error('ws:invalidPropertyValue', ...
@@ -7256,8 +7256,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             if didFindAvailableName ,
                 % Write the current preferences to the current profile
-                preferences = self.packagePreferences() ;
-                ws.setProfilePreferences(self.CurrentProfileName, preferences) ;                
+                self.savePreferences_(self.CurrentProfileName) ;
                 % Change state to accord with the new profile
                 self.CurrentProfileName_ = newProfileName ;
                 newProfileNames = sort(horzcat(self.ProfileNames_, {newProfileName})) ;
@@ -7291,7 +7290,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Get current values out of self
             oldProfileName = self.CurrentProfileName ;            
             oldProfileNames = self.ProfileNames_ ;
-            preferences = self.packagePreferences() ;
             
             % Check for name collision
             if ismember(newProfileName, oldProfileNames) ,
@@ -7313,7 +7311,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Make sure the new name is valid by trying to write out the preferences under
             % the new name
             try
-                ws.setProfilePreferences(newProfileName, preferences) ;
+                self.savePreferences_(newProfileName) ;
             catch err
                 error('%s is not an allowed profile name', newProfileName) ;
             end            
@@ -7333,31 +7331,50 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
     end  % public methods block
     
-    methods (Access = protected)
-        function syncPreferences_(self, preferences)
-            % Set the state of self to match the given preferences
-            lastProtocolFilePath = preferences.LastProtocolFilePath ;                
-            self.LastProtocolFilePath_ = lastProtocolFilePath ; 
-
-            % Restore the fast protocols from the profile preferences
-            fastProtocolsAsStruct = preferences.FastProtocols ;
-            nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
-            for i = 1:nFastProtocolsToSet ,
-                self.FastProtocols_{i}.setPropertyValue_('ProtocolFileName_', fastProtocolsAsStruct(i).ProtocolFileName) ;
-                self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
+    methods (Access = protected)        
+        function loadProfileNameAndNames_(self)
+            if self.DoUsePreferences_ ,
+                profileName = ws.loadLastProfileName() ;
+                profileNames = ws.loadProfileNames() ;  % read from disk; these will be sorted
+            else
+                profileName = 'Default' ;
+                profileNames = { profileName } ;
             end
+            self.CurrentProfileName_ = profileName ;
+            self.CurrentProfileNames_ = profileNames ;
+        end
+        
+        function saveLastProfileName_(self) 
+            if self.DoUsePreferences_ ,
+                profileName = self.CurrentProfileName_ ;
+                ws.saveLastProfileName(profileName) ;
+            end            
         end
         
         function savePreferences_(self, profileName)
-            preferences = self.packagePreferences() ;
-            %profileName = self.CurrentProfileName_ ;
-            ws.setProfilePreferences(profileName, preferences) ;
+            if self.DoUsePreferences_ ,
+                preferences = self.packagePreferences() ;
+                ws.saveProfilePreferences(profileName, preferences) ;
+            end
         end
 
         function loadPreferences_(self, profileName)
-            %profileName = self.CurrentProfileName_ ;
-            preferences = ws.getProfilePreferences(profileName) ;
-            self.syncPreferences_(preferences) ;
+            if self.DoUsePreferences_ ,
+                % Load the preferences from disk
+                preferences = ws.loadProfilePreferences(profileName) ;
+
+                % Set the state of self to match the given preferences
+                lastProtocolFilePath = preferences.LastProtocolFilePath ;                
+                self.LastProtocolFilePath_ = lastProtocolFilePath ; 
+
+                % Restore the fast protocols from the profile preferences
+                fastProtocolsAsStruct = preferences.FastProtocols ;
+                nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
+                for i = 1:nFastProtocolsToSet ,
+                    self.FastProtocols_{i}.setPropertyValue_('ProtocolFileName_', fastProtocolsAsStruct(i).ProtocolFileName) ;
+                    self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
+                end
+            end
         end        
     end  % protected methods block
     

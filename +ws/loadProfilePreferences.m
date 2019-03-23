@@ -1,4 +1,4 @@
-function result = getProfilePreferences(profileName)
+function result = loadProfilePreferences(profileName)
     appDataPath = getenv('APPDATA') ;
     preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
     preferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', profileName)) ;

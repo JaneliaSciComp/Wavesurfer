@@ -1,4 +1,4 @@
-function result = getProfileNames()
+function result = loadProfileNames()
     appDataPath = getenv('APPDATA') ;
     preferencesFolderPath = fullfile(appDataPath, 'janelia', 'wavesurfer', 'profiles') ;
     matFileNames = ws.simpleDir(fullfile(preferencesFolderPath, '*.mat')) ;
