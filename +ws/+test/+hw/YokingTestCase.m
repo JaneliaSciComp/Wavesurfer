@@ -16,7 +16,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testPlayFromWS(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;
@@ -28,7 +28,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testRecordFromWS(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;
@@ -77,7 +77,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
 
         function testMessageReceptionFromSI(self)
-            wsModel = wavesurfer('--nogui') ;            
+            wsModel = wavesurfer('--nogui', '--noprefs') ;            
             %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
@@ -135,7 +135,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         
         function testFECDeleting(self)
             fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.setIsYokedToScanImageForTesting_(true) ;  % should create a FEC
             fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
