@@ -18,7 +18,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
         function testCorrectNumberOfElectrodes(self)
             thisDirName=fileparts(mfilename('fullpath'));
             %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
-            [wsModel,wsController] = wavesurfer() ;
+            [wsModel,wsController] = wavesurfer('--noprefs') ;
 
 %             % Add the channels
 %             wsModel.addAIChannel() ;
@@ -76,7 +76,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
         end  % function
         
         function testDimensionsOfGain(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             gainOrResistanceWithNiceUnits = wsModel.getGainOrResistancePerTestPulseElectrodeWithNiceUnits() ;
             self.verifyEmpty(gainOrResistanceWithNiceUnits) ;
             wsModel.addNewElectrode() ;
