@@ -4,18 +4,19 @@ classdef YokingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            %ws.reset() ;
+            ws.clearDuringTests() ;
         end
     end
 
     methods (Test)
         function testPlayFromWS(self)
+            %fprintf('testPlayFromWS:\n') ;
             wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
@@ -28,6 +29,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testRecordFromWS(self)
+            %fprintf('testRecordFromWS:\n') ;
             wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
@@ -45,6 +47,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
 
         function testSavingAndOpeningOfProtocolFromWS(self)
+            %fprintf('testSavingAndOpeningOfProtocolFromWS:\n') ;
             wsModel = wavesurfer('--nogui', '--noprefs') ;
             %wsModel.DoUsePreferences = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
@@ -60,7 +63,8 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testSavingAndOpeningOfUserSettingsFromWS(self)
-            wsModel = wavesurfer('--nogui', '--noprefs') ;            
+            %fprintf('testSavingAndOpeningOfUserSettingsFromWS:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             %wsModel.DoUsePreferences = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;            
             pause(5) ;  % wait for other process to start            
@@ -77,6 +81,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
 
         function testMessageReceptionFromSI(self)
+            %fprintf('testMessageReceptionFromSI:\n') ;
             wsModel = wavesurfer('--nogui', '--noprefs') ;            
             %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
@@ -134,11 +139,13 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testFECDeleting(self)
+            %fprintf('testFECDeleting:\n') ;
             fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
             wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.setIsYokedToScanImageForTesting_(true) ;  % should create a FEC
             fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;  % should delete a FEC
             wsModel.delete() ;
             fecCountAfter = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore, fecCountAfter) ;
