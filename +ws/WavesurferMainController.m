@@ -22,6 +22,7 @@ classdef WavesurferMainController < ws.Controller
         ChannelsMenuItem
         TriggersMenuItem
         StimulusLibraryMenuItem
+        StimulusPreviewMenuItem
         UserCodeManagerMenuItem
         ElectrodesMenuItem
         TestPulseMenuItem
@@ -82,14 +83,15 @@ classdef WavesurferMainController < ws.Controller
         
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
-        GeneralSettingsController = [] ;
-        ChannelsController = [];
-        StimulusLibraryController = [];
-        TriggersController = [];
-        UserCodeManagerController = [];
-        ElectrodeManagerController= [];        
-        TestPulserController = [];
-        FastProtocolsController = [];
+        GeneralSettingsController
+        ChannelsController
+        StimulusLibraryController
+        StimulusPreviewController
+        TriggersController
+        UserCodeManagerController
+        ElectrodeManagerController
+        TestPulserController
+        FastProtocolsController
     end    
     
     properties (Access=protected, Transient)
@@ -119,6 +121,7 @@ classdef WavesurferMainController < ws.Controller
             self.GeneralSettingsController = ws.GeneralSettingsController(model) ;
             self.ChannelsController = ws.ChannelsController(model) ;
             self.StimulusLibraryController = ws.StimulusLibraryController(model) ;
+            self.StimulusPreviewController = ws.StimulusPreviewController(model) ;
             self.TriggersController = ws.TriggersController(model) ;
             self.UserCodeManagerController = ws.UserCodeManagerController(model) ;
             self.ElectrodeManagerController = ws.ElectrodeManagerController(model, self) ;
@@ -209,6 +212,7 @@ classdef WavesurferMainController < ws.Controller
             ws.deleteIfValidHandle(self.GeneralSettingsController) ;
             ws.deleteIfValidHandle(self.ChannelsController) ;
             ws.deleteIfValidHandle(self.StimulusLibraryController) ;
+            ws.deleteIfValidHandle(self.StimulusPreviewController) ;
             ws.deleteIfValidHandle(self.TriggersController) ;
             ws.deleteIfValidHandle(self.UserCodeManagerController) ;
             ws.deleteIfValidHandle(self.ElectrodeManagerController) ;
@@ -319,6 +323,10 @@ classdef WavesurferMainController < ws.Controller
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Checked', 'off', ...
                        'Label','Stimulus Library...');
+            self.StimulusPreviewMenuItem = ...
+                uimenu('Parent',self.ProtocolMenu, ...
+                       'Checked', 'off', ...
+                       'Label','Stimulus Preview...');
             self.TriggersMenuItem = ...
                 uimenu('Parent',self.ProtocolMenu, ...
                        'Checked', 'off', ...
@@ -768,6 +776,7 @@ classdef WavesurferMainController < ws.Controller
             set(self.GeneralSettingsMenuItem, 'Checked', ws.onIff(wsModel.IsGeneralSettingsFigureVisible));
             set(self.ChannelsMenuItem, 'Checked', ws.onIff(wsModel.IsChannelsFigureVisible));
             set(self.StimulusLibraryMenuItem, 'Checked', ws.onIff(wsModel.IsStimulusLibraryFigureVisible));
+            set(self.StimulusPreviewMenuItem, 'Checked', ws.onIff(wsModel.IsStimulusPreviewFigureVisible));
             set(self.TriggersMenuItem, 'Checked', ws.onIff(wsModel.IsTriggersFigureVisible));
             set(self.UserCodeManagerMenuItem, 'Checked', ws.onIff(wsModel.IsUserCodeManagerFigureVisible));
             set(self.ElectrodesMenuItem, 'Checked', ws.onIff(wsModel.IsElectrodeManagerFigureVisible));
@@ -946,6 +955,7 @@ classdef WavesurferMainController < ws.Controller
               % user can get at radiobutton for untimed DO channels,
               % if desired.
             set(self.StimulusLibraryMenuItem,'Enable',ws.onIff(isIdle));
+            set(self.StimulusPreviewMenuItem,'Enable',ws.onIff(isIdle));
             set(self.TriggersMenuItem,'Enable',ws.onIff(isIdle));
             set(self.UserCodeManagerMenuItem,'Enable',ws.onIff(isIdle));            
             set(self.ElectrodesMenuItem,'Enable',ws.onIff(isIdle));
@@ -1643,6 +1653,11 @@ classdef WavesurferMainController < ws.Controller
             self.Model_.IsStimulusLibraryFigureVisible = true ;
         end
         
+        function StimulusPreviewMenuItemActuated(self,source,event) %#ok<INUSD>
+            self.Model_.IsStimulusPreviewFigureVisible = false ;
+            self.Model_.IsStimulusPreviewFigureVisible = true ;
+        end
+        
         function UserCodeManagerMenuItemActuated(self,source,event) %#ok<INUSD>
             %self.showAndRaiseChildFigure_('UserCodeManagerController') ;
             self.Model_.IsUserCodeManagerFigureVisible = false ;
@@ -1859,6 +1874,7 @@ classdef WavesurferMainController < ws.Controller
             self.GeneralSettingsController.setAreUpdatesEnabledForFigure(newValue) ;
             self.ChannelsController.setAreUpdatesEnabledForFigure(newValue) ;
             self.StimulusLibraryController.setAreUpdatesEnabledForFigure(newValue) ;
+            self.StimulusPreviewController.setAreUpdatesEnabledForFigure(newValue) ;
             self.TriggersController.setAreUpdatesEnabledForFigure(newValue) ;
             self.UserCodeManagerController.setAreUpdatesEnabledForFigure(newValue) ;
             self.ElectrodeManagerController.setAreUpdatesEnabledForFigure(newValue) ;
@@ -1876,6 +1892,7 @@ classdef WavesurferMainController < ws.Controller
             self.GeneralSettingsController.syncFigurePositionFromModel(monitorPositions) ;            
             self.ChannelsController.syncFigurePositionFromModel(monitorPositions) ;            
             self.StimulusLibraryController.syncFigurePositionFromModel(monitorPositions) ;            
+            self.StimulusPreviewController.syncFigurePositionFromModel(monitorPositions) ;            
             self.TriggersController.syncFigurePositionFromModel(monitorPositions) ;            
             self.UserCodeManagerController.syncFigurePositionFromModel(monitorPositions) ;            
             self.ElectrodeManagerController.syncFigurePositionFromModel(monitorPositions) ;            
@@ -2022,6 +2039,7 @@ classdef WavesurferMainController < ws.Controller
             self.ChannelsController.setFigurePositionInModel() ;
             self.TriggersController.setFigurePositionInModel() ;
             self.StimulusLibraryController.setFigurePositionInModel() ;
+            self.StimulusPreviewController.setFigurePositionInModel() ;
             self.FastProtocolsController.setFigurePositionInModel() ;
             self.UserCodeManagerController.setFigurePositionInModel() ;
             self.TestPulserController.setFigurePositionInModel() ;

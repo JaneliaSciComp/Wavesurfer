@@ -24,6 +24,7 @@ classdef AllFiguresTestCase < matlab.unittest.TestCase
             wsController.ChannelsMenuItemActuated([],[]) ;            
             wsController.TriggersMenuItemActuated([],[]) ;
             wsController.StimulusLibraryMenuItemActuated([],[]) ;        
+            wsController.StimulusPreviewMenuItemActuated([],[]) ;        
             wsController.UserCodeManagerMenuItemActuated([],[]) ;        
             wsController.ElectrodesMenuItemActuated([],[]) ;        
             wsController.TestPulseMenuItemActuated([],[]) ;        

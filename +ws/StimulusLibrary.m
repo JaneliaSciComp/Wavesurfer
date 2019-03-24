@@ -995,33 +995,61 @@ classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  %
 %             end
 %         end  % method
     
-        function plotSelectedItemBang(self, figureGH, samplingRate, channelNames, isChannelAnalog)
-            className = self.SelectedItemClassName_ ;
-            itemIndex = self.SelectedItemIndexWithinClass ;
-            self.plotItem(className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog) ;
-        end  % function                
+%         function plotSelectedItemBang(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+%             className = self.SelectedItemClassName_ ;
+%             itemIndex = self.SelectedItemIndexWithinClass ;
+%             self.plotItem(className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog) ;
+%         end  % function                
 
-        function plotItem(self, className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog)
-            if isequal(className, 'ws.StimulusSequence') ,
-                self.plotStimulusSequenceBang_(figureGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isequal(className, 'ws.StimulusMap') ,
-                axesGH = [] ;  % means to make own axes
-                self.plotStimulusMapBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
-            elseif isequal(className, 'ws.Stimulus') ,
-                axesGH = [] ;  % means to make own axes
-                self.plotStimulusBangBang_(figureGH, axesGH, itemIndex, samplingRate) ;
-            else
-                % do nothing
-            end                            
-            % Set figure name
-            if isempty(className) || isempty(itemIndex) ,
-                % do nothing
-            else
-                itemName = self.itemProperty(className, itemIndex, 'Name') ;
-                set(figureGH, 'Name', sprintf('Stimulus Preview: %s', itemName));
-            end
-        end  % function                
+%         function plotItem(self, className, itemIndex, figureGH, samplingRate, channelNames, isChannelAnalog)
+%             if isequal(className, 'ws.StimulusSequence') ,
+%                 self.plotStimulusSequenceBang_(figureGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+%             elseif isequal(className, 'ws.StimulusMap') ,
+%                 axesGH = [] ;  % means to make own axes
+%                 self.plotStimulusMapBangBang_(figureGH, axesGH, itemIndex, samplingRate, channelNames, isChannelAnalog) ;
+%             elseif isequal(className, 'ws.Stimulus') ,
+%                 axesGH = [] ;  % means to make own axes
+%                 self.plotStimulusBangBang_(figureGH, axesGH, itemIndex, samplingRate) ;
+%             else
+%                 % do nothing
+%             end                            
+%             % Set figure name
+%             if isempty(className) || isempty(itemIndex) ,
+%                 % do nothing
+%             else
+%                 itemName = self.itemProperty(className, itemIndex, 'Name') ;
+%                 set(figureGH, 'Name', sprintf('Stimulus Preview: %s', itemName));
+%             end
+%         end  % function                
 
+        function [y, t] = previewStimulus(self, stimulusIndex, sampleRate)
+            dt = 1/sampleRate ;  % s
+            stimulus = self.Stimuli_{stimulusIndex} ;
+            T = stimulus.EndTime ;  % s
+            %n=round(T/dt);
+            n = ws.nScansFromScanRateAndDesiredDuration(sampleRate, T) ;
+            t = dt * (0:(n-1))' ;  % s
+            tOffsetByHalfSample = t + dt/2 ;  % s         
+              % + dt/2 is somewhat controversial, but in the common case
+              % that pulse durations are integer multiples of dt, it
+              % ensures that each pulse is exactly (pulseDuration/dt)
+              % samples long, and avoids other unpleasant pseudorandomness
+              % when stimulus discontinuities occur right at sample times
+              %
+              % Also, this is analogous to most 2D graphics APIs, where pixel edges are on
+              % integer coords, and so pixel centers are on half-integer coords.  And for
+              % essentially the same reason: If a rectangles corners are on integers, you want
+              % the rectangle edges to be sharp.  
+            y = stimulus.calculateSignal(tOffsetByHalfSample) ;
+        end  % function                        
+        
+        function [y, t] = previewMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog)
+            y = self.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+            n = size(y,1) ;            
+            dt = 1/sampleRate ;  % s
+            t = dt*(0:(n-1))' ;            
+        end  % function
+        
         function result = itemCountInClass(self, className) 
             if isequal(className, 'ws.StimulusSequence') ,
                 result = self.NSequences ;
@@ -1444,17 +1472,24 @@ classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  %
             end
         end
         
-        function [data, nChannelsWithStimulus, mapName] = ...
-                calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
+        function data = calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
             % nBoundChannels is the number of channels *in channelNames* for which
             % a non-empty binding was found.
             if ~exist('sweepIndexWithinSet','var') || isempty(sweepIndexWithinSet) ,
                 sweepIndexWithinSet=1;
             end
+
+            % Get the channel count
+            nChannels=length(channelNames);
+            
+            % If the map index is empty, exit early
+            if isempty(mapIndex) ,
+                data = zeros(0, nChannels);
+                return
+            end
             
             % Create a timeline
-            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any            
-            %sampleCount = round(duration * sampleRate);
+            duration = self.itemProperty('ws.StimulusMap', mapIndex, 'Duration') ;  % This takes proper account of an external override, if any
             sampleCount = ws.nScansFromScanRateAndDesiredDuration(sampleRate, duration) ;
             dt=1/sampleRate;
             t = dt*(0:(sampleCount-1))' ;  % s
@@ -1466,14 +1501,13 @@ classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  %
               % when stimulus discontinuities occur right at sample times
             
             % Create the data array  
-            nChannels=length(channelNames);
             data = zeros(sampleCount, nChannels);
             
             % For each named channel, overwrite a col of data
             map = self.Maps_{mapIndex} ;  % get the map
-            mapName = map.Name ;
+            %mapName = map.Name ;
             boundChannelNames=map.ChannelName;
-            nChannelsWithStimulus = 0 ;
+            %nChannelsWithStimulus = 0 ;
             for iChannel = 1:nChannels ,
                 thisChannelName=channelNames{iChannel};
                 bindingIndex = find(strcmp(thisChannelName, boundChannelNames), 1);
@@ -1490,7 +1524,7 @@ classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  %
                         else        
                             % Calc the signal, scale it, overwrite the appropriate col of
                             % data
-                            nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
+                            %nChannelsWithStimulus = nChannelsWithStimulus + 1 ;
                             rawSignal = thisStimulus.calculateSignal(tOffsetByHalfSample, sweepIndexWithinSet);
                             multiplier = map.Multiplier(bindingIndex) ;
                             if isChannelAnalog(iChannel) ,
@@ -2336,106 +2370,106 @@ classdef StimulusLibrary < ws.Model    %  & ws.ValueComparable   % & ws.Mimic  %
             self.SelectedStimulusIndex_ = length(self.Stimuli_) ;
         end  % function        
         
-        function plotStimulusSequenceBang_(self, figureGH, sequenceIndex, sampleRate, channelNames, isChannelAnalog)
-            % Plot the current stimulus sequence in figure figureGH
-            sequence = self.Sequences_{sequenceIndex} ;
-            nBindings = sequence.NBindings ;
-            plotHeight = 1/nBindings ;
-            for bindingIndex = 1:nBindings ,
-                % subplot doesn't allow for direct specification of the
-                % target figure
-                ax=axes('Parent',figureGH, ...
-                        'OuterPosition',[0 1-bindingIndex*plotHeight 1 plotHeight]);
-                mapIndex = sequence.IndexOfEachMapInLibrary{bindingIndex} ;
-                self.plotStimulusMapBangBang_(figureGH, ax, mapIndex, sampleRate, channelNames, isChannelAnalog) ;
-                ylabel(ax,sprintf('Map %d',bindingIndex),'FontSize',10,'Interpreter','none') ;
-            end
-        end  % function
+%         function plotStimulusSequenceBang_(self, figureGH, sequenceIndex, sampleRate, channelNames, isChannelAnalog)
+%             % Plot the current stimulus sequence in figure figureGH
+%             sequence = self.Sequences_{sequenceIndex} ;
+%             nBindings = sequence.NBindings ;
+%             plotHeight = 1/nBindings ;
+%             for bindingIndex = 1:nBindings ,
+%                 % subplot doesn't allow for direct specification of the
+%                 % target figure
+%                 ax=axes('Parent',figureGH, ...
+%                         'OuterPosition',[0 1-bindingIndex*plotHeight 1 plotHeight]);
+%                 mapIndex = sequence.IndexOfEachMapInLibrary{bindingIndex} ;
+%                 self.plotStimulusMapBangBang_(figureGH, ax, mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+%                 ylabel(ax,sprintf('Map %d',bindingIndex),'FontSize',10,'Interpreter','none') ;
+%             end
+%         end  % function
         
-        function plotStimulusMapBangBang_(self, fig, ax, mapIndex, sampleRate, channelNames, isChannelAnalog)
-            if ~exist('ax','var') || isempty(ax)
-                % Make our own axes
-                ax = axes('Parent',fig);
-            end            
-            
-            % calculate the signals
-            [data, ~, mapName] = self.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
-            n=size(data,1);
-            nChannels = length(channelNames) ;
-            %assert(nChannels==size(data,2)) ;
-            
-            lines = zeros(1, size(data,2));
-            
-            dt=1/sampleRate;  % s
-            time = dt*(0:(n-1))';
-            
-            %clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
-            clist = ws.make_color_sequence() ;
-            
-            %set(ax, 'NextPlot', 'Add');
+%         function plotStimulusMapBangBang_(self, fig, ax, mapIndex, sampleRate, channelNames, isChannelAnalog)
+%             if ~exist('ax','var') || isempty(ax) ,
+%                 % Make our own axes
+%                 ax = axes('Parent',fig) ;
+%             end
+%             
+%             % calculate the signals
+%             [data, ~, mapName] = self.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+%             n = size(data,1) ;
+%             nChannels = length(channelNames) ;
+%             %assert(nChannels==size(data,2)) ;
+%             
+%             lines = zeros(1, size(data,2));
+%             
+%             dt=1/sampleRate;  % s
+%             time = dt*(0:(n-1))';
+%             
+%             %clist = 'bgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmkbgrycmk';
+%             clist = ws.make_color_sequence() ;
+%             
+%             %set(ax, 'NextPlot', 'Add');
+% 
+% %             % Get the list of all the channels in the stimulation subsystem
+% %             stimulation=stimulusLibrary.Parent;
+% %             channelNames=stimulation.ChannelName;
+%             
+%             for idx = 1:nChannels ,
+%                 % Determine the index of the output channel among all the
+%                 % output channels
+%                 thisChannelName = channelNames{idx} ;
+%                 indexOfThisChannelInOverallList = find(strcmp(thisChannelName,channelNames),1) ;
+%                 if isempty(indexOfThisChannelInOverallList) ,
+%                     % In this case the, the channel is not even in the list
+%                     % of possible channels.  (This may be b/c is the
+%                     % channel name is empty, which represents the channel
+%                     % name being unspecified in the binding.)
+%                     lines(idx) = line('Parent',ax, ...
+%                                       'XData',[], ...
+%                                       'YData',[]);
+%                 else
+%                     lines(idx) = line('Parent',ax, ...
+%                                       'XData',time, ...
+%                                       'YData',data(:,idx), ...
+%                                       'Color',clist(indexOfThisChannelInOverallList,:));
+%                 end
+%             end
+%             
+%             ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
+%             set(ax, 'XLim', [0 n*dt]) ;
+%             legend(ax, channelNames, 'Interpreter', 'None');
+%             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
+%             ylabel(ax,mapName,'FontSize',10,'Interpreter','none');
+%         end  % function
 
-%             % Get the list of all the channels in the stimulation subsystem
-%             stimulation=stimulusLibrary.Parent;
-%             channelNames=stimulation.ChannelName;
-            
-            for idx = 1:nChannels ,
-                % Determine the index of the output channel among all the
-                % output channels
-                thisChannelName = channelNames{idx} ;
-                indexOfThisChannelInOverallList = find(strcmp(thisChannelName,channelNames),1) ;
-                if isempty(indexOfThisChannelInOverallList) ,
-                    % In this case the, the channel is not even in the list
-                    % of possible channels.  (This may be b/c is the
-                    % channel name is empty, which represents the channel
-                    % name being unspecified in the binding.)
-                    lines(idx) = line('Parent',ax, ...
-                                      'XData',[], ...
-                                      'YData',[]);
-                else
-                    lines(idx) = line('Parent',ax, ...
-                                      'XData',time, ...
-                                      'YData',data(:,idx), ...
-                                      'Color',clist(indexOfThisChannelInOverallList,:));
-                end
-            end
-            
-            ws.setYAxisLimitsToAccomodateLinesBang(ax,lines);
-            set(ax, 'XLim', [0 n*dt]) ;
-            legend(ax, channelNames, 'Interpreter', 'None');
-            xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-            ylabel(ax,mapName,'FontSize',10,'Interpreter','none');
-        end  % function
-
-        function plotStimulusBangBang_(self, fig, ax, stimulusIndex, sampleRate)
-            %fig = self.PlotFigureGH_ ;            
-            if ~exist('ax','var') || isempty(ax) ,
-                ax = axes('Parent',fig) ;
-            end
-            
-            dt=1/sampleRate;  % s
-            stimulus = self.Stimuli_{stimulusIndex} ;
-            T=stimulus.EndTime;  % s
-            %n=round(T/dt);
-            n = ws.nScansFromScanRateAndDesiredDuration(sampleRate, T) ;
-            t = dt*(0:(n-1))';  % s
-            tOffsetByHalfSample = t + dt/2 ;  % s         
-              % + dt/2 is somewhat controversial, but in the common case
-              % that pulse durations are integer multiples of dt, it
-              % ensures that each pulse is exactly (pulseDuration/dt)
-              % samples long, and avoids other unpleasant pseudorandomness
-              % when stimulus discontinuities occur right at sample times
-
-            y = stimulus.calculateSignal(tOffsetByHalfSample);            
-            
-            h = line('Parent',ax, ...
-                     'XData',t, ...
-                     'YData',y);
-            
-            ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
-            set(ax, 'XLim', [0 n*dt]) ;
-            xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
-            ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
-        end  % method        
+%         function plotStimulusBangBang_(self, fig, ax, stimulusIndex, sampleRate)
+%             %fig = self.PlotFigureGH_ ;            
+%             if ~exist('ax','var') || isempty(ax) ,
+%                 ax = axes('Parent', fig) ;
+%             end
+%             
+%             dt=1/sampleRate;  % s
+%             stimulus = self.Stimuli_{stimulusIndex} ;
+%             T=stimulus.EndTime;  % s
+%             %n=round(T/dt);
+%             n = ws.nScansFromScanRateAndDesiredDuration(sampleRate, T) ;
+%             t = dt*(0:(n-1))';  % s
+%             tOffsetByHalfSample = t + dt/2 ;  % s         
+%               % + dt/2 is somewhat controversial, but in the common case
+%               % that pulse durations are integer multiples of dt, it
+%               % ensures that each pulse is exactly (pulseDuration/dt)
+%               % samples long, and avoids other unpleasant pseudorandomness
+%               % when stimulus discontinuities occur right at sample times
+% 
+%             y = stimulus.calculateSignal(tOffsetByHalfSample);            
+%             
+%             h = line('Parent',ax, ...
+%                      'XData',t, ...
+%                      'YData',y);
+%             
+%             ws.setYAxisLimitsToAccomodateLinesBang(ax,h);
+%             set(ax, 'XLim', [0 n*dt]) ;
+%             xlabel(ax,'Time (s)','FontSize',10,'Interpreter','none');
+%             ylabel(ax,stimulus.Name,'FontSize',10,'Interpreter','none');
+%         end  % method        
     end  % protected
  
 

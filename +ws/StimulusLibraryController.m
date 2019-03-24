@@ -70,7 +70,7 @@ classdef StimulusLibraryController < ws.Controller
     
     properties  (Access = protected)
         % Figure window for showing plots.
-        PlotFigureGH_
+        %PlotFigureGH_
     end
     
     methods
@@ -1040,14 +1040,14 @@ classdef StimulusLibraryController < ws.Controller
     
     methods        
         function delete(self)
-            if isempty(self.PlotFigureGH_) ,
-                % nothing to do
-            else                
-                if ishghandle(self.PlotFigureGH_) ,
-                    delete(self.PlotFigureGH_) ;
-                end
-                self.PlotFigureGH_ = [] ;
-            end
+%             if isempty(self.PlotFigureGH_) ,
+%                 % nothing to do
+%             else                
+%                 if ishghandle(self.PlotFigureGH_) ,
+%                     delete(self.PlotFigureGH_) ;
+%                 end
+%                 self.PlotFigureGH_ = [] ;
+%             end
             delete@ws.Controller(self) ;
         end
         
@@ -1231,7 +1231,7 @@ classdef StimulusLibraryController < ws.Controller
     
         function StimulusAdditionalParametersEditsActuated(self, source, event)  %#ok<INUSD>
             % This means one of the additional parameter edits was actuated
-            isMatch = (source==self.Figure.StimulusAdditionalParametersEdits) ;
+            isMatch = (source==self.StimulusAdditionalParametersEdits) ;
             iParameter = find(isMatch,1) ;
             newString = get(source,'String') ;
             self.Model_.do('setSelectedStimulusAdditionalParameter', iParameter, newString) ;
@@ -1280,16 +1280,18 @@ classdef StimulusLibraryController < ws.Controller
             end                        
         end  % function
         
-        function PreviewMenuItemActuated(self, source, event) %#ok<INUSD>
-            if isempty(self.PlotFigureGH_) || ~ishghandle(self.PlotFigureGH_) ,
-                self.PlotFigureGH_ = figure('Name', 'Stimulus Preview', ...
-                                            'Color','w', ...
-                                            'NumberTitle', 'Off');
-            end            
-            figure(self.PlotFigureGH_);  % bring plot figure to fore
-            clf(self.PlotFigureGH_);  % clear the figure            
-            self.Model_.plotSelectedStimulusLibraryItem(self.PlotFigureGH_) ;
-        end  % function                        
+        function PreviewMenuItemActuated(self, source, event)  %#ok<INUSD>
+            self.Model_.IsStimulusPreviewFigureVisible = false ;
+            self.Model_.IsStimulusPreviewFigureVisible = true ;
+%             if isempty(self.PlotFigureGH_) || ~ishghandle(self.PlotFigureGH_) ,
+%                 self.PlotFigureGH_ = figure('Name', 'Stimulus Preview', ...
+%                                             'Color','w', ...
+%                                             'NumberTitle', 'Off');
+%             end            
+%             figure(self.PlotFigureGH_);  % bring plot figure to fore
+%             clf(self.PlotFigureGH_);  % clear the figure            
+%             self.Model_.plotSelectedStimulusLibraryItem(self.PlotFigureGH_) ;
+        end  % function
     end  % public methods block
     
     methods (Access = protected)

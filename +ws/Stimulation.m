@@ -703,8 +703,16 @@ classdef Stimulation < ws.Model
             self.StimulusLibrary_.setSelectedItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
         end  % method        
         
-        function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
-            self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+%         function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+%             self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+%         end  % function            
+
+        function [y, t] = previewStimulus(self, stimulusIndex, sampleRate)
+            [y, t] = self.StimulusLibrary_.previewStimulus(stimulusIndex, sampleRate) ;
+        end  % function            
+        
+        function [y, t] = previewStimulusMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog)
+            [y, t] = self.StimulusLibrary_.previewMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
         end  % function            
         
         function result = selectedStimulusLibraryItemProperty(self, propertyName)
@@ -845,9 +853,9 @@ classdef Stimulation < ws.Model
             result = self.StimulusLibrary_.getCurrentStimulusMapIndex(episodeIndexWithinSweep, doRepeatSequence) ;
         end        
         
-        function [data, nChannelsWithStimulus, mapName] = ...
+        function data = ...
                 calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
-            [data, nChannelsWithStimulus, mapName] = ...
+            data = ...
                 self.StimulusLibrary_.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet) ;
         end
         

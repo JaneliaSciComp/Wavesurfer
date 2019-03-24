@@ -220,6 +220,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         IsGeneralSettingsFigureVisible
         IsChannelsFigureVisible
         IsStimulusLibraryFigureVisible
+        IsStimulusPreviewFigureVisible
         IsTriggersFigureVisible
         IsUserCodeManagerFigureVisible
         IsElectrodeManagerFigureVisible
@@ -230,6 +231,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         GeneralSettingsFigurePosition
         ChannelsFigurePosition
         StimulusLibraryFigurePosition
+        StimulusPreviewFigurePosition
         TriggersFigurePosition
         UserCodeManagerFigurePosition
         ElectrodeManagerFigurePosition
@@ -278,6 +280,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         IsGeneralSettingsFigureVisible_ = false
         IsChannelsFigureVisible_ = false
         IsStimulusLibraryFigureVisible_ = false
+        IsStimulusPreviewFigureVisible_ = false
         IsTriggersFigureVisible_ = false
         IsUserCodeManagerFigureVisible_ = false
         IsElectrodeManagerFigureVisible_ = false
@@ -287,6 +290,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         GeneralSettingsFigurePosition_ = []
         ChannelsFigurePosition_ = []
         StimulusLibraryFigurePosition_ = []
+        StimulusPreviewFigurePosition_ = []
         TriggersFigurePosition_ = []
         UserCodeManagerFigurePosition_ = []
         ElectrodeManagerFigurePosition_ = []
@@ -369,6 +373,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
+        UpdateStimulusPreview
         UpdateFastProtocols
         UpdateLogging
         UpdateElectrodeManager
@@ -1004,6 +1009,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.Stimulation_.releaseStimulusLibraryMapDuration() ;
             end 
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
         end  
         
         function notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_(self)
@@ -1117,6 +1123,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end            
             self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function 
@@ -1152,6 +1159,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
 %             end            
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateChannels') ;          
             self.broadcast('DidMaybeChangeProtocol') ;            
         end  % function 
@@ -2492,6 +2500,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('DidSetDataCache') ;
             self.broadcast('UpdateDisplay') ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateTriggering') ;
             self.broadcast('Update') ;            
             self.broadcast('LayoutAllWindows') ;
@@ -2745,6 +2754,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.broadcast('UpdateTestPulser') ;                
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
             end
         end
         
@@ -2792,6 +2802,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
+                self.broadcast('UpdateStimulusPreview') ;
                 %self.Ephys_.didChangeNumberOfOutputChannels();
                 self.broadcast('EMDidChangeNumberOfOutputChannels');
                 self.broadcast('UpdateTestPulser') ;                                
@@ -2875,6 +2886,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %               % generally be better, but I'm afraid of introducing new
 %               % bugs...
             self.broadcast('UpdateStimulusLibrary');
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2895,6 +2907,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
+            self.broadcast('UpdateStimulusPreview') ;
             %self.Ephys_.didChangeNumberOfOutputChannels();
             self.broadcast('EMDidChangeNumberOfOutputChannels');            
             self.broadcast('UpdateTestPulser') ;            
@@ -4075,11 +4088,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 self.broadcast('Update') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;                            
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('Update') ;
         end  % function
         
         function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
@@ -4088,9 +4103,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
@@ -4100,9 +4117,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('Update') ;                
         end  % function
         
@@ -4112,9 +4131,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
@@ -4124,9 +4145,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
@@ -4136,9 +4159,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
@@ -4148,9 +4173,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
@@ -4160,9 +4187,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('Update') ;  % Need to update the list of outputables                            
         end  % function        
         
@@ -4182,9 +4211,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
@@ -4194,9 +4225,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
@@ -4210,9 +4243,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('Update') ;                
         end  % function        
         
@@ -4230,12 +4265,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             if didSetOutputableName ,
                 self.broadcast('Update') ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function       
         
@@ -4245,9 +4282,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
@@ -4257,9 +4296,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
             
@@ -4279,9 +4320,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
@@ -4295,18 +4338,32 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
-        function plotSelectedStimulusLibraryItem(self, figureGH)
+%         function plotSelectedStimulusLibraryItem(self, figureGH)
+%             sampleRate = self.StimulationSampleRate ;  % Hz 
+%             channelNames = [self.AOChannelNames self.DOChannelNames] ;
+%             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
+%             self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
+%         end  % function
+        
+        function [y, t] = previewStimulus(self, stimulusIndex)
+            sampleRate = self.StimulationSampleRate ;  % Hz 
+            [y, t] = self.Stimulation_.previewStimulus(stimulusIndex, sampleRate) ;
+        end
+        
+        function [y, t] = previewStimulusMap(self, mapIndex)
             sampleRate = self.StimulationSampleRate ;  % Hz 
             channelNames = [self.AOChannelNames self.DOChannelNames] ;
             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
-            self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
-        end  % function      
+            [y, t] = self.Stimulation_.previewStimulusMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+        end
         
         function result = selectedStimulusLibraryItemProperty(self, propertyName)
             result = self.Stimulation_.selectedStimulusLibraryItemProperty(propertyName) ;
@@ -4387,6 +4444,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             % Special case to deal with renaming an outputable
@@ -4395,7 +4453,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                 self.broadcast('DidMaybeChangeProtocol') ;                
             end
-            self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
         end        
         
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
@@ -4404,9 +4463,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                        
         
@@ -4420,9 +4481,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('Update') ;  % Need to update the list of outputables, maybe
         end
         
@@ -4432,9 +4495,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || ~isequal(propertyName, 'IsMarkedForDeletion') ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
@@ -4444,10 +4509,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 self.broadcast('Update') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('Update') ;
         end  % function        
         
@@ -6734,7 +6801,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end            
         end  % function                
         
-        function [aoDataScaledAndLimited, nScans, nChannelsWithStimulus] = getAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
+        function aoDataScaledAndLimited = getAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
             % Get info about which analog channels are in the task
             isInTaskForEachAOChannel = ~self.IsAOChannelTerminalOvercommitted ;
             %isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
@@ -6743,13 +6810,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Calculate the signals
             if isempty(stimulusMapIndex) ,
                 aoData = zeros(0,nAnalogChannelsInTask) ;
-                nChannelsWithStimulus = 0 ;
+                %nChannelsWithStimulus = 0 ;
             else
                 channelNamesInTask = self.AOChannelNames(isInTaskForEachAOChannel) ;
                 isChannelAnalog = true(1,nAnalogChannelsInTask) ;
 %                 [aoData, nChannelsWithStimulus] = ...
 %                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
-                [aoData, nChannelsWithStimulus] = ...
+                aoData = ...
                     self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
                                                              self.StimulationSampleRate, ...
                                                              channelNamesInTask, ...
@@ -6758,8 +6825,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                   % each signal of aoData is in native units
             end
             
-            % Want to return the number of scans in the stimulus data
-            nScans = size(aoData,1);
+            % % Want to return the number of scans in the stimulus data
+            % nScans = size(aoData,1);
             
             % If any channel scales are problematic, deal with this
             analogChannelScales = self.AOChannelScales(isInTaskForEachAOChannel) ;  % (native units)/V
@@ -6787,7 +6854,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             end
         end  % function
 
-        function [doDataLimited, nScans, nChannelsWithStimulus] = getDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
+        function doDataLimited = getDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
             %import ws.*
             
             % % Calculate the episode index
@@ -6800,16 +6867,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             nDigitalChannelsInTask = sum(isInTaskForEachDOChannel) ;
             if isempty(stimulusMapIndex) ,
                 doData=zeros(0,nDigitalChannelsInTask);  
-                nChannelsWithStimulus = 0 ;
             else
                 isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
                 namesOfDigitalChannelsInTask = self.DOChannelNames(isInTaskForEachDOChannel) ;                
-%                 [doData, nChannelsWithStimulus] = ...
-%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, ...
-%                                                  namesOfDigitalChannelsInTask, ...
-%                                                  isChannelAnalogForEachDigitalChannelInTask, ...
-%                                                  episodeIndexWithinRun);
-                [doData, nChannelsWithStimulus] = ...
+                doData = ...
                     self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
                                                              self.StimulationSampleRate, ...
                                                              namesOfDigitalChannelsInTask, ...
@@ -6817,8 +6878,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                                              episodeIndexWithinRun) ;
             end
             
-            % Want to return the number of scans in the stimulus data
-            nScans = size(doData,1) ;
+            % % Want to return the number of scans in the stimulus data
+            % nScans = size(doData,1) ;
             
             % limit the data to {false,true}
             doDataLimited = logical(doData) ;
@@ -7009,6 +7070,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.IsStimulusLibraryFigureVisible_ ;
         end
         
+        function result = get.IsStimulusPreviewFigureVisible(self)
+            result = self.IsStimulusPreviewFigureVisible_ ;
+        end
+        
         function result = get.IsTriggersFigureVisible(self)
             result = self.IsTriggersFigureVisible_ ;
         end
@@ -7050,6 +7115,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsStimulusLibraryFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'StimulusLibrary', oldValue) ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsStimulusPreviewFigureVisible(self, newValue)
+            oldValue = self.IsStimulusPreviewFigureVisible_ ;
+            self.IsStimulusPreviewFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'StimulusPreview', oldValue) ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7109,6 +7182,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.StimulusLibraryFigurePosition_ ;
         end
         
+        function result = get.StimulusPreviewFigurePosition(self)
+            result = self.StimulusPreviewFigurePosition_ ;
+        end
+        
         function result = get.TriggersFigurePosition(self)
             result = self.TriggersFigurePosition_ ;
         end
@@ -7143,6 +7220,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         
         function set.StimulusLibraryFigurePosition(self, newValue)
             self.StimulusLibraryFigurePosition_ = newValue ;
+        end
+        
+        function set.StimulusPreviewFigurePosition(self, newValue)
+            self.StimulusPreviewFigurePosition_ = newValue ;
         end
         
         function set.TriggersFigurePosition(self, newValue)
