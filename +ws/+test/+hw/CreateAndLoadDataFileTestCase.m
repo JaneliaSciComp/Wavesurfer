@@ -17,7 +17,7 @@ classdef CreateAndLoadDataFileTestCase < matlab.unittest.TestCase
     methods (Test)
 
         function testAnalogAndDigital(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

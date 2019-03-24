@@ -18,7 +18,7 @@ classdef DeleteStimulusTestCase < matlab.unittest.TestCase
 
     methods (Test)        
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             doomedStimulusIndex = wsModel.addNewStimulus() ;  % this is now the 2nd stimulus
             %doomedStimulus = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
             %wsModel.Stimulation.StimulusLibrary.deleteItem(doomedStimulus) ;

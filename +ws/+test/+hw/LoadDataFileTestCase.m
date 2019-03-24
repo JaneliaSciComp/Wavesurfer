@@ -17,9 +17,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
     methods (Test)
 
         function testAnalogAndDigital(self)
-            isCommandLineOnly='--nogui';
-            %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -103,8 +101,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         end  % function
 
         function testOneDI(self)
-            isCommandLineOnly='--nogui';
-            wsModel = wavesurfer(isCommandLineOnly) ;
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             % Remove the pre-existing channels
             wsModel.IsAIChannelMarkedForDeletion(:) = true ;

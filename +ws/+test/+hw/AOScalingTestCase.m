@@ -16,7 +16,7 @@ classdef AOScalingTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             electrodeIndex = wsModel.addNewElectrode() ;
             wsModel.setElectrodeProperty(electrodeIndex, 'Mode', 'cc') ;

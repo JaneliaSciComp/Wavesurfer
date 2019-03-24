@@ -16,7 +16,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testWithExistingFile(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -94,7 +94,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testWithNonexistantFile(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -172,7 +172,7 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testWithTemplateFileName(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

@@ -15,7 +15,7 @@ classdef FlyLocomotionUserClassTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             % set up channels 
             %             wsModel.addAIChannel() ;

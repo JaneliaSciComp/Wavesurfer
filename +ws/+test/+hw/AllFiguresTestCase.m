@@ -17,7 +17,7 @@ classdef AllFiguresTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTest(self)
             %thisDirName = fileparts(mfilename('fullpath')) ;
-            [wsModel,wsController] = wavesurfer() ;  %#ok<ASGLU>
+            [wsModel,wsController] = wavesurfer('--noprefs') ;  %#ok<ASGLU>
 
             % Launch some windows
             wsController.GeneralSettingsMenuItemActuated([],[]) ;  % Launch some windows

@@ -18,7 +18,7 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
         function theTest(self)
             %isCommandLineOnly='--nogui';
             %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

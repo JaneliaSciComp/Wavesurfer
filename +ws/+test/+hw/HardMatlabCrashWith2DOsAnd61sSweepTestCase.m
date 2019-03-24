@@ -17,9 +17,7 @@ classdef HardMatlabCrashWith2DOsAnd61sSweepTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            isCommandLineOnly='--nogui';
-            %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

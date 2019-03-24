@@ -16,7 +16,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
     
     methods (Test)
         function theTest(self)
-            [wsModel,wsController] = wavesurfer() ;
+            [wsModel,wsController] = wavesurfer('--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

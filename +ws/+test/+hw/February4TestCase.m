@@ -15,7 +15,7 @@ classdef February4TestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.addAIChannel() ;  % need at least one input channel to do a run
             wsModel.IsStimulationEnabled = true ;
             wsModel.addDOChannel() ;

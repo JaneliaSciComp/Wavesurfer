@@ -14,7 +14,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             % Want to do multiple sweeps
             wsModel.NSweepsPerRun = 4 ;

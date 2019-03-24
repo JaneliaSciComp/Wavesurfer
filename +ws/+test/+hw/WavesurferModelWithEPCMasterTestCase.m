@@ -122,7 +122,7 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             isAwake = true ;
             doUsePreferences = false ;
             wsModel = ws.WavesurferModel(isAwake, [], doUsePreferences) ;
-            %wsModel = wavesurfer('--nogui') ;
+            %wsModel = wavesurfer('--nogui', '--noprefs') ;
             
             % Load configuration file with one Heka EPC electrode
             thisDirName=fileparts(mfilename('fullpath'));

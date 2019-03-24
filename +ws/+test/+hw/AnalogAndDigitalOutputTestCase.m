@@ -16,7 +16,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testAnalogOnly(self)
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -74,7 +74,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testDigitalOnly(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
                            
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -161,7 +161,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testAnalogAndDigital(self)
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

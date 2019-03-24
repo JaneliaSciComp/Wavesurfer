@@ -17,8 +17,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function testWithOneTimedInput(self)
-            isCommandLineOnly='--nogui';
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

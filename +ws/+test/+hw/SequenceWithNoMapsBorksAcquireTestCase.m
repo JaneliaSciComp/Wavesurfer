@@ -16,8 +16,8 @@ classdef SequenceWithNoMapsBorksAcquireTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer() ;
-            %wsModel=wavesurfer('--nogui');
+            wsModel = wavesurfer('--noprefs') ;
+            %wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

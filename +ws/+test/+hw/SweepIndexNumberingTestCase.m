@@ -17,7 +17,7 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     methods (Test)
         function theTestWithoutUI(self)
             %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

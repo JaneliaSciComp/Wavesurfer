@@ -17,7 +17,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
