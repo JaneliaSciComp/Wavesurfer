@@ -166,10 +166,14 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % resized, but this is always done in such a way that the
             % upper-righthand corner stays in the same place.
             if self.AreUpdatesEnabled ,
-                isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
-                isVisible = self.Model_.(isVisiblePropertyName) ;
-                if isVisible ,
+                if isempty(self.Model_) ,
                     self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateImplementation_();
+                    end
                 end
             else
                 self.NCallsToUpdateWhileDisabled_ = self.NCallsToUpdateWhileDisabled_ + 1 ;
@@ -180,10 +184,14 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % Called when caller wants the control properties (Properties besides enablement, that is.) to re-sync
             % with the model, but doesn't need to update the controls that are in existance, or change the positions of the controls.
             if self.AreUpdatesEnabled ,
-                isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
-                isVisible = self.Model_.(isVisiblePropertyName) ;
-                if isVisible ,
-                    self.updateControlPropertiesImplementation_();
+                if isempty(self.Model_) ,
+                    self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateControlPropertiesImplementation_();
+                    end
                 end
             else
                 self.NCallsToUpdateControlPropertiesWhileDisabled_ = self.NCallsToUpdateControlPropertiesWhileDisabled_ + 1 ;
@@ -194,10 +202,14 @@ classdef (Abstract) Controller < ws.EventSubscriber
             % Called when caller only needs to update the
             % enablement/disablment of the controls, given the model state.
             if self.AreUpdatesEnabled ,
-                isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
-                isVisible = self.Model_.(isVisiblePropertyName) ;
-                if isVisible ,
-                    self.updateControlEnablementImplementation_() ;
+                if isempty(self.Model_) ,
+                    self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateControlEnablementImplementation_() ;
+                    end
                 end
             else
                 self.NCallsToUpdateControlEnablementWhileDisabled_ = self.NCallsToUpdateControlEnablementWhileDisabled_ + 1 ;
