@@ -49,8 +49,9 @@ classdef TriggersController < ws.Controller
 
            % Add subscriptions to model events
            if ~isempty(model) ,
-               model.subscribeMe(self, 'DidSetState', '', 'updateControlEnablement');
+               model.subscribeMe(self, 'Update', '', 'update') ;
                model.subscribeMe(self, 'UpdateTriggering', '', 'update');
+               model.subscribeMe(self, 'DidSetState', '', 'updateControlEnablement');
                model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
            end
            

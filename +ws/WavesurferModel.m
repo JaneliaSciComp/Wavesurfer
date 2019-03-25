@@ -217,6 +217,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         DoUsePreferences
         DoesProtocolNeedSave
         
+        IsWavesurferMainFigureVisible
         IsGeneralSettingsFigureVisible
         IsChannelsFigureVisible
         IsStimulusLibraryFigureVisible
@@ -369,7 +370,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     events
         Update
         UpdateMain
-        UpdateGeneralSettings
+        UpdateGeneral
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
@@ -404,7 +405,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         EMDidChangeNumberOfInputChannels
         EMDidChangeNumberOfOutputChannels
         
-        UpdateDisplay
+        %UpdateDisplay
         DidSetUpdateRate
         DidSetXSpan
         DidSetXOffset
@@ -638,7 +639,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %fprintf('WavesurferModel::stop()\n');
             if isequal(self.State,'idle') , 
                 % do nothing except re-sync the view to the model
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
             else
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
@@ -880,17 +883,23 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
                     self.DoesProtocolNeedSave_ = true ;
                 else
-                    self.broadcast('Update') ;
+                    self.broadcast('UpdateMain');
+                    self.broadcast('UpdateGeneral') ;
+                    self.broadcast('UpdateChannels') ;
                     error('ws:invalidPropertyValue', ...
                           'NSweepsPerRun cannot be set when sweeps are continuous') ;
 
                 end
             else
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
                 error('ws:invalidPropertyValue', ...
                       'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function out = get.SweepDurationIfFinite(self)
@@ -910,11 +919,15 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.broadcast('DidSetXSpan') ;
                 self.DoesProtocolNeedSave_ = true ;
             else
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
                 error('ws:invalidPropertyValue', ...
                       'SweepDurationIfFinite must be a (scalar) positive finite value');
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function value = get.SweepDuration(self)
@@ -937,11 +950,15 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 end                        
                 self.DoesProtocolNeedSave_ = true ;
             else
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 error('ws:invalidPropertyValue', ...
                       'SweepDuration must be a (scalar) positive value');
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
@@ -963,7 +980,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_);
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end
         
 %         function set.ReferenceClockSource(self, newValue)
@@ -1019,7 +1038,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %self.Display_.didSetAnalogChannelUnitsOrScales() ;
             self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
             self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;
+            self.broadcast('UpdateMain') ;
             self.broadcast('UpdateTestPulser') ;
         end
 
@@ -2268,7 +2287,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.IsDisplayEnabled = true ;
                 self.DoesProtocolNeedSave_ = false ;  % this is a special case
                 self.enableBroadcastsMaybe() ;            
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('UpdateStimulusPreview') ;
             end
@@ -2494,16 +2515,19 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = false ;
             self.LastProtocolFilePath_ = absoluteFileName ;
             
-            self.broadcast('UpdateLogging') ;
-            self.broadcast('UpdateUserCodeManager') ;
-            self.broadcast('UpdateElectrodeManager') ;
-            self.broadcast('UpdateTestPulser') ;            
-            self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;
-            self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('UpdateTriggering') ;
-            self.broadcast('Update') ;            
+            self.broadcast('Update') ;
+%             self.broadcast('UpdateLogging') ;
+%             self.broadcast('UpdateUserCodeManager') ;
+%             self.broadcast('UpdateElectrodeManager') ;
+%             self.broadcast('UpdateTestPulser') ;            
+%             self.broadcast('DidSetDataCache') ;
+%             self.broadcast('UpdateDisplay') ;
+%             self.broadcast('UpdateStimulusLibrary') ;
+%             self.broadcast('UpdateStimulusPreview') ;
+%             self.broadcast('UpdateTriggering') ;
+%             self.broadcast('UpdateMain');
+%             self.broadcast('UpdateGeneral') ;
+%             self.broadcast('UpdateChannels') ;
             self.broadcast('LayoutAllWindows') ;
             
             self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
@@ -2555,7 +2579,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1);            
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end
 
 %         function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
@@ -2731,7 +2757,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.syncIsAIChannelTerminalOvercommitted_() ;
                 self.Display_.didAddAnalogInputChannel() ;
                 self.broadcast('DidSetDataCache') ;
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 %self.Ephys_.didChangeNumberOfInputChannels();
                 self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateTestPulser');
@@ -2772,7 +2798,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
                 self.broadcast('DidSetDataCache') ;
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 %self.Ephys_.didChangeNumberOfInputChannels() ;                
                 self.broadcast('EMDidChangeNumberOfInputChannels');
                 self.broadcast('UpdateTestPulser');
@@ -2840,7 +2866,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.broadcast('DidSetDataCache') ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
             self.broadcast('UpdateTestPulser');
@@ -2854,7 +2880,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.broadcast('DidSetDataCache') ;
             %self.Ephys_.didChangeNumberOfInputChannels() ;
             self.broadcast('EMDidChangeNumberOfInputChannels');
@@ -3436,7 +3462,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             fastProtocol.ProtocolFileName = '' ;
             fastProtocol.AutoStartType = 'do_nothing' ;
             self.broadcast('UpdateFastProtocols');
-            self.broadcast('Update');  % need to update main window also            
+            self.broadcast('UpdateMain');
         end  % method
         
 %         function result = selectedFastProtocolFileName(self)
@@ -3502,17 +3528,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     %end
                 catch exception
                     self.broadcast('UpdateFastProtocols');
-                    self.broadcast('Update');  % need to update main window also                    
+                    self.broadcast('UpdateMain');
                     rethrow(exception) ;
                 end
             else
                 self.broadcast('UpdateFastProtocols');
-                self.broadcast('Update');  % need to update main window also                    
+                self.broadcast('UpdateMain');  % need to update main window also                    
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
             self.broadcast('UpdateFastProtocols');
-            self.broadcast('Update');  % need to update main window also            
+            self.broadcast('UpdateMain');  % need to update main window also            
         end  % method        
                 
         function incrementSessionIndex(self)
@@ -3523,13 +3549,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.Stimulation_.setSelectedOutputableByIndex(index) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('Update') ;
+            self.broadcast('UpdateGeneral');
         end  % method
 
         function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
             self.Stimulation_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateGeneral');
             self.broadcast('DidMaybeChangeProtocol') ;
         end  % method        
         
@@ -3616,18 +3643,24 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                                                      self.IsDOChannelTerminalOvercommitted) ;
                     end                        
                 else
-                    self.broadcast('Update') ;
+                    self.broadcast('UpdateMain');
+                    self.broadcast('UpdateGeneral') ;
+                    self.broadcast('UpdateChannels') ;
                     self.broadcast('UpdateTriggering') ;
                     error('ws:invalidPropertyValue', ...
                           'PrimaryDeviceName must be the name of an NI DAQmx device');       
                 end                        
             else
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 self.broadcast('UpdateTriggering') ;
                 error('ws:invalidPropertyValue', ...
                       'PrimaryDeviceName must be a nonempty string');       
             end
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
             self.broadcast('UpdateTriggering') ;
         end  % function
     end  % public methods block
@@ -4090,12 +4123,16 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('UpdateStimulusPreview') ;
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
@@ -4123,7 +4160,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;                
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function duplicateSelectedStimulusLibraryItem(self)
@@ -4193,7 +4232,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;  % Need to update the list of outputables                            
+            self.broadcast('UpdateMain');
         end  % function        
         
 %         function addChannelToSelectedStimulusLibraryItem(self)
@@ -4249,7 +4288,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;                
+            self.broadcast('UpdateMain');
         end  % function        
         
         function result = selectedStimulusLibraryItemClassName(self)
@@ -4270,7 +4309,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 rethrow(exception) ;
             end
             if didSetOutputableName ,
-                self.broadcast('Update') ;
+                self.broadcast('UpdateGeneral');
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
@@ -4450,7 +4489,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             % Special case to deal with renaming an outputable
             if didSetOutputableName ,
-                self.broadcast('Update') ;
+                self.broadcast('UpdateGeneral') ;
             else
                 self.broadcast('DidMaybeChangeProtocol') ;                
             end
@@ -4487,7 +4526,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;  % Need to update the list of outputables, maybe
+            self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
         end
         
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
@@ -4511,12 +4550,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('UpdateStimulusPreview') ;
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain') ;
         end  % function        
         
         function result = getCommandServer_(self)
@@ -4616,7 +4655,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
             self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.broadcast('UpdateChannels') ;
         end    
 
@@ -4678,7 +4717,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('EMDidSetIsInputChannelActive') ;
             self.broadcast('TPDidSetIsInputChannelActive') ;
             self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;                        
+            self.broadcast('UpdateMain') ;                        
             self.broadcast('UpdateChannels') ;
         end    
         
@@ -4748,7 +4787,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if ~isempty(display)
                 %display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
                 %self.broadcast('DidSetDataCache') ;
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
             end            
             ephys=self.Ephys_;
             if ~isempty(ephys)
@@ -4766,7 +4805,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             %self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
             %self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.broadcast('UpdateChannels') ;
         end
         
@@ -4818,7 +4857,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                 isNewValueAllowed = true ;  % sort of in a trivial sense...
             end
-            self.broadcast('UpdateDisplay');            
+            self.broadcast('UpdateMain');            
+            self.broadcast('UpdateGeneral');            
             if ~isNewValueAllowed ,
                 error('ws:invalidPropertyValue', ...
                       'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
@@ -4871,10 +4911,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             try
                 self.Display_.toggleIsAnalogChannelDisplayed(aiChannelIndex, nAIChannels) ;
             catch err
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 rethrow(err) ;
             end
-            self.broadcast('UpdateDisplay') ;
+            self.broadcast('UpdateMain') ;
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -4884,10 +4924,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             try
                 self.Display_.toggleIsDigitalChannelDisplayed(diChannelIndex, nDIChannels) ;
             catch err
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 rethrow(err) ;
             end
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5254,11 +5294,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.Display_.IsGridOn = logical(newValue) ;
             else
-                self.broadcast('UpdateDisplay');
+                self.broadcast('UpdateMain');
                 error('ws:invalidPropertyValue', ...
                       'IsGridOn must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('UpdateDisplay');
+            self.broadcast('UpdateMain');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5275,11 +5315,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.Display_.AreColorsNormal = logical(newValue) ;
             else
-                self.broadcast('UpdateDisplay');
+                self.broadcast('UpdateMain');
                 error('ws:invalidPropertyValue', ...
                       'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('UpdateDisplay');
+            self.broadcast('UpdateMain');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5296,11 +5336,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.Display_.DoShowZoomButtons = logical(newValue) ;
             else
-                self.broadcast('UpdateDisplay');
+                self.broadcast('UpdateMain');
                 error('ws:invalidPropertyValue', ...
                       'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('UpdateDisplay');
+            self.broadcast('UpdateMain');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
@@ -5333,18 +5373,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
                 self.Display_.DoColorTraces = logical(newValue) ;
             else
-                self.broadcast('UpdateDisplay');
+                self.broadcast('UpdateMain');
                 error('ws:invalidPropertyValue', ...
                       'DoColorTraces must be a scalar, and must be logical, 0, or 1');
             end
-            self.broadcast('UpdateDisplay');
+            self.broadcast('UpdateMain');
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
             self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('DidMaybeChangeProtocol') ;            
         end
@@ -5690,8 +5730,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                   'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
                     if isModeOrChannelNameOrScale ,
                         %self.Display_.didSetAnalogChannelUnitsOrScales() ;
-                        self.broadcast('DidSetDataCache') ;
-                        self.broadcast('UpdateDisplay') ;
+                        %self.broadcast('DidSetDataCache') ;
+                        self.broadcast('UpdateMain') ;
                         self.broadcast('UpdateChannels') ;
                     end                                
                     self.broadcast('DidMaybeChangeProtocol') ;
@@ -5774,7 +5814,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.broadcast('UpdateElectrodeManager') ;
                 self.broadcast('UpdateTestPulser') ;
                 self.broadcast('DidSetDataCache') ;
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 self.broadcast('UpdateChannels') ;
             end
             self.changeReadiness_(+1) ;
@@ -5864,14 +5904,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.broadcast('UpdateElectrodeManager');
                 self.broadcast('UpdateTestPulser') ;
                 self.broadcast('DidSetDataCache') ;
-                self.broadcast('UpdateDisplay') ;
+                self.broadcast('UpdateMain') ;
                 self.broadcast('UpdateChannels') ;
                 rethrow(err) ;
             end
             self.broadcast('UpdateElectrodeManager');            
             self.broadcast('UpdateTestPulser') ;
             self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;            
+            self.broadcast('UpdateMain') ;            
             self.broadcast('UpdateChannels') ;
         end
         
@@ -6124,10 +6164,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.Stimulation_.IsEnabled = newValue ;
                 self.DoesProtocolNeedSave_ = true ;
             catch me
-                self.broadcast('UpdateGeneralSettings') ;
+                self.broadcast('UpdateGeneral') ;
                 rethrow(me) ;
             end                
-            self.broadcast('UpdateGeneralSettings') ;
+            self.broadcast('UpdateGeneral') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
 
@@ -6142,8 +6182,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
             self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('DidSetDataCache') ;
-            self.broadcast('UpdateDisplay') ;
+            %self.broadcast('DidSetDataCache') ;
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateGeneral') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
 
@@ -6358,10 +6399,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.Stimulation_.DoRepeatSequence = newValue ;
                 self.DoesProtocolNeedSave_ = true ;
             catch me
-                self.broadcast('UpdateGeneralSettings') ;
+                self.broadcast('UpdateGeneral') ;
                 rethrow(me) ;
             end
-            self.broadcast('UpdateGeneralSettings') ;            
+            self.broadcast('UpdateGeneral') ;            
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -6372,7 +6413,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             else
                 wasSet = false ;
             end
-            self.broadcast('UpdateDisplay') ;
+            self.broadcast('UpdateMain') ;
             if ~wasSet ,
                 error('ws:invalidPropertyValue', ...
                       'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
@@ -7059,6 +7100,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % static methods block
     
     methods
+        function result = get.IsWavesurferMainFigureVisible(self)
+            result = true ;
+        end
+
         function result = get.IsGeneralSettingsFigureVisible(self)
             result = self.IsGeneralSettingsFigureVisible_ ;
         end
@@ -7100,6 +7145,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsGeneralSettingsFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'GeneralSettings', oldValue) ;
+            self.broadcast('UpdateGeneral') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7108,6 +7154,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsChannelsFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'Channels', oldValue) ;
+            self.broadcast('UpdateChannels') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7116,6 +7163,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsStimulusLibraryFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'StimulusLibrary', oldValue) ;
+            self.broadcast('UpdateStimulusLibrary') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7124,6 +7172,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsStimulusPreviewFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'StimulusPreview', oldValue) ;
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7132,6 +7181,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsTriggersFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'Triggers', oldValue) ;
+            self.broadcast('UpdateTriggering') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7140,6 +7190,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsUserCodeManagerFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'UserCodeManager', oldValue) ;
+            self.broadcast('UpdateUserCodeManager') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7148,6 +7199,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsElectrodeManagerFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'ElectrodeManager', oldValue) ;
+            self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7156,6 +7208,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsTestPulserFigureVisible_ = newValue ;
             self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'TestPulser', oldValue) ;
+            self.broadcast('UpdateTestPulser') ;
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7164,6 +7217,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsFastProtocolsFigureVisible_ = newValue ;
             %self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
             self.broadcast('DidSetSingleFigureVisibility', 'FastProtocols', oldValue) ;
+            self.broadcast('UpdateFastProtocols') ;
             %self.broadcast('DidMaybeChangeProtocol') ;
         end
         
@@ -7291,16 +7345,17 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 try
                     self.loadPreferences_(newProfileName) ;
                 catch err
-                    self.broadcast('Update') ;
+                    self.broadcast('UpdateMain') ;
                     error('Unable to load preferences for new profile') ;
                 end                                                        
                 self.CurrentProfileName_ = newProfileName ;
             else
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain') ;
                 error('ws:invalidPropertyValue', ...
                       'CurrentProfileName must be one of the ProfileNames');
             end
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateFastProtocols') ;
         end
         
         function result = get.ProfileNames(self)
@@ -7351,7 +7406,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                error('Unable to find an available name for the new profile') ; 
             end
             self.changeReadiness_(+1) ;            
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateFastProtocols') ;
         end
         
         function deleteCurrentProfile(self)
@@ -7370,7 +7426,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % If get here, the file was successfully deleted
             self.ProfileNames_ = setdiff(self.ProfileNames_, profileNameToDelete) ;
             self.changeReadiness_(+1) ;            
-            self.broadcast('Update') ;            
+            self.broadcast('UpdateMain') ;            
+            self.broadcast('UpdateFastProtocols') ;
         end
         
         function renameCurrentProfile(self, newProfileName)
@@ -7413,7 +7470,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             
             % Finally, update the view
             self.changeReadiness_(+1) ;            
-            self.broadcast('Update') ;                        
+            self.broadcast('UpdateMain') ;                        
+            self.broadcast('UpdateFastProtocols') ;
         end
         
     end  % public methods block

@@ -77,6 +77,7 @@ classdef ElectrodeManagerController < ws.Controller
             if ~isempty(wsModel) ,
                 %electrodeManager = wsModel.Ephys.getElectrodeManagerReference_() ;
                 %wsModel.subscribeMeToElectrodeManagerEvent(self,'Update','','update');
+                wsModel.subscribeMe(self,'Update','','update');
                 wsModel.subscribeMe(self,'UpdateElectrodeManager','','update');
                 wsModel.subscribeMe(self,'EMDidSetIsInputChannelActive','','updateControlProperties');
                 wsModel.subscribeMe(self,'EMDidSetIsDigitalOutputTimed','','updateControlProperties');

@@ -93,7 +93,7 @@ classdef GeneralSettingsController < ws.Controller
            % Subscribe to stuff
            if ~isempty(wsModel) ,
                 wsModel.subscribeMe(self,'Update','','update');
-                wsModel.subscribeMe(self,'UpdateGeneralSettings','','update');
+                wsModel.subscribeMe(self,'UpdateGeneral','','update');
                 wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
                 wsModel.subscribeMe(self,'DidSetState','','didSetModelState');
                 wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');
@@ -101,7 +101,7 @@ classdef GeneralSettingsController < ws.Controller
                 wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');
                 %model.Stimulation.StimulusLibrary.subscribeMe(self,'Update','','update');
                 %wsModel.subscribeMeToStimulationEvent(self,'DidSetDoRepeatSequence','','update');
-                wsModel.subscribeMe(self,'UpdateDisplay','','update');
+                %wsModel.subscribeMe(self,'UpdateDisplay','','update');
                 %wsModel.subscribeMeToDisplayEvent(self,'DidSetIsEnabled','','update');
                 wsModel.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties');
                 wsModel.subscribeMe(self,'DidSetXSpan','','updateControlProperties');

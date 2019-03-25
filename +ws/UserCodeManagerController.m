@@ -36,6 +36,7 @@ classdef UserCodeManagerController < ws.Controller
            
            % Subscribe to events
            %model.subscribeMeToUserCodeManagerEvent(self,'Update','','update');
+           model.subscribeMe(self, 'Update', '', 'update') ;
            model.subscribeMe(self,'UpdateUserCodeManager','','update');
            model.subscribeMe(self,'DidMaybeSetUserClassName','','update');            
            model.subscribeMe(self,'DidSetState','','updateControlEnablement');

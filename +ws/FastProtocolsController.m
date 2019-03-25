@@ -34,6 +34,7 @@ classdef FastProtocolsController < ws.Controller
            
            % Subscribe to thangs
            if ~isempty(model) ,
+               model.subscribeMe(self,'Update','','update');
                model.subscribeMe(self,'UpdateFastProtocols','','update');                        
                model.subscribeMe(self,'DidSetState','','updateControlEnablement');
                model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;

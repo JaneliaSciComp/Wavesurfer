@@ -66,8 +66,9 @@ classdef TestPulserController < ws.Controller
             
             % Subscribe to model events
             if ~isempty(wsModel) ,
+                wsModel.subscribeMe(self,'Update','','update');
+                wsModel.subscribeMe(self,'UpdateTestPulser','','update') ;                
                 wsModel.subscribeMe(self,'DidSetState','','updateControlProperties') ;
-                wsModel.subscribeMe(self,'UpdateTestPulser','','update') ;
                 wsModel.subscribeMe(self,'UpdateElectrodeManager','','update') ;
                 wsModel.subscribeMe(self,'TPUpdateTrace','','updateTrace') ;
                 wsModel.subscribeMe(self,'TPDidSetIsInputChannelActive','','update') ;

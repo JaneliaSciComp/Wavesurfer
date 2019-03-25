@@ -174,15 +174,13 @@ classdef WavesurferMainController < ws.Controller
             % Set the initial figure position
             self.setInitialFigurePosition_() ;
             
-            % % Enable updates 
-            % self.AreUpdatesEnabled = true ;
-            
             % Do an update to sync with model  (this will do layout)
             self.update();
             
             % Subscribe to stuff
             if ~isempty(model) ,
-                model.subscribeMe(self,'Update','','update');
+                model.subscribeMe(self, 'Update', '', 'update') ;
+                model.subscribeMe(self,'UpdateMain','','update');
                 model.subscribeMe(self,'WillSetState','','willSetModelState');
                 model.subscribeMe(self,'DidSetState','','didSetModelState');
                 model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
@@ -194,7 +192,7 @@ classdef WavesurferMainController < ws.Controller
                 model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
                 model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
                 model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;                
-                model.subscribeMe(self,'UpdateDisplay','','update') ;
+                %model.subscribeMe(self,'UpdateDisplay','','update') ;
                 model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
                 model.subscribeMe(self,'DidSetXOffset','','updateXAxisLimits') ;
                 model.subscribeMe(self,'DidSetXSpan','','updateXAxisLimits') ;

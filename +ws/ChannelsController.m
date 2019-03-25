@@ -108,8 +108,8 @@ classdef ChannelsController < ws.Controller
             %wsModel=self.Model;  % this is the root model
             if ~isempty(wsModel) ,
                 wsModel.subscribeMe(self, 'Update', '', 'update');                
+                wsModel.subscribeMe(self, 'UpdateChannels', '', 'update');                
                 wsModel.subscribeMe(self, 'DidSetState', '', 'updateControlProperties');
-                wsModel.subscribeMe(self, 'UpdateChannels', '', 'update');         
                 wsModel.subscribeMe(self, 'UpdateDigitalOutputStateIfUntimed', '', 'updateControlProperties');
                 wsModel.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
             end
