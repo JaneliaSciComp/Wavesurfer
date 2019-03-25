@@ -2226,16 +2226,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                                                     rawDigitalData, ...
                                                     timeSinceRunStartAtStartOfData, ...
                                                     self.XSpan);
-                    if doesNeedClear ,
-                        %self.broadcast('DidSetDataCache') ;  
-                        % commenting
-                        % this is maybe a mistake, but either we don't need
-                        % it here, or there's a better way to do this.
-                    end
                     if doesNeedDidSetXOffset ,
                         self.broadcast('DidSetXOffset') ;
                     end
-                    self.broadcast('DidAddData', t, scaledAnalogData, rawDigitalData) ;                                           
+                    if doesNeedClear ,
+                        self.broadcast('DidSetDataCache') ;  
+                    else
+                        self.broadcast('DidAddData', t, scaledAnalogData, rawDigitalData) ;                        
+                    end
                 end
                 self.UserCodeManager_.invoke(self, 'dataAvailable');
 
@@ -7100,7 +7098,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % static methods block
     
     methods
-        function result = get.IsWavesurferMainFigureVisible(self)
+        function result = get.IsWavesurferMainFigureVisible(self)  %#ok<MANU>
             result = true ;
         end
 
