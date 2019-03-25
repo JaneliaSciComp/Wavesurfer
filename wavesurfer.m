@@ -82,7 +82,7 @@ function varargout = wavesurfer(varargin)
             % do nothing
         end
     else
-        % If no protocol or MDF file given, start with a basic setup
+        % If no protocol file given, start with a basic setup
         model.addStarterChannelsAndStimulusLibrary() ;
     end
 

@@ -52,41 +52,44 @@ classdef (Abstract) Controller < ws.EventSubscriber
         end
         
         function set.AreUpdatesEnabled(self, newValue)
+            % The AreUpdatesEnabled property looks from the outside like a simple boolean,
+            % but it actually accumulates the number of times it's been set true vs set
+            % false, and the getter only returns true if that difference is greater than
+            % zero.  Also, the accumulator value (self.DegreeOfEnablement_) never goes above
+            % one.
             if ~( islogical(newValue) && isscalar(newValue) ) ,
                 return
-            end        
-            netValueBefore=self.AreUpdatesEnabled;            
-            newValueAsSign=2*double(newValue)-1;  % [0,1] -> [-1,+1]
-            newDegreeOfEnablementRaw=self.DegreeOfEnablement_+newValueAsSign;
+            end
+            netValueBefore = (self.DegreeOfEnablement_ > 0) ;
+            newValueAsSign = 2 * double(newValue) - 1 ;  % [0,1] -> [-1,+1]
+            newDegreeOfEnablementRaw = self.DegreeOfEnablement_ + newValueAsSign ;
             self.DegreeOfEnablement_ = ...
-                    ws.fif(newDegreeOfEnablementRaw<=1, ...
+                    ws.fif(newDegreeOfEnablementRaw <= 1, ...
                            newDegreeOfEnablementRaw, ...
                            1);
-            netValueAfter = self.AreUpdatesEnabled ;
+            netValueAfter = (self.DegreeOfEnablement_ > 0) ;
             if netValueAfter && ~netValueBefore ,
                 % Updates have just been enabled
-                if self.NCallsToUpdateWhileDisabled_>0
-                    self.updateImplementation_();
-                elseif self.NCallsToUpdateControlPropertiesWhileDisabled_>0
-                    self.updateControlPropertiesImplementation_();
-                elseif self.NCallsToUpdateControlEnablementWhileDisabled_>0
-                    self.updateControlEnablementImplementation_();
+                if self.NCallsToUpdateWhileDisabled_ > 0 ,
+                    self.updateImplementation_() ;
+                elseif self.NCallsToUpdateControlPropertiesWhileDisabled_ > 0 ,
+                    self.updateControlPropertiesImplementation_() ;
+                elseif self.NCallsToUpdateControlEnablementWhileDisabled_ > 0 ,
+                    self.updateControlEnablementImplementation_() ;
                 end
-                self.NCallsToUpdateWhileDisabled_=[];
-                self.NCallsToUpdateControlPropertiesWhileDisabled_=[];
-                self.NCallsToUpdateControlEnablementWhileDisabled_=[];
+                self.NCallsToUpdateWhileDisabled_ = [] ;
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = [] ;
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = [] ;
             elseif ~netValueAfter && netValueBefore ,
                 % Updates have just been disabled
-                self.NCallsToUpdateWhileDisabled_=0;
-                self.NCallsToUpdateControlPropertiesWhileDisabled_=0;
-                self.NCallsToUpdateControlEnablementWhileDisabled_=0;
+                self.NCallsToUpdateWhileDisabled_ = 0 ;
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = 0 ;
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = 0 ;
             end            
         end  % function
 
-        function value=get.AreUpdatesEnabled(self)
-            %fprintf('MCOSFigure:get.AreUpdatesEnabled(): self.DegreeOfEnablement_ = %d\n' , ...
-            %        self.DegreeOfEnablement_);
-            value=(self.DegreeOfEnablement_>0);
+        function value = get.AreUpdatesEnabled(self)
+            value = (self.DegreeOfEnablement_ > 0) ;
         end
         
         function update(self, varargin)
@@ -188,38 +191,6 @@ classdef (Abstract) Controller < ws.EventSubscriber
                 self.NCallsToUpdateControlEnablementWhileDisabled_ = self.NCallsToUpdateControlEnablementWhileDisabled_ + 1 ;
             end            
         end
-        
-%         function changeReadiness(self,delta)
-%             %import ws.*
-% 
-%             if ~( isnumeric(delta) && isscalar(delta) && (delta==-1 || delta==0 || delta==+1 || (isinf(delta) && delta>0) ) ),
-%                 return
-%             end
-%                     
-%             isReadyBefore=self.IsReady;
-%             
-%             newDegreeOfReadinessRaw=self.DegreeOfReadiness_+delta;
-%             self.DegreeOfReadiness_ = ...
-%                     fif(newDegreeOfReadinessRaw<=1, ...
-%                         newDegreeOfReadinessRaw, ...
-%                         1);
-%                         
-%             isReadyAfter=self.IsReady;
-%             
-%             if isReadyAfter && ~isReadyBefore ,
-%                 % Change cursor to normal
-%                 set(self.FigureGH_,'pointer','arrow');
-%                 drawnow('update');
-%             elseif ~isReadyAfter && isReadyBefore ,
-%                 % Change cursor to hourglass
-%                 set(self.FigureGH_,'pointer','watch');
-%                 drawnow('update');
-%             end            
-%         end  % function        
-%         
-%         function value=get.IsReady(self)
-%             value=(self.DegreeOfReadiness_>0);
-%         end       
         
         function updateReadiness_(self,varargin)
             self.updateReadinessImplementation_();
@@ -447,24 +418,6 @@ classdef (Abstract) Controller < ws.EventSubscriber
         end  % function       
     end  % public methods block
     
-%     methods (Access=protected)
-%         function raiseDialogOnException_(self, exception)
-%             if isempty(exception.cause)
-%                 ws.errordlg(exception.message, 'Error', 'modal') ;
-%             else
-%                 primaryCause = exception.cause{1} ;
-%                 if isempty(primaryCause.cause) ,
-%                     errorString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
-%                     ws.errordlg(errorString, 'Error', 'modal') ;
-%                 else
-%                     secondaryCause = primaryCause.cause{1} ;
-%                     errorString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
-%                     ws.errordlg(errorString, 'Error', 'modal') ;
-%                 end
-%             end            
-%         end  % method
-%     end  % protected methods block
-    
     methods
         function constrainPositionToMonitors(self, monitorPositions)
             % For each monitor, calculate the translation needed to get the
@@ -556,49 +509,7 @@ classdef (Abstract) Controller < ws.EventSubscriber
             self.Model_.(modelPropertyName) = position ;
         end
     end
-        
-%     methods (Static)
-%         function result = methodNameStemFromControlName(controlName)
-%             % We want to translate typical control names like
-%             % 'CancelButton_' to method name stems like 'cancelButton'.
-%             % Also, want e.g. 'OKButton_' to go to 'okButton'.
-%             if isempty(controlName) ,
-%                 result = '' ;
-%             elseif isscalar(controlName) ,
-%                 result = lower(controlName) ;
-%             else
-%                 % control is at least 2 chars long
-%                 isUpperCaseLetter = arrayfun(controlName, @(c)(('A'<=c)&&(c<='Z'))) ;                
-%                 indexOfFirstNonUpperCaseLetter = find(~isUpperCaseLetter,1) ;
-%                 if isempty(indexOfFirstNonUpperCaseLetter) ,
-%                     % controlName is all uppercase letters
-%                     lowerCamelCaseControlName = lower(controlName) ;
-%                 else
-%                     if indexOfFirstNonUpperCaseLetter==1 ,
-%                         lowerCamelCaseControlName = controlName ;
-%                     elseif indexOfFirstNonUpperCaseLetter==2 ,
-%                         % This is probably the most common case, e.g.
-%                         % 'CancelButton_', for which the case-corrected
-%                         % contol name is 'cancelButton_'                        
-%                         lowerCamelCaseControlName = horzcat(lower(controlName(1)), controlName(2:end)) ;
-%                     else
-%                         % E.g. 'OKButton_', for which the case-corrected
-%                         % contol name is 'okButton_'                        
-%                         indexOfLastUpperCaseLetter = indexOfFirstNonUpperCaseLetter - 1 ;
-%                         indexOfLastCharacterInFirstWord = indexOfLastUpperCaseLetter - 1 ;  % where the first "word" might be something like "OK"
-%                         lowerCamelCaseControlName = horzcat(lower(controlName(1:indexOfLastCharacterInFirstWord)), controlName(indexOfLastCharacterInFirstWord+1:end)) ;                        
-%                     end
-%                 end
-%                 % Now delete any trailing underscore                
-%                 if isequal(lowerCamelCaseControlName(end),'_') ,
-%                     result = lowerCamelCaseControlName(1:end-1) ;
-%                 else
-%                     result = lowerCamelCaseControlName ;
-%                 end                    
-%             end
-%         end
-%     end
-    
+            
     methods
         function setAreUpdatesEnabledForFigure(self, newValue)
             self.AreUpdatesEnabled = newValue ;

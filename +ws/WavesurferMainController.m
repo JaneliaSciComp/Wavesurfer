@@ -174,6 +174,9 @@ classdef WavesurferMainController < ws.Controller
             % Set the initial figure position
             self.setInitialFigurePosition_() ;
             
+            % % Enable updates 
+            % self.AreUpdatesEnabled = true ;
+            
             % Do an update to sync with model  (this will do layout)
             self.update();
             

@@ -540,7 +540,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     protocolFileFolderPath = pwd() ;
                 else
                     protocolFileFolderPath = lastProtocolFileFolderPath ;
-                end                    
+                end
                 index = 0 ;
                 didFindGoodFileName = false ;
                 while ~didFindGoodFileName ,
@@ -2269,9 +2269,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.DoesProtocolNeedSave_ = false ;  % this is a special case
                 self.enableBroadcastsMaybe() ;            
                 self.broadcast('Update') ;
+                self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
             end
         end
-        
     end  % methods block
     
     methods
