@@ -21,7 +21,7 @@ classdef FastProtocol < ws.Model
         end
         
         function set.ProtocolFileName(self, newValue)
-            if ws.isString(newValue) && ~isempty(newValue) && ws.isFileNameAbsolute(newValue) && exist(newValue,'file') ,
+            if ws.isString(newValue) && (isempty(newValue) || (ws.isFileNameAbsolute(newValue) && exist(newValue,'file'))) ,
                 self.ProtocolFileName_ = newValue ;
             else
                 error('ws:invalidPropertyValue', ...

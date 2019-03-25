@@ -242,7 +242,8 @@ classdef WavesurferMainController < ws.Controller
         function resize_(self)
             %self.clearXDataAndYData_() ;
             %self.clearTraceData_() ;
-            self.layout_() ;            
+            self.layout_() ;         
+            self.updateTraces_() ;
         end        
         
         function setInitialFigurePosition_(self)
