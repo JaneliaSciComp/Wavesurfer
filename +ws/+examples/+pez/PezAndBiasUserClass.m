@@ -3,30 +3,31 @@ classdef PezAndBiasUserClass < ws.UserClass
     properties (Dependent)
         TrialSequenceMode
         
-        BasePosition1X
-        BasePosition1Y
-        BasePosition1Z
+        DoPlayDispenseTone
+        DispenseToneFrequency
+        
         ToneFrequency1
+        ToneDuration1
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
-        DispenseChannelPosition1
+        DispensePosition1ZOffset
 
-        BasePosition2X
-        BasePosition2Y
-        BasePosition2Z
         ToneFrequency2
+        ToneDuration2
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
-        DispenseChannelPosition2
-        
-        ToneDuration
-        ToneDelay
-        DispenseDelay
+        DispensePosition2ZOffset
+
         ReturnDelay
-        
+
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
+        IsRunning
+        IsResetEnabled
+        
+        IsFigurePositionSaved
+        SavedFigurePosition
     
         CameraCount
     end
@@ -177,54 +178,6 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.TrialSequenceMode = newValue ;
         end
         
-        function result = get.BasePosition1X(self)
-            result = self.PezUserObject_.BasePosition1X ;
-        end
-        
-        function result = get.BasePosition1Y(self)
-            result = self.PezUserObject_.BasePosition1Y ;
-        end
-        
-        function result = get.BasePosition1Z(self)
-            result = self.PezUserObject_.BasePosition1Z ;
-        end
-        
-        function set.BasePosition1X(self, newValue)
-            self.PezUserObject_.BasePosition1X = newValue ;
-        end
-        
-        function set.BasePosition1Y(self, newValue)
-            self.PezUserObject_.BasePosition1Z = newValue ;
-        end
-        
-        function set.BasePosition1Z(self, newValue)
-            self.PezUserObject_.BasePosition1Z = newValue ;
-        end
-        
-        function result = get.BasePosition2X(self)
-            result = self.PezUserObject_.BasePosition2X ;
-        end
-        
-        function result = get.BasePosition2Y(self)
-            result = self.PezUserObject_.BasePosition2Y ;
-        end
-        
-        function result = get.BasePosition2Z(self)
-            result = self.PezUserObject_.BasePosition2Z ;
-        end
-        
-        function set.BasePosition2X(self, newValue)
-            self.PezUserObject_.BasePosition2X = newValue ;
-        end
-            
-        function set.BasePosition2Y(self, newValue)
-            self.PezUserObject_.BasePosition2Y = newValue ;
-        end
-            
-        function set.BasePosition2Z(self, newValue)
-            self.PezUserObject_.BasePosition2Z = newValue ;
-        end
-            
         function result = get.ToneFrequency1(self)
             result = self.PezUserObject_.ToneFrequency1 ;
         end
@@ -288,45 +241,21 @@ classdef PezAndBiasUserClass < ws.UserClass
         function set.DeliverPosition2Z(self, newValue)
             self.PezUserObject_.DeliverPosition2Z = newValue ;
         end
-            
-        function result = get.DispenseChannelPosition1(self)
-            result = self.PezUserObject_.DispenseChannelPosition1 ;
+                        
+        function result = get.ToneDuration1(self)
+            result = self.PezUserObject_.ToneDuration1 ;
         end
         
-        function set.DispenseChannelPosition1(self, newValue)
-            self.PezUserObject_.DispenseChannelPosition1 = newValue ;
+        function set.ToneDuration1(self, newValue)
+            self.PezUserObject_.ToneDuration1 = newValue ;
         end
             
-        function result = get.DispenseChannelPosition2(self)
-            result = self.PezUserObject_.DispenseChannelPosition2 ;
+        function result = get.ToneDuration2(self)
+            result = self.PezUserObject_.ToneDuration2 ;
         end
         
-        function set.DispenseChannelPosition2(self, newValue)
-            self.PezUserObject_.DispenseChannelPosition2 = newValue ;
-        end
-            
-        function result = get.ToneDuration(self)
-            result = self.PezUserObject_.ToneDuration ;
-        end
-        
-        function set.ToneDuration(self, newValue)
-            self.PezUserObject_.ToneDuration = newValue ;
-        end
-            
-        function result = get.ToneDelay(self)
-            result = self.PezUserObject_.ToneDelay ;
-        end
-        
-        function set.ToneDelay(self, newValue)
-            self.PezUserObject_.ToneDelay = newValue ;
-        end
-            
-        function result = get.DispenseDelay(self)
-            result = self.PezUserObject_.DispenseDelay ;
-        end
-        
-        function set.DispenseDelay(self, newValue)
-            self.PezUserObject_.DispenseDelay = newValue ;
+        function set.ToneDuration2(self, newValue)
+            self.PezUserObject_.ToneDuration2 = newValue ;
         end
             
         function result = get.ReturnDelay(self)
@@ -343,6 +272,70 @@ classdef PezAndBiasUserClass < ws.UserClass
         
         function result = get.CameraCount(self)
             result = self.BiasUserObject_.cameraCount ;
+        end        
+        
+        function result = get.DoPlayDispenseTone(self)
+            result = self.PezUserObject_.DoPlayDispenseTone ;
+        end        
+
+        function set.DoPlayDispenseTone(self, newValue)
+            self.PezUserObject_.DoPlayDispenseTone = newValue ;
+        end        
+
+        function result = get.DispenseToneFrequency(self)
+            result = self.PezUserObject_.DispenseToneFrequency ;
+        end        
+
+        function set.DispenseToneFrequency(self, newValue)
+            self.PezUserObject_.DispenseToneFrequency = newValue ;
+        end        
+
+        function result = get.DispensePosition1ZOffset(self)
+            result = self.PezUserObject_.DispensePosition1ZOffset ;
+        end
+        
+        function set.DispensePosition1ZOffset(self, newValue)
+            self.PezUserObject_.DispensePosition1ZOffset = newValue ;
+        end
+        
+        function result = get.DispensePosition2ZOffset(self)
+            result = self.PezUserObject_.DispensePosition2ZOffset ;
+        end
+        
+        function set.DispensePosition2ZOffset(self, newValue)
+            self.PezUserObject_.DispensePosition2ZOffset = newValue ;
+        end
+        
+        function result = get.IsRunning(self)
+            result = self.PezUserObject_.IsRunning ;
+        end
+        
+        function set.IsRunning(self, newValue)
+            self.PezUserObject_.IsRunning = newValue ;
+        end
+        
+        function result = get.IsResetEnabled(self)
+            result = self.PezUserObject_.IsResetEnabled ;
+        end
+        
+        function set.IsResetEnabled(self, newValue)
+            self.PezUserObject_.IsResetEnabled = newValue ;
+        end
+        
+        function result = get.IsFigurePositionSaved(self)
+            result = self.PezUserObject_.IsFigurePositionSaved ;
+        end
+        
+        function set.IsFigurePositionSaved(self, newValue)
+            self.PezUserObject_.IsFigurePositionSaved = newValue ;
+        end
+        
+        function result = get.SavedFigurePosition(self)
+            result = self.PezUserObject_.SavedFigurePosition ;
+        end
+        
+        function set.SavedFigurePosition(self, newValue)
+            self.PezUserObject_.SavedFigurePosition = newValue ;
         end        
     end  % methods
         
