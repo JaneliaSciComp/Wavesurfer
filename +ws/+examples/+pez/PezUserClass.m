@@ -588,9 +588,12 @@ classdef PezUserClass < ws.UserClass
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
-            elseif isequal(propertyName, 'DispensePosition1Z') || isequal(propertyName, 'DispensePosition2Z') ,
+            elseif isequal(propertyName, 'DispensePosition1Z') || ...
+                   isequal(propertyName, 'DispensePosition2Z') || ...
+                   isequal(propertyName, 'DeliverPosition1Z') || ...
+                   isequal(propertyName, 'DeliverPosition2Z'),
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-10<=newValue) && (newValue<=(-self.ZOffset_)) ) ,
-                    error('ws:invalidPropertyValue', 'DispensePosition property value is invalid') ;
+                    error('ws:invalidPropertyValue', 'Z Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
