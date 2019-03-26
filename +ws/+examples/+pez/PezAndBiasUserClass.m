@@ -11,14 +11,14 @@ classdef PezAndBiasUserClass < ws.UserClass
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
-        DispensePosition1ZOffset
+        DispensePosition1Z
 
         ToneFrequency2
         ToneDuration2
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
-        DispensePosition2ZOffset
+        DispensePosition2Z
 
         ReturnDelay
 
@@ -290,20 +290,20 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.DispenseToneFrequency = newValue ;
         end        
 
-        function result = get.DispensePosition1ZOffset(self)
-            result = self.PezUserObject_.DispensePosition1ZOffset ;
+        function result = get.DispensePosition1Z(self)
+            result = self.PezUserObject_.DispensePosition1Z ;
         end
         
-        function set.DispensePosition1ZOffset(self, newValue)
-            self.PezUserObject_.DispensePosition1ZOffset = newValue ;
+        function set.DispensePosition1Z(self, newValue)
+            self.PezUserObject_.DispensePosition1Z = newValue ;
         end
         
-        function result = get.DispensePosition2ZOffset(self)
-            result = self.PezUserObject_.DispensePosition2ZOffset ;
+        function result = get.DispensePosition2Z(self)
+            result = self.PezUserObject_.DispensePosition2Z ;
         end
         
-        function set.DispensePosition2ZOffset(self, newValue)
-            self.PezUserObject_.DispensePosition2ZOffset = newValue ;
+        function set.DispensePosition2Z(self, newValue)
+            self.PezUserObject_.DispensePosition2Z = newValue ;
         end
         
         function result = get.IsRunning(self)

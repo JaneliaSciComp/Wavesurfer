@@ -20,7 +20,7 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
-        DispensePosition1ZOffset
+        DispensePosition1Z
 
         ToneFrequency2
         ToneDuration2
@@ -28,7 +28,7 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
-        DispensePosition2ZOffset
+        DispensePosition2Z
         
         ReturnDelay
         
@@ -52,7 +52,7 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition1X_ =  60  % mm?
         DeliverPosition1Y_ =  60  % mm?
         DeliverPosition1Z_ =   0  % mm?
-        DispensePosition1ZOffset_ = 10  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+        DispensePosition1Z_ = 10  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
         ToneFrequency2_ = 10000  % Hz
         ToneDuration2_ = 1  % s
@@ -60,7 +60,7 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition2X_ =  60  % mm?
         DeliverPosition2Y_ =  60  % mm?
         DeliverPosition2Z_ = 0  % mm?
-        DispensePosition2ZOffset_ = 10  % scalar, mm?
+        DispensePosition2Z_ = 10  % scalar, mm?
         
         ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
         
@@ -197,13 +197,13 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency1) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1ZOffset+self.ZOffset_) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z+self.ZOffset_) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2ZOffset+self.ZOffset_) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z+self.ZOffset_) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -338,8 +338,8 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition1Z_ ;
         end
         
-        function result = get.DispensePosition1ZOffset(self)
-            result = self.DispensePosition1ZOffset_ ;
+        function result = get.DispensePosition1Z(self)
+            result = self.DispensePosition1Z_ ;
         end
         
         function result = get.ToneFrequency2(self)
@@ -358,8 +358,8 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition2Z_ ;
         end
         
-        function result = get.DispensePosition2ZOffset(self)
-            result = self.DispensePosition2ZOffset_ ;
+        function result = get.DispensePosition2Z(self)
+            result = self.DispensePosition2Z_ ;
         end
         
         function result = get.ToneDuration1(self)
@@ -423,9 +423,9 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispensePosition1ZOffset(self, newValue)
-            self.checkValue_('DispensePosition1ZOffset', newValue) ;
-            self.DispensePosition1ZOffset_ = newValue ;
+        function set.DispensePosition1Z(self, newValue)
+            self.checkValue_('DispensePosition1Z', newValue) ;
+            self.DispensePosition1Z_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
@@ -453,9 +453,9 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispensePosition2ZOffset(self, newValue)
-            self.checkValue_('DispensePosition2ZOffset', newValue) ;
-            self.DispensePosition2ZOffset_ = newValue ;
+        function set.DispensePosition2Z(self, newValue)
+            self.checkValue_('DispensePosition2Z', newValue) ;
+            self.DispensePosition2Z_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
@@ -588,6 +588,10 @@ classdef PezUserClass < ws.UserClass
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
+            elseif isequal(propertyName, 'DispensePosition1Z') || isequal(propertyName, 'DispensePosition2Z') ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-10<=newValue) && (newValue<=(-self.ZOffset_)) ) ,
+                    error('ws:invalidPropertyValue', 'DispensePosition property value is invalid') ;
+                end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;

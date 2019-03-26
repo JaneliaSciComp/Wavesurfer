@@ -23,7 +23,7 @@ classdef PezController < handle
         DeliverPosition1XLabelledEdit_
         DeliverPosition1YLabelledEdit_
         DeliverPosition1ZLabelledEdit_        
-        DispensePosition1ZOffsetLabelledEdit_
+        DispensePosition1ZLabelledEdit_
         
         Condition2Label_
         ToneFrequency2LabelledEdit_
@@ -32,7 +32,7 @@ classdef PezController < handle
         DeliverPosition2XLabelledEdit_
         DeliverPosition2YLabelledEdit_
         DeliverPosition2ZLabelledEdit_        
-        DispensePosition2ZOffsetLabelledEdit_                
+        DispensePosition2ZLabelledEdit_                
     end
 
     methods
@@ -136,12 +136,12 @@ classdef PezController < handle
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', 'Delivery Z:', ...
                                          'UnitsString', 'mm') ;
-            self.DispensePosition1ZOffsetLabelledEdit_ = ...
+            self.DispensePosition1ZLabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
-                                         'Tag', 'DispensePosition1ZOffset', ...
+                                         'Tag', 'DispensePosition1Z', ...
                                          'Callback', @(source,event)(self.controlActuated(source, event)), ...
                                          'HorizontalAlignment', 'right', ...
-                                         'LabelString', 'Dispense Z Offset:', ...
+                                         'LabelString', 'Dispense Z:', ...
                                          'UnitsString', 'mm') ;
                                      
             self.Condition2Label_ = ...
@@ -191,9 +191,9 @@ classdef PezController < handle
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', '', ...
                                          'UnitsString', 'mm') ;
-            self.DispensePosition2ZOffsetLabelledEdit_ = ...
+            self.DispensePosition2ZLabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
-                                         'Tag', 'DispensePosition2ZOffset', ...
+                                         'Tag', 'DispensePosition2Z', ...
                                          'Callback', @(source,event)(self.controlActuated(source, event)), ...
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', '', ...
@@ -241,8 +241,7 @@ classdef PezController < handle
                     % raise a dialog
                     ws.raiseDialogOnException(exception) ;
                 end
-            end                
-                
+            end                                
         end  % function
         
         function update(self)
@@ -261,7 +260,7 @@ classdef PezController < handle
             self.DeliverPosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1X) ;            
             self.DeliverPosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Y) ;            
             self.DeliverPosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Z) ;            
-            self.DispensePosition1ZOffsetLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1ZOffset) ;                        
+            self.DispensePosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1Z) ;                        
             
             self.ToneFrequency2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency2) ;                        
             self.ToneDuration2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration2) ;
@@ -269,31 +268,31 @@ classdef PezController < handle
             self.DeliverPosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2X) ;            
             self.DeliverPosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Y) ;            
             self.DeliverPosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Z) ;            
-            self.DispensePosition2ZOffsetLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition2ZOffset) ;
+            self.DispensePosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition2Z) ;
 
             % Update enablement
             self.TrialSequenceModePopupMenu_.Enable = ws.onIff(~self.Model_.IsRunning) ;
-            self.ReturnDelayLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;            
+            self.ReturnDelayLabelledEdit_.Enable = ws.onIff(true) ;            
             self.ResetButton_.Enable = ws.onIff(self.Model_.IsResetEnabled) ;
 
-            self.DispenseToneCheckbox_.Enable = ws.onIff(~self.Model_.IsRunning) ;         
-            self.DispenseToneFrequencyLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning && self.Model_.DoPlayDispenseTone) ;         
+            self.DispenseToneCheckbox_.Enable = ws.onIff(true) ;         
+            self.DispenseToneFrequencyLabelledEdit_.Enable = ws.onIff(true && self.Model_.DoPlayDispenseTone) ;         
             
-            self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;         
-            self.ToneDuration1LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
-            self.DispenseDelay1LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
-            self.DeliverPosition1XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
-            self.DeliverPosition1YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
-            self.DeliverPosition1ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;  
-            self.DispensePosition1ZOffsetLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;                   
+            self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(true) ;         
+            self.ToneDuration1LabelledEdit_.Enable = ws.onIff(true) ;
+            self.DispenseDelay1LabelledEdit_.Enable = ws.onIff(true) ;
+            self.DeliverPosition1XLabelledEdit_.Enable = ws.onIff(true) ; 
+            self.DeliverPosition1YLabelledEdit_.Enable = ws.onIff(true) ; 
+            self.DeliverPosition1ZLabelledEdit_.Enable = ws.onIff(true) ;  
+            self.DispensePosition1ZLabelledEdit_.Enable = ws.onIff(true) ;                   
             
-            self.ToneFrequency2LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;             
-            self.ToneDuration2LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
-            self.DispenseDelay2LabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
-            self.DeliverPosition2XLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ; 
-            self.DeliverPosition2YLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;    
-            self.DeliverPosition2ZLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;      
-            self.DispensePosition2ZOffsetLabelledEdit_.Enable = ws.onIff(~self.Model_.IsRunning) ;
+            self.ToneFrequency2LabelledEdit_.Enable = ws.onIff(true) ;             
+            self.ToneDuration2LabelledEdit_.Enable = ws.onIff(true) ;
+            self.DispenseDelay2LabelledEdit_.Enable = ws.onIff(true) ;
+            self.DeliverPosition2XLabelledEdit_.Enable = ws.onIff(true) ; 
+            self.DeliverPosition2YLabelledEdit_.Enable = ws.onIff(true) ;    
+            self.DeliverPosition2ZLabelledEdit_.Enable = ws.onIff(true) ;      
+            self.DispensePosition2ZLabelledEdit_.Enable = ws.onIff(true) ;
         end             
         
         function result = get.FigurePosition(self)
@@ -390,10 +389,10 @@ classdef PezController < handle
             self.DeliverPosition2ZLabelledEdit_.Position(3)   = editWidth ;
             
             yOffset = yOffset - defaultYSpacing ;
-            self.DispensePosition1ZOffsetLabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
-            self.DispensePosition1ZOffsetLabelledEdit_.Position(3)   = editWidth ;
-            self.DispensePosition2ZOffsetLabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
-            self.DispensePosition2ZOffsetLabelledEdit_.Position(3)   = editWidth ;
+            self.DispensePosition1ZLabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
+            self.DispensePosition1ZLabelledEdit_.Position(3)   = editWidth ;
+            self.DispensePosition2ZLabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
+            self.DispensePosition2ZLabelledEdit_.Position(3)   = editWidth ;
         end        
     end  % private methods block    
     
