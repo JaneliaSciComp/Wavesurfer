@@ -566,7 +566,7 @@ classdef PezUserClass < ws.UserClass
             if self.IsFigurePositionSaved_ ,                
                 result = self.SavedFigurePosition_ ;
             else
-                error('Figure position is not saved') ;
+                result = [] ;
             end
         end
         
