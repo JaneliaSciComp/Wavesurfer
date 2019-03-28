@@ -147,6 +147,21 @@ classdef PezUserClass < ws.UserClass
                         'setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
                 end                
                 self.PezDispenser_.startAssay() ;
+                % Wait for Arduino to be ready
+                ticId = tic() ;
+                while toc(ticId) < 30 ,
+                    stateStruct = self.PezDispenser_.getAssayStatus() ;
+                    status = stateStruct.state ;
+                    isReadyToDispense = isequal(status, 'READY_TO_DISPENSE') ;
+                    if isReadyToDispense ,
+                        break
+                    end
+                    pause(1) ;
+                end
+                if ~isReadyToDispense ,
+                    self.tellControllerToUpdateIfPresent_() ;
+                    error('Pez dispenser failed to get ready in the alloted time') ;
+                end
             end
             self.tellControllerToUpdateIfPresent_() ;
         end
