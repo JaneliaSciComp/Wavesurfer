@@ -134,21 +134,19 @@ classdef PezUserClass < ws.UserClass
             self.IsRunning_ = true ;
             self.PezDispenser_ = ws.examples.pez.ModularClient('COM3') ;
             self.PezDispenser_.open() ;
-            if ~isempty(self.TrialSequence_) ,
+            % Need to set the nextDeliverPosition to the position for the first trail,
+            % then give the .startAssay() command to get the Arduino to position the stage
+            % appropriately.
+            if sweepCount > 0 ,
                 firstTrialType = self.TrialSequence_(1) ;
-                % Move to the deliver position for the first sweep, so that no movement will
-                % be needed once the sweep starts.
                 if firstTrialType == 1 ,
-                    self.PezDispenser_.moveStageTo([self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
-                    %self.PezDispenser_.moveTo(0, self.DeliverPosition1Z) ;
-                    %self.PezDispenser_.moveTo(1, self.DeliverPosition1X) ;
-                    %self.PezDispenser_.moveTo(2, self.DeliverPosition1Y) ;                    
+                    self.PezDispenser_.nextDeliverPosition(...
+                        'setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
                 else
-                    self.PezDispenser_.moveStageTo([self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                    %self.PezDispenser_.moveTo(0, self.DeliverPosition2Z) ;
-                    %self.PezDispenser_.moveTo(1, self.DeliverPosition2X) ;
-                    %self.PezDispenser_.moveTo(2, self.DeliverPosition2Y) ;                    
+                    self.PezDispenser_.nextDeliverPosition(...
+                        'setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
                 end                
+                self.PezDispenser_.startAssay() ;
             end
             self.tellControllerToUpdateIfPresent_() ;
         end
@@ -246,9 +244,9 @@ classdef PezUserClass < ws.UserClass
             %
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
             else
-                self.PezDispenser_.deliverPosition('setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
