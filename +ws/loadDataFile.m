@@ -189,7 +189,11 @@ function dataFileAsStruct = loadDataFile(filename, formatString, tMin, tMax, min
             if doesUserWantSingle ,
                 scaledAnalogData = ws.scaledSingleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
             else
-                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                if ispc() ,
+                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                else
+                    scaledAnalogData = ws.scaledDoubleAnalogDataFromRaw(analogDataAsCounts, analogChannelScales, analogScalingCoefficients) ;
+                end                    
             end
             dataFileAsStruct.(fieldName).analogScans = scaledAnalogData ;
         end

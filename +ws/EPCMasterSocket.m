@@ -111,10 +111,10 @@ classdef EPCMasterSocket < handle
             end            
         end  % function        
 
-        function self=reopen(self)
+        function err = reopen(self)
             % Close the connection, then open it.
             self.close();
-            self.open();
+            err = self.open();
         end        
         
         function value=get.IsOpen(self)
@@ -602,14 +602,25 @@ classdef EPCMasterSocket < handle
             end
         end  % function            
 
-        %%
         function [responseString,err]=issueCommandAndGetResponse(self,commandString)
+            %fprintf('Issuing command: %s\n', commandString) ;
             [commandIndex,err]=self.issueCommand(commandString);
+            %fprintf('  Index of that command was %d\n', commandIndex) ;
             if isempty(err) ,
                 [responseString,err]=self.getResponseString(commandIndex);
             else
                 responseString=[];
             end
+%             if isempty(responseString) ,
+%                 fprintf('Got empty response.\n') ;
+%             else
+%                 fprintf('Got response: %s\n', responseString) ;
+%             end
+%             if isempty(err) ,
+%                 fprintf('  With no error.\n') ;
+%             else
+%                 fprintf('  With error: %s\n', err.message) ;
+%             end
         end
             
         function [commandIndex,err]=issueCommand(self,commandString)
@@ -633,6 +644,7 @@ classdef EPCMasterSocket < handle
             fseek(commandFileId,0,'bof');
             fprintf(commandFileId,'+');              
             fclose(commandFileId);
+            %fprintf('Issued command %d: %s\n', commandIndex, commandString) ;
         end
     
         function [commandIndex,err]=issueCommands(self,commandStrings)
@@ -664,27 +676,17 @@ classdef EPCMasterSocket < handle
             fclose(commandFileId);
         end
     
-        function [responseString,err]=getResponseString(self,commandIndex)
+        function [responseString,err]=getResponseString(self, commandIndex)
             % fallback return values
             responseString='';
             err=[];
-            
-            % Try to open the file
-            responseFileId=fopen(self.ResponseFileName_,'r');
-            if responseFileId<0 ,
-                % Couldn't open response file
-                errorId='EPCMasterSocket:CouldNotOpenResponseFile';
-                errorMessage='Couldn''t get response because couldn''t open response file';
-                err=MException(errorId,errorMessage);
-                return
-            end
             
             maximumWaitTime=1;  % s
             dt=0.005;
             nIterations=round(maximumWaitTime/dt);
             wasResponseGenerated=false;
-            for i=1:nIterations ,
-                [responseIndex,err]=ws.EPCMasterSocket.getResponseIndex_(responseFileId);
+            for i=1:nIterations ,                
+                [responseIndex, responseFileAsCellString, err]=ws.EPCMasterSocket.getResponseIndex_(self.ResponseFileName_);
                 if isempty(err) ,
                     success=true;
                 else
@@ -730,15 +732,14 @@ classdef EPCMasterSocket < handle
             end
             
             if ~wasResponseGenerated ,
-                fclose(responseFileId);
                 errorId='EPCMasterSocket:NoReponse';
                 errorMessage='EPCMaster did not respond to a command within the timeout interval';
                 err=MException(errorId,errorMessage);
                 return
             end
             
-            responseString=fgetl(responseFileId);
-            fclose(responseFileId);
+            responseString = responseFileAsCellString{2} ;
+            %fclose(responseFileId);
             if isnumeric(responseString) ,
                 responseString='';  % Some commands don't have a response beyond just generating a response file with the line containing the response index
                 % errorId='EPCMasterSocket:UnableToReadResponseFileToGetResponseString';
@@ -751,25 +752,14 @@ classdef EPCMasterSocket < handle
             % Fallback values
             responseStrings={};
             err=[];
-            
-            %fprintf('Just entered getResponseStrings()\n');
-            %commandIndex
-            responseFileId=fopen(self.ResponseFileName_,'r');
-            if responseFileId<0 ,
-                % Couldn't open response file
-                errorId='EPCMasterSocket:CouldNotOpenResponseFile';
-                errorMessage='Couldn''t get response because couldn''t open response file';
-                err=MException(errorId,errorMessage);
-                return
-            end
-            
+                        
             %tStart=tic();
             maximumWaitTime=1;  % s
             dt=0.005;
             nIterations=round(maximumWaitTime/dt);
             wasResponseGenerated=false;
             for i=1:nIterations ,
-                [responseIndex,err]=ws.EPCMasterSocket.getResponseIndex_(responseFileId);
+                [responseIndex, responseFileAsCellString, err]=ws.EPCMasterSocket.getResponseIndex_(self.ResponseFileName_);
                 if isempty(err)
                     success=true;
                 else
@@ -810,31 +800,14 @@ classdef EPCMasterSocket < handle
             % toc(tStart)
             
             if ~wasResponseGenerated ,
-                fclose(responseFileId);
+                %fclose(responseFileId);
                 errorId='EPCMasterSocket:NoReponse';
                 errorMessage='EPCMaster did not respond to a command within the timeout interval';
                 err=MException(errorId,errorMessage);
                 return
             end
             
-            %tStart=tic();
-            responseStrings=cell(1,0);
-            i=1;
-            atEndOfFile=false;
-            while ~atEndOfFile ,
-                thisLine=fgetl(responseFileId);
-                if isnumeric(thisLine)
-                    atEndOfFile=true;
-                else
-                    responseStrings{1,i}=thisLine;
-                    i=i+1;
-                end
-            end                
-            %toc(tStart)
-            %tStart=tic();
-            fclose(responseFileId);
-            %toc(tStart)
-            %fprintf('About to exit getResponseStrings()\n');
+            responseStrings = responseFileAsCellString(2:end) ;
         end  % function
 
     end  % public methods
@@ -933,11 +906,11 @@ classdef EPCMasterSocket < handle
             % and seeing if we get a response...
             % If successful, this will also reset the command counter in
             % EPCMaster, which is generally good.
-            self.issueCommand('acknowledged');  % as called from the constructor, this will have command index 1
+            self.issueCommand('acknowledged');
             
             % Get the modification date on the command file.
             if exist(self.CommandFileName_,'file') ,
-                commandFileModificationTime=ws.fileModificationTime(self.CommandFileName_);
+                commandFileModificationTime = ws.fileModificationTime(self.CommandFileName_) ;
                 if isempty(commandFileModificationTime),
                     err=MException('EPCMasterSocket:UnableToGetCommandModificationTime', ...
                                    'Unable to open connection to EPCMaster because unable to get modification time on command file after issuing test command');
@@ -959,15 +932,24 @@ classdef EPCMasterSocket < handle
                 if exist(self.ResponseFileName_,'file') ,
                     % Check that the response file was changed after the command
                     % file mode date
-                    responseFileModificationTime=ws.fileModificationTime(self.ResponseFileName_);
+                    responseFileModificationTime = ws.fileModificationTime(self.ResponseFileName_) ;
+%                     if isempty(responseFileModificationTime) ,
+%                         responseFileModTimeRelativeToCommandFileModTime = -inf 
+%                     else
+%                         responseFileModTimeRelativeToCommandFileModTime = responseFileModificationTime - commandFileModificationTime
+%                     end
                     if ~isempty(responseFileModificationTime) && commandFileModificationTime<=responseFileModificationTime ,
                         wasResponseGenerated=true;
                         break
                     else
+                        %ticId1 = tic() ;
                         ws.sleep(dt);
+                        %elapsedTime = toc(ticId1) 
                     end
                 else
+                    %ticId2 = tic() ;
                     ws.sleep(dt);
+                    %elapsedTime = toc(ticId2) 
                 end
             end
             
@@ -1138,7 +1120,6 @@ classdef EPCMasterSocket < handle
             end
         end  % function
         
-        %%
         function [gain,err]=parseVoltageCommandGainResponse(responseString)
             % The response should look like 'GetEpcParams-1 0.100',
             % with that gain in mV/mV.  We convert to mV/V.
@@ -1195,26 +1176,37 @@ classdef EPCMasterSocket < handle
     end  % public class methods
 
     methods (Static=true, Access=protected)  % protected class methods
-        function [responseIndex,err]=getResponseIndex_(responseFileId)
+        function [responseIndex, responseFileContentsAsCellString, err] = getResponseIndex_(responseFileName)
             % If successful, leaves the file pointer at the start of the
             % second line of the response file
-            responseIndex=[];
-            err='';
+            responseIndex = [] ;
+            responseFileContentsAsCellString = cell(0,1) ; 
+            err = '' ;
             
-            fseek(responseFileId,0,'bof');
-            firstLine=fgetl(responseFileId);
-            if isnumeric(firstLine) ,
-                errorId='EPCMasterSocket:UnableToReadResponseFileToGetResponseIndex';
-                errorMessage='Unable to read response file to get response index';
-                err=MException(errorId,errorMessage);
+            try
+                responseFileContentsAsString = ws.readFileContents(responseFileName) ;
+            catch me
+                errorId = 'EPCMasterSocket:UnableToReadResponseFileToGetResponseIndex' ;
+                errorMessage = 'Unable to read response file to get response index' ;
+                err = MException(errorId,errorMessage) ;
+                err.addCause(me) ;
                 return
-            end
-            responseIndex=str2double(firstLine);
-            if ~isreal(responseIndex) || ~isfinite(responseIndex) || responseIndex~=round(responseIndex) ,
+            end                
+            responseFileContentsAsCellString = splitlines(responseFileContentsAsString) ;
+            if length(responseFileContentsAsCellString)>=1 ,
+                firstLine = responseFileContentsAsCellString{1} ;
+                responseIndex=str2double(firstLine);
+                if ~isreal(responseIndex) || ~isfinite(responseIndex) || responseIndex~=round(responseIndex) ,
+                    errorId='EPCMasterSocket:InvalidIndexInResponse';
+                    errorMessage='Response file had an invalid index';
+                    err=MException(errorId,errorMessage);
+                    return
+                end
+            else
                 errorId='EPCMasterSocket:InvalidIndexInResponse';
                 errorMessage='Response file had an invalid index';
                 err=MException(errorId,errorMessage);
-                return
+                return                
             end
         end  % function                    
     end  % protected class methods

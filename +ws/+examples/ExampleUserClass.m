@@ -34,6 +34,11 @@ classdef ExampleUserClass < ws.UserClass
         end
         
         % These methods are called in the frontend process
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+            fprintf('%s  About to save to protocol file\n', ...
+                    self.Greeting);
+        end
+        
         function startingRun(self, wsModel)  %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")

@@ -90,6 +90,9 @@ classdef RasterTreadMill < ws.UserClass
             result = self.SampleRate_ ;
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end
+        
         function startingSweep(self,wsModel) %#ok<INUSD>
         end
         
