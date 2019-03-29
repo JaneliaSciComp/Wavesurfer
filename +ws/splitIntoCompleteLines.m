@@ -1,14 +1,7 @@
 function lines = splitIntoCompleteLines(textAsString)
-    % Note that any text between the final newline and the EOF is ignored
-    isNewline = (textAsString==sprintf('\n')) ;
-    iNewlines = find(isNewline) ;
-    newlineCount = length(iNewlines) ;
-    lines = cell(newlineCount,1) ;
-    iLineStart = 1 ;
-    for lineIndex = 1:newlineCount ,
-        iLineEnd = iNewlines(lineIndex) ;
-        lines{lineIndex} = textAsString(iLineStart:iLineEnd-1) ;  % trim the \n
-        % set up for next iter
-        iLineStart = iLineEnd+1 ;
-    end
+    % Splits a string at newline characters, returning a cell array of strings.
+    % This version ignores any characters between the last newline and the end of
+    % the string.
+    rawLines = ws.splitIntoLines(textAsString) ;  % output of this should never be empty
+    lines = rawLines(1:end-1,1) ;  % If rawLines is a scalar, want result to be an empty column, not an empty row
 end

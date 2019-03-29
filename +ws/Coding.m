@@ -627,7 +627,7 @@ classdef (Abstract) Coding < handle
                     result = cell(1,n) ;
                     for i=1:n ,
                         hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
-                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger, horzcat(context, {fieldName})) ;
+                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger, horzcat(context, {i})) ;
                         % A cell array can't be a parent, so we just use
                         % parent
                     end

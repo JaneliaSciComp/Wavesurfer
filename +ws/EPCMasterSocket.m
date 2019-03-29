@@ -1192,7 +1192,7 @@ classdef EPCMasterSocket < handle
                 err.addCause(me) ;
                 return
             end                
-            responseFileContentsAsCellString = splitlines(responseFileContentsAsString) ;
+            responseFileContentsAsCellString = ws.splitIntoLines(responseFileContentsAsString) ;
             if length(responseFileContentsAsCellString)>=1 ,
                 firstLine = responseFileContentsAsCellString{1} ;
                 responseIndex=str2double(firstLine);
