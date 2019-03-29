@@ -1,31 +1,15 @@
-function contents = readFileContents(fileName)
-    % Read all text from a file.  Result is a string.
-    [fid,fopenErrorMessage] = fopen(fileName,'rt') ;
-
-    if fid<0 ,
-        error('readAllLines:unableToOpenFile', ...
-              'Unable to open file: %s',fopenErrorMessage);
+function lines = splitIntoLines(textAsString)
+    % Splits a string at newline characters, returning a cell array of strings
+    isNewline = (textAsString==sprintf('\n')) ;
+    iNewlines = find(isNewline) ;
+    newlineCount = length(iNewlines) ;
+    iLineStarts = [1 iNewlines+1] ;
+    iLineEnds = [iNewlines-1 length(textAsString)] ;  % the -1 is to trim off the \n characters
+    lineCount = newlineCount + 1 ;
+    lines = cell(lineCount,1) ;
+    for lineIndex = 1:lineCount ,
+        iLineStart = iLineStarts(lineIndex) ;
+        iLineEnd = iLineEnds(lineIndex) ;
+        lines{lineIndex} = textAsString(iLineStart:iLineEnd) ;
     end
-
-    contents = fread(fid, 'char=>char') ;
-%     lines = cell(0,1) ;  % a *col* vector of lines
-%     oneLine = fgets(fid);
-%     while ischar(oneLine) ,  % oneLine will be -1 when EOF is reached
-%         if isempty(oneLine) ,
-%             % Don't think it should be possible to get here...
-%         else
-%             lastChar = oneLine(end) ;
-%             if isequal(lastChar, '\n') ,
-%                 lines{end+1,1} = oneLine(1:end-1) ;  %#ok<AGROW>
-%             else
-%                 % do nothing --- this is presumably a file with some characters after the last
-%                 % newline, which we ignore
-%             end
-%         end
-%         
-%         % Read the next line
-%         oneLine = fgets(fid);        
-%     end
-
-    fclose(fid);
 end

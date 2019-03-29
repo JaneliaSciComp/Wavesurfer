@@ -16,7 +16,7 @@ classdef (Abstract) Coding < handle
         
         function propNames = listPropertiesForHeader(self)
             % Define helper
-            shouldPropertyBeIncludedInHeader = @(x)(strcmpi(x.GetAccess,'public') && ~x.Hidden) ;
+            shouldPropertyBeIncludedInHeader = @(x)(strcmpi(x.GetAccess,'public') && ~x.Hidden && ~x.Transient) ;
 
             % Actually get the prop names that satisfy the predicate
             propNames = self.propertyNamesSatisfyingPredicate_(shouldPropertyBeIncludedInHeader);
@@ -275,10 +275,15 @@ classdef (Abstract) Coding < handle
             end
         end  % function                
 
-        function result = decodeEncodingContainer(encodingContainer, warningLogger)
+        function result = decodeEncodingContainer(encodingContainer, warningLogger, context)
+            % Context is not really used for anything, but it's very useful when debugging
             if nargin<2 ,
                 warningLogger = [] ;
             end
+            if nargin<3 ,
+                context = cell(1,0) ;
+            end
+            
             % Unpack the encoding container, or try to deal with it if
             % encodingContainer is not actually an encoding container.            
             if ws.Coding.isAnEncodingContainer(encodingContainer) ,                        
@@ -316,7 +321,7 @@ classdef (Abstract) Coding < handle
             elseif isequal(className,'cell') ,
                 result = cell(size(encoding)) ;
                 for i=1:numel(result) ,
-                    result{i} = ws.Coding.decodeEncodingContainer(encoding{i}, warningLogger) ;
+                    result{i} = ws.Coding.decodeEncodingContainer(encoding{i}, warningLogger, horzcat(context, {sprintf('%d', i)})) ;
                       % A cell array can't be a parent, so we just use
                       % parent
                 end
@@ -326,7 +331,9 @@ classdef (Abstract) Coding < handle
                 for i=1:numel(encoding) ,
                     for j=1:length(fieldNames) ,
                         fieldName = fieldNames{j} ;
-                        result(i).(fieldName) = ws.Coding.decodeEncodingContainer(encoding(i).(fieldName), warningLogger) ;
+                        result(i).(fieldName) = ws.Coding.decodeEncodingContainer(encoding(i).(fieldName), ...
+                                                                                  warningLogger, ...
+                                                                                  horzcat(context, {fieldName})) ;
                             % A struct array can't be a parent, so we just use
                             % parent
                     end
@@ -502,14 +509,14 @@ classdef (Abstract) Coding < handle
                                        isequal(propertyName, 'PulseDuration_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     subresult = 1e-3 * str2double(rawSubresult) ;  % string to double, ms to s
                                 elseif isa(result, 'ws.ScopeModel') && ...
                                         ( ( isequal(fieldName, 'YUnits_') && isequal(propertyName, 'YUnits_')) || ...
                                           ( isequal(fieldName, 'XUnits_') && isequal(propertyName, 'XUnits_')) ) ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -524,7 +531,7 @@ classdef (Abstract) Coding < handle
                                        isequal(fieldName, 'ChannelNames_') && isequal(propertyName, 'ChannelName_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     % rawSubresult is always a one-element cellstring.  Just
                                     % want the string.
                                     if isempty(rawSubresult) ,
@@ -537,7 +544,7 @@ classdef (Abstract) Coding < handle
                                 elseif isa(result,'ws.Electrode') && isequal(fieldName,'Mode_') && isequal(propertyName,'Mode_') ,
                                     % BC hack 
                                     doSetPropertyValue = true ;
-                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    rawSubresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     % sometimes rawSubresult is a
                                     % one-element cellstring.  If so, just
                                     % want the string.
@@ -552,7 +559,7 @@ classdef (Abstract) Coding < handle
                                        && ...
                                        isequal(fieldName,'Edge_') && isequal(propertyName,'Edge_') ,
                                     % BC hack 
-                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     % sometimes subresult is empty.  If
                                     % so, don't set it.
                                     doSetPropertyValue = ~isempty(subresult) ;
@@ -563,7 +570,7 @@ classdef (Abstract) Coding < handle
                                     % file is missing.
                                     doSetPropertyValue = true ;
                                     try 
-                                        subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                        subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                     catch me 
                                         if isequal(me.identifier, 'MATLAB:UndefinedFunction') ,
                                             % The class being missing
@@ -578,7 +585,7 @@ classdef (Abstract) Coding < handle
                                 else                                    
                                     % the usual case
                                     doSetPropertyValue = true ;
-                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger) ;
+                                    subresult = ws.Coding.decodeEncodingContainer(subencoding, warningLogger, horzcat(context, {fieldName})) ;
                                 end
                                 if doSetPropertyValue ,
                                     try
@@ -620,7 +627,7 @@ classdef (Abstract) Coding < handle
                     result = cell(1,n) ;
                     for i=1:n ,
                         hackedContainer = struct('className', className, 'encoding', encoding(i)) ;
-                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger) ;
+                        result{i} = ws.Coding.decodeEncodingContainer(hackedContainer, warningLogger, horzcat(context, {i})) ;
                         % A cell array can't be a parent, so we just use
                         % parent
                     end

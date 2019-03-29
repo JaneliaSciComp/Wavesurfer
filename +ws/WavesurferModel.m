@@ -2415,6 +2415,7 @@ classdef WavesurferModel < ws.Model
             end            
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
+            self.callUserMethod_('willSaveToProtocolFile');  % notify the user object we're about to save  
             wavesurferModelSettings=self.encodeForPersistence();
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
@@ -6251,6 +6252,32 @@ classdef WavesurferModel < ws.Model
                       'ArePreferencesWritable must be a scalar, and must be logical or numeric and finite') ;
             end               
         end        
+        
+        function result = listUserObjectMethods(self)
+            result = self.UserCodeManager_.listUserObjectMethods() ;
+        end
+        
+        function result = listUserObjectProperties(self)
+            result = self.UserCodeManager_.listUserObjectProperties() ;
+        end
+        
+        function callUserObjectMethod(self, methodName, varargin)
+            self.UserCodeManager_.callUserObjectMethod(methodName, varargin{:}) ;
+        end
+        
+        function setUserObjectProperty(self, propertyName, newValue)
+            self.UserCodeManager_.setUserObjectProperty(propertyName, newValue) ;
+        end
+
+        function result = getUserObjectProperty(self, propertyName)
+            result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
+        end
+        
+        function result = getUserObjectHandle_(self)
+            % We generally from on returning references to object owned by self.
+            % Only use this method if you're sure you know what you're doing.
+            result = self.UserCodeManager_.getUserObjectHandle_() ;            
+        end
     end  % public methods block
     
     methods (Access = protected)

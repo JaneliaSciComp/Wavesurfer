@@ -29,9 +29,10 @@ classdef UserClass < ws.Coding
           % non-transient, non-dependent properties of the user object should be set
           % as in the protocol file, but the transient properties will generally not
           % be set to sensible values.  If needed, the wake() method should set
-          % the transient values to preserve any user object invarients.
+          % the transient values to preserve any user object invarients.        
           
         % these are called in the frontend process
+        willSaveToProtocolFile(self, wsModel)
         startingRun(self, wsModel)
         completingRun(self, wsModel)
         stoppingRun(self, wsModel)

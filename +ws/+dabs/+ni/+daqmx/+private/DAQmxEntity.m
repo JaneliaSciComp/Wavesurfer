@@ -97,8 +97,8 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
     %% HIDDEN PROPERTIES 
     
     properties (Hidden,Constant)
-        apiInstallationHeaderPath = zlclInitApiInstallationHeaderPath();
         apiInstallationHeaderFile = 'nidaqmx.h';        
+        apiInstallationHeaderPath = zlclInitApiInstallationHeaderPath(ws.dabs.ni.daqmx.private.DAQmxEntity.apiInstallationHeaderFile);
     end            
     
     properties (SetAccess=private, Dependent)
@@ -575,18 +575,33 @@ hMap('15.1.x') = 'NIDAQmx_proto.m';
 
 end
 
-function p = zlclInitApiInstallationHeaderPath()
+function result = zlclInitApiInstallationHeaderPath(fileName)
 
-switch lower(computer)
-    
+switch lower(computer)    
     case 'pcwin'
-        pfDir = 'program files';
+        programFileFolderName = 'Program Files';
     case 'pcwin64'
-        pfDir = 'program files (x86)';
+        programFileFolderName = 'Program Files (x86)';
     otherwise
         assert(false);
 end
 
-p = fullfile(ws.startPath,pfDir,'national instruments','ni-daq','daqmx ansi c dev','include');
+driveLettersToTry = {'C:', 'D:', 'E:', 'F:', 'G:', 'H:'} ;
+
+didFindIt = false ;
+for driveLetterSingleton = driveLettersToTry ,
+    driveLetter = driveLetterSingleton{1} ;
+    putativePath = fullfile(driveLetter, programFileFolderName, 'National Instruments', 'NI-DAQ', 'DAQmx ANSI C Dev', 'include', fileName) ;
+    if exist(putativePath, 'file') ,
+        didFindIt = true ;
+        result = putativePath ;
+        %fprintf('Found it!  Path: %s\n', result) ;
+        break
+    end
+end
+if ~didFindIt ,
+    error('Unable to locate NI DAQmx header file, usually located at %s', ...
+          fullfile('C:', programFileFolderName, 'National Instruments', 'NI-DAQ', 'DAQmx ANSI C Dev', 'include', fileName)) ;
+end
 
 end

@@ -21,7 +21,6 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % a few checks on the values
             wsModel = wavesurfer('--nogui') ;
             wsModel.PrimaryDeviceName = 'Dev1' ;
-            nCoeffs = 4 ;  % this holds for all x-series boards
             nAIChannels = 7 ;
             for i=1:(nAIChannels-1) ,
                 wsModel.addAIChannel() ;
@@ -49,7 +48,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             delete(newDataFileAbsolutePath) ;
             realCoefficientsAsRead = newDataFileAsStruct.header.AIScalingCoefficients ;
             % Verify that the shape of the coeffs array is correct
-            self.verifyEqual( size(realCoefficientsAsRead), [nCoeffs nActiveAIChannels] ) ;
+            self.verifyEqual( size(realCoefficientsAsRead,2), nActiveAIChannels ) ;
 
             % For every board I've ever tested the coeffs are the same
             % across channels.  This is likely because all the boards I've
@@ -58,7 +57,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % But let's do some sanity checks of the range of these params.
             termMin = [-0.02 10/2^15*(1-0.1) -1e-13 -1e-17]' ;
             termMax = [+0.02 10/2^15*(1+0.1) +1e-13 +1e-17]' ;
-            for i=1:nCoeffs ,
+            for i=1:size(realCoefficientsAsRead, 1) ,
                 thisTerm = realCoefficientsAsRead(i,:) ;
                 self.verifyTrue( all( (termMin(i)<=thisTerm) & (thisTerm<=termMax(i)) ) ) ;
             end
