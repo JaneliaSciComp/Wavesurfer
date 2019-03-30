@@ -1225,40 +1225,7 @@ classdef WavesurferMainController < ws.Controller
         
 %         function updateData(self,broadcaster,eventName,propertyName,source,event) %#ok<INUSD>
 %             self.syncLineXDataAndYData_();
-%         end  % function        
-        
-        function setYAxisLimitsTightToData(self, plotIndex)            
-            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,                
-                wsModel = self.Model_ ;
-                %display = wsModel.Display ;
-                isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
-                nPlots = length(isAnalogFromPlotIndex) ;
-                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-                    self.setYAxisLimitsInModelTightToData_(channelIndex) ;
-                end
-            end
-            self.updateYAxisLimits_(plotIndex, channelIndex) ;
-        end  % function        
-        
-        function toggleAreYLimitsLockedTightToData(self, plotIndex)
-            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
-                wsModel = self.Model_ ;                
-                %display = wsModel.Display ;
-                isAnalogFromPlotIndex = wsModel.IsAnalogFromPlotIndex ;
-                nPlots = length(isAnalogFromPlotIndex) ;
-                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
-                    channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-                    currentValue = wsModel.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
-                    newValue = ~currentValue ;
-                    wsModel.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
-                    if newValue ,
-                        self.setYAxisLimitsInModelTightToData_(channelIndex) ;
-                    end
-                end
-            end
-            self.update() ;  % update the button
-        end                        
+%         end  % function                
     end  % public methods block    
     
     methods (Access=protected)
@@ -1444,14 +1411,17 @@ classdef WavesurferMainController < ws.Controller
         
         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
             wsModel = self.Model_ ;
-            %display = wsModel.Display ;
             isChannelDisplayed = wsModel.IsAIChannelDisplayed ;
             areYLimitsLockedTightToData = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
             doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
-            for i = indicesOfAIChannelsNeedingYLimitUpdate ,
-                self.setYAxisLimitsInModelTightToData_(i) ;
-            end                
+            plotIndexFromChannelIndex = wsModel.PlotIndexFromChannelIndex ;  % for AI channels, the channel index is equal to the AI channel index
+            plotIndicesOfAIChannelsNeedingYLimitUpdate = plotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            for i = 1:length(indicesOfAIChannelsNeedingYLimitUpdate) ,
+                channelIndex = indicesOfAIChannelsNeedingYLimitUpdate(i) ;
+                plotIndex = plotIndicesOfAIChannelsNeedingYLimitUpdate(i) ;
+                self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
+            end               
         end  % function        
         
         function updateAxisLabels_(self, axisForegroundColor)
@@ -1505,7 +1475,7 @@ classdef WavesurferMainController < ws.Controller
             end
         end  % function        
         
-        function setYAxisLimitsInModelTightToData_(self, aiChannelIndex)            
+        function setYAxisLimitsInModelTightToData_(self, plotIndex, aiChannelIndex)            
             % this core function does no arg checking and doesn't call
             % .broadcast.  It just mutates the state.
             yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
@@ -1518,7 +1488,7 @@ classdef WavesurferMainController < ws.Controller
                 yRadius=0.001;
             end
             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
-            self.Model_.setYLimitsForSingleAIChannel(aiChannelIndex, newYLimits) ;
+            self.Model_.setYLimitsForSinglePlot(plotIndex, newYLimits) ;
         end
         
         function yMinAndMax = dataYMinAndMax_(self, aiChannelIndex)
@@ -1825,12 +1795,31 @@ classdef WavesurferMainController < ws.Controller
             self.Model_.do('zoomOut', plotIndex) ;
         end
                 
-        function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.setYAxisLimitsTightToData(plotIndex) ;
+        function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
+            aiChannelIndex = self.Model_.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            yMinAndMax = self.dataYMinAndMax_(aiChannelIndex) ;
+            if any( ~isfinite(yMinAndMax) ) ,
+                return
+            end
+            yCenter = mean(yMinAndMax) ;
+            yRadius = 0.5*diff(yMinAndMax) ;
+            if yRadius == 0 ,
+                yRadius = 0.001 ;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+            self.Model_.do('setYLimitsForSinglePlot', plotIndex, newYLimits) ;
         end  % method       
         
         function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            self.toggleAreYLimitsLockedTightToData(plotIndex) ;
+            wsModel = self.Model_ ;
+            channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            currentValue = wsModel.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
+            newValue = ~currentValue ;
+            wsModel.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
+            if newValue ,
+                self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
+            end
+            self.update() ;  % update the button
         end  % method       
 
         function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
@@ -1843,7 +1832,7 @@ classdef WavesurferMainController < ws.Controller
             yLimits = wsModel.YLimitsPerAIChannel(:,aiChannelIndex)' ;
             yUnits = wsModel.AIChannelUnits{aiChannelIndex} ;
             %callbackFunction = @(newYLimits)(model.setYLimitsForSingleAnalogChannel(aiChannelIndex, newYLimits)) ;
-            callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSingleAIChannel', aiChannelIndex, newYLimits)) ;
+            callbackFunction = @(newYLimits)(wsModel.do('setYLimitsForSinglePlot', plotIndex, newYLimits)) ;
             self.MyYLimDialogController = ...
                 ws.YLimDialogController(myYLimDialogModel, parentFigurePosition, yLimits, yUnits, callbackFunction) ;
         end  % method                

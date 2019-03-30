@@ -6404,20 +6404,16 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('DidMaybeChangeProtocol') ;
         end
         
-        function setYLimitsForSingleAIChannel(self, i, newValue)
+        function setYLimitsForSinglePlot(self, plotIndex, newValue)
             if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
-                self.Display_.setYLimitsForSingleAnalogChannel(i, double(newValue')) ;
-                wasSet = true ;
+                aiChannelIndex = self.Display_.setYLimitsForSinglePlot(plotIndex, double(newValue)) ;
+                self.broadcast('DidSetYAxisLimits', plotIndex, aiChannelIndex);
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
             else
-                wasSet = false ;
-            end
-            self.broadcast('UpdateMain') ;
-            if ~wasSet ,
                 error('ws:invalidPropertyValue', ...
-                      'YLimitsPerAnalogChannel column must be 2 element numeric row vector, with the first element less than or equal to the second') ;
-            end            
-            self.DoesProtocolNeedSave_ = true ;
-            self.broadcast('DidMaybeChangeProtocol') ;
+                      'y limits must be 2 element numeric row vector, with the first element less than or equal to the second') ;                
+            end
         end
 
         function scrollUp(self, plotIndex)  % works on analog channels only

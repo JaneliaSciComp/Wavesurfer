@@ -1,4 +1,6 @@
 classdef ScopePlot < handle
+    % Each ScopePlot is a subobject of the WavesurferMainController object. I.e.
+    % it is *not* a model class.
     
     properties (Dependent=true)
         %IsVisible

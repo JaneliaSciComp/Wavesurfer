@@ -233,8 +233,24 @@ classdef Display < ws.Model
             value = self.YLimitsPerAnalogChannel_ ;
         end
 
-        function setYLimitsForSingleAnalogChannel(self, i, newValue)
-            self.YLimitsPerAnalogChannel_(:,i) = double(newValue') ;
+        function channelIndex = setYLimitsForSinglePlot(self, plotIndex, newValue)
+            if isnumeric(plotIndex) && isscalar(plotIndex) && isreal(plotIndex) && (plotIndex==round(plotIndex)) && 1<=plotIndex,
+                isAnalogFromPlotIndex = self.IsAnalogFromPlotIndex_ ;
+                nPlots = length(isAnalogFromPlotIndex) ;
+                if plotIndex <= nPlots && isAnalogFromPlotIndex(plotIndex),
+                    channelIndex = self.ChannelIndexWithinTypeFromPlotIndex_(plotIndex) ;
+                    self.YLimitsPerAnalogChannel_(:,channelIndex) = double(newValue(:)) ;
+                    isValid = true ;
+                else
+                    isValid = false ;
+                end
+            else
+                isValid = false ;
+            end
+            if ~isValid ,
+                error('ws:invalidPropertyValue', ...
+                      'First argument to setYLimitsForSinglePlot() must be a valid AI plot index') ;
+            end                            
         end
         
 %         function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
@@ -458,10 +474,9 @@ classdef Display < ws.Model
             else
                 isValid = false ;
             end
-            %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
-                      'Argument to zoomOut() must be a valid AI channel index') ;
+                      'Argument to zoomOut() must be a valid AI plot index') ;
             end                                    
         end  % function
                 
@@ -486,7 +501,7 @@ classdef Display < ws.Model
             %self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
             if ~isValid ,
                 error('ws:invalidPropertyValue', ...
-                      'Argument to zoomIn() must be a valid AI channel index') ;
+                      'Argument to zoomIn() must be a valid AI plot index') ;
             end                
         end  % function
                 
