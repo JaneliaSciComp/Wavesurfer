@@ -60,9 +60,9 @@ classdef WavesurferMainController < ws.Controller
         DoColorTracesMenuItem_
         PlotArrangementMenuItem_
 
-        % The (downsampled for display) data currently being shown.
-        XData_
-        YData_
+%         % The (downsampled for display) data currently being shown.
+%         XData_
+%         YData_
         
         % Stuff below are cached resources that we use in all the scope plots
         NormalPlayIcon_
@@ -128,7 +128,7 @@ classdef WavesurferMainController < ws.Controller
             self.TestPulserController = ws.TestPulserController(model) ;
             self.FastProtocolsController = ws.FastProtocolsController(model) ;
             
-            %% Set up XData_ and YData_
+            % % Set up XData_ and YData_
             %self.clearXDataAndYData_() ;
            
             % Set properties of the figure
@@ -180,25 +180,24 @@ classdef WavesurferMainController < ws.Controller
             % Subscribe to stuff
             if ~isempty(model) ,
                 model.subscribeMe(self, 'Update', '', 'update') ;
-                model.subscribeMe(self,'UpdateMain','','update');
-                model.subscribeMe(self,'WillSetState','','willSetModelState');
-                model.subscribeMe(self,'DidSetState','','didSetModelState');
-                model.subscribeMe(self,'UpdateIsYokedToScanImage','','updateControlProperties');
-                model.subscribeMe(self,'DidCompleteSweep','','updateControlProperties');
-                model.subscribeMe(self,'UpdateForNewData','','updateForNewData');
-                model.subscribeMe(self,'RequestLayoutForAllWindows','','layoutForAllWindowsRequested');                
-                model.subscribeMe(self,'LayoutAllWindows','','layoutAllWindows');                
-                model.subscribeMe(self,'RaiseDialogOnException','','raiseDialogOnException');                                
-                model.subscribeMe(self,'DidMaybeChangeProtocol','','didMaybeChangeProtocol');                                
-                model.subscribeMe(self,'UpdateChannels','','didMaybeChangeProtocol');         
+                model.subscribeMe(self, 'UpdateMain', '', 'update');
+                model.subscribeMe(self, 'WillSetState', '', 'willSetModelState');
+                model.subscribeMe(self, 'DidSetState', '', 'didSetModelState');
+                model.subscribeMe(self, 'UpdateIsYokedToScanImage', '', 'updateControlProperties');
+                model.subscribeMe(self, 'DidCompleteSweep', '', 'updateControlProperties');
+                model.subscribeMe(self, 'UpdateForNewData', '', 'updateForNewData');
+                model.subscribeMe(self, 'RequestLayoutForAllWindows', '', 'layoutForAllWindowsRequested');                
+                model.subscribeMe(self, 'LayoutAllWindows', '', 'layoutAllWindows');                
+                model.subscribeMe(self, 'RaiseDialogOnException', '', 'raiseDialogOnException');                                
+                model.subscribeMe(self, 'DidMaybeChangeProtocol', '', 'didMaybeChangeProtocol');                                
+                model.subscribeMe(self, 'UpdateChannels', '', 'didMaybeChangeProtocol');         
                 model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateFigureVisibilityMenuChecks') ;                
-                %model.subscribeMe(self,'UpdateDisplay','','update') ;
-                model.subscribeMe(self,'DidSetUpdateRate','','updateControlProperties') ;
-                model.subscribeMe(self,'DidSetXOffset','','updateXAxisLimits') ;
-                model.subscribeMe(self,'DidSetXSpan','','updateXAxisLimits') ;
-                model.subscribeMe(self,'DidSetYAxisLimits','','updateYAxisLimits') ;
-                model.subscribeMe(self,'DidSetDataCache','','updateTraces') ;
-                model.subscribeMe(self, 'DidAddData', '', 'addData') ;
+                model.subscribeMe(self, 'DidSetUpdateRate', '', 'updateControlProperties') ;
+                model.subscribeMe(self, 'DidSetXOffset', '', 'updateXAxisLimits') ;
+                model.subscribeMe(self, 'DidSetXSpan', '', 'updateXAxisLimits') ;
+                model.subscribeMe(self, 'DidSetYAxisLimits', '', 'updateYAxisLimits') ;
+                model.subscribeMe(self, 'UpdateTraces', '', 'updateTraces') ;
+                model.subscribeMe(self, 'UpdateAfterDataAdded', '', 'updateTraces') ;
             end
             
             % Make the figure visible
@@ -240,10 +239,8 @@ classdef WavesurferMainController < ws.Controller
     
     methods (Access=protected)
         function resize_(self)
-            %self.clearXDataAndYData_() ;
-            %self.clearTraceData_() ;
             self.layout_() ;         
-            self.updateTraces_() ;
+            %self.updateTraces_() ;  % think this should happen via broadcast...
         end        
         
         function setInitialFigurePosition_(self)
@@ -637,7 +634,13 @@ classdef WavesurferMainController < ws.Controller
             progressBarHeight=12;
             progressBarXOffset = layoutWidth-widthFromProgressBarRightToFigureRight-progressBarWidth ;
             progressBarYOffset = layoutYOffset+(statusBarAreaHeight-progressBarHeight)/2 +1 ;  % shim
-            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);            
+            set(self.ProgressBarAxes,'Position',[progressBarXOffset progressBarYOffset progressBarWidth progressBarHeight]);
+            
+            % Inform the model of the axes width in pixels.
+            if nPlots > 0 ,
+                widthInPixels = self.ScopePlots_(1).getAxesWidthInPixels() ;
+                self.Model_.WidthOfPlotsInPixels = widthInPixels ;
+            end            
         end  % function
         
     end  % protected methods    
@@ -1187,15 +1190,15 @@ classdef WavesurferMainController < ws.Controller
     end    
     
     methods
-        function addData(self, broadcaster, eventName, propertyName, source, event) %#ok<INUSL>
-            args = event.Args ;
-            t = args{1} ;
-            recentScaledAnalogData = args{2} ;
-            recentRawDigitalData = args{3} ;
-            %sampleRate = args{4} ;
-            %sampleRate = self.Model_.AcquisitionSampleRate ;
-            self.addData_(t, recentScaledAnalogData, recentRawDigitalData) ;
-        end
+%         function updateAfterDataAdded(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+%             % Update the line graphics objects to reflect XData_, YData_
+%             self.updateTraces_();
+%             
+%             % Change the y limits to match the data, if appropriate
+%             %indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+%             %plotIndicesNeedingYLimitUpdate = wsModel.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+%             %self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
+%         end
         
 %         function clearData(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
 %             self.clearXDataAndYData_() ;
@@ -1245,14 +1248,14 @@ classdef WavesurferMainController < ws.Controller
 %             end            
 %         end
 
-        function [channelIndexFromPlotIndex, cacheChannelIndexFromChannelIndex] = syncLineXDataAndYData_(self)
+        function [channelIndexFromPlotIndex, cacheChannelIndexFromChannelIndex] = updateTraces_(self)
 %             if isempty(self.YData_) ,
 %                 % Make sure it's the right kind of empty
 %                 self.clearXDataAndYData_() ;
 %             end
-            xData = self.XData_ ;
-            yData = self.YData_ ;
             wsModel = self.Model_ ;
+            xData = wsModel.XDataForDisplay ;
+            yData = wsModel.YDataForDisplay ;
             %acq = wsModel.Acquisition ;
             isChannelInCacheFromChannelIndex = wsModel.IsInputChannelInCacheFromInputChannelIndex ;            
             cacheChannelIndexFromChannelIndex = wsModel.CacheInputChannelIndexFromInputChannelIndex ;            
@@ -1272,157 +1275,72 @@ classdef WavesurferMainController < ws.Controller
             end
         end  % function       
         
-        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData)
-            % t is a scalar, the time stamp of the scan *just after* the
-            % most recent scan.  (I.e. it is one dt==1/fs into the future.
-            % Queue Doctor Who music.)
-
-            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
-            % into a matrix of logical data, then convert it to doubles and
-            % concat it with the recentScaledAnalogData, storing the result
-            % in yRecent.
-            wsModel = self.Model_ ;
-            %display = wsModel.Display ;
-            nActiveDIChannels = wsModel.getNActiveDIChannels() ;
-            if nActiveDIChannels==0 ,
-                yRecent = recentScaledAnalogData ;
-            else
-                % Might need to write a mex function to quickly translate
-                % recentRawDigitalData to recentDigitalData.
-                nScans = size(recentRawDigitalData,1) ;                
-                recentDigitalData = zeros(nScans,nActiveDIChannels) ;
-                for j = 1:nActiveDIChannels ,
-                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
-                end
-                % End of code that might need to mex-ify
-                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
-            end
-            
-            % Compute a timeline for the new data            
-            nNewScans = size(yRecent, 1) ;
-            sampleRate = wsModel.AcquisitionSampleRate ;
-            dt = 1/sampleRate ;  % s
-            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
-            xRecent = t0 + dt*(0:(nNewScans-1))' ;
-            
-            % Figure out the downsampling ratio
-            if isempty(self.ScopePlots_) ,
-                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
-            else
-                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
-            end            
-            xSpan = wsModel.XSpan ;
-            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
-            
-            % Downsample the new data
-            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
-            
-            % deal with XData
-            xAllOriginal = self.XData_ ;  % these are already downsampled
-            yAllOriginal = self.YData_ ;            
-            
-            % Concatenate the old data that we're keeping with the new data
-            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
-            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
-            
-            % Trim off scans that would be off the screen anyway
-            doKeepScan = (wsModel.XOffset<=xAllProto) ;
-            xNew = xAllProto(doKeepScan) ;
-            yNew = yAllProto(doKeepScan,:) ;
-
-            % Commit the data to self
-            self.XData_ = xNew ;
-            self.YData_ = yNew ;
-            
-            % Update the line graphics objects to reflect XData_, YData_
-            self.syncLineXDataAndYData_();
-            
-            % Change the y limits to match the data, if appropriate
-            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
-            plotIndicesNeedingYLimitUpdate = wsModel.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
-            self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
-        end  % function        
-
-        function updateTraces_(self)
-            % t is a scalar, the time stamp of the scan *just after* the
-            % most recent scan.  (I.e. it is one dt==1/fs into the future.
-            % Queue Doctor Who music.)
-
-            wsModel = self.Model_ ;
-            scaledAnalogData = wsModel.getAIDataFromCache() ;
-            [digitalDataAsUint, cachedDigitalSignalCount] = wsModel.getDIDataFromCache() ;
-            t = wsModel.getTimestampsForDataInCache() ;
-            
-            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
-            % into a matrix of logical data, then convert it to doubles and
-            % concat it with the recentScaledAnalogData, storing the result
-            % in yRecent.
-            %display = wsModel.Display ;
-            digitalDataAsLogical = ws.logicalColumnsFromUintColumn(digitalDataAsUint, cachedDigitalSignalCount) ;
-            y = horzcat(scaledAnalogData, digitalDataAsLogical) ;  % horzcat will convert logical to double
-%             nActiveDIChannels = wsModel.getNActiveDIChannels() ;
-%             if nActiveDIChannels==0 ,
-%                 y = scaledAnalogData ;
-%             else
-%                 % Might need to write a mex function to quickly translate
-%                 % recentRawDigitalData to recentDigitalData.
-%                 nScans = size(digitalDataAsUint,1) ;                
-%                 recentDigitalData = zeros(nScans,nActiveDIChannels) ;
-%                 for j = 1:nActiveDIChannels ,
-%                     recentDigitalData(:,j) = bitget(digitalDataAsUint,j) ;
-%                 end
-%                 % End of code that might need to mex-ify
-%                 y = horzcat(scaledAnalogData, recentDigitalData) ;
-%             end
-            
-            % Figure out the downsampling ratio
-            if isempty(self.ScopePlots_) ,
-                xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
-            else
-                xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
-            end            
-            xSpan = wsModel.XSpan ;
-            dt = 1/wsModel.AcquisitionSampleRate ;
-            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
-            
-            % Downsample the new data
-            %size_of_x = size(x)
-            %size_of_y = size(y)
-            %class_of_y = class(y)
-            [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(t, y, r) ;            
-            
-            % Trim off scans that would be off the screen anyway
-            doKeepScan = (wsModel.XOffset<=xForPlotting) ;
-            xNew = xForPlotting(doKeepScan) ;
-            yNew = yForPlotting(doKeepScan,:) ;
-
-            % Commit the data to self
-            self.XData_ = xNew ;
-            self.YData_ = yNew ;
-            
-            % Update the line graphics objects to reflect XData_, YData_
-            self.syncLineXDataAndYData_();
-            
-            % Change the y limits to match the data, if appropriate
-            indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
-            plotIndicesNeedingYLimitUpdate = wsModel.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
-            self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
-        end  % function        
+%         function updateTraces_(self)
+%             % t is a scalar, the time stamp of the scan *just after* the
+%             % most recent scan.  (I.e. it is one dt==1/fs into the future.
+%             % Queue Doctor Who music.)
+% 
+% %             wsModel = self.Model_ ;
+% %             scaledAnalogData = wsModel.getAIDataFromCache() ;
+% %             [digitalDataAsUint, cachedDigitalSignalCount] = wsModel.getDIDataFromCache() ;
+% %             t = wsModel.getTimestampsForDataInCache() ;
+% %             
+% %             % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+% %             % into a matrix of logical data, then convert it to doubles and
+% %             % concat it with the recentScaledAnalogData, storing the result
+% %             % in yRecent.
+% %             %display = wsModel.Display ;
+% %             digitalDataAsLogical = ws.logicalColumnsFromUintColumn(digitalDataAsUint, cachedDigitalSignalCount) ;
+% %             y = horzcat(scaledAnalogData, digitalDataAsLogical) ;  % horzcat will convert logical to double
+% %             
+% %             % Figure out the downsampling ratio
+% %             if isempty(self.ScopePlots_) ,
+% %                 xSpanInPixels = 400 ;  % this is a reasonable value, and presumably it won't much matter
+% %             else
+% %                 xSpanInPixels=self.ScopePlots_(1).getAxesWidthInPixels() ;
+% %             end            
+% %             xSpan = wsModel.XSpan ;
+% %             dt = 1/wsModel.AcquisitionSampleRate ;
+% %             r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+% %             
+% %             % Downsample the new data
+% %             %size_of_x = size(x)
+% %             %size_of_y = size(y)
+% %             %class_of_y = class(y)
+% %             [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(t, y, r) ;            
+% %             
+% %             % Trim off scans that would be off the screen anyway
+% %             doKeepScan = (wsModel.XOffset<=xForPlotting) ;
+% %             xNew = xForPlotting(doKeepScan) ;
+% %             yNew = yForPlotting(doKeepScan,:) ;
+% % 
+% %             % Commit the data to self
+% %             self.XData_ = xNew ;
+% %             self.YData_ = yNew ;
+%             
+%             % Update the line graphics objects to reflect XData_, YData_
+%             self.updateTraces_();
+%             
+% %             % Change the y limits to match the data, if appropriate
+% %             indicesOfAIChannelsNeedingYLimitUpdate = self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+% %             plotIndicesNeedingYLimitUpdate = self.Model_.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+% %             self.updateYAxisLimits_(plotIndicesNeedingYLimitUpdate, indicesOfAIChannelsNeedingYLimitUpdate) ;
+%         end  % function        
         
-        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
-            wsModel = self.Model_ ;
-            isChannelDisplayed = wsModel.IsAIChannelDisplayed ;
-            areYLimitsLockedTightToData = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
-            doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
-            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
-            plotIndexFromChannelIndex = wsModel.PlotIndexFromChannelIndex ;  % for AI channels, the channel index is equal to the AI channel index
-            plotIndicesOfAIChannelsNeedingYLimitUpdate = plotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
-            for i = 1:length(indicesOfAIChannelsNeedingYLimitUpdate) ,
-                channelIndex = indicesOfAIChannelsNeedingYLimitUpdate(i) ;
-                plotIndex = plotIndicesOfAIChannelsNeedingYLimitUpdate(i) ;
-                self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
-            end               
-        end  % function        
+%         function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
+%             wsModel = self.Model_ ;
+%             isChannelDisplayed = wsModel.IsAIChannelDisplayed ;
+%             areYLimitsLockedTightToData = wsModel.AreYLimitsLockedTightToDataForAIChannel ;
+%             doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
+%             indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+%             plotIndexFromChannelIndex = wsModel.PlotIndexFromChannelIndex ;  % for AI channels, the channel index is equal to the AI channel index
+%             plotIndicesOfAIChannelsNeedingYLimitUpdate = plotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+%             for i = 1:length(indicesOfAIChannelsNeedingYLimitUpdate) ,
+%                 channelIndex = indicesOfAIChannelsNeedingYLimitUpdate(i) ;
+%                 plotIndex = plotIndicesOfAIChannelsNeedingYLimitUpdate(i) ;
+%                 self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
+%             end               
+%         end  % function        
         
         function updateAxisLabels_(self, axisForegroundColor)
             for i = 1:length(self.ScopePlots_) ,
@@ -1453,9 +1371,9 @@ classdef WavesurferMainController < ws.Controller
         function updateXAxisLimits_(self)
             % Update the axes limits to match those in the model
             wsModel = self.Model_ ;
-            if isempty(wsModel) || ~isvalid(wsModel) ,
-                return
-            end
+%             if isempty(wsModel) || ~isvalid(wsModel) ,
+%                 return
+%             end
             xl = wsModel.XOffset + [0 wsModel.XSpan] ;
             for i = 1:length(self.ScopePlots_) ,
                 self.ScopePlots_(i).setXAxisLimits(xl) ;
@@ -1475,35 +1393,21 @@ classdef WavesurferMainController < ws.Controller
             end
         end  % function        
         
-        function setYAxisLimitsInModelTightToData_(self, plotIndex, aiChannelIndex)            
-            % this core function does no arg checking and doesn't call
-            % .broadcast.  It just mutates the state.
-            yMinAndMax=self.dataYMinAndMax_(aiChannelIndex);
-            if any(~isfinite(yMinAndMax)) ,
-                return
-            end
-            yCenter=mean(yMinAndMax);
-            yRadius=0.5*diff(yMinAndMax);
-            if yRadius==0 ,
-                yRadius=0.001;
-            end
-            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
-            self.Model_.setYLimitsForSinglePlot(plotIndex, newYLimits) ;
-        end
-        
-        function yMinAndMax = dataYMinAndMax_(self, aiChannelIndex)
-            % Min and max of the data, across all plotted channels.
-            % Returns a 1x2 array.
-            % If all channels are empty, returns [+inf -inf].
-            cacheChannelIndexFromChannelIndex = self.Model_.CacheInputChannelIndexFromInputChannelIndex ;
-            indexWithinData = cacheChannelIndexFromChannelIndex(aiChannelIndex) ;
-            y = self.YData_(:,indexWithinData) ;
-            yMinRaw = min(y) ;
-            yMin = ws.fif(isempty(yMinRaw),+inf,yMinRaw) ;
-            yMaxRaw = max(y) ;
-            yMax = ws.fif(isempty(yMaxRaw),-inf,yMaxRaw) ;            
-            yMinAndMax = double([yMin yMax]) ;
-        end                
+%         function setYAxisLimitsInModelTightToData_(self, plotIndex, aiChannelIndex)            
+%             % this core function does no arg checking and doesn't call
+%             % .broadcast.  It just mutates the state.
+%             yMinAndMax = self.Model_.plottedDataYMinAndMax(aiChannelIndex) ;
+%             if any(~isfinite(yMinAndMax)) ,
+%                 return
+%             end
+%             yCenter=mean(yMinAndMax);
+%             yRadius=0.5*diff(yMinAndMax);
+%             if yRadius==0 ,
+%                 yRadius=0.001;
+%             end
+%             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+%             self.Model_.setYLimitsForSinglePlot(plotIndex, newYLimits) ;
+%         end        
     end  % protected methods block    
     
     methods
@@ -1796,30 +1700,32 @@ classdef WavesurferMainController < ws.Controller
         end
                 
         function SetYLimTightToDataButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>
-            aiChannelIndex = self.Model_.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-            yMinAndMax = self.dataYMinAndMax_(aiChannelIndex) ;
-            if any( ~isfinite(yMinAndMax) ) ,
-                return
-            end
-            yCenter = mean(yMinAndMax) ;
-            yRadius = 0.5*diff(yMinAndMax) ;
-            if yRadius == 0 ,
-                yRadius = 0.001 ;
-            end
-            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
-            self.Model_.do('setYLimitsForSinglePlot', plotIndex, newYLimits) ;
+            self.Model_.do('setYLimitsTightToDataForSinglePlot', plotIndex) ;
+%             aiChannelIndex = self.Model_.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+%             yMinAndMax = self.Model_.plottedDataYMinAndMax(aiChannelIndex) ;
+%             if any( ~isfinite(yMinAndMax) ) ,
+%                 return
+%             end
+%             yCenter = mean(yMinAndMax) ;
+%             yRadius = 0.5*diff(yMinAndMax) ;
+%             if yRadius == 0 ,
+%                 yRadius = 0.001 ;
+%             end
+%             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+%             self.Model_.do('setYLimitsForSinglePlot', plotIndex, newYLimits) ;
         end  % method       
         
         function SetYLimTightToDataLockedButtonGHActuated(self, source, event, plotIndex) %#ok<INUSL>
-            wsModel = self.Model_ ;
-            channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
-            currentValue = wsModel.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
-            newValue = ~currentValue ;
-            wsModel.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
-            if newValue ,
-                self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
-            end
-            self.update() ;  % update the button
+            self.Model_.do('setAreYLimitsLockedTightToDataForSinglePlot', plotIndex) ;
+%             wsModel = self.Model_ ;
+%             channelIndex = wsModel.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+%             currentValue = wsModel.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
+%             newValue = ~currentValue ;
+%             wsModel.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
+%             if newValue ,
+%                 self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
+%             end
+%             self.update() ;  % update the button
         end  % method       
 
         function SetYLimButtonGHActuated(self, source, event, plotIndex)  %#ok<INUSL>

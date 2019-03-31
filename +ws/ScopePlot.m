@@ -162,10 +162,10 @@ classdef ScopePlot < handle
             ws.deleteIfValidHGHandle(self.AxesGH_) ;                        
         end  % function        
                 
-        function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
-            xSpanInPixels=ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;
-            self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
-        end
+%         function tellModelXSpanInPixels(self, broadcaster, eventName, propertyName, source, event)  %#ok<INUSD>
+%             xSpanInPixels = ws.ScopeAxes.getWidthInPixels(self.AxesGH_) ;
+%             self.Model.hereIsXSpanInPixels_(xSpanInPixels) ;
+%         end
         
         function result = getAxesWidthInPixels(self)
             result = ws.ScopePlot.getWidthInPixels(self.AxesGH_) ;

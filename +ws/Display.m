@@ -35,6 +35,9 @@ classdef Display < ws.Model
         PlotIndexFromChannelIndex  % 1 x nChannels
         PlotHeightFromPlotIndex  % 1 x NPlots
         IsXSpanSlavedToAcquistionDuration
+        XSpanInPixels       
+        XData
+        YData
     end
 
     properties (Access = protected)
@@ -62,13 +65,17 @@ classdef Display < ws.Model
         XOffset_
         ClearOnNextData_
         CachedDisplayXSpan_
-        XSpanInPixels_
         %XData_
         %YData_  % analog and digital together, all as doubles, but only for the *active* channels
         ChannelIndexWithinTypeFromPlotIndex_  % 1 x NPlots
         IsAnalogFromPlotIndex_  % 1 x NPlots
         ChannelIndexFromPlotIndex_  % 1 x NPlots (the channel index is in the list of all analog, then all digital, channels)
         PlotIndexFromChannelIndex_ % 1 x nChannels (this has nan's for channels that are not displayed)
+        
+        % The (downsampled for display) data currently being shown.        
+        XSpanInPixels_
+        XData_
+        YData_
     end
     
     methods
@@ -1081,6 +1088,111 @@ classdef Display < ws.Model
         function set.IsEnabled(self, value)
             self.IsEnabled_ = value ;
         end
-    end  % public methods block        
-    
+        
+        function addData(self, t, recentScaledAnalogData, recentRawDigitalData, nActiveDIChannels, sampleRate, xSpan)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            %wsModel = self.Model_ ;
+            %nActiveDIChannels = wsModel.getNActiveDIChannels() ;
+            if nActiveDIChannels==0 ,
+                yRecent = recentScaledAnalogData ;
+            else
+                % Might need to write a mex function to quickly translate
+                % recentRawDigitalData to recentDigitalData.
+                nScans = size(recentRawDigitalData,1) ;                
+                recentDigitalData = zeros(nScans,nActiveDIChannels) ;
+                for j = 1:nActiveDIChannels ,
+                    recentDigitalData(:,j) = bitget(recentRawDigitalData,j) ;
+                end
+                % End of code that might need to mex-ify
+                yRecent = horzcat(recentScaledAnalogData, recentDigitalData) ;
+            end
+            
+            % Compute a timeline for the new data            
+            nNewScans = size(yRecent, 1) ;
+            %sampleRate = wsModel.AcquisitionSampleRate ;
+            dt = 1/sampleRate ;  % s
+            t0 = t - dt*nNewScans ;  % timestamp of first scan in newData
+            xRecent = t0 + dt*(0:(nNewScans-1))' ;
+            
+            % Figure out the downsampling ratio
+            xSpanInPixels = self.XSpanInPixels_ ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlottingNew, yForPlottingNew] = ws.minMaxDownsampleMex(xRecent, yRecent, r) ;            
+            
+            % deal with XData
+            xAllOriginal = self.XData_ ;  % these are already downsampled
+            yAllOriginal = self.YData_ ;            
+            
+            % Concatenate the old data that we're keeping with the new data
+            xAllProto = vertcat(xAllOriginal, xForPlottingNew) ;
+            yAllProto = vertcat(yAllOriginal, yForPlottingNew) ;
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (self.XOffset_<=xAllProto) ;
+            xNew = xAllProto(doKeepScan) ;
+            yNew = yAllProto(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;            
+        end  % function        
+        
+        function updateTraces(self, scaledAnalogData, digitalDataAsUint, cachedDigitalSignalCount, t, xSpan, sampleRate)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+
+            %wsModel = self.Model_ ;
+            %scaledAnalogData = wsModel.getAIDataFromCache() ;
+            %[digitalDataAsUint, cachedDigitalSignalCount] = wsModel.getDIDataFromCache() ;
+            %t = wsModel.getTimestampsForDataInCache() ;
+            
+            % Get the uint8/uint16/uint32 data out of recentRawDigitalData
+            % into a matrix of logical data, then convert it to doubles and
+            % concat it with the recentScaledAnalogData, storing the result
+            % in yRecent.
+            %display = wsModel.Display ;
+            digitalDataAsLogical = ws.logicalColumnsFromUintColumn(digitalDataAsUint, cachedDigitalSignalCount) ;
+            y = horzcat(scaledAnalogData, digitalDataAsLogical) ;  % horzcat will convert logical to double
+            
+            % Figure out the downsampling ratio
+            xSpanInPixels = self.XSpanInPixels_ ;
+            dt = 1/sampleRate ;
+            r = ws.ratioSubsampling(dt, xSpan, xSpanInPixels) ;
+            
+            % Downsample the new data
+            [xForPlotting, yForPlotting] = ws.minMaxDownsampleMex(t, y, r) ;            
+            
+            % Trim off scans that would be off the screen anyway
+            doKeepScan = (self.XOffset_ <= xForPlotting) ;
+            xNew = xForPlotting(doKeepScan) ;
+            yNew = yForPlotting(doKeepScan,:) ;
+
+            % Commit the data to self
+            self.XData_ = xNew ;
+            self.YData_ = yNew ;
+        end  % function        
+        
+        function set.XSpanInPixels(self, newValue)
+            self.XSpanInPixels_ = newValue ;            
+        end
+        
+        function result = get.YData(self)
+            result = self.YData_ ;
+        end        
+        
+        function result = get.XData(self)
+            result = self.XData_ ;
+        end
+    end  % public methods block
+
 end
