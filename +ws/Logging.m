@@ -375,14 +375,14 @@ classdef Logging < ws.Model
                     % data file if needed.
                     newLogFileName = self.sweepSetFileNameFromNumbers(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
-                    if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
+                    if isequal(originalAbsoluteLogFileName, newAbsoluteLogFileName) ,
                         % Nothing to do in this case.
                         % This case might happen, e.g. if the number of sweeps is inf
                         % do nothing.
                     else
                         isSafeToMoveFile = false ;
                         % Check for filename collisions, if that's what user wants
-                        if exist(newAbsoluteLogFileName, 'file') == 2 ,
+                        if exist(newAbsoluteLogFileName, 'file') ,
                             if self.IsOKToOverwrite ,
                                 % Don't need to check anything.
                                 % But need to delete pre-existing files, otherwise h5create
