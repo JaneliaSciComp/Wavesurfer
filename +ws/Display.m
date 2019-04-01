@@ -1182,6 +1182,10 @@ classdef Display < ws.Model
             self.YData_ = yNew ;
         end  % function        
         
+        function result = get.XSpanInPixels(self)
+            result = self.XSpanInPixels_ ;
+        end        
+        
         function set.XSpanInPixels(self, newValue)
             self.XSpanInPixels_ = newValue ;            
         end

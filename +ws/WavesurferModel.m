@@ -7633,6 +7633,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
             self.setYLimitsForSinglePlot(plotIndex, newYLimits) ;  % this will broadcast          
-        end  % method             
-    end
+        end  % method          
+        
+        function result = get.WidthOfPlotsInPixels(self)
+            result = self.Display_.XSpanInPixels ;
+        end
+    end  % public methods block
 end  % classdef
