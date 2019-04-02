@@ -1533,7 +1533,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Create the timer that runs during a run
             self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
                                       'BusyMode', 'drop', ...
-                                      'Period', 0.1, ...
+                                      'Period', 0.05, ...
                                       'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
             
             % Finally, start the timer
@@ -1657,11 +1657,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                             isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
                             self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;
                             % do a drawnow() if it's been too long...
-                            timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                            if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                                drawnow() ;
-                                self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                            end                    
+                            %timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            %if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow('limitrate', 'nocallbacks') ;
+                            %    self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            %end                    
                         end
                     else
                         % We are not currently performing a sweep, so check if we need to start one
@@ -1675,11 +1675,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                             self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;                            
                             %fprintf('Check for messages after completing all sweeps\n');
                             % do a drawnow() if it's been too long...
-                            timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                            if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                                drawnow() ;
-                                self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                            end
+                            %timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            %if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow('limitrate', 'nocallbacks') ;
+                            %    self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            %end
                         else                        
                             self.openSweep_() ;
                         end
