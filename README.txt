@@ -467,11 +467,11 @@ Version History
 
 0.981    Oct 1, 2018     Bug fixes.
 
-0.982    Mar 29, 2019    Fixed bug with finding NI DAQmx .h file.
+0.982    Apr 6, 2019     Fixed bug with finding NI DAQmx .h file.
                          Fixed bug with HEKA integration in Matlab
                          2018a/b.  Added example user class for
                          controlling Hantman Lab pez dispenser.  Added
                          new user class method,
                          willSaveToProtocolFile().  File stimulus can
-                         now load a .mat file.  
+                         now load a .mat file.  Fixed a few other bugs.
                          
