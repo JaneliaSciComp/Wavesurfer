@@ -276,7 +276,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         Display_
         Ephys_
         UserCodeManager_
-        IsYokedToScanImage_ = false
+        %IsYokedToScanImage_ = false
         %ExecutingScanImageCommandNow_ = false;
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
@@ -1201,7 +1201,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 catch me
                     err = me ;
                 end                
-                self.IsYokedToScanImage_ = self.CommandClient_.IsEnabled ;
+                %self.IsYokedToScanImage_ = self.CommandClient_.IsEnabled ;
             end            
 
             % Do an update
@@ -1220,7 +1220,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         end        
         
         function value=get.IsYokedToScanImage(self)
-            value = self.IsYokedToScanImage_ ;
+            value = self.CommandClient_.IsEnabled ;
         end  % function        
         
         function value=get.IsITheOneTrueWavesurferModel(self)
