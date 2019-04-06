@@ -806,8 +806,11 @@ classdef Display < ws.Subsystem   %& ws.EventSubscriber
             
             if self.IsEnabled , 
                 if self.ClearOnNextData_ ,
-                    %self.clearData_() ;
                     self.broadcast('ClearData') ;
+                    if self.XAutoScroll_ ,
+                        self.XOffset_ = 0 ;
+                        self.broadcast('UpdateXOffset') ;
+                    end
                 end            
                 self.ClearOnNextData_ = false;
 
