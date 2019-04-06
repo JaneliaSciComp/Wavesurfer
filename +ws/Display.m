@@ -713,34 +713,43 @@ classdef Display < ws.Model
         function startingSweep(self)
             self.ClearOnNextData_ = true;
         end
-         
+        
         function [doesNeedClear, doesNeedDidSetXOffset] = ...
                 dataAvailable(self, isSweepBased, t, scaledAnalogData, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, xSpan)  %#ok<INUSL>
             % t is a scalar, the time stamp of the scan *just after* the
             % most recent scan.  (I.e. it is one dt==1/fs into the future.
             % Queue Doctor Who music.)
             
+            % Get relevant state
             doesNeedClear = self.ClearOnNextData_ ;
-            %if self.ClearOnNextData_ ,
-            %    self.broadcast('ClearData') ;
-            %end            
-            self.ClearOnNextData_ = false;
+            originalXOffset = self.XOffset_ ;
+            xAutoScroll = self.XAutoScroll_ ;
 
             % update the x offset
-            if self.XAutoScroll_ ,                
-                scale=min(1,xSpan);
-                tNudged=scale*ceil(100*t/scale)/100;  % Helps keep the axes aligned to tidy numbers
-                xOffsetNudged=tNudged-xSpan;
-                if xOffsetNudged>self.XOffset ,
-                    self.XOffset_=xOffsetNudged;
-                    %self.broadcast('DidSetXOffset') ;
+            if xAutoScroll ,                
+                if doesNeedClear ,
                     doesNeedDidSetXOffset = true ;
-                else
-                    doesNeedDidSetXOffset = false ;                    
+                    newXOffset = 0 ;
+                else                    
+                    scale = min(1,xSpan) ;
+                    tNudged = scale * ceil(100*t/scale)/100 ;  % Helps keep the axes aligned to tidy numbers
+                    xOffsetNudged = tNudged - xSpan ;
+                    if xOffsetNudged > originalXOffset ,
+                        doesNeedDidSetXOffset = true ;
+                        newXOffset = xOffsetNudged ;
+                    else
+                        doesNeedDidSetXOffset = false ;
+                    end
                 end
             else
                 doesNeedDidSetXOffset = false ;
             end
+            
+            % Set state
+            if doesNeedDidSetXOffset ,
+                self.XOffset_ = newXOffset ;
+            end
+            self.ClearOnNextData_ = false ;
         end  % function
         
 %         function result = getPlotIndexFromChannelIndex(self)
