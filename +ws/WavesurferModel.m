@@ -200,6 +200,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
           % ClockAtRunStart_ transient, achieves this.
         State
         VersionString
+          % VersionString property exists so that the version is written to the data file
+          % header.  The version string that gets written to the protocol file is stored
+          % outside the serialization of the WavesurferModel, and is gotten directly from
+          % ws.versionString().          
         IsITheOneTrueWavesurferModel  % deprecated, same as IsAwake
         IsAwake
         %WarningLog
@@ -277,7 +281,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
-        VersionString_
         
         %LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
         
@@ -455,8 +458,6 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.IsAwake_ = isAwake ;
             self.IsHeaded_ = isHeaded ;
             self.DoUsePreferences_ = doUsePreferences ;
-            
-            self.VersionString_ = ws.versionString() ;
             
             % We only set up the sockets if we are the one true
             % WavesurferModel, and not some blasted pretender!
@@ -788,8 +789,8 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     end  % ZMQ methods block
     
     methods
-        function value=get.VersionString(self)
-            value=self.VersionString_ ;
+        function value = get.VersionString(self)  %#ok<MANU>
+            value = ws.versionString() ;
         end  % function
         
         function value=get.State(self)
