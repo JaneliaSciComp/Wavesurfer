@@ -468,7 +468,7 @@ classdef DAQmxEntity < ws.most.APIWrapper & ws.most.PDEPPropDynamic
         function codeMapStruct = extractDAQmxCodeMaps(obj)
             codeMapStruct = struct();
             
-            [codeNameMap, codeValueMap] = obj.extractCodeMap('#define\s*(DAQmx_Val_\w*)\s*([^/]*)', fullfile(obj.apiInstallationHeaderPath,obj.apiInstallationHeaderFile));
+            [codeNameMap, codeValueMap] = obj.extractCodeMap('#define\s*(DAQmx_Val_\w*)\s*([^/]*)', obj.apiInstallationHeaderPath) ;
             
             codeMapStruct.codeNameMap = codeNameMap;
             codeMapStruct.codeValueMap = codeValueMap;
