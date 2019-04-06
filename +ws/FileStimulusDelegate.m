@@ -91,11 +91,11 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
         
         %e.g. sprintf('C:\\Users\\arthurb\\Documents\\MATLAB\\Wavesurfer\\data\\electrode%d.wav',i)
         function set.FileName(self, value)
-            if ischar(value) && (isempty(value) || isrow(value)) ,
+            if ws.isString(value) ,
                 % Get rid of backslashes, b/c they mess up sprintf()
                 valueWithoutBackslashes = ws.replaceBackslashesWithSlashes(value);
-                test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1);
-                if ischar(test) ,
+                test = ws.Stimulus.evaluateStringSweepTemplate(valueWithoutBackslashes,1) ;
+                if ws.isString(test) ,
                     % if we get here without error, safe to set
                     self.FileName_ = valueWithoutBackslashes;
                 end
@@ -175,17 +175,40 @@ classdef FileStimulusDelegate < ws.StimulusDelegate
             if isempty(fileNameAfterEvaluation) ,
                 y=zeros(size(t));
             else
-                try
-                    [yInFile,fs] = audioread(fileNameAfterEvaluation);
-                    tInFile = (0:length(yInFile)-1)./fs ;
-                    y = interp1(tInFile, yInFile, t, 'linear', 0);
-                catch me
-                    if isequal(me.identifier,'MATLAB:audiovideo:audioread:fileNotFound') ,
-                        y=zeros(size(t));
-                    else
-                        rethrow(me);
+                [~,~,ext] = fileparts(fileNameAfterEvaluation) ;
+                if isequal(ext, '.wav') ,
+                    try
+                        [yInFile,fs] = audioread(fileNameAfterEvaluation) ;  % yInFile will be a double array
+                        tInFile = (0:length(yInFile)-1)./fs ;                            
+                        y = interp1(tInFile, yInFile, t, 'linear', 0) ;
+                    catch me
+                        if isequal(me.identifier,'MATLAB:audiovideo:audioread:fileNotFound') ,
+                            y = zeros(size(t)) ;
+                        else
+                            rethrow(me) ;
+                        end
                     end
-                end                
+                elseif isequal(ext, '.mat') ,
+                    try
+                        s = load(fileNameAfterEvaluation) ;
+                        if isfield(s, 'y') && isfield(s, 'fs') ,
+                            yInFile = double(s.y) ;
+                            fs = double(s.fs) ;
+                            tInFile = (0:length(yInFile)-1)./fs ;
+                            y = interp1(tInFile, yInFile, t, 'linear', 0) ;
+                        else
+                            y=zeros(size(t)) ;
+                        end
+                    catch me
+                        if isequal(me.identifier,'MATLAB:load:couldNotReadFile') ,
+                            y=zeros(size(t)) ;
+                        else
+                            rethrow(me) ;
+                        end
+                    end
+                else
+                    y = zeros(size(t)) ;
+                end
             end
         end  % function        
     end

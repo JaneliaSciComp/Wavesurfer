@@ -229,6 +229,63 @@ classdef AudioFileOutputTestCase < matlab.unittest.TestCase
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
         end  % function
 
+        function testWithExistingMatFile(self)
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
+
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAIChannel() ;
+            wsModel.addAOChannel() ;
+            wsModel.addDOChannel() ;
+            
+            wsModel.AcquisitionSampleRate=20000;  % Hz
+            wsModel.IsStimulationEnabled=true;
+            wsModel.StimulationSampleRate=20000;  % Hz
+            wsModel.IsDisplayEnabled=true;
+
+            nSweeps=1;
+            wsModel.NSweepsPerRun=nSweeps;
+            wsModel.SweepDuration = 4 ;  % s
+
+            % Make a godzilla stimulus, add to the stimulus library
+            thisDirName = fileparts(mfilename('fullpath')) ;
+            godzillaStimulusAbsoluteFileName = fullfile(thisDirName,'godzilla.mat') ;
+            godzillaStimulusIndex = wsModel.addNewStimulus() ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'TypeString', 'File') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Name', 'Godzilla') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Amplitude', '1') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Delay', '0.25') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'Duration', '3.5') ;
+            wsModel.setStimulusLibraryItemProperty('ws.Stimulus', godzillaStimulusIndex, 'FileName', godzillaStimulusAbsoluteFileName) ;
+            
+            % make a map that puts the just-made stimulus out of the first AO channel, add
+            % to stim library
+            mapIndex = wsModel.addNewStimulusMap() ;
+            wsModel.setStimulusLibraryItemProperty('ws.StimulusMap', mapIndex, 'Name', 'Godzilla out first AO') ;
+            firstAOChannelName = wsModel.AOChannelNames{1} ;
+            bindingIndex = wsModel.addBindingToStimulusLibraryItem('ws.StimulusMap', mapIndex) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'ChannelName', firstAOChannelName) ;
+            wsModel.setStimulusLibraryItemBindingProperty('ws.StimulusMap', mapIndex, bindingIndex, 'IndexOfEachStimulusInLibrary', godzillaStimulusIndex) ;
+            
+            % make the new map the current sequence/map
+            wsModel.setSelectedOutputableByClassNameAndIndex('ws.StimulusMap', mapIndex) ;
+            
+            pause(1);
+            wsModel.playAndBlock();
+
+            % dtBetweenChecks=1;  % s
+            % maxTimeToWait=1.1*wsModel.SweepDuration;  % s
+            % nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+            % for i=1:nTimesToCheck ,
+            %     pause(dtBetweenChecks);
+            %     if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+            %         break
+            %     end
+            % end                   
+
+            self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);            
+        end  % function
+        
     end  % test methods
 
  end  % classdef
