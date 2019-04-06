@@ -236,7 +236,7 @@ classdef WavesurferModel < ws.Model
         Display_
         Ephys_
         UserCodeManager_
-        IsYokedToScanImage_ = false
+        %IsYokedToScanImage_ = false
         %ExecutingScanImageCommandNow_ = false;
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
@@ -1091,14 +1091,14 @@ classdef WavesurferModel < ws.Model
         function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
-            % Set the value by enabling/disabling the command connector
+            % Set the value by enabling/disabling the command client
             if islogical(newValue) && isscalar(newValue) ,
                 try
                     self.CommandClient_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
                 catch me
                     err = me ;
                 end                
-                self.IsYokedToScanImage_ = self.CommandClient_.IsEnabled ;
+                %self.IsYokedToScanImage_ = self.CommandClient_.IsEnabled ;
             end            
 
             % Do an update
@@ -1117,7 +1117,7 @@ classdef WavesurferModel < ws.Model
         end        
         
         function value=get.IsYokedToScanImage(self)
-            value = self.IsYokedToScanImage_ ;
+            value = self.CommandClient_.IsEnabled ;
         end  % function        
         
         function value=get.IsITheOneTrueWavesurferModel(self)
