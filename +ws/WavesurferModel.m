@@ -187,7 +187,11 @@ classdef WavesurferModel < ws.Model
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
         State
-        VersionString
+        VersionString  
+          % VersionString property exists so that the version is written to the data file
+          % header.  The version string that gets written to the protocol file is stored
+          % outside the serialization of the WavesurferModel, and is gotten directly from
+          % ws.versionString().          
         IsITheOneTrueWavesurferModel
         %WarningLog
         LayoutForAllWindows
@@ -238,7 +242,6 @@ classdef WavesurferModel < ws.Model
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
         LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
-        VersionString_
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
@@ -352,8 +355,6 @@ classdef WavesurferModel < ws.Model
             %dbstop('if','error') ;
             
             self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
-            
-            self.VersionString_ = ws.versionString() ;
             
             % We only set up the sockets if we are the one true
             % WavesurferModel, and not some blasted pretender!
@@ -689,8 +690,10 @@ classdef WavesurferModel < ws.Model
     end  % ZMQ methods block
     
     methods
-        function value=get.VersionString(self)
-            value=self.VersionString_ ;
+        function value = get.VersionString(self)  %#ok<MANU>
+            % This exists just so there's a public property holding the WS version that gets
+            % written to the data file header
+            value = ws.versionString() ;
         end  % function
         
         function value=get.State(self)
