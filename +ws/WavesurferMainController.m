@@ -1437,14 +1437,16 @@ classdef WavesurferMainController < ws.Controller
         end
                 
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
-            %profileName = self.Model_.CurrentProfileName ;
-            initialFilePathForFilePicker = self.Model_.LastProtocolFilePath ;            
-            isFileNameKnown = false ;
-            absoluteFileName = ...
-                ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
-            if ~isempty(absoluteFileName)
-                %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-                self.openProtocolFileGivenFileName_(absoluteFileName) ;
+            isOKToCloseProtocol = self.checkIfOKToCloseProtocol_() ;
+            if isOKToCloseProtocol ,
+                initialFilePathForFilePicker = self.Model_.LastProtocolFilePath ;            
+                isFileNameKnown = false ;
+                absoluteFileName = ...
+                    ws.WavesurferMainController.obtainAndVerifyAbsoluteFileName_(isFileNameKnown, '', 'protocol', 'load', initialFilePathForFilePicker);            
+                if ~isempty(absoluteFileName)
+                    %ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
+                    self.openProtocolFileGivenFileName_(absoluteFileName) ;
+                end
             end
         end
 
@@ -1616,20 +1618,23 @@ classdef WavesurferMainController < ws.Controller
         
         function FastProtocolButtonsActuated(self, source, event, fastProtocolIndex) %#ok<INUSL>
             if ~isempty(self.Model_) ,
-                self.Model_.startLoggingWarnings() ;
-                self.Model_.openFastProtocolByIndex(fastProtocolIndex) ;
-                % % Restore the layout...
-                % layoutForAllWindows = self.Model_.LayoutForAllWindows ;
-                % monitorPositions = ws.Controller.getMonitorPositions() ;
-                % self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
-                % % Done restoring layout
-                % Now do an auto-start, if called for by the fast protocol
-                self.Model_.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
-                % Now throw if there were any warnings
-                warningExceptionMaybe = self.Model_.stopLoggingWarnings() ;
-                if ~isempty(warningExceptionMaybe) ,
-                    warningException = warningExceptionMaybe{1} ;
-                    throw(warningException) ;
+                isOKToCloseProtocol = self.checkIfOKToCloseProtocol_() ;            
+                if isOKToCloseProtocol ,
+                    self.Model_.startLoggingWarnings() ;
+                    self.Model_.openFastProtocolByIndex(fastProtocolIndex) ;
+                    % % Restore the layout...
+                    % layoutForAllWindows = self.Model_.LayoutForAllWindows ;
+                    % monitorPositions = ws.Controller.getMonitorPositions() ;
+                    % self.decodeMultiWindowLayout_(layoutForAllWindows, monitorPositions) ;
+                    % % Done restoring layout
+                    % Now do an auto-start, if called for by the fast protocol
+                    self.Model_.performAutoStartForFastProtocolByIndex(fastProtocolIndex) ;
+                    % Now throw if there were any warnings
+                    warningExceptionMaybe = self.Model_.stopLoggingWarnings() ;
+                    if ~isempty(warningExceptionMaybe) ,
+                        warningException = warningExceptionMaybe{1} ;
+                        throw(warningException) ;
+                    end
                 end
             end
         end  % method
@@ -2010,12 +2015,12 @@ classdef WavesurferMainController < ws.Controller
 %             end    
 %         end  % function       
         
-        function isOKToQuit = checkIfOKToQuit_(self)
+        function isOKToCloseProtocol = checkIfOKToCloseProtocol_(self)
             % If acquisition or test pulsing is happening, ignore the close window request
             model = self.Model_ ;
             isIdle = model.isIdleSensuLato() ;
             if ~isIdle ,
-                isOKToQuit = false ;
+                isOKToCloseProtocol = false ;
                 return
             end
             
@@ -2031,19 +2036,19 @@ classdef WavesurferMainController < ws.Controller
                 if isequal(choice, 'Save') ,
                     isSaveAs = false ;
                     self.saveOrSaveAsProtocolFile_(isSaveAs) ;
-                    isOKToQuit = ~model.DoesProtocolNeedSave ;  % Check that the file got saved successfully
+                    isOKToCloseProtocol = ~model.DoesProtocolNeedSave ;  % Check that the file got saved successfully
                 elseif isequal(choice, 'Don''t Save') ,
-                    isOKToQuit = true ;
+                    isOKToCloseProtocol = true ;
                 else
                     % Must have clicked on Cancel
-                    isOKToQuit = false ;                    
+                    isOKToCloseProtocol = false ;                    
                 end               
             else
                 % protocol doesn't need to be saved, so OK to quit
-                isOKToQuit = true ;
+                isOKToCloseProtocol = true ;
             end
         end  % function
-        
+                
 %         function showAndRaiseChildFigure_(self, className, varargin)
 %             [controller, didCreate] = self.createChildControllerIfNonexistant_(className,varargin{:}) ;
 %             % is a Controller
@@ -2210,7 +2215,7 @@ classdef WavesurferMainController < ws.Controller
                 isOKToQuit = true ;
             else
                 %shouldStayPut = ~model.isIdleSensuLato() ;
-                isOKToQuit = self.checkIfOKToQuit_() ;
+                isOKToQuit = self.checkIfOKToCloseProtocol_() ;
             end
             
             % delete ourselves, if called for

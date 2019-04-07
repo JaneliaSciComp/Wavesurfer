@@ -2502,6 +2502,9 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
+            if self.isIdleSensuLato() && ~self.DoesProtocolNeedSave ,
+                return
+            end
             self.changeReadiness_(-1);
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
@@ -4295,11 +4298,13 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
-            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function result = selectedStimulusLibraryItemClassName(self)
@@ -4533,11 +4538,14 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
                 self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
             self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
+            self.broadcast('DidMaybeChangeProtocol') ;
+            
         end
         
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
