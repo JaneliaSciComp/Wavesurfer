@@ -32,9 +32,8 @@ classdef LoadOldProtocolFileTestCase < matlab.unittest.TestCase
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'ws-0p961-protocol-file-with-multiple-stimuli.wsp') ;
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
-            didWarningsOccur = ...
-                ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
-            self.verifyFalse(didWarningsOccur) ;
+            ws.fakeControlActuationInTestBang(wsController, 'OpenProtocolGivenFileNameFauxControl', protocolFileName) ;
+            %self.verifyFalse(didWarningsOccur) ;
             self.verifyTrue( wsModel.isStimulusLibrarySelfConsistent() ) ;            
             
             self.verifyEqual(wsModel.stimulusLibraryItemProperty('ws.Stimulus', 1, 'TypeString'), 'SquarePulse') ;
