@@ -147,36 +147,14 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             % Next we check that toggling the update checkbox before a Test
             % Pulse or Run works correctly, and that a Test Pulse or run
             % with updates enabled is slower than when updates are off.
-            self.checkTimingAndUpdating_(@wsModel.startTestPulsing, @wsModel.stopTestPulsing, wsModel, electrodeIndex, newEPCMasterSocket);
-            %self.verifyTrue(all(testPulserShouldAllBeTrue));
-            
-            ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
-            self.checkTimingAndUpdating_(@wsModel.play, @wsModel.stop, wsModel, electrodeIndex, newEPCMasterSocket);
-            %self.verifyTrue(all(runShouldAllBeTrue));        
-            delete(wsModel) ;
-        end  % function
-    end
-
-    methods (Access=protected)
-        function checkTimingAndUpdating_(self, runOrTPstart, runOrTPstop, wsModel, electrodeIndex, newEPCMasterSocket)
-            % Output array, should be all ones if everything worked
-            % properly. Initialize to zero.
-            %verificationArrayShouldAllBeTrue = zeros(0,1);
             
             % Make sure updating is off
             wsModel.DoTrodeUpdateBeforeRun = 0;
-            %electrode = electrodeManager.Electrodes{electrodeIndex};
 
             % First time starting a Run or Test Pulse is always slow, so do
             % it once before timing
-            runOrTPstart();
-            runOrTPstop();
-            
-%             % Time without updating
-%             tic();
-%             runOrTPstart();
-%             timeWithoutUpdating = toc() ;
-%             runOrTPstop();
+            wsModel.startTestPulsing();
+            wsModel.stopTestPulsing();
             
             % Confirm that nothing updated (wavesurfer and EPCMaster should
             % be out of sync)
@@ -187,10 +165,8 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Turn updating on, and time how long it takes with updating
             wsModel.DoTrodeUpdateBeforeRun = 1;
-            %tic();
-            runOrTPstart();
-            %timeWithUpdating = toc() ;
-            runOrTPstop();
+            wsModel.startTestPulsing();
+            wsModel.stopTestPulsing();
             
             % Confirm that updating worked
             EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
@@ -199,14 +175,83 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             %verificationArrayShouldAllBeTrue(4) = isequal(EPCCommandGain, electrode.CommandScaling);
             self.verifyEqual(EPCCommandGain, wsModel.getElectrodeProperty(electrodeIndex, 'CommandScaling')) ;
 
-            % Ensure that updating is slower than not-updating 
-            % (or not at least for now)
-            %verificationArrayShouldAllBeTrue(5) = (timeWithoutUpdating<timeWithUpdating+0.2);
-            
             % Turn updating back off
             wsModel.DoTrodeUpdateBeforeRun = 0;
-        end
-    end  % protected methods block
+            
+            % Change stuff
+            ws.test.hw.WavesurferModelWithEPCMasterTestCase.changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex) ;
+            
+            % Make sure updating is off
+            wsModel.DoTrodeUpdateBeforeRun = 0;
+
+            % First time starting a Run or Test Pulse is always slow, so do
+            % it once before timing
+            wsModel.play();
+            wsModel.stop();
+            
+            % Confirm that nothing updated (wavesurfer and EPCMaster should
+            % be out of sync)
+            EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
+            self.verifyNotEqual(EPCMonitorGain, wsModel.getElectrodeProperty(electrodeIndex, 'MonitorScaling')) ;
+            EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain') ;
+            self.verifyNotEqual(EPCCommandGain, wsModel.getElectrodeProperty(electrodeIndex, 'CommandScaling')) ;
+            
+            % Turn updating on, and time how long it takes with updating
+            wsModel.DoTrodeUpdateBeforeRun = 1;
+            wsModel.play();
+            wsModel.stop();
+            
+            % Confirm that updating worked
+            EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
+            self.verifyEqual(EPCMonitorGain, wsModel.getElectrodeProperty(electrodeIndex, 'MonitorScaling')) ;
+            EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain') ;
+            %verificationArrayShouldAllBeTrue(4) = isequal(EPCCommandGain, electrode.CommandScaling);
+            self.verifyEqual(EPCCommandGain, wsModel.getElectrodeProperty(electrodeIndex, 'CommandScaling')) ;
+
+            % Turn updating back off
+            wsModel.DoTrodeUpdateBeforeRun = 0;
+            
+            % Clean up
+            delete(wsModel) ;
+        end  % function
+    end
+
+%     methods (Access=protected)
+%         function checkTimingAndUpdating_(self, runOrTPstart, runOrTPstop, wsModel, electrodeIndex, newEPCMasterSocket)
+%             % Output array, should be all ones if everything worked
+%             % properly. Initialize to zero.
+%             
+%             % Make sure updating is off
+%             wsModel.DoTrodeUpdateBeforeRun = 0;
+% 
+%             % First time starting a Run or Test Pulse is always slow, so do
+%             % it once before timing
+%             runOrTPstart();
+%             runOrTPstop();
+%             
+%             % Confirm that nothing updated (wavesurfer and EPCMaster should
+%             % be out of sync)
+%             EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
+%             self.verifyNotEqual(EPCMonitorGain, wsModel.getElectrodeProperty(electrodeIndex, 'MonitorScaling')) ;
+%             EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain') ;
+%             self.verifyNotEqual(EPCCommandGain, wsModel.getElectrodeProperty(electrodeIndex, 'CommandScaling')) ;
+%             
+%             % Turn updating on, and time how long it takes with updating
+%             wsModel.DoTrodeUpdateBeforeRun = 1;
+%             runOrTPstart();
+%             runOrTPstop();
+%             
+%             % Confirm that updating worked
+%             EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
+%             self.verifyEqual(EPCMonitorGain, wsModel.getElectrodeProperty(electrodeIndex, 'MonitorScaling')) ;
+%             EPCCommandGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'VoltageCommandGain') ;
+%             %verificationArrayShouldAllBeTrue(4) = isequal(EPCCommandGain, electrode.CommandScaling);
+%             self.verifyEqual(EPCCommandGain, wsModel.getElectrodeProperty(electrodeIndex, 'CommandScaling')) ;
+% 
+%             % Turn updating back off
+%             wsModel.DoTrodeUpdateBeforeRun = 0;
+%         end
+%     end  % protected methods block
         
     methods (Static)
         function changeEPCMasterElectrodeGainsBang(newEPCMasterSocket, electrodeIndex)
