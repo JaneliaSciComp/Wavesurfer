@@ -2502,7 +2502,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
-            if self.isIdleSensuLato() && ~self.DoesProtocolNeedSave ,
+            if ~self.isIdleSensuLato() || self.DoesProtocolNeedSave ,
                 return
             end
             self.changeReadiness_(-1);
