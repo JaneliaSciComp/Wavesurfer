@@ -186,8 +186,10 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
 
             % First time starting a Run or Test Pulse is always slow, so do
             % it once before timing
-            wsModel.play();
-            wsModel.stop();
+            %fprintf('About to play() #1\n') ;
+            wsModel.do('play') ;  % use .do() to get poor-man's mutex for the timer calls
+            %fprintf('About to stop() #1\n') ;
+            wsModel.do('stop') ;
             
             % Confirm that nothing updated (wavesurfer and EPCMaster should
             % be out of sync)
@@ -198,8 +200,10 @@ classdef WavesurferModelWithEPCMasterTestCase < matlab.unittest.TestCase
             
             % Turn updating on, and time how long it takes with updating
             wsModel.DoTrodeUpdateBeforeRun = 1;
-            wsModel.play();
-            wsModel.stop();
+            %fprintf('About to play() #2\n') ;
+            wsModel.do('play') ;
+            %fprintf('About to stop() #2\n') ;
+            wsModel.do('stop') ;
             
             % Confirm that updating worked
             EPCMonitorGain = newEPCMasterSocket.getElectrodeParameter(electrodeIndex,'CurrentMonitorNominalGain') ;
