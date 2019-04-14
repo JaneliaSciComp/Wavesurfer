@@ -2594,6 +2594,12 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.broadcast('UpdateChannels') ;
         end
 
+        function pretendThatProtocolWasSaved_(self) 
+            % Don't use this unless you know what you're doing --- it doesn't even do an
+            % update
+            self.DoesProtocolNeedSave_ = false ;
+        end
+        
 %         function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
 %             % This is here for backwards-compatibility
 %             self.saveProtocolFileGivenFileName(absoluteFileName) ;
