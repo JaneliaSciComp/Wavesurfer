@@ -94,7 +94,7 @@ classdef GeneralSettingsController < ws.Controller
            if ~isempty(wsModel) ,
                 wsModel.subscribeMe(self,'Update','','update');
                 wsModel.subscribeMe(self,'UpdateGeneral','','update');
-                wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
+                %wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
                 wsModel.subscribeMe(self,'DidSetState','','didSetModelState');
                 wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');
                 %wsModel.subscribeMeToStimulationEvent(self,'Update','','update');
@@ -919,11 +919,6 @@ classdef GeneralSettingsController < ws.Controller
     end        
     
     methods
-        function willSetModelState(self, varargin)  %#ok<INUSD>
-            % Used to inform the controller that the model run state is
-            % about to be set
-        end
-        
         function didSetModelState(self,varargin)
             % Used to inform the controller that the model run state has
             % been set
