@@ -55,9 +55,9 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
             delayUntilManualStopForUntriggeredSweep = sweepDuration ;  % s
-            wsModel.record() ;  % does not block
+            wsModel.do('record') ;  % does not block
             pause(delayUntilManualStopForUntriggeredSweep) ;
-            wsModel.stop() ;           
+            wsModel.do('stop') ;           
             
             % No external trigger was created, so no data should have been
             % collected and no file or data should have been written. Also,
@@ -82,9 +82,9 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             
             % Start timer so Wavesurfer is stopped after delayUntilManualStopForTriggeredSweep seconds
             delayUntilManualStopForTriggeredSweep = sweepDuration/2 ;  % s
-            wsModel.record();
+            wsModel.do('record');
             pause(delayUntilManualStopForTriggeredSweep) ;
-            wsModel.stop() ;                       
+            wsModel.do('stop') ;                       
             
             % Check that everything is as expected
             filesCreated = dir(dataFilePatternAbsolute);

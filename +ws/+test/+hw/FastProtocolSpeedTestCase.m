@@ -22,7 +22,7 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
             thisDirName = fileparts(mfilename('fullpath')) ;
             wsModel.setFastProtocolProperty(1, ...
                                             'ProtocolFileName', ...
-                                            fullfile(thisDirName, 'folder_for_fast_protocol_testing/Six Electrodes.cfg')) ;
+                                            fullfile(thisDirName, 'folder_for_fast_protocol_testing/Six Electrodes.wsp')) ;
             %pressedButtonHandle = wsController.Figure.FastProtocolButtons(1) ;
             %wsController.FastProtocolButtonsActuated(pressedButtonHandle) ; % First time loading is always relatively fast
             ws.fakeControlActuationInTestBang(wsController, 'FastProtocolButtons', 1) ;  % 1 means the first button among the FP buttons
