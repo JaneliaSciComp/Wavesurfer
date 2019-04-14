@@ -23,12 +23,15 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         DeviceName_
         PFIID_
         Edge_
+    end
+    
+    properties (Access=protected, Transient=true)
         IsMarkedForDeletion_
     end
     
     methods
         function self=ExternalTrigger()
-            self@ws.Model() ;  % ignore parent arg
+            %self@ws.Model() ;  % ignore parent arg
             self.Name_ = 'Destination';
             self.DeviceName_ = '' ;
             self.PFIID_ = 0;
@@ -99,14 +102,34 @@ classdef ExternalTrigger < ws.Model %& ws.HasPFIIDAndEdge  % & matlab.mixin.Hete
         
     end  % methods
     
-    methods (Access=protected)        
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end    
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
 end  % classdef

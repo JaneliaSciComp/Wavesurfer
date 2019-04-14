@@ -34,8 +34,6 @@ Show saving of protocols
 
 Show fast protocols
 
-Show saving/loading of user settings files
-
 
 
 

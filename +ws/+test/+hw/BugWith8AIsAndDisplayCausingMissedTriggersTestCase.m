@@ -4,13 +4,13 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -48,17 +48,17 @@ classdef BugWith8AIsAndDisplayCausingMissedTriggersTestCase < matlab.unittest.Te
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nSweeps;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             % Delete the data file
             delete(dataFilePatternAbsolute);

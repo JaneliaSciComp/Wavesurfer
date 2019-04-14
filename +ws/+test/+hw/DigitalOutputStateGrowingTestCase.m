@@ -2,21 +2,19 @@ classdef DigitalOutputStateGrowingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            delete(findall(0,'Type','figure')) ;            
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(0,'Type','figure')) ;            
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
             wsModel.IsStimulationEnabled=true;
             self.verifyEqual(length(wsModel.DOChannelStateIfUntimed), 0);
             wsModel.addDOChannel() ;

@@ -16,12 +16,12 @@ classdef FastProtocol < ws.Model
     end
     
     methods
-        function self=FastProtocol()
-            self@ws.Model() ;
+        function self = FastProtocol()
+            %self@ws.Model() ;
         end
         
         function set.ProtocolFileName(self, newValue)
-            if ws.isString(newValue) && ~isempty(newValue) && ws.isFileNameAbsolute(newValue) && exist(newValue,'file') ,
+            if ws.isString(newValue) && (isempty(newValue) || (ws.isFileNameAbsolute(newValue) && exist(newValue,'file'))) ,
                 self.ProtocolFileName_ = newValue ;
             else
                 error('ws:invalidPropertyValue', ...
@@ -37,7 +37,6 @@ classdef FastProtocol < ws.Model
             if ws.isAStartType(newValue) ,
                 self.AutoStartType_ = newValue ;
             else
-                self.updateFastProtocol() ;
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');
             end
@@ -52,15 +51,34 @@ classdef FastProtocol < ws.Model
         end
     end  % public methods
         
-    methods (Access=protected)
+    methods 
         function result = getPropertyValue_(self, propertyName)
             result = self.(propertyName) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, propertyName, newValue)
             self.(propertyName) = newValue ;
         end  % function
     end
     
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+        
 end

@@ -4,19 +4,19 @@ classdef MultiDeviceScalingCoeffsTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
     
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             % Add four more AI channels
             wsModel.addAIChannel() ;
@@ -37,7 +37,7 @@ classdef MultiDeviceScalingCoeffsTestCase < matlab.unittest.TestCase
             wsModel.setSingleAIChannelTerminalID(5, 2) ;
             
             % Play, so the scaling coeffs get set
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
             
             % Get the scaling coeffs
             scalingCoefficients = wsModel.AIScalingCoefficients ;

@@ -47,7 +47,7 @@ classdef BiasUserClass < ws.UserClass
         end
         
         function wake(self, rootModel)
-            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsAwake ,
                 self.IsIInFrontend = true ;
                 self.initialize();
             else
@@ -59,9 +59,6 @@ classdef BiasUserClass < ws.UserClass
             if self.IsIInFrontend ,
                 % self.close();  % doesn't seem to work right...
             end
-        end
-        
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
         end
         
         function startingRun(self,~)
@@ -126,15 +123,7 @@ classdef BiasUserClass < ws.UserClass
         
         function stoppingEpisode(~,~)
             %dbstack;
-        end
-        
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            %nScans = size(analogData,1);
-            %fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
-        end
+        end        
     end  % methods
 
 
@@ -161,7 +150,7 @@ classdef BiasUserClass < ws.UserClass
         function configure(obj)
             disp('Calling BIAS config.');            
             for i=1:obj.bias_nCams
-                if exist(obj.bias_cfgFiles{i},'file');
+                if exist(obj.bias_cfgFiles{i},'file') ,
                     obj.bias{i}.loadConfiguration(obj.bias_cfgFiles{i});
                 end
             end
@@ -227,5 +216,36 @@ classdef BiasUserClass < ws.UserClass
         end
     end
     
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+        
 end  % classdef
 

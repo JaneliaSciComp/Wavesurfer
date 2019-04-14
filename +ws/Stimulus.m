@@ -1,4 +1,4 @@
-classdef Stimulus < ws.Model & ws.ValueComparable
+classdef Stimulus < ws.Model  %& ws.ValueComparable
     %Stimulus Base class for stimulus classes.
     
     % This class has a copy() method, which creates a completely
@@ -54,7 +54,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
     
     methods
         function self = Stimulus()
-            self@ws.Model() ;
+            %self@ws.Model() ;
             self.Delegate_ = ws.SquarePulseStimulusDelegate();  
         end
         
@@ -125,7 +125,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end
         
         function output = get.Delegate(self)
-            output = self.Delegate_.copy() ;
+            output = ws.copy(self.Delegate_) ;
         end
         
         function result = get.AdditionalParameterNames(self)
@@ -220,27 +220,27 @@ classdef Stimulus < ws.Model & ws.ValueComparable
 %         end
 %     end
     
-    %
-    % Implementations of methods needed to be a ws.ValueComparable
-    %
-    methods
-        function value=isequal(self,other)
-            % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.Stimulus');
-        end                            
-    end
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar Stimulus's
-            % Can't use the built-in isequal b/c want to ignore UUIDs in this
-            % test
-            % Don't need to compare as StimLibraryItem's, b/c only property
-            % of that is UUID, which we want to ignore
-            propertyNamesToCompare={'Name' 'Delegate'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end
-    end
+%     %
+%     % Implementations of methods needed to be a ws.ValueComparable
+%     %
+%     methods
+%         function value=isequal(self,other)
+%             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
+%             value=isequalHelper(self,other,'ws.Stimulus');
+%         end                            
+%     end
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar Stimulus's
+%             % Can't use the built-in isequal b/c want to ignore UUIDs in this
+%             % test
+%             % Don't need to compare as StimLibraryItem's, b/c only property
+%             % of that is UUID, which we want to ignore
+%             propertyNamesToCompare={'Name' 'Delegate'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end
+%     end
     
     methods 
         function mimic(self, other)
@@ -248,7 +248,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             %self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();           
+            propertyNames = ws.listPropertiesForPersistence(self);           
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -266,7 +266,7 @@ classdef Stimulus < ws.Model & ws.ValueComparable
                         
                         % Make a new delegate of the right kind
                         delegateClassName = sprintf('ws.%sStimulusDelegate',other.TypeString) ;
-                        delegate=feval(delegateClassName) ;
+                        delegate = feval(delegateClassName) ;
                         self.Delegate_ = delegate ;
                         self.Delegate_.mimic(other.Delegate_) ;
                     else
@@ -370,28 +370,28 @@ classdef Stimulus < ws.Model & ws.ValueComparable
         end
     end
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
 
-    methods         
-        function propNames = listPropertiesForHeader(self)
-            propNamesRaw = listPropertiesForHeader@ws.Model(self) ;            
-            % delete some property names that are defined in subclasses
-            % that don't need to go into the header file
-            propNames=setdiff(propNamesRaw, ...
-                              {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
-        end  % function 
-    end  % public methods block    
+%     methods         
+%         function propNames = listPropertiesForHeader(self)
+%             propNamesRaw = listPropertiesForHeader@ws.Encodable(self) ;            
+%             % delete some property names that are defined in subclasses
+%             % that don't need to go into the header file
+%             propNames=setdiff(propNamesRaw, ...
+%                               {'AllowedTypeStrings', 'AllowedTypeDisplayStrings'}) ;
+%         end  % function 
+%     end  % public methods block    
     
-    methods (Access=protected)
+    methods 
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -413,7 +413,23 @@ classdef Stimulus < ws.Model & ws.ValueComparable
             end
             self.LegacyDCOffset_ = [] ;
         end
-    end  % protected methods block    
+        
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
+        end
+    end  % protected methods block        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
     
 end
 

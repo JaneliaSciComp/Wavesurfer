@@ -3,7 +3,7 @@
 ws.clear() ;
 
 %[wsModel,wsController] = wavesurfer('repo/+ws/+examples/Machine_Data_File_rasterTreadMill.m') ;
-[wsModel,wsController] = wavesurfer() ;
+[wsModel,wsController] = wavesurfer('--noprefs') ;
 
 % delete all pre-existing channels
 wsModel.IsAIChannelMarkedForDeletion(:) = true ;
@@ -171,8 +171,8 @@ wsModel.UserClassName = 'ws.examples.RasterTreadMill' ;
 
 %scope = wsModel.Display.Scopes{1} ;
 %scope.YLim = [-55 +25] ;
-wsModel.setYLimitsForSingleAIChannel(1, [-75 +25]) ;
-wsModel.setYLimitsForSingleAIChannel(2, [-10 +60]) ;
+wsModel.setYLimitsForSinglePlot(1, [-75 +25]) ;
+wsModel.setYLimitsForSinglePlot(2, [-10 +60]) ;
 
 wsModel.XSpan=10 ;  % s
 

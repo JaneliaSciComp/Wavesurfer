@@ -34,7 +34,7 @@ classdef UserClassWithFigs < ws.UserClass
         function wake(self, rootModel)
             fprintf('%s  Waking an instance of UserClassWithFigs.\n', ...
                     self.Greeting);
-            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,                                
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsAwake ,                                
                 self.FigureGH_ = figure() ;
                 self.ButtonGH_ = uicontrol('Parent', self.FigureGH_ , ...
                                            'Style', 'pushbutton', ...
@@ -53,9 +53,6 @@ classdef UserClassWithFigs < ws.UserClass
         end
         
         % These methods are called in the frontend process
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
-        end
-        
         function startingRun(self,wsModel) %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")
@@ -117,15 +114,6 @@ classdef UserClassWithFigs < ws.UserClass
             fprintf('%s  Just read %d scans of data.\n',self.Greeting,nScans);                                    
         end
         
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD,INUSL>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            nScans = size(analogData,1);
-            fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
-        end
-        
-        % These methods are called in the refiller process
         function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
             fprintf('%s  About to start an episode.\n',self.Greeting);
@@ -150,6 +138,37 @@ classdef UserClassWithFigs < ws.UserClass
             fprintf('Button was pushed!\n');            
         end
     end  % methods
+    
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
     
 end  % classdef
 

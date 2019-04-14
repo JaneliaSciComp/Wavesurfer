@@ -4,19 +4,19 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
         function testAnalogOnly(self)
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -65,7 +65,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();  % this now blocks...            
+            wsModel.recordAndBlock();  % this now blocks...            
 
             % Delete the data file
             delete(dataFilePatternAbsolute);
@@ -74,7 +74,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testDigitalOnly(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
                            
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -142,7 +142,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=2.5*nSweeps;  % s
@@ -161,7 +161,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
         end  % function
 
         function testAnalogAndDigital(self)
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -214,7 +214,7 @@ classdef AnalogAndDigitalOutputTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
             % Delete the data file
             delete(dataFilePatternAbsolute);

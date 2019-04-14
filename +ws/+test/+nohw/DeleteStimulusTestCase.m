@@ -5,20 +5,20 @@ classdef DeleteStimulusTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (Test)        
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             doomedStimulusIndex = wsModel.addNewStimulus() ;  % this is now the 2nd stimulus
             %doomedStimulus = wsModel.Stimulation.StimulusLibrary.Stimuli{1} ;
             %wsModel.Stimulation.StimulusLibrary.deleteItem(doomedStimulus) ;

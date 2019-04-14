@@ -3,21 +3,20 @@ classdef LoadProtocolFileThatUsesAbsentDeviceTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             
-            wsModel.ArePreferencesWritable = false ;
             thisDirName = fileparts(mfilename('fullpath')) ;
             protocolFileName = fullfile(thisDirName, 'SP_basic_0p91_with_more_panels_open.cfg') ;
             wsModel.startLoggingWarnings() ;  % we just want to ignore warnings

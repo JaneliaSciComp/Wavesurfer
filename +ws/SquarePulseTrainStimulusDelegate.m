@@ -41,7 +41,7 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
     
     methods
         function self = SquarePulseTrainStimulusDelegate()
-            self=self@ws.StimulusDelegate();
+            %self=self@ws.StimulusDelegate();
         end
         
         function set.Delay(self, value)
@@ -202,32 +202,51 @@ classdef SquarePulseTrainStimulusDelegate < ws.StimulusDelegate
         end        
     end
     
-    %
-    % Implementations of methods needed to be a ws.ValueComparable
-    %
-    methods
-        function value=isequal(self,other)
-            % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
-            value=isequalHelper(self,other,'ws.SquarePulseTrainStimulusDelegate');
-        end                            
-    end
+%     %
+%     % Implementations of methods needed to be a ws.ValueComparable
+%     %
+%     methods
+%         function value=isequal(self,other)
+%             % Custom isequal.  Doesn't work for 3D, 4D, etc arrays.
+%             value=isequalHelper(self,other,'ws.SquarePulseTrainStimulusDelegate');
+%         end                            
+%     end
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             propertyNamesToCompare={'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Period' 'PulseDuration'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end
+%     end
     
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            propertyNamesToCompare={'Delay' 'Duration' 'Amplitude' 'DCOffset' 'Period' 'PulseDuration'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end
-    end
-    
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
     
 end

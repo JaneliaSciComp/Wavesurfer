@@ -1,4 +1,4 @@
-classdef UserClass < ws.Coding
+classdef UserClass < handle
     % The superclass from which user classes should inherit.  Contains methods
     % that get called at various points, including during a run.  The user
     % class gets instantiated in *each* of the three main processes of WS: the
@@ -15,11 +15,9 @@ classdef UserClass < ws.Coding
     %
     % Any non-transient, non-dependent properties of the user object are saved
     % to the protocol file, and are also serialized and sent to the refiller
-    % and loooper at the start of each run.  
-    
+    % and loooper at the start of each run.      
 
     methods (Abstract=true)
-        % this one is called in all processes
         wake(self, rootModel)
           % Called once after the user object is created, reinstantiated, or loaded from a
           % protocol file.  Note that when a protocol file is loaded, a user object
@@ -29,10 +27,8 @@ classdef UserClass < ws.Coding
           % non-transient, non-dependent properties of the user object should be set
           % as in the protocol file, but the transient properties will generally not
           % be set to sensible values.  If needed, the wake() method should set
-          % the transient values to preserve any user object invarients.        
+          % the transient values to preserve any user object invarients.
           
-        % these are called in the frontend process
-        willSaveToProtocolFile(self, wsModel)
         startingRun(self, wsModel)
         completingRun(self, wsModel)
         stoppingRun(self, wsModel)
@@ -43,22 +39,15 @@ classdef UserClass < ws.Coding
         abortingSweep(self, wsModel)
         dataAvailable(self, wsModel)
         
-        % this one is called in the looper process
-        samplesAcquired(self, looper, analogData, digitalData) 
-        
-        % these are are called in the refiller process
         startingEpisode(self, refiller)        
         completingEpisode(self, refiller)      
         stoppingEpisode(self, refiller)      
         abortingEpisode(self, refiller)        
-    end  % methods
-
-%     methods 
-%         function other = copy(self)
-%             className = class(self) ;
-%             other = feval(className) ;
-%             other.mimic(self) ;            
-%         end  % function                
-%     end
+        result = getPropertyValue_(self, name)
+        setPropertyValue_(self, name, newValue)
+        mimic(self, other)
+        result = get(self, propertyName) 
+        set(self, propertyName, newValue)
+    end  % public abstract methods block            
     
 end  % classdef

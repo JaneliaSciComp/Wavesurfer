@@ -61,7 +61,7 @@ classdef Electrode < ws.Model % & ws.Mimic
     methods        
         function self=Electrode()
             % Set the defaults
-            self@ws.Model();
+            %self@ws.Model();
             self.Name_ = '' ;
             self.VoltageMonitorChannelName_ = '';
             self.CurrentMonitorChannelName_ = '';
@@ -728,7 +728,7 @@ classdef Electrode < ws.Model % & ws.Mimic
 %         end
 %     end
     
-    methods (Access = protected)
+    methods
         function result = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -788,10 +788,25 @@ classdef Electrode < ws.Model % & ws.Mimic
     methods
         function setProperty_(self, propertyName, newValue)            
             % This one is deisigned to be used for most setting needs.
-            % setPropertyValue_() is mostly just for use by ws.Coding.
+            % setPropertyValue_() is mostly just for use when encoding.
+            % 2019-01: This is dumb.  Should just be using public setters
+            % and the set() method, before, for this stuff.
             methodName = horzcat('set', propertyName, '_') ;
             feval(methodName, self, newValue) ;
         end
     end
-
+        
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
 end  % classdef

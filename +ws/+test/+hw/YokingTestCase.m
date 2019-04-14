@@ -4,23 +4,24 @@ classdef YokingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests() ;
         end
     end
 
     methods (Test)
         function testPlayFromWS(self)
-            wsModel = wavesurfer('--nogui') ;
+            %fprintf('testPlayFromWS:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;
-            wsModel.play() ;
+            wsModel.playAndBlock() ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
@@ -28,7 +29,8 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testRecordFromWS(self)
-            wsModel = wavesurfer('--nogui') ;
+            %fprintf('testRecordFromWS:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;
@@ -37,7 +39,7 @@ classdef YokingTestCase < matlab.unittest.TestCase
             wsModel.DataFileLocation = tempFolderPath ;
             wsModel.DataFileBaseName = tempStem ;
             wsModel.IsOKToOverwriteDataFile = true ;
-            wsModel.record() ;
+            wsModel.recordAndBlock() ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ; 
@@ -45,8 +47,9 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
 
         function testSavingAndOpeningOfProtocolFromWS(self)
-            wsModel = wavesurfer('--nogui') ;
-            wsModel.ArePreferencesWritable = false ;
+            %fprintf('testSavingAndOpeningOfProtocolFromWS:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
+            %wsModel.DoUsePreferences = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;
             pause(5) ;  % wait for other process to start
             wsModel.setIsYokedToScanImageForTesting_(true) ;  
@@ -60,13 +63,17 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testSavingAndOpeningOfUserSettingsFromWS(self)
-            wsModel = wavesurfer('--nogui') ;            
-            wsModel.ArePreferencesWritable = false ;
+            %fprintf('testSavingAndOpeningOfUserSettingsFromWS:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
+            %wsModel.DoUsePreferences = false ;
             siMockProcess = ws.launchSIMockInOtherProcess() ;            
             pause(5) ;  % wait for other process to start            
-            userSettingsFilePath = horzcat(tempname(), '.wsu') ;
-            wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
-            wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
+            newProfileName = wsModel.createNewProfile() ;
+            wsModel.CurrentProfileName = newProfileName ;  % should cause WS to tell SI the default profile is being saved
+            %userSettingsFilePath = horzcat(tempname(), '.wsu') ;
+            %wsModel.saveUserFileGivenFileName(userSettingsFilePath) ;
+            wsModel.CurrentProfileName = 'Default' ;  % should cause WS to tell SI the Mortimer profile is being saved, and the Default profile is being loaded
+            %wsModel.openUserFileGivenFileName(userSettingsFilePath) ;
             wsModel.setIsYokedToScanImageForTesting_(false) ;
             siMockProcess.CloseMainWindow() ;
             self.verifyTrue(true) ;
@@ -74,7 +81,8 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
 
         function testMessageReceptionFromSI(self)
-            wsModel = wavesurfer('--nogui') ;            
+            %fprintf('testMessageReceptionFromSI:\n') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;            
             %wsModel.setIsYokedToScanImageForTesting_(true) ;            
             % Returns a dotnet System.Diagnostics.Process object
             pathToWavesurferRoot = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
@@ -131,11 +139,13 @@ classdef YokingTestCase < matlab.unittest.TestCase
         end  % function
         
         function testFECDeleting(self)
+            %fprintf('testFECDeleting:\n') ;
             fecCountBefore = ws.FileExistenceCheckerManager.getShared().Count ;
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.setIsYokedToScanImageForTesting_(true) ;  % should create a FEC
             fecCountDuring = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore+1, fecCountDuring) ;
+            wsModel.setIsYokedToScanImageForTesting_(false) ;  % should delete a FEC
             wsModel.delete() ;
             fecCountAfter = ws.FileExistenceCheckerManager.getShared().Count ;
             self.verifyEqual(fecCountBefore, fecCountAfter) ;

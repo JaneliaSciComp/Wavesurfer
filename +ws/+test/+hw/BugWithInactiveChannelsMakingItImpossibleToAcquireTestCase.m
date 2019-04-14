@@ -5,13 +5,13 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -30,7 +30,9 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.addAIChannel() ;
                                                       
             wsModel.AcquisitionSampleRate=20000;  % Hz
-            wsModel.IsAIChannelActive = [true true false true true true true false];
+            %wsModel.IsAIChannelActive = [true true false true true true true false];
+            wsModel.setSingleIsAIChannelActive(3, false) ;
+            wsModel.setSingleIsAIChannelActive(8, false) ;            
             wsModel.IsStimulationEnabled=true;
             wsModel.StimulationSampleRate=20000;  % Hz
             wsModel.IsDisplayEnabled=true;
@@ -40,17 +42,17 @@ classdef BugWithInactiveChannelsMakingItImpossibleToAcquireTestCase < matlab.uni
             wsModel.NSweepsPerRun=nSweeps;
 
             pause(0.1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
-            dtBetweenChecks=1;  % s
-            maxTimeToWait=2.5*nSweeps;  % s
-            nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
-            for i=1:nTimesToCheck ,
-                pause(dtBetweenChecks);
-                if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
-                    break
-                end
-            end                   
+%             dtBetweenChecks=1;  % s
+%             maxTimeToWait=2.5*nSweeps;  % s
+%             nTimesToCheck=ceil(maxTimeToWait/dtBetweenChecks);
+%             for i=1:nTimesToCheck ,
+%                 pause(dtBetweenChecks);
+%                 if wsModel.NSweepsCompletedInThisRun>=nSweeps ,
+%                     break
+%                 end
+%             end                   
 
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,nSweeps);
             

@@ -4,13 +4,13 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -19,16 +19,17 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % Now create a new data file, read it in, and make sure the
             % shape of the scaling coefficients array is correct.  Also do
             % a few checks on the values
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.PrimaryDeviceName = 'Dev1' ;
+            nCoeffs = 4 ;  % this holds for all x-series boards
             nAIChannels = 7 ;
             for i=1:(nAIChannels-1) ,
                 wsModel.addAIChannel() ;
             end
             self.verifyEqual(wsModel.NAIChannels, nAIChannels, 'Number of analog channels is wrong') ;
             nInactiveAnalogChannels = 2 ;
-            wsModel.IsAIChannelActive(3) = false ;  % shouldn't matter
-            wsModel.IsAIChannelActive(5) = false ;
+            wsModel.setSingleIsAIChannelActive(3, false) ;  % shouldn't matter
+            wsModel.setSingleIsAIChannelActive(5, false) ;
             nActiveAIChannels = nAIChannels - nInactiveAnalogChannels ;
             self.verifyEqual(wsModel.getNActiveAIChannels(), nActiveAIChannels, 'Number of active analog channels is wrong') ;
             wsModel.SweepDuration = 0.1 ;  % sec
@@ -39,7 +40,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             wsModel.DataFileBaseName = outputFileStem ;
             wsModel.IsOKToOverwriteDataFile = true ;
             newDataFileAbsolutePath = wsModel.NextRunAbsoluteFileName ;
-            wsModel.record() ;  % blocks
+            wsModel.recordAndBlock() ;  % blocks
             self.verifyEqual(wsModel.NSweepsCompletedInThisRun,1) ;
             wsModel.delete() ; 
             wsModel = [] ;  %#ok<NASGU>
@@ -49,6 +50,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             realCoefficientsAsRead = newDataFileAsStruct.header.AIScalingCoefficients ;
             % Verify that the shape of the coeffs array is correct
             self.verifyEqual( size(realCoefficientsAsRead,2), nActiveAIChannels ) ;
+            nCoeffs = size(realCoefficientsAsRead, 1) ;
 
             % For every board I've ever tested the coeffs are the same
             % across channels.  This is likely because all the boards I've
@@ -57,7 +59,7 @@ classdef AppendScalingCoefficientsToDataFileWithHWTestCase < matlab.unittest.Tes
             % But let's do some sanity checks of the range of these params.
             termMin = [-0.02 10/2^15*(1-0.1) -1e-13 -1e-17]' ;
             termMax = [+0.02 10/2^15*(1+0.1) +1e-13 +1e-17]' ;
-            for i=1:size(realCoefficientsAsRead, 1) ,
+            for i=1:nCoeffs ,
                 thisTerm = realCoefficientsAsRead(i,:) ;
                 self.verifyTrue( all( (termMin(i)<=thisTerm) & (thisTerm<=termMax(i)) ) ) ;
             end

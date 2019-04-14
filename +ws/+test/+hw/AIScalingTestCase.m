@@ -4,19 +4,19 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
     
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             electrodeIndex = wsModel.addNewElectrode() ;
             wsModel.setElectrodeProperty(electrodeIndex, 'Mode', 'cc') ;
@@ -40,8 +40,8 @@ classdef AIScalingTestCase < matlab.unittest.TestCase
 
             wsModel.IsStimulationEnabled = true ;
 
-            wsModel.play() ;
-
+            wsModel.playAndBlock() ;
+            
             x = wsModel.getAIDataFromCache() ;
 
             wsModel.delete() ;  % have to do this now

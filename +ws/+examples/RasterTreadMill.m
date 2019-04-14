@@ -90,9 +90,6 @@ classdef RasterTreadMill < ws.UserClass
             result = self.SampleRate_ ;
         end
         
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
-        end
-        
         function startingSweep(self,wsModel) %#ok<INUSD>
         end
         
@@ -318,16 +315,6 @@ classdef RasterTreadMill < ws.UserClass
             self.LastLEDValue_ = led(end) ;
         end
         
-        % this one is called in the looper process
-        function samplesAcquired(self,looper,analogData,digitalData) %#ok<INUSD>
-            % output TTL pulse
-            %fprintf('RasterTreadMill::samplesAcquired(): nScans: %d\n',size(analogData,1)) ;
-            v = analogData(:,self.ElectrodeChannel) ;
-            newValue = any(v>=self.SpikeThreshold) ;
-            looper.setDigitalOutputStateIfUntimedQuicklyAndDirtily(newValue) ;
-        end
-        
-        % these are are called in the refiller process
         function startingEpisode(self,refiller) %#ok<INUSD>
         end
         
@@ -428,7 +415,7 @@ classdef RasterTreadMill < ws.UserClass
                 self.SampleRate_ = rootModel.AcquisitionSampleRate ;
                 self.BinWidth_ = self.TreadMillLength / self.NBins;
                 self.BinCenters_ = self.BinWidth_/2 : self.BinWidth_ : self.TreadMillLength;
-                if rootModel.IsITheOneTrueWavesurferModel ,
+                if rootModel.IsAwake ,
                     self.syncRasterFigAndAxes_(rootModel) ;
                     self.syncLatencyFigAndAxes_() ;
                 end
@@ -453,6 +440,38 @@ classdef RasterTreadMill < ws.UserClass
             end
         end  % function            
     end
-      
+   
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
+    
 end
 

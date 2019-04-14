@@ -4,20 +4,20 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
             delete(findall(0,'Style','Figure'))
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel = wavesurfer('--nogui') ;
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
 
             % set up channels 
 %             wsModel.addAIChannel() ;
@@ -42,7 +42,7 @@ classdef UserClassWithFigsTestCase < matlab.unittest.TestCase
 %                            'TimerFcn', @(event,arg2)(wsModel.stop()) ) ;
             
 %             start(aTimer) ;
-            wsModel.play() ;  % this will block
+            wsModel.playAndBlock() ;  % this will block
 %             stop(aTimer) ;
 %             delete(aTimer) ;
 

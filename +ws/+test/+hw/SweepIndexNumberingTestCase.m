@@ -4,21 +4,20 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests();
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(groot,'Type','Figure')) ;
-            ws.reset() ;
+            ws.clearDuringTests();
         end
     end
 
     methods (Test)
         function theTestWithoutUI(self)
-            %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel = wavesurfer('--nogui') ;
+            % Set everything up, with many AI channels
+            wsModel = wavesurfer('--nogui', '--noprefs') ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -27,42 +26,38 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
             wsModel.addAOChannel() ;
-            wsModel.SweepDuration = 10 ;  % s
-            %wsModel.AcquisitionSampleRate=20000;  % Hz
+            sweepDuration = 10 ;  % s
+            wsModel.SweepDuration = sweepDuration ;  % s
             wsModel.IsStimulationEnabled = true ;
-            %wsModel.StimulationSampleRate=20000;  % Hz
-            %wsModel.IsDisplayEnabled=true;
             
             % Set to external triggering
             wsModel.addExternalTrigger() ;
             wsModel.AcquisitionTriggerIndex = 2 ;
 
-            nSweeps=1;
-            wsModel.NSweepsPerRun=nSweeps;
+            % Set the number of sweeps
+            nSweeps = 1 ;
+            wsModel.NSweepsPerRun = nSweeps ;
 
             % set the data file name
-            thisFileName=mfilename();
-            [~,dataFileBaseName]=fileparts(thisFileName);
-            wsModel.DataFileBaseName=dataFileBaseName;
+            thisFileName = mfilename() ;
+            [~, dataFileBaseName] = fileparts(thisFileName) ;
+            wsModel.DataFileBaseName = dataFileBaseName ;
 
             % delete any preexisting data files
-            dataDirNameAbsolute=wsModel.DataFileLocation;
-            dataFilePatternAbsolute=fullfile(dataDirNameAbsolute,[dataFileBaseName '*']);
-            delete(dataFilePatternAbsolute);
+            dataDirNameAbsolute = wsModel.DataFileLocation ;
+            dataFilePatternAbsolute = fullfile(dataDirNameAbsolute, [dataFileBaseName '*']) ;
+            delete(dataFilePatternAbsolute) ;
 
-            %arrayOfWhatShouldBeTrue = zeros(4,1); %this will store the actual results
-           
-            pause(1);
+            % Make sure everything has settled
+            pause(1) ;
+            
             % Create timer so Wavesurfer will be stopped 5 seconds after
             % timer starts, which will prevent it from collecting any data
             % since no trigger will be created.
-            timerToStopWavesurfer = timer('ExecutionMode', 'fixedDelay', ...
-                                          'TimerFcn',@(~,~)(wsModel.stop()), ...
-                                          'StartDelay',10, ...
-                                          'Period', 20);  % do this repeatedly in case first is missed
-            start(timerToStopWavesurfer);
-            wsModel.record();  % this will block
-            stop(timerToStopWavesurfer);
+            delayUntilManualStopForUntriggeredSweep = sweepDuration ;  % s
+            wsModel.do('record') ;  % does not block
+            pause(delayUntilManualStopForUntriggeredSweep) ;
+            wsModel.do('stop') ;           
             
             % No external trigger was created, so no data should have been
             % collected and no file or data should have been written. Also,
@@ -82,11 +77,16 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
             % Delete the data file if it was created
             delete(dataFilePatternAbsolute);            
 
+            % Make sure everything has settled
             pause(1);
-            % Start timer so Wavesurfer is stopped after 5 seconds
-            start(timerToStopWavesurfer);
-            wsModel.record();
-            stop(timerToStopWavesurfer);
+            
+            % Start timer so Wavesurfer is stopped after delayUntilManualStopForTriggeredSweep seconds
+            delayUntilManualStopForTriggeredSweep = sweepDuration/2 ;  % s
+            wsModel.do('record');
+            pause(delayUntilManualStopForTriggeredSweep) ;
+            wsModel.do('stop') ;                       
+            
+            % Check that everything is as expected
             filesCreated = dir(dataFilePatternAbsolute);
             wasAnOutputFileCreated = (length(filesCreated)==1) ;
             if wasAnOutputFileCreated ,
@@ -108,10 +108,10 @@ classdef SweepIndexNumberingTestCase < matlab.unittest.TestCase
 
             % Delete the data file, timer
             delete(dataFilePatternAbsolute);
-            delete(timerToStopWavesurfer);
             
             % Since data was collected, sweep index should be incremented.
             self.verifyEqual(wsModel.NextSweepIndex, 2, 'The next sweep index should be 2, but is not') ;
+            delete(wsModel) ;
         end  % function
     end  % test methods
 

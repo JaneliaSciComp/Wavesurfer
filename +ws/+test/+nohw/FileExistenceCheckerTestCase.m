@@ -15,8 +15,8 @@ classdef FileExistenceCheckerTestCase < matlab.unittest.TestCase
             filePath = tempname(tempdir()) ;
             fecm = ws.FileExistenceCheckerManager.getShared() ;
             fecCountBefore = fecm.Count ;
-            fec = ws.FileExistenceChecker(filePath, @()('File appeared!')) ;
-            fec = [] ;  % should call the destructor
+            fec = ws.FileExistenceChecker(filePath, @()('File appeared!')) ;  %#ok<NASGU>
+            fec = [] ;  %#ok<NASGU>  % should call the destructor
             fecCountAfter = fecm.Count ;
             self.verifyEqual(fecCountBefore, fecCountAfter) ;
         end
@@ -37,7 +37,7 @@ classdef FileExistenceCheckerTestCase < matlab.unittest.TestCase
                 pause(0.5) ;  % Give time for the checker thread to detect the file's absence.
             end
             fec.stop() ;
-            fec = [] ;  % should call the destructor
+            fec = [] ;  %#ok<NASGU> % should call the destructor
             self.verifyEqual(self.Counter, 2*n) ;
         end        
     end  % test methods

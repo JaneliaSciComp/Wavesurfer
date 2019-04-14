@@ -5,19 +5,19 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -48,7 +48,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             
             % start the acq, which should error
             try
-                wsModel.record();
+                wsModel.recordAndBlock();
             catch me
                 if isequal(me.identifier,'wavesurfer:logFileAlreadyExists') ,
                     % ignore error
@@ -64,7 +64,7 @@ classdef FailingToRecordBorksTestCase < matlab.unittest.TestCase
             pause(0.1);
             
             % start the acq, which should work this time
-            wsModel.record();  % this blocks
+            wsModel.recordAndBlock();  % this blocks
             
 %             % Wait for acq to complete
 %             dtBetweenChecks=0.1;  % s

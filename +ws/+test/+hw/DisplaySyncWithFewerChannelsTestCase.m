@@ -4,20 +4,19 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(0,'Type','Figure')) ;
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
     
     methods (Test)
         function theTest(self)
-            [wsModel,wsController] = wavesurfer() ;
+            [wsModel,wsController] = wavesurfer('--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -29,7 +28,7 @@ classdef DisplaySyncWithFewerChannelsTestCase < matlab.unittest.TestCase
             wsModel.IsAIChannelMarkedForDeletion(3) = true ;
             wsModel.deleteMarkedAIChannels() ;
 
-            wsModel.play() ;  % this blocks
+            wsModel.playAndBlock() ;  % this blocks
             
             %wsController.openProtocolFileGivenFileName(protocolFileName) ;
             try

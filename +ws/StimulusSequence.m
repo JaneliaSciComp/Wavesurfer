@@ -1,4 +1,4 @@
-classdef StimulusSequence < ws.Model & ws.ValueComparable
+classdef StimulusSequence < ws.Model      % & ws.ValueComparable
     % Represents a sequence of stimulus maps, to be used in sequence.
     % Note that StimulusSequences should only ever
     % exist as an item in a StimulusLibrary!
@@ -24,7 +24,7 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
     
     methods
         function self = StimulusSequence()
-            self@ws.Model();  % Don't need or want to have a parent.  Only need or want this paddle-ball game.
+            %self@ws.Model();  % Don't need or want to have a parent.  Only need or want this paddle-ball game.
 %             pvArgs = ws.filterPVArgs(varargin, {'Name'}, {});
 %             
 %             prop = pvArgs(1:2:end);
@@ -151,19 +151,19 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end  % function
     end  % methods
 
-    methods
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusSequence');
-        end  % function    
-    end  % methods
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'IndexOfEachMapInLibrary'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end  % function       
-    end  % methods
+%     methods
+%         function value=isequal(self,other)
+%             value=isequalHelper(self,other,'ws.StimulusSequence');
+%         end  % function    
+%     end  % methods
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar StimulusMap's
+%             propertyNamesToCompare={'Name' 'IndexOfEachMapInLibrary'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end  % function       
+%     end  % methods
     
     methods
         function other = copy(self)
@@ -206,28 +206,53 @@ classdef StimulusSequence < ws.Model & ws.ValueComparable
         end
     end  
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
     methods (Access=protected)
-        function sanitizePersistedState_(self)
-            % This method should perform any sanity-checking that might be
-            % advisable after loading the persistent state from disk.
-            % This is often useful to provide backwards compatibility
-            
+        function synchronizeTransientStateToPersistedState_(self)
             nBindings = length(self.IndexOfEachMapInLibrary_) ;
-            
-            % length of things should equal nBindings
-            self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
+            self.IsMarkedForDeletion_ = false(1, nBindings) ;
         end
+        
+%         function sanitizePersistedState_(self)
+%             % This method should perform any sanity-checking that might be
+%             % advisable after loading the persistent state from disk.
+%             % This is often useful to provide backwards compatibility
+%             
+%             nBindings = length(self.IndexOfEachMapInLibrary_) ;
+%             
+%             % length of things should equal nBindings
+%             self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
+%         end
     end  % protected methods block    
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end        
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
 end  % classdef
 

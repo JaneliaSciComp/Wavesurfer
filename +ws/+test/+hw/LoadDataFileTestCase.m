@@ -4,22 +4,20 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
 
         function testAnalogAndDigital(self)
-            isCommandLineOnly='--nogui';
-            %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -77,7 +75,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
-            wsModel.record();  % blocking, now
+            wsModel.recordAndBlock();  % blocking, now
             pause(0.5);
 
             % Make sure that worked
@@ -103,8 +101,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
         end  % function
 
         function testOneDI(self)
-            isCommandLineOnly='--nogui';
-            wsModel = wavesurfer(isCommandLineOnly) ;
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             % Remove the pre-existing channels
             wsModel.IsAIChannelMarkedForDeletion(:) = true ;
@@ -132,7 +129,7 @@ classdef LoadDataFileTestCase < matlab.unittest.TestCase
             absoluteFileName = wsModel.NextRunAbsoluteFileName ;
             
             pause(1);
-            wsModel.record();  % blocking, now
+            wsModel.recordAndBlock();  % blocking, now
             pause(0.5);
 
             % Make sure that worked

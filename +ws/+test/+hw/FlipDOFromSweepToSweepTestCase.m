@@ -1,19 +1,20 @@
 classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase    
+    
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             % Want to do multiple sweeps
             wsModel.NSweepsPerRun = 4 ;
@@ -33,7 +34,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
 
             % Play, logging warnings
             wsModel.startLoggingWarnings() ;
-            wsModel.play() ;  % blocks
+            wsModel.playAndBlock() ;  % blocks
             exceptionMaybe = wsModel.stopLoggingWarnings() ;
             
             % If there were warnings, print them now
@@ -53,7 +54,7 @@ classdef FlipDOFromSweepToSweepTestCase < matlab.unittest.TestCase
             wsModel.delete() ;
             wsModel = [] ;  %#ok<NASGU>    
             
-            self.verifyEmpty(exceptionMaybe, 'wsModel.play() threw one or more warnings') ;
+            self.verifyEmpty(exceptionMaybe, 'wsModel.playAndBlock() threw one or more warnings') ;
         end  % function
     end  % test methods
 

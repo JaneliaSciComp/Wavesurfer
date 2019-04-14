@@ -1,4 +1,4 @@
-classdef StimulusMap < ws.Model & ws.ValueComparable
+classdef StimulusMap < ws.Model     % & ws.ValueComparable
     
     properties (Dependent=true)
         Name
@@ -7,12 +7,9 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         IndexOfEachStimulusInLibrary
         %Stimuli  % a cell array, with [] for missing stimuli
         Multiplier  % a double array
-    end
-    
-    properties (Dependent = true, Transient=true)
         IsMarkedForDeletion  % a logical array
     end
-
+    
     properties (Dependent = true, SetAccess=immutable, Transient=true)
         %IsDurationFree
         NBindings
@@ -26,12 +23,15 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         ChannelName_ = {}
         IndexOfEachStimulusInLibrary_ = {}  % for each binding, the index of the stimulus (in the library) for that binding, or empty if unspecified
         Multiplier_ = []
-        IsMarkedForDeletion_ = logical([])
     end
-    
+
+    properties (Access = protected, Transient=true)
+        IsMarkedForDeletion_ = logical([])        
+    end
+
     methods
         function self = StimulusMap()
-            self@ws.Model();
+            %self@ws.Model();
         end
         
         function debug(self) %#ok<MANU>
@@ -195,10 +195,10 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         function bindingIndex = addBinding(self)
             % Add a "binding" to the list of bindings
             bindingIndex = self.NBindings + 1 ;
-            self.ChannelName_{bindingIndex} = '' ;
-            self.IndexOfEachStimulusInLibrary_{bindingIndex} = [] ;
-            self.Multiplier_(bindingIndex) = 1 ;
-            self.IsMarkedForDeletion_(bindingIndex) = false ;
+            self.ChannelName_{1,bindingIndex} = '' ;
+            self.IndexOfEachStimulusInLibrary_{1,bindingIndex} = [] ;
+            self.Multiplier_(1,bindingIndex) = 1 ;
+            self.IsMarkedForDeletion_(1,bindingIndex) = false ;
         end   % function
         
         function deleteBinding(self, index)
@@ -350,19 +350,19 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end  % function
     end  % public methods block
     
-    methods
-        function value=isequal(self,other)
-            value=isequalHelper(self,other,'ws.StimulusMap');
-        end  % function    
-    end  % methods
-    
-    methods (Access=protected)
-       function value=isequalElement(self,other)
-            % Test for "value equality" of two scalar StimulusMap's
-            propertyNamesToCompare={'Name' 'Duration' 'ChannelName' 'IndexOfEachStimulusInLibrary' 'Multiplier'};
-            value=isequalElementHelper(self,other,propertyNamesToCompare);
-       end  % function
-    end  % methods
+%     methods
+%         function value=isequal(self,other)
+%             value=isequalHelper(self,other,'ws.StimulusMap');
+%         end  % function    
+%     end  % methods
+%     
+%     methods (Access=protected)
+%        function value=isequalElement(self,other)
+%             % Test for "value equality" of two scalar StimulusMap's
+%             propertyNamesToCompare={'Name' 'Duration' 'ChannelName' 'IndexOfEachStimulusInLibrary' 'Multiplier'};
+%             value=isequalElementHelper(self,other,propertyNamesToCompare);
+%        end  % function
+%     end  % methods
     
     methods
         function other = copy(self)
@@ -376,18 +376,23 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
         end  % function
     end  % methods
     
-    methods (Access=protected)
+    methods
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
-    methods (Access=protected)
+    methods
+        function synchronizeTransientStateToPersistedState_(self)
+            nBindings = length(self.ChannelName_) ;
+            self.IsMarkedForDeletion_ = false(1, nBindings) ;
+        end
+        
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -398,7 +403,26 @@ classdef StimulusMap < ws.Model & ws.ValueComparable
             % length of things should equal nBindings
             self.IndexOfEachStimulusInLibrary_ = ws.sanitizeRowVectorLength(self.IndexOfEachStimulusInLibrary_, nBindings, {[]}) ;
             self.Multiplier_ = ws.sanitizeRowVectorLength(self.Multiplier_, nBindings, 1) ;
-            self.IsMarkedForDeletion_ = ws.sanitizeRowVectorLength(self.IsMarkedForDeletion_, nBindings, false) ;
         end
     end  % protected methods block    
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
 end
