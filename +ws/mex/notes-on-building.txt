@@ -18,3 +18,9 @@ should be getting 64-bit mwSize/mwIndex variables.
 
 ALT
 2016-06-22
+
+
+As of this writing, used VS2015 to build these.
+
+ALT
+2019-04-14

@@ -44,3 +44,14 @@ in Matlab 2013b, using the VS2008 compiler.
 
 Adam L. Taylor
 March 20, 2016
+
+-----
+
+Now use
+
+    mex MulticlampTelegraph.cpp
+    
+in Matlab 2015b, using the VS2015 compiler.
+
+Adam L. Taylor
+April 24, 2019
