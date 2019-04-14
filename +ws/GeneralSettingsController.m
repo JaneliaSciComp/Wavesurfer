@@ -95,7 +95,7 @@ classdef GeneralSettingsController < ws.Controller
                 wsModel.subscribeMe(self,'Update','','update');
                 wsModel.subscribeMe(self,'UpdateGeneral','','update');
                 %wsModel.subscribeMe(self,'WillSetState','','willSetModelState');
-                wsModel.subscribeMe(self,'DidSetState','','didSetModelState');
+                wsModel.subscribeMe(self,'DidSetState','','update');
                 wsModel.subscribeMe(self,'DidSetAcquisitionSampleRate','','updateControlProperties');
                 %wsModel.subscribeMeToStimulationEvent(self,'Update','','update');
                 wsModel.subscribeMe(self,'DidSetStimulationSampleRate','','updateControlProperties');
@@ -918,16 +918,6 @@ classdef GeneralSettingsController < ws.Controller
 %         end        
     end        
     
-    methods
-        function didSetModelState(self,varargin)
-            % Used to inform the controller that the model run state has
-            % been set
-            
-            % If we're switching out of the "no_device" mode, update the scope menu            
-            self.update_();
-        end
-    end     
-
     methods  % Control actuation methods, which are public
         function SweepBasedRadiobuttonActuated(self, source, event)  %#ok<INUSD>
             newValue = get(source, 'Value') ;

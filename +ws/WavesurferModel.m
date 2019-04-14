@@ -387,7 +387,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
         UpdateUserCodeManager
         UpdateForNewData
         UpdateIsYokedToScanImage
-        WillSetState
+        %WillSetState
         DidSetState
         DidCompleteSweep
         UpdateDigitalOutputStateIfUntimed
@@ -1309,7 +1309,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     
     methods (Access = protected)
         function setState_(self,newValue)
-            self.broadcast('WillSetState');
+            %self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
                 if ~isequal(self.State_,newValue) ,
                     self.State_ = newValue ;

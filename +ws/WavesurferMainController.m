@@ -77,9 +77,9 @@ classdef WavesurferMainController < ws.Controller
         TraceColorSequence_
     end    
     
-    properties (Access=protected, Transient=true)
-        OriginalModelState_  % used to store the previous model state when model state is being set
-    end
+%     properties (Access=protected, Transient=true)
+%         OriginalModelState_  % used to store the previous model state when model state is being set
+%     end
         
     properties (Access = public)  % these are protected by gentleman's agreement
         % Individual controller instances for various tools/windows/dialogs.
@@ -181,8 +181,8 @@ classdef WavesurferMainController < ws.Controller
             if ~isempty(model) ,
                 model.subscribeMe(self, 'Update', '', 'update') ;
                 model.subscribeMe(self, 'UpdateMain', '', 'update');
-                model.subscribeMe(self, 'WillSetState', '', 'willSetModelState');
-                model.subscribeMe(self, 'DidSetState', '', 'didSetModelState');
+                %model.subscribeMe(self, 'WillSetState', '', 'willSetModelState');
+                model.subscribeMe(self, 'DidSetState', '', 'update');
                 model.subscribeMe(self, 'UpdateIsYokedToScanImage', '', 'updateControlProperties');
                 model.subscribeMe(self, 'DidCompleteSweep', '', 'updateControlProperties');
                 model.subscribeMe(self, 'UpdateForNewData', '', 'updateForNewData');
@@ -1021,31 +1021,31 @@ classdef WavesurferMainController < ws.Controller
         end  % function        
     end
     
-    methods
-        function willSetModelState(self,varargin)
-            % Used to inform the controller that the model run state is
-            % about to be set
-            self.OriginalModelState_=self.Model_.State;
-        end
-        
-        function didSetModelState(self,varargin)
-            % Used to inform the controller that the model run state has
-            % been set
-            
-            % Make a local copy of the original state, clear the cache
-            originalModelState=self.OriginalModelState_;
-            self.OriginalModelState_=[];
-            
-            % If we're switching out of the "no_device" mode, update the scope menu            
-            if isequal(originalModelState,'no_device') && ~isequal(self.Model_.State,'no_device') ,
-                self.update();
-            else
-                % More limited update is sufficient
-                self.updateControlProperties();
-                self.updateControlEnablement();
-            end
-        end
-    end     
+%     methods
+% %         function willSetModelState(self,varargin)
+% %             % Used to inform the controller that the model run state is
+% %             % about to be set
+% %             self.OriginalModelState_=self.Model_.State;
+% %         end
+%         
+% %         function didSetModelState(self,varargin)
+% %             % Used to inform the controller that the model run state has
+% %             % been set
+% %             
+% %             % Make a local copy of the original state, clear the cache
+% %             originalModelState=self.OriginalModelState_;
+% %             self.OriginalModelState_=[];
+% %             
+% %             % If we're switching out of the "no_device" mode, update the scope menu            
+% %             if isequal(originalModelState,'no_device') && ~isequal(self.Model_.State,'no_device') ,
+% %                 self.update();
+% %             else
+% %                 % More limited update is sufficient
+% %                 self.updateControlProperties();
+% %                 self.updateControlEnablement();
+% %             end
+% %         end
+%     end     
     
     methods (Access=protected)
         function updateProgressBarProperties_(self)
