@@ -5552,7 +5552,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 result = '' ;
             else
                 aiChannelIndex = self.Acquisition_.aiChannelIndexFromName(monitorChannelName) ;
-                result = self.AIChannelDeviceNames{aiChannelIndex} ;
+                if isfinite(aiChannelIndex) ,
+                    result = self.AIChannelDeviceNames{aiChannelIndex} ;
+                else
+                    result = '' ;
+                end
             end
         end
 
@@ -5562,7 +5566,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 result = '' ;
             else
                 aoChannelIndex = self.Stimulation_.aoChannelIndexFromName(commandChannelName) ;
-                result = self.AOChannelDeviceNames{aoChannelIndex} ;
+                if isfinite(aoChannelIndex) ,
+                    result = self.AOChannelDeviceNames{aoChannelIndex} ;
+                else
+                    result = '' ;
+                end
             end
         end        
     end
