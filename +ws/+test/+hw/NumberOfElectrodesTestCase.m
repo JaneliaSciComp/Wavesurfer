@@ -17,30 +17,16 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
     methods (Test)
         function testCorrectNumberOfElectrodes(self)
             thisDirName=fileparts(mfilename('fullpath'));
-            %[wsModel,wsController]=wavesurfer(fullfile(thisDirName,'Machine_Data_File_WS_Test_with_DO.m'));
-            [wsModel,wsController] = wavesurfer('--noprefs') ;
+            [wsModel, wsController] = wavesurfer('--noprefs') ;
 
-%             % Add the channels
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAIChannel() ;
-%             wsModel.addAOChannel() ;
-%             wsModel.addAOChannel() ;
-%             wsModel.addDOChannel() ;
-            
             % Load a fast protocol with 2 electrodes and one with 6
             % electrodes
-            %fpOne = wsModel.FastProtocols{1};
-            %fpOne.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg');
             wsModel.setFastProtocolProperty(1, ...
                                             'ProtocolFileName', ...
-                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.cfg') ) ;
-            %fpTwo = wsModel.FastProtocols{2};
-            %fpTwo.ProtocolFileName = fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg');
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Two Electrodes Changed Names.wsp') ) ;
             wsModel.setFastProtocolProperty(2, ...
                                             'ProtocolFileName', ...
-                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.cfg') ) ;
+                                            fullfile(thisDirName,'folder_for_fast_protocol_testing/Six Electrodes.wsp') ) ;
                                         
             % Load fast protocol 1 with 2 electrodes, then fast protocol 2 with 6 electrodes
             % Store number of electrodes in figure and manager for
@@ -48,9 +34,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             storeNumberOfElectrodesInFigure = zeros(1,2);
             storeNumberOfElectrodesInModel = zeros(1,2);            
             for i = 1:2 ,
-                %pressedButtonHandle = wsController.Figure.FastProtocolButtons(currentButtonIndex);
                 try
-                    %wsController.FastProtocolButtonsActuated(pressedButtonHandle);
                     ws.fakeControlActuationInTestBang(wsController, 'FastProtocolButtons', i) ;
                 catch exception
                     % If just warnings, print them but proceed.  Otherwise,
@@ -64,8 +48,8 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
                     end
                 end
                 
-                % Make the electrode manager visible so the updates actually do something
-                wsModel.IsElectrodeManagerFigureVisible = true ;            
+                % % Make the electrode manager visible so the updates actually do something
+                % wsModel.IsElectrodeManagerFigureVisible = true ;            
                 
                 electrodeManagerController = wsController.ElectrodeManagerController ;
                 storeNumberOfElectrodesInFigure(i) = length(electrodeManagerController.LabelEdits);
@@ -73,7 +57,7 @@ classdef NumberOfElectrodesTestCase < matlab.unittest.TestCase
             end
             
             % Compare number of electrodes in figure and model
-            self.verifyEqual( storeNumberOfElectrodesInFigure,storeNumberOfElectrodesInModel);
+            self.verifyEqual(storeNumberOfElectrodesInFigure, storeNumberOfElectrodesInModel) ;
             
             wsController.quit() ;
         end  % function
