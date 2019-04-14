@@ -25,13 +25,14 @@ classdef StimulusPreviewController < ws.Controller
            self.update() ;
            
            % Subscribe to model event(s)
+           model.subscribeMe(self, 'Update', '', 'update');
            model.subscribeMe(self, 'UpdateStimulusPreview', '', 'update');
            model.subscribeMe(self, 'DidSetSingleFigureVisibility', '', 'updateVisibility') ;
         end  % constructor
     end
     
     methods (Access = protected)
-        function createFixedControls_(self)
+        function createFixedControls_(self)  %#ok<MANU>
         end  % function
         
         function figureSize = layoutFixedControls_(self)
@@ -109,7 +110,7 @@ classdef StimulusPreviewController < ws.Controller
     end  % protected methods block
 
     methods (Access=protected)
-        function updateControlEnablementImplementation_(self)
+        function updateControlEnablementImplementation_(self)  %#ok<MANU>
         end  % function
         
         function plotStimulus_(self)
