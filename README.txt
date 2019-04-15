@@ -2,13 +2,8 @@ WaveSurfer
 ==========
 
 WaveSurfer is an application for acquiring electrophysiology
-data.  It runs within Matlab R2014b and later (64-bit only).  At
+data.  It runs within Matlab R2015b and later (64-bit only).  At
 present, you must have a Matlab license to use it.
-
-PLEASE NOTE THAT WAVESURFER IS CURRENTLY PRE-RELEASE SOFTWARE.  THERE
-WILL ALMOST CERTAINLY BE BREAKING CHANGES TO FILE FORMATS, ETC. BEFORE
-VERSION 1.0 IS RELEASED, AND WE CAN MAKE NO PROMISES ABOUT BACKWARD
-COMPATIBILITY.
 
 
 System Requirements
@@ -20,7 +15,7 @@ National Instruments X Series card (i.e. 63xx)
 
 National Instruments DAQmx driver, version 9.8.x or later.
 
-Matlab R2014b or later (64-bit)
+Matlab R2015b or later (64-bit)
 
 
 Installation
@@ -71,7 +66,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2018 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2019 by the Howard Hughes Medical 
 Institute.
 
 
@@ -112,9 +107,7 @@ Authors
 WaveSurfer was developed at the HHMI Janelia Research Campus.  It
 started out as version 3 of Ephus, another electrophysiology package
 largely authored by Vijay Iyer, with contributions by Tim O'Connor and
-others.  Vijay is also the primary author of the DABS library, from
-which the code in +ws/+dabs/+ni was taken, and of the MOST library, in
-+ws/+most.
+others.
 
 The original developer of WaveSurfer was Patrick Edson.  
 
@@ -474,4 +467,17 @@ Version History
                          new user class method,
                          willSaveToProtocolFile().  File stimulus can
                          now load a .mat file.  Fixed a few other bugs.
+                         
+1.0      Apr 14, 2019    User settings files have been replaced with
+                         user profiles that act as preferences,
+                         requiring less user fiddling.  WaveSurfer
+                         now does a better job of warning the user
+                         when they try to close a protocol with
+                         unsaved changes.  Stimulus preview is no
+                         longer a second-class window, and now
+                         automatically updates when the current
+                         stimulus/map/sequence is changed.  Dropped
+                         support for soft-real-time controllers in
+                         user code.  Dropped support for Matlab 2014b
+                         and 2015a.
                          

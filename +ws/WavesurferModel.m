@@ -1,4 +1,4 @@
-classdef WavesurferModel < ws.Model
+classdef WavesurferModel < ws.Model & ws.EventBroadcaster
     % The main Wavesurfer model object.
     
     properties (Constant = true, Transient=true)
@@ -100,7 +100,7 @@ classdef WavesurferModel < ws.Model
         ChannelIndexWithinTypeFromPlotIndex
         IsAnalogFromPlotIndex
         ChannelIndexFromPlotIndex
-        ActiveInputChannelIndexFromInputChannelIndex
+        CacheInputChannelIndexFromInputChannelIndex
         PlotHeightFromPlotIndex
         PlotIndexFromChannelIndex  % 1 x nChannels
         AIChannelTerminalNames
@@ -126,6 +126,13 @@ classdef WavesurferModel < ws.Model
         AOChannelTerminalIDs
         DIChannelTerminalIDs
         DOChannelTerminalIDs
+        IsPerformingRun
+        IsPerformingSweep
+        DataCacheDurationWhenContinuous
+        IsInputChannelInCacheFromInputChannelIndex
+        WidthOfPlotsInPixels
+        XDataForDisplay
+        YDataForDisplay
     end
     
     properties (Access=protected)
@@ -156,7 +163,12 @@ classdef WavesurferModel < ws.Model
         IsDOChannelTerminalOvercommitted_ = false(1,0)        
         
         NRunsCompleted_ = 0  % number of runs *completed* (not stopped or aborted) since WS was started
-        ArePreferencesWritable_ = true
+        DoUsePreferences_ = true
+        TheBigTimer_ = []
+        AllowTimerCallback_ = true ;
+        CurrentProfileName_
+        ProfileNames_
+        LastProtocolFilePath_ = ''
     end   
 
     properties (Dependent = true)
@@ -187,14 +199,15 @@ classdef WavesurferModel < ws.Model
           % the .cfg file.  Having this property publically-gettable, and having
           % ClockAtRunStart_ transient, achieves this.
         State
-        VersionString  
+        VersionString
           % VersionString property exists so that the version is written to the data file
           % header.  The version string that gets written to the protocol file is stored
           % outside the serialization of the WavesurferModel, and is gotten directly from
           % ws.versionString().          
-        IsITheOneTrueWavesurferModel
+        IsITheOneTrueWavesurferModel  % deprecated, same as IsAwake
+        IsAwake
         %WarningLog
-        LayoutForAllWindows
+        %LayoutForAllWindows
        
         AIChannelNames
         DIChannelNames
@@ -208,7 +221,34 @@ classdef WavesurferModel < ws.Model
         AcquisitionTriggerIndex  % this is an index into Schemes
         StimulationUsesAcquisitionTrigger  % boolean
         StimulationTriggerIndex  % this is an index into Schemes
-        ArePreferencesWritable
+        DoUsePreferences
+        DoesProtocolNeedSave
+        
+        IsWavesurferMainFigureVisible
+        IsGeneralSettingsFigureVisible
+        IsChannelsFigureVisible
+        IsStimulusLibraryFigureVisible
+        IsStimulusPreviewFigureVisible
+        IsTriggersFigureVisible
+        IsUserCodeManagerFigureVisible
+        IsElectrodeManagerFigureVisible
+        IsTestPulserFigureVisible        
+        IsFastProtocolsFigureVisible
+
+        MainFigurePosition
+        GeneralSettingsFigurePosition
+        ChannelsFigurePosition
+        StimulusLibraryFigurePosition
+        StimulusPreviewFigurePosition
+        TriggersFigurePosition
+        UserCodeManagerFigurePosition
+        ElectrodeManagerFigurePosition
+        TestPulserFigurePosition        
+        FastProtocolsFigurePosition        
+        
+        CurrentProfileName
+        ProfileNames
+        LastProtocolFilePath
     end
    
 %     properties (Access=protected, Constant = true, Transient=true)
@@ -241,7 +281,27 @@ classdef WavesurferModel < ws.Model
         AreSweepsFiniteDuration_ = true
         NSweepsPerRun_ = 1
         SweepDurationIfFinite_ = 1  % s
-        LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
+        
+        %LayoutForAllWindows_  % Yeah, this is view-related, but it's persisted, so it belongs in the model
+        
+        IsGeneralSettingsFigureVisible_ = false
+        IsChannelsFigureVisible_ = false
+        IsStimulusLibraryFigureVisible_ = false
+        IsStimulusPreviewFigureVisible_ = false
+        IsTriggersFigureVisible_ = false
+        IsUserCodeManagerFigureVisible_ = false
+        IsElectrodeManagerFigureVisible_ = false
+        IsTestPulserFigureVisible_ = false
+        
+        MainFigurePosition_ = []
+        GeneralSettingsFigurePosition_ = []
+        ChannelsFigurePosition_ = []
+        StimulusLibraryFigurePosition_ = []
+        StimulusPreviewFigurePosition_ = []
+        TriggersFigurePosition_ = []
+        UserCodeManagerFigurePosition_ = []
+        ElectrodeManagerFigurePosition_ = []
+        TestPulserFigurePosition_ = []
         
         % Saved to .usr file
         FastProtocols_ = cell(1,0)
@@ -251,23 +311,26 @@ classdef WavesurferModel < ws.Model
     end
 
     properties (Access=protected, Transient=true)
-        IPCPublisher_
-        LooperIPCSubscriber_
-        RefillerIPCSubscriber_
-        LooperIPCRequester_
-        RefillerIPCRequester_
+        Looper_
+        Refiller_        
+%         IPCPublisher_
+%         LooperIPCSubscriber_
+%         RefillerIPCSubscriber_
+%         LooperIPCRequester_
+%         RefillerIPCRequester_
         HasUserSpecifiedProtocolFileName_ = false
         AbsoluteProtocolFileName_ = ''
         HasUserSpecifiedUserSettingsFileName_ = false
+        DoesProtocolNeedSave_ = false 
         AbsoluteUserSettingsFileName_ = ''
         IndexOfSelectedFastProtocol_ = 1  % Invariant: Always a scalar real double, and an integer between 1 and NFastProtocols (never empty)
         State_ = 'uninitialized'
-        Subsystems_
-        t_  % During a sweep, the time stamp of the scan *just after* the most recent scan
-        NScansAcquiredSoFarThisSweep_
+        %Subsystems_
+        t_ = 0  % During a sweep, the time stamp of the scan *just after* the most recent scan
+        %NScansAcquiredSoFarThisSweep_
         FromRunStartTicId_
         FromSweepStartTicId_
-        TimeOfLastWillPerformSweep_        
+        TimeOfLastWillPerformSweep_
         %TimeOfLastSamplesAcquired_
         NTimesDataAvailableCalledSinceRunStart_ = 0
         %PollingTimer_
@@ -276,16 +339,17 @@ classdef WavesurferModel < ws.Model
         ClockAtRunStart_
         %DoContinuePolling_
         %DidLooperCompleteSweep_
-        DidRefillerCompleteEpisodes_
+        %DidRefillerCompleteEpisodes_
         DidAnySweepFailToCompleteSoFar_
-        WasRunStopped_        
-        WasRunStoppedInLooper_        
-        WasRunStoppedInRefiller_        
-        WasExceptionThrown_
-        ThrownException_
+        %WasRunStopped_
+        %WasRunStoppedInLooper_
+        %WasRunStoppedInRefiller_
+        %WasExceptionThrown_
+        %ThrownException_
         NSweepsCompletedInThisRun_ = 0
         AreAllSweepsCompleted_
-        IsITheOneTrueWavesurferModel_
+        IsAwake_
+        IsHeaded_
         DesiredNScansPerUpdate_        
         NScansPerUpdate_        
         SamplesBuffer_
@@ -300,23 +364,30 @@ classdef WavesurferModel < ws.Model
         %LayoutForAllWindows_ = []   % this should eventually get migrated into the persistent state, but don't want to deal with that now
         DrawnowTicId_
         TimeOfLastDrawnow_
-        DidLooperCompleteSweep_
+        %DidLooperCompleteSweep_
         %SICommandPollTimer_
         %SICommandFileExistenceChecker_
+        IsFastProtocolsFigureVisible_ = false
+        FastProtocolsFigurePosition_ = []
         CommandClient_
         CommandServer_
     end
     
     events
+        Update
         UpdateMain
-        UpdateGeneralSettings
+        UpdateGeneral
         UpdateChannels
         UpdateTriggering
         UpdateStimulusLibrary
+        UpdateStimulusPreview
         UpdateFastProtocols
+        UpdateLogging
+        UpdateElectrodeManager
+        UpdateUserCodeManager
         UpdateForNewData
         UpdateIsYokedToScanImage
-        WillSetState
+        %WillSetState
         DidSetState
         DidCompleteSweep
         UpdateDigitalOutputStateIfUntimed
@@ -327,6 +398,28 @@ classdef WavesurferModel < ws.Model
         DidSetStimulationSampleRate
         UpdateElectrodes
         UpdateTestPulser
+        RaiseDialogOnException
+        DidMaybeChangeProtocol
+        DidMaybeSetUserClassName
+        DidSetSingleFigureVisibility
+        UpdateDoIncludeSessionIndexInDataFileName
+        TPDidSetIsInputChannelActive
+        TPUpdateTrace
+        
+        EMDidSetIsInputChannelActive
+        EMDidSetIsDigitalOutputTimed
+        EMDidChangeNumberOfInputChannels
+        EMDidChangeNumberOfOutputChannels
+        
+        %UpdateDisplay
+        DidSetUpdateRate
+        DidSetXSpan
+        DidSetXOffset
+        DidSetYAxisLimits
+        UpdateTraces
+        UpdateAfterDataAdded
+        
+        UpdateReadiness        
     end
     
     properties (Dependent = true, SetAccess=immutable, Transient=true)
@@ -337,135 +430,54 @@ classdef WavesurferModel < ws.Model
         DegreeOfReadiness_ = 1
     end
 
-    events
-        UpdateReadiness
-    end
-    
     methods
-        function self = WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode)
-            self@ws.Model();
+        function self = WavesurferModel(isAwake, isHeaded, doUsePreferences)
+            %self@ws.Model();
             
-            if ~exist('isITheOneTrueWavesurferModel','var') || isempty(isITheOneTrueWavesurferModel) ,
-                isITheOneTrueWavesurferModel = false ;
+            if ~exist('isAwake','var') || isempty(isAwake) ,
+                isAwake = false ;
             end                       
-            if ~exist('doRunInDebugMode','var') || isempty(doRunInDebugMode) ,
-                doRunInDebugMode = false ;
-            end
+            if isAwake ,
+                if ~exist('isHeaded','var') || isempty(isHeaded) ,
+                    isHeaded = false ;
+                end
+            else
+                isHeaded = false ;                
+            end         
+            if isAwake ,
+                if ~exist('doUsePreferences','var') || isempty(doUsePreferences) ,
+                    doUsePreferences = true ;
+                end
+            else
+                doUsePreferences = false ;                
+            end                     
+            
             %doRunInDebugMode = true ;
             %dbstop('if','error') ;
             
-            self.IsITheOneTrueWavesurferModel_ = isITheOneTrueWavesurferModel ;
+            self.IsAwake_ = isAwake ;
+            self.IsHeaded_ = isHeaded ;
+            self.DoUsePreferences_ = doUsePreferences ;
             
             % We only set up the sockets if we are the one true
             % WavesurferModel, and not some blasted pretender!
             % ("Pretenders" are created when we load a protocol from disk,
             % for instance.)
-            if isITheOneTrueWavesurferModel ,
-                % Determine which three free ports to use:
-                nPorts = 5 ;
-                portNumbers = ws.WavesurferModel.getFreeEphemeralPortNumbers(nPorts) ;                
-                frontendIPCPublisherPortNumber = portNumbers(1) ;
-                looperIPCPublisherPortNumber = portNumbers(2) ;
-                refillerIPCPublisherPortNumber = portNumbers(3) ;
-                looperIPCReplierPortNumber = portNumbers(4) ;
-                refillerIPCReplierPortNumber = portNumbers(5) ;                
-                
-                % Set up the object to broadcast messages to the satellite
-                % processes
-                self.IPCPublisher_ = ws.IPCPublisher(frontendIPCPublisherPortNumber) ;
-                self.IPCPublisher_.bind(); 
+            if isAwake ,
+                % Create the looper, refiller
+                self.Looper_ = ws.Looper() ;
+                self.Refiller_ = ws.Refiller() ;                                
 
-                % Subscribe to the looper broadcaster
-                self.LooperIPCSubscriber_ = ws.IPCSubscriber() ;
-                self.LooperIPCSubscriber_.setDelegate(self) ;
-                self.LooperIPCSubscriber_.connect(looperIPCPublisherPortNumber) ;
+%                 % Create the timer that runs during a run
+%                 self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+%                                           'BusyMode', 'drop', ...
+%                                           'Period', 0.1, ...
+%                                           'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
                 
-                % Subscribe to the refiller broadcaster
-                self.RefillerIPCSubscriber_ = ws.IPCSubscriber() ;
-                self.RefillerIPCSubscriber_.setDelegate(self) ;
-                self.RefillerIPCSubscriber_.connect(refillerIPCPublisherPortNumber) ;
-
-                % Connect to the looper replier
-                self.LooperIPCRequester_ = ws.IPCRequester() ;
-                self.LooperIPCRequester_.connect(looperIPCReplierPortNumber) ;                
-                
-                % Connect to the refiller replier
-                self.RefillerIPCRequester_ = ws.IPCRequester() ;
-                self.RefillerIPCRequester_.connect(refillerIPCReplierPortNumber) ;                
-                
-                % Start the other Matlab processes, passing the relevant
-                % path information to make sure they can find all the .m
-                % files they need.
-                [pathToWavesurferRoot,pathToMatlabZmqLib] = ws.WavesurferModel.pathNamesThatNeedToBeOnSearchPath() ;
-                if doRunInDebugMode ,
-                    looperLaunchStringTemplate = ...
-                        ['start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); looper=ws.Looper(%d, %d, %d); ' ...
-                         'looper.runMainLoop(); clear; quit()"'] ;
-                else
-                    looperLaunchStringTemplate = ...
-                        ['start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); ws.hideMatlabWindow(); looper=ws.Looper(%d, %d, %d); ' ...
-                         'looper.runMainLoop(); clear; quit()"'] ;
-                end
-                looperLaunchString = ...
-                    sprintf(looperLaunchStringTemplate , ...
-                            pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib , ...
-                            looperIPCPublisherPortNumber, ...
-                            frontendIPCPublisherPortNumber, ...
-                            looperIPCReplierPortNumber) ;
-                system(looperLaunchString) ;
-                if doRunInDebugMode ,
-                    refillerLaunchStringTemplate = ...
-                        [ 'start matlab -nosplash -minimize -r "addpath(''%s''); addpath(''%s''); refiller=ws.Refiller(%d, %d, %d); ' ...
-                          'refiller.runMainLoop(); clear; quit()"' ] ;
-                else
-                    refillerLaunchStringTemplate = ...
-                        [ 'start matlab -nojvm -nosplash -minimize -r "addpath(''%s''); addpath(''%s'');  ws.hideMatlabWindow(); refiller=ws.Refiller(%d, %d, %d); ' ...
-                          'refiller.runMainLoop(); clear; quit()"' ] ;
-                end
-                refillerLaunchString = ...
-                    sprintf(refillerLaunchStringTemplate , ...
-                            pathToWavesurferRoot , ...
-                            pathToMatlabZmqLib , ...
-                            refillerIPCPublisherPortNumber, ...
-                            frontendIPCPublisherPortNumber, ...
-                            refillerIPCReplierPortNumber) ;
-                system(refillerLaunchString) ;
-                
-                % Start broadcasting pings until the satellite processes
-                % respond
-                nPingsMax=20 ;
-                isLooperAlive=false;
-                isRefillerAlive=false;
-                for iPing = 1:nPingsMax ,
-                    self.IPCPublisher_.send('areYallAliveQ') ;
-                    pause(1);
-                    [didGetMessage,messageName] = self.LooperIPCSubscriber_.processMessageIfAvailable() ;
-                    if didGetMessage && isequal(messageName,'looperIsAlive') ,
-                        isLooperAlive=true;
-                    end
-                    [didGetMessage,messageName] = self.RefillerIPCSubscriber_.processMessageIfAvailable() ;
-                    if didGetMessage && isequal(messageName,'refillerIsAlive') ,
-                        isRefillerAlive=true;
-                    end
-                    if isLooperAlive && isRefillerAlive ,
-                        break
-                    end
-                end
-
-                % Error if either satellite is not responding
-                if ~isLooperAlive ,
-                    error('ws:noContactWithLooper' , ...
-                          'Unable to establish contact with the looper process');
-                end
-                if ~isRefillerAlive ,
-                    error('ws:noContactWithRefiller' , ...
-                          'Unable to establish contact with the refiller process');
-                end
-
                 % Get the list of all device names, and cache it in our own
                 % state
-                self.probeHardwareAndSetAllDeviceNames() ;                
+                self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
+                self.syncDeviceResourceCountsFromDeviceNames_() ;
             end  % if isITheOneTrueWavesurfer
             
             % Initialize the fast protocols
@@ -490,7 +502,7 @@ classdef WavesurferModel < ws.Model
             % right channels are enabled and the smart-electrode associated
             % gains are right, and before Display and Logging so that the
             % data values are correct.
-            self.Subsystems_ = {self.Ephys_, self.Acquisition_, self.Stimulation_, self.Display_, self.Triggering_, self.Logging_, self.UserCodeManager_};
+            %self.Subsystems_ = {self.Ephys_, self.Acquisition_, self.Stimulation_, self.Display_, self.Triggering_, self.Logging_, self.UserCodeManager_};
             
             % The object is now initialized, but not very useful until a
             % device is specified.
@@ -498,7 +510,7 @@ classdef WavesurferModel < ws.Model
             
             % Finally, set the device name to the first device name, if
             % there is one (and if we are the one true wavesurfer object)
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 % Set the device name to the first device
                 allDeviceNames = self.AllDeviceNames ;
                 if ~isempty(allDeviceNames) ,
@@ -510,34 +522,95 @@ classdef WavesurferModel < ws.Model
             % correctly.
             self.overrideOrReleaseStimulusMapDurationAsNeeded_();            
             
-            % Lastly (I guess...) create a command connector (which will
+            % Create a command connector (which will
             % remain disabled for now)
+            % This needs to be done before loading the preferences, since it's the
+            % CommandClient_ that takes care of notifying SI of preference file loading,
+            % depending on whether we are yoked.
             self.CommandServer_ = ws.CommandServer(self) ;
             self.CommandClient_ = ws.CommandClient(self) ;
-            if isITheOneTrueWavesurferModel ,
+            if isAwake ,
                 self.CommandServer_.IsEnabled = true ;
+            end            
+            
+            % Set the protocol file name
+            if isAwake ,
+                %self.addStarterChannelsAndStimulusLibrary() ;
+                self.loadProfileNameAndNames_() ;  % populates self.CurrentProfileName_                
+                self.loadPreferences_(self.CurrentProfileName_) ;
+                
+                lastProtocolFilePath = self.LastProtocolFilePath_ ;  % just loaded from disk, typically 
+                lastProtocolFileFolderPath = fileparts(lastProtocolFilePath) ;
+                if isempty(lastProtocolFileFolderPath) || ~exist(lastProtocolFileFolderPath, 'dir') ,
+                    protocolFileFolderPath = pwd() ;
+                else
+                    protocolFileFolderPath = lastProtocolFileFolderPath ;
+                end
+                index = 0 ;
+                didFindGoodFileName = false ;
+                while ~didFindGoodFileName ,
+                    index = index + 1 ;
+                    if index==1 ,
+                        putativeGoodFileName = 'untitled.wsp' ;
+                    else
+                        putativeGoodFileName = sprintf('untitled-%d.wsp', index) ;
+                    end
+                    putativeGoodFilePath = fullfile(protocolFileFolderPath, putativeGoodFileName) ;
+                    didFindGoodFileName = ~exist(putativeGoodFilePath, 'file') ;
+                end                
+                self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
+                self.HasUserSpecifiedProtocolFileName_ = false ;
+                self.DoesProtocolNeedSave_ = false ;
             end            
         end  % function
         
         function delete(self)            
             %fprintf('WavesurferModel::delete()\n');
-            if self.IsITheOneTrueWavesurferModel_ ,
+            if self.IsAwake_ ,
                 % Signal to others that we are going away
-                self.IPCPublisher_.send('frontendIsBeingDeleted') ;
+                %self.Looper_.frontendIsBeingDeleted() ;
+                %self.Refiller_.frontendIsBeingDeleted() ;
+                %self.IPCPublisher_.send('frontendIsBeingDeleted') ;
+                
+                try
+                    % Stop, delete the timer
+                    if ~isempty(self.TheBigTimer_)
+                        if isvalid(self.TheBigTimer_) ,
+                            stop(self.TheBigTimer_) ;
+                            delete(self.TheBigTimer_) ;
+                        end
+                        self.TheBigTimer_ = [] ;
+                    end                        
+                catch me
+                    fprintf('Unable to delete the timer in WSM delete() method.  Error was: %s\n', me.message) ;
+                end
+                
+                % Try to save the preferences
+                try
+                    self.savePreferences_(self.CurrentProfileName_) ;  
+                        % if the above fails, we don't try to save self.CurrentProfileName to the
+                        % LastProfileName as stored on disk
+                    self.saveLastProfileName_() ;
+                catch me
+                    fprintf('Unable to save the preferences in WSM delete() method.  Error was: %s\n', me.message) ;
+                end                    
                 
                 % Close the sockets
-                self.LooperIPCSubscriber_ = [] ;
-                self.RefillerIPCSubscriber_ = [] ;
-                self.LooperIPCRequester_ = [] ;
-                self.RefillerIPCRequester_ = [] ;
-                self.IPCPublisher_ = [] ;                                
+                self.Looper_ = [] ;
+                self.Refiller_ = [] ;
+                %self.LooperIPCSubscriber_ = [] ;
+                %self.RefillerIPCSubscriber_ = [] ;
+                %self.LooperIPCRequester_ = [] ;
+                %self.RefillerIPCRequester_ = [] ;
+                %self.IPCPublisher_ = [] ;                                
                 
                 % If yoked, tell SI that we're quitting
                 try
                     self.notifyScanImageThatWavesurferIsQuittingIfYoked_() ;
-                catch exception  %#ok<NASGU>
+                catch exception  
                     % If something goes wrong, just ignore it, since this is delete() method   
-                    fprintf('notifyScanImageThatWavesurferIsQuittingIfYoked_() threw in the WSM delete() method\n') ;                    
+                    fprintf('notifyScanImageThatWavesurferIsQuittingIfYoked_() threw in the WSM delete() method, with the error message:\n') ;
+                    fprintf('%s', exception.message) ;                    
                 end                    
             end
             % Delete CommandServer_, client
@@ -570,13 +643,25 @@ classdef WavesurferModel < ws.Model
             %fprintf('WavesurferModel::stop()\n');
             if isequal(self.State,'idle') , 
                 % do nothing except re-sync the view to the model
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
             else
                 % Actually stop the ongoing sweep
                 %self.abortSweepAndRun_('user');
                 %self.WasRunStoppedByUser_ = true ;
                 %fprintf('About to publish "frontendWantsToStopRun"\n') ;
-                self.IPCPublisher_.send('frontendWantsToStopRun');  
+                %self.IPCPublisher_.send('frontendWantsToStopRun');  
+                self.Looper_.stoppingRun(self.IsPerformingSweep) ;
+                didStopEpisode = self.Refiller_.stoppingRun() ;
+                if self.IsPerformingSweep_ ,
+                    self.stopTheOngoingSweep_() ;
+                end
+                if didStopEpisode ,
+                    self.UserCodeManager_.invoke(self, 'stoppingEpisode') ;
+                end
+                self.stopTheOngoingRun_();
+                
                 %fprintf('Just published "frontendWantsToStopRun"\n') ;
                   % the looper gets this message and stops the run, then
                   % publishes 'looperStoppedRun'.
@@ -587,45 +672,52 @@ classdef WavesurferModel < ws.Model
     end
     
     methods  % These are all the methods that get called in response to ZMQ messages
-        function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
-            %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
-            
-            % If we are not performing sweeps, just ignore.  This can
-            % happen after stopping a run and then starting another, where some old messages from the last run are
-            % still in the queue
-            if self.IsPerformingSweep_ ,
-                %fprintf('About to call samplesAcquired_()\n') ;
-                self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
-            end
-            result = [] ;
-        end  % function
+%         function result = samplesAcquired(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+%             %fprintf('got data.  scanIndex: %d\n',scanIndex) ;
+%             
+%             % If we are not performing sweeps, just ignore.  This can
+%             % happen after stopping a run and then starting another, where some old messages from the last run are
+%             % still in the queue
+%             if self.IsPerformingSweep_ ,
+%                 %fprintf('About to call samplesAcquired_()\n') ;
+%                 self.samplesAcquired_(scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
+%             end
+%             result = [] ;
+%         end  % function
         
-        function result = looperCompletedSweep(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
-            %fprintf('WavesurferModel::looperCompletedSweep()\n');
-            %self.DidLooperCompleteSweep_ = true ;
-            self.DidLooperCompleteSweep_ = true ;
-            result = [] ;
-        end
+%         function result = looperCompletedSweep(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has completed a sweep
+%             %fprintf('WavesurferModel::looperCompletedSweep()\n');
+%             %self.DidLooperCompleteSweep_ = true ;
+%             self.DidLooperCompleteSweep_ = true ;
+%             result = [] ;
+%         end
         
-        function result = refillerCompletedEpisodes(self)
-            % Call by the Refiller, via ZMQ pub-sub, when it has completed
-            % all the episodes in the run
-            %fprintf('WavesurferModel::refillerCompletedRun()\n');            
-            self.DidRefillerCompleteEpisodes_ = true ;
-            %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
-            %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
-            result = [] ;
-        end
+%         function result = refillerCompletedEpisodes(self)
+%             % Call by the Refiller, via ZMQ pub-sub, when it has completed
+%             % all the episodes in the run
+%             %fprintf('WavesurferModel::refillerCompletedRun()\n');            
+%             self.DidRefillerCompleteEpisodes_ = true ;
+%             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = true\n');
+%             %self.DidMostRecentSweepComplete_ = self.DidLooperCompleteSweep_ ;
+%             result = [] ;
+%         end
         
-        function result = looperStoppedRun(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
-            % run (in response to a frontendWantsToStopRun message)
-            %fprintf('WavesurferModel::looperStoppedRun()\n');
-            self.WasRunStoppedInLooper_ = true ;
-            self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
-            result = [] ;
-        end
+%         function result = looperStoppedRun(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+%             % run (in response to a frontendWantsToStopRun message)
+%             %fprintf('WavesurferModel::looperStoppedRun()\n');
+%             self.WasRunStoppedInLooper_ = true ;
+%             %self.WasRunStopped_ = self.WasRunStoppedInRefiller_ ;
+%             if self.WasRunStoppedInRefiller_ ,
+%                 if self.IsPerformingSweep_ ,
+%                     self.stopTheOngoingSweep_() ;
+%                 end
+%                 self.stopTheOngoingRun_();
+%             end
+% 
+%             result = [] ;
+%         end
         
 %         function result = looperReadyForRunOrPerhapsNot(self, err)  %#ok<INUSL>
 %             % Call by the Looper, via ZMQ pub-sub, when it has finished its
@@ -641,11 +733,11 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end        
         
-        function result = looperIsAlive(self)  %#ok<MANU>
-            % Doesn't need to do anything
-            %fprintf('WavesurferModel::looperIsAlive()\n');
-            result = [] ;
-        end
+%         function result = looperIsAlive(self)  %#ok<MANU>
+%             % Doesn't need to do anything
+%             %fprintf('WavesurferModel::looperIsAlive()\n');
+%             result = [] ;
+%         end
         
 %         function result = refillerReadyForRunOrPerhapsNot(self, err) %#ok<INUSL>
 %             % Call by the Refiller, via ZMQ pub-sub, when it has finished its
@@ -661,20 +753,27 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end        
         
-        function result = refillerStoppedRun(self)
-            % Call by the Looper, via ZMQ pub-sub, when it has stopped the
-            % run (in response to a frontendWantsToStopRun message)
-            %fprintf('WavesurferModel::refillerStoppedRun()\n');
-            self.WasRunStoppedInRefiller_ = true ;
-            self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
-            result = [] ;
-        end
+%         function result = refillerStoppedRun(self)
+%             % Call by the Looper, via ZMQ pub-sub, when it has stopped the
+%             % run (in response to a frontendWantsToStopRun message)
+%             %fprintf('WavesurferModel::refillerStoppedRun()\n');
+%             self.WasRunStoppedInRefiller_ = true ;
+%             %self.WasRunStopped_ = self.WasRunStoppedInLooper_ ;
+%             if self.WasRunStoppedInLooper_ ,
+%                 if self.IsPerformingSweep_ ,
+%                     self.stopTheOngoingSweep_() ;
+%                 end
+%                 self.stopTheOngoingRun_();
+%             end
+%             
+%             result = [] ;
+%         end
         
-        function result = refillerIsAlive(self)  %#ok<MANU>
-            % Doesn't need to do anything
-            %fprintf('WavesurferModel::refillerIsAlive()\n');
-            result = [] ;
-        end
+%         function result = refillerIsAlive(self)  %#ok<MANU>
+%             % Doesn't need to do anything
+%             %fprintf('WavesurferModel::refillerIsAlive()\n');
+%             result = [] ;
+%         end
         
 %         function result = looperDidReleaseTimedHardwareResources(self) %#ok<MANU>
 %             result = [] ;
@@ -684,15 +783,13 @@ classdef WavesurferModel < ws.Model
 %             result = [] ;
 %         end       
         
-        function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
-            result = [] ;
-        end       
+%         function result = gotMessageHeyRefillerIsDigitalOutputTimedWasSetInFrontend(self) %#ok<MANU>
+%             result = [] ;
+%         end       
     end  % ZMQ methods block
     
     methods
         function value = get.VersionString(self)  %#ok<MANU>
-            % This exists just so there's a public property holding the WS version that gets
-            % written to the data file header
             value = ws.versionString() ;
         end  % function
         
@@ -788,18 +885,25 @@ classdef WavesurferModel < ws.Model
                     %self.Triggering_.willSetNSweepsPerRun();
                     self.NSweepsPerRun_ = double(newValue) ;
                     self.didSetNSweepsPerRun_(self.NSweepsPerRun_) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 else
-                    self.broadcast('Update') ;
+                    self.broadcast('UpdateMain');
+                    self.broadcast('UpdateGeneral') ;
+                    self.broadcast('UpdateChannels') ;
                     error('ws:invalidPropertyValue', ...
                           'NSweepsPerRun cannot be set when sweeps are continuous') ;
 
                 end
             else
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
                 error('ws:invalidPropertyValue', ...
                       'NSweepsPerRun must be a (scalar) positive integer, or inf') ;       
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function out = get.SweepDurationIfFinite(self)
@@ -813,15 +917,22 @@ classdef WavesurferModel < ws.Model
                 %self.willSetSweepDurationIfFinite();
                 self.SweepDurationIfFinite_ = valueToSet;
                 self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                self.didSetSweepDurationIfFinite_();
+                if self.IsXSpanSlavedToAcquistionDuration ,
+                    self.syncTraces_() ;
+                    self.broadcast('UpdateTraces') ;
+                end
+                self.broadcast('DidSetXSpan') ;
+                self.DoesProtocolNeedSave_ = true ;
             else
-                %self.overrideOrReleaseStimulusMapDurationAsNeeded_();
-                %self.didSetSweepDurationIfFinite();
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;                
                 error('ws:invalidPropertyValue', ...
                       'SweepDurationIfFinite must be a (scalar) positive finite value');
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function value = get.SweepDuration(self)
@@ -842,12 +953,17 @@ classdef WavesurferModel < ws.Model
                 else                        
                     self.AreSweepsContinuous = true ;
                 end                        
+                self.DoesProtocolNeedSave_ = true ;
             else
-                self.broadcast('Update');
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 error('ws:invalidPropertyValue', ...
                       'SweepDuration must be a (scalar) positive value');
             end
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function value=get.AreSweepsFiniteDuration(self)
@@ -864,11 +980,14 @@ classdef WavesurferModel < ws.Model
                 %self.AreSweepsContinuous=nan.The;
                 %self.NSweepsPerRun=nan.The;
                 %self.SweepDuration=nan.The;
+                self.DoesProtocolNeedSave_ = true ;                
                 self.overrideOrReleaseStimulusMapDurationAsNeeded_();
                 self.didSetAreSweepsFiniteDuration_(self.AreSweepsFiniteDuration_, self.NSweepsPerRun_);
             end
             %self.broadcast('DidSetAreSweepsFiniteDurationOrContinuous');            
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end
         
 %         function set.ReferenceClockSource(self, newValue)
@@ -914,36 +1033,19 @@ classdef WavesurferModel < ws.Model
                 self.Stimulation_.releaseStimulusLibraryMapDuration() ;
             end 
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
         end  
-
-        function electrodeMayHaveChanged_(self, electrodeIndex, propertyName)  %#ok<INUSL>
-            % Notify other systems that an electrode may have changed in the Ephys
-            % subsystem.
-            %self.Ephys_.electrodeMayHaveChanged(electrodeIndex, propertyName) ;
-              % Ephys subsystem should already know...
-            isModeOrChannelNameOrScale = ...
-                isempty(propertyName) || ...
-                ismember(propertyName, ...
-                         {'Mode' ...
-                          'CommandChannelName' 'CommandScaling' ...
-                          'MonitorChannelName' 'MonitorScaling' ...
-                          'VoltageCommandChannelName' 'VoltageCommandScaling' ...
-                          'CurrentCommandChannelName' 'CurrentCommandScaling' ...
-                          'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
-                          'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
-            if isModeOrChannelNameOrScale ,
-                self.Display_.didSetAnalogChannelUnitsOrScales() ;
-                %self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
-                self.broadcast('UpdateChannels') ;
-            end            
-        end  % function
         
         function notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_(self)
             % Called after setting an analog channel unit or scale (directly), to
             % notify other systems of the change.  Here "other" means "other than the
             % Acquisition or Stimulation subsystem where the change was made".
-            self.Display_.didSetAnalogChannelUnitsOrScales() ;
+            %self.Display_.didSetAnalogChannelUnitsOrScales() ;
             self.Ephys_.didSetAnalogChannelUnitsOrScales() ;
+            self.syncTraces_() ;
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateTestPulser') ;
         end
 
     end  % protected methods block
@@ -969,10 +1071,13 @@ classdef WavesurferModel < ws.Model
         end
 
         function setSingleAIChannelTerminalID(self, i, newValue)
-            self.Acquisition_.setSingleAnalogTerminalID_(i, newValue) ;
+            self.Acquisition_.setSingleAnalogTerminalID(i, newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;
-            self.Display_.didSetAnalogInputTerminalID_() ;
+            %self.Display_.didSetAnalogInputTerminalID() ;
+            %self.broadcast('UpdateTraces') ;
             self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function setSingleDIChannelTerminalName(self, iChannel, terminalName)
@@ -982,32 +1087,41 @@ classdef WavesurferModel < ws.Model
         
         function setSingleDIChannelTerminalID(self, iChannel, terminalID)
             wasSet = self.Acquisition_.setSingleDigitalTerminalID_(iChannel, terminalID) ;            
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
-            self.Display_.didSetDigitalInputTerminalID_() ;
+            %self.broadcast('UpdateTraces') ;
             self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
             if wasSet ,
                 %value = self.Acquisition_.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
-                self.IPCPublisher_.send('singleDigitalInputTerminalIDWasSetInFrontend', ...
-                                        self.IsDOChannelTerminalOvercommitted ) ;
+                self.Looper_.singleDigitalInputTerminalIDWasSetInFrontend(self.PrimaryDeviceName, ...
+                                                                          self.IsPrimaryDeviceAPXIDevice, ...
+                                                                          self.DOChannelTerminalIDs, ...
+                                                                          self.IsDOChannelTimed, ...
+                                                                          self.DOChannelStateIfUntimed, ...
+                                                                          self.IsDOChannelTerminalOvercommitted) ;
+                self.Refiller_.singleDigitalInputTerminalIDWasSetInFrontend(self.IsDOChannelTerminalOvercommitted) ;                
+                %self.IPCPublisher_.send('singleDigitalInputTerminalIDWasSetInFrontend', ...
+                %                        self.IsDOChannelTerminalOvercommitted ) ;
             end            
         end
         
-        function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
-            display=self.Display_;
-            if ~isempty(display)
-                display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
-            end            
-            ephys=self.Ephys_;
-            if ~isempty(ephys)
-                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
-            end            
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetAnalogInputChannelName(self, didSucceed, oldValue, newValue)
+%             display=self.Display_;
+%             if ~isempty(display)
+%                 display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+%             ephys=self.Ephys_;
+%             if ~isempty(ephys)
+%                 ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+%             end            
+%             self.broadcast('UpdateChannels') ;
+%         end
         
-        function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
-            self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
-            self.broadcast('UpdateChannels') ;
-        end
+%         function didSetDigitalInputChannelName(self, didSucceed, oldValue, newValue)
+%             self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+%             self.broadcast('UpdateChannels') ;
+%         end
         
 %         function didSetAnalogOutputTerminalID(self)
 %             self.syncIsAOChannelTerminalOvercommitted_() ;
@@ -1020,6 +1134,7 @@ classdef WavesurferModel < ws.Model
                 oldValue = self.Stimulation_.AnalogChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
                      self.Stimulation_.setSingleAnalogChannelName(channelIndex, newValue) ;
+                     self.DoesProtocolNeedSave_ = true ;
                      didSucceed = true ;
                 else
                     didSucceed = false;
@@ -1031,8 +1146,11 @@ classdef WavesurferModel < ws.Model
             if ~isempty(ephys) ,
                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
             end            
+            self.broadcast('UpdateElectrodeManager') ;
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateChannels') ;            
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function 
         
 %         function didSetAnalogOutputChannelName(self, didSucceed, oldValue, newValue)
@@ -1053,6 +1171,7 @@ classdef WavesurferModel < ws.Model
                 %oldValue = self.Stimuluation_.DigitalChannelNames{channelIndex} ;
                 if ws.isString(newValue) && ~isempty(newValue) && ~ismember(newValue,self.AllChannelNames) ,
                      self.Stimulation_.setSingleDigitalChannelName(channelIndex, newValue) ;
+                     self.DoesProtocolNeedSave_ = true ;
                      %didSucceed = true ;
                 else
                     %didSucceed = false;
@@ -1065,36 +1184,20 @@ classdef WavesurferModel < ws.Model
 %                 ephys.didSetAnalogOutputChannelName(didSucceed, oldValue, newValue);
 %             end            
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('UpdateChannels') ;            
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateChannels') ;          
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end  % function 
-        
-        function didSetIsInputChannelMarkedForDeletion(self) 
-            self.broadcast('UpdateChannels') ;
-        end
-        
-        function didSetIsDigitalOutputTimed(self)
-            self.Ephys_.didSetIsDigitalOutputTimed() ;
-            self.broadcast('UpdateChannels') ;            
-        end
-        
-        function didSetDigitalOutputStateIfUntimed(self)
-            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;                        
-        end
-    end
+    end  % public methods block
        
     methods (Access=protected)
-        function notifyOtherSubsystemsThatDidSetIsInputChannelActive_(self) 
-            self.Ephys_.didSetIsInputChannelActive() ;
-            self.Display_.didSetIsInputChannelActive() ;
-        end
-        
         function setIsYokedToScanImage_(self, newValue)
             err = [] ;
             
-            % Set the value by enabling/disabling the command client
+            % Set the value by enabling/disabling the command connector
             if islogical(newValue) && isscalar(newValue) ,
                 try
-                    self.CommandClient_.IsEnabled = (self.IsITheOneTrueWavesurferModel_ && newValue) ;
+                    self.CommandClient_.IsEnabled = (self.IsAwake_ && newValue) ;
                 catch me
                     err = me ;
                 end                
@@ -1121,7 +1224,12 @@ classdef WavesurferModel < ws.Model
         end  % function        
         
         function value=get.IsITheOneTrueWavesurferModel(self)
-            value = self.IsITheOneTrueWavesurferModel_ ;
+            % This is deprecated
+            value = self.IsAwake_ ;
+        end  % function        
+        
+        function value=get.IsAwake(self)
+            value = self.IsAwake_ ;
         end  % function        
         
 %         function willPerformTestPulse(self)
@@ -1164,15 +1272,12 @@ classdef WavesurferModel < ws.Model
             %self.Ephys_.releaseTimedHardwareResources();
         end
 
-        function didSetSweepDurationIfFinite_(self)
-            %self.Triggering_.didSetSweepDurationIfFinite() ;
-            self.Display_.didSetSweepDurationIfFinite(self.IsXSpanSlavedToAcquistionDuration) ;
-        end        
-        
         function didSetAreSweepsFiniteDuration_(self, areSweepsFiniteDuration, nSweepsPerRun) %#ok<INUSL>
             self.Triggering_.didSetAreSweepsFiniteDuration(nSweepsPerRun);
+            self.syncTraces_() ;
             self.broadcast('UpdateTriggering') ;
-            self.Display_.didSetAreSweepsFiniteDuration();
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('DidSetXSpan') ;
         end        
 
         function releaseTimedHardwareResourcesOfAllProcesses_(self)
@@ -1182,17 +1287,19 @@ classdef WavesurferModel < ws.Model
             %self.IPCPublisher_.send('satellitesReleaseTimedHardwareResources') ;
             
             % Wait for the looper to respond
-            timeout = 10 ;  % s
-            self.LooperIPCRequester_.send('releaseTimedHardwareResources') ;
-            err = self.LooperIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
+            %timeout = 10 ;  % s
+            err = self.Looper_.releaseTimedHardwareResources() ;
+            %self.LooperIPCRequester_.send('releaseTimedHardwareResources') ;
+            %err = self.LooperIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
             end
             
             % Wait for the refiller to respond
-            self.RefillerIPCRequester_.send('releaseTimedHardwareResources') ;
-            err = self.RefillerIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
+            err = self.Refiller_.releaseTimedHardwareResources() ;
+            %self.RefillerIPCRequester_.send('releaseTimedHardwareResources') ;
+            %err = self.RefillerIPCRequester_.waitForResponse(timeout, 'releaseTimedHardwareResources') ;
             if ~isempty(err) ,
                 % Something went wrong
                 throw(err);
@@ -1200,20 +1307,9 @@ classdef WavesurferModel < ws.Model
         end  % function        
     end
     
-    methods
-%         function result=get.FastProtocols(self)
-%             result = self.FastProtocols_ ;
-%         end
-        
-        function didSetAcquisitionSampleRate(self,newValue)
-            ephys = self.Ephys_ ;
-            ephys.didSetAcquisitionSampleRate(newValue) ;
-        end        
-    end  % methods
-    
     methods (Access = protected)
         function setState_(self,newValue)
-            self.broadcast('WillSetState');
+            %self.broadcast('WillSetState');
             if ws.isAnApplicationState(newValue) ,
                 if ~isequal(self.State_,newValue) ,
                     self.State_ = newValue ;
@@ -1252,53 +1348,33 @@ classdef WavesurferModel < ws.Model
             % Initialize the sweep counter, etc.
             self.NSweepsCompletedInThisRun_ = 0 ;
             self.AreAllSweepsCompleted_ = (self.NSweepsCompletedInThisRun_>=self.NSweepsPerRun) ;            
-            self.DidRefillerCompleteEpisodes_ = false ;
+            %self.DidRefillerCompleteEpisodes_ = false ;
             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
-            self.callUserMethod_('startingRun');  
+            self.UserCodeManager_.invoke(self, 'startingRun');  
                         
-            % We now do this clock() call in the looper, so that it can be
-            % as close as possible in time to the tic() call that the sweep timestamps are
-            % based on.
-            % % Note the time, b/c the logging subsystem needs it, and we
-            % % want to note it *just* before the start of the run
-            % clockAtRunStart = clock() ;
-            % self.ClockAtRunStart_ = clockAtRunStart ;
-            
             % Tell all the subsystems except the logging subsystem to prepare for the run
             % The logging subsystem has to wait until we obtain the analog
             % scaling coefficients from the Looper.
             try
-%                 for idx = 1: numel(self.Subsystems_) ,
-%                     thisSubsystem = self.Subsystems_{idx} ;
-%                     if thisSubsystem~=self.Logging && thisSubsystem.IsEnabled ,
-%                         thisSubsystem.startingRun();
-%                     end
-%                 end
-                if self.Ephys_.IsEnabled ,
-                    if self.DoTrodeUpdateBeforeRun ,
-                        self.updateSmartElectrodeGainsAndModes() ;
-                    end
-                    self.Ephys_.startingRun() ;
+                if self.DoTrodeUpdateBeforeRun ,
+                    self.updateSmartElectrodeGainsAndModes() ;
                 end
-                if self.Acquisition_.IsEnabled ,
-                    self.Acquisition_.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration, self.SweepDuration) ;
-                end
+                self.Acquisition_.startingRun(self.AreSweepsContinuous, self.AreSweepsFiniteDuration, self.SweepDuration) ;
                 if self.Stimulation_.IsEnabled ,
                     self.Stimulation_.startingRun() ;
                 end
                 if self.Display_.IsEnabled ,
+                    self.XOffset = 0 ;
                     self.Display_.startingRun(self.XSpan, self.SweepDuration) ;
+                    self.syncTraces_() ;
+                    self.broadcast('UpdateTraces') ;
                 end
-                if self.Triggering_.IsEnabled ,
-                    primaryDeviceName = self.PrimaryDeviceName ;
-                    isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-                    self.Triggering_.startingRun(primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-                end
-                if self.UserCodeManager_.IsEnabled ,
-                    self.UserCodeManager_.startingRun() ;
-                end                
+                primaryDeviceName = self.PrimaryDeviceName ;
+                isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+                self.Triggering_.startingRun(primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+                self.UserCodeManager_.startingRun() ;
             catch me
                 % Something went wrong
                 self.abortOngoingRun_();
@@ -1309,125 +1385,94 @@ classdef WavesurferModel < ws.Model
             % Determine the keystone tasks for acq and stim
             [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, ...
              stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
-               self.determineKeystoneTasks() ;
+               self.determineKeystoneTasks_() ;
             
-            % Tell the Looper & Refiller to prepare for the run
-            currentFrontendPath = path() ;
-            currentFrontendPwd = pwd() ;
-            looperProtocol = self.getLooperProtocol_() ;
-            refillerProtocol = self.getRefillerProtocol_() ;
-            %wavesurferModelSettings=self.encodeForPersistence();
-            %fprintf('About to send startingRun\n');
-            self.LooperIPCRequester_.send('startingRun', ...
-                                          currentFrontendPath, ...
-                                          currentFrontendPwd, ...
-                                          looperProtocol, ...
-                                          acquisitionKeystoneTaskType, ...
-                                          acquisitionKeystoneTaskDeviceName,  ...
-                                          self.IsDOChannelTerminalOvercommitted) ;
-            self.RefillerIPCRequester_.send('startingRun', ...
-                                            currentFrontendPath, ...
-                                            currentFrontendPwd, ...
-                                            refillerProtocol, ...
-                                            stimulationKeystoneTaskType, ...
-                                            stimulationKeystoneTaskDeviceName, ...
-                                            self.IsAOChannelTerminalOvercommitted, ...
-                                            self.IsDOChannelTerminalOvercommitted ) ;
-            
-            % Isn't the code below a race condition?  What if the refiller
-            % responds first?  No, it's not a race, because one is waiting
-            % on the LooperIPCRequester_, the other on the
-            % RefillerIPCRequester_.
-            
-            % Wait for the looper to respond that it is ready
-            timeout = 10 ;  % s
-            [err,looperResponse] = self.LooperIPCRequester_.waitForResponse(timeout, 'startingRun') ;
-            if isempty(err) ,
-                if isa(looperResponse,'MException') ,
-                    compositeLooperError = looperResponse ;
-                    analogScalingCoefficients = [] ;
-                    clockAtRunStartTic = [] ;
-                else
-                    compositeLooperError = [] ;
-                    analogScalingCoefficients = looperResponse.ScalingCoefficients ;
-                    clockAtRunStartTic = looperResponse.ClockAtRunStartTic ;
-                end
-            else
-                % If there was an error in the
-                % message-sending-and-receiving process, then we don't
-                % really care if the looper also had a problem.  We have
-                % bigger fish to fry, in a sense.
-                compositeLooperError = err ;
-                analogScalingCoefficients = [] ;
-                clockAtRunStartTic = [] ;
+            % Tell the looper to start
+            try
+                coeffsAndClock = ...
+                    self.Looper_.startingRun(acquisitionKeystoneTaskType, ...
+                                             acquisitionKeystoneTaskDeviceName, ...
+                                             self.IsAIChannelActive, ...
+                                             self.IsDIChannelActive, ...
+                                             self.AcquisitionSampleRate, ...
+                                             self.SweepDuration, ...
+                                             self.DataCacheDurationWhenContinuous, ...
+                                             self.AIChannelDeviceNames, ...
+                                             self.AIChannelTerminalIDs, ...
+                                             self.PrimaryDeviceName, ...
+                                             self.IsPrimaryDeviceAPXIDevice, ...
+                                             self.acquisitionTriggerProperty('DeviceName'), ...
+                                             self.acquisitionTriggerProperty('PFIID'), ...
+                                             self.acquisitionTriggerProperty('Edge'), ...
+                                             self.DIChannelTerminalIDs) ;
+            catch err
+                self.abortOngoingRun_();
+                self.changeReadiness_(+1);
+                rethrow(err) ;
             end            
-            if isempty(compositeLooperError) ,
-                summaryLooperError = [] ;
-            else
-                % Something went wrong
-                %self.abortOngoingRun_();
-                %self.changeReadiness_(+1);
-                summaryLooperError = MException('wavesurfer:looperDidntGetReady', ...
-                                                'The looper encountered a problem while getting ready for the run');
-                summaryLooperError = summaryLooperError.addCause(compositeLooperError) ;
-                %throw(summaryLooperError) ;  % can't throw until we
-                %consume the message from the refiller.  See below.
-            end
             
-            % Even if the looper had a problem, we still need to get the
-            % message from the refiller, if any, because we're using
-            % req-rep for these messages.
-            
-            % Wait for the refiller to respond that it is ready
-            [err, refillerError] = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingRun') ;
-            if isempty(err) ,
-                compositeRefillerError = refillerError ;
-            else
-                % If there was an error in the
-                % message-sending-and-receiving process, then we don't
-                % really care if the refiller also had a problem.  We have
-                % bigger fish to fry, in a sense.
-                compositeRefillerError = err ;
-            end
-            if isempty(compositeRefillerError) ,
-                summaryRefillerError = [] ;
-            else
-                % Something went wrong
-                %self.abortOngoingRun_();
-                %self.changeReadiness_(+1);
-                summaryRefillerError = MException('wavesurfer:refillerDidntGetReady', ...
-                                                  'The refiller encountered a problem while getting ready for the run');
-                summaryRefillerError = summaryRefillerError.addCause(compositeRefillerError) ;
-                %throw(me) ;
-            end
-            
-            % OK, now throw up if needed
-            if isempty(summaryLooperError) ,
-                if isempty(summaryRefillerError) ,
-                    % nothing to do
+            % Tell the refiller to start
+            try
+                stimulationTriggerClass = self.stimulationTriggerProperty('class') ;
+                if isequal(stimulationTriggerClass, 'ws.CounterTrigger') ,                    
+                    stimulationTriggerRepeatCount = self.stimulationTriggerProperty('RepeatCount') ;
                 else
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryRefillerError) ;                    
+                    stimulationTriggerRepeatCount = nan ;
+                end                    
+                stimulationTriggerDeviceName = self.stimulationTriggerProperty('DeviceName') ;
+                stimulationTriggerPFIID = self.stimulationTriggerProperty('PFIID') ;
+                stimulationTriggerEdge = self.stimulationTriggerProperty('Edge') ;
+                isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                self.Refiller_.startingRun(stimulationKeystoneTaskType, ...
+                                           stimulationKeystoneTaskDeviceName, ...
+                                           self.IsStimulationEnabled, ...
+                                           stimulationTriggerClass, ...
+                                           self.NSweepsPerRun, ...
+                                           stimulationTriggerRepeatCount, ...
+                                           isStimulationTriggerIdenticalToAcquisitionTrigger, ...
+                                           self.AOChannelDeviceNames, ...
+                                           self.IsAOChannelTerminalOvercommitted, ...
+                                           self.AOChannelTerminalIDs, ...
+                                           self.PrimaryDeviceName, ...
+                                           self.IsPrimaryDeviceAPXIDevice, ...
+                                           self.IsDOChannelTerminalOvercommitted, ...
+                                           self.IsDOChannelTimed, ...
+                                           self.DOChannelTerminalIDs, ...
+                                           self.StimulationSampleRate, ...
+                                           stimulationTriggerDeviceName, ...
+                                           stimulationTriggerPFIID, ...
+                                           stimulationTriggerEdge) ;
+                % (Maybe) start an episode, which will wait for a trigger to *really*
+                % start.
+                % It's important to do this here, so that we get ready to
+                % receive the first stim trigger *before* we tell the frontend
+                % that we're ready for the run.
+                if self.Refiller_.NEpisodesPerRun > 0 ,
+                    if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                        self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                        [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;                        
+                        self.Refiller_.startEpisode(aoData, doData) ;
+                    end
                 end
-            else
-                if isempty(summaryRefillerError) ,
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryLooperError) ;                                        
-                else
-                    % Problems abound!  Throw the looper one, for no good
-                    % reason...
-                    self.abortOngoingRun_();
-                    self.changeReadiness_(+1);
-                    throw(summaryLooperError) ;                                                            
-                end                
-            end
+            catch err
+                self.abortOngoingRun_();
+                self.changeReadiness_(+1);
+                rethrow(err) ;                
+            end            
+            
+%             % Create the timer
+%             self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+%                                       'BusyMode', 'drop', ...
+%                                       'Period', 0.1, ...
+%                                       'TimerFcn', @(timerObject, event)(self.handleTimerTick()), ...
+%                                       'ErrorFcn', @(timerObject, event)(self.handleTimerError(event))) ;                                      
             
             % Stash the analog scaling coefficients (have to do this now,
             % instead of in Acquisiton.startingRun(), b/c we get them from
             % the looper
-            self.Acquisition_.cacheAnalogScalingCoefficients_(analogScalingCoefficients) ;
+            analogScalingCoefficients = coeffsAndClock.ScalingCoefficients ;
+            clockAtRunStartTic = coeffsAndClock.ClockAtRunStartTic ;
+            self.Acquisition_.cacheAnalogScalingCoefficients(analogScalingCoefficients) ;
             self.ClockAtRunStart_ = clockAtRunStartTic ;  % store the value returned from the looper
             
             % Now tell the logging subsystem that a run is about to start,
@@ -1435,7 +1480,7 @@ classdef WavesurferModel < ws.Model
             try
                 logging = self.Logging_ ;
                 if logging.IsEnabled ,
-                    headerStruct = self.encodeForHeader() ;
+                    headerStruct = ws.encodeForHeader(self) ;
                     logging.startingRun(self.NextRunAbsoluteFileName, self.IsAIChannelActive, self.ExpectedSweepScanCount, ...
                                         self.AcquisitionSampleRate, self.AreSweepsFiniteDuration, headerStruct);
                 end
@@ -1453,8 +1498,8 @@ classdef WavesurferModel < ws.Model
             self.IsPerformingRun_ = true ;
             
             % Handle timing stuff
-            self.TimeOfLastWillPerformSweep_=[];
-            self.FromRunStartTicId_=tic();
+            self.TimeOfLastWillPerformSweep_ = [] ;
+            self.FromRunStartTicId_ = tic() ;
             rawUpdateDt = 1/self.Display_.UpdateRate ;  % s
             updateDt = min(rawUpdateDt,self.SweepDuration);  % s
             desiredNScansPerUpdate = max(1,round(updateDt*self.AcquisitionSampleRate)) ;  % don't want this to be zero!
@@ -1473,96 +1518,27 @@ classdef WavesurferModel < ws.Model
             % Move on to the main within-run loop
             %
             %self.DidMostRecentSweepComplete_ = true ;  % Set this to true just so the first sweep gets started
-            didThrow = false ;
-            exception = [] ;
             self.DrawnowTicId_ = tic() ;  % Need this for timing between drawnow()'s
             self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;  % we don't really do a a drawnow() here, but need to init
             %didPerformFinalDrawnow = false ;
             %for iSweep = 1:self.NSweepsPerRun ,
             % Can't use a for loop b/c self.NSweepsPerRun can be Inf
             %while iSweep<=self.NSweepsPerRun && ~self.RefillerCompletedSweep ,            
-            self.WasRunStoppedInLooper_ = false ;
-            self.WasRunStoppedInRefiller_ = false ;
-            self.WasRunStopped_ = false ;
+            %self.WasRunStoppedInLooper_ = false ;
+            %self.WasRunStoppedInRefiller_ = false ;
+            %self.WasRunStopped_ = false ;
             %self.NSweepsPerformed_ = 0 ;  % in this run
             self.DidAnySweepFailToCompleteSoFar_ = false ;
             %didLastSweepComplete = true ;  % It is convenient to pretend the zeroth sweep completed successfully
-            while ~self.WasRunStopped_ && ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.DidRefillerCompleteEpisodes_) ,
-                %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
-                if self.IsPerformingSweep_ ,
-                    if self.DidLooperCompleteSweep_ ,
-                        try
-                            self.closeSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            didThrow = true ;
-                            exception = me ;
-                        end
-                    else
-                        %fprintf('At top of within-sweep loop...\n') ;
-                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                        end                    
-                    end
-                else
-                    % We are not currently performing a sweep, so check if we need to start one
-                    if self.AreAllSweepsCompleted_ ,
-                        % All sweeps are were performed, but the refiller must not be done yet if we got here
-                        % Keep checking messages so we know when the
-                        % refiller is done.  Also keep listening for looper
-                        % messages, although I'm not sure we need to...
-                        %fprintf('About to check for messages after completing all sweeps\n');
-                        self.LooperIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        self.RefillerIPCSubscriber_.processMessagesIfAvailable() ;  % process all available messages, to make sure we keep up
-                        %fprintf('Check for messages after completing all sweeps\n');
-                        % do a drawnow() if it's been too long...
-                        timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
-                        if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
-                            drawnow() ;
-                            self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
-                        end
-                    else                        
-                        try
-                            self.openSweep_() ;
-                        catch me
-                            self.abortTheOngoingSweep_();
-                            didThrow = true ;
-                            exception = me ;
-                        end
-                    end
-                end
-            end
             
-            % At this point, self.IsPerformingRun_ is true
-            % Do post-run clean up
-            if self.AreAllSweepsCompleted_ ,
-                % Wrap up run in which all sweeps completed
-                self.wrapUpRunInWhichAllSweepsCompleted_() ;
-            elseif self.WasRunStopped_ ,
-                if self.IsPerformingSweep_ ,
-                    self.stopTheOngoingSweep_() ;
-                end
-                self.stopTheOngoingRun_();
-            else
-                % Something went wrong
-                self.abortOngoingRun_();
-            end
-            % At this point, self.IsPerformingRun_ is false
+            % Create the timer that runs during a run
+            self.TheBigTimer_ = timer('ExecutionMode', 'fixedRate', ...
+                                      'BusyMode', 'drop', ...
+                                      'Period', 0.05, ...
+                                      'TimerFcn', @(timerObject, event)(self.handleTimerTick())) ;
             
-            % If an exception was thrown, re-throw it
-            if didThrow ,
-                rethrow(exception) ;
-            end
-            
-            % Do we need this?  Where should it go, exactly?
-            % If we put it here, stopping a run from WS can get held up b/c
-            % WS is waiting for SI to acknowledge the abort command
-            %self.CommandClient_.sendCommandFileAsString('abort') ;
+            % Finally, start the timer
+            start(self.TheBigTimer_) ;
         end  % run_() function
         
         function openSweep_(self)
@@ -1574,7 +1550,7 @@ classdef WavesurferModel < ws.Model
             %self.TimeOfLastSamplesAcquired_=[];            
             
             % Reset the sample count for the sweep
-            self.NScansAcquiredSoFarThisSweep_ = 0;
+            %self.NScansAcquiredSoFarThisSweep_ = 0;
             
             % update the current time
             self.t_=0;            
@@ -1588,20 +1564,38 @@ classdef WavesurferModel < ws.Model
             %self.IsPerformingSweep_ = true ;
             
             % Call user functions 
-            self.callUserMethod_('startingSweep');            
+            self.UserCodeManager_.invoke(self, 'startingSweep');            
             
             % Call startingSweep() on all the enabled subsystems
-            for idx = 1:numel(self.Subsystems_)
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.startingSweep();
-                end
+%             for idx = 1:numel(self.Subsystems_)
+%                 if self.Subsystems_{idx}.IsEnabled ,
+%                     self.Subsystems_{idx}.startingSweep();
+%                 end
+%             end
+            %self.Ephys_.startingSweep() ;
+            self.Acquisition_.startingSweep() ;
+            %self.Stimulation_.startingSweep() ;
+            if self.Display_.IsEnabled ,
+                self.Display_.startingSweep() ;
             end
+            %self.Triggering_.startingSweep() ;
+            if self.Logging_.IsEnabled ,
+                self.Logging_.startingSweep() ;
+            end
+            %self.UserCodeManager_.startingSweep() ;
 
             % Notify the refiller that we're starting a sweep, wait for the refiller to respond
             if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
-                self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-                timeout = 11 ;  % s
-                err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+                try
+                    self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                    [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
+                    self.Refiller_.startEpisode(aoData, doData) ;
+                    err = [] ;
+                catch err
+                end
+                %self.RefillerIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+                %timeout = 11 ;  % s
+                %err = self.RefillerIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
                 if ~isempty(err) ,
                     % Something went wrong
                     self.abortOngoingRun_();
@@ -1611,9 +1605,14 @@ classdef WavesurferModel < ws.Model
             end
             
             % Notify the looper that we're starting a sweep, wait for the looper to respond
-            self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
-            timeout = 12 ;  % s
-            err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
+            try
+                self.Looper_.startingSweep(self.NSweepsCompletedInThisRun_+1) ;
+                err = [] ;
+            catch err
+            end
+            %self.LooperIPCRequester_.send('startingSweep', self.NSweepsCompletedInThisRun_+1) ;
+            %timeout = 12 ;  % s
+            %err = self.LooperIPCRequester_.waitForResponse(timeout, 'startingSweep') ;
             if ~isempty(err) 
                 % Something went wrong
                 self.abortOngoingRun_();
@@ -1626,7 +1625,7 @@ classdef WavesurferModel < ws.Model
 
             % Pulse the master trigger to start the sweep!
             %fprintf('About to pulse the master trigger!\n');
-            self.DidLooperCompleteSweep_ = false ;
+            %self.DidLooperCompleteSweep_ = false ;
             %self.DidAnySweepFailToCompleteSoFar_ = true ;
             self.IsPerformingSweep_ = true ;  
                 % have to wait until now to set this true, so that old
@@ -1640,26 +1639,119 @@ classdef WavesurferModel < ws.Model
             %self.DidRefillerCompleteSweep_ = ~self.Stimulation_.IsEnabled ;  % if stim subsystem is disabled, then the refiller is automatically done
         end
 
-        function closeSweep_(self)
-            % End the sweep in the way appropriate, either a "complete",
-            % a stop, or an abort.
-            % Precondition: self.IsPerformingSweep_ (is true)
-            if self.DidLooperCompleteSweep_ ,
-                self.completeTheOngoingSweep_() ;
-                %didCompleteSweep = true ;
-            elseif self.WasRunStopped_ ,
-                self.stopTheOngoingSweep_() ;
-                %didCompleteSweep = false ;
-            else
-                % Something must have gone wrong...
-                self.abortTheOngoingSweep_() ;
-                %didCompleteSweep = false ;
+        function handleTimerTick(self)
+            % Called every so often once data acquition has started            
+            if ~self.AllowTimerCallback_ ,
+                return
             end
+            try
+                if ~self.DidAnySweepFailToCompleteSoFar_ && ~(self.AreAllSweepsCompleted_ && self.Refiller_.DidCompleteEpisodes) ,
+                    %fprintf('wasRunStopped: %d\n', self.WasRunStopped_) ;
+                    if self.IsPerformingSweep_ ,
+                        if self.Looper_.DidCompleteSweep ,
+                            self.completeTheOngoingSweep_() ;
+                        else
+                            %fprintf('At top of within-sweep loop...\n') ;
+                            timeSinceSweepStart = toc(self.FromSweepStartTicId_) ;
+                            self.performOneLooperIterationDuringOngoingSweep_(timeSinceSweepStart, ...
+                                                                              self.FromRunStartTicId_) ;
+                            isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                            self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;
+                            % do a drawnow() if it's been too long...
+                            %timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            %if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow('limitrate', 'nocallbacks') ;
+                            %    self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            %end                    
+                        end
+                    else
+                        % We are not currently performing a sweep, so check if we need to start one
+                        if self.AreAllSweepsCompleted_ ,
+                            % All sweeps are were performed, but the refiller must not be done yet if we got here
+                            % Keep checking messages so we know when the
+                            % refiller is done.  Also keep listening for looper
+                            % messages, although I'm not sure we need to...
+                            %fprintf('About to check for messages after completing all sweeps\n');
+                            isStimulationTriggerIdenticalToAcquisitionTrigger = self.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                            self.performOneRefillerIterationDuringOngoingRun_(isStimulationTriggerIdenticalToAcquisitionTrigger) ;                            
+                            %fprintf('Check for messages after completing all sweeps\n');
+                            % do a drawnow() if it's been too long...
+                            %timeSinceLastDrawNow = toc(self.DrawnowTicId_) - self.TimeOfLastDrawnow_ ;
+                            %if timeSinceLastDrawNow > 0.1 ,  % 0.1 s, hence 10 Hz
+                            drawnow('limitrate', 'nocallbacks') ;
+                            %    self.TimeOfLastDrawnow_ = toc(self.DrawnowTicId_) ;
+                            %end
+                        else                        
+                            self.openSweep_() ;
+                        end
+                    end
+                else
+                    % This means we should end the run
 
-            % No errors thrown, so set return values accordingly
-            %didThrow = false ;  
-            %exception = [] ;
-        end  % function
+                    % At this point, self.IsPerformingRun_ is true
+                    % Do post-run clean up
+                    if self.AreAllSweepsCompleted_ ,
+                        % Wrap up run in which all sweeps completed
+                        self.wrapUpRunInWhichAllSweepsCompleted_() ;
+                    else
+                        % Something went wrong
+                        self.abortOngoingRun_();
+                    end
+                    % At this point, self.IsPerformingRun_ is false
+                end
+            catch exception
+                if self.IsPerformingRun_ ,
+                    if self.IsPerformingSweep_ ,
+                        self.abortTheOngoingSweep_() ;
+                    end
+                    self.abortOngoingRun_() ;
+                end
+                if self.IsHeaded_ ,
+                    self.broadcast('RaiseDialogOnException', exception);
+                else
+                    throw(exception) ;
+                end
+            end                
+        end  % handleTimerTick()
+
+%         function handleTimerError(self, event)
+% %             %event  %#ok<NOPRT>
+% %             %event.Data
+% %             %fprintf('The timer had an error\n') ;
+% %             if self.IsPerformingRun_ ,
+% %                 if self.IsPerformingSweep_ ,
+% %                     self.abortTheOngoingSweep_() ;
+% %                 end
+% %                 self.abortOngoingRun_() ;
+% %             end
+% %             exception = MException(event.Data.messageID, event.Data.message) ;
+% %             if self.IsHeaded_ ,
+% %                 self.broadcast('RaiseDialogOnException', exception);
+% %             else
+% %                 throw(exception) ;
+% %             end
+%         end  % handleTimerError()
+        
+%         function closeSweep_(self)
+%             % End the sweep in the way appropriate, either a "complete",
+%             % a stop, or an abort.
+%             % Precondition: self.IsPerformingSweep_ (is true)
+%             if self.DidLooperCompleteSweep_ ,
+%                 self.completeTheOngoingSweep_() ;
+%                 %didCompleteSweep = true ;
+%             elseif self.WasRunStopped_ ,
+%                 self.stopTheOngoingSweep_() ;
+%                 %didCompleteSweep = false ;
+%             else
+%                 % Something must have gone wrong...
+%                 self.abortTheOngoingSweep_() ;
+%                 %didCompleteSweep = false ;
+%             end
+% 
+%             % No errors thrown, so set return values accordingly
+%             %didThrow = false ;  
+%             %exception = [] ;
+%         end  % function
         
 %         function performSweep_(self)
 %             % time between subsequent calls to this, etc
@@ -1684,7 +1776,7 @@ classdef WavesurferModel < ws.Model
 %             %self.IsPerformingSweep_ = true ;
 %             
 %             % Call user functions 
-%             self.callUserMethod_('startingSweep');            
+%             self.UserCodeManager_.invoke(self, 'startingSweep');            
 %             
 %             % Call startingSweep() on all the enabled subsystems
 %             for idx = 1:numel(self.Subsystems_)
@@ -1796,7 +1888,7 @@ classdef WavesurferModel < ws.Model
 %             self.broadcast('DidCompleteSweep');
 %             
 %             % Call user method
-%             self.callUserMethod_('didCompleteSweep');
+%             self.UserCodeManager_.invoke(self, 'didCompleteSweep');
 %         end  % function
                 
         function completeTheOngoingSweep_(self)
@@ -1807,15 +1899,18 @@ classdef WavesurferModel < ws.Model
             % Bump the number of completed sweeps
             self.NSweepsCompletedInThisRun_ = self.NSweepsCompletedInThisRun_ + 1;
 
-            % Notify all the subsystems that the sweep is done
-            for idx = 1: numel(self.Subsystems_)
-                if self.Subsystems_{idx}.IsEnabled
-                    self.Subsystems_{idx}.completingSweep();
-                end
-            end
+            % Notify all the necessary subsystems that the sweep is done
+            %for idx = 1: numel(self.Subsystems_)
+            %    if self.Subsystems_{idx}.IsEnabled
+            %        self.Subsystems_{idx}.completingSweep();
+            %    end
+            %end
+            if self.Logging_.IsEnabled ,
+                self.Logging_.completingSweep() ;
+            end                           
 
             % Call user method
-            self.callUserMethod_('completingSweep');
+            self.UserCodeManager_.invoke(self, 'completingSweep');
 
             % As of next line, sweep is officially over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1833,15 +1928,14 @@ classdef WavesurferModel < ws.Model
             % Stop the ongoing sweep following user request            
             self.dataAvailable_() ;  % Process any remaining data in the samples buffer
 
-            % Notify all the subsystems that the sweep was stopped
-            for i = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{i}.IsEnabled ,
-                    self.Subsystems_{i}.stoppingSweep();
-                end
+            % Notify all the needed subsystems that the sweep was stopped
+            % (in reverse order if multiple)
+            if self.Logging_.IsEnabled , 
+                self.Logging_.stoppingSweep() ;
             end
-
+            
             % Call user method
-            self.callUserMethod_('stoppingSweep');                    
+            self.UserCodeManager_.invoke(self, 'stoppingSweep');                    
 
             % As of next line, sweep is officially over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1853,22 +1947,33 @@ classdef WavesurferModel < ws.Model
             % Clean up after a sweep shits the bed.
             %fprintf('WavesurferModel::abortTheOngoingSweep_()\n') ;
             
-            % Notify all the subsystems that the sweep aborted
-            for i = numel(self.Subsystems_):-1:1 ,
-                if self.Subsystems_{i}.IsEnabled ,
-                    try 
-                        self.Subsystems_{i}.abortingSweep();
-                    catch me
-                        % In theory, Subsystem::abortingSweep() never
-                        % throws an exception
-                        % But just in case, we catch it here and ignore it
-                        disp(me.getReport());
-                    end
+            % Notify all needed subsystems that the sweep aborted, in
+            % reverse order
+%             for i = numel(self.Subsystems_):-1:1 ,
+%                 if self.Subsystems_{i}.IsEnabled ,
+%                     try 
+%                         self.Subsystems_{i}.abortingSweep();
+%                     catch me
+%                         % In theory, Subsystem::abortingSweep() never
+%                         % throws an exception
+%                         % But just in case, we catch it here and ignore it
+%                         disp(me.getReport());
+%                     end
+%                 end
+%             end
+            if self.Logging_.IsEnabled ,
+                try
+                    self.Logging_.abortingSweep();
+                catch me
+                    % In theory, ws.Logging::abortingSweep() never
+                    % throws an exception
+                    % But just in case, we catch it here and ignore it
+                    disp(me.getReport());
                 end
             end
             
             % Call user method
-            self.callUserMethod_('abortingSweep');
+            self.UserCodeManager_.invoke(self, 'abortingSweep');
             
             % declare the sweep over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1879,18 +1984,40 @@ classdef WavesurferModel < ws.Model
         function wrapUpRunInWhichAllSweepsCompleted_(self)
             % Clean up after all sweeps complete successfully.
             
-            % Notify other processes
-            self.IPCPublisher_.send('completingRun') ;
-
-            % Notify subsystems
-            for idx = 1: numel(self.Subsystems_) ,
-                if self.Subsystems_{idx}.IsEnabled ,
-                    self.Subsystems_{idx}.completingRun() ;
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
                 end
+                self.TheBigTimer_ = [] ;
+            end                
+                                    
+            % Notify other processes
+            %self.IPCPublisher_.send('completingRun') ;
+            self.Looper_.completingRun() ;
+            didStopEpisode = self.Refiller_.completingRun() ;
+            if didStopEpisode ,
+                self.UserCodeManager_.invoke(self, 'stoppingEpisode');
+            end            
+            
+            % Notify subsystems that need to know, in forward order (why
+            % forward?)
+%             for idx = 1: numel(self.Subsystems_) ,
+%                 if self.Subsystems_{idx}.IsEnabled ,
+%                     self.Subsystems_{idx}.completingRun() ;
+%                 end
+%             end
+            if self.Display_.IsEnabled ,
+                self.Display_.completingRun() ;
+            end
+            self.Triggering_.completingRun() ;
+            if self.Logging_.IsEnabled ,
+                self.Logging_.completingRun() ;
             end
             
             % Call user method
-            self.callUserMethod_('completingRun') ;
+            self.UserCodeManager_.invoke(self, 'completingRun') ;
 
             % Finalize
             self.IsPerformingRun_ =  false ;
@@ -1913,6 +2040,15 @@ classdef WavesurferModel < ws.Model
             % Called when the user stops the run in the middle, typically
             % by pressing the stop button.            
             
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                end
+                self.TheBigTimer_ = [] ;
+            end                
+                                    
             %fprintf('WavesurferModel::stopTheOngoingRun_()\n') ;
             
             % Notify other processes --- or not, we don't currently need
@@ -1930,30 +2066,16 @@ classdef WavesurferModel < ws.Model
 %                     self.Subsystems_{idx}.stoppingRun() ;
 %                 end
 %             end
-            if self.UserCodeManager_.IsEnabled ,
-                self.UserCodeManager_.stoppingRun() ;
-            end
             if self.Logging_.IsEnabled ,
                 self.Logging_.stoppingRun(self) ;
             end
-            if self.Triggering_.IsEnabled ,
-                self.Triggering_.stoppingRun() ;
-            end
+            self.Triggering_.stoppingRun() ;
             if self.Display_.IsEnabled ,
                 self.Display_.stoppingRun() ;
             end
-            if self.Stimulation_.IsEnabled ,
-                self.Stimulation_.stoppingRun() ;
-            end
-            if self.Acquisition_.IsEnabled ,
-                self.Acquisition_.stoppingRun() ;
-            end
-            if self.Ephys_.IsEnabled ,
-                self.Ephys_.stoppingRun() ;
-            end
             
             % Call user method
-            self.callUserMethod_('stoppingRun');                
+            self.UserCodeManager_.invoke(self, 'stoppingRun');                
             
             % Set state back to idle
             self.IsPerformingRun_ =  false;
@@ -1965,39 +2087,39 @@ classdef WavesurferModel < ws.Model
             
             %fprintf('WavesurferModel::abortOngoingRun_()\n') ;
 
+            % Stop, delete the timer
+            if ~isempty(self.TheBigTimer_)
+                if isvalid(self.TheBigTimer_) ,
+                    stop(self.TheBigTimer_) ;
+                    delete(self.TheBigTimer_) ;
+                end
+                self.TheBigTimer_ = [] ;
+            end                
+                        
             % Notify other processes
-            self.IPCPublisher_.send('abortingRun') ;
-
+            %self.IPCPublisher_.send('abortingRun') ;
+            self.Looper_.abortingRun() ;
+            didAbortEpisode = self.Refiller_.abortingRun() ;
+            if didAbortEpisode ,
+                self.UserCodeManager_.invoke(self, 'abortingEpisode');
+            end                                
+            
             % Notify subsystems, in reverse of starting order
 %             for idx = numel(self.Subsystems_):-1:1 ,
 %                 if self.Subsystems_{idx}.IsEnabled ,
 %                     self.Subsystems_{idx}.abortingRun() ;
 %                 end
 %             end
-            if self.UserCodeManager_.IsEnabled ,
-                self.UserCodeManager_.abortingRun() ;
-            end
             if self.Logging_.IsEnabled ,
                 self.Logging_.abortingRun(self) ;
             end
-            if self.Triggering_.IsEnabled ,
-                self.Triggering_.abortingRun() ;
-            end
+            self.Triggering_.abortingRun() ;
             if self.Display_.IsEnabled ,
                 self.Display_.abortingRun() ;
             end
-            if self.Stimulation_.IsEnabled ,
-                self.Stimulation_.abortingRun() ;
-            end
-            if self.Acquisition_.IsEnabled ,
-                self.Acquisition_.abortingRun() ;
-            end
-            if self.Ephys_.IsEnabled ,
-                self.Ephys_.abortingRun() ;
-            end            
             
             % Call user method
-            self.callUserMethod_('abortingRun');
+            self.UserCodeManager_.invoke(self, 'abortingRun');
             
             % Set state back to idle
             self.IsPerformingRun_ = false ; 
@@ -2014,30 +2136,15 @@ classdef WavesurferModel < ws.Model
             
         end  % function
         
-        function samplesAcquired_(self, scanIndex, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
+        function samplesAcquired_(self, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData)
             % Record the time
             %self.TimeInSweep_ = toc(self.FromSweepStartTicId_) ;
             
-            % Get the number of scans
-            nScans = size(rawAnalogData,1) ;
+            % % Get the number of scans
+            % nScans = size(rawAnalogData,1) ;
 
-            % Check that we didn't miss any data
-            if scanIndex>self.NScansAcquiredSoFarThisSweep_ ,                
-                nScansMissed = scanIndex - self.NScansAcquiredSoFarThisSweep_ ;
-                %fprintf('About to error in samplesAcquired_()\n');
-                %keyboard
-                error('We apparently missed %d scans: the index of the first scan in this acquire is %d, but we''ve only seen %d scans.', ...
-                      nScansMissed, ...
-                      scanIndex, ...
-                      self.NScansAcquiredSoFarThisSweep_ );
-            elseif scanIndex<self.NScansAcquiredSoFarThisSweep_ ,
-                %fprintf('About to error in samplesAcquired_()\n');
-                %keyboard
-                error('Weird.  The data timestamp is earlier than expected.  Timestamp: %d, expected: %d.',scanIndex,self.NScansAcquiredSoFarThisSweep_);
-            else
-                % All is well, so just update self.NScansAcquiredSoFarThisSweep_
-                self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
-            end
+            % % Update the number of scans acquired
+            % self.NScansAcquiredSoFarThisSweep_ = self.NScansAcquiredSoFarThisSweep_ + nScans ;
 
             % Add the new data to the storage buffer
             self.SamplesBuffer_.store(rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData) ;
@@ -2066,8 +2173,7 @@ classdef WavesurferModel < ws.Model
         end
         
         function dataAvailable_(self)
-            % The central method for handling incoming data, after it has
-            % been buffered for a while, and we're ready to display+log it.
+            % The central method for handling incoming data.
             % Calls the dataAvailable() method on all the relevant subsystems, which handle display, logging, etc.            
             
             %fprintf('At top of WavesurferModel::dataAvailable_()\n') ;
@@ -2097,7 +2203,7 @@ classdef WavesurferModel < ws.Model
 %                 end
                 
                 % Store the data in the user cache
-                self.Acquisition_.addDataToUserCache(rawAnalogData, rawDigitalData, self.AreSweepsFiniteDuration_) ;
+                self.Acquisition_.addDataToCache(rawAnalogData, rawDigitalData, self.AreSweepsFiniteDuration_) ;
                 
                 % 
 
@@ -2119,17 +2225,26 @@ classdef WavesurferModel < ws.Model
                                                expectedSweepScanCount);
                 end
                 if self.Display_.IsEnabled ,
-                    self.Display_.dataAvailable(isSweepBased, ...
-                                               t, ...
-                                               scaledAnalogData, ...
-                                               rawAnalogData, ...
-                                               rawDigitalData, ...
-                                               timeSinceRunStartAtStartOfData, ...
-                                               self.XSpan);
+                    [doesNeedClear, doesNeedDidSetXOffset] = ...
+                        self.Display_.dataAvailable(isSweepBased, ...
+                                                    t, ...
+                                                    scaledAnalogData, ...
+                                                    rawAnalogData, ...
+                                                    rawDigitalData, ...
+                                                    timeSinceRunStartAtStartOfData, ...
+                                                    self.XSpan);
+                    if doesNeedDidSetXOffset ,
+                        self.broadcast('DidSetXOffset') ;
+                    end
+                    if doesNeedClear ,
+                        self.syncTraces_() ;
+                        self.broadcast('UpdateTraces') ;  
+                    else
+                        %self.broadcast('UpdateAfterDataAdded', t, scaledAnalogData, rawDigitalData) ;                        
+                        self.addData_(t, scaledAnalogData, rawDigitalData) ;  % This will broadcast
+                    end
                 end
-                if self.UserCodeManager_.IsEnabled ,
-                    self.callUserMethod_('dataAvailable');
-                end
+                self.UserCodeManager_.invoke(self, 'dataAvailable');
 
                 % Fire an event to cause views to sync
                 self.broadcast('UpdateForNewData');
@@ -2143,13 +2258,13 @@ classdef WavesurferModel < ws.Model
         
     end % protected methods block
         
-    methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+    methods 
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name) ;
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             %if isequal(name,'IsDIChannelTerminalOvercommitted_')
             %    dbstack
@@ -2165,31 +2280,28 @@ classdef WavesurferModel < ws.Model
             % map in the stim library, and sets the current outputable to
             % the newly-created map.  This is intended to be run on a
             % "virgin" wavesurferModel.
-            
-            self.addAIChannel() ;
-            aoChannelIndex = self.addAOChannel() ;
-            if ~isempty(aoChannelIndex) ,
-                aoChannelName = self.AOChannelNames{aoChannelIndex} ;
-                self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+        
+            if self.DoesProtocolNeedSave || self.NAIChannels>0 || self.NAOChannels>0 || ~self.isStimulusLibraryEmpty() ,
+                % do nothing
+            else
+                self.disableBroadcasts() ;
+                self.addAIChannel() ;
+                aoChannelIndex = self.addAOChannel() ;
+                if ~isempty(aoChannelIndex) ,
+                    aoChannelName = self.AOChannelNames{aoChannelIndex} ;
+                    self.Stimulation_.setStimulusLibraryToSimpleLibraryWithUnitPulse({aoChannelName}) ;
+                end
+                self.IsDisplayEnabled = true ;
+                self.DoesProtocolNeedSave_ = false ;  % this is a special case
+                self.enableBroadcastsMaybe() ;            
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
             end
-            self.Display_.IsEnabled = true ;
         end
     end  % methods block
-    
-    methods (Access = protected)        
-        function callUserMethod_(self, eventName, varargin)
-            % Handle user functions.  It would be possible to just make the UserCodeManager
-            % subsystem a regular listener of these events.  Handling it
-            % directly removes at 
-            % least one layer of function calls and allows for user functions for 'events'
-            % that are not formally events on the model.
-            self.UserCodeManager_.invoke(self, eventName, varargin{:});
-            
-            % Handle as standard event if applicable.
-            %self.broadcast(eventName);
-        end  % function     
-    end  % protected methods block
     
     methods
         function executeIncomingCommand(self, command)
@@ -2207,9 +2319,9 @@ classdef WavesurferModel < ws.Model
                 case 'set-number-of-sweeps-in-run'
                     self.NSweepsPerRun = str2double(parameters{1}) ;
                 case 'set-data-file-folder-path'
-                    self.Logging_.FileLocation = parameters{1} ;
+                    self.DataFileLocation = parameters{1} ;
                 case 'set-data-file-base-name'
-                    self.Logging_.FileBaseName = parameters{1} ;
+                    self.DataFileBaseName = parameters{1} ;
                 case 'set-data-file-session-index'
                     self.Logging_.SessionIndex = str2double(parameters{1}) ;
                 case 'set-is-session-number-included-in-data-file-name'
@@ -2226,19 +2338,38 @@ classdef WavesurferModel < ws.Model
                     self.openProtocolFileGivenFileName(protocolFileName) ;
                 case 'saving-user-file-at-full-path'
                     siUserFileName = parameters{1} ;
-                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;
-                    self.saveUserFileGivenFileName(wsUserFileName) ;
+                    [~, putativeProfileName, ~] = fileparts(siUserFileName) ;
+                    if isequal(putativeProfileName, self.CurrentProfileName) ,
+                        % Write the preferences to disk, just for the hell of it
+                        self.savePreferences_(self.CurrentProfileName) ;
+                    else
+                        if ismember(putativeProfileName, self.ProfileNames) ,
+                            newProfileName = putativeProfileName ;
+                            self.CurrentProfileName = newProfileName ;  % this will update view                            
+                        else
+                            newProfileName = putativeProfileName ;
+                            temporaryProfileName = self.createNewProfile() ;  % this will update view
+                            self.CurrentProfileName = temporaryProfileName ;  % this will update view
+                            self.renameCurrentProfile(newProfileName) ;  % this will update view          
+                            self.savePreferences_(self.CurrentProfileName) ;  % what the hell                                                        
+                        end
+                    end                        
                 case 'loading-user-file-at-full-path'
                     siUserFileName = parameters{1} ;
-                    wsUserFileName = ws.replaceFileExtension(siUserFileName, '.wsu') ;                    
-                    self.openUserFileGivenFileName(wsUserFileName) ;                    
+                    [~, putativeProfileName, ~] = fileparts(siUserFileName) ;
+                    if isequal(putativeProfileName, self.CurrentProfileName) ,
+                        % Do nothing
+                    else
+                        if ismember(putativeProfileName, self.ProfileNames) ,
+                            newProfileName = putativeProfileName ;
+                            self.CurrentProfileName = newProfileName ;  % this will update view                            
+                        else
+                            error('Can''t find profile named "%s"', putativeProfileName) ;
+                        end
+                    end                        
                 case 'record'
-                    % self.record() is a blocking call, but that's dealt
-                    % with in the CommandServer
                     self.record()
                 case 'play'
-                    % self.play() is a blocking call, but that's dealt
-                    % with in the CommandServer
                     self.play()
                 case 'stop'
                     % This is similar to the user pressing the stop button
@@ -2310,23 +2441,25 @@ classdef WavesurferModel < ws.Model
         end
         
         function notifyScanImageThatSavingProtocolFileIfYoked_(self, absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+            commandFileAsString = sprintf('1\nsaving-protocol-file-at-full-path| %s\n', absoluteProtocolFileName) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
         function notifyScanImageThatOpeningProtocolFileIfYoked_(self, absoluteProtocolFileName)
-            commandFileAsString = sprintf('1\nopening-protocol-file-at-full-path| %s\n',absoluteProtocolFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+            commandFileAsString = sprintf('1\nopening-protocol-file-at-full-path| %s\n', absoluteProtocolFileName) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
         
-        function notifyScanImageThatSavingUserFileIfYoked_(self, absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        function notifyScanImageThatSavingPreferencesIfYoked_(self, profileName)
+            absolutePreferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
+            commandFileAsString = sprintf('1\nsaving-user-file-at-full-path| %s\n', absolutePreferencesFilePath) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
 
-        function notifyScanImageThatOpeningUserFileIfYoked_(self, absoluteUserSettingsFileName)
-            commandFileAsString = sprintf('1\nopening-user-file-at-full-path| %s\n',absoluteUserSettingsFileName);
-            self.CommandClient_.sendCommandFileAsString(commandFileAsString);
+        function notifyScanImageThatLoadingPreferencesIfYoked_(self, profileName)
+            absolutePreferencesFilePath = ws.preferencesFileNameFromProfileName(profileName) ;
+            commandFileAsString = sprintf('1\nopening-user-file-at-full-path| %s\n', absolutePreferencesFilePath) ;
+            self.CommandClient_.sendCommandFileAsString(commandFileAsString) ;
         end  % function
     end % methods
     
@@ -2369,6 +2502,9 @@ classdef WavesurferModel < ws.Model
             % Actually loads the named protocol file.  fileName should be a
             % file name referring to a file that is known to be
             % present, at least as of a few milliseconds ago.
+            if ~self.isIdleSensuLato() || self.DoesProtocolNeedSave ,
+                return
+            end
             self.changeReadiness_(-1);
             if ws.isFileNameAbsolute(fileName) ,
                 absoluteFileName = fileName ;
@@ -2378,29 +2514,45 @@ classdef WavesurferModel < ws.Model
             saveStruct = load('-mat',absoluteFileName) ;
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
-            if isfield(saveStruct, 'layoutForAllWindows') ,
-                self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
-            end
+            %if isfield(saveStruct, 'layoutForAllWindows') ,
+            %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
+            %end
+            %self.Acquisition_.invalidateDataCache() ;
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             self.HasUserSpecifiedProtocolFileName_ = true ; 
-            self.updateEverythingAfterProtocolFileOpen_() ;  % Calls .broadcast('Update') for self and all subsystems
-            self.callUserMethod_('wake');  % wake the user object
-            if self.ArePreferencesWritable , 
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            end
+            self.DoesProtocolNeedSave_ = false ;
+            self.LastProtocolFilePath_ = absoluteFileName ;
+            
+            self.broadcast('Update') ;
+%             self.broadcast('UpdateLogging') ;
+%             self.broadcast('UpdateUserCodeManager') ;
+%             self.broadcast('UpdateElectrodeManager') ;
+%             self.broadcast('UpdateTestPulser') ;            
+%             self.broadcast('UpdateTraces') ;
+%             self.broadcast('UpdateDisplay') ;
+%             self.broadcast('UpdateStimulusLibrary') ;
+%             self.broadcast('UpdateStimulusPreview') ;
+%             self.broadcast('UpdateTriggering') ;
+%             self.broadcast('UpdateMain');
+%             self.broadcast('UpdateGeneral') ;
+%             self.broadcast('UpdateChannels') ;
+            self.broadcast('LayoutAllWindows') ;
+            
+            self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
+            
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
             self.changeReadiness_(+1);
         end  % function
     end
     
-    methods
-        function setLayoutForAllWindows_(self, layoutForAllWindows)
-            self.LayoutForAllWindows_ = layoutForAllWindows ;
-        end
-    end
+%     methods
+%         function setLayoutForAllWindows_(self, layoutForAllWindows)
+%             self.LayoutForAllWindows_ = layoutForAllWindows ;
+%         end
+%     end
     
     methods
 %         function saveProtocolFileGivenAbsoluteFileNameAndWindowsLayout(self, absoluteFileName, layoutForAllWindows)
@@ -2415,11 +2567,10 @@ classdef WavesurferModel < ws.Model
                 absoluteFileName = fileName ;
             else
                 absoluteFileName = fullfile(pwd(),fileName) ;
-            end            
+            end
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
-            self.callUserMethod_('willSaveToProtocolFile');  % notify the user object we're about to save  
-            wavesurferModelSettings=self.encodeForPersistence();
+            wavesurferModelSettings = ws.encodeForPersistence(self) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
             versionString = ws.versionString() ;
@@ -2433,15 +2584,22 @@ classdef WavesurferModel < ws.Model
             self.AbsoluteProtocolFileName_ = absoluteFileName ;
             %self.broadcast('DidSetAbsoluteProtocolFileName');            
             self.HasUserSpecifiedProtocolFileName_ = true ;
-            if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', absoluteFileName);
-            end
+            self.DoesProtocolNeedSave_ = false ;
+            self.LastProtocolFilePath_ = absoluteFileName ;
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatSavingProtocolFileIfYoked_(absoluteFileName) ;
             self.changeReadiness_(+1);            
-            self.broadcast('Update');
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end
 
+        function pretendThatProtocolWasSaved_(self) 
+            % Don't use this unless you know what you're doing --- it doesn't even do an
+            % update
+            self.DoesProtocolNeedSave_ = false ;
+        end
+        
 %         function saveProtocolFileGivenAbsoluteFileName(self, absoluteFileName)
 %             % This is here for backwards-compatibility
 %             self.saveProtocolFileGivenFileName(absoluteFileName) ;
@@ -2449,74 +2607,58 @@ classdef WavesurferModel < ws.Model
         
     end        
     
-    methods
-        function loadUserFileGivenFileName(self, fileName)
-            % Retained for backwards compatibility
-            self.openUserFileGivenFileName(fileName) ;
-        end
-    end        
+%     methods
+%         function openUserFileGivenFileName(self, fileName)
+%             % Actually opens the named user file.  fileName should be an
+%             % file name referring to a file that is known to be
+%             % present, at least as of a few milliseconds ago.
+%             self.changeReadiness_(-1) ;
+%             if ws.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end                        
+%             saveStruct=load('-mat',absoluteFileName) ;
+%             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
+%             wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
+%             newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
+%             self.mimicUserSettings_(newModel) ;
+%             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
+%             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+%             if self.DoUsePreferences ,
+%                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
+%             end
+%             self.notifyScanImageThatLoadingPreferencesIfYoked_(absoluteFileName) ;
+%             self.changeReadiness_(+1) ;            
+%             self.broadcast('UpdateFastProtocols') ;
+%             self.broadcast('Update') ;
+%         end
+%     end        
 
 %     methods
-%         function saveUserFileGivenAbsoluteFileName(self, absoluteFileName)
-%             % Retained for backwards compatibility
-%             self.saveUserFileGivenFileName(absoluteFileName) ;
+%         function saveUserFileGivenFileName(self, fileName)
+%             self.changeReadiness_(-1) ;
+%             if ws.isFileNameAbsolute(fileName) ,
+%                 absoluteFileName = fileName ;
+%             else
+%                 absoluteFileName = fullfile(pwd(),fileName) ;
+%             end                        
+%             userSettings = ws.encodeForPersistence(self) ;
+%             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
+%             versionString = ws.versionString() ;
+%             saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
+%                               'versionString',versionString) ;  %#ok<NASGU>
+%             save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
+%             self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
+%             self.HasUserSpecifiedUserSettingsFileName_ = true ;            
+%             if self.DoUsePreferences ,
+%                 ws.setPreference('LastUserFilePath', absoluteFileName) ;
+%             end
+%             self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
+%             self.changeReadiness_(+1) ;            
+%             self.broadcast('Update') ;            
 %         end  % function
 %     end
-
-    methods
-        function openUserFileGivenFileName(self, fileName)
-            % Actually opens the named user file.  fileName should be an
-            % file name referring to a file that is known to be
-            % present, at least as of a few milliseconds ago.
-            self.changeReadiness_(-1) ;
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            saveStruct=load('-mat',absoluteFileName) ;
-            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;            
-            wavesurferModelSettings=saveStruct.(wavesurferModelSettingsVariableName) ;
-            newModel = ws.Coding.decodeEncodingContainer(wavesurferModelSettings, self) ;
-            self.mimicUserSettings_(newModel) ;
-            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
-            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
-            end
-            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
-            self.notifyScanImageThatOpeningUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness_(+1) ;            
-            self.broadcast('UpdateFastProtocols') ;
-            self.broadcast('Update') ;
-        end
-    end        
-
-    methods
-        function saveUserFileGivenFileName(self, fileName)
-            self.changeReadiness_(-1) ;
-            if ws.isFileNameAbsolute(fileName) ,
-                absoluteFileName = fileName ;
-            else
-                absoluteFileName = fullfile(pwd(),fileName) ;
-            end                        
-            userSettings=self.encodeForPersistence() ;
-            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
-            versionString = ws.versionString() ;
-            saveStruct=struct(wavesurferModelSettingsVariableName,userSettings, ...
-                              'versionString',versionString) ;  %#ok<NASGU>
-            save('-mat','-v7.3',absoluteFileName,'-struct','saveStruct') ;     
-            self.AbsoluteUserSettingsFileName_ = absoluteFileName ;
-            self.HasUserSpecifiedUserSettingsFileName_ = true ;            
-            if self.ArePreferencesWritable ,
-                ws.Preferences.sharedPreferences().savePref('LastUserFilePath', absoluteFileName) ;
-            end
-            %siUserFilePath = ws.replaceFileExtension(absoluteFileName, '.usr') ;
-            self.notifyScanImageThatSavingUserFileIfYoked_(absoluteFileName) ;
-            self.changeReadiness_(+1) ;            
-            self.broadcast('Update') ;            
-        end  % function
-    end
     
 %     methods
 %         function set.AbsoluteProtocolFileName(self,newValue)
@@ -2534,15 +2676,15 @@ classdef WavesurferModel < ws.Model
 %         end
 %     end
 
-    methods
-        function updateFastProtocol(self)
-            % Called by one of the child FastProtocol's when it is changed
-            self.broadcast('UpdateFastProtocols');
-            self.broadcast('Update');  % need to update main window also
-        end
-    end
+%     methods
+%         function updateFastProtocol(self)
+%             % Called by one of the child FastProtocol's when it is changed
+%             self.broadcast('UpdateFastProtocols');
+%             self.broadcast('Update');  % need to update main window also
+%         end
+%     end
 
-    methods
+%     methods
 %         function result = allDigitalTerminalIDs(self)
 %             nDigitalTerminalIDsInHardware = self.NDIOTerminals ;
 %             result = 0:(nDigitalTerminalIDsInHardware-1) ;              
@@ -2564,7 +2706,7 @@ classdef WavesurferModel < ws.Model
 %             inUseDigitalTerminalIDs = self.digitalTerminalIDsInUse() ;
 %             result = ismember(DigitalTerminalID, inUseDigitalTerminalIDs) ;
 %         end
-    end
+%     end
     
     methods
         function setSingleDOChannelTerminalID(self, iChannel, terminalID)
@@ -2575,8 +2717,17 @@ classdef WavesurferModel < ws.Model
             if wasSet ,
                 %self.Parent.singleDigitalOutputTerminalIDWasSetInStimulationSubsystem(i) ;
                 value = self.Stimulation_.DigitalTerminalIDs(iChannel) ;  % value is possibly normalized, terminalID is not
-                self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
-                                        iChannel, value, self.IsDOChannelTerminalOvercommitted ) ;
+%                 self.IPCPublisher_.send('singleDigitalOutputTerminalIDWasSetInFrontend', ...
+%                                         iChannel, value, self.IsDOChannelTerminalOvercommitted ) ;
+                self.Looper_.singleDigitalOutputTerminalIDWasSetInFrontend(self.PrimaryDeviceName, ...
+                                                                           self.IsPrimaryDeviceAPXIDevice, ...
+                                                                           self.DOChannelTerminalIDs, ...
+                                                                           self.IsDOChannelTimed, ...
+                                                                           self.DOChannelStateIfUntimed, ...
+                                                                           self.IsDOChannelTerminalOvercommitted) ;
+                self.Refiller_.singleDigitalOutputTerminalIDWasSetInFrontend(iChannel, ...
+                                                                             value, ...
+                                                                             self.IsDOChannelTerminalOvercommitted ) ;
             end
         end
         
@@ -2588,24 +2739,24 @@ classdef WavesurferModel < ws.Model
 %                                     i, value, self.IsDOChannelTerminalOvercommitted ) ;
 %         end
 
-        function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
-            value = self.DOChannelStateIfUntimed ;
-            self.IPCPublisher_.send('digitalOutputStateIfUntimedWasSetInFrontend', value) ;
-        end
+%         function digitalOutputStateIfUntimedWasSetInStimulationSubsystem(self)
+%             value = self.DOChannelStateIfUntimed ;
+%             self.Looper_.digitalOutputStateIfUntimedWasSetInFrontend(value, self.IsDOChannelTimed) ;
+%             self.Refiller_.digitalOutputStateIfUntimedWasSetInFrontend(value) ;
+%         end
         
         function isDigitalChannelTimedWasSetInStimulationSubsystem(self)
             value = self.IsDOChannelTimed ;
             % Notify the refiller first, so that it can release all the DO
             % channels
-            self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
-        end
-        
-        function didAddAnalogInputChannel(self)
-            self.syncIsAIChannelTerminalOvercommitted_() ;
-            self.Display_.didAddAnalogInputChannel() ;
-            self.Ephys_.didChangeNumberOfInputChannels();
-            self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            %self.IPCPublisher_.send('isDigitalOutputTimedWasSetInFrontend',value) ;
+            self.Looper_.isDigitalOutputTimedWasSetInFrontend(self.PrimaryDeviceName, ...
+                                                              self.IsPrimaryDeviceAPXIDevice, ...
+                                                              self.DOChannelTerminalIDs, ...
+                                                              self.IsDOChannelTimed, ...
+                                                              self.DOChannelStateIfUntimed, ...
+                                                              self.IsDOChannelTerminalOvercommitted) ;
+            self.Refiller_.isDigitalOutputTimedWasSetInFrontend(value) ;            
         end
         
         function newChannelIndex = addAIChannel(self)
@@ -2613,11 +2764,22 @@ classdef WavesurferModel < ws.Model
             if isempty(nextFreeDeviceNameAndTerminalIDMaybe) ,
                 % No free AI terminals
                 newChannelIndex = [] ;
-            else            
+            else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
-                newChannelIndex = self.Acquisition_.addAnalogChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
-                self.didAddAnalogInputChannel() ;
+                newChannelIndex = self.Acquisition_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                     nextFreeDeviceNameAndTerminalID.terminalID) ;
+                %self.Acquisition_.invalidateDataCache() ;                                                  
+                self.DoesProtocolNeedSave_ = true ;                                                  
+                self.syncIsAIChannelTerminalOvercommitted_() ;
+                self.Display_.didAddAnalogInputChannel() ;
+                self.syncTraces_() ;
+                self.broadcast('UpdateTraces') ;
+                self.broadcast('UpdateMain') ;
+                %self.Ephys_.didChangeNumberOfInputChannels();
+                self.broadcast('EMDidChangeNumberOfInputChannels');
+                self.broadcast('UpdateTestPulser');
+                self.broadcast('UpdateChannels');  % causes channels figure to update
+                self.broadcast('DidChangeNumberOfInputChannels');
             end
         end  % function
         
@@ -2629,10 +2791,14 @@ classdef WavesurferModel < ws.Model
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;
                 newChannelIndex = self.Stimulation_.addAnalogChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsAOChannelTerminalOvercommitted_() ;
-                self.Ephys_.didChangeNumberOfOutputChannels() ;
+                %self.Ephys_.didChangeNumberOfOutputChannels() ;                
+                self.broadcast('EMDidChangeNumberOfOutputChannels');
+                self.broadcast('UpdateTestPulser') ;                
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
             end
         end
         
@@ -2642,17 +2808,27 @@ classdef WavesurferModel < ws.Model
                 channelIndex = [] ;
             else
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
-                %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
-                %allDeviceNames = self.AllDeviceNames ;
-                channelIndex = self.Acquisition_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                    nextFreeDeviceNameAndTerminalID.terminalID) ;
+                channelIndex = self.Acquisition_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                   nextFreeDeviceNameAndTerminalID.terminalID) ;
+                %self.Acquisition_.invalidateDataCache() ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 self.Display_.didAddDigitalInputChannel() ;
-                self.Ephys_.didChangeNumberOfInputChannels() ;
+                self.syncTraces_() ;
+                self.broadcast('UpdateTraces') ;
+                self.broadcast('UpdateMain') ;
+                %self.Ephys_.didChangeNumberOfInputChannels() ;                
+                self.broadcast('EMDidChangeNumberOfInputChannels');
+                self.broadcast('UpdateTestPulser');
                 self.broadcast('UpdateChannels') ;  % causes channels figure to update
                 self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
-                self.IPCPublisher_.send('didAddDigitalInputChannelInFrontend', ...
-                                        self.IsDOChannelTerminalOvercommitted) ;
+                self.Looper_.didAddDigitalInputChannelInFrontend(self.PrimaryDeviceName, ...
+                                                                 self.IsPrimaryDeviceAPXIDevice, ...
+                                                                 self.DOChannelTerminalIDs, ...
+                                                                 self.IsDOChannelTimed, ...
+                                                                 self.DOChannelStateIfUntimed, ...
+                                                                 self.IsDOChannelTerminalOvercommitted) ;
+                self.Refiller_.didAddDigitalInputChannelInFrontend(self.IsDOChannelTerminalOvercommitted) ;
             end
         end
         
@@ -2664,61 +2840,100 @@ classdef WavesurferModel < ws.Model
                 nextFreeDeviceNameAndTerminalID = nextFreeDeviceNameAndTerminalIDMaybe(1) ;                
                 %freeTerminalIDs = self.freeDigitalTerminalIDs() ;
                 %allDeviceNames = self.AllDeviceNames ;
-                newChannelIndex = self.Stimulation_.addDigitalChannel_(nextFreeDeviceNameAndTerminalID.deviceName, ...
-                                                                       nextFreeDeviceNameAndTerminalID.terminalID) ;
+                newChannelIndex = self.Stimulation_.addDigitalChannel(nextFreeDeviceNameAndTerminalID.deviceName, ...
+                                                                      nextFreeDeviceNameAndTerminalID.terminalID) ;
                 %self.Display_.didAddDigitalOutputChannel() ;
+                self.DoesProtocolNeedSave_ = true ;                                                  
                 self.syncIsDIOChannelTerminalOvercommitted_() ;
                 %self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
                 self.broadcast('UpdateStimulusLibrary');
-                self.Ephys_.didChangeNumberOfOutputChannels();
+                self.broadcast('UpdateStimulusPreview') ;
+                %self.Ephys_.didChangeNumberOfOutputChannels();
+                self.broadcast('EMDidChangeNumberOfOutputChannels');
+                self.broadcast('UpdateTestPulser') ;                                
                 self.broadcast('UpdateChannels');  % causes channels figure to update
                 %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
-                channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-                %deviceNameForEachDOChannel = self.Stimulation_.DigitalDeviceNames ;
-                terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-                isTimedForEachDOChannel = self.IsDOChannelTimed ;
-                onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
-                self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
-                                        channelNameForEachDOChannel, ...
-                                        terminalIDForEachDOChannel, ...
-                                        isTimedForEachDOChannel, ...
-                                        onDemandOutputForEachDOChannel, ...
-                                        isTerminalOvercommittedForEachDOChannel) ;
+%                 channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+%                 terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+%                 isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%                 onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
+%                 isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%                 self.IPCPublisher_.send('didAddDigitalOutputChannelInFrontend', ...
+%                                         channelNameForEachDOChannel, ...
+%                                         terminalIDForEachDOChannel, ...
+%                                         isTimedForEachDOChannel, ...
+%                                         onDemandOutputForEachDOChannel, ...
+%                                         isTerminalOvercommittedForEachDOChannel) ;
+                self.Looper_.didAddDigitalOutputChannelInFrontend(self.PrimaryDeviceName, ...
+                                                                  self.IsPrimaryDeviceAPXIDevice, ...
+                                                                  self.DOChannelTerminalIDs, ...
+                                                                  self.IsDOChannelTimed, ...
+                                                                  self.DOChannelStateIfUntimed, ...
+                                                                  self.IsDOChannelTerminalOvercommitted) ;
+%                 self.Refiller_.didAddDigitalOutputChannelInFrontend(channelNameForEachDOChannel, ...
+%                                                                     terminalIDForEachDOChannel, ...
+%                                                                     isTimedForEachDOChannel, ...
+%                                                                     onDemandOutputForEachDOChannel, ...
+%                                                                     isTerminalOvercommittedForEachDOChannel) ;
             end
         end        
         
         function deleteMarkedAIChannels(self)
-            wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels_() ;
+            wasDeleted = self.Acquisition_.deleteMarkedAnalogChannels() ;
+            %self.Acquisition_.invalidateDataCache() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAIChannelTerminalOvercommitted_() ;            
             self.Display_.didDeleteAnalogInputChannels(wasDeleted) ;
-            self.Ephys_.didChangeNumberOfInputChannels();
+            self.syncTraces_() ;
+            self.broadcast('UpdateMain') ;            
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('EMDidChangeNumberOfInputChannels');
+            self.broadcast('UpdateTestPulser');
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels');  % causes scope controllers to be synched with scope models
+            self.broadcast('DidChangeNumberOfInputChannels');  
         end
         
         function deleteMarkedDIChannels(self)
-            wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels_() ;
+            wasDeleted = self.Acquisition_.deleteMarkedDigitalChannels() ;
+            %self.Acquisition_.invalidateDataCache() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.Display_.didDeleteDigitalInputChannels(wasDeleted) ;
-            self.Ephys_.didChangeNumberOfInputChannels() ;
+            self.syncTraces_() ;
+            self.broadcast('UpdateMain') ;            
+            self.broadcast('UpdateTraces') ;
+            %self.Ephys_.didChangeNumberOfInputChannels() ;
+            self.broadcast('EMDidChangeNumberOfInputChannels');
+            self.broadcast('UpdateTestPulser');
             self.broadcast('UpdateChannels') ;  % causes channels figure to update
-            self.broadcast('DidChangeNumberOfInputChannels') ;  % causes scope controllers to be synched with scope models
-            self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
-                                    self.IsDOChannelTerminalOvercommitted) ;
+            self.broadcast('DidChangeNumberOfInputChannels') ;  
+            %self.broadcast('DidMaybeChangeProtocol') ;
+%             self.IPCPublisher_.send('didDeleteDigitalInputChannelsInFrontend', ...
+%                                     self.IsDOChannelTerminalOvercommitted) ;
+            self.Looper_.didDeleteDigitalInputChannelsInFrontend(self.PrimaryDeviceName, ...
+                                                                 self.IsPrimaryDeviceAPXIDevice, ...
+                                                                 self.DOChannelTerminalIDs, ...
+                                                                 self.IsDOChannelTimed, ...
+                                                                 self.DOChannelStateIfUntimed, ...
+                                                                 self.IsDOChannelTerminalOvercommitted) ;
+            self.Refiller_.didDeleteDigitalInputChannelsInFrontend(self.IsDOChannelTerminalOvercommitted) ;
         end
         
         function deleteMarkedAOChannels(self)
-            self.Stimulation_.deleteMarkedAnalogChannels_() ;
+            self.Stimulation_.deleteMarkedAnalogChannels() ;
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsAOChannelTerminalOvercommitted_() ;            
             %self.Display_.didRemoveAnalogOutputChannel(nameOfRemovedChannel) ;
-            self.Ephys_.didChangeNumberOfOutputChannels();
+            %self.Ephys_.didChangeNumberOfOutputChannels();
+            self.broadcast('EMDidChangeNumberOfOutputChannels');
+            self.broadcast('UpdateTestPulser') ;            
 %             self.Stimulation_.notifyLibraryThatDidChangeNumberOfOutputChannels_();  
 %               % we might be able to call this from within
 %               % self.Stimulation_.deleteMarkedAnalogChannels, and that would
 %               % generally be better, but I'm afraid of introducing new
 %               % bugs...
             self.broadcast('UpdateStimulusLibrary');
+            self.broadcast('UpdateStimulusPreview') ;
             self.broadcast('UpdateChannels');  % causes channels figure to update
             %self.broadcast('DidChangeNumberOfOutputChannels');  % causes scope controllers to be synched with scope models
         end
@@ -2736,21 +2951,36 @@ classdef WavesurferModel < ws.Model
             self.Stimulation_.deleteMarkedDigitalChannels_(isToBeDeleted) ;
             
             % Do all the things that need doing after that
+            self.DoesProtocolNeedSave_ = true ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             self.broadcast('UpdateStimulusLibrary');
-            self.Ephys_.didChangeNumberOfOutputChannels();
+            self.broadcast('UpdateStimulusPreview') ;
+            %self.Ephys_.didChangeNumberOfOutputChannels();
+            self.broadcast('EMDidChangeNumberOfOutputChannels');            
+            self.broadcast('UpdateTestPulser') ;            
             self.broadcast('UpdateChannels');  % causes channels figure to update
-            channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
-            terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-            isTimedForEachDOChannel = self.IsDOChannelTimed ;
-            onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
-            isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
-            self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
-                                    channelNameForEachDOChannel, ...
-                                    terminalIDForEachDOChannel, ...
-                                    isTimedForEachDOChannel, ...
-                                    onDemandOutputForEachDOChannel, ...
-                                    isTerminalOvercommittedForEachDOChannel) ;
+%             channelNameForEachDOChannel = self.Stimulation_.DigitalChannelNames ;
+%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
+%             isTimedForEachDOChannel = self.IsDOChannelTimed ;
+%             onDemandOutputForEachDOChannel = self.DOChannelStateIfUntimed ;
+%             isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;
+%             self.IPCPublisher_.send('didRemoveDigitalOutputChannelsInFrontend', ...
+%                                     channelNameForEachDOChannel, ...
+%                                     terminalIDForEachDOChannel, ...
+%                                     isTimedForEachDOChannel, ...
+%                                     onDemandOutputForEachDOChannel, ...
+%                                     isTerminalOvercommittedForEachDOChannel) ;
+            self.Looper_.didRemoveDigitalOutputChannelsInFrontend(self.PrimaryDeviceName, ...
+                                                                  self.IsPrimaryDeviceAPXIDevice, ...
+                                                                  self.DOChannelTerminalIDs, ...
+                                                                  self.IsDOChannelTimed, ...
+                                                                  self.DOChannelStateIfUntimed, ...
+                                                                  self.IsDOChannelTerminalOvercommitted) ;
+%             self.Refiller_.didRemoveDigitalOutputChannelsInFrontend(channelNameForEachDOChannel, ...
+%                                                                     terminalIDForEachDOChannel, ...
+%                                                                     isTimedForEachDOChannel, ...
+%                                                                     onDemandOutputForEachDOChannel, ...
+%                                                                     isTerminalOvercommittedForEachDOChannel) ;
         end        
     end  % public methods block
     
@@ -2764,29 +2994,6 @@ classdef WavesurferModel < ws.Model
 %         end  % function
 %     end
     
-    methods (Access=protected)        
-%         function poll_(self)
-%             %fprintf('\n\n\nWavesurferModel::poll()\n');
-%             timeSinceSweepStart = toc(self.FromSweepStartTicId_);
-%             self.Acquisition_.poll(timeSinceSweepStart,self.FromRunStartTicId_);
-%             self.Stimulation_.poll(timeSinceSweepStart);
-%             self.Triggering_.poll(timeSinceSweepStart);
-%             %self.Display_.poll(timeSinceSweepStart);
-%             %self.Logging_.poll(timeSinceSweepStart);
-%             %self.UserCodeManager_.poll(timeSinceSweepStart);
-%             %drawnow();  % OK to do this, since it's fired from a timer callback, not a HG callback
-%         end
-        
-%         function pollingTimerErrored_(self,eventData)  %#ok<INUSD>
-%             %fprintf('WavesurferModel::pollTimerErrored()\n');
-%             %eventData
-%             %eventData.Data            
-%             self.abortSweepAndRun_('problem');  % Put an end to the run
-%             error('waversurfer:pollingTimerError',...
-%                   'The polling timer had a problem.  Acquisition aborted.');
-%         end        
-    end  % protected methods block
-    
     methods
         function mimic(self, other)
             % Cause self to resemble other.
@@ -2795,7 +3002,7 @@ classdef WavesurferModel < ws.Model
             self.disableBroadcasts();
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -2816,12 +3023,12 @@ classdef WavesurferModel < ws.Model
             
             % Broadcast update
             self.broadcast('Update');
-        end  % function
+        end  % function        
     end  % public methods block
 
-    methods
+    methods (Access=protected)
         function [acquisitionKeystoneTaskType, acquisitionKeystoneTaskDeviceName, stimulationKeystoneTaskType, stimulationKeystoneTaskDeviceName] = ...
-                determineKeystoneTasks(self)
+                determineKeystoneTasks_(self)
             % The acq and stim subsystems each have a "keystone" task.  This task is
             % identified by its type (one of "ai", "di", "ao", and "do") and its device
             % name (the name of one of the devices in use).  In some cases, the
@@ -2907,14 +3114,6 @@ classdef WavesurferModel < ws.Model
 %             fprintf('  stimulationKeystoneDevice: %s\n', stimulationKeystoneTaskDeviceName) ;            
         end
         
-        function propNames = listPropertiesForCheckingIndependence(self)
-            % Define a helper function
-            propNamesRaw = listPropertiesForCheckingIndependence@ws.Coding(self) ;
-            propNames = setdiff(propNamesRaw, {'Logging_', 'FastProtocols_'}, 'stable') ;
-        end
-    end  % public methods block
-    
-    methods (Access=protected) 
         function mimicProtocolThatWasJustLoaded_(self, other)
             % Cause self to resemble other, but only w.r.t. the protocol.
 
@@ -2923,12 +3122,12 @@ classdef WavesurferModel < ws.Model
             self.releaseTimedHardwareResources_() ;
 
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Don't want to do broadcasts while we're in a
             % possibly-inconsistent state
             %self.disableBroadcasts() ;
-            self.disableAllBroadcastsDammit_() ;  % want to disable *all* broadcasts, in *all* subsystems
+            self.disableBroadcasts() ;
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -2990,25 +3189,38 @@ classdef WavesurferModel < ws.Model
 
             % Safe to do broadcasts again
             %self.enableBroadcastsMaybe() ;
-            self.enableBroadcastsMaybeDammit_() ;
+            self.enableBroadcastsMaybe() ;
             
             % Make sure the looper knows which output channels are timed vs
             % on-demand
             %keyboard
-            if self.IsITheOneTrueWavesurferModel_ ,
-                isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
-                self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
-                                        primaryDeviceName, ...
-                                        isPrimaryDeviceAPXIDevice, ...
-                                        isTerminalOvercommittedForEachDOChannel) ;
-                %wavesurferModelSettings = self.encodeForPersistence() ;
-                looperProtocol = self.getLooperProtocol_() ;
-                self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
+            if self.IsAwake_ ,
+                %isTerminalOvercommittedForEachDOChannel = self.IsDOChannelTerminalOvercommitted ;  % this is transient, so isn't in the wavesurferModelSettings
+%                 self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
+%                                         primaryDeviceName, ...
+%                                         isPrimaryDeviceAPXIDevice, ...
+%                                         isTerminalOvercommittedForEachDOChannel) ;
+                self.Looper_.didSetPrimaryDeviceInFrontend(self.PrimaryDeviceName, ...
+                                                           self.IsPrimaryDeviceAPXIDevice, ...
+                                                           self.DOChannelTerminalIDs, ...
+                                                           self.IsDOChannelTimed, ...
+                                                           self.DOChannelStateIfUntimed, ...
+                                                           self.IsDOChannelTerminalOvercommitted) ;
+                self.Refiller_.didSetPrimaryDeviceInFrontend() ;
+                %looperProtocol = self.getLooperProtocol_() ;
+                %self.IPCPublisher_.send('frontendJustLoadedProtocol', looperProtocol, isTerminalOvercommittedForEachDOChannel) ;
+                self.Looper_.loadingProtocol(self.PrimaryDeviceName, ...
+                                             self.IsPrimaryDeviceAPXIDevice, ...
+                                             self.DOChannelTerminalIDs, ...
+                                             self.IsDOChannelTimed, ...
+                                             self.DOChannelStateIfUntimed, ...
+                                             self.IsDOChannelTerminalOvercommitted) ;
+                %self.Refiller_.frontendJustLoadedProtocol(isTerminalOvercommittedForEachDOChannel) ;                
             end
         end  % function
     end  % protected methods block
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -3025,104 +3237,99 @@ classdef WavesurferModel < ws.Model
         function mimicUserSettings_(self, other)
             % Cause self to resemble other, but only w.r.t. the user settings            
             source = other.getPropertyValue_('FastProtocols_') ;
-            self.FastProtocols_ = ws.Coding.copyCellArrayOfHandles(source) ;
+            self.FastProtocols_ = ws.copyCellArrayOfHandles(source) ;
         end  % function        
     end  % protected methods block
     
     methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-            self.Triggering_.disableBroadcasts() ;
-            self.Acquisition_.disableBroadcasts() ;
-            self.Stimulation_.disableBroadcasts() ;
-            self.Display_.disableBroadcasts() ;
-            %self.Ephys_.TestPulser.disableBroadcasts() ;
-            %self.Ephys_.ElectrodeManager.disableBroadcasts() ;
-            self.Ephys_.disableAllBroadcastsDammit_() ;
-            self.UserCodeManager_.disableBroadcasts() ;
-            self.Logging_.disableBroadcasts() ;            
-        end
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%             %self.Triggering_.disableBroadcasts() ;
+%             %self.Acquisition_.disableBroadcasts() ;
+%             %self.Stimulation_.disableBroadcasts() ;
+%             %self.Display_.disableBroadcasts() ;
+%             %self.Ephys_.TestPulser.disableBroadcasts() ;
+%             %self.Ephys_.ElectrodeManager.disableBroadcasts() ;
+%             %self.Ephys_.disableAllBroadcastsDammit_() ;
+%             %self.UserCodeManager_.disableBroadcasts() ;
+%             %self.Logging_.disableBroadcasts() ;            
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.Logging_.enableBroadcastsMaybe() ;                        
+%             self.UserCodeManager_.enableBroadcastsMaybe() ;
+%             self.Ephys_.enableBroadcastsMaybeDammit_() ;
+% %             self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
+% %             self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
+%             self.Display_.enableBroadcastsMaybe() ;
+%             self.Stimulation_.enableBroadcastsMaybe() ;
+%             self.Acquisition_.enableBroadcastsMaybe() ;            
+%             self.Triggering_.enableBroadcastsMaybe() ;
+%             self.enableBroadcastsMaybe() ;
+%         end
         
-        function enableBroadcastsMaybeDammit_(self)
-            self.Logging_.enableBroadcastsMaybe() ;                        
-            self.UserCodeManager_.enableBroadcastsMaybe() ;
-            self.Ephys_.enableBroadcastsMaybeDammit_() ;
-%             self.Ephys_.ElectrodeManager.enableBroadcastsMaybe() ;
-%             self.Ephys_.TestPulser.enableBroadcastsMaybe() ;
-            self.Display_.enableBroadcastsMaybe() ;
-            self.Stimulation_.enableBroadcastsMaybe() ;
-            self.Acquisition_.enableBroadcastsMaybe() ;            
-            self.Triggering_.enableBroadcastsMaybe() ;
-            self.enableBroadcastsMaybe() ;
-        end
-        
-        function updateEverythingAfterProtocolFileOpen_(self)
-            self.Logging_.broadcast('Update') ;                        
-            self.UserCodeManager_.broadcast('Update') ;
-            self.Ephys_.updateEverythingAfterProtocolFileOpen_() ;
-            %self.Ephys_.ElectrodeManager.broadcast('Update') ;
-            %self.Ephys_.TestPulser.broadcast('Update') ;
-            self.Display_.broadcast('ClearData') ;
-            self.Display_.broadcast('Update') ;
-            %self.Stimulation_.broadcast('Update') ;  % Does nothing---no one
-                                                      % subscribes to this anymore.
-            self.broadcast('UpdateStimulusLibrary') ;
-            self.Acquisition_.broadcast('Update') ;
-            self.Triggering_.broadcast('Update') ;
-            self.broadcast('Update') ;            
-            self.broadcast('LayoutAllWindows') ;
-        end
+%         function updateEverythingAfterProtocolFileOpen_(self)
+%             self.broadcast('UpdateLogging') ;
+%             self.broadcast('UpdateUserCodeManager') ;
+%             self.broadcast('UpdateElectrodeManager') ;
+%             self.broadcast('UpdateTestPulser') ;            
+%             self.broadcast('UpdateTraces') ;
+%             self.broadcast('UpdateDisplay') ;
+%             self.broadcast('UpdateStimulusLibrary') ;
+%             self.broadcast('UpdateTriggering') ;
+%             self.broadcast('Update') ;            
+%             self.broadcast('LayoutAllWindows') ;
+%         end
     end  % protected methods block
     
     methods (Static)
-        function [pathToRepoRoot,pathToMatlabZmqLib] = pathNamesThatNeedToBeOnSearchPath()
+        function pathToRepoRoot = pathNamesThatNeedToBeOnSearchPath()
             % Allow user to invoke Wavesurfer from the Matlab command line, for
-            % this Matlab session only.  Modifies the user's Matlab path, but does
-            % not safe the modified path.
+            % this Matlab session only.
 
             pathToWavesurferModel = mfilename('fullpath') ;
             pathToWsModulerFolder = fileparts(pathToWavesurferModel) ;  % should be +ws folder
             pathToRepoRoot = fileparts(pathToWsModulerFolder) ;  % should be repo root
-            pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
+            %pathToMatlabZmqLib = fullfile(pathToRepoRoot,'matlab-zmq','lib') ;
             
             %result = { pathToRepoRoot , pathToMatlabZmqLib } ;
         end
         
-        function portNumbers = getFreeEphemeralPortNumbers(nPorts)
-            % Determine which three free ports to use:
-            % First bind to three free ports to get their addresses
-            freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
-            for i=1:nPorts ,
-                %freePorts(i).context = zmq.core.ctx_new();
-                freePorts(i).context = zmq.Context();
-                %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
-                freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
-                address = 'tcp://127.0.0.1:*';
-                %zmq.core.bind(freePorts(i).socket, address);
-                freePorts(i).socket.bind(address);
-                %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
-                %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
-                %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
-                freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
-                splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
-                freePorts(i).portNumber = str2double(splitString{2});
-            end
-
-            % Unbind the ports to free them up for the actual
-            % processes. Doing it in this way (rather than
-            % binding/unbinding each port sequentially) will minimize amount of
-            % time between a port being unbound and bound by a process.
-            for i=1:nPorts ,
-                %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
-                %zmq.core.close(freePorts(i).socket);
-                %zmq.core.ctx_shutdown(freePorts(i).context);
-                %zmq.core.ctx_term(freePorts(i).context);
-                freePorts(i).socket = [] ;
-                freePorts(i).context = [] ;
-            end
-
-            portNumbers = [ freePorts(:).portNumber ] ;            
-        end
+%         function portNumbers = getFreeEphemeralPortNumbers(nPorts)
+%             % Determine which three free ports to use:
+%             % First bind to three free ports to get their addresses
+%             freePorts = struct('context',{},'socket',{},'endpoint',{},'portNumber',{});
+%             for i=1:nPorts ,
+%                 %freePorts(i).context = zmq.core.ctx_new();
+%                 freePorts(i).context = zmq.Context();
+%                 %freePorts(i).socket  = zmq.core.socket(freePorts(i).context, 'ZMQ_PUSH');
+%                 freePorts(i).socket  = freePorts(i).context.socket('ZMQ_PUSH');
+%                 address = 'tcp://127.0.0.1:*';
+%                 %zmq.core.bind(freePorts(i).socket, address);
+%                 freePorts(i).socket.bind(address);
+%                 %freePorts(i).endpoint = zmq.core.getsockopt(freePorts(i).socket, 'ZMQ_LAST_ENDPOINT');
+%                 %freePorts(i).endpoint = freePorts(i).socket.getsockopt('ZMQ_LAST_ENDPOINT');
+%                 %freePorts(i).endpoint = freePorts(i).socket.get('ZMQ_LAST_ENDPOINT');
+%                 freePorts(i).endpoint = freePorts(i).socket.bindings{end} ;
+%                 splitString = strsplit(freePorts(i).endpoint,'tcp://127.0.0.1:');
+%                 freePorts(i).portNumber = str2double(splitString{2});
+%             end
+% 
+%             % Unbind the ports to free them up for the actual
+%             % processes. Doing it in this way (rather than
+%             % binding/unbinding each port sequentially) will minimize amount of
+%             % time between a port being unbound and bound by a process.
+%             for i=1:nPorts ,
+%                 %zmq.core.disconnect(freePorts(i).socket, freePorts(i).endpoint);
+%                 %zmq.core.close(freePorts(i).socket);
+%                 %zmq.core.ctx_shutdown(freePorts(i).context);
+%                 %zmq.core.ctx_term(freePorts(i).context);
+%                 freePorts(i).socket = [] ;
+%                 freePorts(i).context = [] ;
+%             end
+% 
+%             portNumbers = [ freePorts(:).portNumber ] ;            
+%         end
     end  % static methods block
     
     methods
@@ -3154,6 +3361,7 @@ classdef WavesurferModel < ws.Model
             % warning logging near the beginning of the .do() method, and turn
             % it off near the end.  That way we don't have to do it for
             % each model method, and we only do it once per user command.            
+            self.AllowTimerCallback_ = false ;
             self.startLoggingWarnings() ;
             try
                 self.(methodName)(varargin{:}) ;
@@ -3163,13 +3371,16 @@ classdef WavesurferModel < ws.Model
                 % non-logging state.
                 self.stopLoggingWarnings() ;  % discard the result, which might contain warnings
                 self.resetReadiness_() ;  % Need to do this to make sure we don't stay unready for the rest of the WSM lifetime
+                self.AllowTimerCallback_ = true ;
                 rethrow(exception) ;
             end
             warningExceptionMaybe = self.stopLoggingWarnings() ;
             if ~isempty(warningExceptionMaybe) ,
                 warningException = warningExceptionMaybe{1} ;
+                self.AllowTimerCallback_ = true ;
                 throw(warningException) ;
             end
+            self.AllowTimerCallback_ = true ;
         end
 
         function logWarning(self, identifier, message, causeOrEmpty)
@@ -3270,7 +3481,8 @@ classdef WavesurferModel < ws.Model
             fastProtocol = self.FastProtocols_{selectedIndex} ;
             fastProtocol.ProtocolFileName = '' ;
             fastProtocol.AutoStartType = 'do_nothing' ;
-            self.updateFastProtocol() ;
+            self.broadcast('UpdateFastProtocols');
+            self.broadcast('UpdateMain');
         end  % method
         
 %         function result = selectedFastProtocolFileName(self)
@@ -3331,57 +3543,41 @@ classdef WavesurferModel < ws.Model
                 fastProtocol = self.FastProtocols_{index} ;
                 try 
                     fastProtocol.(propertyName) = newValue ;
-                    if isequal(propertyName, 'ProtocolFileName') && self.ArePreferencesWritable ,
-                        ws.Preferences.sharedPreferences().savePref('LastProtocolFilePath', newValue) ;
-                    end
+                    %if isequal(propertyName, 'ProtocolFileName') && self.DoUsePreferences ,
+                    %    ws.setPreference('LastProtocolFilePath', newValue) ;
+                    %end
                 catch exception
-                    self.updateFastProtocol() ;
+                    self.broadcast('UpdateFastProtocols');
+                    self.broadcast('UpdateMain');
                     rethrow(exception) ;
                 end
             else
-                self.updateFastProtocol() ;
+                self.broadcast('UpdateFastProtocols');
+                self.broadcast('UpdateMain');  % need to update main window also                    
                 error('ws:invalidPropertyValue', ...
                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
             end                
-            self.updateFastProtocol() ;
+            self.broadcast('UpdateFastProtocols');
+            self.broadcast('UpdateMain');  % need to update main window also            
         end  % method        
                 
-%         function setFastProtocolAutoStartType(self, index, newValue)
-%             % newFileName should be an absolute file path
-%             if isscalar(index) && isnumeric(index) && isreal(index) && round(index)==index && 1<=index && index<=self.NFastProtocols ,                
-%                 if ws.isAStartType(newValue) ,
-%                     fastProtocol = self.FastProtocols_{index} ;
-%                     fastProtocol.AutoStartType = newValue ;
-%                 else
-%                     self.updateFastProtocol() ;                    
-%                     error('ws:invalidPropertyValue', ...
-%                           'Fast protocol auto start type must be one of ''do_nothing'', ''play'', or ''record''');              
-%                 end
-%             else
-%                 self.updateFastProtocol() ;
-%                 error('ws:invalidPropertyValue', ...
-%                       'Fast protocol index must a real numeric scalar integer between 1 and %d', self.NFastProtocols);
-%             end                
-%             self.updateFastProtocol() ;
-%         end  % method        
-        
-%         function setSubsystemProperty(self, subsystemName, propertyName, newValue)
-%             self.(subsystemName).(propertyName) = newValue ;
-%         end
-        
         function incrementSessionIndex(self)
             self.Logging_.incrementSessionIndex() ;
         end
         
         function setSelectedOutputableByIndex(self, index)            
             self.Stimulation_.setSelectedOutputableByIndex(index) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
-            self.broadcast('Update') ;
+            self.broadcast('UpdateGeneral');
         end  % method
 
         function setSelectedOutputableByClassNameAndIndex(self, className, indexWithinClass)
             self.Stimulation_.setSelectedOutputableByClassNameAndIndex(className, indexWithinClass) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateGeneral');
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % method        
         
         function openFastProtocolByIndex(self, index)
@@ -3410,92 +3606,10 @@ classdef WavesurferModel < ws.Model
             end
         end  % method        
         
-        function result = get.LayoutForAllWindows(self)
-            result = self.LayoutForAllWindows_ ;
-        end
-    end  % public methods block
-    
-    methods (Access=protected)
-        function looperProtocol = getLooperProtocol_(self)
-            looperProtocol = struct() ;
-
-            looperProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
-            looperProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-            
-%             looperProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-%             looperProtocol.ReferenceClockRate = self.ReferenceClockRate ;
-            
-            looperProtocol.NSweepsPerRun = self.NSweepsPerRun ;
-            looperProtocol.SweepDuration = self.SweepDuration ;
-            looperProtocol.AcquisitionSampleRate = self.AcquisitionSampleRate ;
-
-            looperProtocol.AIChannelNames = self.AIChannelNames ;
-            looperProtocol.AIChannelScales = self.AIChannelScales ;
-            looperProtocol.IsAIChannelActive = self.IsAIChannelActive ;
-            looperProtocol.AIChannelDeviceNames = self.AIChannelDeviceNames ;
-            looperProtocol.AIChannelTerminalIDs = self.AIChannelTerminalIDs ;
-            
-            looperProtocol.DIChannelNames = self.DIChannelNames ;
-            looperProtocol.IsDIChannelActive = self.IsDIChannelActive ;
-            %looperProtocol.DIChannelDeviceNames = self.DIChannelDeviceNames ;
-            looperProtocol.DIChannelTerminalIDs = self.DIChannelTerminalIDs ;
-            
-            looperProtocol.DOChannelNames = self.DOChannelNames ;
-            %looperProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
-            looperProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
-            looperProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            looperProtocol.DigitalOutputStateIfUntimed = self.DOChannelStateIfUntimed ;
-            
-            looperProtocol.DataCacheDurationWhenContinuous = self.Acquisition_.DataCacheDurationWhenContinuous ;
-            
-            looperProtocol.AcquisitionTriggerDeviceName = self.Triggering_.getAcquisitionTriggerProperty('DeviceName') ;
-            looperProtocol.AcquisitionTriggerPFIID = self.Triggering_.getAcquisitionTriggerProperty('PFIID') ;
-            looperProtocol.AcquisitionTriggerEdge = self.Triggering_.getAcquisitionTriggerProperty('Edge') ;
-            
-            looperProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
-            looperProtocol.TheUserObject = self.TheUserObject ;
-        end  % method
+%         function result = get.LayoutForAllWindows(self)
+%             result = self.LayoutForAllWindows_ ;
+%         end
         
-        function refillerProtocol = getRefillerProtocol_(self)
-            refillerProtocol = struct() ;
-            
-            refillerProtocol.PrimaryDeviceName = self.PrimaryDeviceName ;
-            refillerProtocol.IsPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-            
-%             %refillerProtocol.DeviceName = self.DeviceName ;
-%             refillerProtocol.ReferenceClockSource = self.ReferenceClockSource ;
-%             refillerProtocol.ReferenceClockRate = self.ReferenceClockRate ;
-
-            refillerProtocol.NSweepsPerRun  = self.NSweepsPerRun ;
-            refillerProtocol.SweepDuration = self.SweepDuration ;
-            refillerProtocol.StimulationSampleRate = self.StimulationSampleRate ;
-
-            refillerProtocol.AOChannelNames = self.Stimulation_.AnalogChannelNames ;
-            refillerProtocol.AOChannelScales = self.AOChannelScales ;
-            refillerProtocol.AOChannelDeviceNames = self.AOChannelDeviceNames ;
-            refillerProtocol.AOChannelTerminalIDs = self.AOChannelTerminalIDs ;
-            
-            refillerProtocol.DOChannelNames = self.Stimulation_.DigitalChannelNames ;
-            refillerProtocol.IsDOChannelTimed = self.IsDOChannelTimed ;
-            %refillerProtocol.DOChannelDeviceNames = self.DOChannelDeviceNames ;
-            refillerProtocol.DOChannelTerminalIDs = self.DOChannelTerminalIDs ;
-            
-            refillerProtocol.IsStimulationEnabled = self.Stimulation_.IsEnabled ;                                    
-            refillerProtocol.StimulationTrigger = self.Triggering_.getStimulationTriggerCopy() ;            
-            refillerProtocol.StimulusLibrary = self.Stimulation_.getStimulusLibraryCopy() ;  
-              % .copy() sets the stim lib Parent pointer to [], if it isn't already.  We 
-              % don't want to preserve the stim lib parent pointer, b/c
-              % that leads back to the entire WSM.
-            refillerProtocol.DoRepeatSequence = self.DoRepeatStimulusSequence ;
-            refillerProtocol.IsStimulationTriggerIdenticalToAcquistionTrigger_ = ...
-                (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ;
-            
-            refillerProtocol.IsUserCodeManagerEnabled = self.UserCodeManager_.IsEnabled ;                        
-            refillerProtocol.TheUserObject = self.TheUserObject ;
-        end  % method        
-    end  % protected methods block
-    
-    methods
         function value = get.AllDeviceNames(self)
             value = self.AllDeviceNames_ ;
         end  % function
@@ -3508,30 +3622,6 @@ classdef WavesurferModel < ws.Model
             value = self.IsPrimaryDeviceAPXIDevice_ ;
         end  % function
         
-%         function value = get.AvailableReferenceClockSources(self)
-%             value = self.AvailableReferenceClockSources_ ;
-%         end  % function
-% 
-%         function value = get.ReferenceClockSource(self)
-%             value = self.ReferenceClockSource_ ;
-%         end  % function
-
-%         function value = get.OnboardClockReferenceClockRate(self)
-%             value = self.OnboardClockReferenceClockRate_ ;
-%         end  % function
-        
-%         function value = get.ReferenceClockRate(self)
-%             clockSource = self.ReferenceClockSource_ ;
-%             if isequal(clockSource, '100MHzTimebase') ,
-%                 value = 100e6 ;  % Hz
-%             elseif isequal(clockSource, 'PXI_CLK10') ,
-%                 value = 10e6 ;  % Hz, the 10 means 10 MHz
-%             else
-%                 % don't think should ever get here right now
-%                 error('Internal error 948509345876905') ;
-%             end            
-%         end  % function
-
         function set.PrimaryDeviceName(self, newValue)
             if ws.isString(newValue) && ~isempty(newValue) ,
                 allDeviceNames = self.AllDeviceNames ;
@@ -3541,13 +3631,9 @@ classdef WavesurferModel < ws.Model
                     primaryDeviceName = allDeviceNames{iMatch} ;
                     self.PrimaryDeviceName_ = primaryDeviceName ;
                     isPrimaryDeviceAPXIDevice = ws.isDeviceAPXIDevice(primaryDeviceName) ;
-                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;
-
-                    % Probe the device to find out its capabilities
-                    %self.syncDeviceResourceCountsFromDeviceName_() ;                        
-                    %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
-                    %self.syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_() ;
-
+                    self.IsPrimaryDeviceAPXIDevice_ = isPrimaryDeviceAPXIDevice ;                    
+                    self.DoesProtocolNeedSave_ = true ;
+                    
                     % Tell the subsystems that we've changed the device
                     % name
                     nCounters = self.NCountersPerDevice_(iMatch) ;
@@ -3565,39 +3651,41 @@ classdef WavesurferModel < ws.Model
                     % device
                     self.setState_('idle') ;
 
-                    % Notify the satellites
-                    %nDIOTerminals = self.NDIOTerminalsPerDevice_(iMatch) ;
-                    %nAITerminals = self.NAITerminalsPerDevice_(iMatch) ;
-                    %nAOTerminals = self.NAOTerminalsPerDevice_(iMatch) ;                    
-                    if self.IsITheOneTrueWavesurferModel_ ,
-                        self.IPCPublisher_.send('didSetPrimaryDeviceInFrontend', ...
-                                                primaryDeviceName, ...
-                                                isPrimaryDeviceAPXIDevice, ...
-                                                self.IsDOChannelTerminalOvercommitted) ;
+                    if self.IsAwake_ ,
+                        self.Looper_.didSetPrimaryDeviceInFrontend(self.PrimaryDeviceName, ...
+                                                                   self.IsPrimaryDeviceAPXIDevice, ...
+                                                                   self.DOChannelTerminalIDs, ...
+                                                                   self.IsDOChannelTimed, ...
+                                                                   self.DOChannelStateIfUntimed, ...
+                                                                   self.IsDOChannelTerminalOvercommitted) ;
+                        self.Refiller_.didSetPrimaryDeviceInFrontend(primaryDeviceName, ...
+                                                                     isPrimaryDeviceAPXIDevice, ...
+                                                                     self.IsDOChannelTerminalOvercommitted) ;
                     end                        
                 else
-                    self.broadcast('Update') ;
+                    self.broadcast('UpdateMain');
+                    self.broadcast('UpdateGeneral') ;
+                    self.broadcast('UpdateChannels') ;
                     self.broadcast('UpdateTriggering') ;
                     error('ws:invalidPropertyValue', ...
                           'PrimaryDeviceName must be the name of an NI DAQmx device');       
                 end                        
             else
-                self.broadcast('Update') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 self.broadcast('UpdateTriggering') ;
                 error('ws:invalidPropertyValue', ...
                       'PrimaryDeviceName must be a nonempty string');       
             end
-            self.broadcast('Update') ;
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
             self.broadcast('UpdateTriggering') ;
         end  % function
     end  % public methods block
     
     methods
-        function probeHardwareAndSetAllDeviceNames(self)
-            self.AllDeviceNames_ = ws.getAllDeviceNamesFromHardware() ;
-            self.syncDeviceResourceCountsFromDeviceNames_() ;
-        end
-        
         function result = get.NAITerminalsPerDevice(self)
             % The number of AI channels available, if you used them all in
             % differential mode, which is what we do.
@@ -3711,29 +3799,7 @@ classdef WavesurferModel < ws.Model
         end        
     end  % public methods block
         
-    methods
-        function didRemoveDigitalOutputChannel(self, channelIndex) %#ok<INUSD>
-        end
-    end  % public methods block
-    
     methods (Access=protected)
-%         function syncDeviceResourceCountsFromDeviceName_(self)
-% %             % Probe the devices to find out their capabilities
-% %             deviceName = self.DeviceName ;
-% % %             [nDIOTerminals, nPFITerminals] = ws.getNumberOfDIOAndPFITerminalsFromDevice(deviceName) ;
-% % %             nCounters = ws.getNumberOfCountersFromDevice(deviceName) ;
-% % %             nAITerminals = ws.getNumberOfDifferentialAITerminalsFromDevice(deviceName) ;
-% % %             nAOTerminals = ws.getNumberOfAOTerminalsFromDevice(deviceName) ;            
-% %             onboardClockTimebaseRate = ws.getOnboardClockRateFromDevice(deviceName) ;
-% % %             self.NDIOTerminals_ = nDIOTerminals ;
-% % %             self.NPFITerminals_ = nPFITerminals ;
-% % %             self.NCounters_ = nCounters ;
-% % %             self.NAITerminals_ = nAITerminals ;
-% % %             self.AITerminalIDsOnDevice_ = ws.differentialAITerminalIDsGivenCount(nAITerminals) ;
-% % %             self.NAOTerminals_ = nAOTerminals ;
-% %             self.OnboardClockTimebaseRate_ = onboardClockTimebaseRate ;
-%         end  % function
-
         function syncDeviceResourceCountsFromDeviceNames_(self)
             % Probe the devices to find out their capabilities
             allDeviceNames = self.AllDeviceNames ;
@@ -3767,41 +3833,6 @@ classdef WavesurferModel < ws.Model
             self.AITerminalIDsOnEachDevice_ = aiTerminalIDsOnEachDevice ;
         end  % function     
         
-%         function syncAvailableReferenceClockSourcesFromDeviceName_(self)
-%             deviceName = self.DeviceName ;
-%             availableReferenceClockSources = ws.getAvailableReferenceClockSourcesFromDevice(deviceName) ;
-%             self.AvailableReferenceClockSources_ = availableReferenceClockSources ;
-%         end
-        
-%         function syncTimebaseRateFromDeviceNameAndAvailableTimebaseSourcesEtc_(self)
-%             deviceName = self.DeviceName ;
-%             availableTimebaseSources = self.AvailableTimebaseSources ;
-%             timebaseSource = self.TimebaseSource ;
-%             if ismember(timebaseSource, availableTimebaseSources) ,
-%                 rate = ws.getClockRateFromDeviceNameAndTimebaseSource(deviceName, timebaseSource) ;  % Hz
-%             else
-%                 % Likely a bad timebaseSource for the given deviceName, so we
-%                 % guess about the clock rate
-%                 if isequal(timebaseSource, 'OnboardClock') ,
-%                     rate = 100e6 ;  % Hz, the onboard clock rate for X-series cards
-%                 elseif length(timebaseSource)>=3 && isequal(timebaseSource(1:3), 'PXI') ,
-%                     rate = 10e6;  % Hz, PXI backplace rate
-%                 else
-%                     rate = 1e6;  % Hz, conservative number, plus will give hint that something is up
-%                 end
-%             end
-%             self.TimebaseRate_ = rate ;
-%         end
-        
-%         function syncIsDIOChannelTerminalOvercommitted_(self)
-%             [nOccurancesOfTerminalForEachDIChannel,nOccurancesOfTerminalForEachDOChannel] = self.computeDIOTerminalCommitments() ;
-%             nDIOTerminals = self.NDIOTerminals ;
-%             terminalIDForEachDIChannel = self.Acquisition_.DigitalTerminalIDs ;
-%             terminalIDForEachDOChannel = self.Stimulation_.DigitalTerminalIDs ;
-%             self.IsDIChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDIChannel>1) | (terminalIDForEachDIChannel>=nDIOTerminals) ;
-%             self.IsDOChannelTerminalOvercommitted_ = (nOccurancesOfTerminalForEachDOChannel>1) | (terminalIDForEachDOChannel>=nDIOTerminals) ;
-%         end  % function
-
         function syncIsAIChannelTerminalOvercommitted_(self)            
             % For each channel, determines if the terminal ID for that
             % channel is "overcommited".  I.e. if two channels specify the
@@ -3867,7 +3898,6 @@ classdef WavesurferModel < ws.Model
             self.IsDIChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDIChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDIChannel ;
             self.IsDOChannelTerminalOvercommitted_ = (nOccurencesOfDeviceAndTerminalForEachDOChannel>1) | ~isDeviceNameTerminalIDPairValidForEachDOChannel ;
         end  % function
-
     end  % protected methods block
     
     methods
@@ -3892,55 +3922,6 @@ classdef WavesurferModel < ws.Model
             nOccurencesOfDeviceAndTerminalForEachDOChannel = nOccurencesOfDeviceAndTerminal(nDIChannels+1:end) ;
         end
         
-        function [sampleFrequency, referenceClockRate] = coerceSampleFrequencyToAllowedValue(self, desiredSampleFrequency)
-            % Make sure desiredSampleFrequency is a scalar
-            defaultSampleFrequency  = 20000 ;
-            if isempty(desiredSampleFrequency) ,
-                temp1 = defaultSampleFrequency ;  % the default value
-            else
-                temp1 = desiredSampleFrequency(1) ;  % make it a scalar
-            end
-            
-            % Make sure a double
-            if isnumeric(temp1) ,
-                temp2 = double(temp1) ;
-            else
-                temp2 = defaultSampleFrequency ;  % the default value
-            end
-            
-            % Make sure finite
-            if isfinite(temp2) ,
-                sanitizedDesiredSampleFrequency = temp2 ;
-            else
-                sanitizedDesiredSampleFrequency = defaultSampleFrequency ;  % the default value
-            end
-            
-            % Limit to the allowed range of sampling frequencies
-            primaryDeviceName = self.PrimaryDeviceName ;
-            isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
-            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
-                % the rate only depends on the primary device
-            %referenceClockRate = self.ReferenceClockRate ;  % Hz
-            desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
-            integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
-            maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
-            minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
-              % See here:
-              % http://digital.ni.com/public.nsf/allkb/4BBE1409700F6CE686256E9200652F6B
-              % Entitled "What Sample Rates Is my DAQ Board Actually
-              % Capable of Achieving?"
-              %
-            actualTimebaseTicksPerSample = ...
-                ws.limit(minimumTimebaseTicksPerSample, integralTimebaseTicksPerSample, maximumTimebaseTicksPerSample) ;  % enforce min, max
-              % Note that if actualTimebaseTicksPerSample is 1, then the
-              % sampleFrequency is equal to the timebaseFrequency.  You can
-              % set it to this in the hardware, and the board will try to
-              % do it, but it will generally fail to keep up once the sweep
-              % starts, because for instance the default timebase for X series cards is
-              % 100 MHz.
-            sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
-        end
-        
         function result = get.IsProcessingIncomingCommand(self)
             if ~isempty(self.CommandServer_) && isvalid(self.CommandServer_) ,
                 result = self.CommandServer_.IsProcessingIncomingCommand ;
@@ -3958,9 +3939,12 @@ classdef WavesurferModel < ws.Model
             % does nothing, but subclasses can override it to make sure the
             % object invariants are satisfied after an object is decoded
             % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
+            % ws.Encodable.decodeEncodingContainerGivenParent() after
             % a new object is instantiated, and after its persistent state
             % variables have been set to the encoded values.
+            
+            self.Acquisition_.synchronizeTransientStateToPersistedStateHelper() ;
+            self.Stimulation_.synchronizeTransientStateToPersistedStateHelper() ;
             
             %self.syncDeviceResourceCountsFromDeviceName_() ;
             %self.syncAvailableReferenceClockSourcesFromDeviceName_() ;
@@ -3968,10 +3952,10 @@ classdef WavesurferModel < ws.Model
             self.syncIsAOChannelTerminalOvercommitted_() ;
             self.syncIsDIOChannelTerminalOvercommitted_() ;
             % Need something here for yoking...
-            %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
-            %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsITheOneTrueWavesurferModel_ ;            
+            %self.CommandClient_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
+            %self.CommandServer_.IsEnabled = self.IsYokedToScanImage_ && self.IsAwake_ ;            
             
-            self.Display_.synchronizeTransientStateToPersistedStateHelper_() ;
+            self.Display_.synchronizeTransientStateToPersistedStateHelper() ;
         end  % method
         
         function informSubsystemsThatWeAreSettingPrimaryDeviceName_(self, primaryDeviceName, nCounters, nPFITerminals)
@@ -3996,11 +3980,13 @@ classdef WavesurferModel < ws.Model
         function set.AcquisitionTriggerIndex(self, newValue)
             try
                 self.Triggering_.setAcquisitionTriggerIndex(newValue, self.NSweepsPerRun) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
-            self.broadcast('UpdateTriggering');                        
+            self.broadcast('UpdateTriggering');         
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
                 
         function result = get.StimulationTriggerIndex(self)            
@@ -4010,11 +3996,13 @@ classdef WavesurferModel < ws.Model
         function set.StimulationTriggerIndex(self, newValue)
             try
                 self.Triggering_.setStimulationTriggerIndex(newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering');                        
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function value = get.StimulationUsesAcquisitionTrigger(self)
@@ -4024,12 +4012,14 @@ classdef WavesurferModel < ws.Model
         function set.StimulationUsesAcquisitionTrigger(self, newValue)
             try
                 self.Triggering_.StimulationUsesAcquisitionTriggerScheme = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
 
         function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)
@@ -4039,51 +4029,61 @@ classdef WavesurferModel < ws.Model
         function addCounterTrigger(self)    
             try
                 self.Triggering_.addCounterTrigger(self.PrimaryDeviceName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function deleteMarkedCounterTriggers(self)
             try
                 self.Triggering_.deleteMarkedCounterTriggers() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function addExternalTrigger(self)    
             try
                 self.Triggering_.addExternalTrigger(self.PrimaryDeviceName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function deleteMarkedExternalTriggers(self)
             try
                 self.Triggering_.deleteMarkedExternalTriggers() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function setTriggerProperty(self, triggerType, triggerIndexWithinType, propertyName, newValue)
             try
                 self.Triggering_.setTriggerProperty(triggerType, triggerIndexWithinType, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || ~isequal(propertyName, 'IsMarkedForDeletion');
             catch exception
                 self.broadcast('UpdateTriggering');
                 rethrow(exception) ;
             end
             self.broadcast('UpdateTriggering') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function result = get.TriggerCount(self)
@@ -4139,85 +4139,120 @@ classdef WavesurferModel < ws.Model
         function clearStimulusLibrary(self)
             try
                 self.Stimulation_.clearStimulusLibrary() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
-                self.broadcast('Update') ;
+                self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateMain');
+                self.broadcast('UpdateGeneral') ;
+                self.broadcast('UpdateChannels') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;                            
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function setSelectedStimulusLibraryItemByClassNameAndIndex(self, className, index)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemByClassNameAndIndex(className, index) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function index = addNewStimulusSequence(self)
             try
                 index = self.Stimulation_.addNewStimulusSequence() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateMain');
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('UpdateChannels') ;
         end  % function
         
         function duplicateSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.duplicateSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function bindingIndex = addBindingToSelectedStimulusLibraryItem(self)
             try
                 bindingIndex = self.Stimulation_.addBindingToSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function bindingIndex = addBindingToStimulusLibraryItem(self, className, itemIndex)
             try
                 bindingIndex = self.Stimulation_.addBindingToStimulusLibraryItem(className, itemIndex) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function deleteMarkedBindingsFromSequence(self)
             try
                 self.Stimulation_.deleteMarkedBindingsFromSequence() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function index = addNewStimulusMap(self)
             try
                 index = self.Stimulation_.addNewStimulusMap() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;  % Need to update the list of outputables                            
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateMain');
         end  % function        
         
 %         function addChannelToSelectedStimulusLibraryItem(self)
@@ -4233,21 +4268,29 @@ classdef WavesurferModel < ws.Model
         function deleteMarkedChannelsFromSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.deleteMarkedChannelsFromSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function stimulusIndex = addNewStimulus(self)
             try
                 stimulusIndex = self.Stimulation_.addNewStimulus() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function result = isSelectedStimulusLibraryItemInUse(self)
@@ -4257,12 +4300,17 @@ classdef WavesurferModel < ws.Model
         function deleteSelectedStimulusLibraryItem(self)
             try
                 self.Stimulation_.deleteSelectedStimulusLibraryItem() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function result = selectedStimulusLibraryItemClassName(self)
@@ -4276,34 +4324,46 @@ classdef WavesurferModel < ws.Model
         function setSelectedStimulusLibraryItemProperty(self, propertyName, newValue)
             try
                 didSetOutputableName = self.Stimulation_.setSelectedStimulusLibraryItemProperty(propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             if didSetOutputableName ,
-                self.broadcast('Update') ;
+                self.broadcast('UpdateGeneral');
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function       
         
         function setSelectedStimulusAdditionalParameter(self, iParameter, newString)
             try
                 self.Stimulation_.setSelectedStimulusAdditionalParameter(iParameter, newString) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
         function setBindingOfSelectedSequenceToNamedMap(self, indexOfElementWithinSequence, newMapName)
             try
                 self.Stimulation_.setBindingOfSelectedSequenceToNamedMap(indexOfElementWithinSequence, newMapName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
             
 %         function setIsMarkedForDeletionForElementOfSelectedSequence(self, indexOfElementWithinSequence, newValue)
@@ -4319,11 +4379,15 @@ classdef WavesurferModel < ws.Model
         function setBindingOfSelectedMapToNamedStimulus(self, indexOfBindingWithinMap, newStimulusName)
             try
                 self.Stimulation_.setBindingOfSelectedMapToNamedStimulus(indexOfBindingWithinMap, newStimulusName) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                
         
 %         function result = propertyForElementOfSelectedStimulusLibraryItem(self, indexOfElementWithinItem, propertyName)
@@ -4333,19 +4397,35 @@ classdef WavesurferModel < ws.Model
         function setPropertyForElementOfSelectedMap(self, indexOfElementWithinMap, propertyName, newValue)
             try
                 self.Stimulation_.setPropertyForElementOfSelectedMap(indexOfElementWithinMap, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
-        function plotSelectedStimulusLibraryItem(self, figureGH)
+%         function plotSelectedStimulusLibraryItem(self, figureGH)
+%             sampleRate = self.StimulationSampleRate ;  % Hz 
+%             channelNames = [self.AOChannelNames self.DOChannelNames] ;
+%             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
+%             self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
+%         end  % function
+        
+        function [y, t] = previewStimulus(self, stimulusIndex)
+            sampleRate = self.StimulationSampleRate ;  % Hz 
+            [y, t] = self.Stimulation_.previewStimulus(stimulusIndex, sampleRate) ;
+        end
+        
+        function [y, t] = previewStimulusMap(self, mapIndex)
             sampleRate = self.StimulationSampleRate ;  % Hz 
             channelNames = [self.AOChannelNames self.DOChannelNames] ;
             isChannelAnalog = [true(size(self.AOChannelNames)) false(size(self.DOChannelNames))] ;
-            self.Stimulation_.plotSelectedStimulusLibraryItem(figureGH, sampleRate, channelNames, isChannelAnalog) ;
-        end  % function      
+            [y, t] = self.Stimulation_.previewStimulusMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
+        end
         
         function result = selectedStimulusLibraryItemProperty(self, propertyName)
             result = self.Stimulation_.selectedStimulusLibraryItemProperty(propertyName) ;
@@ -4423,25 +4503,34 @@ classdef WavesurferModel < ws.Model
         function setStimulusLibraryItemProperty(self, className, index, propertyName, newValue)
             try
                 didSetOutputableName = self.Stimulation_.setStimulusLibraryItemProperty(className, index, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             % Special case to deal with renaming an outputable
             if didSetOutputableName ,
-                self.broadcast('Update') ;
+                self.broadcast('UpdateGeneral') ;
+            else
+                self.broadcast('DidMaybeChangeProtocol') ;                
             end
-            self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('UpdateStimulusPreview') ;
         end        
         
         function setStimulusLibraryItemBindingProperty(self, className, itemIndex, bindingIndex, propertyName, newValue)
             try
                 self.Stimulation_.setStimulusLibraryItemBindingProperty(className, itemIndex, bindingIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function                        
         
         function result = isStimulusLibraryItemInUse(self, className, itemIndex)
@@ -4451,34 +4540,47 @@ classdef WavesurferModel < ws.Model
         function deleteStimulusLibraryItem(self, className, itemIndex)
             try
                 self.Stimulation_.deleteStimulusLibraryItem(className, itemIndex) ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;  % Need to update the list of outputables, maybe
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateGeneral') ;  % Need to update the list of outputables, maybe
+            self.broadcast('DidMaybeChangeProtocol') ;
+            
         end
         
         function setSelectedStimulusLibraryItemWithinClassBindingProperty(self, className, bindingIndex, propertyName, newValue)
             try
                 self.Stimulation_.setSelectedStimulusLibraryItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || ~isequal(propertyName, 'IsMarkedForDeletion') ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
+                self.broadcast('UpdateStimulusPreview') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function        
         
         function populateStimulusLibraryForTesting(self)
             try
                 self.Stimulation_.populateStimulusLibraryForTesting() ;
+                self.DoesProtocolNeedSave_ = true ;
             catch exception
                 self.broadcast('UpdateStimulusLibrary') ;
-                self.broadcast('Update') ;
+                self.broadcast('UpdateStimulusPreview') ;
+                self.broadcast('UpdateMain') ;
                 rethrow(exception) ;
             end
             self.broadcast('UpdateStimulusLibrary') ;                
-            self.broadcast('Update') ;
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('UpdateMain') ;
         end  % function        
         
         function result = getCommandServer_(self)
@@ -4519,6 +4621,7 @@ classdef WavesurferModel < ws.Model
         function set.AIChannelUnits(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelUnits_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelUnits_())) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4526,6 +4629,7 @@ classdef WavesurferModel < ws.Model
         function set.AIChannelScales(self,newValue)
             isChangeable= ~(self.getNumberOfElectrodesClaimingAIChannel()==1);
             self.Acquisition_.setAnalogChannelScales_(ws.fif(isChangeable, newValue, self.Acquisition_.getAnalogChannelScales_())) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4535,6 +4639,7 @@ classdef WavesurferModel < ws.Model
             newUnits = cellfun(@strtrim,newUnitsRaw,'UniformOutput',false) ;
             self.Acquisition_.setAnalogChannelUnits_( ws.fif(isChangeable, newUnits, self.Acquisition_.getAnalogChannelUnits_()) ) ;
             self.Acquisition_.setAnalogChannelScales_( ws.fif(isChangeable, newScales, self.Acquisition_.getAnalogChannelScales_()) ) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
@@ -4545,6 +4650,7 @@ classdef WavesurferModel < ws.Model
             if isChangeable , 
                 newValue = strtrim(newValueRaw) ;
                 self.Acquisition_.setSingleAnalogChannelUnits_(i, newValue) ;                
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
@@ -4555,22 +4661,35 @@ classdef WavesurferModel < ws.Model
             isChangeable = isChangeableFull(i);
             if isChangeable ,
                 self.Acquisition_.setSingleAnalogChannelScale_(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();
             self.broadcast('UpdateChannels') ;
         end  % function
         
         function result = get.IsAIChannelActive(self)
-            result = self.Acquisition_.getIsAnalogChannelActive_() ;
+            result = self.Acquisition_.IsAnalogChannelActive ;
         end
         
-        function set.IsAIChannelActive(self, newValue)
+        function setSingleIsAIChannelActive(self, aiChannelIndex, newValue)
             % Boolean array indicating which of the AI channels is
             % active.
-            self.Acquisition_.setIsAnalogChannelActive_(newValue) ;
-            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.Acquisition_.setSingleIsAnalogChannelActive(aiChannelIndex, newValue) ;
+            self.syncTraces_() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('EMDidSetIsInputChannelActive') ;
+            self.broadcast('TPDidSetIsInputChannelActive') ;
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;            
             self.broadcast('UpdateChannels') ;
         end    
+
+        function result = getTimestampsForDataInCache(self)
+            dt = 1/self.AcquisitionSampleRate ;
+            tPastLast = self.t_ ;  % the timestamp of the scan that would follow the last scan in the cache
+            n = self.Acquisition_.getNScansInCache() ;
+            result = dt*(0:(n-1))' - dt*n + tPastLast ;
+        end
         
         function scaledAnalogData = getLatestAIData(self)
             % Get the data from the most-recent data available callback, as
@@ -4585,29 +4704,45 @@ classdef WavesurferModel < ws.Model
             % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
             rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
-            channelScales=self.AIChannelScales(self.IsAIChannelActive);
-            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;            
+            if isempty(rawAnalogData) ,
+                scaledAnalogData = double(rawAnalogData) ;
+            else
+                %channelScales=self.AIChannelScales(self.IsAIChannelActive);
+                channelScales = self.AIChannelScales(self.Acquisition_.IsInCacheFromAnalogChannelIndex);
+                scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+                scaledAnalogData = ws.scaledDoubleAnalogDataFromRawMex(rawAnalogData, channelScales, scalingCoefficients) ;
+            end
         end  % function
 
-        function scaledData = getSinglePrecisionAIDataFromCache(self)
-            % Get the data from the main-memory cache, as single-precision floats.  This
+%         function scaledData = getSinglePrecisionAIDataFromCache(self)
+%             % Get the data from the main-memory cache, as single-precision floats.  This
+%             % call unwraps the circular buffer for you.
+%             rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
+%             channelScales=self.AIChannelScales(self.IsAIChannelActive);
+%             scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
+%             scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+%         end  % function
+
+        function [result, signalCount] = getDIDataFromCache(self)
+            % Get the data from the main-memory cache, as double-precision floats.  This
             % call unwraps the circular buffer for you.
-            rawAnalogData = self.Acquisition_.getRawAnalogDataFromCache();
-            channelScales=self.AIChannelScales(self.IsAIChannelActive);
-            scalingCoefficients = self.Acquisition_.AnalogScalingCoefficients ;
-            scaledData = ws.scaledSingleAnalogDataFromRaw(rawAnalogData, channelScales, scalingCoefficients) ;
+            [result, signalCount] = self.Acquisition_.getRawDigitalDataFromCache();
         end  % function
-
+        
         function result = get.IsDIChannelActive(self)
-            result = self.Acquisition_.getIsDigitalChannelActive_() ;
+            result = self.Acquisition_.IsDigitalChannelActive ;
         end
 
-        function set.IsDIChannelActive(self, newValue)
+        function setSingleIsDIChannelActive(self, diChannelIndex, newValue)
             % Boolean array indicating which of the AI channels is
             % active.
-            self.Acquisition_.setIsDigitalChannelActive_(newValue) ;
-            self.notifyOtherSubsystemsThatDidSetIsInputChannelActive_() ;
+            self.Acquisition_.setSingleIsDigitalChannelActive(diChannelIndex, newValue) ;
+            self.syncTraces_() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('EMDidSetIsInputChannelActive') ;
+            self.broadcast('TPDidSetIsInputChannelActive') ;
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;                        
             self.broadcast('UpdateChannels') ;
         end    
         
@@ -4651,7 +4786,7 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=get.IsDIChannelMarkedForDeletion(self)
@@ -4664,19 +4799,39 @@ classdef WavesurferModel < ws.Model
             % Boolean array indicating which of the AI channels is
             % active.
             self.Acquisition_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function setSingleAIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
             [didSucceed, oldValue] = self.Acquisition_.setSingleAnalogChannelName_(i, newValue, allChannelNames) ;
-            self.didSetAnalogInputChannelName(didSucceed,oldValue,newValue);
+            if didSucceed, 
+                self.DoesProtocolNeedSave_ = true ;
+            end
+            display=self.Display_;
+            if ~isempty(display)
+                %display.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+                %self.broadcast('UpdateTraces') ;
+                self.broadcast('UpdateMain') ;
+            end            
+            ephys=self.Ephys_;
+            if ~isempty(ephys)
+                ephys.didSetAnalogInputChannelName(didSucceed, oldValue, newValue);
+                self.broadcast('UpdateElectrodeManager') ;
+            end            
+            self.broadcast('UpdateChannels') ;
         end
         
         function setSingleDIChannelName(self, i, newValue)
             allChannelNames = self.AllChannelNames ;
-            [didSucceed, oldValue] = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
-            self.didSetDigitalInputChannelName(didSucceed, oldValue, newValue) ;
+            didSucceed = self.Acquisition_.setSingleDigitalChannelName_(i, newValue, allChannelNames) ;
+            if didSucceed, 
+                self.DoesProtocolNeedSave_ = true ;
+            end
+            %self.Display_.didSetDigitalInputChannelName(didSucceed, oldValue, newValue);
+            %self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;            
+            self.broadcast('UpdateChannels') ;
         end
         
         function set.AcquisitionSampleRate(self, newValue)
@@ -4684,13 +4839,15 @@ classdef WavesurferModel < ws.Model
                 % Constrain value appropriately
                 isValueValid = true ;
                 newValue = double(newValue) ;
-                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                sampleRate = ws.WavesurferModel.coerceSampleFrequencyToAllowedValue(self.PrimaryDeviceName, self.IsPrimaryDeviceAPXIDevice, newValue) ;
                 self.Acquisition_.setSampleRate_(sampleRate) ;
-                self.didSetAcquisitionSampleRate(sampleRate);
+                self.Ephys_.didSetAcquisitionSampleRate(newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             else
                 isValueValid = false ;
             end
             self.broadcast('DidSetAcquisitionSampleRate');
+            self.broadcast('DidMaybeChangeProtocol');
             if ~isValueValid ,
                 error('ws:invalidPropertyValue', ...
                       'AcquisitionSampleRate must be a positive finite numeric scalar');
@@ -4709,12 +4866,32 @@ classdef WavesurferModel < ws.Model
             if self.AreSweepsContinuous ,
                 value = false ;
             else
-                value = self.Display_.getIsXSpanSlavedToAcquistionDuration_() ;
+                value = self.Display_.IsXSpanSlavedToAcquistionDuration ;
             end
         end  % function
         
-        function set.IsXSpanSlavedToAcquistionDuration(self,newValue)
-            self.Display_.setIsXSpanSlavedToAcquistionDuration_(newValue, self.IsXSpanSlavedToAcquistionDurationSettable) ;
+        function set.IsXSpanSlavedToAcquistionDuration(self, newValue)
+            if self.IsXSpanSlavedToAcquistionDurationSettable ,
+                if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                    isNewValueAllowed = true ;
+                    self.Display_.IsXSpanSlavedToAcquistionDuration = logical(newValue) ;
+                    self.syncTraces_() ;
+                    self.broadcast('UpdateTraces');
+                else
+                    isNewValueAllowed = false ;
+                end
+            else
+                isNewValueAllowed = true ;  % sort of in a trivial sense...
+            end
+            self.broadcast('UpdateMain');            
+            self.broadcast('UpdateGeneral');            
+            if ~isNewValueAllowed ,
+                error('ws:invalidPropertyValue', ...
+                      'IsXSpanSlavedToAcquistionDuration must be a logical scalar, or convertible to one') ;
+            end                            
+            
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol');
         end
         
         function value = get.IsXSpanSlavedToAcquistionDurationSettable(self)
@@ -4726,22 +4903,57 @@ classdef WavesurferModel < ws.Model
                 sweepDuration = self.SweepDuration ;
                 value = ws.fif(isfinite(sweepDuration), sweepDuration, 1) ;
             else
-                value = self.Display_.getXSpan_() ;
+                value = self.Display_.getXSpan() ;
             end
         end
         
         function set.XSpan(self, newValue)            
-            self.Display_.setXSpan_(newValue, self.IsXSpanSlavedToAcquistionDuration) ;
+            if self.IsXSpanSlavedToAcquistionDuration ,
+                % don't set anything
+                didSucceed = true ;  % this is by convention
+            else
+                if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                    self.Display_.setXSpan(double(newValue)) ;
+                    self.syncTraces_() ;
+                    self.broadcast('UpdateTraces') ;
+                    didSucceed = true ;
+                else
+                    didSucceed = false ;
+                end
+            end
+            self.broadcast('DidSetXSpan');
+            if ~didSucceed ,
+                error('ws:invalidPropertyValue', ...
+                      'XSpan must be a scalar finite positive number') ;
+            end                                      
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function toggleIsAIChannelDisplayed(self, aiChannelIndex) 
             nAIChannels = self.NAIChannels ;
-            self.Display_.toggleIsAnalogChannelDisplayed_(aiChannelIndex, nAIChannels) ;
+            try
+                self.Display_.toggleIsAnalogChannelDisplayed(aiChannelIndex, nAIChannels) ;
+            catch err
+                self.broadcast('UpdateMain') ;
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateMain') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function toggleIsDIChannelDisplayed(self, diChannelIndex) 
             nDIChannels = self.NDIChannels ;
-            self.Display_.toggleIsDigitalChannelDisplayed_(diChannelIndex, nDIChannels) ;
+            try
+                self.Display_.toggleIsDigitalChannelDisplayed(diChannelIndex, nDIChannels) ;
+            catch err
+                self.broadcast('UpdateMain') ;
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateMain') ;            
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.IsAIChannelDisplayed(self)
@@ -4804,6 +5016,7 @@ classdef WavesurferModel < ws.Model
             isChangeable= isChangeableFull(i);
             if isChangeable ,
                 self.Stimulation_.setSingleAnalogChannelUnits_(i, strtrim(newValue)) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_();            
             self.broadcast('UpdateChannels') ;
@@ -4814,6 +5027,7 @@ classdef WavesurferModel < ws.Model
             isChangeable = isChangeableFull(i) ;
             if isChangeable && isfinite(newValue) && newValue>0 ,
                 self.Stimulation_.setSingleAnalogChannelScale_(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
             end
             self.notifyOtherSubsystemsThatDidSetAnalogChannelUnitsOrScales_() ;
             self.broadcast('UpdateChannels') ;
@@ -4823,7 +5037,8 @@ classdef WavesurferModel < ws.Model
             if 1<=i && i<=self.NAOChannels && isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
                 newValueAsDouble = double(newValue) ;
                 if newValueAsDouble>=0 && newValueAsDouble==round(newValueAsDouble) ,
-                    self.Stimulation_.setSingleAnalogTerminalID_(i, newValueAsDouble) ;
+                    self.Stimulation_.setSingleAnalogTerminalID(i, newValueAsDouble) ;
+                    self.DoesProtocolNeedSave_ = true ;
                 end
             end
             self.syncIsAOChannelTerminalOvercommitted_() ;
@@ -4834,12 +5049,15 @@ classdef WavesurferModel < ws.Model
             try
                 wasSet = self.Stimulation_.setIsDigitalChannelTimed_(newValue) ;
             catch exception
-                self.didSetIsDigitalOutputTimed() ;
+                self.broadcast('EMDidSetIsDigitalOutputTimed') ;
+                self.broadcast('UpdateChannels') ;
                 rethrow(exception) ;
             end            
-            self.didSetIsDigitalOutputTimed() ;            
+            self.broadcast('EMDidSetIsDigitalOutputTimed') ;
+            self.broadcast('UpdateChannels') ;            
             if wasSet ,
                 self.isDigitalChannelTimedWasSetInStimulationSubsystem() ;
+                self.DoesProtocolNeedSave_ = true ;
             end
         end
         
@@ -4851,11 +5069,14 @@ classdef WavesurferModel < ws.Model
             try
                 self.Stimulation_.setDigitalOutputStateIfUntimed_(newValue) ;
             catch exception
-                self.didSetDigitalOutputStateIfUntimed() ;
+                self.broadcast('UpdateDigitalOutputStateIfUntimed') ;
                 rethrow(exception) ;
             end
-            self.didSetDigitalOutputStateIfUntimed() ;            
-            self.digitalOutputStateIfUntimedWasSetInStimulationSubsystem() ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateDigitalOutputStateIfUntimed') ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
+            self.Looper_.digitalOutputStateIfUntimedWasSetInFrontend(self.DOChannelStateIfUntimed, self.IsDOChannelTimed) ;
+            self.Refiller_.digitalOutputStateIfUntimedWasSetInFrontend(self.DOChannelStateIfUntimed) ;
         end  % function
         
         function out = get.DOChannelStateIfUntimed(self)
@@ -4871,13 +5092,15 @@ classdef WavesurferModel < ws.Model
                 % Constrain value appropriately
                 isValueValid = true ;
                 newValue = double(newValue) ;
-                sampleRate = self.coerceSampleFrequencyToAllowedValue(newValue) ;
+                sampleRate = ws.WavesurferModel.coerceSampleFrequencyToAllowedValue(self.PrimaryDeviceName, self.IsPrimaryDeviceAPXIDevice, newValue) ;
                 self.Stimulation_.setSampleRate_(sampleRate) ;
-                self.didSetAcquisitionSampleRate(sampleRate);
+                self.DoesProtocolNeedSave_ = true ;
+                %self.didSetAcquisitionSampleRate(sampleRate);
             else
                 isValueValid = false ;
             end
             self.broadcast('DidSetStimulationSampleRate');
+            self.broadcast('DidMaybeChangeProtocol') ;            
             if ~isValueValid ,
                 error('ws:invalidPropertyValue', ...
                       'StimulationSampleRate must be a positive finite numeric scalar');
@@ -4890,7 +5113,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsAnalogChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=get.IsDOChannelMarkedForDeletion(self)
@@ -4899,7 +5122,7 @@ classdef WavesurferModel < ws.Model
         
         function set.IsDOChannelMarkedForDeletion(self, newValue)
             self.Stimulation_.setIsDigitalChannelMarkedForDeletion_(newValue) ;
-            self.didSetIsInputChannelMarkedForDeletion() ;
+            self.broadcast('UpdateChannels') ;
         end
         
         function result=aoChannelUnitsFromName(self,channelName)
@@ -4992,7 +5215,8 @@ classdef WavesurferModel < ws.Model
                                                   deviceName, ...
                                                   primaryDeviceName, ...
                                                   isPrimaryDeviceAPXIDevice, ...
-                                                  gainOrResistanceUnitsPerTestPulseElectrode) ;
+                                                  gainOrResistanceUnitsPerTestPulseElectrode, ...
+                                                  self) ;
 
                 % Change our state
                 if isequal(self.State,'idle') ,
@@ -5019,24 +5243,33 @@ classdef WavesurferModel < ws.Model
             
             try             
                 self.changeReadiness_(-1) ;  % Takes some time to stop
+                %fprintf('About to call self.Ephys_.stopTestPulsing()\n');
                 self.Ephys_.stopTestPulsing() ;
+                %fprintf('Done with call to self.Ephys_.stopTestPulsing()\n');
                 self.changeReadiness_(+1) ;
                 if isequal(self.State,'test_pulsing') ,
                     self.setState_('idle');
                 end
             catch exception
+                fprintf('Hit an exception while trying to stop test pulsing\n');
                 self.abortTestPulsing_() ;
                 self.changeReadiness_(+1) ;
                 rethrow(exception) ;                                
             end            
         end  % function    
+        
+        function completingTestPulserSweep(self)
+            %fprintf('Inside ws.WavesurferModel::completingTestPulserSweep()\n');
+            self.Ephys_.completingTestPulserSweep() ;
+            self.broadcast('TPUpdateTrace');
+        end
     end
     
     methods (Access=protected)
 %         function changeTestPulserReadiness_(self, delta)
 %             self.Ephys_.changeTestPulserReadiness_(delta) ;
 %         end
-        
+
         function abortTestPulsing_(self)
             % This is called when a problem arises during test pulsing, and we
             % want to try very hard to get back to a known, sane, state.
@@ -5071,43 +5304,113 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DoSubtractBaselineInTestPulseView(self, newValue)            
-            self.Ephys_.setDoSubtractBaselineInTestPulseView_(newValue) ;
+            self.Ephys_.setDoSubtractBaselineInTestPulseView(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
        
         function toggleIsGridOn(self)
-            self.Display_.toggleIsGridOn_() ;
+            self.IsGridOn = ~(self.IsGridOn) ;
         end
 
+        function set.IsGridOn(self, newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.IsGridOn = logical(newValue) ;
+            else
+                self.broadcast('UpdateMain');
+                error('ws:invalidPropertyValue', ...
+                      'IsGridOn must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateMain');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
+        end
+        
         function result = get.IsGridOn(self)
             result = self.Display_.IsGridOn ;
         end
         
         function toggleAreColorsNormal(self)
-            self.Display_.toggleAreColorsNormal_() ;
+            self.AreColorsNormal = ~(self.AreColorsNormal) ;
         end
 
+        function set.AreColorsNormal(self,newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.AreColorsNormal = logical(newValue) ;
+            else
+                self.broadcast('UpdateMain');
+                error('ws:invalidPropertyValue', ...
+                      'AreColorsNormal must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateMain');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
+        end
+        
         function result = get.AreColorsNormal(self)
             result = self.Display_.AreColorsNormal ;
         end
         
         function toggleDoShowZoomButtons(self)
-            self.Display_.toggleDoShowZoomButtons_() ;
+            self.DoShowZoomButtons = ~(self.DoShowZoomButtons) ;
         end
+        
+        function set.DoShowZoomButtons(self, newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.DoShowZoomButtons = logical(newValue) ;
+            else
+                self.broadcast('UpdateMain');
+                error('ws:invalidPropertyValue', ...
+                      'DoShowZoomButtons must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateMain');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function toggleDoColorTraces(self)
+            self.DoColorTraces = ~(self.DoColorTraces) ;
+        end        
+        
+%         function toggleDoShowZoomButtons(self)
+%             self.Display_.toggleDoShowZoomButtons_() ;
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.broadcast('DidMaybeChangeProtocol') ;            
+%         end
         
         function result = get.DoShowZoomButtons(self)
             result = self.Display_.DoShowZoomButtons ;
         end
         
-        function toggleDoColorTraces(self)
-            self.Display_.toggleDoColorTraces_() ;       
-        end        
+%         function toggleDoColorTraces(self)
+%             self.Display_.toggleDoColorTraces_() ;       
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.broadcast('DidMaybeChangeProtocol') ;            
+%         end        
         
         function result = get.DoColorTraces(self)
             result = self.Display_.DoColorTraces ;
         end
         
+        function set.DoColorTraces(self,newValue)
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && (newValue==1 || newValue==0))) ,
+                self.Display_.DoColorTraces = logical(newValue) ;
+            else
+                self.broadcast('UpdateMain');
+                error('ws:invalidPropertyValue', ...
+                      'DoColorTraces must be a scalar, and must be logical, 0, or 1');
+            end
+            self.broadcast('UpdateMain');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
         function setPlotHeightsAndOrder(self, isDisplayed, plotHeights, rowIndexFromChannelIndex)
-            self.Display_.setPlotHeightsAndOrder_(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            self.Display_.setPlotHeightsAndOrder(isDisplayed, plotHeights, rowIndexFromChannelIndex) ;
+            self.broadcast('UpdateMain') ;            
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
 
         function result = getTestPulseElectrodeCommandUnits(self)
@@ -5121,7 +5424,10 @@ classdef WavesurferModel < ws.Model
         end  % function
 
         function set.TestPulseYLimits(self, newValue)
-            self.Ephys_.setTestPulseYLimits_(newValue) ;
+            self.Ephys_.setTestPulseYLimits(newValue) ;
+            self.broadcast('UpdateTestPulser') ;                        
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;            
         end
         
         function result = get.TestPulseYLimits(self)
@@ -5246,7 +5552,11 @@ classdef WavesurferModel < ws.Model
                 result = '' ;
             else
                 aiChannelIndex = self.Acquisition_.aiChannelIndexFromName(monitorChannelName) ;
-                result = self.AIChannelDeviceNames{aiChannelIndex} ;
+                if isfinite(aiChannelIndex) ,
+                    result = self.AIChannelDeviceNames{aiChannelIndex} ;
+                else
+                    result = '' ;
+                end
             end
         end
 
@@ -5256,7 +5566,11 @@ classdef WavesurferModel < ws.Model
                 result = '' ;
             else
                 aoChannelIndex = self.Stimulation_.aoChannelIndexFromName(commandChannelName) ;
-                result = self.AOChannelDeviceNames{aoChannelIndex} ;
+                if isfinite(aoChannelIndex) ,
+                    result = self.AOChannelDeviceNames{aoChannelIndex} ;
+                else
+                    result = '' ;
+                end
             end
         end        
     end
@@ -5328,19 +5642,31 @@ classdef WavesurferModel < ws.Model
     
     methods
         function zoomInTestPulseView(self)
-            self.Ephys_.zoomInTestPulseView_() ;
+            self.Ephys_.zoomInTestPulseView() ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function zoomOutTestPulseView(self)
-            self.Ephys_.zoomOutTestPulseView_() ;
+            self.Ephys_.zoomOutTestPulseView() ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollUpTestPulseView(self)
-            self.Ephys_.scrollUpTestPulseView_() ;
+            self.Ephys_.scrollUpTestPulseView() ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDownTestPulseView(self)
-            self.Ephys_.scrollDownTestPulseView_() ;
+            self.Ephys_.scrollDownTestPulseView() ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function result = get.TestPulseDuration(self) 
@@ -5348,7 +5674,10 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.TestPulseDuration(self, newValue) 
-            self.Ephys_.setTestPulseDuration_(newValue) ;
+            self.Ephys_.setTestPulseDuration(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = get.IsAutoYInTestPulseView(self) 
@@ -5357,6 +5686,9 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYInTestPulseView_(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
        
         function result = get.IsAutoYRepeatingInTestPulseView(self) 
@@ -5365,6 +5697,9 @@ classdef WavesurferModel < ws.Model
         
         function set.IsAutoYRepeatingInTestPulseView(self, newValue) 
             self.Ephys_.setIsAutoYRepeatingInTestPulseView_(newValue) ;
+            self.broadcast('UpdateTestPulser') ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function value = getUpdateRateInTestPulseView(self)
@@ -5384,12 +5719,20 @@ classdef WavesurferModel < ws.Model
             switch propertyName ,
                 case 'Type' ,
                     self.setElectrodeType_(electrodeIndex, newValue) ;
+                    self.DoesProtocolNeedSave_ = true ;
+                    self.broadcast('DidMaybeChangeProtocol') ;
                 case 'IndexWithinType' ,
                     self.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+                    self.broadcast('UpdateElectrodeManager') ;
+                    self.DoesProtocolNeedSave_ = true ;
+                    self.broadcast('DidMaybeChangeProtocol') ;
                 otherwise ,
                     % the common case
                     try
-                        self.Ephys_.setElectrodeProperty_(electrodeIndex, propertyName, newValue) ;
+                        self.Ephys_.setElectrodeProperty(electrodeIndex, propertyName, newValue) ;
+                        self.broadcast('UpdateElectrodeManager') ;
+                        self.broadcast('UpdateTestPulser') ;
+                        self.DoesProtocolNeedSave_ = true ;
                     catch exception
                         % deal with EPCMasterSocket exceptions,
                         % otherwise rethrow
@@ -5405,31 +5748,51 @@ classdef WavesurferModel < ws.Model
                             rethrow(exception);
                         end
                     end                                        
-                    self.electrodeMayHaveChanged_(electrodeIndex, propertyName) ;
+                    % Notify other systems that an electrode may have changed in the Ephys
+                    % subsystem.
+                    isModeOrChannelNameOrScale = ...
+                        isempty(propertyName) || ...
+                        ismember(propertyName, ...
+                                 {'Mode' ...
+                                  'CommandChannelName' 'CommandScaling' ...
+                                  'MonitorChannelName' 'MonitorScaling' ...
+                                  'VoltageCommandChannelName' 'VoltageCommandScaling' ...
+                                  'CurrentCommandChannelName' 'CurrentCommandScaling' ...
+                                  'VoltageMonitorChannelName' 'VoltageMonitorScaling' ...
+                                  'CurrentMonitorChannelName' 'CurrentMonitorScaling' }) ;
+                    if isModeOrChannelNameOrScale ,
+                        %self.Display_.didSetAnalogChannelUnitsOrScales() ;
+                        %self.broadcast('UpdateTraces') ;
+                        self.broadcast('UpdateMain') ;
+                        self.broadcast('UpdateChannels') ;
+                    end                                
+                    self.broadcast('DidMaybeChangeProtocol') ;
             end
         end
         
-        function setElectrodeModeAndScalings(self,...
-                                             electrodeIndex, ...
-                                             newMode, ...
-                                             newCurrentMonitorScaling, ...
-                                             newVoltageMonitorScaling, ...
-                                             newCurrentCommandScaling, ...
-                                             newVoltageCommandScaling,...
-                                             newIsCommandEnabled)
-            self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
-                                                     newMode, ...
-                                                     newCurrentMonitorScaling, ...
-                                                     newVoltageMonitorScaling, ...
-                                                     newCurrentCommandScaling, ...
-                                                     newVoltageCommandScaling,...
-                                                     newIsCommandEnabled) ;
-            self.electrodeMayHaveChanged_(electrodeIndex, '') ;
-        end  % function
+%         function setElectrodeModeAndScalings(self,...
+%                                              electrodeIndex, ...
+%                                              newMode, ...
+%                                              newCurrentMonitorScaling, ...
+%                                              newVoltageMonitorScaling, ...
+%                                              newCurrentCommandScaling, ...
+%                                              newVoltageCommandScaling,...
+%                                              newIsCommandEnabled)
+%             self.Ephys_.setElectrodeModeAndScalings_(electrodeIndex, ...
+%                                                      newMode, ...
+%                                                      newCurrentMonitorScaling, ...
+%                                                      newVoltageMonitorScaling, ...
+%                                                      newCurrentCommandScaling, ...
+%                                                      newVoltageCommandScaling,...
+%                                                      newIsCommandEnabled) ;
+%             self.DoesProtocolNeedSave_ = true ;
+%             self.Display_.didSetAnalogChannelUnitsOrScales() ;
+%             self.broadcast('UpdateChannels') ;
+%         end  % function
         
         function result = areTestPulseElectrodeChannelsValid(self)
             aiChannelNames = self.AIChannelNames ;
-            isAIChannelActive = self.Acquisition_.getIsAnalogChannelActive_() ;            
+            isAIChannelActive = self.Acquisition_.IsAnalogChannelActive ;            
             activeAIChannelNames = aiChannelNames(isAIChannelActive) ;
             aoChannelNames = self.AOChannelNames ;
             result = self.Ephys_.areTestPulseElectrodeChannelsValid(activeAIChannelNames, aoChannelNames) ;
@@ -5439,6 +5802,7 @@ classdef WavesurferModel < ws.Model
             self.changeReadiness_(-1) ;
             % Get the current mode and scaling from any smart electrodes
             smartElectrodeTypes = setdiff(ws.Electrode.Types,{'Manual'}) ;
+            didSetSomething = false ;
             for k = 1:length(smartElectrodeTypes) , 
                 smartElectrodeType = smartElectrodeTypes{k} ;                
                 [areAnyOfThisType, ...
@@ -5456,15 +5820,35 @@ classdef WavesurferModel < ws.Model
                         % and no new info could be gathered, those ones
                         % should just be nan's or empty's, which
                         % setModeAndScalings() knows to ignore.
-                        self.setElectrodeModeAndScalings(electrodeIndex, ...
-                                                         modes{j}, ...
-                                                         currentMonitorScalings(j), ...
-                                                         voltageMonitorScalings(j), ...
-                                                         currentCommandScalings(j), ...
-                                                         voltageCommandScalings(j), ...
-                                                         isCommandEnabled{j}) ;
+%                         self.setElectrodeModeAndScalings(electrodeIndex, ...
+%                                                          modes{j}, ...
+%                                                          currentMonitorScalings(j), ...
+%                                                          voltageMonitorScalings(j), ...
+%                                                          currentCommandScalings(j), ...
+%                                                          voltageCommandScalings(j), ...
+%                                                          isCommandEnabled{j}) ;
+                        self.Ephys_.setElectrodeModeAndScalings(electrodeIndex, ...
+                                                                modes{j}, ...
+                                                                currentMonitorScalings(j), ...
+                                                                voltageMonitorScalings(j), ...
+                                                                currentCommandScalings(j), ...
+                                                                voltageCommandScalings(j), ...
+                                                                isCommandEnabled{j}) ;                                                            
+                        didSetSomething = true ;
                     end
                 end
+            end
+            if didSetSomething ,
+                %self.DoesProtocolNeedSave_ = true ;
+                % Should maybe be smarter about this, but it's annoying to
+                % have the protocol think it needs saving after each
+                % press of the Update button.
+                self.syncTraces_() ;                
+                self.broadcast('UpdateElectrodeManager') ;
+                self.broadcast('UpdateTestPulser') ;
+                self.broadcast('UpdateTraces') ;
+                self.broadcast('UpdateMain') ;
+                self.broadcast('UpdateChannels') ;
             end
             self.changeReadiness_(+1) ;
             self.broadcast('UpdateElectrodes') ;
@@ -5490,7 +5874,8 @@ classdef WavesurferModel < ws.Model
             % enabled.  I.e. only when WS is _not_ in command of the
             % gain settings
             self.changeReadiness_(-1);  % may have to establish contact with the softpanel, which can take a little while
-            doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType_(electrodeIndex, newValue) ;
+            doNeedToUpdateGainsAndModes = self.Ephys_.setElectrodeType(electrodeIndex, newValue) ;
+            self.broadcast('UpdateElectrodeManager') ;            
             if doNeedToUpdateGainsAndModes, 
                 self.updateSmartElectrodeGainsAndModes() ;
             end
@@ -5498,7 +5883,7 @@ classdef WavesurferModel < ws.Model
         end  % function
        
         function setElectrodeIndexWithinType_(self, electrodeIndex, newValue)
-            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType_(electrodeIndex, newValue) ;
+            doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setElectrodeIndexWithinType(electrodeIndex, newValue) ;
             if doUpdateSmartElectrodeGainsAndModes ,
                 self.updateSmartElectrodeGainsAndModes() ;
             end
@@ -5509,11 +5894,21 @@ classdef WavesurferModel < ws.Model
         function toggleIsInControlOfSoftpanelModeAndGains(self)
             currentValue = self.IsInControlOfSoftpanelModeAndGains ;
             self.IsInControlOfSoftpanelModeAndGains = ~currentValue ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function set.IsInControlOfSoftpanelModeAndGains(self, newValue)
             if self.areAnyElectrodesCommandable() ,
-                doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains_(newValue) ;
+                try
+                    doUpdateSmartElectrodeGainsAndModes = self.Ephys_.setIsInControlOfSoftpanelModeAndGains(newValue) ;
+                catch err
+                    self.broadcast('UpdateElectrodeManager') ;
+                    rethrow(err) ;
+                end
+                self.broadcast('UpdateElectrodeManager') ;
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
                 if doUpdateSmartElectrodeGainsAndModes ,
                     self.updateSmartElectrodeGainsAndModes() ;
                 end
@@ -5521,21 +5916,48 @@ classdef WavesurferModel < ws.Model
         end
         
         function electrodeIndex = addNewElectrode(self)
-            electrodeIndex = self.Ephys_.addNewElectrode() ;
+            try 
+                electrodeIndex = self.Ephys_.addNewElectrode() ;
+            catch err
+                self.broadcast('UpdateElectrodeManager') ;
+                self.broadcast('UpdateTestPulser') ;
+                rethrow(err) ;
+            end
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('UpdateTestPulser') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
        
         function removeMarkedElectrodes(self)
-            self.Ephys_.removeMarkedElectrodes_() ;
-            self.Display_.didRemoveElectrodes() ;
+            try
+                self.Ephys_.removeMarkedElectrodes() ;
+                self.syncTraces_() ;
+                self.DoesProtocolNeedSave_ = true ;
+            catch err
+                self.broadcast('UpdateElectrodeManager');
+                self.broadcast('UpdateTestPulser') ;
+                self.broadcast('UpdateTraces') ;
+                self.broadcast('UpdateMain') ;
+                self.broadcast('UpdateChannels') ;
+                rethrow(err) ;
+            end
+            self.broadcast('UpdateElectrodeManager');            
+            self.broadcast('UpdateTestPulser') ;
+            self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;            
             self.broadcast('UpdateChannels') ;
         end
         
         function set.DoTrodeUpdateBeforeRun(self, newValue)
-            self.Ephys_.setDoTrodeUpdateBeforeRun_(newValue) ;
+            self.Ephys_.setDoTrodeUpdateBeforeRun(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
        
         function result = get.DoTrodeUpdateBeforeRun(self)
-            result = self.Ephys_.getDoTrodeUpdateBeforeRun_() ;
+            result = self.Ephys_.getDoTrodeUpdateBeforeRun() ;
         end
 
 %         function setElectrodeModeOrScaling(self, electrodeIndex, propertyName, newValue)
@@ -5574,7 +5996,9 @@ classdef WavesurferModel < ws.Model
         
         function set.IsElectrodeMarkedForRemoval(self, newValue)
             self.Ephys_.setIsElectrodeMarkedForRemoval_(newValue) ;
+            %self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateElectrodes') ;
+            %self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function result = get.TestPulseElectrodeIndex(self)
@@ -5583,12 +6007,16 @@ classdef WavesurferModel < ws.Model
 
         function set.TestPulseElectrodeIndex(self, newValue)
             self.Ephys_.TestPulseElectrodeIndex = newValue ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function setTestPulseElectrodeProperty(self, propertyName, newValue)
             testPulseElectrodeIndex = self.TestPulseElectrodeIndex ;
             if ~isempty(testPulseElectrodeIndex) ,
                 self.setElectrodeProperty(testPulseElectrodeIndex, propertyName, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
             end
         end
         
@@ -5601,8 +6029,25 @@ classdef WavesurferModel < ws.Model
         end  % function
         
         function set.UserClassName(self, newValue)
-            self.UserCodeManager_.setClassName_(newValue) ;
-            self.callUserMethod_('wake');  % wake the user object
+            if ws.isString(newValue) ,
+                % If it's a string, we'll keep it, but we have to check if
+                % it's a valid class name
+                trimmedValue = strtrim(newValue) ;
+                err = self.UserCodeManager_.setClassName_(trimmedValue) ;
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeSetUserClassName');
+                self.broadcast('DidMaybeChangeProtocol') ;
+                if isempty(err) ,
+                    self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
+                else
+                  error('wavesurfer:errorWhileInstantiatingUserObject', ...
+                        'Unable to instantiate user object: %s.',err.message);
+                end
+            else
+                self.broadcast('DidMaybeSetUserClassName');  % replace the bad value with the old value in the view
+                error('ws:invalidPropertyValue', ...
+                      'Invalid value for property ''ClassName'' supplied.');
+            end
         end
         
         function result = get.UserClassName(self) 
@@ -5610,8 +6055,15 @@ classdef WavesurferModel < ws.Model
         end
         
         function reinstantiateUserObject(self)
-            self.UserCodeManager_.reinstantiateUserObject_() ;
-            self.callUserMethod_('wake');  % wake the user object
+            err = self.UserCodeManager_.reinstantiateUserObject() ;
+            if ~isempty(err) ,
+                self.broadcast('UpdateUserCodeManager');
+                throw(err) ;
+            end
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('UpdateUserCodeManager');
+            self.broadcast('DidMaybeChangeProtocol') ;
+            self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
         end        
         
         function result = get.IsUserClassNameValid(self)
@@ -5690,17 +6142,17 @@ classdef WavesurferModel < ws.Model
             result = self.Ephys_.getTestPulseElectrodeNames() ;
         end
         
-        function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToEphysEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
-        function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToElectrodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMeToElectrodeManagerEvent(subscriber,eventName,propertyName,methodName) ;
+%         end
         
-        function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToTestPulserEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Ephys_.subscribeMeToTestPulserEvent(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.TestPulseElectrodesCount(self)
             result = self.Ephys_.TestPulseElectrodesCount ;
@@ -5728,7 +6180,9 @@ classdef WavesurferModel < ws.Model
         
         function setTestPulseElectrodeByName(self, newValue)
             self.Ephys_.setTestPulseElectrodeByName(newValue) ;
+            self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateTestPulser');
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
         function result = getTestPulseElectrodeProperty(self, propertyName)
@@ -5742,11 +6196,13 @@ classdef WavesurferModel < ws.Model
         function set.IsStimulationEnabled(self, newValue)
             try
                 self.Stimulation_.IsEnabled = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch me
-                self.broadcast('UpdateGeneralSettings') ;
+                self.broadcast('UpdateGeneral') ;
                 rethrow(me) ;
             end                
-            self.broadcast('UpdateGeneralSettings') ;
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function result = get.IsLoggingEnabled(self)
@@ -5759,6 +6215,11 @@ classdef WavesurferModel < ws.Model
 
         function set.IsDisplayEnabled(self, newValue)
             self.Display_.IsEnabled = newValue ;
+            self.DoesProtocolNeedSave_ = true ;
+            %self.broadcast('UpdateTraces') ;
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
 
         function result = getNActiveAIChannels(self)
@@ -5774,7 +6235,14 @@ classdef WavesurferModel < ws.Model
         end
 
         function set.DataFileLocation(self, newValue)
-            self.Logging_.FileLocation = newValue ;
+            if ws.isString(newValue) ,
+                self.Logging_.FileLocation = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'DataFileLocation must be a string');                    
+            end
+            self.broadcast('UpdateLogging');            
         end
         
         function result = get.DataFileBaseName(self)
@@ -5782,15 +6250,29 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DataFileBaseName(self, newValue)
-            self.Logging_.FileBaseName = newValue ;
+            if ws.isString(newValue) ,
+                self.Logging_.FileBaseName = newValue ;
+            else
+                self.broadcast('UpdateLogging') ;
+                error('ws:invalidPropertyValue', ...
+                      'DataFileBaseName must be a string');                    
+            end
+            self.broadcast('UpdateLogging');                        
         end
                 
         function result = get.IsOKToOverwriteDataFile(self)
             result = self.Logging_.IsOKToOverwrite ;
         end
         
-        function set.IsOKToOverwriteDataFile(self, newValue)
-            self.Logging_.IsOKToOverwrite = newValue ;
+        function set.IsOKToOverwriteDataFile(self, newValue)            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
+                self.Logging_.IsOKToOverwrite = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'IsOKToOverwriteDataFile must be a logical scalar, or convertable to one');                  
+            end
+            self.broadcast('UpdateLogging');                                    
         end
         
         function result = get.NPlots(self) 
@@ -5798,7 +6280,14 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.NextSweepIndex(self, newValue)
-            self.Logging_.NextSweepIndex = newValue ;
+            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
+                self.Logging_.NextSweepIndex = newValue ;
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'NextSweepIndex must be a (scalar) nonnegative integer');
+            end
+            self.broadcast('UpdateLogging');                        
         end
         
         function result = get.NextSweepIndex(self)
@@ -5814,12 +6303,21 @@ classdef WavesurferModel < ws.Model
         end
         
         function set.DisplayUpdateRate(self, newValue)
-            self.Display_.UpdateRate = newValue ;
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) && newValue>0 ,
+                self.Display_.UpdateRate = max(0.1,min(newValue,10)) ;
+            else
+                self.broadcast('DidSetUpdateRate');
+                error('ws:invalidPropertyValue', ...
+                      'UpdateRate must be a scalar finite positive number') ;
+            end
+            self.broadcast('DidSetUpdateRate');
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
-        function mimicStimulusLibrary_(self, newValue) 
-            self.Stimulation_.mimicStimulusLibrary_(newValue) ;
-        end
+%         function mimicStimulusLibrary_(self, newValue) 
+%             self.Stimulation_.mimicStimulusLibrary_(newValue) ;
+%         end
         
         function result = get.AIScalingCoefficients(self)
             result = self.Acquisition_.AnalogScalingCoefficients ;
@@ -5828,7 +6326,18 @@ classdef WavesurferModel < ws.Model
         function value = get.XOffset(self)
             value = self.Display_.XOffset ;
         end
-                
+           
+        function set.XOffset(self, newValue)
+            if isnumeric(newValue) && isscalar(newValue) && isfinite(newValue) ,
+                self.Display_.XOffset = double(newValue) ;
+            else
+                self.broadcast('DidSetXOffset');
+                error('ws:invalidPropertyValue', ...
+                      'XOffset must be a scalar finite number') ;
+            end
+            self.broadcast('DidSetXOffset');
+        end
+        
         function value = get.YLimitsPerAIChannel(self)
             value = self.Display_.YLimitsPerAnalogChannel ;
         end
@@ -5848,26 +6357,34 @@ classdef WavesurferModel < ws.Model
         function result = get.ChannelIndexFromPlotIndex(self)
             result = self.Display_.ChannelIndexFromPlotIndex ;
         end
+
+        function result = get.IsInputChannelInCacheFromInputChannelIndex(self)
+            % Cache input channels are the input channels that were active
+            % at the time of the last sweep.
+            result = [ self.Acquisition_.IsInCacheFromAnalogChannelIndex self.Acquisition_.IsInCacheFromDigitalChannelIndex ] ;
+        end        
         
-        function result = get.ActiveInputChannelIndexFromInputChannelIndex(self)
-            result = self.Acquisition_.ActiveChannelIndexFromChannelIndex ;
+        function result = get.CacheInputChannelIndexFromInputChannelIndex(self)
+            % Cache input channels are the input channels that were active
+            % at the time of the last sweep.
+            result = [ self.Acquisition_.IndexInCacheFromAnalogChannelIndex self.Acquisition_.IndexInCacheFromDigitalChannelIndex ] ;
         end
         
         function result = get.PlotHeightFromPlotIndex(self)
             result = self.Display_.PlotHeightFromPlotIndex ;
         end
         
-        function subscribeMeToDisplayEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToDisplayEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Display_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
 %         function subscribeMeToStimulationEvent(self,subscriber,eventName,propertyName,methodName)
 %             self.Stimulation_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
 %         end
         
-        function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
-            self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToLoggingEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.Logging_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.PlotIndexFromChannelIndex(self)
             result = self.Display_.PlotIndexFromChannelIndex ;
@@ -5878,14 +6395,14 @@ classdef WavesurferModel < ws.Model
             self.Display_.setAreYLimitsLockedTightToDataForSingleChannel_(aiChannelIndex, newValue) ;
         end        
         
-        function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
-            % Underscore b/c doesn't trigger an update
-            self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
-        end
+%         function setYLimitsForSingleAIChannel_(self, aiChannelIndex, newValue)
+%             % Underscore b/c doesn't trigger an update
+%             self.Display_.setYLimitsForSingleAIChannel_(aiChannelIndex, newValue) ;
+%         end
 
-        function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
-            self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
-        end
+%         function subscribeMeToUserCodeManagerEvent(self,subscriber,eventName,propertyName,methodName)
+%             self.UserCodeManager_.subscribeMe(subscriber,eventName,propertyName,methodName) ;
+%         end
         
         function result = get.AIChannelTerminalNames(self)
             result = self.Acquisition_.AnalogTerminalNames ;
@@ -5914,39 +6431,68 @@ classdef WavesurferModel < ws.Model
         function set.DoRepeatStimulusSequence(self, newValue)
             try
                 self.Stimulation_.DoRepeatSequence = newValue ;
+                self.DoesProtocolNeedSave_ = true ;
             catch me
-                self.broadcast('UpdateGeneralSettings') ;
+                self.broadcast('UpdateGeneral') ;
                 rethrow(me) ;
             end
-            self.broadcast('UpdateGeneralSettings') ;            
+            self.broadcast('UpdateGeneral') ;            
+            self.broadcast('DidMaybeChangeProtocol') ;
         end
         
-        function setYLimitsForSingleAIChannel(self, i, newValue)
-            self.Display_.setYLimitsForSingleAnalogChannel(i, newValue) ;
+        function setYLimitsForSinglePlot(self, plotIndex, newValue)
+            if isnumeric(newValue) && isequal(size(newValue),[1 2]) && newValue(1)<=newValue(2) ,
+                aiChannelIndex = self.Display_.setYLimitsForSinglePlot(plotIndex, double(newValue)) ;
+                self.broadcast('DidSetYAxisLimits', plotIndex, aiChannelIndex);
+                self.DoesProtocolNeedSave_ = true ;
+                self.broadcast('DidMaybeChangeProtocol') ;
+            else
+                error('ws:invalidPropertyValue', ...
+                      'y limits must be 2 element numeric row vector, with the first element less than or equal to the second') ;                
+            end
         end
 
         function scrollUp(self, plotIndex)  % works on analog channels only
-            self.Display_.scrollUp(plotIndex) ;
+            channelIndex = self.Display_.scrollUp(plotIndex) ;
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
         
         function scrollDown(self, plotIndex)  % works on analog channels only
-            self.Display_.scrollDown(plotIndex) ;
+            channelIndex = self.Display_.scrollDown(plotIndex) ;
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomIn(self, plotIndex)  % works on analog channels only
-            self.Display_.zoomIn(plotIndex) ;
+            channelIndex = self.Display_.zoomIn(plotIndex) ;
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex);
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end  % function
                 
         function zoomOut(self, plotIndex)  % works on analog channels only
-            self.Display_.zoomOut(plotIndex) ;
+            channelIndex = self.Display_.zoomOut(plotIndex) ;
+            self.broadcast('DidSetYAxisLimits', plotIndex, channelIndex) ;
+            self.DoesProtocolNeedSave_ = true ;
+            self.broadcast('DidMaybeChangeProtocol') ;
         end        
         
         function result = get.DoIncludeDateInDataFileName(self)
             result = self.Logging_.DoIncludeDate ;
         end
         
-        function set.DoIncludeDateInDataFileName(self, newValue)
-            self.Logging_.DoIncludeDate = newValue ;
+        function set.DoIncludeDateInDataFileName(self, newValue)            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                self.Logging_.DoIncludeDate = newValue ;
+            else
+                self.broadcast('UpdateLogging') ;
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeDateInDataFileName must be a logical scalar, or convertable to one') ;                  
+            end
+            self.broadcast('UpdateLogging') ;                        
         end
 
         function result = get.DoIncludeSessionIndexInDataFileName(self)
@@ -5955,6 +6501,16 @@ classdef WavesurferModel < ws.Model
         
         function set.DoIncludeSessionIndexInDataFileName(self, newValue)
             self.Logging_.DoIncludeSessionIndex = newValue ;
+            
+            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
+                self.Logging_.DoIncludeSessionIndex = newValue ;
+            else
+                self.broadcast('UpdateDoIncludeSessionIndexInDataFileName');
+                error('ws:invalidPropertyValue', ...
+                      'DoIncludeSessionIndexInDataFileName must be a logical scalar, or convertable to one');                  
+            end
+            self.broadcast('UpdateDoIncludeSessionIndexInDataFileName');            
+            
         end
         
         function result = get.SessionIndex(self)
@@ -5962,13 +6518,26 @@ classdef WavesurferModel < ws.Model
         end        
         
         function set.SessionIndex(self, newValue)
-            self.Logging_.SessionIndex = newValue ;
+            if self.DoIncludeSessionIndexInDataFileName ,
+                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
+                    self.Logging_.SessionIndex = newValue ;
+                else
+                    self.broadcast('UpdateLogging');
+                    error('ws:invalidPropertyValue', ...
+                          'SessionIndex must be an integer greater than or equal to one');
+                end
+            else
+                self.broadcast('UpdateLogging');
+                error('ws:invalidPropertyValue', ...
+                      'Can''t set SessionIndex when DoIncludeSessionIndexInDataFileName is false');
+            end
+            self.broadcast('UpdateLogging');            
         end
 
-        function result = stimulusLibrary(self)
-            % Note that this returns a *copy* of the internal stimulus library
-            result = self.Stimulation_.getStimulusLibraryCopy() ;
-        end
+%         function result = stimulusLibrary(self)
+%             % Note that this returns a *copy* of the internal stimulus library
+%             result = self.Stimulation_.getStimulusLibraryCopy() ;
+%         end
         
         function result = get.CurrentRunAbsoluteFileName(self)
             result = self.Logging_.CurrentRunAbsoluteFileName ;
@@ -6034,6 +6603,7 @@ classdef WavesurferModel < ws.Model
         function setSingleAIChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAIChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
                 self.Acquisition_.setSingleAnalogDeviceName(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
                 self.syncIsAIChannelTerminalOvercommitted_() ;
             else
                 self.broadcast('UpdateChannels') ;
@@ -6060,6 +6630,7 @@ classdef WavesurferModel < ws.Model
         function setSingleAOChannelDeviceName(self, i, newValue)
             if 1<=i && i<=self.NAOChannels && i==round(i) && ws.isString(newValue) && ismember(newValue, self.AllDeviceNames) ,
                 self.Stimulation_.setSingleAnalogDeviceName(i, newValue) ;
+                self.DoesProtocolNeedSave_ = true ;
                 self.syncIsAOChannelTerminalOvercommitted_() ;
             else                
                 self.broadcast('UpdateChannels') ;
@@ -6232,55 +6803,40 @@ classdef WavesurferModel < ws.Model
             value=(self.DegreeOfReadiness_>0);
         end               
         
-        function encoding = encodeForHeader(self)
-            % Get the default header encoding
-            encoding = encodeForHeader@ws.Model(self) ;            
-            
-            % Add custom field
-            thisPropertyValue = self.stimulusLibrary() ;
-            encodingOfPropertyValue = ws.Coding.encodeAnythingForHeader(thisPropertyValue) ;
-            encoding.StimulusLibrary = encodingOfPropertyValue ;
+%         function encoding = encodeForHeader(self)
+%             % Get the default header encoding
+%             encoding = encodeForHeader@ws.Encodable(self) ;            
+%             
+%             % Add custom field
+%             thisPropertyValue = self.getStimulusLibraryCopy() ;
+%             encodingOfPropertyValue = ws.encodeAnythingForHeader(thisPropertyValue) ;
+%             encoding.StimulusLibrary = encodingOfPropertyValue ;
+%         end
+        
+        function result = get.DoUsePreferences(self)
+            result = self.DoUsePreferences_ ;
         end
         
-        function result = get.ArePreferencesWritable(self)
-            result = self.ArePreferencesWritable_ ;
-        end
-        
-        function set.ArePreferencesWritable(self, rawNewValue)
+        function set.DoUsePreferences(self, rawNewValue)
             if (islogical(rawNewValue) || isnumeric(rawNewValue)) && isscalar(rawNewValue) && isfinite(rawNewValue) ,
                 newValue = logical(rawNewValue) ;
-                self.ArePreferencesWritable_ = newValue ;
+                self.DoUsePreferences_ = newValue ;
             else
                 error('ws:invalidPropertyValue', ...
-                      'ArePreferencesWritable must be a scalar, and must be logical or numeric and finite') ;
+                      'DoUsePreferences must be a scalar, and must be logical or numeric and finite') ;
             end               
         end        
-        
-        function result = listUserObjectMethods(self)
-            result = self.UserCodeManager_.listUserObjectMethods() ;
-        end
-        
-        function result = listUserObjectProperties(self)
-            result = self.UserCodeManager_.listUserObjectProperties() ;
-        end
-        
-        function callUserObjectMethod(self, methodName, varargin)
-            self.UserCodeManager_.callUserObjectMethod(methodName, varargin{:}) ;
-        end
-        
-        function setUserObjectProperty(self, propertyName, newValue)
-            self.UserCodeManager_.setUserObjectProperty(propertyName, newValue) ;
-        end
 
-        function result = getUserObjectProperty(self, propertyName)
-            result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
+        function [aoData, doData] = getStimulationData(self, indexOfEpisodeWithinRun)
+            % Get the current stimulus map
+            stimulusMapIndex = self.Stimulation_.getCurrentStimulusMapIndex(indexOfEpisodeWithinRun) ;
+            %stimulusMap = self.getCurrentStimulusMap_(indexOfEpisodeWithinSweep);
+
+            % Set the channel data in the tasks
+            aoData = self.getAnalogChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
+            doData = self.getDigitalChannelData_(stimulusMapIndex, indexOfEpisodeWithinRun) ;
         end
         
-        function result = getUserObjectHandle_(self)
-            % We generally from on returning references to object owned by self.
-            % Only use this method if you're sure you know what you're doing.
-            result = self.UserCodeManager_.getUserObjectHandle_() ;            
-        end
     end  % public methods block
     
     methods (Access = protected)
@@ -6316,6 +6872,794 @@ classdef WavesurferModel < ws.Model
                 self.broadcast('UpdateReadiness');
             end            
         end  % function                
+        
+        function aoDataScaledAndLimited = getAnalogChannelData_(self, stimulusMapIndex, episodeIndexWithinSweep)
+            % Get info about which analog channels are in the task
+            isInTaskForEachAOChannel = ~self.IsAOChannelTerminalOvercommitted ;
+            %isInTaskForEachAnalogChannel = self.TheFiniteAnalogOutputTask_.IsChannelInTask ;
+            nAnalogChannelsInTask = sum(isInTaskForEachAOChannel) ;
+
+            % Calculate the signals
+            if isempty(stimulusMapIndex) ,
+                aoData = zeros(0,nAnalogChannelsInTask) ;
+                %nChannelsWithStimulus = 0 ;
+            else
+                channelNamesInTask = self.AOChannelNames(isInTaskForEachAOChannel) ;
+                isChannelAnalog = true(1,nAnalogChannelsInTask) ;
+%                 [aoData, nChannelsWithStimulus] = ...
+%                     stimulusMap.calculateSignals(self.StimulationSampleRate_, channelNamesInTask, isChannelAnalog, episodeIndexWithinSweep) ;  
+                aoData = ...
+                    self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                             self.StimulationSampleRate, ...
+                                                             channelNamesInTask, ...
+                                                             isChannelAnalog, ...
+                                                             episodeIndexWithinSweep) ;
+                  % each signal of aoData is in native units
+            end
+            
+            % % Want to return the number of scans in the stimulus data
+            % nScans = size(aoData,1);
+            
+            % If any channel scales are problematic, deal with this
+            analogChannelScales = self.AOChannelScales(isInTaskForEachAOChannel) ;  % (native units)/V
+            inverseAnalogChannelScales=1./analogChannelScales;  % e.g. V/(native unit)
+            sanitizedInverseAnalogChannelScales = ...
+                ws.fif(isfinite(inverseAnalogChannelScales), inverseAnalogChannelScales, zeros(size(inverseAnalogChannelScales)));            
+
+            % scale the data by the channel scales
+            if isempty(aoData) ,
+                aoDataScaled=aoData;
+            else
+                aoDataScaled=bsxfun(@times,aoData,sanitizedInverseAnalogChannelScales);
+            end
+            % all signals in aoDataScaled are in V
+            
+            % limit the data to [-10 V, +10 V]
+            aoDataScaledAndLimited=max(-10,min(aoDataScaled,+10));  % also eliminates nan, sets to +10
+
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             if isempty(self.TheFiniteAnalogOutputTask_) ,
+%                 error('Adam is dumb');
+%             else
+%                 self.TheFiniteAnalogOutputTask_.setChannelData(aoDataScaledAndLimited) ;
+%             end
+        end  % function
+
+        function doDataLimited = getDigitalChannelData_(self, stimulusMapIndex, episodeIndexWithinRun)
+            %import ws.*
+            
+            % % Calculate the episode index
+            % episodeIndexWithinRun=self.NEpisodesCompleted_+1;
+            
+            % Calculate the signals
+            isTimedForEachDOChannel = self.IsDOChannelTimed ;
+            isInTaskForEachDOChannel = isTimedForEachDOChannel & ~self.IsDOChannelTerminalOvercommitted ;
+            %isInTaskForEachDigitalChannel = self.TheFiniteDigitalOutputTask_.IsChannelInTask ;
+            nDigitalChannelsInTask = sum(isInTaskForEachDOChannel) ;
+            if isempty(stimulusMapIndex) ,
+                doData=zeros(0,nDigitalChannelsInTask);  
+            else
+                isChannelAnalogForEachDigitalChannelInTask = false(1,nDigitalChannelsInTask) ;
+                namesOfDigitalChannelsInTask = self.DOChannelNames(isInTaskForEachDOChannel) ;                
+                doData = ...
+                    self.Stimulation_.calculateSignalsForMap(stimulusMapIndex, ...
+                                                             self.StimulationSampleRate, ...
+                                                             namesOfDigitalChannelsInTask, ...
+                                                             isChannelAnalogForEachDigitalChannelInTask, ...
+                                                             episodeIndexWithinRun) ;
+            end
+            
+            % % Want to return the number of scans in the stimulus data
+            % nScans = size(doData,1) ;
+            
+            % limit the data to {false,true}
+            doDataLimited = logical(doData) ;
+
+%             % Finally, assign the stimulation data to the the relevant part
+%             % of the output task
+%             self.TheFiniteDigitalOutputTask_.setChannelData(doDataLimited) ;
+        end  % function        
+        
+        function performOneLooperIterationDuringOngoingSweep_(self, ...
+                                                              timeSinceSweepStart, ...
+                                                              fromRunStartTicId)
+                                                    
+            % Acquire data, update soft real-time outputs
+            [didReadFromTasks, rawAnalogData, rawDigitalData, timeSinceRunStartAtStartOfData, areTasksDone] = ...
+                self.Looper_.pollAcquisition(timeSinceSweepStart, fromRunStartTicId, self.SweepDuration) ;
+            
+%             % DEBUG: This is for debugging purposes only!
+%             if timeSinceRunStartAtStartOfData > 5 ,
+%                 error('ws:fakeerror', 'Stuff went bad.  Real bad.') ;
+%             end
+            
+            % Deal with the acquired samples
+            if didReadFromTasks ,
+                %self.NTimesSamplesAcquiredCalledSinceRunStart_ = self.NTimesSamplesAcquiredCalledSinceRunStart_ + 1 ;
+                %self.TimeOfLastSamplesAcquired_ = timeSinceRunStartAtStartOfData ;
+                nScans=size(rawAnalogData,1);
+                %nChannels=size(data,2);
+                %assert(nChannels == numel(expectedChannelNames));
+
+                if (nScans>0)
+                    % update the current time
+                    %dt = 1/acquisitionSampleRate ;
+                    %self.t_ = self.t_ + nScans*dt ;  % Note that this is the time stamp of the sample just past the most-recent sample
+
+                    % Add data to the user cache
+                    %isSweepBased = isfinite(sweepDuration) ;
+                    %self.Looper_.addDataToUserCache(rawAnalogData, rawDigitalData, isSweepBased) ;
+                    self.samplesAcquired_(rawAnalogData, ...
+                                          rawDigitalData, ...
+                                          timeSinceRunStartAtStartOfData ) ;
+                end
+                
+                if areTasksDone ,
+                    self.Looper_.completeTheOngoingSweep() ;
+                    %self.acquisitionSweepComplete() ;
+                end
+            end                        
+            
+%             % We'll use this in a sanity-check
+%             didAcquireNonzeroScans = (size(rawAnalogData,1)>0) ;
+        end  % function
+        
+        function performOneRefillerIterationDuringOngoingRun_(self, isStimulationTriggerIdenticalToAcquisitionTrigger)
+            % Action in a run depends on whether we are also in an
+            % episode, or are in-between episodes
+            % Check the finite outputs, refill them if
+            % needed.
+            if self.Refiller_.IsPerformingEpisode ,
+                didCompleteEpisode = self.Refiller_.checkIfTasksAreDoneAndEndEpisodeIfSo() ;
+                if didCompleteEpisode ,
+                    self.UserCodeManager_.invoke(self, 'completingEpisode');           
+                end
+            else
+                % If we're not performing an episode, see if
+                % we need to start one.
+                if self.Refiller_.NEpisodesCompletedSoFarThisRun < self.Refiller_.NEpisodesPerRun ,
+                    %isStimulationTriggerIdenticalToAcquisitionTrigger = self.Frontend_.isStimulationTriggerIdenticalToAcquisitionTrigger() ;
+                    if isStimulationTriggerIdenticalToAcquisitionTrigger ,
+                        % do nothing.
+                        % if they're identical, startEpisode_()
+                        % is called from the startingSweep()
+                        % req-rep method.
+                    else
+                        try
+                            self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                            [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
+                            self.Refiller_.startEpisode(aoData, doData) ;
+                        catch err
+                            % Something went wrong
+                            self.abortOngoingRun_();
+                            self.changeReadiness_(+1);
+                            rethrow(err);
+                        end
+                    end
+                end
+            end
+        end  % function        
+        
     end  % protected methods block        
     
+    methods
+        function result = get.IsPerformingRun(self)
+            result = self.IsPerformingRun_ ;
+        end
+        
+        function result = get.IsPerformingSweep(self)
+            result = self.IsPerformingSweep_ ;
+        end
+        
+        function result = get.DataCacheDurationWhenContinuous(self)
+            result = self.Acquisition_.DataCacheDurationWhenContinuous ;
+        end
+        
+        function waitForRunToComplete(self)
+            while self.IsPerformingRun ,
+                pause(0.2) ;
+            end                
+        end
+        
+        function playAndBlock(self)
+            self.play() ;
+            self.waitForRunToComplete() ;
+        end
+        
+        function recordAndBlock(self)
+            self.record() ;
+            self.waitForRunToComplete() ;
+        end            
+        
+        function result = get.DoesProtocolNeedSave(self)
+            result = self.DoesProtocolNeedSave_ ;
+        end
+    end  % public methods block
+    
+    methods (Static)
+        function [sampleFrequency, referenceClockRate] = ...
+                coerceSampleFrequencyToAllowedValue(primaryDeviceName, isPrimaryDeviceAPXIDevice, desiredSampleFrequency)
+            % Make sure desiredSampleFrequency is a scalar
+            defaultSampleFrequency  = 20000 ;
+            if isempty(desiredSampleFrequency) ,
+                temp1 = defaultSampleFrequency ;  % the default value
+            else
+                temp1 = desiredSampleFrequency(1) ;  % make it a scalar
+            end
+            
+            % Make sure a double
+            if isnumeric(temp1) ,
+                temp2 = double(temp1) ;
+            else
+                temp2 = defaultSampleFrequency ;  % the default value
+            end
+            
+            % Make sure finite
+            if isfinite(temp2) ,
+                sanitizedDesiredSampleFrequency = temp2 ;
+            else
+                sanitizedDesiredSampleFrequency = defaultSampleFrequency ;  % the default value
+            end
+            
+            % Limit to the allowed range of sampling frequencies
+            %primaryDeviceName = self.PrimaryDeviceName ;
+            %isPrimaryDeviceAPXIDevice = self.IsPrimaryDeviceAPXIDevice ;
+            [~, referenceClockRate] = ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;  
+                % the rate only depends on the primary device
+            %referenceClockRate = self.ReferenceClockRate ;  % Hz
+            desiredTimebaseTicksPerSample = referenceClockRate/sanitizedDesiredSampleFrequency ;  
+            integralTimebaseTicksPerSample = floor(desiredTimebaseTicksPerSample);  % err on the side of sampling faster
+            maximumTimebaseTicksPerSample = 2^32-1 ;  % Note that this sets the *minimum* frequency
+            minimumTimebaseTicksPerSample = 1 ;  % Note that this sets the *maximum* frequency (Although usually this isn't achievable in practice)
+              % See here:
+              % http://digital.ni.com/public.nsf/allkb/4BBE1409700F6CE686256E9200652F6B
+              % Entitled "What Sample Rates Is my DAQ Board Actually
+              % Capable of Achieving?"
+              %
+            actualTimebaseTicksPerSample = ...
+                ws.limit(minimumTimebaseTicksPerSample, integralTimebaseTicksPerSample, maximumTimebaseTicksPerSample) ;  % enforce min, max
+              % Note that if actualTimebaseTicksPerSample is 1, then the
+              % sampleFrequency is equal to the timebaseFrequency.  You can
+              % set it to this in the hardware, and the board will try to
+              % do it, but it will generally fail to keep up once the sweep
+              % starts, because for instance the default timebase for X series cards is
+              % 100 MHz.
+            sampleFrequency = referenceClockRate/actualTimebaseTicksPerSample ;            
+        end  % method        
+    end  % static methods block
+    
+    methods
+        function result = get.IsWavesurferMainFigureVisible(self)  %#ok<MANU>
+            result = true ;
+        end
+
+        function result = get.IsGeneralSettingsFigureVisible(self)
+            result = self.IsGeneralSettingsFigureVisible_ ;
+        end
+        
+        function result = get.IsChannelsFigureVisible(self)
+            result = self.IsChannelsFigureVisible_ ;
+        end
+        
+        function result = get.IsStimulusLibraryFigureVisible(self)
+            result = self.IsStimulusLibraryFigureVisible_ ;
+        end
+        
+        function result = get.IsStimulusPreviewFigureVisible(self)
+            result = self.IsStimulusPreviewFigureVisible_ ;
+        end
+        
+        function result = get.IsTriggersFigureVisible(self)
+            result = self.IsTriggersFigureVisible_ ;
+        end
+        
+        function result = get.IsUserCodeManagerFigureVisible(self)
+            result = self.IsUserCodeManagerFigureVisible_ ;
+        end
+        
+        function result = get.IsElectrodeManagerFigureVisible(self)
+            result = self.IsElectrodeManagerFigureVisible_ ;
+        end
+        
+        function result = get.IsTestPulserFigureVisible(self)
+            result = self.IsTestPulserFigureVisible_ ;
+        end
+        
+        function result = get.IsFastProtocolsFigureVisible(self)
+            result = self.IsFastProtocolsFigureVisible_ ;
+        end
+        
+        function set.IsGeneralSettingsFigureVisible(self, newValue)
+            oldValue = self.IsGeneralSettingsFigureVisible_ ;
+            self.IsGeneralSettingsFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'GeneralSettings', oldValue) ;
+            self.broadcast('UpdateGeneral') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsChannelsFigureVisible(self, newValue)
+            oldValue = self.IsChannelsFigureVisible_ ;
+            self.IsChannelsFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'Channels', oldValue) ;
+            self.broadcast('UpdateChannels') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsStimulusLibraryFigureVisible(self, newValue)
+            oldValue = self.IsStimulusLibraryFigureVisible_ ;
+            self.IsStimulusLibraryFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'StimulusLibrary', oldValue) ;
+            self.broadcast('UpdateStimulusLibrary') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsStimulusPreviewFigureVisible(self, newValue)
+            oldValue = self.IsStimulusPreviewFigureVisible_ ;
+            self.IsStimulusPreviewFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'StimulusPreview', oldValue) ;
+            self.broadcast('UpdateStimulusPreview') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsTriggersFigureVisible(self, newValue)
+            oldValue = self.IsTriggersFigureVisible_ ;
+            self.IsTriggersFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'Triggers', oldValue) ;
+            self.broadcast('UpdateTriggering') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsUserCodeManagerFigureVisible(self, newValue)
+            oldValue = self.IsUserCodeManagerFigureVisible_ ;
+            self.IsUserCodeManagerFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'UserCodeManager', oldValue) ;
+            self.broadcast('UpdateUserCodeManager') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsElectrodeManagerFigureVisible(self, newValue)
+            oldValue = self.IsElectrodeManagerFigureVisible_ ;
+            self.IsElectrodeManagerFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'ElectrodeManager', oldValue) ;
+            self.broadcast('UpdateElectrodeManager') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsTestPulserFigureVisible(self, newValue)
+            oldValue = self.IsTestPulserFigureVisible_ ;
+            self.IsTestPulserFigureVisible_ = newValue ;
+            self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'TestPulser', oldValue) ;
+            self.broadcast('UpdateTestPulser') ;
+            self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function set.IsFastProtocolsFigureVisible(self, newValue)
+            oldValue = self.IsFastProtocolsFigureVisible_ ;
+            self.IsFastProtocolsFigureVisible_ = newValue ;
+            %self.DoesProtocolNeedSave_ = self.DoesProtocolNeedSave_ || (newValue ~= oldValue) ;
+            self.broadcast('DidSetSingleFigureVisibility', 'FastProtocols', oldValue) ;
+            self.broadcast('UpdateFastProtocols') ;
+            %self.broadcast('DidMaybeChangeProtocol') ;
+        end
+        
+        function result = get.MainFigurePosition(self)
+            result = self.MainFigurePosition_ ;
+        end
+        
+        function result = get.GeneralSettingsFigurePosition(self)
+            result = self.GeneralSettingsFigurePosition_ ;
+        end
+        
+        function result = get.ChannelsFigurePosition(self)
+            result = self.ChannelsFigurePosition_ ;
+        end
+        
+        function result = get.StimulusLibraryFigurePosition(self)
+            result = self.StimulusLibraryFigurePosition_ ;
+        end
+        
+        function result = get.StimulusPreviewFigurePosition(self)
+            result = self.StimulusPreviewFigurePosition_ ;
+        end
+        
+        function result = get.TriggersFigurePosition(self)
+            result = self.TriggersFigurePosition_ ;
+        end
+        
+        function result = get.UserCodeManagerFigurePosition(self)
+            result = self.UserCodeManagerFigurePosition_ ;
+        end
+        
+        function result = get.ElectrodeManagerFigurePosition(self)
+            result = self.ElectrodeManagerFigurePosition_ ;
+        end
+        
+        function result = get.TestPulserFigurePosition(self)
+            result = self.TestPulserFigurePosition_ ;
+        end
+        
+        function result = get.FastProtocolsFigurePosition(self)
+            result = self.FastProtocolsFigurePosition_ ;
+        end        
+        
+        function set.MainFigurePosition(self, newValue)
+            self.MainFigurePosition_ = newValue ;
+        end
+        
+        function set.GeneralSettingsFigurePosition(self, newValue)
+            self.GeneralSettingsFigurePosition_ = newValue ;
+        end
+        
+        function set.ChannelsFigurePosition(self, newValue)
+            self.ChannelsFigurePosition_ = newValue ;
+        end
+        
+        function set.StimulusLibraryFigurePosition(self, newValue)
+            self.StimulusLibraryFigurePosition_ = newValue ;
+        end
+        
+        function set.StimulusPreviewFigurePosition(self, newValue)
+            self.StimulusPreviewFigurePosition_ = newValue ;
+        end
+        
+        function set.TriggersFigurePosition(self, newValue)
+            self.TriggersFigurePosition_ = newValue ;
+        end
+        
+        function set.UserCodeManagerFigurePosition(self, newValue)
+            self.UserCodeManagerFigurePosition_ = newValue ;
+        end
+        
+        function set.ElectrodeManagerFigurePosition(self, newValue)
+            self.ElectrodeManagerFigurePosition_ = newValue ;
+        end
+        
+        function set.TestPulserFigurePosition(self, newValue)
+            self.TestPulserFigurePosition_ = newValue ;
+        end
+        
+        function set.FastProtocolsFigurePosition(self, newValue)
+            self.FastProtocolsFigurePosition_ = newValue ;
+        end        
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block
+    
+    methods
+        function callUserObjectMethod(self, methodName, varargin)
+            self.UserCodeManager_.callUserObjectMethod(methodName, varargin{:}) ;
+        end
+        
+        function setUserObjectProperty(self, propertyName, newValue)
+            self.UserCodeManager_.setUserObjectProperty(propertyName, newValue) ;
+        end
+
+        function result = getUserObjectProperty(self, propertyName)
+            result = self.UserCodeManager_.getUserObjectProperty(propertyName) ;
+        end
+    end  % public methods block
+    
+    methods
+        function result = get.LastProtocolFilePath(self)
+            result = self.LastProtocolFilePath_ ;
+        end
+        
+        function result = get.CurrentProfileName(self)
+            result = self.CurrentProfileName_ ;            
+        end
+
+        function set.CurrentProfileName(self, newProfileName)
+            profileNames = self.ProfileNames_ ;
+            if ws.isString(newProfileName) && ismember(newProfileName, profileNames) ,
+                self.savePreferences_(self.CurrentProfileName) ;
+                try
+                    self.loadPreferences_(newProfileName) ;
+                catch err
+                    self.broadcast('UpdateMain') ;
+                    error('Unable to load preferences for new profile') ;
+                end                                                        
+                self.CurrentProfileName_ = newProfileName ;
+            else
+                self.broadcast('UpdateMain') ;
+                error('ws:invalidPropertyValue', ...
+                      'CurrentProfileName must be one of the ProfileNames');
+            end
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateFastProtocols') ;
+        end
+        
+        function result = get.ProfileNames(self)
+            result = self.ProfileNames_ ;            
+        end        
+
+        function result = packagePreferences(self)  % constant method
+            lastProtocolFilePath = self.LastProtocolFilePath_ ;
+            %if self.HasUserSpecifiedProtocolFileName ,
+            %    lastProtocolFilePath = self.AbsoluteProtocolFileName ;
+            %else
+            %    lastProtocolFilePath = '' ;
+            %end
+            fastProtocolsAsStruct = struct([]) ;
+            for i=1:self.NFastProtocols ,
+                fastProtocolsAsStruct(i).ProtocolFileName = self.FastProtocols_{i}.ProtocolFileName ;
+                fastProtocolsAsStruct(i).AutoStartType = self.FastProtocols_{i}.AutoStartType ;
+            end
+            result = struct('LastProtocolFilePath', {lastProtocolFilePath}, ...
+                            'FastProtocols', {fastProtocolsAsStruct}) ;
+        end        
+        
+        function newProfileName = createNewProfile(self)
+            self.changeReadiness_(-1) ;            
+            didFindAvailableName = false ;
+            for i = 1:10 ,
+                if i==1 ,
+                    putativeNewProfileName = 'New Profile' ;
+                else
+                    putativeNewProfileName = sprintf('New Profile %d', i) ;
+                end                    
+                %putativePreferencesFilePath = fullfile(preferencesFolderPath, sprintf('%s.mat', putativeProfileName)) ;
+                profileNames = self.ProfileNames_ ;
+                if ~ismember(putativeNewProfileName, profileNames) ,
+                    newProfileName = putativeNewProfileName ;
+                    didFindAvailableName = true ;
+                    break
+                end
+            end
+            if didFindAvailableName ,
+                % Write the current preferences to the current profile
+                self.savePreferences_(self.CurrentProfileName) ;
+                % Change state to accord with the new profile
+                self.CurrentProfileName_ = newProfileName ;
+                newProfileNames = sort(horzcat(self.ProfileNames_, {newProfileName})) ;
+                self.ProfileNames_ = newProfileNames ;
+            else
+               error('Unable to find an available name for the new profile') ; 
+            end
+            self.changeReadiness_(+1) ;            
+            self.broadcast('UpdateMain') ;
+            self.broadcast('UpdateFastProtocols') ;
+        end
+        
+        function deleteCurrentProfile(self)
+            self.changeReadiness_(-1) ;            
+            profileNameToDelete = self.CurrentProfileName ;
+            if isequal(profileNameToDelete, 'Default') ,
+               error('Sorry, you can''t delete the default profile') ;
+            end
+            self.CurrentProfileName = 'Default' ;  % this will update the view
+            preferencesFilePath = ws.preferencesFileNameFromProfileName(profileNameToDelete) ;
+            try
+                delete(preferencesFilePath) ;
+            catch err
+               error('Unable to delete the profile preferences file from disk') ;                                 
+            end
+            % If get here, the file was successfully deleted
+            self.ProfileNames_ = setdiff(self.ProfileNames_, profileNameToDelete) ;
+            self.changeReadiness_(+1) ;            
+            self.broadcast('UpdateMain') ;            
+            self.broadcast('UpdateFastProtocols') ;
+        end
+        
+        function renameCurrentProfile(self, newProfileName)
+            self.changeReadiness_(-1) ;            
+            % Get current values out of self
+            oldProfileName = self.CurrentProfileName ;            
+            oldProfileNames = self.ProfileNames_ ;
+            
+            % Check for name collision
+            if ismember(newProfileName, oldProfileNames) ,
+                error('There is already a profile named "%s"', newProfileName) ;
+            end
+            
+            % Delete the old-profile-name preference file from disk, if it exists
+            oldPreferencesFilePath = ws.preferencesFileNameFromProfileName(oldProfileName) ;
+            try 
+                if exist(oldPreferencesFilePath, 'file') ,
+                    delete(oldPreferencesFilePath) ;
+                end
+            catch err
+                error('Unable to delete preferences file for profile "%s", so not renaming', oldProfileName) ;
+            end            
+            
+            % Make sure the new name is valid by trying to write out the preferences under
+            % the new name
+            try
+                self.savePreferences_(newProfileName) ;
+            catch err
+                error('%s is not an allowed profile name', newProfileName) ;
+            end            
+            
+            % Replace the old profile name with the new in profile names
+            newProfileNames = ws.renameInCellString(oldProfileNames, oldProfileName, newProfileName) ;
+            
+            % Commit things to self            
+            % The renamed profile preferences will get written to disk in delete(), or when
+            % user switches to a new profile.
+            self.CurrentProfileName_ = newProfileName ;
+            self.ProfileNames_ = newProfileNames ;
+            
+            % Finally, update the view
+            self.changeReadiness_(+1) ;            
+            self.broadcast('UpdateMain') ;                        
+            self.broadcast('UpdateFastProtocols') ;
+        end
+        
+    end  % public methods block
+    
+    methods (Access = protected)        
+        function loadProfileNameAndNames_(self)
+            if self.DoUsePreferences_ ,
+                profileName = ws.loadLastProfileName() ;
+                profileNames = ws.loadProfileNames() ;  % read from disk; these will be sorted
+            else
+                profileName = 'Default' ;
+                profileNames = { profileName } ;
+            end
+            self.CurrentProfileName_ = profileName ;
+            self.ProfileNames_ = profileNames ;
+        end
+        
+        function saveLastProfileName_(self) 
+            if self.DoUsePreferences_ ,
+                profileName = self.CurrentProfileName_ ;
+                ws.saveLastProfileName(profileName) ;
+            end            
+        end
+        
+        function savePreferences_(self, profileName)
+            if self.DoUsePreferences_ ,
+                preferences = self.packagePreferences() ;
+                ws.saveProfilePreferences(profileName, preferences) ;
+            end
+            % Notify SI whether or not we're *really* saving the preferences
+            self.notifyScanImageThatSavingPreferencesIfYoked_(profileName) ;
+        end
+
+        function loadPreferences_(self, profileName)
+            if self.DoUsePreferences_ ,
+                % Load the preferences from disk
+                preferences = ws.loadProfilePreferences(profileName) ;
+
+                % Set the state of self to match the given preferences
+                lastProtocolFilePath = preferences.LastProtocolFilePath ;                
+                self.LastProtocolFilePath_ = lastProtocolFilePath ; 
+
+                % Restore the fast protocols from the profile preferences
+                fastProtocolsAsStruct = preferences.FastProtocols ;
+                nFastProtocolsToSet = min(self.NFastProtocols, length(fastProtocolsAsStruct)) ;
+                for i = 1:nFastProtocolsToSet ,
+                    self.FastProtocols_{i}.setPropertyValue_('ProtocolFileName_', fastProtocolsAsStruct(i).ProtocolFileName) ;
+                    self.FastProtocols_{i}.setPropertyValue_('AutoStartType_'   , fastProtocolsAsStruct(i).AutoStartType   ) ;
+                end
+            end
+            % Notify SI whether or not we're *really* loading the preferences
+            self.notifyScanImageThatLoadingPreferencesIfYoked_(profileName) ;
+        end        
+        
+        function addData_(self, t, recentScaledAnalogData, recentRawDigitalData)
+            % t is a scalar, the time stamp of the scan *just after* the
+            % most recent scan.  (I.e. it is one dt==1/fs into the future.
+            % Queue Doctor Who music.)
+            
+            nActiveDIChannels = self.getNActiveDIChannels() ;
+            sampleRate = self.AcquisitionSampleRate ;
+            xSpan = self.XSpan ;
+            self.Display_.addData(t, recentScaledAnalogData, recentRawDigitalData, nActiveDIChannels, sampleRate, xSpan) ;
+            
+            self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+            %plotIndicesNeedingYLimitUpdate = self.PlotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            
+            self.broadcast('UpdateAfterDataAdded') ;
+        end  % function        
+        
+        function indicesOfAIChannelsNeedingYLimitUpdate = setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_(self)
+            isChannelDisplayed = self.IsAIChannelDisplayed ;
+            areYLimitsLockedTightToData = self.AreYLimitsLockedTightToDataForAIChannel ;
+            doesAIChannelNeedYLimitUpdate = isChannelDisplayed & areYLimitsLockedTightToData ;
+            indicesOfAIChannelsNeedingYLimitUpdate = find(doesAIChannelNeedYLimitUpdate) ;
+            plotIndexFromChannelIndex = self.PlotIndexFromChannelIndex ;  % for AI channels, the channel index is equal to the AI channel index
+            plotIndicesOfAIChannelsNeedingYLimitUpdate = plotIndexFromChannelIndex(indicesOfAIChannelsNeedingYLimitUpdate) ;
+            for i = 1:length(plotIndicesOfAIChannelsNeedingYLimitUpdate) ,
+                %channelIndex = indicesOfAIChannelsNeedingYLimitUpdate(i) ;
+                plotIndex = plotIndicesOfAIChannelsNeedingYLimitUpdate(i) ;
+                %self.setYAxisLimitsInModelTightToData_(plotIndex, channelIndex) ;
+                self.setYLimitsTightToDataForSinglePlot(plotIndex) ;
+            end               
+        end  % function        
+        
+        function syncTraces_(self)
+            scaledAnalogData = self.getAIDataFromCache() ;
+            [digitalDataAsUint, cachedDigitalSignalCount] = self.getDIDataFromCache() ;
+            t = self.getTimestampsForDataInCache() ;
+            xSpan = self.XSpan ;
+            sampleRate = self.AcquisitionSampleRate ;
+            self.Display_.updateTraces(scaledAnalogData, digitalDataAsUint, cachedDigitalSignalCount, t, xSpan, sampleRate) ;
+            self.setYAxisLimitsInModelTightToDataIfAreYLimitsLockedTightToData_() ;            
+        end
+    end  % protected methods block
+    
+    methods
+        function set.WidthOfPlotsInPixels(self, newValue)
+            self.Display_.XSpanInPixels = newValue ;
+            self.syncTraces_() ;            
+            self.broadcast('UpdateTraces') ;  % Is this what we want, really?
+        end
+        
+        function result = get.XDataForDisplay(self)
+            result = self.Display_.XData ;
+        end
+        
+        function result = get.YDataForDisplay(self)
+            result = self.Display_.YData ;
+        end
+        
+        function yMinAndMax = plottedDataYMinAndMax(self, aiChannelIndex)
+            % Min and max of the data, across all plotted channels.
+            % Returns a 1x2 array.
+            % If all channels are empty, returns [+inf -inf].
+            cacheChannelIndexFromChannelIndex = self.CacheInputChannelIndexFromInputChannelIndex ;
+            indexWithinData = cacheChannelIndexFromChannelIndex(aiChannelIndex) ;
+            if isfinite(indexWithinData) ,
+                yData = self.Display_.YData ;
+                y = yData(:,indexWithinData) ;
+                yMinRaw = min(y) ;
+                yMin = ws.fif(isempty(yMinRaw),+inf,yMinRaw) ;
+                yMaxRaw = max(y) ;
+                yMax = ws.fif(isempty(yMaxRaw),-inf,yMaxRaw) ;
+                yMinAndMax = double([yMin yMax]) ;
+            else
+                yMinAndMax = [-inf +inf] ;
+            end
+        end                        
+        
+        function setAreYLimitsLockedTightToDataForSinglePlot(self, plotIndex) 
+            channelIndex = self.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            currentValue = self.AreYLimitsLockedTightToDataForAIChannel(channelIndex) ;
+            newValue = ~currentValue ;
+            self.setAreYLimitsLockedTightToDataForSingleAIChannel_(channelIndex, newValue) ;
+            if newValue ,
+                self.setYLimitsTightToDataForSinglePlot(plotIndex) ;
+            end
+            self.broadcast('UpdateMain') ;  % need to update the button
+        end  % method       
+        
+        function setYLimitsTightToDataForSinglePlot(self, plotIndex) 
+            aiChannelIndex = self.ChannelIndexWithinTypeFromPlotIndex(plotIndex) ;
+            yMinAndMax = self.plottedDataYMinAndMax(aiChannelIndex) ;
+            if any( ~isfinite(yMinAndMax) ) ,
+                return
+            end
+            yCenter = mean(yMinAndMax) ;
+            yRadius = 0.5*diff(yMinAndMax) ;
+            if yRadius == 0 ,
+                yRadius = 0.001 ;
+            end
+            newYLimits = yCenter + 1.05*yRadius*[-1 +1] ;
+            self.setYLimitsForSinglePlot(plotIndex, newYLimits) ;  % this will broadcast          
+        end  % method          
+        
+        function result = get.WidthOfPlotsInPixels(self)
+            result = self.Display_.XSpanInPixels ;
+        end
+    end  % public methods block
 end  % classdef

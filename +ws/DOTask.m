@@ -4,7 +4,7 @@ classdef DOTask < handle
         ChannelCount_ = 0
         ChannelData_
         IsOutputBufferSyncedToChannelData_ = false
-        DabsDaqTask_ = []  % Can be empty if there are zero channels
+        DAQmxTaskHandle_ = []  % Can be empty if there are zero channels
     end
     
     methods
@@ -17,25 +17,48 @@ classdef DOTask < handle
             % after adding channels)
             nChannels=length(terminalIDs);
             if nChannels>0 ,
-                self.DabsDaqTask_ = ws.dabs.ni.daqmx.Task(taskName);
+                %self.DAQmxTaskHandle_ = ws.dabs.ni.daqmx.Task(taskName);
+                self.DAQmxTaskHandle_ = ws.ni('DAQmxCreateTask', taskName) ;
                 for i=1:nChannels ,
                     deviceName = primaryDeviceName ;
                     terminalID = terminalIDs(i) ;                    
-                    lineName = sprintf('line%d',terminalID) ;                        
-                    self.DabsDaqTask_.createDOChan(deviceName, lineName) ;
+                    %lineName = sprintf('line%d',terminalID) ;                        
+                    %self.DAQmxTaskHandle_.createDOChan(deviceName, lineName) ;
+                    lineSpecification = sprintf('%s/line%d', deviceName, terminalID) ;
+                    ws.ni('DAQmxCreateDOChan', self.DAQmxTaskHandle_, lineSpecification, 'DAQmx_Val_ChanForAllLines')
                 end
                 [referenceClockSource, referenceClockRate] = ...
                     ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;                
-                set(self.DabsDaqTask_, 'refClkSrc', referenceClockSource) ;                
-                set(self.DabsDaqTask_, 'refClkRate', referenceClockRate) ;                
-                self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                %set(self.DAQmxTaskHandle_, 'refClkSrc', referenceClockSource) ;                
+                %set(self.DAQmxTaskHandle_, 'refClkRate', referenceClockRate) ;                
+                ws.ni('DAQmxSetRefClkSrc', self.DAQmxTaskHandle_, referenceClockSource) ;
+                ws.ni('DAQmxSetRefClkRate', self.DAQmxTaskHandle_, referenceClockRate) ;
+                %self.DAQmxTaskHandle_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps');
+                source = '';  % means to use default sample clock
+                scanCount = 2 ;
+                  % 2 is the minimum value advisable when using FiniteSamps mode. If this isn't
+                  % set, then Error -20077 can occur if writeXXX() operation precedes configuring
+                  % sampQuantSampPerChan property to a non-zero value -- a bit strange,
+                  % considering that it is allowed to buffer/write more data than specified to
+                  % generate.
+                ws.ni('DAQmxCfgSampClkTiming', self.DAQmxTaskHandle_, source, sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', scanCount);
                 try
-                    self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
+                    %self.DAQmxTaskHandle_.control('DAQmx_Val_Task_Verify');
+                    ws.ni('DAQmxTaskControl', self.DAQmxTaskHandle_, 'DAQmx_Val_Task_Verify');
                 catch me
                     error('There was a problem setting up the finite output task');
                 end
-                if self.DabsDaqTask_.sampClkRate~=sampleRate ,
-                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                try
+                    %taskSampleClockRate = self.DAQmxTaskHandle_.sampClkRate ;
+                    taskSampleClockRate = ws.ni('DAQmxGetSampClkRate', self.DAQmxTaskHandle_) ;
+                catch cause
+                    rawException = MException('ws:errorGettingTaskSampleClockRate', ...
+                                              'There was a problem getting the sample clock rate of the DAQmx task in order to check it') ;
+                    exception = addCause(rawException, cause) ;
+                    throw(exception) ;
+                end                                    
+                if taskSampleClockRate ~= sampleRate ,
+                    error('The DAQmx task sample rate is not equal to the desired sampling rate');
                 end
                 
                 % Figure out the trigger terminal and edge
@@ -58,15 +81,22 @@ classdef DOTask < handle
                 end
                 
                 % Set up triggering
+%                 if isempty(triggerTerminalName) ,
+%                     self.DAQmxTaskHandle_.disableStartTrig() ;
+%                 else
+%                     dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
+%                     self.DAQmxTaskHandle_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
+%                 end                
                 if isempty(triggerTerminalName) ,
-                    self.DabsDaqTask_.disableStartTrig() ;
+                    % This is mostly here for testing
+                    ws.ni('DAQmxDisableStartTrig', self.DAQmxTaskHandle_) ;
                 else
-                    dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-                    self.DabsDaqTask_.cfgDigEdgeStartTrig(triggerTerminalName, dabsTriggerEdge) ;
+                    daqmxTriggerEdge = ws.daqmxEdgeTypeFromEdgeType(triggerEdge) ;
+                    ws.ni('DAQmxCfgDigEdgeStartTrig', self.DAQmxTaskHandle_, triggerTerminalName, daqmxTriggerEdge);
                 end                
             else
                 % if no channels
-                self.DabsDaqTask_ = [] ;
+                self.DAQmxTaskHandle_ = [] ;
             end        
             
             % Store stuff
@@ -79,19 +109,27 @@ classdef DOTask < handle
         end  % function
         
         function delete(self)
-            ws.deleteIfValidHandle(self.DabsDaqTask_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
-            self.DabsDaqTask_ = [] ;  % not really necessary...
+            %ws.deleteIfValidHandle(self.DAQmxTaskHandle_) ;  % have to explicitly delete, b/c ws.dabs.ni.daqmx.System has refs to, I guess
+            if ~isempty(self.DAQmxTaskHandle_) ,
+                if ~ws.ni('DAQmxIsTaskDone', self.DAQmxTaskHandle_) ,
+                    ws.ni('DAQmxStopTask', self.DAQmxTaskHandle_) ;
+                end
+                ws.ni('DAQmxClearTask', self.DAQmxTaskHandle_) ;
+            end            
+            self.DAQmxTaskHandle_ = [] ;  % not really necessary...
         end  % function
         
         function start(self)
-            if ~isempty(self.DabsDaqTask_) ,
-                self.DabsDaqTask_.start();
+            if ~isempty(self.DAQmxTaskHandle_) ,
+                %self.DAQmxTaskHandle_.start();
+                ws.ni('DAQmxStartTask', self.DAQmxTaskHandle_) ;
             end
         end  % function
         
         function stop(self)
-            if ~isempty(self.DabsDaqTask_) ,
-                self.DabsDaqTask_.stop();
+            if ~isempty(self.DAQmxTaskHandle_) ,
+                %self.DAQmxTaskHandle_.stop();
+                ws.ni('DAQmxStopTask', self.DAQmxTaskHandle_) ;
             end
         end  % function
         
@@ -99,8 +137,9 @@ classdef DOTask < handle
             % This is used in the process of setting all outputs to zero when stopping
             % a run.  The DOTask is mostly useless after, because no was to restore the
             % triggers.
-            if ~isempty(self.DabsDaqTask_) ,
-                self.DabsDaqTask_.disableStartTrig() ;
+            if ~isempty(self.DAQmxTaskHandle_) ,
+                %self.DAQmxTaskHandle_.disableStartTrig() ;
+                ws.ni('DAQmxDisableStartTrig', self.DAQmxTaskHandle_) ;
             end
         end
         
@@ -121,10 +160,6 @@ classdef DOTask < handle
             self.setChannelData(false(nScans,nChannels)) ;  % N.B.: Want to use public setter, so output gets sync'ed
         end  % function       
         
-%         function value = get.ChannelData(self)
-%             value = self.ChannelData_;
-%         end  % function
-        
         function setChannelData(self, value)
             nChannels = self.ChannelCount_ ;
             requiredType = 'logical' ;
@@ -138,149 +173,17 @@ classdef DOTask < handle
             end
         end  % function        
         
-%         function value = get.OutputDuration(self)
-%             value = size(self.ChannelData_,1) * self.SampleRate;
-%         end  % function        
-        
         function debug(self) %#ok<MANU>
             keyboard
         end  % function        
-    end  % methods
-    
-    methods
-%         function out = get.TerminalIDs(self)
-%             out = self.TerminalIDs_ ;
-%         end  % function
-
-%         function out = get.ChannelNames(self)
-%             out = self.ChannelNames_ ;
-%         end  % function
-        
-%         function value = get.SampleRate(self)
-%             value = self.SampleRate_;
-%         end  % function
-        
-%         function set.SampleRate(self, newValue)
-%             if ~( isnumeric(newValue) && isscalar(newValue) && newValue==round(newValue) && newValue>0 )  ,
-%                 error('ws:invalidPropertyValue', ...
-%                       'SampleRate must be a positive integer');       
-%             end            
-%                         
-%             if isempty(self.DabsDaqTask_) ,
-%                 self.SampleRate_ = newValue;
-%             else                
-%                 nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize');
-%                 if nScansInBuffer > 0 ,                
-%                     originalSampleRate = self.DabsDaqTask_.sampClkRate;
-%                     self.DabsDaqTask_.sampClkRate = newValue;
-%                     self.SampleRate_ = newValue;
-%                     try
-%                         self.DabsDaqTask_.control('DAQmx_Val_Task_Verify');
-%                     catch me
-%                         self.DabsDaqTask_.sampClkRate = originalSampleRate;
-%                         self.SampleRate_ = originalSampleRate;
-%                         error('ws:invalidPropertyValue', ...
-%                               'Unable to set task sample rate to the given value');
-%                     end
-%                 else
-%                     self.SampleRate_ = newValue;
-%                 end
-%             end
-%         end  % function
-        
-%         function out = get.TaskName(self)
-%             if isempty(self.DabsDaqTask_) ,
-%                 out = '';
-%             else
-%                 out = self.DabsDaqTask_.taskName;
-%             end
-%         end  % function
-%         
-%         function set.TriggerTerminalName(self, newValue)
-%             if isempty(newValue) ,
-%                 self.TriggerTerminalName_ = '' ;
-%             elseif ws.isString(self.TriggerTerminalName_) ,
-%                 self.TriggerTerminalName_ = newValue ;
-%             else
-%                 error('ws:invalidPropertyValue', ...
-%                       'TriggerTerminalName must be empty or a string');
-%             end
-%         end  % function
-%         
-%         function value = get.TriggerTerminalName(self)
-%             value = self.TriggerTerminalName_ ;
-%         end  % function
-% 
-%         function set.TriggerEdge(self, newValue)
-%             if isempty(newValue) ,
-%                 self.TriggerEdge_ = [];
-%             elseif ws.isAnEdgeType(newValue) ,
-%                 self.TriggerEdge_ = newValue;
-%             else
-%                 error('ws:invalidPropertyValue', ...
-%                       'TriggerEdge must be empty, or ''rising'', or ''falling''');       
-%             end            
-%         end  % function
-%         
-%         function value = get.TriggerEdge(self)
-%             value = self.TriggerEdge_ ;
-%         end  % function                
-        
-%         function arm(self)
-%             % called before the first call to start()            
-%             %fprintf('FiniteOutputTask::arm()\n');
-%             if self.IsArmed_ ,
-%                 return
-%             end
-%             
-%             % Configure self.DabsDaqTask_
-%             if isempty(self.DabsDaqTask_) ,
-%                 % do nothing
-%             else
-%                 % Set up callbacks
-%                 %self.DabsDaqTask_.doneEventCallbacks = {@self.taskDone_};
-% 
-%                 % Set up triggering
-%                 if isempty(self.TriggerTerminalName) ,
-%                     self.DabsDaqTask_.disableStartTrig() ;
-%                 else
-%                     terminalName = self.TriggerTerminalName ;
-%                     triggerEdge = self.TriggerEdge ;
-%                     dabsTriggerEdge = ws.dabsEdgeTypeFromEdgeType(triggerEdge) ;
-%                     self.DabsDaqTask_.cfgDigEdgeStartTrig(terminalName, dabsTriggerEdge) ;
-%                 end
-%             end
-%             
-%             % Note that we are now armed
-%             self.IsArmed_ = true;
-%         end  % function
-
-%         function disarm(self)
-%             if self.IsArmed_ ,            
-%                 if isempty(self.DabsDaqTask_) ,
-%                     % do nothing
-%                 else
-%                     % Unregister callbacks
-%                     %self.DabsDaqTask_.doneEventCallbacks = {};
-% 
-%                     % Stop the task
-%                     self.DabsDaqTask_.stop();
-%                     
-%                     % Unreserve resources (abort should do this for us)
-%                     %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');
-%                 end
-%                 
-%                 % Note that we are now disarmed
-%                 self.IsArmed_ = false;
-%             end
-%         end  % function   
         
         function result = isDone(self)
-            if isempty(self.DabsDaqTask_) ,
+            if isempty(self.DAQmxTaskHandle_) ,
                 % This means there are no channels, so nothing to do
                 result = true ;  % things work out better if you use this convention
             else
-                result = self.DabsDaqTask_.isTaskDoneQuiet() ;
+                %result = self.DAQmxTaskHandle_.isTaskDoneQuiet() ;
+                result = ws.ni('DAQmxIsTaskDone', self.DAQmxTaskHandle_) ;
             end
         end  % function
     end  % public methods
@@ -293,7 +196,7 @@ classdef DOTask < handle
             end
             
             % Actually set up the task, if present
-            if isempty(self.DabsDaqTask_) ,
+            if isempty(self.DAQmxTaskHandle_) ,
                 % do nothing
             else            
                 % Get the channel data into a local
@@ -311,54 +214,42 @@ classdef DOTask < handle
                 end
                 
                 % Resize the output buffer to the number of scans in outputData
-                %self.DabsDaqTask_.control('DAQmx_Val_Task_Unreserve');  
+                %self.DAQmxTaskHandle_.control('DAQmx_Val_Task_Unreserve');  
                 % this is needed b/c we might have filled the buffer before bur never outputed that data
                 nScansInOutputData = size(outputData,1) ;
-                nScansInBuffer = self.DabsDaqTask_.get('bufOutputBufSize') ;
+                %nScansInBuffer = self.DAQmxTaskHandle_.get('bufOutputBufSize') ;
+                nScansInBuffer = ws.ni('DAQmxGetBufOutputBufSize', self.DAQmxTaskHandle_) ;
                 if nScansInBuffer ~= nScansInOutputData ,
-                    self.DabsDaqTask_.cfgOutputBuffer(nScansInOutputData) ;
+                    %self.DAQmxTaskHandle_.cfgOutputBuffer(nScansInOutputData) ;
+                    ws.ni('DAQmxCfgOutputBuffer', self.DAQmxTaskHandle_, nScansInOutputData) ;
                 end
 
                 % Configure the the number of scans in the finite-duration output
                 sampleRate = self.SampleRate_ ;
-                self.DabsDaqTask_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData) ;
+                %self.DAQmxTaskHandle_.cfgSampClkTiming(sampleRate, 'DAQmx_Val_FiniteSamps', nScansInOutputData) ;
+                ws.ni('DAQmxCfgSampClkTiming', self.DAQmxTaskHandle_, '', sampleRate, 'DAQmx_Val_Rising', 'DAQmx_Val_FiniteSamps', nScansInOutputData);
                   % We validated the sample rate when we created the
                   % FiniteOutputTask, so this should be OK, but check
                   % anyway.
-                if self.DabsDaqTask_.sampClkRate ~= sampleRate ,
-                    error('The DABS task sample rate is not equal to the desired sampling rate');
+                sampleRateAsRead = ws.ni('DAQmxGetSampClkRate', self.DAQmxTaskHandle_) ;  
+                if sampleRateAsRead ~= sampleRate ,
+                    error('The DAQmx task sample rate is not equal to the desired sampling rate');
                 end
 
                 % Write the data to the output buffer
                 outputData(end,:) = false ;  % don't want to end on nonzero value
-                self.DabsDaqTask_.reset('writeRelativeTo');
-                self.DabsDaqTask_.reset('writeOffset');
-                self.DabsDaqTask_.writeDigitalData(outputData) ;
+                %self.DAQmxTaskHandle_.reset('writeRelativeTo');
+                %self.DAQmxTaskHandle_.reset('writeOffset');
+                ws.ni('DAQmxResetWriteRelativeTo', self.DAQmxTaskHandle_) ;
+                ws.ni('DAQmxResetWriteOffset', self.DAQmxTaskHandle_) ;
+                %self.DAQmxTaskHandle_.writeDigitalData(outputData) ;
+                autoStart = false ;  % Don't automatically start the task.  This is typically what you want for a timed task.
+                timeout = -1 ;  % wait indefinitely
+                ws.ni('DAQmxWriteDigitalLines', self.DAQmxTaskHandle_, autoStart, timeout, outputData) ;
             end
             
             % Note that we are now synched
             self.IsOutputBufferSyncedToChannelData_ = true ;
         end  % function
-
-%         function packedData = packDigitalData_(self, unpackedData)
-%             % Only used for digital data.  outputData is an nScans x
-%             % nSignals logical array.  packedOutputData is an nScans x 1
-%             % uint32 array, with each outputData column stored in the right
-%             % bit of packedOutputData, given the physical line ID for that
-%             % channel.
-%             [nScans,nChannels] = size(unpackedData);
-%             packedData = zeros(nScans,1,'uint32');
-%             %terminalIDs = ws.terminalIDsFromTerminalNames(self.TerminalNames);
-%             terminalIDs = self.TerminalIDs_ ;
-%             for j=1:nChannels ,
-%                 terminalID = terminalIDs(j);
-%                 %thisChannelData = uint32(outputData(:,j));                
-%                 %thisChannelDataShifted = bitshift(thisChannelData,terminalID) ;
-%                 %packedOutputData = bitor(packedOutputData,thisChannelDataShifted);
-%                 thisChannelData = unpackedData(:,j);
-%                 packedData = bitset(packedData,terminalID+1,thisChannelData);  % +1 to convert to 1-based indexing
-%             end
-%         end  % function
-    end  % protected methods block
-    
+    end  % protected methods block    
 end  % classdef

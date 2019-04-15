@@ -153,7 +153,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         function wake(self, rootModel)
-            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ,
+            if isa(rootModel, 'ws.WavesurferModel') && rootModel.IsAwake ,
                 % Only want this to happen in frontend
                 set(0,'units','pixels');
                 self.ScreenSize_ = get(0,'screensize');
@@ -228,9 +228,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
         
         % These methods are called in the frontend process
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
-        end
-        
         function startingRun(self,wsModel) 
             % Called just before each set of sweeps (a.k.a. each "run")
             
@@ -448,119 +445,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
         end
         
-        % These methods are called in the looper process
-        function samplesAcquired(self,looper,analogData,digitalData) %#ok<INUSD>
-            % This is used to acquire the data, and performs the necessary
-            % analysis to trigger an LED
-            
-            % Check if this is the first call of the run, and act
-            % accordingly
-            nSweepsCompletedInThisRun = looper.NSweepsCompletedInThisRun ;
-            if self.NSweepsCompletedInThisRunAtLastCheck_ ~= nSweepsCompletedInThisRun ,
-                % This must be the first call to samplesAcquired() in 
-                % this sweep.
-                if self.IsInDebugMode_ ,
-                    if nSweepsCompletedInThisRun==0 ,
-                        s = load(self.FakeInputDataAbsoluteFileName_) ;
-                        self.FakeInputDataForDebugging_ = s.data ;
-                    end
-                end
-                self.NFakeScansUsedSoFarThisSweep_ = 0 ;
-                self.NSweepsCompletedInThisRunAtLastCheck_ = nSweepsCompletedInThisRun ;
-            end
-            
-            % Get the number of scans acquired since the last call to
-            % samplesAcquired()
-            numberOfScansRecent = size(analogData,1) ;
-            
-            % NEXt 2 lines are TESTING
-            if self.IsInDebugMode_ ,                            
-                analogData = self.FakeInputDataForDebugging_(self.NFakeScansUsedSoFarThisSweep_+1:self.NFakeScansUsedSoFarThisSweep_+numberOfScansRecent,:);
-                self.NFakeScansUsedSoFarThisSweep_ = self.NFakeScansUsedSoFarThisSweep_+numberOfScansRecent;
-            end
-       
-            % analyzeFlyLocomotion gives us the recent wrapped bar position and forward displacement of the fly
-            self.analyzeFlyLocomotion_(analogData, false);  % only called in looper
-            
-            if self.RunAlreadyStarted_ == false
-                % Then a run just started
-                self.LooperBarPositionHistogramTotal_ = self.BarPositionHistogramTotal_; % Sync looper bar positions to those acquired in frontend
-                self.NSweepsCompletedInThisRunPrevious_ = NaN;
-                self.DeltaTime_ = 1/looper.AcquisitionSampleRate;
-                self.Alpha_ = self.DeltaTime_/(self.Tau_+self.DeltaTime_);
-                self.OneMinusAlpha_ = 1 - self.Alpha_;
-                self.RunAlreadyStarted_ = true;
-                self.ShouldTheLEDBeTurnedOnForRealThisTime_ = true;
-            end
-
-            if self.NSweepsCompletedInThisRunPrevious_ ~= looper.NSweepsCompletedInThisRun
-                % Then a new sweep has just started
-                self.TimeSpentInThisSweep_ = -self.DeltaTime_; % Initialize to this so that eg. the first scan equals time 0
-                self.NSweepsCompletedInThisRunPrevious_ = looper.NSweepsCompletedInThisRun;
-                self.RCFilteredForwardDisplacementPrevious_ = self.ForwardDisplacementRecent_(1);
-                timeForLEDToBeOff = self.TimeToWaitBeforeTurningOnLEDForFirstTime_;
-                self.TimeWhenWeCanTurnOnLED_ = self.TimeToWaitBeforeTurningOnLEDForFirstTime_;
-            else
-                timeForLEDToBeOff = self.TimeToWaitBeforeTurningLEDBackOn_;
-            end
-            
-            % Update times
-            timesRecent = self.TimeSpentInThisSweep_ + (1:numberOfScansRecent)'*self.DeltaTime_;
-            self.TimeSpentInThisSweep_ = timesRecent(end);
-            
-            % Bar
-            barPositionWrappedLessThanZero = self.BarPositionWrappedRecent_<0;
-            self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero) = self.BarPositionWrappedRecent_(barPositionWrappedLessThanZero)+2*pi;
-            barPositionHistogramCountsRecent = hist(self.BarPositionWrappedRecent_,self.BarPositionHistogramBinCenters_);
-            self.LooperBarPositionHistogramTotal_ = self.LooperBarPositionHistogramTotal_ + barPositionHistogramCountsRecent/looper.AcquisitionSampleRate;
-            
-            % Use RC filter of forward displacement to determine if fly is
-            % moving forward enough to turn LED on.
-            filteredForwardDisplacementRecent = zeros(numberOfScansRecent,1);
-            for i=2:numberOfScansRecent
-                filteredForwardDisplacementRecent(i) = self.ForwardDisplacementRecent_(i)*self.Alpha_ + self.RCFilteredForwardDisplacementPrevious_*self.OneMinusAlpha_;
-                self.RCFilteredForwardDisplacementPrevious_ = filteredForwardDisplacementRecent(i);
-            end
-            % Check whether to turn the LED on or off
-            if strcmp(self.CurrentLEDState_, 'Off') % Then the LED is off
-                % We can turn on the LED if the fly was moving forward and
-                % if the LED has been off long enough AND if the LED can be on
-                % for a full cycle before the sweep ends
-                canWeTurnOnTheLED = any(timesRecent >= self.TimeWhenWeCanTurnOnLED_ &...
-                                        self.TimeSpentInThisSweep_ < (looper.SweepDuration - (self.TimeForLEDToBeOn_+0.1)) & ...
-                                        filteredForwardDisplacementRecent>=self.CutoffToDetermineIfFlyIsMovingForward_);
-                if canWeTurnOnTheLED % Then we will either turn on the LED or pseudo turn on the LED
-                    self.ShouldTheLEDBeTurnedOnForRealThisTime_ = 1;%rand()>0.5; % randomize whether it will be turned on for real. Comment this out and it will alternate if it is turned on for real.
-                    if self.ShouldTheLEDBeTurnedOnForRealThisTime_
-                        % The LED will really be turned on.
-                        self.setLEDState(looper,'On');
-                        self.CurrentLEDState_ = 'On';
-                    else
-                        % We will pretend as if the LED was turned on so
-                        % we wait an appropriate amount of time before
-                        % trying to turn it on again.
-                        self.CurrentLEDState_ = 'Pseudo On';
-                    end
-                    self.TimeWhenWeShouldTurnOffLED_ = self.TimeSpentInThisSweep_+self.TimeForLEDToBeOn_;
-                    self.ShouldTheLEDBeTurnedOnForRealThisTime_ = ~self.ShouldTheLEDBeTurnedOnForRealThisTime_; % Toggle this. Only affects next LED state if not randomizing
-                end
-            else
-                % The LED is "On" or "Pseudo On"
-                if self.TimeSpentInThisSweep_ >= self.TimeWhenWeShouldTurnOffLED_ % then want to turn it off
-                    if strcmp(self.CurrentLEDState_,'On')
-                        self.setLEDState(looper,'Off');
-                    else
-                        % Then the LED is Pseudo On, so we don't need to
-                        % actually turn it off
-                    end
-                    self.CurrentLEDState_ = 'Off';
-                    self.TimeWhenWeCanTurnOnLED_ = self.TimeSpentInThisSweep_ + timeForLEDToBeOff;
-                end
-            end
-            
-        end
-        
-        % These methods are called in the refiller process
         function startingEpisode(self,refiller) %#ok<INUSD>
         end
         
@@ -575,7 +459,6 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
     end  % methods
     
     methods
-        
         function setLEDState(self, looper, onOrOff)
             % Will set the LED state              
             digitalOutputStateIfUntimed = looper.DOChannelStateIfUntimed ;
@@ -768,7 +651,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             end
         end
         
-        function analyzeFlyLocomotion_(self, data, isITheOneTrueWavesurferModel)
+        function analyzeFlyLocomotion_(self, data, isAwake)
             % This function quantifies the locomotor activity of the fly
             % and updates the key parameters used by the subsequent
             % functions. It was provided by Stephanie Wegener, but has been
@@ -806,7 +689,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             %displacement of the fly as computed from ball tracker readout in mm
             self.ForwardDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) + inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1+y2
             self.BarPositionWrappedRecent_ = self.circ_mean_(data(:,3)'/arena_range(2)*2*pi)'; % converted to a signal ranging from -pi to pi
-            if isITheOneTrueWavesurferModel % do not need to do this in looper, helps save time
+            if isAwake % do not need to do this in looper, helps save time
                 
                 %  self.SideDisplacementRecent_ = (inp_dig(:,2)*mmperpix_c(1) - inp_dig(:,4)*mmperpix_c(2))*sqrt(2)/2; %y1-y2
                 self.RotationalDisplacementRecent_ = (inp_dig(:,1)*mmperpix_c(1) + inp_dig(:,3)*mmperpix_c(2))/2; %x1+x2
@@ -939,7 +822,7 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
         end
     end
     
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -952,18 +835,27 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             % If a Coding subclass wants to decode private/protected variables, or do
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
+        end        
+    end
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
         end
         
-        function synchronizeTransientStateToPersistedState_(self) %#ok<MANU>
-            % This method should set any transient state variables to
-            % ensure that the object invariants are met, given the values
-            % of the persisted state variables.  The default implementation
-            % does nothing, but subclasses can override it to make sure the
-            % object invariants are satisfied after an object is decoded
-            % from persistant storage.  This is called by
-            % ws.Coding.decodeEncodingContainerGivenParent() after
-            % a new object is instantiated, and after its persistent state
-            % variables have been set to the encoded values.
-        end
-    end
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
+    
 end  % classdef

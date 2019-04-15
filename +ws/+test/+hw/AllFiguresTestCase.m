@@ -4,34 +4,33 @@ classdef AllFiguresTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            delete(findall(0,'Style','Figure')) ;
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
-    
+
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(0,'Style','Figure')) ;
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
     
     methods (Test)
         function theTest(self)
             %thisDirName = fileparts(mfilename('fullpath')) ;
-            [wsModel,wsController] = wavesurfer() ;  %#ok<ASGLU>
+            [wsModel,wsController] = wavesurfer('--noprefs') ;  %#ok<ASGLU>
 
             % Launch some windows
             wsController.GeneralSettingsMenuItemActuated([],[]) ;  % Launch some windows
             wsController.ChannelsMenuItemActuated([],[]) ;            
             wsController.TriggersMenuItemActuated([],[]) ;
             wsController.StimulusLibraryMenuItemActuated([],[]) ;        
+            wsController.StimulusPreviewMenuItemActuated([],[]) ;        
             wsController.UserCodeManagerMenuItemActuated([],[]) ;        
             wsController.ElectrodesMenuItemActuated([],[]) ;        
             wsController.TestPulseMenuItemActuated([],[]) ;        
             wsController.ManageFastProtocolsButtonActuated([],[]) ;
             
-            generalSettingsFigure = wsController.GeneralSettingsFigure ;
+            generalSettingsFigure = wsController.GeneralSettingsController ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'ContinuousRadiobutton') ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'SweepBasedRadiobutton') ;
             ws.fakeControlActuationInTestBang(generalSettingsFigure, 'OverwriteCheckbox', true) ;

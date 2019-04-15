@@ -5,20 +5,19 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (Test)
         function testWithOneTimedInput(self)
-            isCommandLineOnly='--nogui';
-            wsModel=wavesurfer(isCommandLineOnly);
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -54,7 +53,7 @@ classdef TimedDigitalInputTestCase < matlab.unittest.TestCase
 %             wsModel.Stimulation.StimulusLibrary.SelectedOutputable=map;
             
             pause(1);
-            wsModel.play();
+            wsModel.playAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=1.1*wsModel.SweepDuration*nSweeps;  % s

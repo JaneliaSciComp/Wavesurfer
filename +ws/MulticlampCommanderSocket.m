@@ -17,7 +17,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     
     methods
         function self = MulticlampCommanderSocket()
-            self@ws.Model() ;
+            %self@ws.Model() ;
             %self.IsOpen_=false;
         end  % function
         
@@ -48,7 +48,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end
         
         function self=close(self)
-            ws.dabs.axon.MulticlampTelegraph('stop');
+            ws.axon.MulticlampTelegraph('stop');
             self.ElectrodeIDs_ = zeros(0,1) ;
         end  % function
         
@@ -59,16 +59,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end
         
         function mimic(self,other)
-            % Disable broadcasts for speed
-            %self.disableBroadcasts();
-            
             self.ElectrodeIDs_ = other.ElectrodeIDs_ ;
-            
-            % Re-enable broadcasts
-            %self.enableBroadcastsMaybe();
-            
-            % Broadcast update
-            %self.broadcast('Update');
         end
         
         %%
@@ -95,7 +86,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
                 %ws.dabs.axon.MulticlampTelegraph('requestElectrodeState',electrodeID)
                 %ws.sleep(0.05);  % Wait a bit for response (how short can we make this?)
                 %electrodeState=ws.dabs.axon.MulticlampTelegraph('collectElectrodeState',electrodeID);
-                electrodeState=ws.dabs.axon.MulticlampTelegraph('getElectrodeState',electrodeID);
+                electrodeState=ws.axon.MulticlampTelegraph('getElectrodeState',electrodeID);
                 if isempty(electrodeState) ,
                     errorId='MulticlampCommanderSocket:NoResponseToElectrodeStateRequest';
                     errorMessage=sprintf('No response to request for state of Axon electrode %d.',electrodeIndex);
@@ -268,11 +259,10 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
     methods (Access=protected)
         function updateElectrodeList_(self)
             % Update the list of electrode IDs that we know about
-            electrodeIDs=ws.dabs.axon.MulticlampTelegraph('getAllElectrodeIDs');
+            electrodeIDs=ws.axon.MulticlampTelegraph('getAllElectrodeIDs');
             sortedElectrodeIDs=ws.MulticlampCommanderSocket.sortElectrodeIDs(electrodeIDs);
             self.ElectrodeIDs_ = sortedElectrodeIDs;  % want them ordered reliably
-        end  % function
-        
+        end  % function        
     end  % protected methods
     
     methods (Static=true)  % public class methods
@@ -545,7 +535,7 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
         end  % function
     end
     
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % By default this behaves as expected - allowing access to public properties.
             % If a Coding subclass wants to encode private/protected variables, or do
@@ -559,6 +549,20 @@ classdef MulticlampCommanderSocket < ws.Model % & ws.Mimic
             % some other kind of transformation on decoding, this method can be overridden.
             self.(name) = value;
         end        
-    end  % protected methods
+    end  % protected methods    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
     
 end  % classdef

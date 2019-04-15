@@ -20,12 +20,11 @@ classdef StickShiftBiasUserClass < ws.UserClass
     methods
         function self = StickShiftBiasUserClass()
             fprintf('Creating the BIAS user object\n') ;
-            %self.isIInFrontend_ = ( isa(wsModel,'ws.WavesurferModel') && wsModel.IsITheOneTrueWavesurferModel ) ;
         end
 
         function wake(self, rootModel)
             fprintf('Waking the BIAS user object\n') ;
-            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsITheOneTrueWavesurferModel ) ;
+            self.isIInFrontend_ = ( isa(rootModel,'ws.WavesurferModel') && rootModel.IsAwake ) ;
         end
         
         
@@ -44,9 +43,6 @@ classdef StickShiftBiasUserClass < ws.UserClass
                 self.biasCameraInterfaces_ = cell(1,0) ;  % set to zero-length cell array
                 self.areCameraInterfacesInitialized_ = false ;
             end
-        end
-        
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
         end
         
         function startingRun(self,~)
@@ -169,14 +165,6 @@ classdef StickShiftBiasUserClass < ws.UserClass
         function stoppingEpisode(~,~)
         end
         
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-            %nScans = size(analogData,1);
-            %fprintf('%s  Just acquired %d scans of data.\n',self.Greeting,nScans);                                    
-        end
-        
         function result = get.cameraCount(self)
             result = self.cameraCount_ ;
         end
@@ -241,5 +229,36 @@ classdef StickShiftBiasUserClass < ws.UserClass
         end
     end  % private methods block
     
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+        
 end  % classdef
 

@@ -1,22 +1,18 @@
-classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
+classdef Stimulation < ws.Model
     % Stimulation subsystem
     
     properties (Dependent = true)
-        %SampleRate  % Hz
+        IsEnabled
+    end
+    
+    properties (Access = protected)
+        IsEnabled_ = false
+    end
+    
+    properties (Dependent = true)
         DoRepeatSequence  % should really be named DoRepeatOutputable, since it applies to 'naked' maps also
-        %StimulusLibrary
-%         AnalogChannelScales
-%           % A row vector of scale factors to convert each channel from native units to volts on the coax.
-%           % This is implicitly in units of ChannelUnits per volt (see below)
-%         AnalogChannelUnits
-%           % An SIUnit row vector that describes the real-world units 
-%           % for each stimulus channel.
-        %IsDigitalChannelTimed
-        %DigitalOutputStateIfUntimed
         AnalogTerminalIDs
         DigitalTerminalIDs
-%         IsAnalogChannelMarkedForDeletion
-%         IsDigitalChannelMarkedForDeletion
     end
     
     properties (Dependent = true, SetAccess = immutable)  % N.B.: it's not settable, but it can change over the lifetime of the object
@@ -49,17 +45,16 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         DigitalOutputStateIfUntimed_ = false(1,0)
         AnalogTerminalIDs_ = zeros(1,0)
         DigitalTerminalIDs_ = zeros(1,0)
-        IsAnalogChannelMarkedForDeletion_ = false(1,0)
-        IsDigitalChannelMarkedForDeletion_ = false(1,0)
     end
     
-    events 
-        DidSetDoRepeatSequence
-    end
+    properties (Access = protected, Transient=true)
+        IsAnalogChannelMarkedForDeletion_ = false(1,0)
+        IsDigitalChannelMarkedForDeletion_ = false(1,0)        
+    end    
     
     methods
         function self = Stimulation()
-            self@ws.Subsystem() ;
+            %self@ws.Subsystem() ;
             self.StimulusLibrary_ = ws.StimulusLibrary();  % create a StimulusLibrary, which doesn't need to know its parent
         end
         
@@ -72,13 +67,13 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         
     end  % methods block
         
-    methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+    methods 
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end        
@@ -116,30 +111,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %             end
         end
         
-        function newChannelIndex = addDigitalChannel_(self, deviceNameForNewChannel, newTerminalID)
-            %fprintf('StimulationSubsystem::addDigitalChannel_()\n') ;
-            %deviceName = self.Parent.DeviceName ;
-            
-%             %newChannelDeviceName = deviceName ;
-%             %freeTerminalIDs = self.Parent.freeDigitalTerminalIDs() ;
-%             if isempty(freeTerminalIDs) ,
-%                 return  % can't add a new one, because no free IDs
-%             else
-%                 newTerminalID = freeTerminalIDs(1) ;
-%             end
+        function newChannelIndex = addDigitalChannel(self, deviceNameForNewChannel, newTerminalID)
             newChannelName = sprintf('P0.%d',newTerminalID) ;
-%             %newChannelName = newChannelPhysicalName ;
-%             
-%             % Determine device name for the new channel
-%             if self.NDigitalChannels==0 ,                
-%                 if isempty(allDeviceNames) ,                   
-%                     deviceNameForNewChannel = 'Dev1' ;
-%                 else
-%                     deviceNameForNewChannel = allDeviceNames{1} ;
-%                 end
-%             else
-%                 deviceNameForNewChannel = self.DigitalDeviceNames_{1} ;
-%             end
             
             self.DigitalDeviceNames_ = [self.DigitalDeviceNames_ {deviceNameForNewChannel} ] ;
             self.DigitalTerminalIDs_ = [self.DigitalTerminalIDs_ newTerminalID] ;
@@ -147,11 +120,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.IsDigitalChannelTimed_ = [  self.IsDigitalChannelTimed_ true  ];
             self.DigitalOutputStateIfUntimed_ = [  self.DigitalOutputStateIfUntimed_ false ];
             self.IsDigitalChannelMarkedForDeletion_ = [  self.IsDigitalChannelMarkedForDeletion_ false ];
-            
-            %self.Parent.didAddDigitalOutputChannel() ;
-            %self.notifyLibraryThatDidChangeNumberOfOutputChannels_() ;
-            %self.broadcast('DidChangeNumberOfChannels');            
-            %fprintf('About to exit StimulationSubsystem::addDigitalChannel_()\n') ;
             
             newChannelIndex = length(self.DigitalChannelNames_) ;
         end  % function
@@ -231,17 +199,17 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         end  % function
     end  % protected methods
 
-    methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-            self.StimulusLibrary_.disableBroadcasts() ;
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.StimulusLibrary_.enableBroadcastsMaybe() ;            
-            self.enableBroadcastsMaybe() ;
-        end
-    end  % protected methods block
+%     methods (Access=protected)    
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%             self.StimulusLibrary_.disableBroadcasts() ;
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.StimulusLibrary_.enableBroadcastsMaybe() ;            
+%             self.enableBroadcastsMaybe() ;
+%         end
+%     end  % protected methods block
     
     methods
 %         function self = StimulationSubsystem(parent)
@@ -270,7 +238,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %         end
 
         function result = getStimulusLibraryCopy(self)
-            result = self.StimulusLibrary_.copy() ;
+            result = ws.copy(self.StimulusLibrary_) ;
         end
 
         function out = getSampleRate_(self)
@@ -523,7 +491,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             newChannelIndex = length(self.AnalogChannelNames_) ;
         end  % function
 
-        function wasDeleted = deleteMarkedAnalogChannels_(self)
+        function wasDeleted = deleteMarkedAnalogChannels(self)
             % This has to be public so that the parent can call it, but it
             % should not be called by anyone but the parent.
             isToBeDeleted = self.IsAnalogChannelMarkedForDeletion_ ;
@@ -571,7 +539,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             %self.Parent.didSetDigitalOutputChannelName(didSucceed,oldValue,newValue);
         end
         
-        function setSingleAnalogTerminalID_(self, i, newValue)
+        function setSingleAnalogTerminalID(self, i, newValue)
             self.AnalogTerminalIDs_(i) = newValue ;
         end
     end  % methods block
@@ -580,11 +548,8 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            self.disableBroadcasts();
-            
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -593,7 +558,7 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination                    
                     target = self.(thisPropertyName) ;
                     if isempty(target) ,
-                        self.setPropertyValue_(thisPropertyName, source.copy()) ;
+                        self.setPropertyValue_(thisPropertyName, ws.copy(source)) ;
                     else
                         target.mimic(source);
                     end
@@ -604,12 +569,6 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
                     end
                 end
             end
-            
-            % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
-            
-%             % Broadcast update
-%             self.broadcast('Update');
         end  % function
     end  % public methods block
 
@@ -621,9 +580,16 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
 %         function set.DigitalOutputStateIfUntimed(self,newValue)
 %             self.setDigitalOutputStateIfUntimed_(newValue) ;  % want to be able to override setter
 %         end  % function
+
+        function synchronizeTransientStateToPersistedStateHelper(self)
+            nAnalogChannels = length(self.AnalogChannelNames_) ;
+            self.IsAnalogChannelMarkedForDeletion_ = false(1, nAnalogChannels) ;
+            nDigitalChannels = length(self.DigitalChannelNames_) ;
+            self.IsDigitalChannelMarkedForDeletion_ = false(1, nDigitalChannels) ;
+        end
     end
 
-    methods (Access=protected)
+    methods 
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -737,8 +703,16 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.StimulusLibrary_.setSelectedItemWithinClassBindingProperty(className, bindingIndex, propertyName, newValue) ;
         end  % method        
         
-        function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
-            self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+%         function plotSelectedStimulusLibraryItem(self, figureGH, samplingRate, channelNames, isChannelAnalog)
+%             self.StimulusLibrary_.plotSelectedItemBang(figureGH, samplingRate, channelNames, isChannelAnalog) ;
+%         end  % function            
+
+        function [y, t] = previewStimulus(self, stimulusIndex, sampleRate)
+            [y, t] = self.StimulusLibrary_.previewStimulus(stimulusIndex, sampleRate) ;
+        end  % function            
+        
+        function [y, t] = previewStimulusMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog)
+            [y, t] = self.StimulusLibrary_.previewMap(mapIndex, sampleRate, channelNames, isChannelAnalog) ;
         end  % function            
         
         function result = selectedStimulusLibraryItemProperty(self, propertyName)
@@ -858,9 +832,9 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.StimulusLibrary_.populateForTesting() ;
         end  % function
         
-        function mimicStimulusLibrary_(self, newValue) 
-            self.StimulusLibrary_.mimic(newValue) ;
-        end
+%         function mimicStimulusLibrary_(self, newValue) 
+%             self.StimulusLibrary_.mimic(newValue) ;
+%         end
         
         function result = isStimulusLibrarySelfConsistent(self)
             result = self.StimulusLibrary_.isSelfConsistent() ;
@@ -873,6 +847,18 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
         function result = get.DigitalDeviceNames(self)
             result = self.DigitalDeviceNames_ ;
         end  % function        
+        
+        function result = getCurrentStimulusMapIndex(self, episodeIndexWithinSweep)
+            doRepeatSequence = self.DoRepeatSequence_ ;
+            result = self.StimulusLibrary_.getCurrentStimulusMapIndex(episodeIndexWithinSweep, doRepeatSequence) ;
+        end        
+        
+        function data = ...
+                calculateSignalsForMap(self, mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet)
+            data = ...
+                self.StimulusLibrary_.calculateSignalsForMap(mapIndex, sampleRate, channelNames, isChannelAnalog, sweepIndexWithinSet) ;
+        end
+        
     end  % public methods block    
     
     methods
@@ -886,5 +872,28 @@ classdef Stimulation < ws.Subsystem   % & ws.DependentProperties
             self.DigitalDeviceNames_{i} = newValue ;
         end  % function                
     end  % public methods block
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
+    methods
+        function result = get.IsEnabled(self)
+            result = self.IsEnabled_ ;
+        end
+        
+        function set.IsEnabled(self, value)
+            self.IsEnabled_ = value ;
+        end
+    end  % public methods block        
     
 end  % classdef

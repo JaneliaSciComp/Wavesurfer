@@ -1,5 +1,13 @@
-classdef Logging < ws.Subsystem
+classdef Logging < ws.Model
     % Logging  Subsystem that logs data to disk.
+    
+    properties (Dependent = true)
+        IsEnabled
+    end
+    
+    properties (Access = protected)
+        IsEnabled_ = false
+    end
     
     properties (Dependent=true)
         FileLocation  % absolute path of data file directory
@@ -53,13 +61,9 @@ classdef Logging < ws.Subsystem
         %CurrentSweepIndex_
     end
 
-    events
-        UpdateDoIncludeSessionIndex
-    end
-    
     methods
         function self = Logging()
-            self@ws.Subsystem() ;
+            %self@ws.Subsystem() ;
             self.FileLocation_ = winqueryreg('HKEY_CURRENT_USER','SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders', 'Personal') ;
             self.FileBaseName_ = 'untitled';
             self.DoIncludeDate_ = false ;
@@ -72,25 +76,17 @@ classdef Logging < ws.Subsystem
         end
         
         function set.FileLocation(self, newValue)
-            if ws.isString(newValue) ,
-                %if exist(newValue,'dir') ,  % When setting the file location
-                %programmatically, sometimes useful to put off checking that the folder
-                %exists until we actually record.
-                originalValue = self.FileLocation_ ;
-                self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
-                % If file name has changed, reset the sweep index
-                originalFullName = fullfile(originalValue, self.FileBaseName) ;
-                newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
-                if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
-                    self.NextSweepIndex = 1 ;
-                end
-                %end
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'FileLocation must be a string');                    
+            %if exist(newValue,'dir') ,  % When setting the file location
+            %programmatically, sometimes useful to put off checking that the folder
+            %exists until we actually record.
+            originalValue = self.FileLocation_ ;
+            self.FileLocation_ = fullfile(newValue);  % changes / to \, for instance
+            % If file name has changed, reset the sweep index
+            originalFullName = fullfile(originalValue, self.FileBaseName) ;
+            newFullName = fullfile(self.FileLocation_, self.FileBaseName) ;
+            if ~isequal(lower(originalFullName), lower(newFullName)) ,  % Windows is case-preserving but case-insensitive
+                self.NextSweepIndex = 1 ;
             end
-            self.broadcast('Update');            
         end
         
         function result=get.FileLocation(self)
@@ -98,23 +94,14 @@ classdef Logging < ws.Subsystem
         end
         
         function set.FileBaseName(self, newValue)
-            %fprintf('Entered set.FileBaseName()\n');            
-            if ws.isString(newValue) ,
-                originalValue=self.FileBaseName_;
-                self.FileBaseName_ = newValue;
-                % If file name has changed, reset the sweep index
-                originalFullName=fullfile(self.FileLocation,originalValue);
-                newFullName=fullfile(self.FileLocation,newValue);
-                if ~isequal(originalFullName,newFullName) ,
-                    %fprintf('About to reset NextSweepIndex...\n');
-                    self.NextSweepIndex = 1;
-                end
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'FileBaseName must be a string');                    
+            originalValue=self.FileBaseName_;
+            self.FileBaseName_ = newValue;
+            % If file name has changed, reset the sweep index
+            originalFullName=fullfile(self.FileLocation,originalValue);
+            newFullName=fullfile(self.FileLocation,newValue);
+            if ~isequal(originalFullName,newFullName) ,
+                self.NextSweepIndex = 1;
             end
-            self.broadcast('Update');            
         end
         
         function result=get.FileBaseName(self)
@@ -122,15 +109,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.NextSweepIndex(self, newValue)
-            if isnumeric(newValue) && isreal(newValue) && isscalar(newValue) && (newValue==round(newValue)) && newValue>=0 ,
-                newValue=double(newValue) ;
-                self.NextSweepIndex_ = newValue;
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'NextSweepIndex must be a (scalar) nonnegative integer');
-            end
-            self.broadcast('Update');            
+            self.NextSweepIndex_ = double(newValue) ;
         end
         
         function result=get.NextSweepIndex(self)
@@ -142,14 +121,7 @@ classdef Logging < ws.Subsystem
 %         end
 
         function set.IsOKToOverwrite(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && isfinite(newValue))) ,
-                self.IsOKToOverwrite_ = logical(newValue);
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'IsOKToOverwrite must be a logical scalar, or convertable to one');                  
-            end
-            self.broadcast('Update');                        
+            self.IsOKToOverwrite_ = logical(newValue) ;
         end
         
         function result=get.IsOKToOverwrite(self)
@@ -157,14 +129,7 @@ classdef Logging < ws.Subsystem
         end
         
         function set.DoIncludeDate(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                self.DoIncludeDate_ = logical(newValue);
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'DoIncludeDate must be a logical scalar, or convertable to one');                  
-            end
-            self.broadcast('Update');            
+            self.DoIncludeDate_ = logical(newValue);
         end
         
         function result=get.DoIncludeDate(self)
@@ -172,20 +137,12 @@ classdef Logging < ws.Subsystem
         end
 
         function set.DoIncludeSessionIndex(self, newValue)
-            if isscalar(newValue) && (islogical(newValue) || (isnumeric(newValue) && ~isnan(newValue))) ,
-                originalValue = self.DoIncludeSessionIndex_ ;
-                newValueForReals = logical(newValue) ;
-                self.DoIncludeSessionIndex_ = newValueForReals ;
-                if newValueForReals && ~originalValue ,
-                    self.NextSweepIndex_ = 1 ;
-                    %self.FirstSweepIndexInNextFile_ = 1 ;
-                end
-            else
-                self.broadcast('UpdateDoIncludeSessionIndex');
-                error('ws:invalidPropertyValue', ...
-                      'DoIncludeSessionIndex must be a logical scalar, or convertable to one');                  
+            originalValue = self.DoIncludeSessionIndex_ ;
+            newValueForReals = logical(newValue) ;
+            self.DoIncludeSessionIndex_ = newValueForReals ;
+            if newValueForReals && ~originalValue ,
+                self.NextSweepIndex_ = 1 ;
             end
-            self.broadcast('UpdateDoIncludeSessionIndex');            
         end
         
         function result=get.DoIncludeSessionIndex(self)
@@ -193,26 +150,11 @@ classdef Logging < ws.Subsystem
         end
 
         function set.SessionIndex(self, newValue)
-            if self.DoIncludeSessionIndex ,
-                if isnumeric(newValue) && isscalar(newValue) && round(newValue)==newValue && newValue>=1 ,
-                    originalValue = self.SessionIndex_ ;
-                    self.SessionIndex_ = newValue;
-                    if newValue ~= originalValue ,
-                        self.NextSweepIndex_ = 1 ;
-                        %self.FirstSweepIndexInNextFile_ = 1 ;
-                    end
-                else
-                    self.broadcast('Update');
-                    error('ws:invalidPropertyValue', ...
-                          'SessionIndex must be an integer greater than or equal to one');
-                end
-            else
-                self.broadcast('Update');
-                error('ws:invalidPropertyValue', ...
-                      'Can''t set SessionIndex when DoIncludeSessionIndex is false');
-
+            originalValue = self.SessionIndex_ ;
+            self.SessionIndex_ = newValue;
+            if newValue ~= originalValue ,
+                self.NextSweepIndex_ = 1 ;
             end
-            self.broadcast('Update');
         end
         
         function result=get.SessionIndex(self)
@@ -353,10 +295,8 @@ classdef Logging < ws.Subsystem
         end
         
         function startingSweep(self)
-            %profile resume
             % No data written at the start of the sweep
             self.DidWriteSomeDataForThisSweep_ = false ;
-            %profile off
         end
         
         function completingSweep(self)
@@ -435,14 +375,14 @@ classdef Logging < ws.Subsystem
                     % data file if needed.
                     newLogFileName = self.sweepSetFileNameFromNumbers(firstSweepIndex,numberOfPartialSweepsLogged) ;
                     newAbsoluteLogFileName = fullfile(self.FileLocation, newLogFileName);
-                    if isequal(originalAbsoluteLogFileName,newAbsoluteLogFileName) ,
+                    if isequal(originalAbsoluteLogFileName, newAbsoluteLogFileName) ,
                         % Nothing to do in this case.
                         % This case might happen, e.g. if the number of sweeps is inf
                         % do nothing.
                     else
                         isSafeToMoveFile = false ;
                         % Check for filename collisions, if that's what user wants
-                        if exist(newAbsoluteLogFileName, 'file') == 2 ,
+                        if exist(newAbsoluteLogFileName, 'file') ,
                             if self.IsOKToOverwrite ,
                                 % Don't need to check anything.
                                 % But need to delete pre-existing files, otherwise h5create
@@ -647,20 +587,44 @@ classdef Logging < ws.Subsystem
         end  % function        
     end  % public methods block
     
-    methods (Access=protected)        
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end        
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
+    
+    methods
+        function result = get.IsEnabled(self)
+            result = self.IsEnabled_ ;
+        end
+        
+        function set.IsEnabled(self, value)
+            self.IsEnabled_ = value ;
+        end
+    end  % public methods block        
     
 end

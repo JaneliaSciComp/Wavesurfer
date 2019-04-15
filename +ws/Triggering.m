@@ -1,4 +1,4 @@
-classdef Triggering < ws.Subsystem 
+classdef Triggering < ws.Model
     % In the following, a "trigger" is same as a "trigger scheme".  There was
     % once a distinction, but no longer.
     
@@ -28,15 +28,15 @@ classdef Triggering < ws.Subsystem
     end
     
     properties (Access=protected, Transient=true)
-        BuiltinTriggerDABSTask_
+        BuiltinTriggerDAQmxTaskHandle_
         AcquisitionCounterTask_
         StimulationCounterTask_
     end
         
     methods
         function self = Triggering()
-            self@ws.Subsystem() ;
-            self.IsEnabled = true ;
+            %self@ws.Subsystem() ;
+            %self.IsEnabled = true ;
             self.BuiltinTrigger_ = ws.BuiltinTrigger() ;  % triggers are now parentless
             self.CounterTriggers_ = cell(1,0) ;  % want zero-length row
             self.ExternalTriggers_ = cell(1,0) ;  % want zero-length row       
@@ -58,8 +58,14 @@ classdef Triggering < ws.Subsystem
 
         function releaseTimedHardwareResources(self)
             % Delete the built-in trigger task
-            ws.deleteIfValidHandle(self.BuiltinTriggerDABSTask_);  % have to explicitly delete b/c DABS task
-            self.BuiltinTriggerDABSTask_ = [] ;
+            %ws.deleteIfValidHandle(self.BuiltinTriggerDAQmxTaskHandle_);  % have to explicitly delete b/c DABS task
+            if ~isempty(self.BuiltinTriggerDAQmxTaskHandle_) ,
+                if ~ws.ni('DAQmxIsTaskDone', self.BuiltinTriggerDAQmxTaskHandle_) ,
+                    ws.ni('DAQmxStopTask', self.BuiltinTriggerDAQmxTaskHandle_) ;
+                end
+                ws.ni('DAQmxClearTask', self.BuiltinTriggerDAQmxTaskHandle_) ;
+                self.BuiltinTriggerDAQmxTaskHandle_ = [] ;
+            end
 %             if ~isempty(self.AcquisitionCounterTask_) ,
 %                 self.AcquisitionCounterTask_.stop();
 %             end
@@ -72,9 +78,11 @@ classdef Triggering < ws.Subsystem
         
         function pulseBuiltinTrigger(self)
             % Produce a pulse on the master trigger, which will truly start things
-            self.BuiltinTriggerDABSTask_.writeDigitalData(true);            
+            %self.BuiltinTriggerDAQmxTaskHandle_.writeDigitalData(true);            
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDAQmxTaskHandle_, true, -1, true) ;
             %pause(0.010);  % TODO: get rid of once done debugging
-            self.BuiltinTriggerDABSTask_.writeDigitalData(false);            
+            %self.BuiltinTriggerDAQmxTaskHandle_.writeDigitalData(false);            
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDAQmxTaskHandle_, true, -1, false) ;
         end  % function
                 
         function startingRun(self, primaryDeviceName, isPrimaryDeviceAPXIDevice)
@@ -82,21 +90,26 @@ classdef Triggering < ws.Subsystem
             % invariant, that the tasks are all empty when WS is not running.
             
             % Set up the built-in trigger task
-            self.BuiltinTriggerDABSTask_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
-            sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
-            %builtinTrigger = self.BuiltinTrigger_
-            self.BuiltinTriggerDABSTask_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+%             self.BuiltinTriggerDAQmxTaskHandle_ = ws.dabs.ni.daqmx.Task('WaveSurfer Built-in Trigger Task');  % on-demand DO task
+%             sweepTriggerTerminalName = sprintf('pfi%d', self.BuiltinTrigger_.PFIID) ;
+%             self.BuiltinTriggerDAQmxTaskHandle_.createDOChan(self.BuiltinTrigger_.DeviceName, sweepTriggerTerminalName);
+%             [referenceClockSource, referenceClockRate] = ...
+%                 ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
+%             set(self.BuiltinTriggerDAQmxTaskHandle_, 'refClkSrc', referenceClockSource) ;
+%             set(self.BuiltinTriggerDAQmxTaskHandle_, 'refClkRate', referenceClockRate) ;
+%             self.BuiltinTriggerDAQmxTaskHandle_.writeDigitalData(false);
+
+            self.BuiltinTriggerDAQmxTaskHandle_ = ws.ni('DAQmxCreateTask', 'WaveSurfer Built-in Trigger Task');  % on-demand DO task
+            sweepTriggerTerminalName = sprintf('%s/pfi%d', self.BuiltinTrigger_.DeviceName, self.BuiltinTrigger_.PFIID) ;
+            ws.ni('DAQmxCreateDOChan', self.BuiltinTriggerDAQmxTaskHandle_, sweepTriggerTerminalName, 'DAQmx_Val_ChanForAllLines') ;
             [referenceClockSource, referenceClockRate] = ...
                 ws.getReferenceClockSourceAndRate(primaryDeviceName, primaryDeviceName, isPrimaryDeviceAPXIDevice) ;
-            set(self.BuiltinTriggerDABSTask_, 'refClkSrc', referenceClockSource) ;
-            set(self.BuiltinTriggerDABSTask_, 'refClkRate', referenceClockRate) ;
-            self.BuiltinTriggerDABSTask_.writeDigitalData(false);
+            ws.ni('DAQmxSetRefClkSrc', self.BuiltinTriggerDAQmxTaskHandle_, referenceClockSource) ;
+            ws.ni('DAQmxSetRefClkRate', self.BuiltinTriggerDAQmxTaskHandle_, referenceClockRate) ;
+            autoStart = true ;
+            timeout = -1 ;  % means to wait as long as needed
+            ws.ni('DAQmxWriteDigitalLines', self.BuiltinTriggerDAQmxTaskHandle_, autoStart, timeout, false) ;
             
-%             % Set up the counter triggers, if any
-%             % Tear down any pre-existing counter trigger tasks
-%             self.AcquisitionCounterTask_ = [];
-%             self.StimulationCounterTask_ = [];
-
             % If needed, set up the acquisition counter task
             acquisitionTrigger = self.getAcquisitionTrigger_() ;            
             if isa(acquisitionTrigger, 'ws.CounterTrigger') ,  % acquisition subsystem is always enabled
@@ -159,16 +172,7 @@ classdef Triggering < ws.Subsystem
                 self.StimulationCounterTask_.start() ;
             end
         end  % function
-        
-        function startingSweep(self) %#ok<MANU>
-        end  % function
-
-        function completingSweep(self) %#ok<MANU>
-        end  % function
-        
-        function abortingSweep(self) %#ok<MANU>
-        end  % function
-        
+                
         function completingRun(self)
             self.completingOrStoppingOrAbortingRun_() ;
         end  % function
@@ -224,13 +228,13 @@ classdef Triggering < ws.Subsystem
 %         end  % method        
     end  % protected method block    
 
-    methods (Access = protected)
-        % Allows access to protected and protected variables from ws.Coding.
+    methods 
+        % Allows access to protected and protected variables from ws.Encodable.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
@@ -303,7 +307,7 @@ classdef Triggering < ws.Subsystem
             if isempty(trigger) ,
                 result = [] ;
             else
-                result = trigger.copy() ;
+                result = ws.copy(trigger) ;
             end
         end
         
@@ -386,14 +390,14 @@ classdef Triggering < ws.Subsystem
             trigger = ws.CounterTrigger();  % Triggers are now parentless
 
             % Set the trigger parameters
-            self.disableBroadcasts() ;
+            %self.disableBroadcasts() ;
             trigger.Name = sprintf('Counter %d',counterID) ;
             trigger.DeviceName = deviceName ; 
             trigger.CounterID = counterID ;  % at this point, we know this is a free counter
             trigger.RepeatCount = 1 ;
             trigger.Interval = 1 ;  % s
             trigger.Edge = 'rising' ;
-            self.enableBroadcastsMaybe() ;
+            %self.enableBroadcastsMaybe() ;
 
             % Note the number of counter triggers before adding this new
             % one
@@ -678,11 +682,8 @@ classdef Triggering < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            self.disableBroadcasts();
-            
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -693,7 +694,7 @@ classdef Triggering < ws.Subsystem
                     target.mimic(source) ;
                 elseif any(strcmp(thisPropertyName,{'CounterTriggers_', 'ExternalTriggers_'})) ,
                     source = other.(thisPropertyName) ;  % source as in source vs target, not as in source vs destination
-                    target = ws.Coding.copyCellArrayOfHandles(source) ;
+                    target = ws.copyCellArrayOfHandles(source) ;
                     self.(thisPropertyName) = target ;
                 else
                     if isprop(other,thisPropertyName) ,
@@ -709,12 +710,6 @@ classdef Triggering < ws.Subsystem
             % Make sure the transient state is consistent with
             % the non-transient state
             self.synchronizeTransientStateToPersistedState_() ;            
-
-            % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
-            
-            % Broadcast update
-            % self.broadcast('Update');            
         end  % function
         
         function settingPrimaryDeviceName(self, deviceName, nCounters, nPFITerminals)
@@ -733,7 +728,7 @@ classdef Triggering < ws.Subsystem
         end        
     end  % public methods block
     
-    methods (Access=protected)
+    methods
         function sanitizePersistedState_(self)
             % This method should perform any sanity-checking that might be
             % advisable after loading the persistent state from disk.
@@ -759,6 +754,10 @@ classdef Triggering < ws.Subsystem
                 self.NewAcquisitionTriggerSchemeIndex_  = 1 ;  % This means the built-in trigger
             end
         end  % function
+        
+        function synchronizeTransientStateToPersistedState_(self)  %#ok<MANU>
+        end
+        
     end  % protected methods block
     
     methods
@@ -819,13 +818,21 @@ classdef Triggering < ws.Subsystem
         function result = acquisitionTriggerProperty(self, propertyName)
             triggerIndex = self.NewAcquisitionTriggerSchemeIndex_ ;
             trigger = self.getTriggerByIndex_(triggerIndex) ;
-            result = trigger.(propertyName) ;
+            if isequal(propertyName, 'class') ,
+                result = class(trigger) ;
+            else
+                result = trigger.(propertyName) ;
+            end
         end  % function
         
         function result = stimulationTriggerProperty(self, propertyName)
             triggerIndex = self.StimulationTriggerSchemeIndex ;   % *not* StimulationTriggerSchemeIndex_
             trigger = self.getTriggerByIndex_(triggerIndex) ;
-            result = trigger.(propertyName) ;
+            if isequal(propertyName, 'class') ,
+                result = class(trigger) ;
+            else
+                result = trigger.(propertyName) ;
+            end
         end  % function        
         
         function result = isStimulationTriggerIdenticalToAcquisitionTrigger(self)
@@ -920,5 +927,18 @@ classdef Triggering < ws.Subsystem
             end
         end  % function        
     end  % static methods block
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
     
 end  % classdef

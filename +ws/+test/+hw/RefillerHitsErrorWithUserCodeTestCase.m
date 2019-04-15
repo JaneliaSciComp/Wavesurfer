@@ -4,13 +4,13 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -45,8 +45,7 @@ classdef RefillerHitsErrorWithUserCodeTestCase < matlab.unittest.TestCase
             
             start(aTimer) ;
             wsModel.play() ;
-            stop(aTimer) ;
-            delete(aTimer) ;
+            pause(40) ;
 
             wsController.quit() ;
             wsController = [] ;  %#ok<NASGU>

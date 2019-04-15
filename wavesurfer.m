@@ -7,8 +7,8 @@ function varargout = wavesurfer(varargin)
     %   "WAVESURFER <protocolFileName>" launches the WaveSurfer GUI,
     %   opening the named protocol file on launch.
     %
-    %   "WAVESURFER --debug" launches WaveSurfer in debugging mode.  This
-    %   makes the satellite process windows visible instead of hidden.
+    %   "WAVESURFER --noprefs" causes WaveSurfer to neither read nor write
+    %   preferences.  This is useful for debugging.
     %
     %   "WAVESURFER --nogui" launches WaveSurfer without the graphical user
     %   interface.
@@ -31,11 +31,11 @@ function varargout = wavesurfer(varargin)
     fprintf('Starting WaveSurfer...');
     
     % Process arguments
-    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doRunInDebugMode] = processArguments(varargin) ;
+    [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doUsePreferences] = processArguments(varargin) ;
     
     % Create the application (model) object.
-    isITheOneTrueWavesurferModel = true ;
-    model = ws.WavesurferModel(isITheOneTrueWavesurferModel, doRunInDebugMode);
+    isAwake = true ;
+    model = ws.WavesurferModel(isAwake, ~isCommandLineOnly, doUsePreferences);
 
     % Start the controller, if desired
     if isCommandLineOnly ,
@@ -82,7 +82,7 @@ function varargout = wavesurfer(varargin)
             % do nothing
         end
     else
-        % If no protocol or MDF file given, start with a basic setup
+        % If no protocol file given, start with a basic setup
         model.addStarterChannelsAndStimulusLibrary() ;
     end
 
@@ -101,26 +101,26 @@ end  % function
 
 
 
-function [wasProtocolOrMDFFileNameGivenAtCommandLine, protocolOrMDFFileName,isCommandLineOnly,doRunInDebugMode] = processArguments(args)
-    % Deal with --debug, --nodebug
-    isDebugMatch = strcmp('--debug', args) ;
-    isNoDebugMatch = strcmp('--nodebug', args) ;
-    doRunInDebugMode = any(isDebugMatch) ;    
-    argsWithoutDebug = args(~(isDebugMatch|isNoDebugMatch)) ;
+function [wasProtocolFileNameGivenAtCommandLine, protocolFileName, isCommandLineOnly, doUsePreferences] = processArguments(args)
+    % Deal with --prefs, --noprefs
+    isPreferencesMatch = strcmp('--prefs', args) ;
+    isNoPreferencesMatch = strcmp('--noprefs', args) ;
+    doUsePreferences = ~any(isNoPreferencesMatch) ;    
+    argsWithoutPreferences = args(~(isPreferencesMatch|isNoPreferencesMatch)) ;
 
     % Deal with --gui, --nogui
-    isGuiMatch = strcmp('--gui', argsWithoutDebug) ;
-    isNoguiMatch = strcmp('--nogui', argsWithoutDebug) ;
+    isGuiMatch = strcmp('--gui', argsWithoutPreferences) ;
+    isNoguiMatch = strcmp('--nogui', argsWithoutPreferences) ;
     isCommandLineOnly = any(isNoguiMatch) ;
-    argsLeft = argsWithoutDebug(~(isGuiMatch|isNoguiMatch)) ;
+    argsLeft = argsWithoutPreferences(~(isGuiMatch|isNoguiMatch)) ;
     
     % Deal with the rest of the args
     if isempty(argsLeft) ,
-        wasProtocolOrMDFFileNameGivenAtCommandLine = false ;
-        protocolOrMDFFileName = '' ;
+        wasProtocolFileNameGivenAtCommandLine = false ;
+        protocolFileName = '' ;
     elseif isscalar(argsLeft) ,
-        wasProtocolOrMDFFileNameGivenAtCommandLine = true ;
-        protocolOrMDFFileName = argsLeft{1} ;        
+        wasProtocolFileNameGivenAtCommandLine = true ;
+        protocolFileName = argsLeft{1} ;        
     else
         % too many args
         error('ws:tooManyArgsToWavesurfer', ...

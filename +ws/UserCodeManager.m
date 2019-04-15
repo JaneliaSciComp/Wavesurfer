@@ -1,4 +1,4 @@
-classdef UserCodeManager < ws.Subsystem
+classdef UserCodeManager < ws.Model
     
     properties (Dependent = true)
         %ClassName
@@ -25,8 +25,8 @@ classdef UserCodeManager < ws.Subsystem
     
     methods
         function self = UserCodeManager()
-            self@ws.Subsystem() ;
-            self.IsEnabled=true;            
+            %self@ws.Subsystem() ;
+            %self.IsEnabled=true;            
         end  % function
 
         function delete(self)
@@ -56,23 +56,9 @@ classdef UserCodeManager < ws.Subsystem
             result = self.TheObject_;
         end
         
-        function setClassName_(self, value)
-            if ws.isString(value) ,
-                % If it's a string, we'll keep it, but we have to check if
-                % it's a valid class name
-                trimmedValue = strtrim(value) ;
-                self.ClassName_ = trimmedValue ;
-                err = self.tryToInstantiateObject_() ;
-                self.broadcast('Update');
-                if ~isempty(err) ,
-                  error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                        'Unable to instantiate user object: %s.',err.message);
-                end
-            else
-                self.broadcast('Update');  % replace the bad value with the old value in the view
-                error('ws:invalidPropertyValue', ...
-                      'Invalid value for property ''ClassName'' supplied.');
-            end
+        function err = setClassName_(self, value)
+            self.ClassName_ = value ;
+            err = self.tryToInstantiateObject_() ;
         end  % function
         
         % We have separate methods for instantiation and reinstantiation
@@ -118,7 +104,7 @@ classdef UserCodeManager < ws.Subsystem
 %             end
 %         end  % method
 
-        function reinstantiateUserObject_(self)
+        function result = reinstantiateUserObject(self)
             % This reinstantiates the user object.
             % If the object name doesn't match
             % the class name, does nothing.  
@@ -127,10 +113,12 @@ classdef UserCodeManager < ws.Subsystem
             else
                 err = [] ;
             end
-            self.broadcast('Update');
-            if ~isempty(err) ,
-                error('wavesurfer:errorWhileInstantiatingUserObject', ...
-                      'Unable to reinstantiate user object: %s.',err.message);
+            %self.broadcast('Update');
+            if isempty(err) ,
+                result = [] ;
+            else
+                result = MException('wavesurfer:errorWhileInstantiatingUserObject', ...
+                                    'Unable to reinstantiate user object: %s.',err.message) ;
             end
         end  % method
         
@@ -214,11 +202,8 @@ classdef UserCodeManager < ws.Subsystem
         function mimic(self, other)
             % Cause self to resemble other.
             
-            % Disable broadcasts for speed
-            self.disableBroadcasts();
-            
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence();
+            propertyNames = ws.listPropertiesForPersistence(self);
             
             % Set each property to the corresponding one
             for i = 1:length(propertyNames) ,
@@ -232,7 +217,6 @@ classdef UserCodeManager < ws.Subsystem
                     if isempty(source) ,
                         newUserObject = [] ;
                     else
-                        %newUserObject = source.copy(root) ;
                         className = class(source) ;
                         newUserObject = feval(className) ;
                         newUserObject.mimic(source) ;
@@ -245,39 +229,7 @@ classdef UserCodeManager < ws.Subsystem
                     end
                 end
             end
-            
-            % Re-enable broadcasts
-            self.enableBroadcastsMaybe();
-            
-            % Broadcast update
-            self.broadcast('Update');
         end  % function        
-        
-        function result = listUserObjectMethods(self)
-            result = methods(self.TheObject_) ;
-        end
-        
-        function result = listUserObjectProperties(self)
-            result = properties(self.TheObject_) ;
-        end
-        
-        function callUserObjectMethod(self, methodName, varargin)
-            self.TheObject_.(methodName)(varargin{:}) ;
-        end
-        
-        function setUserObjectProperty(self, propertyName, newValue)
-            self.TheObject_.(propertyName) = newValue ;
-        end
-
-        function result = getUserObjectProperty(self, propertyName)
-            result = self.TheObject_.(propertyName) ;
-        end        
-        
-        function result = getUserObjectHandle_(self)
-            % We generally from on returning references to object owned by self.
-            % Only use this method if you're sure you know what you're doing.
-            result = self.TheObject_ ;            
-        end
     end  % public methods block
        
     methods (Access=protected)
@@ -318,30 +270,57 @@ classdef UserCodeManager < ws.Subsystem
         end  % function
     end    
     
-    methods (Access=protected)
+    methods 
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
         
-    methods (Access=protected)    
-        function disableAllBroadcastsDammit_(self)
-            self.disableBroadcasts() ;
-        end
-        
-        function enableBroadcastsMaybeDammit_(self)
-            self.enableBroadcastsMaybe() ;
-        end
-    end  % protected methods block
+%     methods (Access=protected)    
+%         function disableAllBroadcastsDammit_(self)
+%             self.disableBroadcasts() ;
+%         end
+%         
+%         function enableBroadcastsMaybeDammit_(self)
+%             self.enableBroadcastsMaybe() ;
+%         end
+%     end  % protected methods block
     
 %     properties (Hidden, SetAccess=protected)
 %         mdlPropAttributes = struct();        
 %         mdlHeaderExcludeProps = {};
 %     end
     
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+
+    methods
+        function callUserObjectMethod(self, methodName, varargin)
+            self.TheObject_.(methodName)(varargin{:}) ;
+        end
+        
+        function setUserObjectProperty(self, propertyName, newValue)
+            self.TheObject_.(propertyName) = newValue ;
+        end
+
+        function result = getUserObjectProperty(self, propertyName)
+            result = self.TheObject_.(propertyName) ;
+        end        
+    end  % public methods block
+        
 end  % classdef

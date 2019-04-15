@@ -4,13 +4,13 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
 
@@ -18,7 +18,7 @@ classdef CantSetTestPulseAmplitudeTestCase < matlab.unittest.TestCase
         function theTest(self)
             %isCommandLineOnly='--nogui';
             %thisDirName=fileparts(mfilename('fullpath'));            
-            wsModel=wavesurfer('--nogui') ;
+            wsModel=wavesurfer('--nogui', '--noprefs') ;
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;

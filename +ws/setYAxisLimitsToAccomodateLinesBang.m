@@ -21,5 +21,7 @@ function setYAxisLimitsToAccomodateLinesBang(ax, lines)
         yRad=ws.fif(yRadRaw==0,1,yRadRaw);
         yl=yCenter+1.05*yRad*[-1 +1];
         set(ax,'YLim',yl);
+    else
+        set(ax,'YLim',[-1 +1]);
     end
 end

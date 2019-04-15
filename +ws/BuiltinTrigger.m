@@ -25,7 +25,7 @@ classdef BuiltinTrigger < ws.Model
     
     methods
         function self = BuiltinTrigger()   
-            self@ws.Model() ;  % have to accept parent arg, but ignore it
+            %self@ws.Model() ;  % have to accept parent arg, but ignore it
             %fprintf('ws.BuiltinTrigger constructor called\n') ;
             %dbstack
             self.Name_ = 'Built-in Trigger (PFI8)' ;
@@ -120,36 +120,34 @@ classdef BuiltinTrigger < ws.Model
         end        
     end  % methods
     
-    methods (Access=protected)        
+    methods    
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end  % function
         
-        % Allows access to protected and protected variables from ws.Coding.
+        % Allows access to protected and protected variables from ws.Encodable.
         function setPropertyValue_(self, name, value)
             self.(name) = value;
         end  % function
     end
     
-%     properties (Hidden, SetAccess=protected)
-%         mdlPropAttributes = struct();        
-%         mdlHeaderExcludeProps = {};
-%     end
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end
     
-%     methods (Static)
-%         function s = propertyAttributes()
-%             s = struct();
-% 
-%             s.Name=struct('Classes', 'char', ...
-%                           'Attributes', {{'vector'}}, ...
-%                           'AllowEmpty', false);
-%             s.DeviceName=struct('Classes', 'char', ...
-%                             'Attributes', {{'vector'}}, ...
-%                             'AllowEmpty', true);
-%             s.PFIID=struct('Classes', 'numeric', ...
-%                            'Attributes', {{'scalar', 'integer'}}, ...
-%                            'AllowEmpty', false);
-%         end  % function
-%     end  % class methods block
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block        
     
 end  % classdef

@@ -5,8 +5,8 @@ function setPopupMenuItemsAndSelectionBang(popupGH, options, selectionAsStringOr
     % strings, with either zero elements or one element.  In this case, an
     % empty cell array reprents no selection.
     
-    normalBackgroundColor = ws.WavesurferMainFigure.NormalBackgroundColor ;
-    warningBackgroundColor = ws.WavesurferMainFigure.WarningBackgroundColor ;
+    normalBackgroundColor = ws.normalBackgroundColor() ;
+    warningBackgroundColor = ws.warningBackgroundColor() ;
         
     % If value is empty (e.g. the empty string), that gets treated as an
     % empty optional.

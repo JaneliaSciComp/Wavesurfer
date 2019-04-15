@@ -1,10 +1,10 @@
 classdef (Abstract=true) EventSubscriber < handle
     % This is equivalent to an Observer in the classic Smalltalk Observer pattern.    
     properties (Access=private, Transient=true)
-        IncomingSubscriptions=struct('broadcaster',cell(1,0), ...
-                                     'eventName',cell(1,0), ...
-                                     'propertyName',cell(1,0), ...
-                                     'methodName',cell(1,0));
+        IncomingSubscriptions_ = struct('broadcaster',cell(1,0), ...
+                                        'eventName',cell(1,0), ...
+                                        'propertyName',cell(1,0), ...
+                                        'methodName',cell(1,0)) ;
     end  % properties
     
     methods        
@@ -23,7 +23,7 @@ classdef (Abstract=true) EventSubscriber < handle
                                    'eventName',eventName, ...
                                    'propertyName',propertyName, ...
                                    'methodName',methodName);
-            self.IncomingSubscriptions(end+1)=newSubscription;
+            self.IncomingSubscriptions_(end+1)=newSubscription;
         end
         
         function unregisterSubscription(self,broadcaster,oldBroadcasterSubscription)
@@ -49,18 +49,20 @@ classdef (Abstract=true) EventSubscriber < handle
             end
             
             % Delete the relevant subscriptions
-            %isMatch=arrayfun(@(s)isequal(s,oldSubscription),self.IncomingSubscriptions);
-            isMatch=arrayfun(@(s)(areTheseScalarSubscriptionsTheSame(s,oldSubscription)),self.IncomingSubscriptions);
-            self.IncomingSubscriptions(isMatch)=[];
+            %isMatch=arrayfun(@(s)isequal(s,oldSubscription),self.IncomingSubscriptions_);
+            isMatch=arrayfun(@(s)(areTheseScalarSubscriptionsTheSame(s,oldSubscription)),self.IncomingSubscriptions_);
+            self.IncomingSubscriptions_(isMatch)=[];
         end
         
         function unsubscribe(self,iSubscription)
             % Unsubscribe self from the indicated subscription, by sending
             % an unsubscribe message to the broadcaster.
-            subscription=self.IncomingSubscriptions(iSubscription);
+            subscription = self.IncomingSubscriptions_(iSubscription) ;
             broadcaster=subscription.broadcaster;
             if isvalid(broadcaster) ,
                 broadcaster.unsubscribeMe(self,subscription.eventName,subscription.propertyName,subscription.methodName);
+            else
+                self.IncomingSubscriptions_(iSubscription) = [] ;
             end
         end
         
@@ -71,13 +73,15 @@ classdef (Abstract=true) EventSubscriber < handle
             
             % We used to do this in a while loop, but this at least
             % prevents an infinite loop if something goes wrong...
-            n = length(self.IncomingSubscriptions) ;
-            for i=1:n ,
-%                 if i==9 ,
-%                     keyboard
-%                 end
-                self.unsubscribe(1);  % each time we call this, the subscription list gets shorter by 1
+            %self
+            %if isequal(class(self), 'ws.WavesurferMainController') ,
+            %    keyboard() ;
+            %end
+            n = length(self.IncomingSubscriptions_) ;
+            for i = n:-1:1 ,
+                self.unsubscribe(i);  % each time we call this, the subscription list gets shorter by 1
             end
+            %nAfter = length(self.IncomingSubscriptions_)
         end
     end
 end  % classdef

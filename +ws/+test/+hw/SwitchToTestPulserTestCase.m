@@ -5,19 +5,19 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            ws.reset() ;
+            %ws.reset() ;
         end
     end
 
     methods (Test)
         function theTest(self)
-            wsModel=wavesurfer('--nogui');
+            wsModel=wavesurfer('--nogui', '--noprefs');
 
             wsModel.addAIChannel() ;
             wsModel.addAIChannel() ;
@@ -70,7 +70,7 @@ classdef SwitchToTestPulserTestCase < matlab.unittest.TestCase
             delete(dataFilePatternAbsolute);
 
             pause(1);
-            wsModel.record();
+            wsModel.recordAndBlock();
 
 %             dtBetweenChecks=1;  % s
 %             maxTimeToWait=2.5*nSweeps;  % s

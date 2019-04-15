@@ -1,321 +1,429 @@
-classdef Controller < handle
-
-    properties (Dependent=true, SetAccess=immutable)
-        Parent
-        Model
-        Figure  % the associated figure object (i.e. a handle handle, not a hande graphics handle)
+classdef (Abstract) Controller < ws.EventSubscriber
+    % This is a base class that wraps a handle graphics figure in a proper
+    % MCOS object, but does not have a separate controller.  All methods
+    % fired by UI actions are methods of the Controller
+    % subclass.
+    
+    properties (Access=protected, Transient=true)
+        DegreeOfEnablement_ = 1
+            % We want to be able to disable updates, and do it in such a way
+            % that it can be called in nested loops, functions, etc and
+            % behave in a reasonable way.  So this this an integer that can
+            % take on negative values when it has been disabled multiple
+            % times without being enabled.  But it is always <= 1.
+        NCallsToUpdateWhileDisabled_ = []    
+        NCallsToUpdateControlPropertiesWhileDisabled_ = []    
+        NCallsToUpdateControlEnablementWhileDisabled_ = []    
+        %DegreeOfReadiness_ = 1
+    end
+    
+    properties (Dependent=true, Transient=true)
+        AreUpdatesEnabled   % logical scalar; if false, changes in the model should not be reflected in the UI
     end
     
     properties (Access=protected)
-        Parent_
-        Model_
-        Figure_
-    end
-        
+        FigureGH_  % the figure graphics handle
+        Model_  % the model        
+    end  % properties    
+    
     methods
-        function self = Controller(parent,model)        
-            %self = self@ws.most.Controller(model,varargin{:});
-            self.Parent_ = parent ;
-            self.Model_ = model ;
-            %self.Figure_ = figureObject ;
-            %figureObject=self.Figure;
-            %figureGH=figureObject.FigureGH;
-            %set(figureGH,'CloseRequestFcn',@(source,event)(figureObject.closeRequested(source,event)));            
-            %self.initialize();            
-        end  % function
-        
-%         function initialize(self)  %#ok<MANU>
-%         end
+        function self = Controller(model)
+            backgroundColor = ws.getDefaultUIControlBackgroundColor() ;
+            self.FigureGH_=figure('Units','Pixels', ...
+                                  'Color',backgroundColor, ...
+                                  'Visible','off', ...
+                                  'HandleVisibility','off', ...
+                                  'DockControls','off', ...
+                                  'CloseRequestFcn',@(source,event)(self.closeRequested_(source,event))) ;
+            if exist('model','var') ,
+                self.Model_ = model ;
+                if ~isempty(model) && isvalid(model) ,
+                    %fprintf('About to subscribe a figure-with-self-control of class %s to a model of class %s\n', class(self), class(model)) ;
+                    model.subscribeMe(self,'UpdateReadiness','','updateReadiness');
+                end
+            else
+                self.Model_ = [] ;  % need this to can create an empty array of MCOSFigures
+            end
+        end
         
         function delete(self)
-            %fprintf('ws.Controller::delete()\n');
-            if ~isempty(self.Figure) && isvalid(self.Figure) ,
-                delete(self.Figure) ;
-            end
-            %self.deleteFigure_();
-            self.Model_ = [] ;  
-              % we don't generally delete the model b/c most controllers are
-              % sub-controllers, and their model is a sub-model of the main
-              % model.  So the main controller will handle deleting the
-              % model, if needed.
-            self.Parent_=[];            
+            self.deleteFigureGH_();
+            self.Model_ = [] ;
         end
         
-        function output=get.Figure(self)
-            output = self.Figure_ ;
-%             figureGH=self.hGUIsArray;  % should be a scalar
-%             if isscalar(figureGH) && ishghandle(figureGH) ,
-%                 handles=guidata(figureGH);
-%                 if ~isempty(handles) && isfield(handles,'FigureObject') ,
-%                     output=handles.FigureObject;
+        function set.AreUpdatesEnabled(self, newValue)
+            % The AreUpdatesEnabled property looks from the outside like a simple boolean,
+            % but it actually accumulates the number of times it's been set true vs set
+            % false, and the getter only returns true if that difference is greater than
+            % zero.  Also, the accumulator value (self.DegreeOfEnablement_) never goes above
+            % one.
+            if ~( islogical(newValue) && isscalar(newValue) ) ,
+                return
+            end
+            netValueBefore = (self.DegreeOfEnablement_ > 0) ;
+            newValueAsSign = 2 * double(newValue) - 1 ;  % [0,1] -> [-1,+1]
+            newDegreeOfEnablementRaw = self.DegreeOfEnablement_ + newValueAsSign ;
+            self.DegreeOfEnablement_ = ...
+                    ws.fif(newDegreeOfEnablementRaw <= 1, ...
+                           newDegreeOfEnablementRaw, ...
+                           1);
+            netValueAfter = (self.DegreeOfEnablement_ > 0) ;
+            if netValueAfter && ~netValueBefore ,
+                % Updates have just been enabled
+                if self.NCallsToUpdateWhileDisabled_ > 0 ,
+                    self.updateImplementation_() ;
+                elseif self.NCallsToUpdateControlPropertiesWhileDisabled_ > 0 ,
+                    self.updateControlPropertiesImplementation_() ;
+                elseif self.NCallsToUpdateControlEnablementWhileDisabled_ > 0 ,
+                    self.updateControlEnablementImplementation_() ;
+                end
+                self.NCallsToUpdateWhileDisabled_ = [] ;
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = [] ;
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = [] ;
+            elseif ~netValueAfter && netValueBefore ,
+                % Updates have just been disabled
+                self.NCallsToUpdateWhileDisabled_ = 0 ;
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = 0 ;
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = 0 ;
+            end            
+        end  % function
+
+        function value = get.AreUpdatesEnabled(self)
+            value = (self.DegreeOfEnablement_ > 0) ;
+        end
+        
+        function update(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % Controller should generally call update_() directly.
+            self.update_(varargin{:}) ;
+        end
+        
+        function updateControlProperties(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % Controller should generally call update_() directly.
+            self.updateControlProperties_(varargin{:}) ;
+        end
+
+        function updateControlEnablement(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % Controller should generally call update_() directly.
+            self.updateControlEnablement_(varargin{:}) ;
+        end
+        
+        function updateReadiness(self, varargin)
+            % Sometimes outsiders need to prompt an update.  Methods of the 
+            % Controller should generally call update_() directly.
+            self.updateReadiness_(varargin{:}) ;
+        end
+
+        function updateVisibility(self, varargin)
+            if length(varargin)>=5 ,
+                event = varargin{5} ;                
+                figureName = event.Args{1} ;
+                %oldValue = event.Args{2} ;
+                myFigureName = ws.figureNameFromControllerClassName(class(self)) ;
+                isMatch = isequal(figureName, myFigureName) ;
+            else
+                isMatch = true ;
+            end
+            if isMatch ,
+                isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                newValue = self.Model_.(isVisiblePropertyName) ;
+                set(self.FigureGH_, 'Visible', ws.onIff(newValue)) ;
+            end
+        end                
+
+        function syncFigurePositionFromModel(self, monitorPositions)
+            modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
+            rawPosition = self.Model_.(modelPropertyName) ;
+            set(self.FigureGH_, 'Position', rawPosition);
+            self.constrainPositionToMonitors(monitorPositions) ;
+        end
+    end  % public methods block
+    
+    methods (Access=protected)
+%         function set(self, propName, value)
+%             if strcmpi(propName,'Visible') && islogical(value) && isscalar(value) ,
+%                 % special case to deal with Visible, which seems to
+%                 % sometimes be a boolean
+%                 if value,
+%                     set(self.FigureGH_,'Visible','on');
 %                 else
-%                     output=[];                    
+%                     set(self.FigureGH_,'Visible','off');
 %                 end
 %             else
-%                 output=[];
-%             end
-        end  % function        
-
-        function output=get.Parent(self)
-            output=self.Parent_;
-        end
-        
-        function output=get.Model(self)
-%             output=self.hModel;
-            output = self.Model_ ;
-        end
-        
-        function setAreUpdatesEnabledForFigure(self,newValue)
-            self.Figure.AreUpdatesEnabled = newValue ;
-        end        
-    end
-    
-    methods
-        function updateFigure(self)             
-            self.Figure.update();
-        end
-        
-        function showFigure(self)             
-            % This exists so that it can optionally be overridden for some
-            % controller classes, like ws.ScopeController
-            self.Figure.show();
-        end
-        
-        function hideFigure(self)
-            % This exists so that it can optionally be overridden for some
-            % controller classes, like ws.ScopeController
-            self.Figure.hide();
-        end
-        
-%         function quittingWavesurfer(self)   
-%             self.deleteFigureGH();
-%         end  % function
-        
-%         function deleteFigureGH(self)   
-%             self.tellFigureToDeleteFigureGH_();
-%         end  % function
-        
-        function raiseFigure(self)
-            self.Figure.raise();
-        end 
-        
-    end  % methods
-            
-    methods (Access = protected)
-        function deleteModel_(self)
-            % Explictly delete the model.
-            % Usually this is unnecessary and you shouldn't do it, but
-            % sometimes it's needful.  E.g. if there's a timer that points
-            % to the model, then the model can fail to be deleted even
-            % though there are no pointers to it except the timer.
-            delete(self.Model_) ;
-        end
-        
-%         function deleteFigure_(self)
-%             % Destroy the window rather than just hide it.
-%             figure=self.Figure;
-%             if ~isempty(figure) && isvalid(figure) ,
-%                 figure.delete();
+%                 set(self.FigureGH_,propName,value);
 %             end
 %         end
-        
-        function deleteFigure_(self)
-            figure = self.Figure ;
-            if ~isempty(figure) && isvalid(figure) ,
-                delete(figure) ;
-            end
-        end            
-    end  % methods
-    
-    methods (Access = protected, Sealed = true)
-        function layoutForAllWindows = addThisWindowLayoutToLayout(self, layoutForAllWindows)
-            % Add layout info for this window (just this one window) to
-            % a struct representing the layout of all windows in the app
-            % session.
-           
-            % Framework specific transformation.
-            thisWindowLayout = self.encodeWindowLayout_();
-            
-            layoutVarNameForClass = ws.Controller.layoutVariableNameFromControllerClassName(class(self));
-            layoutForAllWindows.(layoutVarNameForClass)=thisWindowLayout;
-        end
-    end
-
-%     methods (Access = protected)
-%         function out = encodeWindowLayout_(self) %#ok<MANU>
-%             % Subclasses can encode size, position, visibility, and other features.  Current
-%             % implementations use a struct, but the variable returned from this function can
-%             % be anything, as long as it can be saved and loaded from a MAT file. Subclasses
-%             % will get the variable back in the exact same state in the decode method.
-%             % These methods do not have to be overriden in framework specific subclasses if
-%             % saving state is not desired or applicable.
-%             out = struct();
-%         end
-%     end
-        
-    methods (Access = protected)
-        function layout = encodeWindowLayout_(self)
-            fig = self.Figure ;
-            position = get(fig, 'Position') ;
-            visible = get(fig, 'Visible') ;
-            if ischar(visible) ,
-                isVisible = strcmpi(visible,'on') ;
-            else
-                isVisible = visible ;
-            end
-            layout = struct('Position', {position}, 'IsVisible', {isVisible}) ;
-        end
-    end
-    
-    methods (Access = protected)
-        function decodeWindowLayout(self, layoutOfWindowsInClass, monitorPositions)
-            figureObject = self.Figure ;
-            fieldNames = fieldnames(layoutOfWindowsInClass) ;
-            if isscalar(fieldNames) ,
-                % This means it's an older protocol file, with the layout
-                % stored in a single field with a sometimes-weird name.
-                % But the name doesn't really matter.
-                fieldName = fieldNames{1} ;
-                layoutOfThisWindow = layoutOfWindowsInClass.(fieldName) ;
-                isVisibleFieldName = 'Visible' ;
-            else
-                % This means it's a newer protocol file, with (hopefully)
-                % two fields, Position and IsVisible.
-                layoutOfThisWindow = layoutOfWindowsInClass ;
-                isVisibleFieldName = 'IsVisible' ;
-            end
-            if isfield(layoutOfThisWindow, 'Position') ,
-                rawPosition = layoutOfThisWindow.Position ;
-                set(figureObject, 'Position', rawPosition);
-                figureObject.constrainPositionToMonitors(monitorPositions) ;
-            end
-            if isfield(layoutOfThisWindow, isVisibleFieldName) ,
-                set(figureObject, 'Visible', layoutOfThisWindow.(isVisibleFieldName)) ;
-            end
-        end
-    end
-    
-    methods
-        function windowCloseRequested(self, source, event)
-            % Frameworks that windows with close boxes or similar decorations should set the
-            % callback to this method when they take control of the window.  For example,
-            % the CloseRequestFcn for HG windows, or the Closing event in WPF.
-            %
-            % It is also likely the right choice for callbacks/actions associated with close
-            % or quit menu items, etc.
-            
-            % This method uses three methods that should be overriden by framework specific
-            % subclasses to perform either the hide or a true close.  A fourth method
-            % (shouldWindowStayPutQ) is a hook for application specific controllers to
-            % intercept the close (or hide) attempt and cancel it.  By default it simply
-            % returns false to continue.
-            
-            shouldStayPut = self.shouldWindowStayPutQ(source, event);
-            
-            if shouldStayPut ,
-                % Do nothing
-            else
-                self.hideFigure();
-            end
-        end
-    end
-
-    % This method is expected to be overriden by actual application controller implementations.
-    methods (Access = protected)
-%         function out = shouldWindowStayPutQ(self, source, event) %#ok<INUSD>
-%             % This method is a hook for application specific controllers to intercept the
-%             % close (or hide) attempt and cancel it.  Controllers should return false to
-%             % continue the close/hide or true to cancel.
-%             out = false;
+%         
+%         function value=get(self,propName)
+%             value=get(self.FigureGH_,propName);
 %         end
         
-        function shouldStayPut = shouldWindowStayPutQ(self, varargin)
-            % This is called after the user indicates she wants to close
-            % the window.  Returns true if the window should _not_ close,
-            % false if it should go ahead and close.
-            model = self.Model ;
-            if isempty(model) || ~isvalid(model) ,
-                shouldStayPut = false ;
+        function update_(self,varargin)
+            % Called when the caller wants the figure to fully re-sync with the
+            % model, from scratch.  This may cause the figure to be
+            % resized, but this is always done in such a way that the
+            % upper-righthand corner stays in the same place.
+            if self.AreUpdatesEnabled ,
+                if isempty(self.Model_) ,
+                    self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateImplementation_();
+                    end
+                end
             else
-                %shouldStayPut = ~model.isRootIdleSensuLato() ;
-                shouldStayPut = ~model.isIdleSensuLato() ;
+                self.NCallsToUpdateWhileDisabled_ = self.NCallsToUpdateWhileDisabled_ + 1 ;
+            end
+        end
+        
+        function updateControlProperties_(self,varargin)
+            % Called when caller wants the control properties (Properties besides enablement, that is.) to re-sync
+            % with the model, but doesn't need to update the controls that are in existance, or change the positions of the controls.
+            if self.AreUpdatesEnabled ,
+                if isempty(self.Model_) ,
+                    self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateControlPropertiesImplementation_();
+                    end
+                end
+            else
+                self.NCallsToUpdateControlPropertiesWhileDisabled_ = self.NCallsToUpdateControlPropertiesWhileDisabled_ + 1 ;
+            end
+        end
+        
+        function updateControlEnablement_(self,varargin)
+            % Called when caller only needs to update the
+            % enablement/disablment of the controls, given the model state.
+            if self.AreUpdatesEnabled ,
+                if isempty(self.Model_) ,
+                    self.updateImplementation_();
+                else                    
+                    isVisiblePropertyName = ws.isFigureVisibleVariableNameFromControllerClassName(class(self)) ;
+                    isVisible = self.Model_.(isVisiblePropertyName) ;
+                    if isVisible ,
+                        self.updateControlEnablementImplementation_() ;
+                    end
+                end
+            else
+                self.NCallsToUpdateControlEnablementWhileDisabled_ = self.NCallsToUpdateControlEnablementWhileDisabled_ + 1 ;
+            end            
+        end
+        
+        function updateReadiness_(self,varargin)
+            self.updateReadinessImplementation_();
+        end
+
+        function doWithModel_(self, varargin)
+            if ~isempty(self.Model_) ,
+                self.Model_.do(varargin{:}) ;
+            end
+        end
+        
+        function newPosition = positionUpperLeftRelativeToOtherUpperRight_(self, referenceFigurePosition, offset)
+            % Positions the upper left corner of the figure relative to the upper
+            % *right* corner of the other figure.  offset is 2x1, with the 1st
+            % element the number of pixels from the right side of the other figure,
+            % the 2nd the number of pixels from the top of the other figure.
+
+            %ws.positionFigureUpperLeftRelativeToFigureUpperRightBang(self.FigureGH_, other.FigureGH_, offset) ;
+            
+            % Get our position
+            figureGH = self.FigureGH_ ;
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            position=get(figureGH,'position');
+            set(figureGH,'units',originalUnits);
+            figureSize=position(3:4);
+
+            % Get the reference figure position
+            %originalUnits=get(referenceFigureGH,'units');
+            %set(referenceFigureGH,'units','pixels');
+            %referenceFigurePosition=get(referenceFigureGH,'position');
+            %set(referenceFigureGH,'units',originalUnits);
+            referenceFigureOffset=referenceFigurePosition(1:2);
+            referenceFigureSize=referenceFigurePosition(3:4);
+
+            % Calculate a new offset that will position us as wanted
+            origin = referenceFigureOffset + referenceFigureSize ;
+            figureHeight=figureSize(2);
+            newOffset = [ origin(1) + offset(1) ...
+                          origin(2) + offset(2) - figureHeight ] ;
+            
+            % Get the new position
+            newPosition = [newOffset figureSize] ;
+
+            % Set figure position, using the new offset but the same size as before
+            originalUnits=get(figureGH,'units');
+            set(figureGH,'units','pixels');
+            set(figureGH,'position',newPosition);
+            set(figureGH,'units',originalUnits);            
+        end
+        
+        createFixedControls_(self)
+            % In subclass, this should create all the controls that persist
+            % throughout the lifetime of the figure.
+        
+        function updateControlsInExistance_(self)  %#ok<MANU>
+            % In subclass, this should make sure the non-fixed controls in
+            % existance are synced with the model state, deleting
+            % inappropriate ones and creating appropriate ones as needed.
+            
+            % This default implementation does nothing, and is appropriate
+            % only if all the controls are fixed.
+        end
+        
+        updateControlPropertiesImplementation_(self) 
+            % In subclass, this should make sure the properties of the
+            % controls (besides Position and Enable) are in-sync with the
+            % model.  It can assume that all the controls that should
+            % exist, do exist.
+        
+        updateControlEnablementImplementation_(self) 
+            % In subclass, this should make sure the Enable property of
+            % each control is in-sync with the model.  It can assume that
+            % all the controls that should exist, do exist.
+        
+        figureSize = layoutFixedControls_(self) 
+            % In subclass, this should make sure all the positions of the
+            % fixed controls are appropriate given the current model state.
+        
+        function figureSizeModified = layoutNonfixedControls_(self, figureSize)  %#ok<INUSL>
+            % In subclass, this should make sure all the positions of the
+            % non-fixed controls are appropriate given the current model state.
+            % It can safely assume that all the non-fixed controls already
+            % exist
+            figureSizeModified = figureSize ;  % this is appropriate if there are no nonfixed controls
+        end
+        
+        function layout_(self)
+            % This method should make sure all the controls are sized and placed
+            % appropraitely given the current model state.
+            
+            % This implementation should work in most cases, but can be overridden by
+            % subclasses if needed.
+            figureSize = self.layoutFixedControls_() ;
+            figureSizeModified = self.layoutNonfixedControls_(figureSize) ;
+            ws.resizeLeavingUpperLeftFixedBang(self.FigureGH_, figureSizeModified) ;
+        end
+        
+        function updateImplementation_(self)
+            % This method should make sure the figure is fully synched with the
+            % model state after it is called.  This includes existance,
+            % placement, sizing, enablement, and properties of each control, and
+            % of the figure itself.
+
+            % This implementation should work in most cases, but can be overridden by
+            % subclasses if needed.
+            self.updateControlsInExistance_() ;
+            self.updateControlPropertiesImplementation_() ;
+            self.updateControlEnablementImplementation_() ;
+            self.layout_() ;
+            self.updateVisibility() ;
+        end
+        
+        function updateReadinessImplementation_(self)
+            if isempty(self.Model_) 
+                pointerValue = 'arrow';
+            else
+                if isvalid(self.Model_) ,
+                    if self.Model_.IsReady ,
+                        pointerValue = 'arrow';
+                    else
+                        pointerValue = 'watch';
+                    end
+                else
+                    pointerValue = 'arrow';
+                end
+            end
+            set(self.FigureGH_,'pointer',pointerValue);
+            %fprintf('drawnow(''update'')\n');
+            drawnow('update');
+        end
+    end
+    
+    methods (Access=protected)
+        function setIsVisible_(self, newValue)
+            if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
+                set(self.FigureGH_, 'Visible', ws.onIff(newValue));
             end
         end  % function
-        
-    end
-    
-    methods (Access = protected)
-        % These protected methods will generally only be overriden by implementations
-        % for specific frameworks, such as an HG Controller base class.  It is not
-        % expected that application controllers that further subclass for a specific
-        % window in an application will ever need to modify these methods, and they
-        % should generally me marked as (Sealed = true) in the framework specific
-        % controllers such as the HG controller.
-        
-%         function createWindows(self, guiNames, guiNamesInvisible, model) %#ok<INUSD>
-%             % Framework specific implementations should load a fig file or create a WPF
-%             % window or whatever is appropriate.  A controller base class that does not use
-%             % windows (e.g., one specifically for WPF user controls rather than windows -
-%             % though it does not exist currently) may do nothing here.
-%         end
-        
-%         function out = get_main_window(self) %#ok<MANU>
-%             % Framework specific subclasses can implement this method to return a "primary"
-%             % window. This may simply be the first window or the only window.  The reason it
-%             % is left to the framework specific subclasses is that they may store references
-%             % to their list of windows differently, such as array vs. cell array, depending
-%             % on their requirements.
-%             out = [];
-%         end
-        
-%         function modifyEventIfNeededToCancelClose(self, src, evt) %#ok<INUSD>
-%             % Perform any action required to cancel a window close event.  May be a no-op
-%             % (e.g., for an HG controller) or require modification of the event object (see
-%             % the WPF controller for an example).
-%         end
-        
-%         function modifyEventIfNeededAndHideWindow(self, src, evt) %#ok<INUSD>
-%             % Perform any action required to hide a window rather than close it.
-%         end
-        
-%         function deleteWindows(self) %#ok<MANU>
-%             % Should actually release/delete any handles or objects that define the window
-%             % object.  This is essentially for the framework specific delete() method code
-%             % for windows and associated resources.
-%         end
-    end  % protected methods that are designed to be optionally overridden
+    end  % methods
     
     methods
-        function exceptionMaybe = controlActuated(self, controlName, source, event, varargin)            
-            % The gateway for all UI-initiated commands.  exceptionMaybe is
-            % an empty cell array if all goes well.  If something goes
-            % awry, we raise a dialog, and then return the exception in a
-            % length-one cell array.  But note that upon return, the user
-            % has already been notified that an exception occurred.  Still,
-            % subclasses may want to call this method, and may want to know
-            % if anything went wrong during execution.
+        function show(self)
+            self.setIsVisible_(true);
+        end  % function       
+    end  % methods    
+
+    methods
+        function hide(self)
+            self.setIsVisible_(false);
+        end  % function       
+    end  % methods    
+    
+    methods
+        function raise(self)
+            self.hide() ;
+            self.show() ;  
+        end  % function       
+    end  % public methods block
+    
+    methods (Access=protected)
+        function closeRequested_(self, source, event)  %#ok<INUSD>
+            % Subclasses can override this if it's not to their liking
+            self.deleteFigureGH_();
+        end  % function       
+    end  % methods    
+            
+    methods (Access=protected)
+        function deleteFigureGH_(self)   
+            % This causes the figure HG object to be deleted, with no ifs
+            % ands or buts
+            if ~isempty(self.FigureGH_) && ishghandle(self.FigureGH_) ,
+                delete(self.FigureGH_);
+            end
+            self.FigureGH_ = [] ;
+        end  % function       
+    end  % methods    
+        
+    methods
+        function exceptionMaybe = controlActuated(self, methodNameStem, source, event, varargin)  % public so that control actuation can be easily faked          
+            % E.g. self.CancelButton_ would typically have the method name stem 'cancelButton'.
+            % The advantage of passing in the methodNameStem, rather than,
+            % say always storing it in the tag of the graphics object, and
+            % then reading it out of the source arg, is that doing it this
+            % way makes it easier to fake control actuations by calling
+            % this function with the desired methodNameStem and an empty
+            % source and event.
             try
                 if isempty(source) ,
-                    % This enables us to easily do fake actuations
-                    methodName=[controlName 'Actuated'] ;
+                    % this means the control actuated was a 'faux' control
+                    methodName=[methodNameStem 'Actuated'] ;
                     if ismethod(self,methodName) ,
-                        self.(methodName)(source,event,varargin{:}) ;
+                        self.(methodName)(source, event, varargin{:});
                     end
-                else                    
-                    type=get(source,'Type') ;
+                else
+                    type=get(source,'Type');
                     if isequal(type,'uitable') ,
                         if isfield(event,'EditData') || isprop(event,'EditData') ,  % in older Matlabs, event is a struct, in later, an object
-                            methodName=[controlName 'CellEdited'] ;
+                            methodName=[methodNameStem 'CellEdited'];
                         else
-                            methodName=[controlName 'CellSelected'] ;
+                            methodName=[methodNameStem 'CellSelected'];
                         end
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:}) ;
-                        end                    
+                            self.(methodName)(source, event, varargin{:});
+                        end
                     elseif isequal(type,'uicontrol') || isequal(type,'uimenu') ,
-                        methodName=[controlName 'Actuated'] ;
+                        methodName=[methodNameStem 'Actuated'] ;
                         if ismethod(self,methodName) ,
-                            self.(methodName)(source,event,varargin{:}) ;
+                            self.(methodName)(source, event, varargin{:});
                         end
                     else
                         % odd --- just ignore
@@ -331,174 +439,105 @@ classdef Controller < handle
                     exceptionMaybe = { exception } ;
                 end
             end
-        end  % function
-        
-%         function fakeControlActuatedInTest(self, controlName, varargin)            
-%             % This is like controlActuated(), but used when you want to
-%             % fake the actuation of a control, often in a testing script.
-%             % So, for instance, if only ws:warnings occur, if prints them,
-%             % rather than showing a dialog box.  Also, this lets
-%             % non-warning errors (including ws:invalidPropertyValue)
-%             % percolate upward, unlike controlActuated().  Also, this
-%             % always calls [controlName 'Actuated'], rather than using
-%             % source.Type to determine the method name.  That's becuase
-%             % there's generally no real source for fake actuations.
-%             try
-%                 methodName = [controlName 'Actuated'] ;
-%                 if ismethod(self,methodName) ,
-%                     source = [] ;
-%                     event = [] ;
-%                     self.(methodName)(source,event,varargin{:}) ;
-%                 else
-%                     error('ws:noSuchMethod' , ...
-%                           'There is no method named %s', methodName) ;                    
-%                 end
-%             catch exception
-%                 indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
-%                 isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
-%                 if isWarning ,
-%                     fprintf('A warning-level exception was thrown.  Here is the report for it:\n') ;
-%                     disp(exception.getReport()) ;
-%                     fprintf('(End of report for warning-level exception.)\n\n') ;
-%                 else
-%                     rethrow(exception) ;
-%                 end
-%             end
-%         end  % function
+        end  % function       
     end  % public methods block
     
-%     methods (Access=protected)        
-%         function raiseDialogOnException_(self, exception)
-%             indicesOfWarningPhrase = strfind(exception.identifier,'ws:warningsOccurred') ;
-%             isWarning = (~isempty(indicesOfWarningPhrase) && indicesOfWarningPhrase(1)==1) ;
-%             if isWarning ,
-%                 dialogContentString = exception.message ;
-%                 dialogTitleString = ws.fif(length(exception.cause)<=1, 'Warning', 'Warnings') ;
-%             else
-%                 if isempty(exception.cause)
-%                     dialogContentString = exception.message ;
-%                     dialogTitleString = 'Error' ;
-%                 else
-%                     primaryCause = exception.cause{1} ;
-%                     if isempty(primaryCause.cause) ,
-%                         dialogContentString = sprintf('%s:\n%s',exception.message,primaryCause.message) ;
-%                         dialogTitleString = 'Error' ;
-%                     else
-%                         secondaryCause = primaryCause.cause{1} ;
-%                         dialogContentString = sprintf('%s:\n%s\n%s', exception.message, primaryCause.message, secondaryCause.message) ;
-%                         dialogTitleString = 'Error' ;
-%                     end
-%                 end            
-%             end
-%             ws.errordlg(dialogContentString, dialogTitleString, 'modal') ;                
-%         end  % method
-%     end  % protected methods block
-    
-    methods (Static=true)
-        function setWithBenefits(object,propertyName,newValue)
-            % Do object.(propertyName)=newValue, but catch any
-            % ws:invalidPropertyValue exception generated.  If that
-            % exception is generated, just ignore it.  The model is
-            % responsible for broadcasting an Update event in the case of a
-            % attempt to set an invalid value, which should cause the
-            % invalid value to be cleared from the view, and replaced with
-            % the preexisting value.
-            try 
-                object.(propertyName)=newValue;
-            catch exception
-                if isequal(exception.identifier,'ws:invalidPropertyValue') ,
-                    % Ignore it
-                else
-                    rethrow(exception);
-                end
-            end
-        end  % function
-        
-        function monitorPositions = getMonitorPositions(doForceForOldMatlabs)
-            % Get the monitor positions for the current monitor
-            % configuration, dealing with brokenness in olf Matlab versions
-            % as best we can.
-            
-            % Deal with args
-            if ~exist('doForceForOldMatlabs', 'var') || isempty(doForceForOldMatlabs) ,
-                doForceForOldMatlabs = false ;
-            end
-            
-            if verLessThan('matlab','8.4') ,
-                % MonitorPositions is broken in this version, so just get
-                % primary screen positions.
-                
-                if doForceForOldMatlabs ,
-                    % Get the (primary) screen size in pels
-                    originalScreenUnits = get(0,'Units') ;    
-                    set(0,'Units','pixels') ;    
-                    monitorPositions = get(0,'ScreenSize') ;
-                    set(0,'Units',originalScreenUnits) ;
-                else
-                    monitorPositions = [-1e12 -1e12 2e12 2e12] ;  
-                      % a huge screen, than any window will presumably be within, thus the window will not be moved
-                      % don't want to use infs b/c topOffset = offset +
-                      % size, which for infs would be topOffset == -inf +
-                      % inf == nan.
-                end                    
-            else
-                % This version has a working MonitorPositions, so use that.
+    methods
+        function constrainPositionToMonitors(self, monitorPositions)
+            % For each monitor, calculate the translation needed to get the
+            % figure onto it.
 
-                % Get the monitor positions in pels
-                originalScreenUnits = get(0,'Units') ;    
-                set(0,'Units','pixels') ;    
-                monitorPositions = get(0,'MonitorPositions') ;  % 
-                set(0,'Units',originalScreenUnits) ;
-                %monitorPositions = bsxfun(@plus, monitorPositionsAlaMatlab, [-1 -1 0 0]) ;  % not-insane style
+            % get the figure's OuterPosition
+            %dbstack
+            figureOuterPosition = get(self.FigureGH_, 'OuterPosition') ;
+            figurePosition = get(self.FigureGH_, 'Position') ;
+            %monitorPositions
+            
+            % define some local functions we'll need
+            function translation = translationToFit2D(offset, sz, screenOffset, screenSize)
+                xTranslation = translationToFit1D(offset(1), sz(1), screenOffset(1), screenSize(1)) ;
+                yTranslation = translationToFit1D(offset(2), sz(2), screenOffset(2), screenSize(2)) ;
+                translation = [xTranslation yTranslation] ;
             end
-        end  % function        
-    end  % static methods block
-    
-    methods (Access=protected, Sealed = true)
-        function extractAndDecodeLayoutFromMultipleWindowLayout_(self, multiWindowLayout, monitorPositions)
-            % Find a layout that applies to whatever subclass of controller
-            % self happens to be (if any), and use it to position self's
-            % figure's window.            
-            if isscalar(multiWindowLayout) && isstruct(multiWindowLayout) ,
-                layoutMaybe = ws.Controller.singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, class(self)) ;
-                if ~isempty(layoutMaybe) ,
-                    layoutForThisClass = layoutMaybe{1} ;
-                    self.decodeWindowLayout(layoutForThisClass, monitorPositions);
+
+            function translation = translationToFit1D(offset, sz, screenOffset, screenSize)
+                % Calculate a translation that will get a thing of size size at offset
+                % offset onto a screen at offset screenOffset, of size screenSize.  All
+                % args are *scalars*, as is the returned value
+                topOffset = offset + sz ;  % or right offset, really
+                screenTop = screenOffset+screenSize ;
+                if offset < screenOffset ,
+                    newOffset = screenOffset ;
+                    translation =  newOffset - offset ;
+                elseif topOffset > screenTop ,
+                    newOffset = screenTop - sz ;
+                    translation =  newOffset - offset ;
+                else
+                    translation = 0 ;
                 end
             end
-        end  % function        
+            
+            % Get the offset, size of the figure
+            figureOuterOffset = figureOuterPosition(1:2) ;
+            figureOuterSize = figureOuterPosition(3:4) ;
+            figureOffset = figurePosition(1:2) ;
+            figureSize = figurePosition(3:4) ;
+            
+            % Compute the translation needed to get the figure onto each of
+            % the monitors
+            nMonitors = size(monitorPositions, 1) ;
+            figureTranslationForEachMonitor = zeros(nMonitors,2) ;
+            for i = 1:nMonitors ,
+                monitorPosition = monitorPositions(i,:) ;
+                monitorOffset = monitorPosition(1:2) ;
+                monitorSize = monitorPosition(3:4) ;
+                figureTranslationForThisMonitor = translationToFit2D(figureOuterOffset, figureOuterSize, monitorOffset, monitorSize) ;
+                figureTranslationForEachMonitor(i,:) = figureTranslationForThisMonitor ;
+            end
+
+            % Calculate the magnitude of the translation for each monitor
+            sizeOfFigureTranslationForEachMonitor = hypot(figureTranslationForEachMonitor(:,1), figureTranslationForEachMonitor(:,2)) ;
+            
+            % Pick the smallest translation that gets the figure onto
+            % *some* monitor
+            [~,indexOfSmallestFigureTranslation] = min(sizeOfFigureTranslationForEachMonitor) ;
+            if isempty(indexOfSmallestFigureTranslation) ,
+                figureTranslation = [0 0] ;
+            else
+                figureTranslation = figureTranslationForEachMonitor(indexOfSmallestFigureTranslation,:) ;
+            end        
+
+            % Compute the new position
+            newFigurePosition = [figureOffset+figureTranslation figureSize] ;  
+              % Apply the translation to the Position, not the
+              % OuterPosition, as this seems to be more reliable.  Setting
+              % the OuterPosition causes the layouts to get messed up
+              % sometimes.  (Maybe setting the 'OuterSize' is the problem?)
+            
+            % Set it
+            set(self.FigureGH_, 'Position', newFigurePosition) ;
+        end  % function               
+        
+    end  % public methods block
+    
+    methods (Sealed = true)
+        function setFigurePositionInModel(self)
+            % Add layout info for this window (just this one window) to
+            % a struct representing the layout of all windows in the app
+            % session.
+           
+            % Framework specific transformation.
+            fig = self.FigureGH_ ;
+            position = get(fig, 'Position') ;
+            modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
+            self.Model_.(modelPropertyName) = position ;
+        end
     end
-    
-    methods (Static=true)
-        function result = layoutVariableNameFromControllerClassName(controllerClassName)
-            controllerClassNameWithoutPrefix = strrep(controllerClassName, 'ws.', '') ;
-            figureClassName = strrep(controllerClassNameWithoutPrefix, 'Controller', 'Figure') ;
-            % Make sure we don't go beyond matlab var name length limit
-            if length(figureClassName)>63 ,
-                result = figureClassName(1:63) ;
-            else
-                result = figureClassName ;
-            end
-        end  % method
-        
-        function layoutMaybe = singleWindowLayoutMaybeFromMultiWindowLayout(multiWindowLayout, controllerClassName) 
-            coreName = strrep(strrep(controllerClassName, 'ws.', ''), 'Controller', '') ;
-            if isempty(multiWindowLayout) ,
-                layoutMaybe = {} ;
-            else
-                multiWindowLayoutFieldNames = fieldnames(multiWindowLayout) ;
-                layoutMaybe = {} ;
-                for i = 1:length(multiWindowLayoutFieldNames) ,
-                    fieldName = multiWindowLayoutFieldNames{i} ;
-                    doesFieldNameContainCoreName = ~isempty(strfind(fieldName, coreName)) ;
-                    if doesFieldNameContainCoreName ,
-                        layoutMaybe = {multiWindowLayout.(fieldName)} ;
-                        break
-                    end
-                end
-            end
-        end  % function
-        
-    end  % static methods block
-    
+            
+    methods
+        function setAreUpdatesEnabledForFigure(self, newValue)
+            self.AreUpdatesEnabled = newValue ;
+        end        
+    end
+
 end  % classdef

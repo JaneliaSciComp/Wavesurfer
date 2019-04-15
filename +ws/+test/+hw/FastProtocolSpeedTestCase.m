@@ -4,27 +4,25 @@ classdef FastProtocolSpeedTestCase < matlab.unittest.TestCase
     
     methods (TestMethodSetup)
         function setup(self) %#ok<MANU>
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
-    
+
     methods (TestMethodTeardown)
         function teardown(self) %#ok<MANU>
-            delete(findall(0,'Style','Figure')) ;
-            ws.reset() ;
+            ws.clearDuringTests
         end
     end
     
     methods (Test)
         function testFastProtocolSpeed(self)
-            [wsModel, wsController] = wavesurfer() ;            
+            [wsModel, wsController] = wavesurfer('--noprefs') ;            
             % Load 1 cfg file with 6 electrodes into fast protocol
             %fastProtocol = wsModel.FastProtocols{1};
-            wsModel.ArePreferencesWritable = false ;            
             thisDirName = fileparts(mfilename('fullpath')) ;
             wsModel.setFastProtocolProperty(1, ...
                                             'ProtocolFileName', ...
-                                            fullfile(thisDirName, 'folder_for_fast_protocol_testing/Six Electrodes.cfg')) ;
+                                            fullfile(thisDirName, 'folder_for_fast_protocol_testing/Six Electrodes.wsp')) ;
             %pressedButtonHandle = wsController.Figure.FastProtocolButtons(1) ;
             %wsController.FastProtocolButtonsActuated(pressedButtonHandle) ; % First time loading is always relatively fast
             ws.fakeControlActuationInTestBang(wsController, 'FastProtocolButtons', 1) ;  % 1 means the first button among the FP buttons

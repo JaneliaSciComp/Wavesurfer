@@ -11,9 +11,6 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         end
         
         % These methods are called in the frontend process
-        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
-        end
-        
         function startingRun(self,wsModel)  %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
             % "run")
@@ -52,13 +49,6 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         function dataAvailable(self,wsModel)  %#ok<INUSD>
         end        
         
-        % These methods are called in the looper process
-        function samplesAcquired(self,looper,analogData,digitalData)  %#ok<INUSD> 
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-        end
-        
-        % These methods are called in the refiller process
         function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
         end
@@ -76,5 +66,37 @@ classdef FlipDOFromSweepToSweep < ws.UserClass
         end
         
     end  % methods
+    
+    methods 
+        % Allows access to protected and protected variables for encoding.
+        function out = getPropertyValue_(self, name)
+            out = self.(name);
+        end
+        
+        % Allows access to protected and protected variables for encoding.
+        function setPropertyValue_(self, name, value)
+            self.(name) = value;
+        end        
+    end  % protected methods block
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
     
 end  % classdef
