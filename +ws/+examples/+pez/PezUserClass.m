@@ -113,7 +113,6 @@ classdef PezUserClass < ws.UserClass
             end
         end
         
-        % These methods are called in the frontend process
         function startingRun(self, wsModel)
             % Called just before each set of sweeps (a.k.a. each
             % "run")
@@ -296,7 +295,6 @@ classdef PezUserClass < ws.UserClass
             %fprintf('Just read %d scans of data in PezUserClass.\n', nScans);                                    
         end
         
-        % These methods are called in the looper process
         function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
             % Called each time a "chunk" of data (typically a few ms worth) 
             % is read from the DAQ board.
@@ -304,7 +302,6 @@ classdef PezUserClass < ws.UserClass
             %fprintf('Just acquired %d scans of data in PezUserClass.\n', nScans);                                    
         end
         
-        % These methods are called in the refiller process
         function startingEpisode(self,refiller)  %#ok<INUSD>
             % Called just before each episode
             fprintf('About to start an episode in PezUserClass.\n');
@@ -630,7 +627,7 @@ classdef PezUserClass < ws.UserClass
         end
     end  % protected methods block
     
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % This allows public access to private properties in certain limited
             % circumstances, like persisting.
@@ -643,6 +640,26 @@ classdef PezUserClass < ws.UserClass
             self.(name) = value;
         end
     end  % protected
+    
+    methods
+        function mimic(self, other)
+            ws.mimicBang(self, other) ;
+        end
+    end    
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
+    
     
 end  % classdef
 

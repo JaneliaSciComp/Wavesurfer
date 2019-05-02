@@ -118,7 +118,7 @@ classdef ExampleUserClass < ws.UserClass
     end  % methods
     
     methods 
-        % Allows access to protected and protected variables for encoding.
+        % Allows access to private and protected variables for encoding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
