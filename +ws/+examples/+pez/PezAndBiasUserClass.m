@@ -44,9 +44,9 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.BiasUserObject_ = ws.examples.bias.StickShiftBiasUserClass() ;
         end
         
-        function wake(self, rootModel)
-            self.PezUserObject_.wake(rootModel) ;
-            self.BiasUserObject_.wake(rootModel) ;
+        function wake(self, wsModel)
+            self.PezUserObject_.wake(wsModel) ;
+            self.BiasUserObject_.wake(wsModel) ;
         end
          
         function delete(self)
@@ -111,27 +111,20 @@ classdef PezAndBiasUserClass < ws.UserClass
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % has been accumulated from the looper.
         end
-        
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-        end
-        
-        % These methods are called in the refiller process
-        function startingEpisode(self,refiller)  %#ok<INUSD>
+                
+        function startingEpisode(self,wsModel)  %#ok<INUSD>
             % Called just before each episode
         end
         
-        function completingEpisode(self,refiller)  %#ok<INUSD>
+        function completingEpisode(self,wsModel)  %#ok<INUSD>
             % Called after each episode completes
         end
         
-        function stoppingEpisode(self,refiller)  %#ok<INUSD>
+        function stoppingEpisode(self,wsModel)  %#ok<INUSD>
             % Called if a episode goes wrong
         end        
         
-        function abortingEpisode(self,refiller)  %#ok<INUSD>
+        function abortingEpisode(self,wsModel)  %#ok<INUSD>
             % Called if a episode goes wrong
         end
         
@@ -339,7 +332,7 @@ classdef PezAndBiasUserClass < ws.UserClass
         end        
     end  % methods
         
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % This allows public access to private properties in certain limited
             % circumstances, like persisting.
@@ -391,6 +384,19 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
     end
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
     
 end  % classdef
 

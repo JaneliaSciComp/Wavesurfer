@@ -659,7 +659,6 @@ classdef PezUserClass < ws.UserClass
             self.(propertyName) = newValue ;
         end           
     end  % public methods block            
-    
-    
+        
 end  % classdef
 
