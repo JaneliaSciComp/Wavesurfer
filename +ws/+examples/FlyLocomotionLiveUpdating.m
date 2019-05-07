@@ -211,6 +211,9 @@ classdef FlyLocomotionLiveUpdating < ws.UserClass
             ws.deleteIfValidHGHandle(self.HeadingVsRotationalVelocityHeatmapFigureHandle_);
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end        
+                
         function result = get.IsInDebugMode(self)
             result = self.IsInDebugMode_ ;
         end

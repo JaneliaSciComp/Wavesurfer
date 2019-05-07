@@ -22,7 +22,8 @@ classdef UserClass < handle
           % as in the protocol file, but the transient properties will generally not
           % be set to sensible values.  If needed, the wake() method should set
           % the transient values to preserve any user object invarients.
-          
+        willSaveToProtocolFile(self, wsModel)
+        
         startingRun(self, wsModel)
         completingRun(self, wsModel)
         stoppingRun(self, wsModel)

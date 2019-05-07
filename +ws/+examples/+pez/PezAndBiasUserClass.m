@@ -351,7 +351,7 @@ classdef PezAndBiasUserClass < ws.UserClass
             % Need to override the default mimic method, 
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence() ;
+            propertyNames = ws.listPropertiesForPersistence(self) ;
             
             % Set each property to the corresponding one, taking special care for some
             for i = 1:length(propertyNames) ,
