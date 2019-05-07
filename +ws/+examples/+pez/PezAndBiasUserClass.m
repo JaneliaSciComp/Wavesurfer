@@ -377,11 +377,11 @@ classdef PezAndBiasUserClass < ws.UserClass
             end
             
             % Do sanity-checking on persisted state
-            self.sanitizePersistedState_() ;
+            %self.sanitizePersistedState_() ;
             
             % Make sure the transient state is consistent with
             % the non-transient state
-            self.synchronizeTransientStateToPersistedState_() ;            
+            %self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
     end
     

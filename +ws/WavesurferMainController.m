@@ -1437,7 +1437,7 @@ classdef WavesurferMainController < ws.Controller
         function StopButtonActuated(self, source, event)  %#ok<INUSD>
             self.Model_.do('stop') ;
         end
-                
+        
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             isOKToCloseProtocol = self.checkIfOKToCloseProtocol_() ;
             if isOKToCloseProtocol ,
