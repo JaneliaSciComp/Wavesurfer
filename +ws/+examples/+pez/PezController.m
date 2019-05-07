@@ -13,8 +13,8 @@ classdef PezController < handle
         ReturnDelayLabelledEdit_
         ResetButton_
 
-        DispenseToneCheckbox_
-        DispenseToneFrequencyLabelledEdit_
+        %DispenseToneCheckbox_
+        %DispenseToneFrequencyLabelledEdit_
         
         Condition1Label_
         ToneFrequency1LabelledEdit_
@@ -73,20 +73,20 @@ classdef PezController < handle
                              'Style', 'pushbutton', ...
                              'String', 'Reset') ;                
                 
-            % Second row (from top)
-            self.DispenseToneCheckbox_ = ...
-                ws.uicontrol('Parent', fig, ...
-                             'Tag', 'DoPlayDispenseTone', ...
-                             'Callback', @(source,event)(self.controlActuated(source, event)), ...
-                             'Style', 'checkbox', ...
-                             'String', 'Play Dispense Tone?') ;                
-            self.DispenseToneFrequencyLabelledEdit_ = ...
-                ws.LabelledEdit('Parent', fig, ...
-                                         'Tag', 'DispenseToneFrequency', ...
-                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
-                                         'HorizontalAlignment', 'right', ...
-                                         'LabelString', 'Dispense Tone Frequency:', ...
-                                         'UnitsString', 'Hz') ;
+%             % Second row (from top)
+%             self.DispenseToneCheckbox_ = ...
+%                 ws.uicontrol('Parent', fig, ...
+%                              'Tag', 'DoPlayDispenseTone', ...
+%                              'Callback', @(source,event)(self.controlActuated(source, event)), ...
+%                              'Style', 'checkbox', ...
+%                              'String', 'Play Dispense Tone?') ;                
+%             self.DispenseToneFrequencyLabelledEdit_ = ...
+%                 ws.LabelledEdit('Parent', fig, ...
+%                                          'Tag', 'DispenseToneFrequency', ...
+%                                          'Callback', @(source,event)(self.controlActuated(source, event)), ...
+%                                          'HorizontalAlignment', 'right', ...
+%                                          'LabelString', 'Dispense Tone Frequency:', ...
+%                                          'UnitsString', 'Hz') ;
                          
             % Per-condition columns                                     
             self.Condition1Label_ = ...
@@ -251,8 +251,8 @@ classdef PezController < handle
                                                  self.Model_.TrialSequenceMode) ;
             self.ReturnDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ReturnDelay) ;                        
             
-            self.DispenseToneCheckbox_.Value = double(self.Model_.DoPlayDispenseTone) ;
-            self.DispenseToneFrequencyLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseToneFrequency) ;
+%             self.DispenseToneCheckbox_.Value = double(self.Model_.DoPlayDispenseTone) ;
+%             self.DispenseToneFrequencyLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseToneFrequency) ;
             
             self.ToneFrequency1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency1) ;                        
             self.ToneDuration1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration1) ;
@@ -275,8 +275,8 @@ classdef PezController < handle
             self.ReturnDelayLabelledEdit_.Enable = ws.onIff(true) ;            
             self.ResetButton_.Enable = ws.onIff(self.Model_.IsResetEnabled) ;
 
-            self.DispenseToneCheckbox_.Enable = ws.onIff(true) ;         
-            self.DispenseToneFrequencyLabelledEdit_.Enable = ws.onIff(true && self.Model_.DoPlayDispenseTone) ;         
+%             self.DispenseToneCheckbox_.Enable = ws.onIff(true) ;         
+%             self.DispenseToneFrequencyLabelledEdit_.Enable = ws.onIff(true && self.Model_.DoPlayDispenseTone) ;         
             
             self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(true) ;         
             self.ToneDuration1LabelledEdit_.Enable = ws.onIff(true) ;
@@ -320,15 +320,15 @@ classdef PezController < handle
             popupMenuWidth = 80 ;
             editWidth = 60 ;
             %intergroupExtraYSpace = 20 ;
-            belowFirstRowExtraYSpace = 6 ;
+%             belowFirstRowExtraYSpace = 6 ;
             belowSecondRowExtraYSpace = 16 ;
             belowConditionLabelsYSpace = 20 ;
             %aboveResetButtonExtraYSpace = 10 ;
             modePopupXOffset = 60 ;
             returnDelayXOffset = 240 ;
             resetButtonXOffset = 340 ;
-            doPlayDispenseToneCheckboxXOffset = 30 ;            
-            dispenseToneFrequencyEditXOffset = 310 ;
+%             doPlayDispenseToneCheckboxXOffset = 30 ;            
+%             dispenseToneFrequencyEditXOffset = 310 ;
             
             ws.resizeLeavingUpperLeftFixedBang(self.Figure_, [figureWidth figureHeight]) ;
             
@@ -342,11 +342,11 @@ classdef PezController < handle
             self.ReturnDelayLabelledEdit_.Position(3)   = editWidth ;
             self.ResetButton_.Position(1:2) = [resetButtonXOffset yOffset] ;
 
-            yOffset = yOffset - defaultYSpacing - belowFirstRowExtraYSpace ;
-            self.DispenseToneCheckbox_.Position(1:2) = [doPlayDispenseToneCheckboxXOffset yOffset] ;
-            self.DispenseToneCheckbox_.Position(3) = 120 ;  % Just wide enough for text
-            self.DispenseToneFrequencyLabelledEdit_.Position(1:2) = [dispenseToneFrequencyEditXOffset yOffset] ;
-            self.DispenseToneFrequencyLabelledEdit_.Position(3) = editWidth ;
+%            yOffset = yOffset - defaultYSpacing - belowFirstRowExtraYSpace ;
+%             self.DispenseToneCheckbox_.Position(1:2) = [doPlayDispenseToneCheckboxXOffset yOffset] ;
+%             self.DispenseToneCheckbox_.Position(3) = 120 ;  % Just wide enough for text
+%             self.DispenseToneFrequencyLabelledEdit_.Position(1:2) = [dispenseToneFrequencyEditXOffset yOffset] ;
+%             self.DispenseToneFrequencyLabelledEdit_.Position(3) = editWidth ;
             
             yOffset = yOffset - defaultYSpacing - belowSecondRowExtraYSpace ;
             self.Condition1Label_.Position(1:2) = [condition1XBaseline yOffset] ;
