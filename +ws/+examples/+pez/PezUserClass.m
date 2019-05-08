@@ -518,22 +518,22 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-        function set.DispenseToneFrequency(self, newValue)
-            self.checkValue_('DispenseToneFrequency', newValue) ;
-            self.DispenseToneFrequency_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
-        
-        function set.DoPlayDispenseTone(self, rawNewValue)
-            self.checkValue_('DoPlayDispenseTone', rawNewValue) ;
-            if islogical(rawNewValue) ,
-                newValue = rawNewValue ;
-            else
-                newValue = (rawNewValue>0) ;
-            end
-            self.DoPlayDispenseTone_ = newValue ;
-            self.tellControllerToUpdateIfPresent_() ;
-        end
+%         function set.DispenseToneFrequency(self, newValue)
+%             self.checkValue_('DispenseToneFrequency', newValue) ;
+%             self.DispenseToneFrequency_ = newValue ;
+%             self.tellControllerToUpdateIfPresent_() ;
+%         end
+%         
+%         function set.DoPlayDispenseTone(self, rawNewValue)
+%             self.checkValue_('DoPlayDispenseTone', rawNewValue) ;
+%             if islogical(rawNewValue) ,
+%                 newValue = rawNewValue ;
+%             else
+%                 newValue = (rawNewValue>0) ;
+%             end
+%             self.DoPlayDispenseTone_ = newValue ;
+%             self.tellControllerToUpdateIfPresent_() ;
+%         end
         
         function result = get.IsRunning(self)
             result = self.IsRunning_ ;            

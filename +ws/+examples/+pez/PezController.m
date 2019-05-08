@@ -19,6 +19,7 @@ classdef PezController < handle
         Condition1Label_
         ToneFrequency1LabelledEdit_
         ToneDuration1LabelledEdit_
+        ToneDelay1LabelledEdit_
         DispenseDelay1LabelledEdit_
         DeliverPosition1XLabelledEdit_
         DeliverPosition1YLabelledEdit_
@@ -28,6 +29,7 @@ classdef PezController < handle
         Condition2Label_
         ToneFrequency2LabelledEdit_
         ToneDuration2LabelledEdit_
+        ToneDelay2LabelledEdit_
         DispenseDelay2LabelledEdit_
         DeliverPosition2XLabelledEdit_
         DeliverPosition2YLabelledEdit_
@@ -101,6 +103,13 @@ classdef PezController < handle
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', 'Tone Frequency:', ...
                                          'UnitsString', 'Hz') ;
+            self.ToneDelay1LabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'ToneDelay1', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', 'Tone Delay:', ...
+                                         'UnitsString', 's') ;
             self.ToneDuration1LabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
                                          'Tag', 'ToneDuration1', ...
@@ -156,6 +165,13 @@ classdef PezController < handle
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', '', ...
                                          'UnitsString', 'Hz') ;
+            self.ToneDelay2LabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'ToneDelay2', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', '', ...
+                                         'UnitsString', 's') ;
             self.ToneDuration2LabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
                                          'Tag', 'ToneDuration2', ...
@@ -255,6 +271,7 @@ classdef PezController < handle
 %             self.DispenseToneFrequencyLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseToneFrequency) ;
             
             self.ToneFrequency1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency1) ;                        
+            self.ToneDelay1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay1) ;
             self.ToneDuration1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration1) ;
             self.DispenseDelay1LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseDelay1) ;
             self.DeliverPosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1X) ;            
@@ -263,6 +280,7 @@ classdef PezController < handle
             self.DispensePosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1Z) ;                        
             
             self.ToneFrequency2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency2) ;                        
+            self.ToneDelay2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay2) ;
             self.ToneDuration2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDuration2) ;
             self.DispenseDelay2LabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseDelay2) ;
             self.DeliverPosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2X) ;            
@@ -279,6 +297,7 @@ classdef PezController < handle
 %             self.DispenseToneFrequencyLabelledEdit_.Enable = ws.onIff(true && self.Model_.DoPlayDispenseTone) ;         
             
             self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(true) ;         
+            self.ToneDelay1LabelledEdit_.Enable = ws.onIff(true) ;
             self.ToneDuration1LabelledEdit_.Enable = ws.onIff(true) ;
             self.DispenseDelay1LabelledEdit_.Enable = ws.onIff(true) ;
             self.DeliverPosition1XLabelledEdit_.Enable = ws.onIff(true) ; 
@@ -287,6 +306,7 @@ classdef PezController < handle
             self.DispensePosition1ZLabelledEdit_.Enable = ws.onIff(true) ;                   
             
             self.ToneFrequency2LabelledEdit_.Enable = ws.onIff(true) ;             
+            self.ToneDelay2LabelledEdit_.Enable = ws.onIff(true) ;
             self.ToneDuration2LabelledEdit_.Enable = ws.onIff(true) ;
             self.DispenseDelay2LabelledEdit_.Enable = ws.onIff(true) ;
             self.DeliverPosition2XLabelledEdit_.Enable = ws.onIff(true) ; 
@@ -311,7 +331,7 @@ classdef PezController < handle
     methods (Access=private)
         function layout_(self)
             figureWidth = 424 ;
-            figureHeight = 338 ;
+            figureHeight = 330 ;
             
             firstRowYBaseline = figureHeight - 36 ;
             defaultYSpacing = 30 ;
@@ -357,6 +377,12 @@ classdef PezController < handle
             self.ToneFrequency1LabelledEdit_.Position(3)   = editWidth ;
             self.ToneFrequency2LabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
             self.ToneFrequency2LabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing ;
+            self.ToneDelay1LabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
+            self.ToneDelay1LabelledEdit_.Position(3)   = editWidth ;
+            self.ToneDelay2LabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
+            self.ToneDelay2LabelledEdit_.Position(3)   = editWidth ;
             
             yOffset = yOffset - defaultYSpacing ;
             self.ToneDuration1LabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
