@@ -3,10 +3,11 @@ classdef PezAndBiasUserClass < ws.UserClass
     properties (Dependent)
         TrialSequenceMode
         
-        DoPlayDispenseTone
-        DispenseToneFrequency
+        %DoPlayDispenseTone
+        %DispenseToneFrequency
         
         ToneFrequency1
+        ToneDelay1
         ToneDuration1
         DeliverPosition1X
         DeliverPosition1Y
@@ -14,6 +15,7 @@ classdef PezAndBiasUserClass < ws.UserClass
         DispensePosition1Z
 
         ToneFrequency2
+        ToneDelay2
         ToneDuration2
         DeliverPosition2X
         DeliverPosition2Y
@@ -251,6 +253,22 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.ToneDuration2 = newValue ;
         end
             
+        function result = get.ToneDelay1(self)
+            result = self.PezUserObject_.ToneDelay1 ;
+        end
+        
+        function set.ToneDelay1(self, newValue)
+            self.PezUserObject_.ToneDelay1 = newValue ;
+        end
+            
+        function result = get.ToneDelay2(self)
+            result = self.PezUserObject_.ToneDelay2 ;
+        end
+        
+        function set.ToneDelay2(self, newValue)
+            self.PezUserObject_.ToneDelay2 = newValue ;
+        end
+            
         function result = get.ReturnDelay(self)
             result = self.PezUserObject_.ReturnDelay ;
         end
@@ -267,21 +285,21 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.BiasUserObject_.cameraCount ;
         end        
         
-        function result = get.DoPlayDispenseTone(self)
-            result = self.PezUserObject_.DoPlayDispenseTone ;
-        end        
-
-        function set.DoPlayDispenseTone(self, newValue)
-            self.PezUserObject_.DoPlayDispenseTone = newValue ;
-        end        
-
-        function result = get.DispenseToneFrequency(self)
-            result = self.PezUserObject_.DispenseToneFrequency ;
-        end        
-
-        function set.DispenseToneFrequency(self, newValue)
-            self.PezUserObject_.DispenseToneFrequency = newValue ;
-        end        
+%         function result = get.DoPlayDispenseTone(self)
+%             result = self.PezUserObject_.DoPlayDispenseTone ;
+%         end        
+% 
+%         function set.DoPlayDispenseTone(self, newValue)
+%             self.PezUserObject_.DoPlayDispenseTone = newValue ;
+%         end        
+% 
+%         function result = get.DispenseToneFrequency(self)
+%             result = self.PezUserObject_.DispenseToneFrequency ;
+%         end        
+% 
+%         function set.DispenseToneFrequency(self, newValue)
+%             self.PezUserObject_.DispenseToneFrequency = newValue ;
+%         end        
 
         function result = get.DispensePosition1Z(self)
             result = self.PezUserObject_.DispensePosition1Z ;
