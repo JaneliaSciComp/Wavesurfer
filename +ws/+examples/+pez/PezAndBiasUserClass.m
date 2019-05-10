@@ -2,6 +2,7 @@ classdef PezAndBiasUserClass < ws.UserClass
     
     properties (Dependent)
         TrialSequenceMode
+        RandomTrialSequenceMaximumRunLength
         
         %DoPlayDispenseTone
         %DispenseToneFrequency
@@ -169,6 +170,10 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.PezUserObject_.TrialSequenceMode ;
         end
         
+        function result = get.RandomTrialSequenceMaximumRunLength(self)
+            result = self.PezUserObject_.RandomTrialSequenceMaximumRunLength ;
+        end
+                
         function set.TrialSequenceMode(self, newValue)
             self.PezUserObject_.TrialSequenceMode = newValue ;
         end

@@ -9,6 +9,7 @@ classdef PezUserClass < ws.UserClass
     
     properties (Dependent)
         TrialSequenceMode
+        RandomTrialSequenceMaximumRunLength
         
         ToneFrequency1
         ToneDelay1
@@ -40,6 +41,7 @@ classdef PezUserClass < ws.UserClass
     
     properties (Access=protected)
         TrialSequenceMode_ = 'alternating'  % can be 'all-1', 'all-2', 'alternating', or 'random'
+        RandomTrialSequenceMaximumRunLength_ = 3
         
         ToneFrequency1_ = 3000  % Hz
         ToneDelay1_ = 1  % s
@@ -122,7 +124,8 @@ classdef PezUserClass < ws.UserClass
             elseif isequal(self.TrialSequenceMode, 'alternating')
                 self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
             elseif isequal(self.TrialSequenceMode, 'random') 
-                trialSequence = randi(2, [1 sweepCount]) ;
+                maximumRunLength = self.RandomTrialSequenceMaximumRunLength ;
+                trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength) ;
                 self.TrialSequence_ = trialSequence ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
@@ -324,7 +327,11 @@ classdef PezUserClass < ws.UserClass
         
     methods
         function result = get.TrialSequence(self)
-            result = self.TrialSequence_ ;
+            result = self.TrialSequence_ ;        
+        end
+        
+        function result = get.RandomTrialSequenceMaximumRunLength(self)
+            result = self.RandomTrialSequenceMaximumRunLength_ ;
         end
         
         function result = get.TrialSequenceMode(self)
