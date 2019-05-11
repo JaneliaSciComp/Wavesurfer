@@ -55,7 +55,7 @@ classdef ExampleUserClass < ws.UserClass
         end
         
         function stoppingRun(self, wsModel)  %#ok<INUSD>
-            % Called if a sweep goes wrong
+            % Called if a sweep is manually stopped
             fprintf('%s  User stopped a run.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        

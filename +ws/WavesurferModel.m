@@ -546,19 +546,19 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 else
                     protocolFileFolderPath = lastProtocolFileFolderPath ;
                 end
-                index = 0 ;
-                didFindGoodFileName = false ;
-                while ~didFindGoodFileName ,
-                    index = index + 1 ;
-                    if index==1 ,
-                        putativeGoodFileName = 'untitled.wsp' ;
-                    else
-                        putativeGoodFileName = sprintf('untitled-%d.wsp', index) ;
-                    end
-                    putativeGoodFilePath = fullfile(protocolFileFolderPath, putativeGoodFileName) ;
-                    didFindGoodFileName = ~exist(putativeGoodFilePath, 'file') ;
-                end                
-                self.AbsoluteProtocolFileName_ = putativeGoodFilePath ;
+%                 index = 0 ;
+%                 didFindGoodFileName = false ;
+%                 while ~didFindGoodFileName ,
+%                     index = index + 1 ;
+%                     if index==1 ,
+%                         putativeGoodFileName = 'untitled.wsp' ;
+%                     else
+%                         putativeGoodFileName = sprintf('untitled-%d.wsp', index) ;
+%                     end
+%                     putativeGoodFilePath = fullfile(protocolFileFolderPath, putativeGoodFileName) ;
+%                     didFindGoodFileName = ~exist(putativeGoodFilePath, 'file') ;
+%                 end                
+                self.AbsoluteProtocolFileName_ = fullfile(protocolFileFolderPath, 'untitled.wsp') ;
                 self.HasUserSpecifiedProtocolFileName_ = false ;
                 self.DoesProtocolNeedSave_ = false ;
             end            
