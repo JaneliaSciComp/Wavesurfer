@@ -658,7 +658,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     self.stopTheOngoingSweep_() ;
                 end
                 if didStopEpisode ,
-                    self.UserCodeManager_.invoke(self, 'stoppingEpisode') ;
+                    self.callUserMethod_('stoppingEpisode') ;
                 end
                 self.stopTheOngoingRun_();
                 
@@ -1352,7 +1352,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %fprintf('Just did self.DidRefillerCompleteEpisodes_ = false\n');
             
             % Call the user method, if any
-            self.UserCodeManager_.invoke(self, 'startingRun');  
+            self.callUserMethod_('startingRun');  
                         
             % Tell all the subsystems except the logging subsystem to prepare for the run
             % The logging subsystem has to wait until we obtain the analog
@@ -1449,7 +1449,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 % that we're ready for the run.
                 if self.Refiller_.NEpisodesPerRun > 0 ,
                     if ~isStimulationTriggerIdenticalToAcquisitionTrigger ,
-                        self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                        self.callUserMethod_('startingEpisode') ;
                         [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;                        
                         self.Refiller_.startEpisode(aoData, doData) ;
                     end
@@ -1564,7 +1564,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             %self.IsPerformingSweep_ = true ;
             
             % Call user functions 
-            self.UserCodeManager_.invoke(self, 'startingSweep');            
+            self.callUserMethod_('startingSweep');            
             
             % Call startingSweep() on all the enabled subsystems
 %             for idx = 1:numel(self.Subsystems_)
@@ -1587,7 +1587,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Notify the refiller that we're starting a sweep, wait for the refiller to respond
             if self.Stimulation_.IsEnabled && (self.StimulationTriggerIndex==self.AcquisitionTriggerIndex) ,
                 try
-                    self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                    self.callUserMethod_('startingEpisode') ;
                     [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
                     self.Refiller_.startEpisode(aoData, doData) ;
                     err = [] ;
@@ -1776,7 +1776,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             %self.IsPerformingSweep_ = true ;
 %             
 %             % Call user functions 
-%             self.UserCodeManager_.invoke(self, 'startingSweep');            
+%             self.callUserMethod_('startingSweep');            
 %             
 %             % Call startingSweep() on all the enabled subsystems
 %             for idx = 1:numel(self.Subsystems_)
@@ -1888,7 +1888,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             self.broadcast('DidCompleteSweep');
 %             
 %             % Call user method
-%             self.UserCodeManager_.invoke(self, 'didCompleteSweep');
+%             self.callUserMethod_('didCompleteSweep');
 %         end  % function
                 
         function completeTheOngoingSweep_(self)
@@ -1910,7 +1910,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end                           
 
             % Call user method
-            self.UserCodeManager_.invoke(self, 'completingSweep');
+            self.callUserMethod_('completingSweep');
 
             % As of next line, sweep is officially over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1935,7 +1935,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Call user method
-            self.UserCodeManager_.invoke(self, 'stoppingSweep');                    
+            self.callUserMethod_('stoppingSweep');                    
 
             % As of next line, sweep is officially over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1973,7 +1973,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Call user method
-            self.UserCodeManager_.invoke(self, 'abortingSweep');
+            self.callUserMethod_('abortingSweep');
             
             % declare the sweep over
             %self.NSweepsPerformed_ = self.NSweepsPerformed_ + 1 ;
@@ -1998,7 +1998,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.Looper_.completingRun() ;
             didStopEpisode = self.Refiller_.completingRun() ;
             if didStopEpisode ,
-                self.UserCodeManager_.invoke(self, 'stoppingEpisode');
+                self.callUserMethod_('stoppingEpisode');
             end            
             
             % Notify subsystems that need to know, in forward order (why
@@ -2017,7 +2017,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Call user method
-            self.UserCodeManager_.invoke(self, 'completingRun') ;
+            self.callUserMethod_('completingRun') ;
 
             % Finalize
             self.IsPerformingRun_ =  false ;
@@ -2075,7 +2075,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Call user method
-            self.UserCodeManager_.invoke(self, 'stoppingRun');                
+            self.callUserMethod_('stoppingRun');                
             
             % Set state back to idle
             self.IsPerformingRun_ =  false;
@@ -2101,7 +2101,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.Looper_.abortingRun() ;
             didAbortEpisode = self.Refiller_.abortingRun() ;
             if didAbortEpisode ,
-                self.UserCodeManager_.invoke(self, 'abortingEpisode');
+                self.callUserMethod_('abortingEpisode');
             end                                
             
             % Notify subsystems, in reverse of starting order
@@ -2119,7 +2119,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             
             % Call user method
-            self.UserCodeManager_.invoke(self, 'abortingRun');
+            self.callUserMethod_('abortingRun');
             
             % Set state back to idle
             self.IsPerformingRun_ = false ; 
@@ -2244,7 +2244,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                         self.addData_(t, scaledAnalogData, rawDigitalData) ;  % This will broadcast
                     end
                 end
-                self.UserCodeManager_.invoke(self, 'dataAvailable');
+                self.callUserMethod_('dataAvailable');
 
                 % Fire an event to cause views to sync
                 self.broadcast('UpdateForNewData');
@@ -2540,7 +2540,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
 %             self.broadcast('UpdateChannels') ;
             self.broadcast('LayoutAllWindows') ;
             
-            self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
+            self.callUserMethod_('wake');  % wake the user object
             
             %siConfigFilePath = ws.replaceFileExtension(absoluteFileName, '.cfg') ;
             self.notifyScanImageThatOpeningProtocolFileIfYoked_(absoluteFileName);
@@ -2570,6 +2570,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             end
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
               % If headless, self.LayoutForAllWindows_ will not change
+            self.callUserMethod_('willSaveToProtocolFile');  % notify the user object we're about to save  
             wavesurferModelSettings = ws.encodeForPersistence(self) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
             wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
@@ -6038,7 +6039,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 self.broadcast('DidMaybeSetUserClassName');
                 self.broadcast('DidMaybeChangeProtocol') ;
                 if isempty(err) ,
-                    self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
+                    self.callUserMethod_('wake');  % wake the user object
                 else
                   error('wavesurfer:errorWhileInstantiatingUserObject', ...
                         'Unable to instantiate user object: %s.',err.message);
@@ -6063,7 +6064,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             self.DoesProtocolNeedSave_ = true ;
             self.broadcast('UpdateUserCodeManager');
             self.broadcast('DidMaybeChangeProtocol') ;
-            self.UserCodeManager_.invoke(self, 'wake');  % wake the user object
+            self.callUserMethod_('wake');  % wake the user object
         end        
         
         function result = get.IsUserClassNameValid(self)
@@ -7013,7 +7014,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             if self.Refiller_.IsPerformingEpisode ,
                 didCompleteEpisode = self.Refiller_.checkIfTasksAreDoneAndEndEpisodeIfSo() ;
                 if didCompleteEpisode ,
-                    self.UserCodeManager_.invoke(self, 'completingEpisode');           
+                    self.callUserMethod_('completingEpisode');           
                 end
             else
                 % If we're not performing an episode, see if
@@ -7027,7 +7028,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                         % req-rep method.
                     else
                         try
-                            self.UserCodeManager_.invoke(self, 'startingEpisode') ;
+                            self.callUserMethod_('startingEpisode') ;
                             [aoData, doData] = self.getStimulationData(self.Refiller_.NEpisodesCompletedSoFarThisRun+1) ;
                             self.Refiller_.startEpisode(aoData, doData) ;
                         catch err
@@ -7662,4 +7663,18 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = self.Display_.XSpanInPixels ;
         end
     end  % public methods block
+    
+    methods (Access = protected)        
+        function callUserMethod_(self, eventName, varargin)
+            % Handle user functions.  It would be possible to just make the UserCodeManager
+            % subsystem a regular listener of these events.  Handling it
+            % directly removes at 
+            % least one layer of function calls and allows for user functions for 'events'
+            % that are not formally events on the model.
+            self.UserCodeManager_.invoke(self, eventName, varargin{:});
+            
+            % Handle as standard event if applicable.
+            %self.broadcast(eventName);
+        end  % function     
+    end  % protected methods block    
 end  % classdef
