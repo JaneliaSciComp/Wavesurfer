@@ -86,6 +86,9 @@ classdef RasterTreadMill < ws.UserClass
             %self.RootModel_ = [] ;
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end        
+                
         function result = get.SampleRate(self) 
             result = self.SampleRate_ ;
         end

@@ -2,11 +2,13 @@ classdef PezAndBiasUserClass < ws.UserClass
     
     properties (Dependent)
         TrialSequenceMode
+        RandomTrialSequenceMaximumRunLength
         
-        DoPlayDispenseTone
-        DispenseToneFrequency
+        %DoPlayDispenseTone
+        %DispenseToneFrequency
         
         ToneFrequency1
+        ToneDelay1
         ToneDuration1
         DeliverPosition1X
         DeliverPosition1Y
@@ -14,6 +16,7 @@ classdef PezAndBiasUserClass < ws.UserClass
         DispensePosition1Z
 
         ToneFrequency2
+        ToneDelay2
         ToneDuration2
         DeliverPosition2X
         DeliverPosition2Y
@@ -44,9 +47,9 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.BiasUserObject_ = ws.examples.bias.StickShiftBiasUserClass() ;
         end
         
-        function wake(self, rootModel)
-            self.PezUserObject_.wake(rootModel) ;
-            self.BiasUserObject_.wake(rootModel) ;
+        function wake(self, wsModel)
+            self.PezUserObject_.wake(wsModel) ;
+            self.BiasUserObject_.wake(wsModel) ;
         end
          
         function delete(self)
@@ -56,6 +59,8 @@ classdef PezAndBiasUserClass < ws.UserClass
         
         % These methods are called in the frontend process
         function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+            self.PezUserObject_.willSaveToProtocolFile(wsModel) ;
+            self.BiasUserObject_.willSaveToProtocolFile(wsModel) ;
         end
         
         function startingRun(self, wsModel)
@@ -111,27 +116,20 @@ classdef PezAndBiasUserClass < ws.UserClass
             % Called each time a "chunk" of data (typically 100 ms worth) 
             % has been accumulated from the looper.
         end
-        
-        % These methods are called in the looper process
-        function samplesAcquired(self, looper, analogData, digitalData)  %#ok<INUSD>
-            % Called each time a "chunk" of data (typically a few ms worth) 
-            % is read from the DAQ board.
-        end
-        
-        % These methods are called in the refiller process
-        function startingEpisode(self,refiller)  %#ok<INUSD>
+                
+        function startingEpisode(self,wsModel)  %#ok<INUSD>
             % Called just before each episode
         end
         
-        function completingEpisode(self,refiller)  %#ok<INUSD>
+        function completingEpisode(self,wsModel)  %#ok<INUSD>
             % Called after each episode completes
         end
         
-        function stoppingEpisode(self,refiller)  %#ok<INUSD>
+        function stoppingEpisode(self,wsModel)  %#ok<INUSD>
             % Called if a episode goes wrong
         end        
         
-        function abortingEpisode(self,refiller)  %#ok<INUSD>
+        function abortingEpisode(self,wsModel)  %#ok<INUSD>
             % Called if a episode goes wrong
         end
         
@@ -174,6 +172,10 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.PezUserObject_.TrialSequenceMode ;
         end
         
+        function result = get.RandomTrialSequenceMaximumRunLength(self)
+            result = self.PezUserObject_.RandomTrialSequenceMaximumRunLength ;
+        end
+                
         function set.TrialSequenceMode(self, newValue)
             self.PezUserObject_.TrialSequenceMode = newValue ;
         end
@@ -258,6 +260,22 @@ classdef PezAndBiasUserClass < ws.UserClass
             self.PezUserObject_.ToneDuration2 = newValue ;
         end
             
+        function result = get.ToneDelay1(self)
+            result = self.PezUserObject_.ToneDelay1 ;
+        end
+        
+        function set.ToneDelay1(self, newValue)
+            self.PezUserObject_.ToneDelay1 = newValue ;
+        end
+            
+        function result = get.ToneDelay2(self)
+            result = self.PezUserObject_.ToneDelay2 ;
+        end
+        
+        function set.ToneDelay2(self, newValue)
+            self.PezUserObject_.ToneDelay2 = newValue ;
+        end
+            
         function result = get.ReturnDelay(self)
             result = self.PezUserObject_.ReturnDelay ;
         end
@@ -274,21 +292,21 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.BiasUserObject_.cameraCount ;
         end        
         
-        function result = get.DoPlayDispenseTone(self)
-            result = self.PezUserObject_.DoPlayDispenseTone ;
-        end        
-
-        function set.DoPlayDispenseTone(self, newValue)
-            self.PezUserObject_.DoPlayDispenseTone = newValue ;
-        end        
-
-        function result = get.DispenseToneFrequency(self)
-            result = self.PezUserObject_.DispenseToneFrequency ;
-        end        
-
-        function set.DispenseToneFrequency(self, newValue)
-            self.PezUserObject_.DispenseToneFrequency = newValue ;
-        end        
+%         function result = get.DoPlayDispenseTone(self)
+%             result = self.PezUserObject_.DoPlayDispenseTone ;
+%         end        
+% 
+%         function set.DoPlayDispenseTone(self, newValue)
+%             self.PezUserObject_.DoPlayDispenseTone = newValue ;
+%         end        
+% 
+%         function result = get.DispenseToneFrequency(self)
+%             result = self.PezUserObject_.DispenseToneFrequency ;
+%         end        
+% 
+%         function set.DispenseToneFrequency(self, newValue)
+%             self.PezUserObject_.DispenseToneFrequency = newValue ;
+%         end        
 
         function result = get.DispensePosition1Z(self)
             result = self.PezUserObject_.DispensePosition1Z ;
@@ -339,7 +357,7 @@ classdef PezAndBiasUserClass < ws.UserClass
         end        
     end  % methods
         
-    methods (Access = protected)
+    methods
         function out = getPropertyValue_(self, name)
             % This allows public access to private properties in certain limited
             % circumstances, like persisting.
@@ -358,7 +376,7 @@ classdef PezAndBiasUserClass < ws.UserClass
             % Need to override the default mimic method, 
             
             % Get the list of property names for this file type
-            propertyNames = self.listPropertiesForPersistence() ;
+            propertyNames = ws.listPropertiesForPersistence(self) ;
             
             % Set each property to the corresponding one, taking special care for some
             for i = 1:length(propertyNames) ,
@@ -384,13 +402,26 @@ classdef PezAndBiasUserClass < ws.UserClass
             end
             
             % Do sanity-checking on persisted state
-            self.sanitizePersistedState_() ;
+            %self.sanitizePersistedState_() ;
             
             % Make sure the transient state is consistent with
             % the non-transient state
-            self.synchronizeTransientStateToPersistedState_() ;            
+            %self.synchronizeTransientStateToPersistedState_() ;            
         end  % function
     end
+    
+    methods
+        % These are intended for getting/setting *public* properties.
+        % I.e. they are for general use, not restricted to special cases like
+        % encoding or ugly hacks.
+        function result = get(self, propertyName) 
+            result = self.(propertyName) ;
+        end
+        
+        function set(self, propertyName, newValue)
+            self.(propertyName) = newValue ;
+        end           
+    end  % public methods block            
     
 end  % classdef
 

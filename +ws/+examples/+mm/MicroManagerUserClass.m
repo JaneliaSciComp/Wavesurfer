@@ -44,6 +44,9 @@ classdef MicroManagerUserClass < ws.UserClass
 %             end
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end        
+        
         function startingRun(self,~)
             fprintf('Starting a run.\n');
             if self.isIInFrontend_ ,

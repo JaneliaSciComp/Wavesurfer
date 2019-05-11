@@ -33,6 +33,11 @@ classdef ExampleUserClass < ws.UserClass
                     self.Greeting);
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+            fprintf('%s  Saving to protocol file in ExampleUserClass.\n', ...
+                    self.Greeting);
+        end        
+        
         % These methods are called in the frontend process
         function startingRun(self, wsModel)  %#ok<INUSD>
             % Called just before each set of sweeps (a.k.a. each
@@ -50,7 +55,7 @@ classdef ExampleUserClass < ws.UserClass
         end
         
         function stoppingRun(self, wsModel)  %#ok<INUSD>
-            % Called if a sweep goes wrong
+            % Called if a sweep is manually stopped
             fprintf('%s  User stopped a run.  Time at start of run: %s\n', ...
                     self.Greeting,self.TimeAtStartOfLastRunAsString_);
         end        
@@ -118,7 +123,7 @@ classdef ExampleUserClass < ws.UserClass
     end  % methods
     
     methods 
-        % Allows access to protected and protected variables for encoding.
+        % Allows access to private and protected variables for encoding.
         function out = getPropertyValue_(self, name)
             out = self.(name);
         end
