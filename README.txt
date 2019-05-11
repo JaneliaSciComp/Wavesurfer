@@ -481,3 +481,7 @@ Version History
                          user code.  Dropped support for Matlab 2014b
                          and 2015a.
                          
+1.0.1    May 11, 2019    Fixed bugs.  Pez controller example code is
+                         now suitable for the v2 pez dispenser.
+                         Switched to semantic versioning
+                         (https://semver.org/).
