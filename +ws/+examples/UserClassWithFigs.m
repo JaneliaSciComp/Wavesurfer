@@ -51,6 +51,9 @@ classdef UserClassWithFigs < ws.UserClass
             delete(self.ButtonGH_) ;
             delete(self.FigureGH_) ;
         end
+                
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end                
         
         % These methods are called in the frontend process
         function startingRun(self,wsModel) %#ok<INUSD>

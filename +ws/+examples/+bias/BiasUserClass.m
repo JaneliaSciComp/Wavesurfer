@@ -61,6 +61,9 @@ classdef BiasUserClass < ws.UserClass
             end
         end
         
+        function willSaveToProtocolFile(self, wsModel)  %#ok<INUSD>
+        end        
+                
         function startingRun(self,~)
             fprintf('Starting a run.\n');
             self.configure();

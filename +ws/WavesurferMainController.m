@@ -1437,10 +1437,16 @@ classdef WavesurferMainController < ws.Controller
         function StopButtonActuated(self, source, event)  %#ok<INUSD>
             self.Model_.do('stop') ;
         end
-                
+        
         function OpenProtocolMenuItemActuated(self,source,event) %#ok<INUSD>
             isOKToCloseProtocol = self.checkIfOKToCloseProtocol_() ;
             if isOKToCloseProtocol ,
+                if self.Model_.DoesProtocolNeedSave ,
+                    % This is a hack to enable the opening of a new protocol without saving the
+                    % current protocol first.  This is OK in this case b/c we know it's OK to
+                    % "close" the current protocol.
+                    self.Model_.pretendThatProtocolWasSaved_() ;
+                end                
                 initialFilePathForFilePicker = self.Model_.LastProtocolFilePath ;            
                 isFileNameKnown = false ;
                 absoluteFileName = ...

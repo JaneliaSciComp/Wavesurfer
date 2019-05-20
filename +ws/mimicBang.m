@@ -1,6 +1,6 @@
 function mimicBang(destination, source)
     % Cause self to resemble other.  This implementation sets all
-    % the properties that would get stored to the .cfg file to the
+    % the properties that would get stored to the .wsp file to the
     % values in other, if that property is present in other.  This
     % works as long as all the properties store value (non-handle)
     % arrays.  But classes not meeting this constraint will have to
