@@ -84,7 +84,7 @@ function dataFileAsStruct = loadDataFile(filename, formatString, tMin, tMax, min
     % of WS which didn't coerce the sampling rate to an allowed rate.
     if isfield(dataFileAsStruct.header, 'VersionString') ,
         versionString = dataFileAsStruct.header.VersionString ;
-        version = str2double(versionString) ;        
+        version = ws.scalarVersionFromVersionString(versionString) ;
     else
         % If no VersionsString field, the file is from an old old version
         version = 0 ;
