@@ -3,10 +3,6 @@ classdef PezUserClass < ws.UserClass
         TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
     end
 
-    properties (Constant, Transient, Access=protected)  % Transient so doesn't get written to data files
-        ZOffset_ = -45  % mm
-    end
-    
     properties (Dependent)
         TrialSequenceMode
         RandomTrialSequenceMaximumRunLength
@@ -49,8 +45,8 @@ classdef PezUserClass < ws.UserClass
         DispenseDelay1_ = 1  % s
         DeliverPosition1X_ =  60  % mm?
         DeliverPosition1Y_ =  60  % mm?
-        DeliverPosition1Z_ =   0  % mm?
-        DispensePosition1Z_ = 10  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+        DeliverPosition1Z_ =  10  % mm?
+        DispensePosition1Z_ = 12  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
         ToneFrequency2_ = 10000  % Hz
         ToneDelay2_ = 1  % s
@@ -58,8 +54,8 @@ classdef PezUserClass < ws.UserClass
         DispenseDelay2_ = 1  % s
         DeliverPosition2X_ =  60  % mm?
         DeliverPosition2Y_ =  60  % mm?
-        DeliverPosition2Z_ = 0  % mm?
-        DispensePosition2Z_ = 10  % scalar, mm?
+        DeliverPosition2Z_ = 10  % mm?
+        DispensePosition2Z_ = 12  % scalar, mm?
         
         ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
         
@@ -140,10 +136,10 @@ classdef PezUserClass < ws.UserClass
                 firstTrialType = self.TrialSequence_(1) ;
                 if firstTrialType == 1 ,
                     self.PezDispenser_.nextDeliverPosition(...
-                        'setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                        'setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
                 else
                     self.PezDispenser_.nextDeliverPosition(...
-                        'setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                        'setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
                 end                
                 self.PezDispenser_.startAssay() ;
                 % Wait for Arduino to be ready
@@ -210,14 +206,14 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay1) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z+self.ZOffset_) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay2) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z+self.ZOffset_) ;
+                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -260,9 +256,9 @@ classdef PezUserClass < ws.UserClass
             %
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
             else
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
@@ -624,7 +620,7 @@ classdef PezUserClass < ws.UserClass
                    isequal(propertyName, 'DispensePosition2Z') || ...
                    isequal(propertyName, 'DeliverPosition1Z') || ...
                    isequal(propertyName, 'DeliverPosition2Z'),
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-10<=newValue) && (newValue<=(-self.ZOffset_)) ) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=13) ) ,
                     error('ws:invalidPropertyValue', 'Z Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
