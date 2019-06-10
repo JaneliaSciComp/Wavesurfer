@@ -485,3 +485,5 @@ Version History
                          now suitable for the v2 pez dispenser.
                          Switched to semantic versioning
                          (https://semver.org/).
+
+1.0.2    June 5, 2019    Fixed bug with opening old protocol files.

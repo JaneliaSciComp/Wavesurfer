@@ -136,8 +136,10 @@ classdef (Abstract) Controller < ws.EventSubscriber
 
         function syncFigurePositionFromModel(self, monitorPositions)
             modelPropertyName = ws.positionVariableNameFromControllerClassName(class(self));
-            rawPosition = self.Model_.(modelPropertyName) ;
-            set(self.FigureGH_, 'Position', rawPosition);
+            rawPosition = self.Model_.(modelPropertyName) ;  % Can be empty if opening an older protocol file
+            if ~isempty(rawPosition) ,
+                set(self.FigureGH_, 'Position', rawPosition);
+            end
             self.constrainPositionToMonitors(monitorPositions) ;
         end
     end  % public methods block
