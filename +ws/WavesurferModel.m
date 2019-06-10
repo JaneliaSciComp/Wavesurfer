@@ -2512,9 +2512,11 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
             saveStruct = load('-mat',absoluteFileName) ;
-            wavesurferModelSettingsVariableName = 'ws_WavesurferModel' ;
-            wavesurferModelSettings = saveStruct.(wavesurferModelSettingsVariableName) ;
+            wavesurferModelSettings = saveStruct.ws_WavesurferModel ;
             newModel = ws.decodeEncodingContainer(wavesurferModelSettings, self) ;
+            self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
+              % We do this in case something in the protocol file is weird, so that we can
+              % fallback on the current positions and visibilities.
             self.mimicProtocolThatWasJustLoaded_(newModel) ;
             %if isfield(saveStruct, 'layoutForAllWindows') ,
             %    self.LayoutForAllWindows_ = saveStruct.layoutForAllWindows ;
@@ -2569,7 +2571,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                 absoluteFileName = fullfile(pwd(),fileName) ;
             end
             self.broadcast('RequestLayoutForAllWindows');  % Have to prompt the figure/controller to tell us this
-              % If headless, self.LayoutForAllWindows_ will not change
+              % If headless, window position and visibility fields will not change
             self.callUserMethod_('willSaveToProtocolFile');  % notify the user object we're about to save  
             wavesurferModelSettings = ws.encodeForPersistence(self) ;
             %wavesurferModelSettingsVariableName=self.getEncodedVariableName();
@@ -3140,7 +3142,20 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
                     %self.(thisPropertyName).mimic(other.(thisPropertyName)) ;
                     self.(thisPropertyName).mimic(other.getPropertyValue_(thisPropertyName)) ;  % needs root model arg (not anymore...)
                 elseif any(strcmp(thisPropertyName,{'FastProtocols_', 'Logging_'})) ,
-                    % do nothing                   
+                    % do nothing                
+                elseif any(strcmp(thisPropertyName, ...
+                                  {'MainFigurePosition_', 'GeneralSettingsFigurePosition_', 'ChannelsFigurePosition_', ...
+                                   'StimulusLibraryFigurePosition_', 'StimulusPreviewFigurePosition_', 'TriggersFigurePosition_', ...
+                                   'UserCodeManagerFigurePosition_', 'ElectrodeManagerFigurePosition_', 'TestPulserFigurePosition_'})) ,
+                    if isprop(other, thisPropertyName) ,
+                        source = other.getPropertyValue_(thisPropertyName) ;
+                        if isempty(source) ,
+                            % Do nothing, no reason to replace a possibly-nonempty position with an empty
+                            % one.  Empty ones sometimes happen for old protocol files...
+                        else
+                            self.setPropertyValue_(thisPropertyName, source) ;
+                        end
+                    end
                 else
                     if isprop(other,thisPropertyName) ,
                         source = other.getPropertyValue_(thisPropertyName) ;
@@ -3230,7 +3245,7 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             % Set the override state for the stimulus map durations
             self.overrideOrReleaseStimulusMapDurationAsNeeded_() ;
             
-            self.Display_.sanitizePersistedStateGivenChannelCounts_(self.NAIChannels, self.NDIChannels) ;
+            self.Display_.sanitizePersistedStateGivenChannelCounts_(self.NAIChannels, self.NDIChannels) ;            
         end
     end  % protected methods block
     
