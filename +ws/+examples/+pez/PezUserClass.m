@@ -620,7 +620,7 @@ classdef PezUserClass < ws.UserClass
                    isequal(propertyName, 'DispensePosition2Z') || ...
                    isequal(propertyName, 'DeliverPosition1Z') || ...
                    isequal(propertyName, 'DeliverPosition2Z'),
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=13) ) ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=26) ) ,
                     error('ws:invalidPropertyValue', 'Z Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
