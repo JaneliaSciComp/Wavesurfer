@@ -14,6 +14,8 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
+        DispensePosition1X
+        DispensePosition1Y
         DispensePosition1Z
 
         ToneFrequency2
@@ -23,6 +25,8 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
+        DispensePosition2X
+        DispensePosition2Y
         DispensePosition2Z
         
         ReturnDelay
@@ -46,6 +50,8 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition1X_ =  60  % mm?
         DeliverPosition1Y_ =  60  % mm?
         DeliverPosition1Z_ =  10  % mm?
+        DispensePosition1X_ =  60  % mm?
+        DispensePosition1Y_ =  60  % mm?
         DispensePosition1Z_ = 12  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
         ToneFrequency2_ = 10000  % Hz
@@ -55,6 +61,8 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition2X_ =  60  % mm?
         DeliverPosition2Y_ =  60  % mm?
         DeliverPosition2Z_ = 10  % mm?
+        DispensePosition2X_ =  60  % mm?
+        DispensePosition2Y_ =  60  % mm?
         DispensePosition2Z_ = 12  % scalar, mm?
         
         ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
@@ -137,10 +145,14 @@ classdef PezUserClass < ws.UserClass
                 if firstTrialType == 1 ,
                     self.PezDispenser_.nextDeliverPosition(...
                         'setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                    self.PezDispenser_.nextDispensePosition(...
+                        'setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
                 else
                     self.PezDispenser_.nextDeliverPosition(...
                         'setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                end                
+                    self.PezDispenser_.nextDispensePosition(...
+                        'setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
+                end
                 self.PezDispenser_.startAssay() ;
                 % Wait for Arduino to be ready
                 ticId = tic() ;
@@ -206,14 +218,14 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay1) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z) ;
+                %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay2) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z) ;
+                %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -233,7 +245,7 @@ classdef PezUserClass < ws.UserClass
             %   increasing y == rightward
             %   increasing z == away
             %
-            % (All of these are from the POV of the experiemnter, sitting in front of the
+            % (All of these are from the POV of the experimenter, sitting in front of the
             % rig.)
             %
             % We want increasing z to be upwards, and to keep the coordinate system
@@ -257,8 +269,10 @@ classdef PezUserClass < ws.UserClass
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
                 self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
             else
                 self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
@@ -350,6 +364,14 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition1Z_ ;
         end
         
+        function result = get.DispensePosition1X(self)
+            result = self.DispensePosition1X_ ;
+        end
+        
+        function result = get.DispensePosition1Y(self)
+            result = self.DispensePosition1Y_ ;
+        end
+        
         function result = get.DispensePosition1Z(self)
             result = self.DispensePosition1Z_ ;
         end
@@ -368,6 +390,14 @@ classdef PezUserClass < ws.UserClass
         
         function result = get.DeliverPosition2Z(self)
             result = self.DeliverPosition2Z_ ;
+        end
+        
+        function result = get.DispensePosition2X(self)
+            result = self.DispensePosition2X_ ;
+        end
+        
+        function result = get.DispensePosition2Y(self)
+            result = self.DispensePosition2Y_ ;
         end
         
         function result = get.DispensePosition2Z(self)
@@ -443,6 +473,18 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
         
+        function set.DispensePosition1X(self, newValue)
+            self.checkValue_('DispensePosition1X', newValue) ;
+            self.DispensePosition1X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition1Y(self, newValue)
+            self.checkValue_('DispensePosition1Y', newValue) ;
+            self.DispensePosition1Y_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
         function set.DispensePosition1Z(self, newValue)
             self.checkValue_('DispensePosition1Z', newValue) ;
             self.DispensePosition1Z_ = newValue ;
@@ -470,6 +512,18 @@ classdef PezUserClass < ws.UserClass
         function set.DeliverPosition2Z(self, newValue)
             self.checkValue_('DeliverPosition2Z', newValue) ;
             self.DeliverPosition2Z_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition2X(self, newValue)
+            self.checkValue_('DispensePosition2X', newValue) ;
+            self.DispensePosition2X_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition2Y(self, newValue)
+            self.checkValue_('DispensePosition2Y', newValue) ;
+            self.DispensePosition2Y_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         

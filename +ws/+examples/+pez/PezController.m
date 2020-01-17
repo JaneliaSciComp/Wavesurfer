@@ -24,6 +24,8 @@ classdef PezController < handle
         DeliverPosition1XLabelledEdit_
         DeliverPosition1YLabelledEdit_
         DeliverPosition1ZLabelledEdit_        
+        DispensePosition1XLabelledEdit_
+        DispensePosition1YLabelledEdit_
         DispensePosition1ZLabelledEdit_
         
         Condition2Label_
@@ -34,6 +36,8 @@ classdef PezController < handle
         DeliverPosition2XLabelledEdit_
         DeliverPosition2YLabelledEdit_
         DeliverPosition2ZLabelledEdit_        
+        DispensePosition2XLabelledEdit_                
+        DispensePosition2YLabelledEdit_                
         DispensePosition2ZLabelledEdit_                
     end
 
@@ -145,6 +149,20 @@ classdef PezController < handle
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', 'Delivery Z:', ...
                                          'UnitsString', 'mm') ;
+            self.DispensePosition1XLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'DispensePosition1X', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', 'Dispense X:', ...
+                                         'UnitsString', 'mm') ;
+            self.DispensePosition1YLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'DispensePosition1Y', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', 'Dispense Y:', ...
+                                         'UnitsString', 'mm') ;
             self.DispensePosition1ZLabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
                                          'Tag', 'DispensePosition1Z', ...
@@ -203,6 +221,20 @@ classdef PezController < handle
             self.DeliverPosition2ZLabelledEdit_ = ...
                 ws.LabelledEdit('Parent', fig, ...
                                          'Tag', 'DeliverPosition2Z', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', '', ...
+                                         'UnitsString', 'mm') ;
+            self.DispensePosition2XLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'DispensePosition2X', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', '', ...
+                                         'UnitsString', 'mm') ;
+            self.DispensePosition2YLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'DispensePosition2Y', ...
                                          'Callback', @(source,event)(self.controlActuated(source, event)), ...
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', '', ...
@@ -277,6 +309,8 @@ classdef PezController < handle
             self.DeliverPosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1X) ;            
             self.DeliverPosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Y) ;            
             self.DeliverPosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition1Z) ;            
+            self.DispensePosition1XLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1X) ;                        
+            self.DispensePosition1YLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1Y) ;                        
             self.DispensePosition1ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition1Z) ;                        
             
             self.ToneFrequency2LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency2) ;                        
@@ -286,6 +320,8 @@ classdef PezController < handle
             self.DeliverPosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2X) ;            
             self.DeliverPosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Y) ;            
             self.DeliverPosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DeliverPosition2Z) ;            
+            self.DispensePosition2XLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition2X) ;
+            self.DispensePosition2YLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition2Y) ;
             self.DispensePosition2ZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispensePosition2Z) ;
 
             % Update enablement
@@ -303,6 +339,8 @@ classdef PezController < handle
             self.DeliverPosition1XLabelledEdit_.Enable = ws.onIff(true) ; 
             self.DeliverPosition1YLabelledEdit_.Enable = ws.onIff(true) ; 
             self.DeliverPosition1ZLabelledEdit_.Enable = ws.onIff(true) ;  
+            self.DispensePosition1XLabelledEdit_.Enable = ws.onIff(true) ;                   
+            self.DispensePosition1YLabelledEdit_.Enable = ws.onIff(true) ;                   
             self.DispensePosition1ZLabelledEdit_.Enable = ws.onIff(true) ;                   
             
             self.ToneFrequency2LabelledEdit_.Enable = ws.onIff(true) ;             
@@ -312,6 +350,8 @@ classdef PezController < handle
             self.DeliverPosition2XLabelledEdit_.Enable = ws.onIff(true) ; 
             self.DeliverPosition2YLabelledEdit_.Enable = ws.onIff(true) ;    
             self.DeliverPosition2ZLabelledEdit_.Enable = ws.onIff(true) ;      
+            self.DispensePosition2XLabelledEdit_.Enable = ws.onIff(true) ;
+            self.DispensePosition2YLabelledEdit_.Enable = ws.onIff(true) ;
             self.DispensePosition2ZLabelledEdit_.Enable = ws.onIff(true) ;
         end             
         
@@ -331,7 +371,7 @@ classdef PezController < handle
     methods (Access=private)
         function layout_(self)
             figureWidth = 424 ;
-            figureHeight = 330 ;
+            figureHeight = 390 ;
             
             firstRowYBaseline = figureHeight - 36 ;
             defaultYSpacing = 30 ;
@@ -413,6 +453,18 @@ classdef PezController < handle
             self.DeliverPosition1ZLabelledEdit_.Position(3)   = editWidth ;
             self.DeliverPosition2ZLabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
             self.DeliverPosition2ZLabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing ;
+            self.DispensePosition1XLabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
+            self.DispensePosition1XLabelledEdit_.Position(3)   = editWidth ;
+            self.DispensePosition2XLabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
+            self.DispensePosition2XLabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing ;
+            self.DispensePosition1YLabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
+            self.DispensePosition1YLabelledEdit_.Position(3)   = editWidth ;
+            self.DispensePosition2YLabelledEdit_.Position(1:2) = [condition2XBaseline yOffset] ;
+            self.DispensePosition2YLabelledEdit_.Position(3)   = editWidth ;
             
             yOffset = yOffset - defaultYSpacing ;
             self.DispensePosition1ZLabelledEdit_.Position(1:2) = [condition1XBaseline yOffset] ;
