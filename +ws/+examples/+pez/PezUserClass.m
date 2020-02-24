@@ -130,6 +130,9 @@ classdef PezUserClass < ws.UserClass
             elseif isequal(self.TrialSequenceMode, 'random') 
                 maximumRunLength = self.RandomTrialSequenceMaximumRunLength ;
                 trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength) ;
+                %trialSequence = [2     2     1     1     1] 
+                %trialSequence = [2     2     2     1     1] 
+                %trialSequence = [1     2     2     2     2] 
                 self.TrialSequence_ = trialSequence ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
@@ -145,13 +148,13 @@ classdef PezUserClass < ws.UserClass
                 if firstTrialType == 1 ,
                     self.PezDispenser_.nextDeliverPosition(...
                         'setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
-                    self.PezDispenser_.nextDispensePosition(...
-                        'setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
+                    %self.PezDispenser_.nextDispensePosition(...
+                    %    'setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
                 else
                     self.PezDispenser_.nextDeliverPosition(...
                         'setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                    self.PezDispenser_.nextDispensePosition(...
-                        'setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
+                    %self.PezDispenser_.nextDispensePosition(...
+                    %    'setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
                 end
                 self.PezDispenser_.startAssay() ;
                 % Wait for Arduino to be ready
@@ -219,6 +222,7 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
                 %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
@@ -226,6 +230,7 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
                 %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -269,10 +274,10 @@ classdef PezUserClass < ws.UserClass
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
                 self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
-                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
+                %self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
             else
                 self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
+                %self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
