@@ -483,172 +483,155 @@ classdef PezUserClass < ws.UserClass
         end        
                 
         function set.ToneFrequency1(self, newValue)
-            self.checkValue_('ToneFrequency1', newValue) ;
-            self.ToneFrequency1_ = newValue ;
+            screenedValue = self.screenValue_('ToneFrequency1', newValue) ;
+            self.ToneFrequency1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1X(self, newValue)
-            self.checkValue_('DeliverPosition1X', newValue) ;
-            self.DeliverPosition1X_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1X', newValue) ;
+            self.DeliverPosition1X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1Y(self, newValue)
-            self.checkValue_('DeliverPosition1Y', newValue) ;
-            self.DeliverPosition1Y_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1Y', newValue) ;
+            self.DeliverPosition1Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1Z(self, newValue)
-            self.checkValue_('DeliverPosition1Z', newValue) ;
-            self.DeliverPosition1Z_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1Z', newValue) ;
+            self.DeliverPosition1Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition1X(self, newValue)
-            self.checkValue_('DispensePosition1X', newValue) ;
-            self.DispensePosition1X_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition1X', newValue) ;
+            self.DispensePosition1X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition1Y(self, newValue)
-            self.checkValue_('DispensePosition1Y', newValue) ;
-            self.DispensePosition1Y_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition1Y', newValue) ;
+            self.DispensePosition1Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition1Z(self, newValue)
-            self.checkValue_('DispensePosition1Z', newValue) ;
-            self.DispensePosition1Z_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition1Z', newValue) ;
+            self.DispensePosition1Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneFrequency2(self, newValue)
-            self.checkValue_('ToneFrequency2', newValue) ;
-            self.ToneFrequency2_ = newValue ;
+            screenedValue = self.screenValue_('ToneFrequency2', newValue) ;
+            self.ToneFrequency2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2X(self, newValue)
-            self.checkValue_('DeliverPosition2X', newValue) ;
-            self.DeliverPosition2X_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2X', newValue) ;
+            self.DeliverPosition2X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2Y(self, newValue)
-            self.checkValue_('DeliverPosition2Y', newValue) ;
-            self.DeliverPosition2Y_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2Y', newValue) ;
+            self.DeliverPosition2Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2Z(self, newValue)
-            self.checkValue_('DeliverPosition2Z', newValue) ;
-            self.DeliverPosition2Z_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2Z', newValue) ;
+            self.DeliverPosition2Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition2X(self, newValue)
-            self.checkValue_('DispensePosition2X', newValue) ;
-            self.DispensePosition2X_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition2X', newValue) ;
+            self.DispensePosition2X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition2Y(self, newValue)
-            self.checkValue_('DispensePosition2Y', newValue) ;
-            self.DispensePosition2Y_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition2Y', newValue) ;
+            self.DispensePosition2Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition2Z(self, newValue)
-            self.checkValue_('DispensePosition2Z', newValue) ;
-            self.DispensePosition2Z_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition2Z', newValue) ;
+            self.DispensePosition2Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDelay1(self, newValue)
-            self.checkValue_('ToneDelay1', newValue) ;
-            self.ToneDelay1_ = newValue ;
+            screenedValue = self.screenValue_('ToneDelay1', newValue) ;
+            self.ToneDelay1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDuration1(self, newValue)
-            self.checkValue_('ToneDuration1', newValue) ;
-            self.ToneDuration1_ = newValue ;
+            screenedValue = self.screenValue_('ToneDuration1', newValue) ;
+            self.ToneDuration1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseDelay1(self, newValue)
-            self.checkValue_('DispenseDelay1', newValue) ;
-            self.DispenseDelay1_ = newValue ;
+            screenedValue = self.screenValue_('DispenseDelay1', newValue) ;
+            self.DispenseDelay1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDelay2(self, newValue)
-            self.checkValue_('ToneDelay2', newValue) ;
-            self.ToneDelay2_ = newValue ;
+            screenedValue = self.screenValue_('ToneDelay2', newValue) ;
+            self.ToneDelay2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDuration2(self, newValue)
-            self.checkValue_('ToneDuration2', newValue) ;
-            self.ToneDuration2_ = newValue ;
+            screenedValue = self.screenValue_('ToneDuration2', newValue) ;
+            self.ToneDuration2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseDelay2(self, newValue)
-            self.checkValue_('DispenseDelay2', newValue) ;
-            self.DispenseDelay2_ = newValue ;
+            screenedValue = self.screenValue_('DispenseDelay2', newValue) ;
+            self.DispenseDelay2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ReturnDelay(self, newValue)
-            self.checkValue_('ReturnDelay', newValue) ;
-            self.ReturnDelay_ = newValue ;
+            screenedValue = self.screenValue_('ReturnDelay', newValue) ;
+            self.ReturnDelay_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
 
         function set.TapCount(self, newValue)
-            self.checkValue_('TapCount', newValue) ;
-            self.TapCount_ = newValue ;
+            screenedValue = self.screenValue_('TapCount', newValue) ;
+            self.TapCount_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseSpeedX(self, newValue)
-            self.checkValue_('DispenseSpeedX', newValue) ;
-            self.DispenseSpeedX_ = newValue ;
+            screenedValue = self.screenValue_('DispenseSpeedX', newValue) ;
+            self.DispenseSpeedX_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseSpeedY(self, newValue)
-            self.checkValue_('DispenseSpeedY', newValue) ;
-            self.DispenseSpeedY_ = newValue ;
+            screenedValue = self.screenValue_('DispenseSpeedY', newValue) ;
+            self.DispenseSpeedY_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseSpeedZ(self, newValue)
-            self.checkValue_('DispenseSpeedZ', newValue) ;
-            self.DispenseSpeedZ_ = newValue ;
+            screenedValue = self.screenValue_('DispenseSpeedZ', newValue) ;
+            self.DispenseSpeedZ_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
 
-%         function set.DispenseToneFrequency(self, newValue)
-%             self.checkValue_('DispenseToneFrequency', newValue) ;
-%             self.DispenseToneFrequency_ = newValue ;
-%             self.tellControllerToUpdateIfPresent_() ;
-%         end
-%         
-%         function set.DoPlayDispenseTone(self, rawNewValue)
-%             self.checkValue_('DoPlayDispenseTone', rawNewValue) ;
-%             if islogical(rawNewValue) ,
-%                 newValue = rawNewValue ;
-%             else
-%                 newValue = (rawNewValue>0) ;
-%             end
-%             self.DoPlayDispenseTone_ = newValue ;
-%             self.tellControllerToUpdateIfPresent_() ;
-%         end
-        
         function result = get.IsRunning(self)
             result = self.IsRunning_ ;            
         end
@@ -722,40 +705,48 @@ classdef PezUserClass < ws.UserClass
             end
         end
         
-        function checkValue_(self, propertyName, newValue)  %#ok<INUSL>
+        function screenedValue = screenValue_(self, propertyName, newValue)  %#ok<INUSL>
             if isequal(propertyName, 'ReturnDelay') ,
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
-                end                                    
+                end
+                screenedValue = newValue ;
             elseif isequal(propertyName, 'TapCount') ,
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=5) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue) && isreal(screenedValue) && isfinite(screenedValue) && 1<=screenedValue && screenedValue<=5) ,
                     error('ws:invalidPropertyValue', 'TapCount property value is invalid') ;
                 end                                    
             elseif isequal(propertyName, 'DispensePosition1Z') || ...
                    isequal(propertyName, 'DispensePosition2Z') || ...
                    isequal(propertyName, 'DeliverPosition1Z') || ...
                    isequal(propertyName, 'DeliverPosition2Z'),
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=20) ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (0<=screenedValue ) && (screenedValue <=20) ) ,
                     error('ws:invalidPropertyValue', 'Z Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (0<=screenedValue ) && (screenedValue <=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Speed')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (1<=newValue) && (newValue<=500) ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (1<=screenedValue ) && (screenedValue <=500) ) ,
                     error('ws:invalidPropertyValue', 'Speed property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Duration')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Duration property value is invalid') ;
                 end                    
+                screenedValue = newValue ;
             elseif ~isempty(strfind(propertyName, 'Delay')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Delay property value is invalid') ;
                 end                    
+                screenedValue = newValue ;
             elseif ~isempty(strfind(propertyName, 'Frequency')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<newValue ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && 0<screenedValue  ) ,
                     error('ws:invalidPropertyValue', 'Frequency property value is invalid') ;
                 end                    
             else
