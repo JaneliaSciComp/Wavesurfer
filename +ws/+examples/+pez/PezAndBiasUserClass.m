@@ -4,15 +4,14 @@ classdef PezAndBiasUserClass < ws.UserClass
         TrialSequenceMode
         RandomTrialSequenceMaximumRunLength
         
-        %DoPlayDispenseTone
-        %DispenseToneFrequency
-        
         ToneFrequency1
         ToneDelay1
         ToneDuration1
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
+        DispensePosition1X
+        DispensePosition1Y
         DispensePosition1Z
 
         ToneFrequency2
@@ -21,9 +20,15 @@ classdef PezAndBiasUserClass < ws.UserClass
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
+        DispensePosition2X
+        DispensePosition2Y
         DispensePosition2Z
 
         ReturnDelay
+        TapCount
+        DispenseSpeedX
+        DispenseSpeedY
+        DispenseSpeedZ
 
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
@@ -283,7 +288,15 @@ classdef PezAndBiasUserClass < ws.UserClass
         function set.ReturnDelay(self, newValue)
             self.PezUserObject_.ReturnDelay = newValue ;
         end
-            
+
+        function result = get.TapCount(self)
+            result = self.PezUserObject_.TapCount ;
+        end
+        
+        function set.TapCount(self, newValue)
+            self.PezUserObject_.TapCount = newValue ;
+        end
+        
         function result = get.TrialSequence(self)
             result = self.PezUserObject_.TrialSequence ;
         end
@@ -292,28 +305,44 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.BiasUserObject_.cameraCount ;
         end        
         
-%         function result = get.DoPlayDispenseTone(self)
-%             result = self.PezUserObject_.DoPlayDispenseTone ;
-%         end        
-% 
-%         function set.DoPlayDispenseTone(self, newValue)
-%             self.PezUserObject_.DoPlayDispenseTone = newValue ;
-%         end        
-% 
-%         function result = get.DispenseToneFrequency(self)
-%             result = self.PezUserObject_.DispenseToneFrequency ;
-%         end        
-% 
-%         function set.DispenseToneFrequency(self, newValue)
-%             self.PezUserObject_.DispenseToneFrequency = newValue ;
-%         end        
-
+        function result = get.DispensePosition1X(self)
+            result = self.PezUserObject_.DispensePosition1X ;
+        end
+        
+        function set.DispensePosition1X(self, newValue)
+            self.PezUserObject_.DispensePosition1X = newValue ;
+        end
+        
+        function result = get.DispensePosition1Y(self)
+            result = self.PezUserObject_.DispensePosition1Y ;
+        end
+        
+        function set.DispensePosition1Y(self, newValue)
+            self.PezUserObject_.DispensePosition1Y = newValue ;
+        end
+        
         function result = get.DispensePosition1Z(self)
             result = self.PezUserObject_.DispensePosition1Z ;
         end
         
         function set.DispensePosition1Z(self, newValue)
             self.PezUserObject_.DispensePosition1Z = newValue ;
+        end
+        
+        function result = get.DispensePosition2X(self)
+            result = self.PezUserObject_.DispensePosition2X ;
+        end
+        
+        function set.DispensePosition2X(self, newValue)
+            self.PezUserObject_.DispensePosition2X = newValue ;
+        end
+        
+        function result = get.DispensePosition2Y(self)
+            result = self.PezUserObject_.DispensePosition2Y ;
+        end
+        
+        function set.DispensePosition2Y(self, newValue)
+            self.PezUserObject_.DispensePosition2Y = newValue ;
         end
         
         function result = get.DispensePosition2Z(self)
@@ -355,6 +384,30 @@ classdef PezAndBiasUserClass < ws.UserClass
         function set.SavedFigurePosition(self, newValue)
             self.PezUserObject_.SavedFigurePosition = newValue ;
         end        
+        
+        function result = get.DispenseSpeedX(self)
+            result = self.PezUserObject_.DispenseSpeedX ;
+        end
+        
+        function set.DispenseSpeedX(self, newValue)
+            self.PezUserObject_.DispenseSpeedX = newValue ;
+        end
+        
+        function result = get.DispenseSpeedY(self)
+            result = self.PezUserObject_.DispenseSpeedY ;
+        end
+        
+        function set.DispenseSpeedY(self, newValue)
+            self.PezUserObject_.DispenseSpeedY = newValue ;
+        end
+        
+        function result = get.DispenseSpeedZ(self)
+            result = self.PezUserObject_.DispenseSpeedZ ;
+        end
+        
+        function set.DispenseSpeedZ(self, newValue)
+            self.PezUserObject_.DispenseSpeedZ = newValue ;
+        end
     end  % methods
         
     methods
