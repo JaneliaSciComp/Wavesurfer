@@ -30,6 +30,11 @@ classdef PezUserClass < ws.UserClass
         DispensePosition2Z
         
         ReturnDelay
+
+        TapCount
+        DispenseSpeedX
+        DispenseSpeedY
+        DispenseSpeedZ
         
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
@@ -66,6 +71,11 @@ classdef PezUserClass < ws.UserClass
         DispensePosition2Z_ = 12  % scalar, mm?
         
         ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
+        
+        TapCount_ = 3
+        DispenseSpeedX_ = 250
+        DispenseSpeedY_ = 250
+        DispenseSpeedZ_ = 250        
         
         IsFigurePositionSaved_ = false
         SavedFigurePosition_ = []
@@ -281,6 +291,8 @@ classdef PezUserClass < ws.UserClass
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
+            self.PezDispenser_.tapCount('setValue', self.TapCount) ;
+            
             %self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
             %self.PezDispenser_.toneDelayMax('setValue', 0) ;            
             %dispenseToneVolume = ws.fif(self.DoPlayDispenseTone, self.DispenseToneVolumeWhenPlayed_, 0) ;
@@ -437,6 +449,22 @@ classdef PezUserClass < ws.UserClass
             result = self.ReturnDelay_ ;
         end
         
+        function result = get.TapCount(self)
+            result = self.TapCount_ ;
+        end
+
+        function result = get.DispenseSpeedX(self)
+            result = self.DispenseSpeedX_ ;
+        end
+
+        function result = get.DispenseSpeedY(self)
+            result = self.DispenseSpeedY_ ;
+        end
+
+        function result = get.DispenseSpeedZ(self)
+            result = self.DispenseSpeedZ_ ;
+        end
+        
 %         function result = get.DispenseToneFrequency(self)
 %             result = self.DispenseToneFrequency_ ;
 %         end        
@@ -579,7 +607,31 @@ classdef PezUserClass < ws.UserClass
             self.ReturnDelay_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
+
+        function set.TapCount(self, newValue)
+            self.checkValue_('TapCount', newValue) ;
+            self.TapCount_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
         
+        function set.DispenseSpeedX(self, newValue)
+            self.checkValue_('DispenseSpeedX', newValue) ;
+            self.DispenseSpeedX_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseSpeedY(self, newValue)
+            self.checkValue_('DispenseSpeedY', newValue) ;
+            self.DispenseSpeedY_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseSpeedZ(self, newValue)
+            self.checkValue_('DispenseSpeedZ', newValue) ;
+            self.DispenseSpeedZ_ = newValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
 %         function set.DispenseToneFrequency(self, newValue)
 %             self.checkValue_('DispenseToneFrequency', newValue) ;
 %             self.DispenseToneFrequency_ = newValue ;
@@ -675,6 +727,10 @@ classdef PezUserClass < ws.UserClass
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
                 end                                    
+            elseif isequal(propertyName, 'TapCount') ,
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=5) ,
+                    error('ws:invalidPropertyValue', 'TapCount property value is invalid') ;
+                end                                    
             elseif isequal(propertyName, 'DispensePosition1Z') || ...
                    isequal(propertyName, 'DispensePosition2Z') || ...
                    isequal(propertyName, 'DeliverPosition1Z') || ...
@@ -685,6 +741,10 @@ classdef PezUserClass < ws.UserClass
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;
+                end
+            elseif ~isempty(strfind(propertyName, 'Speed')) ,  %#ok<STREMP>
+                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (1<=newValue) && (newValue<=500) ) ,
+                    error('ws:invalidPropertyValue', 'Speed property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Duration')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
