@@ -373,10 +373,16 @@ classdef PezController < handle
         end
         
         function syncFigurePosition(self) 
+            % This moves the figure s.t. it's upper left corner
+            % is in the same position as the upper left corner of
+            % the on-screen rectangel defined by the models' SavedFigurePosition.
+            % This is better, b/c sometimes we change the user class such that the 
+            % figure size changes, and this will work better with old protocol files
             model = self.Model_ ;
             if model.IsFigurePositionSaved ,
                 position = model.SavedFigurePosition ;
-                self.Figure_.Position = position ;
+                upperLeftXY = [position(1) position(2)+position(4)] ;
+                ws.positionFigureUpperLeft(self.Figure_, upperLeftXY) ;
             end               
         end
     end  % public methods block    
