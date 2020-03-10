@@ -2,7 +2,6 @@ classdef PezAndBiasUserClass < ws.UserClass
     
     properties (Dependent)
         TrialSequenceMode
-        RandomTrialSequenceMaximumRunLength
         
         ToneFrequency1
         ToneDelay1
@@ -29,6 +28,8 @@ classdef PezAndBiasUserClass < ws.UserClass
         DispenseSpeedX
         DispenseSpeedY
         DispenseSpeedZ
+        RandomTrialSequenceMaximumRunLength
+        RandomTrialSequenceLaserTrialSpacing
 
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
@@ -181,6 +182,18 @@ classdef PezAndBiasUserClass < ws.UserClass
             result = self.PezUserObject_.RandomTrialSequenceMaximumRunLength ;
         end
                 
+        function set.RandomTrialSequenceMaximumRunLength(self, newValue)
+            self.PezUserObject_.RandomTrialSequenceMaximumRunLength = newValue ;
+        end
+                
+        function result = get.RandomTrialSequenceLaserTrialSpacing(self)
+            result = self.PezUserObject_.RandomTrialSequenceLaserTrialSpacing ;
+        end
+                
+        function set.RandomTrialSequenceLaserTrialSpacing(self, newValue)
+            self.PezUserObject_.RandomTrialSequenceLaserTrialSpacing = newValue ;
+        end
+        
         function set.TrialSequenceMode(self, newValue)
             self.PezUserObject_.TrialSequenceMode = newValue ;
         end

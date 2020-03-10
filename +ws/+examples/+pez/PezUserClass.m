@@ -35,10 +35,12 @@ classdef PezUserClass < ws.UserClass
         DispenseSpeedX
         DispenseSpeedY
         DispenseSpeedZ
+        RandomTrialSequenceLaserTrialSpacing  % only matters for random trials
         
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
         IsResetEnabled
+        IsTrialSequenceDeterministic
         
         IsFigurePositionSaved
         SavedFigurePosition
@@ -75,7 +77,8 @@ classdef PezUserClass < ws.UserClass
         TapCount_ = 3
         DispenseSpeedX_ = 250
         DispenseSpeedY_ = 250
-        DispenseSpeedZ_ = 250        
+        DispenseSpeedZ_ = 250                
+        RandomTrialSequenceLaserTrialSpacing_ = +inf
         
         IsFigurePositionSaved_ = false
         SavedFigurePosition_ = []
@@ -136,13 +139,11 @@ classdef PezUserClass < ws.UserClass
             elseif isequal(self.TrialSequenceMode, 'all-2') 
                 self.TrialSequence_ = repmat(2, [1 sweepCount]) ;
             elseif isequal(self.TrialSequenceMode, 'alternating')
-                self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
+                self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;
             elseif isequal(self.TrialSequenceMode, 'random') 
                 maximumRunLength = self.RandomTrialSequenceMaximumRunLength ;
-                trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength) ;
-                %trialSequence = [2     2     1     1     1] 
-                %trialSequence = [2     2     2     1     1] 
-                %trialSequence = [1     2     2     2     2] 
+                laserTrialSpacing = self.LaserTrailSpacing ;
+                trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength, laserTrialSpacing) ;
                 self.TrialSequence_ = trialSequence ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
@@ -465,6 +466,14 @@ classdef PezUserClass < ws.UserClass
             result = self.DispenseSpeedZ_ ;
         end
         
+        function result = get.RandomTrialSequenceLaserTrialSpacing(self)
+            result = self.RandomTrialSequenceLaserTrialSpacing_ ;
+        end
+        
+        function result = get.IsTrialSequenceDeterministic(self)
+            result = ~isequal(self.TrialSequenceMode, 'random') ;
+        end
+        
 %         function result = get.DispenseToneFrequency(self)
 %             result = self.DispenseToneFrequency_ ;
 %         end        
@@ -476,7 +485,7 @@ classdef PezUserClass < ws.UserClass
         function set.TrialSequenceMode(self, newValue) 
             if ~any(strcmp(newValue, self.TrialSequenceModeOptions))
                 error('ws:invalidPropertyValue', ...
-                      'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+                      'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', ''random'', or ''random-laser''') ;
             end
             self.TrialSequenceMode_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
@@ -632,6 +641,18 @@ classdef PezUserClass < ws.UserClass
             self.tellControllerToUpdateIfPresent_() ;
         end
 
+        function set.RandomTrialSequenceLaserTrialSpacing(self, newValue)
+            screenedValue = self.screenValue_('RandomTrialSequenceLaserTrialSpacing', newValue) ;
+            self.RandomTrialSequenceLaserTrialSpacing_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
+        function set.RandomTrialSequenceMaximumRunLength(self, newValue)
+            screenedValue = self.screenValue_('RandomTrialSequenceMaximumRunLength', newValue) ;
+            self.RandomTrialSequenceMaximumRunLength_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
         function result = get.IsRunning(self)
             result = self.IsRunning_ ;            
         end
@@ -712,9 +733,19 @@ classdef PezUserClass < ws.UserClass
                 end
                 screenedValue = newValue ;
             elseif isequal(propertyName, 'TapCount') ,
-                screenedValue = round(newValue) ;
-                if ~( isscalar(screenedValue) && isreal(screenedValue) && isfinite(screenedValue) && 1<=screenedValue && screenedValue<=5) ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && isfinite(screenedValue) && 1<=screenedValue && screenedValue<=5) ,
                     error('ws:invalidPropertyValue', 'TapCount property value is invalid') ;
+                end                                    
+            elseif isequal(propertyName, 'RandomTrialSequenceMaximumRunLength') ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && ~isnan(screenedValue) && 2<=screenedValue ) ,
+                    error('ws:invalidPropertyValue', 'RandomTrialSequenceMaximumRunLength property value is invalid') ;
+                end                                    
+            elseif isequal(propertyName, 'RandomTrialSequenceLaserTrialSpacing') ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && ~isnan(screenedValue) && 1<=screenedValue ) ,
+                    error('ws:invalidPropertyValue', 'RandomTrialSequenceLaserTrialSpacing property value is invalid') ;
                 end                                    
             elseif isequal(propertyName, 'DispensePosition1Z') || ...
                    isequal(propertyName, 'DispensePosition2Z') || ...

@@ -17,6 +17,8 @@ classdef PezController < handle
         DispenseSpeedXLabelledEdit_
         DispenseSpeedYLabelledEdit_
         DispenseSpeedZLabelledEdit_
+        MaximumRunLengthLabelledEdit_
+        LaserTrialSpacingLabelledEdit_
         
         Condition1Label_
         ToneFrequency1LabelledEdit_
@@ -107,6 +109,24 @@ classdef PezController < handle
                                          'Callback', @(source,event)(self.controlActuated(source, event)), ...
                                          'HorizontalAlignment', 'right', ...
                                          'LabelString', 'Dispense Speed Z:') ;                                     
+                                     
+            self.MaximumRunLengthLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'RandomTrialSequenceMaximumRunLength', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', 'Maximum Run Length:', ...
+                                         'UnitsString', 'trials') ;            
+
+            self.LaserTrialSpacingLabelledEdit_ = ...
+                ws.LabelledEdit('Parent', fig, ...
+                                         'Tag', 'RandomTrialSequenceLaserTrialSpacing', ...
+                                         'Callback', @(source,event)(self.controlActuated(source, event)), ...
+                                         'HorizontalAlignment', 'right', ...
+                                         'LabelString', 'Laser Trial Spacing:', ...
+                                         'UnitsString', 'trials') ;            
+
+
                          
             % Per-condition columns                                     
             self.Condition1Label_ = ...
@@ -313,10 +333,12 @@ classdef PezController < handle
                                                  self.Model_.TrialSequenceMode) ;
             self.ReturnDelayLabelledEdit_.EditString = sprintf('%g', self.Model_.ReturnDelay) ;                        
             
-            self.TapCountLabelledEdit_.EditString = sprintf('%g', self.Model_.TapCount) ;                        
+            self.TapCountLabelledEdit_.EditString = sprintf('%g', self.Model_.TapCount) ;
             self.DispenseSpeedXLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseSpeedX) ;
             self.DispenseSpeedYLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseSpeedY) ;
             self.DispenseSpeedZLabelledEdit_.EditString = sprintf('%g', self.Model_.DispenseSpeedZ) ;
+            self.MaximumRunLengthLabelledEdit_.EditString = sprintf('%g', self.Model_.RandomTrialSequenceMaximumRunLength) ;
+            self.LaserTrialSpacingLabelledEdit_.EditString = sprintf('%g', self.Model_.RandomTrialSequenceLaserTrialSpacing) ;
             
             self.ToneFrequency1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneFrequency1) ;                        
             self.ToneDelay1LabelledEdit_.EditString = sprintf('%g', self.Model_.ToneDelay1) ;
@@ -344,7 +366,10 @@ classdef PezController < handle
             self.TrialSequenceModePopupMenu_.Enable = ws.onIff(~self.Model_.IsRunning) ;
             self.ReturnDelayLabelledEdit_.Enable = ws.onIff(true) ;            
             self.ResetButton_.Enable = ws.onIff(self.Model_.IsResetEnabled) ;
-
+            isTrialSequenceModeRandom = isequal(self.Model_.TrialSequenceMode, 'random') ;
+            self.MaximumRunLengthLabelledEdit_.Enable = ws.onIff(isTrialSequenceModeRandom) ;
+            self.LaserTrialSpacingLabelledEdit_.Enable = ws.onIff(isTrialSequenceModeRandom) ;
+            
             self.ToneFrequency1LabelledEdit_.Enable = ws.onIff(true) ;         
             self.ToneDelay1LabelledEdit_.Enable = ws.onIff(true) ;
             self.ToneDuration1LabelledEdit_.Enable = ws.onIff(true) ;
@@ -390,7 +415,7 @@ classdef PezController < handle
     methods (Access=private)
         function layout_(self)
             figureWidth = 344 ;
-            figureHeight = 550 ;
+            figureHeight = 610 ;
             
             firstRowYBaseline = figureHeight - 32 ;
             defaultYSpacing = 30 ;
@@ -437,6 +462,14 @@ classdef PezController < handle
             yOffset = yOffset - defaultYSpacing ;
             self.DispenseSpeedZLabelledEdit_.Position(1:2) = [sharedBlockXBaseline yOffset] ;
             self.DispenseSpeedZLabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing ;
+            self.MaximumRunLengthLabelledEdit_.Position(1:2) = [sharedBlockXBaseline yOffset] ;
+            self.MaximumRunLengthLabelledEdit_.Position(3)   = editWidth ;
+            
+            yOffset = yOffset - defaultYSpacing ;
+            self.LaserTrialSpacingLabelledEdit_.Position(1:2) = [sharedBlockXBaseline yOffset] ;
+            self.LaserTrialSpacingLabelledEdit_.Position(3)   = editWidth ;
             
             % Two-column part
             yOffset = yOffset - defaultYSpacing - belowSharedBlockExtraYSpace ;
