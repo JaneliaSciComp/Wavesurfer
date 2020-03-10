@@ -142,7 +142,7 @@ classdef PezUserClass < ws.UserClass
                 self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;
             elseif isequal(self.TrialSequenceMode, 'random') 
                 maximumRunLength = self.RandomTrialSequenceMaximumRunLength ;
-                laserTrialSpacing = self.LaserTrailSpacing ;
+                laserTrialSpacing = self.RandomTrialSequenceLaserTrialSpacing ;
                 trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength, laserTrialSpacing) ;
                 self.TrialSequence_ = trialSequence ;
             else
