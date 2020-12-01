@@ -3,10 +3,6 @@ classdef PezUserClass < ws.UserClass
         TrialSequenceModeOptions = {'all-1' 'all-2' 'alternating' 'random'} ;
     end
 
-    properties (Constant, Transient, Access=protected)  % Transient so doesn't get written to data files
-        ZOffset_ = -45  % mm
-    end
-    
     properties (Dependent)
         TrialSequenceMode
         RandomTrialSequenceMaximumRunLength
@@ -18,6 +14,8 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition1X
         DeliverPosition1Y
         DeliverPosition1Z
+        DispensePosition1X
+        DispensePosition1Y
         DispensePosition1Z
 
         ToneFrequency2
@@ -27,13 +25,22 @@ classdef PezUserClass < ws.UserClass
         DeliverPosition2X
         DeliverPosition2Y
         DeliverPosition2Z
+        DispensePosition2X
+        DispensePosition2Y
         DispensePosition2Z
         
         ReturnDelay
+
+        TapCount
+        DispenseSpeedX
+        DispenseSpeedY
+        DispenseSpeedZ
+        RandomTrialSequenceLaserTrialSpacing  % only matters for random trials
         
         TrialSequence  % 1 x sweepCount, each element 1 or 2        
         IsRunning
         IsResetEnabled
+        IsTrialSequenceDeterministic
         
         IsFigurePositionSaved
         SavedFigurePosition
@@ -49,8 +56,10 @@ classdef PezUserClass < ws.UserClass
         DispenseDelay1_ = 1  % s
         DeliverPosition1X_ =  60  % mm?
         DeliverPosition1Y_ =  60  % mm?
-        DeliverPosition1Z_ =   0  % mm?
-        DispensePosition1Z_ = 10  % scalar, mm?, the vertical delta from the deliver position to the dispense position
+        DeliverPosition1Z_ =  10  % mm?
+        DispensePosition1X_ =  60  % mm?
+        DispensePosition1Y_ =  60  % mm?
+        DispensePosition1Z_ = 12  % scalar, mm?, the vertical delta from the deliver position to the dispense position
 
         ToneFrequency2_ = 10000  % Hz
         ToneDelay2_ = 1  % s
@@ -58,10 +67,18 @@ classdef PezUserClass < ws.UserClass
         DispenseDelay2_ = 1  % s
         DeliverPosition2X_ =  60  % mm?
         DeliverPosition2Y_ =  60  % mm?
-        DeliverPosition2Z_ = 0  % mm?
-        DispensePosition2Z_ = 10  % scalar, mm?
+        DeliverPosition2Z_ = 10  % mm?
+        DispensePosition2X_ =  60  % mm?
+        DispensePosition2Y_ =  60  % mm?
+        DispensePosition2Z_ = 12  % scalar, mm?
         
         ReturnDelay_ = 1  % s, the duration the piston holds at the dispense position
+        
+        TapCount_ = 3
+        DispenseSpeedX_ = 250
+        DispenseSpeedY_ = 250
+        DispenseSpeedZ_ = 250                
+        RandomTrialSequenceLaserTrialSpacing_ = +inf
         
         IsFigurePositionSaved_ = false
         SavedFigurePosition_ = []
@@ -122,10 +139,11 @@ classdef PezUserClass < ws.UserClass
             elseif isequal(self.TrialSequenceMode, 'all-2') 
                 self.TrialSequence_ = repmat(2, [1 sweepCount]) ;
             elseif isequal(self.TrialSequenceMode, 'alternating')
-                self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;                
+                self.TrialSequence_ = repmat([1 2], [1 ceil(sweepCount/2)]) ;
             elseif isequal(self.TrialSequenceMode, 'random') 
                 maximumRunLength = self.RandomTrialSequenceMaximumRunLength ;
-                trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength) ;
+                laserTrialSpacing = self.RandomTrialSequenceLaserTrialSpacing ;
+                trialSequence = ws.examples.pez.randomTrialSequence(sweepCount, maximumRunLength, laserTrialSpacing) ;
                 self.TrialSequence_ = trialSequence ;
             else
                 error('Unrecognized TrialSequenceMode: %s', self.TrialSequenceMode) ;
@@ -140,11 +158,15 @@ classdef PezUserClass < ws.UserClass
                 firstTrialType = self.TrialSequence_(1) ;
                 if firstTrialType == 1 ,
                     self.PezDispenser_.nextDeliverPosition(...
-                        'setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                        'setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                    %self.PezDispenser_.nextDispensePosition(...
+                    %    'setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
                 else
                     self.PezDispenser_.nextDeliverPosition(...
-                        'setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
-                end                
+                        'setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                    %self.PezDispenser_.nextDispensePosition(...
+                    %    'setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
+                end
                 self.PezDispenser_.startAssay() ;
                 % Wait for Arduino to be ready
                 ticId = tic() ;
@@ -210,14 +232,16 @@ classdef PezUserClass < ws.UserClass
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay1) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration1) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay1) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z+self.ZOffset_) ;
+                %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition1Z) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
                 self.PezDispenser_.position('setValue', 'LEFT') ;
             else
                 self.PezDispenser_.positionToneFrequency('setValue', self.ToneFrequency2) ;
                 self.PezDispenser_.positionToneDelay('setValue', self.ToneDelay2) ;
                 self.PezDispenser_.positionToneDuration('setValue', self.ToneDuration2) ;
                 self.PezDispenser_.dispenseDelay('setValue', self.DispenseDelay2) ;
-                self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z+self.ZOffset_) ;
+                %self.PezDispenser_.dispenseChannelPosition('setValue', self.DispensePosition2Z) ;
+                self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
                 self.PezDispenser_.position('setValue', 'RIGHT') ;
             end
 
@@ -237,7 +261,7 @@ classdef PezUserClass < ws.UserClass
             %   increasing y == rightward
             %   increasing z == away
             %
-            % (All of these are from the POV of the experiemnter, sitting in front of the
+            % (All of these are from the POV of the experimenter, sitting in front of the
             % rig.)
             %
             % We want increasing z to be upwards, and to keep the coordinate system
@@ -260,12 +284,16 @@ classdef PezUserClass < ws.UserClass
             %
             % So, long story short, we permute the user coords to get arduino coords            
             if nextTrialType == 1 ,
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z+self.ZOffset_ self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition1Z self.DeliverPosition1X self.DeliverPosition1Y]) ;
+                %self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition1Z self.DispensePosition1X self.DispensePosition1Y]) ;
             else
-                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z+self.ZOffset_ self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                self.PezDispenser_.nextDeliverPosition('setValue', [self.DeliverPosition2Z self.DeliverPosition2X self.DeliverPosition2Y]) ;
+                %self.PezDispenser_.nextDispensePosition('setValue', [self.DispensePosition2Z self.DispensePosition2X self.DispensePosition2Y]) ;
             end                
             self.PezDispenser_.returnDelayMin('setValue', self.ReturnDelay) ;
             self.PezDispenser_.returnDelayMax('setValue', self.ReturnDelay) ;
+            self.PezDispenser_.tapCount('setValue', self.TapCount) ;
+            
             %self.PezDispenser_.toneDelayMin('setValue', 0) ;  % Just to make sure, since we're not using toneDelay any more
             %self.PezDispenser_.toneDelayMax('setValue', 0) ;            
             %dispenseToneVolume = ws.fif(self.DoPlayDispenseTone, self.DispenseToneVolumeWhenPlayed_, 0) ;
@@ -354,6 +382,14 @@ classdef PezUserClass < ws.UserClass
             result = self.DeliverPosition1Z_ ;
         end
         
+        function result = get.DispensePosition1X(self)
+            result = self.DispensePosition1X_ ;
+        end
+        
+        function result = get.DispensePosition1Y(self)
+            result = self.DispensePosition1Y_ ;
+        end
+        
         function result = get.DispensePosition1Z(self)
             result = self.DispensePosition1Z_ ;
         end
@@ -372,6 +408,14 @@ classdef PezUserClass < ws.UserClass
         
         function result = get.DeliverPosition2Z(self)
             result = self.DeliverPosition2Z_ ;
+        end
+        
+        function result = get.DispensePosition2X(self)
+            result = self.DispensePosition2X_ ;
+        end
+        
+        function result = get.DispensePosition2Y(self)
+            result = self.DispensePosition2Y_ ;
         end
         
         function result = get.DispensePosition2Z(self)
@@ -406,6 +450,30 @@ classdef PezUserClass < ws.UserClass
             result = self.ReturnDelay_ ;
         end
         
+        function result = get.TapCount(self)
+            result = self.TapCount_ ;
+        end
+
+        function result = get.DispenseSpeedX(self)
+            result = self.DispenseSpeedX_ ;
+        end
+
+        function result = get.DispenseSpeedY(self)
+            result = self.DispenseSpeedY_ ;
+        end
+
+        function result = get.DispenseSpeedZ(self)
+            result = self.DispenseSpeedZ_ ;
+        end
+        
+        function result = get.RandomTrialSequenceLaserTrialSpacing(self)
+            result = self.RandomTrialSequenceLaserTrialSpacing_ ;
+        end
+        
+        function result = get.IsTrialSequenceDeterministic(self)
+            result = ~isequal(self.TrialSequenceMode, 'random') ;
+        end
+        
 %         function result = get.DispenseToneFrequency(self)
 %             result = self.DispenseToneFrequency_ ;
 %         end        
@@ -417,131 +485,174 @@ classdef PezUserClass < ws.UserClass
         function set.TrialSequenceMode(self, newValue) 
             if ~any(strcmp(newValue, self.TrialSequenceModeOptions))
                 error('ws:invalidPropertyValue', ...
-                      'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', or ''random''') ;
+                      'TrialSequenceMode must be one of ''all-1'', ''all-2'', ''alternating'', ''random'', or ''random-laser''') ;
             end
             self.TrialSequenceMode_ = newValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end        
                 
         function set.ToneFrequency1(self, newValue)
-            self.checkValue_('ToneFrequency1', newValue) ;
-            self.ToneFrequency1_ = newValue ;
+            screenedValue = self.screenValue_('ToneFrequency1', newValue) ;
+            self.ToneFrequency1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1X(self, newValue)
-            self.checkValue_('DeliverPosition1X', newValue) ;
-            self.DeliverPosition1X_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1X', newValue) ;
+            self.DeliverPosition1X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1Y(self, newValue)
-            self.checkValue_('DeliverPosition1Y', newValue) ;
-            self.DeliverPosition1Y_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1Y', newValue) ;
+            self.DeliverPosition1Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition1Z(self, newValue)
-            self.checkValue_('DeliverPosition1Z', newValue) ;
-            self.DeliverPosition1Z_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition1Z', newValue) ;
+            self.DeliverPosition1Z_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition1X(self, newValue)
+            screenedValue = self.screenValue_('DispensePosition1X', newValue) ;
+            self.DispensePosition1X_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition1Y(self, newValue)
+            screenedValue = self.screenValue_('DispensePosition1Y', newValue) ;
+            self.DispensePosition1Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition1Z(self, newValue)
-            self.checkValue_('DispensePosition1Z', newValue) ;
-            self.DispensePosition1Z_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition1Z', newValue) ;
+            self.DispensePosition1Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneFrequency2(self, newValue)
-            self.checkValue_('ToneFrequency2', newValue) ;
-            self.ToneFrequency2_ = newValue ;
+            screenedValue = self.screenValue_('ToneFrequency2', newValue) ;
+            self.ToneFrequency2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2X(self, newValue)
-            self.checkValue_('DeliverPosition2X', newValue) ;
-            self.DeliverPosition2X_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2X', newValue) ;
+            self.DeliverPosition2X_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2Y(self, newValue)
-            self.checkValue_('DeliverPosition2Y', newValue) ;
-            self.DeliverPosition2Y_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2Y', newValue) ;
+            self.DeliverPosition2Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DeliverPosition2Z(self, newValue)
-            self.checkValue_('DeliverPosition2Z', newValue) ;
-            self.DeliverPosition2Z_ = newValue ;
+            screenedValue = self.screenValue_('DeliverPosition2Z', newValue) ;
+            self.DeliverPosition2Z_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition2X(self, newValue)
+            screenedValue = self.screenValue_('DispensePosition2X', newValue) ;
+            self.DispensePosition2X_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispensePosition2Y(self, newValue)
+            screenedValue = self.screenValue_('DispensePosition2Y', newValue) ;
+            self.DispensePosition2Y_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispensePosition2Z(self, newValue)
-            self.checkValue_('DispensePosition2Z', newValue) ;
-            self.DispensePosition2Z_ = newValue ;
+            screenedValue = self.screenValue_('DispensePosition2Z', newValue) ;
+            self.DispensePosition2Z_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDelay1(self, newValue)
-            self.checkValue_('ToneDelay1', newValue) ;
-            self.ToneDelay1_ = newValue ;
+            screenedValue = self.screenValue_('ToneDelay1', newValue) ;
+            self.ToneDelay1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDuration1(self, newValue)
-            self.checkValue_('ToneDuration1', newValue) ;
-            self.ToneDuration1_ = newValue ;
+            screenedValue = self.screenValue_('ToneDuration1', newValue) ;
+            self.ToneDuration1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseDelay1(self, newValue)
-            self.checkValue_('DispenseDelay1', newValue) ;
-            self.DispenseDelay1_ = newValue ;
+            screenedValue = self.screenValue_('DispenseDelay1', newValue) ;
+            self.DispenseDelay1_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDelay2(self, newValue)
-            self.checkValue_('ToneDelay2', newValue) ;
-            self.ToneDelay2_ = newValue ;
+            screenedValue = self.screenValue_('ToneDelay2', newValue) ;
+            self.ToneDelay2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ToneDuration2(self, newValue)
-            self.checkValue_('ToneDuration2', newValue) ;
-            self.ToneDuration2_ = newValue ;
+            screenedValue = self.screenValue_('ToneDuration2', newValue) ;
+            self.ToneDuration2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.DispenseDelay2(self, newValue)
-            self.checkValue_('DispenseDelay2', newValue) ;
-            self.DispenseDelay2_ = newValue ;
+            screenedValue = self.screenValue_('DispenseDelay2', newValue) ;
+            self.DispenseDelay2_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
         function set.ReturnDelay(self, newValue)
-            self.checkValue_('ReturnDelay', newValue) ;
-            self.ReturnDelay_ = newValue ;
+            screenedValue = self.screenValue_('ReturnDelay', newValue) ;
+            self.ReturnDelay_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
+        function set.TapCount(self, newValue)
+            screenedValue = self.screenValue_('TapCount', newValue) ;
+            self.TapCount_ = screenedValue ;
             self.tellControllerToUpdateIfPresent_() ;
         end
         
-%         function set.DispenseToneFrequency(self, newValue)
-%             self.checkValue_('DispenseToneFrequency', newValue) ;
-%             self.DispenseToneFrequency_ = newValue ;
-%             self.tellControllerToUpdateIfPresent_() ;
-%         end
-%         
-%         function set.DoPlayDispenseTone(self, rawNewValue)
-%             self.checkValue_('DoPlayDispenseTone', rawNewValue) ;
-%             if islogical(rawNewValue) ,
-%                 newValue = rawNewValue ;
-%             else
-%                 newValue = (rawNewValue>0) ;
-%             end
-%             self.DoPlayDispenseTone_ = newValue ;
-%             self.tellControllerToUpdateIfPresent_() ;
-%         end
+        function set.DispenseSpeedX(self, newValue)
+            screenedValue = self.screenValue_('DispenseSpeedX', newValue) ;
+            self.DispenseSpeedX_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
         
+        function set.DispenseSpeedY(self, newValue)
+            screenedValue = self.screenValue_('DispenseSpeedY', newValue) ;
+            self.DispenseSpeedY_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+        
+        function set.DispenseSpeedZ(self, newValue)
+            screenedValue = self.screenValue_('DispenseSpeedZ', newValue) ;
+            self.DispenseSpeedZ_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
+        function set.RandomTrialSequenceLaserTrialSpacing(self, newValue)
+            screenedValue = self.screenValue_('RandomTrialSequenceLaserTrialSpacing', newValue) ;
+            self.RandomTrialSequenceLaserTrialSpacing_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
+        function set.RandomTrialSequenceMaximumRunLength(self, newValue)
+            screenedValue = self.screenValue_('RandomTrialSequenceMaximumRunLength', newValue) ;
+            self.RandomTrialSequenceMaximumRunLength_ = screenedValue ;
+            self.tellControllerToUpdateIfPresent_() ;
+        end
+
         function result = get.IsRunning(self)
             result = self.IsRunning_ ;            
         end
@@ -615,32 +726,58 @@ classdef PezUserClass < ws.UserClass
             end
         end
         
-        function checkValue_(self, propertyName, newValue)  %#ok<INUSL>
+        function screenedValue = screenValue_(self, propertyName, newValue)  %#ok<INUSL>
             if isequal(propertyName, 'ReturnDelay') ,
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 1<=newValue && newValue<=3600) ,
                     error('ws:invalidPropertyValue', 'ReturnDelay property value is invalid') ;
+                end
+                screenedValue = newValue ;
+            elseif isequal(propertyName, 'TapCount') ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && isfinite(screenedValue) && 1<=screenedValue && screenedValue<=5) ,
+                    error('ws:invalidPropertyValue', 'TapCount property value is invalid') ;
+                end                                    
+            elseif isequal(propertyName, 'RandomTrialSequenceMaximumRunLength') ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && ~isnan(screenedValue) && 2<=screenedValue ) ,
+                    error('ws:invalidPropertyValue', 'RandomTrialSequenceMaximumRunLength property value is invalid') ;
+                end                                    
+            elseif isequal(propertyName, 'RandomTrialSequenceLaserTrialSpacing') ,
+                screenedValue = round(real(newValue)) ;
+                if ~( isscalar(screenedValue) && ~isnan(screenedValue) && 1<=screenedValue ) ,
+                    error('ws:invalidPropertyValue', 'RandomTrialSequenceLaserTrialSpacing property value is invalid') ;
                 end                                    
             elseif isequal(propertyName, 'DispensePosition1Z') || ...
                    isequal(propertyName, 'DispensePosition2Z') || ...
                    isequal(propertyName, 'DeliverPosition1Z') || ...
                    isequal(propertyName, 'DeliverPosition2Z'),
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (-10<=newValue) && (newValue<=(-self.ZOffset_)) ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (0<=screenedValue ) && (screenedValue <=20) ) ,
                     error('ws:invalidPropertyValue', 'Z Position property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Position')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && (0<=newValue) && (newValue<=+100) ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (0<=screenedValue ) && (screenedValue <=+100) ) ,
                     error('ws:invalidPropertyValue', 'Position property value is invalid') ;
+                end
+            elseif ~isempty(strfind(propertyName, 'Speed')) ,  %#ok<STREMP>
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && (1<=screenedValue ) && (screenedValue <=500) ) ,
+                    error('ws:invalidPropertyValue', 'Speed property value is invalid') ;
                 end
             elseif ~isempty(strfind(propertyName, 'Duration')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Duration property value is invalid') ;
                 end                    
+                screenedValue = newValue ;
             elseif ~isempty(strfind(propertyName, 'Delay')) ,  %#ok<STREMP>
                 if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<=newValue ) ,
                     error('ws:invalidPropertyValue', 'Delay property value is invalid') ;
                 end                    
+                screenedValue = newValue ;
             elseif ~isempty(strfind(propertyName, 'Frequency')) ,  %#ok<STREMP>
-                if ~( isscalar(newValue) && isreal(newValue) && isfinite(newValue) && 0<newValue ) ,
+                screenedValue = round(newValue) ;
+                if ~( isscalar(screenedValue ) && isreal(screenedValue ) && isfinite(screenedValue ) && 0<screenedValue  ) ,
                     error('ws:invalidPropertyValue', 'Frequency property value is invalid') ;
                 end                    
             else

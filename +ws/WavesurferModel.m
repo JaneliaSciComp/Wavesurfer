@@ -5315,6 +5315,10 @@ classdef WavesurferModel < ws.Model & ws.EventBroadcaster
             result = isequal(self.State_, 'idle') ;
         end
         
+        function result = isLoggingEnabled(self)
+            result = self.Logging_.IsEnabled ;
+        end
+        
         function result = get.DoSubtractBaselineInTestPulseView(self)
             result = self.Ephys_.getDoSubtractBaselineInTestPulseView_() ;
         end
