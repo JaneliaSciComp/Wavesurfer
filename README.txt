@@ -486,4 +486,8 @@ Version History
                          Switched to semantic versioning
                          (https://semver.org/).
 
-1.0.2    June 5, 2019    Fixed bug with opening old protocol files.
+1.0.2    Jun 05, 2019    Fixed bug with opening old protocol files.
+
+1.0.4    Dec 01, 2020    Updates to pez controller example.  Added
+                         method to query whether logging is enabled
+                         to ws.WavesurferModel.
