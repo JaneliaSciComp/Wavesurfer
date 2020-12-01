@@ -66,7 +66,7 @@ Copyright
 ---------
 
 Except where noted, all code, documentation, images, and anything else
-in WaveSurfer is copyright 2013-2019 by the Howard Hughes Medical 
+in WaveSurfer is copyright 2013-2020 by the Howard Hughes Medical 
 Institute.
 
 
@@ -488,6 +488,6 @@ Version History
 
 1.0.2    Jun 05, 2019    Fixed bug with opening old protocol files.
 
-1.0.4    Dec 01, 2020    Updates to pez controller example.  Added
+1.0.5    Dec 01, 2020    Updates to pez controller example.  Added
                          method to query whether logging is enabled
                          to ws.WavesurferModel.
