@@ -408,7 +408,7 @@ classdef ModularClient < handle
                         if floor(arg) ~= ceil(arg)
                             request = sprintf('%s, %f', request, arg);
                         else
-                            request = sprintf('%s, %d', request, int32(arg))
+                            request = sprintf('%s, %d', request, int32(arg));
                         end
                     else
                         json = obj.convertToJson(arg);
